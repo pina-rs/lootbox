@@ -22,13 +22,23 @@ pub struct RequestOpen {
 	pub owner_box_account: solana_pubkey::Pubkey,
 	pub opening: solana_pubkey::Pubkey,
 	pub randomness: solana_pubkey::Pubkey,
-	pub clock: solana_pubkey::Pubkey,
+	pub reward_escrow: solana_pubkey::Pubkey,
+	pub oracle_queue: solana_pubkey::Pubkey,
+	pub oracle: solana_pubkey::Pubkey,
+	pub recent_slot_hashes: solana_pubkey::Pubkey,
+	pub oracle_program: solana_pubkey::Pubkey,
+	pub oracle_program_state: solana_pubkey::Pubkey,
+	pub oracle_lut_signer: solana_pubkey::Pubkey,
+	pub oracle_lut: solana_pubkey::Pubkey,
+	pub associated_token_program: solana_pubkey::Pubkey,
+	pub wrapped_sol_mint: solana_pubkey::Pubkey,
+	pub address_lookup_table_program: solana_pubkey::Pubkey,
 	pub system_program: solana_pubkey::Pubkey,
 	pub token_program: solana_pubkey::Pubkey,
 }
 
 impl RequestOpen {
-	pub fn new(owner: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, owner_box_account: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, clock: solana_pubkey::Pubkey) -> Self {
+	pub fn new(owner: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, owner_box_account: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, oracle_lut_signer: solana_pubkey::Pubkey, oracle_lut: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey, address_lookup_table_program: solana_pubkey::Pubkey) -> Self {
 		Self {
 			owner,
 			lootbox,
@@ -40,7 +50,17 @@ impl RequestOpen {
 				&crate::LOOTBOX_PROGRAM_ID,
 			).0,
 			randomness,
-			clock,
+			reward_escrow,
+			oracle_queue,
+			oracle,
+			recent_slot_hashes,
+			oracle_program,
+			oracle_program_state,
+			oracle_lut_signer,
+			oracle_lut,
+			associated_token_program: solana_pubkey::pubkey!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
+			wrapped_sol_mint,
+			address_lookup_table_program,
 			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
 			token_program: solana_pubkey::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
 		}
@@ -56,15 +76,25 @@ impl RequestOpen {
 		data: RequestOpenInstructionData,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(10 + remaining_accounts.len());
+		let mut accounts = Vec::with_capacity(20 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.owner, true));
 		accounts.push(solana_instruction::AccountMeta::new(self.lootbox, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.vault, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.box_mint, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.owner_box_account, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.randomness, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.clock, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.randomness, true));
+		accounts.push(solana_instruction::AccountMeta::new(self.reward_escrow, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.oracle_queue, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.oracle, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.recent_slot_hashes, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_program_state, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_lut_signer, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.oracle_lut, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.associated_token_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.wrapped_sol_mint, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.address_lookup_table_program, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.token_program, false));
 		accounts.extend_from_slice(remaining_accounts);
@@ -100,5 +130,6 @@ impl RequestOpenInstructionData {
 #[derive(pina::ZeroPod)]
 pub struct RequestOpenInstructionWire {
 	pub discriminator: u8,
+	pub recent_slot: u64,
 	pub bump: u8,
 }

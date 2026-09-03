@@ -4,8 +4,9 @@
 //!
 //! The test deploys the lootbox program and a separate, test-only program at
 //! Switchboard's devnet address. The oracle fixture owns the canonical
-//! 408-byte randomness account and performs commit/reveal transitions; the
-//! lootbox program has no mock branches or privileged testing instructions.
+//! 408-byte randomness account and performs PDA-authorized commit/reveal
+//! transitions; the lootbox program has no mock branches or privileged testing
+//! instructions.
 
 use std::path::Path;
 use std::path::PathBuf;
@@ -21,10 +22,12 @@ use program_under_test::CreateLootboxInstruction;
 use program_under_test::DepositInstruction;
 use program_under_test::ID;
 use program_under_test::LootboxInstruction;
+use program_under_test::MAX_TOTAL_WEIGHT;
 use program_under_test::MintBoxesInstruction;
 use program_under_test::RANDOMNESS_TIMEOUT_SLOTS;
 use program_under_test::RequestOpenInstruction;
 use program_under_test::SWITCHBOARD_DEVNET_ID;
+use program_under_test::SettleOpenInstruction;
 use program_under_test::WithdrawSurplusInstruction;
 use solana_message::Message;
 use solana_transaction::Transaction;
@@ -32,8 +35,13 @@ use surfpool_sdk::Surfnet;
 use surfpool_sdk::cheatcodes::builders::DeployProgram;
 
 const ATA_PROGRAM: &str = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
+const ADDRESS_LOOKUP_TABLE_PROGRAM: &str = "AddressLookupTab1e1111111111111111111111111";
 const CLOCK_SYSVAR: &str = "SysvarC1ock11111111111111111111111111111111";
+const SLOT_HASHES_SYSVAR: &str = "SysvarS1otHashes111111111111111111111111111";
 const TOKEN_PROGRAM: &str = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const WRAPPED_SOL_MINT: &str = "So11111111111111111111111111111111111111112";
+const RANDOMNESS_COMMIT_DISCRIMINATOR: [u8; 8] = [52, 170, 152, 201, 179, 133, 242, 141];
+const RANDOMNESS_REVEAL_DISCRIMINATOR: [u8; 8] = [197, 181, 187, 10, 30, 58, 20, 73];
 const RANDOMNESS_SPACE: u64 = 408;
 const MINT_SPACE: u64 = 82;
 const FUND: u64 = 50_000_000;
@@ -121,16 +129,29 @@ impl Harness {
 	}
 
 	fn fund(&self, address: &Pubkey, lamports: u64) -> Result<(), String> {
-		let mut data = 2u32.to_le_bytes().to_vec();
-		data.extend_from_slice(&lamports.to_le_bytes());
-		self.send_instruction(Instruction::new_with_bytes(
-			Pubkey::default(),
-			&data,
-			vec![
-				AccountMeta::new(self.payer(), true),
-				AccountMeta::new(*address, false),
-			],
-		))
+		self.fund_many(&[*address], lamports)
+	}
+
+	fn fund_many(&self, addresses: &[Pubkey], lamports: u64) -> Result<(), String> {
+		let payer = self.payer();
+		let instructions = addresses
+			.iter()
+			.map(|address| {
+				let mut data = 2u32.to_le_bytes().to_vec();
+				data.extend_from_slice(&lamports.to_le_bytes());
+
+				Instruction::new_with_bytes(
+					Pubkey::default(),
+					&data,
+					vec![
+						AccountMeta::new(payer, true),
+						AccountMeta::new(*address, false),
+					],
+				)
+			})
+			.collect::<Vec<_>>();
+
+		self.send_instructions_with_signers(&instructions, &[])
 	}
 
 	fn account(&self, address: &Pubkey) -> Result<Account, String> {
@@ -180,12 +201,24 @@ fn ata_program_id() -> Pubkey {
 	Pubkey::from_str_const(ATA_PROGRAM)
 }
 
+fn address_lookup_table_program_id() -> Pubkey {
+	Pubkey::from_str_const(ADDRESS_LOOKUP_TABLE_PROGRAM)
+}
+
 fn clock_sysvar_id() -> Pubkey {
 	Pubkey::from_str_const(CLOCK_SYSVAR)
 }
 
+fn slot_hashes_sysvar_id() -> Pubkey {
+	Pubkey::from_str_const(SLOT_HASHES_SYSVAR)
+}
+
 fn oracle_program_id() -> Pubkey {
 	Pubkey::new_from_array(SWITCHBOARD_DEVNET_ID.to_bytes())
+}
+
+fn wrapped_sol_mint_id() -> Pubkey {
+	Pubkey::from_str_const(WRAPPED_SOL_MINT)
 }
 
 fn ata_of(wallet: &Pubkey, mint: &Pubkey) -> Pubkey {
@@ -336,12 +369,124 @@ fn mint_data(amount: u64) -> Vec<u8> {
 	data
 }
 
-fn request_data(bump: u8) -> Vec<u8> {
+fn request_data(recent_slot: u64, bump: u8) -> Vec<u8> {
 	let mut data = vec![0u8; RequestOpenInstruction::SIZE];
-	RequestOpenInstruction::initialize(&mut data)
-		.expect("request data")
-		.bump = bump;
+	let args = RequestOpenInstruction::initialize(&mut data).expect("request data");
+	args.recent_slot.set(recent_slot);
+	args.bump = bump;
 	data
+}
+
+struct OracleCpiAccounts {
+	reward_escrow: Pubkey,
+	program_state: Pubkey,
+	lut_signer: Pubkey,
+	lut: Pubkey,
+	stats: Pubkey,
+}
+
+#[allow(clippy::too_many_arguments)]
+fn request_accounts(
+	owner: &Pubkey,
+	lootbox: &Pubkey,
+	vault: &Pubkey,
+	mint: &Pubkey,
+	owner_ata: &Pubkey,
+	opening: &Pubkey,
+	randomness: &Pubkey,
+	queue: &Pubkey,
+	oracle: &Pubkey,
+	oracle_cpi: &OracleCpiAccounts,
+) -> Vec<AccountMeta> {
+	vec![
+		AccountMeta::new(*owner, true),
+		AccountMeta::new(*lootbox, false),
+		AccountMeta::new_readonly(*vault, false),
+		AccountMeta::new(*mint, false),
+		AccountMeta::new(*owner_ata, false),
+		AccountMeta::new(*opening, false),
+		AccountMeta::new(*randomness, true),
+		AccountMeta::new(oracle_cpi.reward_escrow, false),
+		AccountMeta::new(*queue, false),
+		AccountMeta::new(*oracle, false),
+		AccountMeta::new_readonly(slot_hashes_sysvar_id(), false),
+		AccountMeta::new_readonly(oracle_program_id(), false),
+		AccountMeta::new_readonly(oracle_cpi.program_state, false),
+		AccountMeta::new_readonly(oracle_cpi.lut_signer, false),
+		AccountMeta::new(oracle_cpi.lut, false),
+		AccountMeta::new_readonly(ata_program_id(), false),
+		AccountMeta::new_readonly(wrapped_sol_mint_id(), false),
+		AccountMeta::new_readonly(address_lookup_table_program_id(), false),
+		AccountMeta::new_readonly(Pubkey::default(), false),
+		AccountMeta::new_readonly(token_program_id(), false),
+	]
+}
+
+fn settle_data(value: [u8; 32]) -> Vec<u8> {
+	let mut data = vec![0u8; SettleOpenInstruction::SIZE];
+	let args = SettleOpenInstruction::initialize(&mut data).expect("settle data");
+	args.signature.fill(7);
+	args.recovery_id = 1;
+	args.value = value;
+	data
+}
+
+#[allow(clippy::too_many_arguments)]
+fn settle_accounts(
+	recipient: &Pubkey,
+	payer: &Pubkey,
+	lootbox: &Pubkey,
+	vault: &Pubkey,
+	mint: &Pubkey,
+	opening: &Pubkey,
+	randomness: &Pubkey,
+	queue: &Pubkey,
+	oracle: &Pubkey,
+	oracle_cpi: &OracleCpiAccounts,
+) -> Vec<AccountMeta> {
+	vec![
+		AccountMeta::new(*recipient, false),
+		AccountMeta::new(*payer, true),
+		AccountMeta::new(*lootbox, false),
+		AccountMeta::new(*vault, false),
+		AccountMeta::new_readonly(*mint, false),
+		AccountMeta::new(*opening, false),
+		AccountMeta::new(*randomness, false),
+		AccountMeta::new_readonly(*queue, false),
+		AccountMeta::new_readonly(*oracle, false),
+		AccountMeta::new(oracle_cpi.stats, false),
+		AccountMeta::new_readonly(slot_hashes_sysvar_id(), false),
+		AccountMeta::new_readonly(oracle_program_id(), false),
+		AccountMeta::new(oracle_cpi.reward_escrow, false),
+		AccountMeta::new_readonly(oracle_cpi.program_state, false),
+		AccountMeta::new_readonly(Pubkey::default(), false),
+		AccountMeta::new_readonly(token_program_id(), false),
+		AccountMeta::new_readonly(wrapped_sol_mint_id(), false),
+	]
+}
+
+fn close_accounts(
+	recipient: &Pubkey,
+	lootbox: &Pubkey,
+	opening: &Pubkey,
+	randomness: &Pubkey,
+	oracle_cpi: &OracleCpiAccounts,
+) -> Vec<AccountMeta> {
+	vec![
+		AccountMeta::new(*recipient, false),
+		AccountMeta::new_readonly(*lootbox, false),
+		AccountMeta::new(*opening, false),
+		AccountMeta::new(*randomness, false),
+		AccountMeta::new(oracle_cpi.reward_escrow, false),
+		AccountMeta::new_readonly(oracle_program_id(), false),
+		AccountMeta::new_readonly(oracle_cpi.program_state, false),
+		AccountMeta::new(oracle_cpi.lut, false),
+		AccountMeta::new_readonly(oracle_cpi.lut_signer, false),
+		AccountMeta::new_readonly(Pubkey::default(), false),
+		AccountMeta::new_readonly(token_program_id(), false),
+		AccountMeta::new_readonly(wrapped_sol_mint_id(), false),
+		AccountMeta::new_readonly(address_lookup_table_program_id(), false),
+	]
 }
 
 fn withdraw_data(lamports: u64) -> Vec<u8> {
@@ -383,6 +528,29 @@ fn commit_burn_reveal_and_payout_round_trip() {
 
 		let id = 7u64;
 		let queue = Pubkey::new_from_array([7u8; 32]);
+		let oracle = Pubkey::new_from_array([8u8; 32]);
+		let empty_account_rent = rent_minimum(0);
+		let oracle_cpi = OracleCpiAccounts {
+			reward_escrow: Pubkey::new_from_array([9u8; 32]),
+			program_state: Pubkey::new_from_array([10u8; 32]),
+			lut_signer: Pubkey::new_from_array([11u8; 32]),
+			lut: Pubkey::new_from_array([12u8; 32]),
+			stats: Pubkey::new_from_array([13u8; 32]),
+		};
+		program
+			.fund_many(
+				&[
+					queue,
+					oracle,
+					oracle_cpi.reward_escrow,
+					oracle_cpi.program_state,
+					oracle_cpi.lut_signer,
+					oracle_cpi.lut,
+					oracle_cpi.stats,
+				],
+				empty_account_rent,
+			)
+			.expect("fund mock Switchboard CPI accounts");
 		let (lootbox, bump) = lootbox_pda(&program_id, &authority, id);
 		let (vault, vault_bump) = vault_pda(&program_id, &lootbox);
 		let mint = provision_mint(&program, &authority, &lootbox).expect("provision box mint");
@@ -414,6 +582,18 @@ fn commit_burn_reveal_and_payout_round_trip() {
 				)
 				.expect("add weighted outcome");
 		}
+		assert!(
+			program
+				.send(
+					&add_outcome_data(MAX_TOTAL_WEIGHT, 1),
+					vec![
+						AccountMeta::new_readonly(authority, true),
+						AccountMeta::new(lootbox, false),
+					],
+				)
+				.is_err(),
+			"the on-chain total-weight bound rejects pathological tables"
+		);
 
 		program
 			.send(
@@ -483,114 +663,79 @@ fn commit_burn_reveal_and_payout_round_trip() {
 			"fully reserved collateral cannot be withdrawn"
 		);
 
-		let stale_randomness = Keypair::new();
+		let invalid_randomness = Keypair::new();
 		program
 			.send_with_signers(
 				create_account_instruction(
 					&authority,
-					&stale_randomness.pubkey(),
+					&invalid_randomness.pubkey(),
 					rent_minimum(RANDOMNESS_SPACE),
 					RANDOMNESS_SPACE,
 					&oracle_program_id(),
 				),
-				&[&stale_randomness],
+				&[&invalid_randomness],
 			)
-			.expect("create stale randomness candidate");
-		let mut stale_commit_data = vec![0u8];
-		stale_commit_data.extend_from_slice(queue.as_ref());
-		program
-			.send_with_signers(
-				Instruction::new_with_bytes(
-					oracle_program_id(),
-					&stale_commit_data,
-					vec![
-						AccountMeta::new_readonly(recipient.pubkey(), true),
-						AccountMeta::new(stale_randomness.pubkey(), false),
-						AccountMeta::new_readonly(clock_sysvar_id(), false),
-					],
-				),
-				&[&recipient],
-			)
-			.expect("commit stale randomness candidate");
-		program.advance_one_slot().expect("age stale commitment");
-		let (stale_opening, stale_bump) =
-			opening_pda(&program_id, &lootbox, &stale_randomness.pubkey());
+			.expect("create invalid-authority randomness candidate");
+		let (invalid_opening, invalid_bump) =
+			opening_pda(&program_id, &lootbox, &invalid_randomness.pubkey());
+		let recent_slot = stored_u64(
+			&program
+				.account(&clock_sysvar_id())
+				.expect("clock before opening")
+				.data,
+			0,
+		);
 		assert!(
 			program
 				.send_with_signers(
 					program.instruction(
-						&request_data(stale_bump),
-						vec![
-							AccountMeta::new(recipient.pubkey(), true),
-							AccountMeta::new(lootbox, false),
-							AccountMeta::new_readonly(vault, false),
-							AccountMeta::new(mint, false),
-							AccountMeta::new(recipient_ata, false),
-							AccountMeta::new(stale_opening, false),
-							AccountMeta::new_readonly(stale_randomness.pubkey(), false),
-							AccountMeta::new_readonly(clock_sysvar_id(), false),
-							AccountMeta::new_readonly(Pubkey::default(), false),
-							AccountMeta::new_readonly(token_program_id(), false),
-						],
+						&request_data(recent_slot, invalid_bump),
+						request_accounts(
+							&recipient.pubkey(),
+							&lootbox,
+							&vault,
+							&mint,
+							&recipient_ata,
+							&invalid_opening,
+							&invalid_randomness.pubkey(),
+							&queue,
+							&oracle,
+							&oracle_cpi,
+						),
 					),
-					&[&recipient],
+					&[&recipient, &invalid_randomness],
 				)
 				.is_err(),
-			"a prior-slot commitment cannot become a selective-opening option"
+			"request_open rejects an already initialized randomness account"
 		);
 		assert_eq!(
 			token_amount(&program.account(&recipient_ata).expect("recipient ATA")),
 			BOXES,
-			"rejected stale request does not burn a box"
+			"rejected randomness authority does not burn a box"
 		);
 
 		let randomness = Keypair::new();
+		let (opening, opening_bump) = opening_pda(&program_id, &lootbox, &randomness.pubkey());
 		program
 			.send_with_signers(
-				create_account_instruction(
-					&authority,
-					&randomness.pubkey(),
-					rent_minimum(RANDOMNESS_SPACE),
-					RANDOMNESS_SPACE,
-					&oracle_program_id(),
+				program.instruction(
+					&request_data(recent_slot, opening_bump),
+					request_accounts(
+						&recipient.pubkey(),
+						&lootbox,
+						&vault,
+						&mint,
+						&recipient_ata,
+						&opening,
+						&randomness.pubkey(),
+						&queue,
+						&oracle,
+						&oracle_cpi,
+					),
 				),
-				&[&randomness],
+				&[&recipient, &randomness],
 			)
-			.expect("create oracle-owned randomness account");
-		let (opening, opening_bump) = opening_pda(&program_id, &lootbox, &randomness.pubkey());
-		let mut commit_data = vec![0u8];
-		commit_data.extend_from_slice(queue.as_ref());
-		program
-			.send_instructions_with_signers(
-				&[
-					Instruction::new_with_bytes(
-						oracle_program_id(),
-						&commit_data,
-						vec![
-							AccountMeta::new_readonly(recipient.pubkey(), true),
-							AccountMeta::new(randomness.pubkey(), false),
-							AccountMeta::new_readonly(clock_sysvar_id(), false),
-						],
-					),
-					program.instruction(
-						&request_data(opening_bump),
-						vec![
-							AccountMeta::new(recipient.pubkey(), true),
-							AccountMeta::new(lootbox, false),
-							AccountMeta::new_readonly(vault, false),
-							AccountMeta::new(mint, false),
-							AccountMeta::new(recipient_ata, false),
-							AccountMeta::new(opening, false),
-							AccountMeta::new_readonly(randomness.pubkey(), false),
-							AccountMeta::new_readonly(clock_sysvar_id(), false),
-							AccountMeta::new_readonly(Pubkey::default(), false),
-							AccountMeta::new_readonly(token_program_id(), false),
-						],
-					),
-				],
-				&[&recipient],
-			)
-			.expect("atomically commit randomness and burn one box");
+			.expect("program-authorized initialize, commit, and burn are atomic");
 		let committed = program
 			.account(&randomness.pubkey())
 			.expect("committed randomness account");
@@ -609,7 +754,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 			408,
 			"canonical randomness account size"
 		);
-		assert_eq!(&committed.data[8..40], recipient.pubkey().as_ref());
+		assert_eq!(&committed.data[8..40], opening.as_ref());
 		assert_eq!(&committed.data[40..72], queue.as_ref());
 		assert_eq!(
 			stored_u64(&committed.data, 144),
@@ -640,35 +785,50 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		);
 		assert!(
 			program
-				.send(
-					&[LootboxInstruction::SettleOpen as u8],
-					vec![
-						AccountMeta::new(recipient.pubkey(), false),
-						AccountMeta::new(lootbox, false),
-						AccountMeta::new(vault, false),
-						AccountMeta::new_readonly(mint, false),
-						AccountMeta::new(opening, false),
-						AccountMeta::new_readonly(randomness.pubkey(), false),
-					],
+				.send_with_signers(
+					Instruction::new_with_bytes(
+						oracle_program_id(),
+						&RANDOMNESS_COMMIT_DISCRIMINATOR,
+						vec![
+							AccountMeta::new(randomness.pubkey(), false),
+							AccountMeta::new_readonly(queue, false),
+							AccountMeta::new(oracle, false),
+							AccountMeta::new_readonly(slot_hashes_sysvar_id(), false),
+							AccountMeta::new_readonly(recipient.pubkey(), true),
+						],
+					),
+					&[&recipient],
 				)
 				.is_err(),
-			"unrevealed randomness cannot settle"
+			"the holder cannot overwrite a PDA-authorized pending commitment"
+		);
+		assert_eq!(
+			stored_u64(
+				&program
+					.account(&randomness.pubkey())
+					.expect("unchanged randomness")
+					.data,
+				104,
+			),
+			seed_slot,
+			"failed re-commit preserves the receipt-bound seed slot"
 		);
 		assert!(
 			program
-				.send(
-					&[LootboxInstruction::RefundOpen as u8],
-					vec![
-						AccountMeta::new(recipient.pubkey(), false),
-						AccountMeta::new(lootbox, false),
-						AccountMeta::new_readonly(vault, false),
-						AccountMeta::new(mint, false),
-						AccountMeta::new(recipient_ata, false),
-						AccountMeta::new(opening, false),
-						AccountMeta::new_readonly(randomness.pubkey(), false),
-						AccountMeta::new_readonly(clock_sysvar_id(), false),
-						AccountMeta::new_readonly(token_program_id(), false),
-					],
+				.send_with_signers(
+					program.instruction(
+						&[LootboxInstruction::RefundOpen as u8],
+						vec![
+							AccountMeta::new(recipient.pubkey(), true),
+							AccountMeta::new(lootbox, false),
+							AccountMeta::new(vault, false),
+							AccountMeta::new_readonly(mint, false),
+							AccountMeta::new(opening, false),
+							AccountMeta::new_readonly(randomness.pubkey(), false),
+							AccountMeta::new_readonly(clock_sysvar_id(), false),
+						],
+					),
+					&[&recipient],
 				)
 				.is_err(),
 			"a live commitment cannot be refunded early"
@@ -678,22 +838,32 @@ fn commit_burn_reveal_and_payout_round_trip() {
 			.expect("advance beyond the commitment slot");
 
 		let revealed_value = [42u8; 32];
-		let mut reveal_data = vec![1u8];
-		reveal_data.extend_from_slice(&revealed_value);
-		program
-			.send_with_signers(
-				Instruction::new_with_bytes(
+		let settle_instruction_data = settle_data(revealed_value);
+		let mut direct_reveal_data = RANDOMNESS_REVEAL_DISCRIMINATOR.to_vec();
+		direct_reveal_data.extend_from_slice(&settle_instruction_data[1..]);
+		assert!(
+			program
+				.send_instruction(Instruction::new_with_bytes(
 					oracle_program_id(),
-					&reveal_data,
+					&direct_reveal_data,
 					vec![
-						AccountMeta::new_readonly(recipient.pubkey(), true),
 						AccountMeta::new(randomness.pubkey(), false),
-						AccountMeta::new_readonly(clock_sysvar_id(), false),
+						AccountMeta::new_readonly(oracle, false),
+						AccountMeta::new_readonly(queue, false),
+						AccountMeta::new(oracle_cpi.stats, false),
+						AccountMeta::new_readonly(opening, true),
+						AccountMeta::new(authority, true),
+						AccountMeta::new_readonly(slot_hashes_sysvar_id(), false),
+						AccountMeta::new_readonly(Pubkey::default(), false),
+						AccountMeta::new(oracle_cpi.reward_escrow, false),
+						AccountMeta::new_readonly(token_program_id(), false),
+						AccountMeta::new_readonly(wrapped_sol_mint_id(), false),
+						AccountMeta::new_readonly(oracle_cpi.program_state, false),
 					],
-				),
-				&[&recipient],
-			)
-			.expect("reveal randomness after burn");
+				))
+				.is_err(),
+			"the holder cannot reveal without the opening PDA signature"
+		);
 
 		let recipient_before = program
 			.balance(&recipient.pubkey())
@@ -702,32 +872,51 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		assert!(
 			program
 				.send(
-					&[LootboxInstruction::SettleOpen as u8],
-					vec![
-						AccountMeta::new(authority, false),
-						AccountMeta::new(lootbox, false),
-						AccountMeta::new(vault, false),
-						AccountMeta::new_readonly(mint, false),
-						AccountMeta::new(opening, false),
-						AccountMeta::new_readonly(randomness.pubkey(), false),
-					],
+					&settle_instruction_data,
+					settle_accounts(
+						&authority,
+						&authority,
+						&lootbox,
+						&vault,
+						&mint,
+						&opening,
+						&randomness.pubkey(),
+						&queue,
+						&oracle,
+						&oracle_cpi,
+					),
 				)
 				.is_err(),
 			"settlement cannot redirect the payout"
 		);
+		assert_eq!(
+			stored_u64(
+				&program
+					.account(&randomness.pubkey())
+					.expect("randomness after rejected redirect")
+					.data,
+				144,
+			),
+			0,
+			"failed payout redirection cannot consume the reveal"
+		);
 		program
 			.send(
-				&[LootboxInstruction::SettleOpen as u8],
-				vec![
-					AccountMeta::new(recipient.pubkey(), false),
-					AccountMeta::new(lootbox, false),
-					AccountMeta::new(vault, false),
-					AccountMeta::new_readonly(mint, false),
-					AccountMeta::new(opening, false),
-					AccountMeta::new_readonly(randomness.pubkey(), false),
-				],
+				&settle_instruction_data,
+				settle_accounts(
+					&recipient.pubkey(),
+					&authority,
+					&lootbox,
+					&vault,
+					&mint,
+					&opening,
+					&randomness.pubkey(),
+					&queue,
+					&oracle,
+					&oracle_cpi,
+				),
 			)
-			.expect("settle revealed opening permissionlessly");
+			.expect("reveal and settle the opening permissionlessly");
 
 		let opening_account = program.account(&opening).expect("opening receipt");
 		let reward = stored_u64(&opening_account.data, 105);
@@ -765,63 +954,69 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		program
 			.send(
 				&[LootboxInstruction::CloseOpening as u8],
-				vec![
-					AccountMeta::new(recipient.pubkey(), false),
-					AccountMeta::new(opening, false),
-				],
+				close_accounts(
+					&recipient.pubkey(),
+					&lootbox,
+					&opening,
+					&randomness.pubkey(),
+					&oracle_cpi,
+				),
 			)
-			.expect("close terminal receipt and recover rent");
+			.expect("close terminal receipt and Switchboard randomness account");
 		assert!(
 			program.account(&opening).is_err(),
 			"terminal receipt is closed"
 		);
+		assert!(
+			program.account(&randomness.pubkey()).is_err(),
+			"Switchboard randomness account is closed"
+		);
 
 		let refund_randomness = Keypair::new();
+		let refund_oracle_cpi = OracleCpiAccounts {
+			reward_escrow: Pubkey::new_from_array([14u8; 32]),
+			program_state: oracle_cpi.program_state,
+			lut_signer: Pubkey::new_from_array([15u8; 32]),
+			lut: Pubkey::new_from_array([16u8; 32]),
+			stats: oracle_cpi.stats,
+		};
 		program
-			.send_with_signers(
-				create_account_instruction(
-					&authority,
-					&refund_randomness.pubkey(),
-					rent_minimum(RANDOMNESS_SPACE),
-					RANDOMNESS_SPACE,
-					&oracle_program_id(),
-				),
-				&[&refund_randomness],
+			.fund_many(
+				&[
+					refund_oracle_cpi.reward_escrow,
+					refund_oracle_cpi.lut_signer,
+					refund_oracle_cpi.lut,
+				],
+				empty_account_rent,
 			)
-			.expect("create refund-path randomness account");
+			.expect("fund refund-path Switchboard CPI accounts");
 		let (refund_opening, refund_bump) =
 			opening_pda(&program_id, &lootbox, &refund_randomness.pubkey());
-		let mut refund_commit_data = vec![0u8];
-		refund_commit_data.extend_from_slice(queue.as_ref());
+		let refund_recent_slot = stored_u64(
+			&program
+				.account(&clock_sysvar_id())
+				.expect("clock before refund-path opening")
+				.data,
+			0,
+		);
 		program
-			.send_instructions_with_signers(
-				&[
-					Instruction::new_with_bytes(
-						oracle_program_id(),
-						&refund_commit_data,
-						vec![
-							AccountMeta::new_readonly(recipient.pubkey(), true),
-							AccountMeta::new(refund_randomness.pubkey(), false),
-							AccountMeta::new_readonly(clock_sysvar_id(), false),
-						],
+			.send_with_signers(
+				program.instruction(
+					&request_data(refund_recent_slot, refund_bump),
+					request_accounts(
+						&recipient.pubkey(),
+						&lootbox,
+						&vault,
+						&mint,
+						&recipient_ata,
+						&refund_opening,
+						&refund_randomness.pubkey(),
+						&queue,
+						&oracle,
+						&refund_oracle_cpi,
 					),
-					program.instruction(
-						&request_data(refund_bump),
-						vec![
-							AccountMeta::new(recipient.pubkey(), true),
-							AccountMeta::new(lootbox, false),
-							AccountMeta::new_readonly(vault, false),
-							AccountMeta::new(mint, false),
-							AccountMeta::new(recipient_ata, false),
-							AccountMeta::new(refund_opening, false),
-							AccountMeta::new_readonly(refund_randomness.pubkey(), false),
-							AccountMeta::new_readonly(clock_sysvar_id(), false),
-							AccountMeta::new_readonly(Pubkey::default(), false),
-							AccountMeta::new_readonly(token_program_id(), false),
-						],
-					),
-				],
-				&[&recipient],
+				),
+				&[&recipient, &refund_randomness],
 			)
 			.expect("request a second opening for the timeout path");
 		assert_eq!(
@@ -832,52 +1027,90 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		program
 			.advance_slots(RANDOMNESS_TIMEOUT_SLOTS + 1)
 			.expect("advance beyond randomness timeout");
+		let recipient_before_refund = program
+			.balance(&recipient.pubkey())
+			.expect("recipient before timeout refund");
 		let vault_before_refund = program.balance(&vault).expect("vault before refund");
+		assert!(
+			program
+				.send(
+					&[LootboxInstruction::RefundOpen as u8],
+					vec![
+						AccountMeta::new(recipient.pubkey(), false),
+						AccountMeta::new(lootbox, false),
+						AccountMeta::new(vault, false),
+						AccountMeta::new_readonly(mint, false),
+						AccountMeta::new(refund_opening, false),
+						AccountMeta::new_readonly(refund_randomness.pubkey(), false),
+						AccountMeta::new_readonly(clock_sysvar_id(), false),
+					],
+				)
+				.is_err(),
+			"an outsider cannot force the recipient down to the reward floor"
+		);
 		program
-			.send(
-				&[LootboxInstruction::RefundOpen as u8],
-				vec![
-					AccountMeta::new(recipient.pubkey(), false),
-					AccountMeta::new(lootbox, false),
-					AccountMeta::new_readonly(vault, false),
-					AccountMeta::new(mint, false),
-					AccountMeta::new(recipient_ata, false),
-					AccountMeta::new(refund_opening, false),
-					AccountMeta::new_readonly(refund_randomness.pubkey(), false),
-					AccountMeta::new_readonly(clock_sysvar_id(), false),
-					AccountMeta::new_readonly(token_program_id(), false),
-				],
+			.send_with_signers(
+				program.instruction(
+					&[LootboxInstruction::RefundOpen as u8],
+					vec![
+						AccountMeta::new(recipient.pubkey(), true),
+						AccountMeta::new(lootbox, false),
+						AccountMeta::new(vault, false),
+						AccountMeta::new_readonly(mint, false),
+						AccountMeta::new(refund_opening, false),
+						AccountMeta::new_readonly(refund_randomness.pubkey(), false),
+						AccountMeta::new_readonly(clock_sysvar_id(), false),
+					],
+				),
+				&[&recipient],
 			)
-			.expect("refund timed-out opening permissionlessly");
+			.expect("let the recipient claim the timed-out opening's reward floor");
 		assert_eq!(
 			token_amount(&program.account(&recipient_ata).expect("recipient ATA")),
-			1,
-			"timeout restores the burned box"
+			0,
+			"timeout cannot create another draw"
 		);
 		assert_eq!(
-			program.balance(&vault).expect("vault after refund"),
-			vault_before_refund,
-			"refund preserves reward collateral"
+			program
+				.balance(&recipient.pubkey())
+				.expect("recipient after timeout refund")
+				- recipient_before_refund,
+			OUTCOMES[0].1,
+			"timeout pays the minimum configured reward"
+		);
+		assert_eq!(
+			vault_before_refund - program.balance(&vault).expect("vault after refund"),
+			OUTCOMES[0].1,
+			"vault pays exactly the minimum configured reward"
 		);
 		let refunded_receipt = program
 			.account(&refund_opening)
 			.expect("refunded opening receipt");
 		assert_eq!(refunded_receipt.data[114], 2, "opening is refunded");
+		assert_eq!(stored_u64(&refunded_receipt.data, 105), OUTCOMES[0].1);
+		assert_eq!(refunded_receipt.data[113], 0, "minimum outcome recorded");
 		let refunded_state = program.account(&lootbox).expect("refunded lootbox state");
 		assert_eq!(stored_u64(&refunded_state.data, 153), 0, "pending cleared");
 		assert_eq!(stored_u64(&refunded_state.data, 169), 1, "refund counted");
 		program
 			.send(
 				&[LootboxInstruction::CloseOpening as u8],
-				vec![
-					AccountMeta::new(recipient.pubkey(), false),
-					AccountMeta::new(refund_opening, false),
-				],
+				close_accounts(
+					&recipient.pubkey(),
+					&lootbox,
+					&refund_opening,
+					&refund_randomness.pubkey(),
+					&refund_oracle_cpi,
+				),
 			)
 			.expect("close refunded receipt");
 		assert!(
 			program.account(&refund_opening).is_err(),
 			"refunded receipt is closed"
+		);
+		assert!(
+			program.account(&refund_randomness.pubkey()).is_err(),
+			"refunded randomness account is closed"
 		);
 
 		program.stop().expect("stop isolated Surfpool test");

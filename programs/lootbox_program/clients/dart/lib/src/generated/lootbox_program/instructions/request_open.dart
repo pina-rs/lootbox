@@ -13,15 +13,20 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
 @immutable
 class RequestOpenInstructionData {
-  const RequestOpenInstructionData({required this.bump}) : discriminator = 5;
+  const RequestOpenInstructionData({
+    required this.recentSlot,
+    required this.bump,
+  }) : discriminator = 5;
 
   final int discriminator;
+  final BigInt recentSlot;
   final int bump;
 }
 
 Encoder<RequestOpenInstructionData> getRequestOpenInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('recentSlot', getU64Encoder()),
     ('bump', getU8Encoder()),
   ]);
 
@@ -29,6 +34,7 @@ Encoder<RequestOpenInstructionData> getRequestOpenInstructionDataEncoder() {
     structEncoder,
     (RequestOpenInstructionData value) => <String, Object?>{
       'discriminator': 5,
+      'recentSlot': value.recentSlot,
       'bump': value.bump,
     },
   );
@@ -37,6 +43,7 @@ Encoder<RequestOpenInstructionData> getRequestOpenInstructionDataEncoder() {
 Decoder<RequestOpenInstructionData> getRequestOpenInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('recentSlot', getU64Decoder()),
     ('bump', getU8Decoder()),
   ]);
 
@@ -55,7 +62,13 @@ Decoder<RequestOpenInstructionData> getRequestOpenInstructionDataDecoder() {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
     }
 
-    return (RequestOpenInstructionData(bump: map['bump']! as int), newOffset);
+    return (
+      RequestOpenInstructionData(
+        recentSlot: map['recentSlot']! as BigInt,
+        bump: map['bump']! as int,
+      ),
+      newOffset,
+    );
   }
 
   return switch (structDecoder) {
@@ -96,12 +109,26 @@ Instruction getRequestOpenInstruction({
   required Address ownerBoxAccount,
   required Address opening,
   required Address randomness,
-  required Address clock,
+  required Address rewardEscrow,
+  required Address oracleQueue,
+  required Address oracle,
+  required Address recentSlotHashes,
+  required Address oracleProgram,
+  required Address oracleProgramState,
+  required Address oracleLutSigner,
+  required Address oracleLut,
+  required Address associatedTokenProgram,
+  required Address wrappedSolMint,
+  required Address addressLookupTableProgram,
   required Address systemProgram,
   required Address tokenProgram,
+  required BigInt recentSlot,
   required int bump,
 }) {
-  final instructionData = RequestOpenInstructionData(bump: bump);
+  final instructionData = RequestOpenInstructionData(
+    recentSlot: recentSlot,
+    bump: bump,
+  );
 
   return Instruction(
     programAddress: programAddress,
@@ -112,8 +139,21 @@ Instruction getRequestOpenInstruction({
       AccountMeta(address: boxMint, role: AccountRole.writable),
       AccountMeta(address: ownerBoxAccount, role: AccountRole.writable),
       AccountMeta(address: opening, role: AccountRole.writable),
-      AccountMeta(address: randomness, role: AccountRole.readonly),
-      AccountMeta(address: clock, role: AccountRole.readonly),
+      AccountMeta(address: randomness, role: AccountRole.writableSigner),
+      AccountMeta(address: rewardEscrow, role: AccountRole.writable),
+      AccountMeta(address: oracleQueue, role: AccountRole.writable),
+      AccountMeta(address: oracle, role: AccountRole.writable),
+      AccountMeta(address: recentSlotHashes, role: AccountRole.readonly),
+      AccountMeta(address: oracleProgram, role: AccountRole.readonly),
+      AccountMeta(address: oracleProgramState, role: AccountRole.readonly),
+      AccountMeta(address: oracleLutSigner, role: AccountRole.readonly),
+      AccountMeta(address: oracleLut, role: AccountRole.writable),
+      AccountMeta(address: associatedTokenProgram, role: AccountRole.readonly),
+      AccountMeta(address: wrappedSolMint, role: AccountRole.readonly),
+      AccountMeta(
+        address: addressLookupTableProgram,
+        role: AccountRole.readonly,
+      ),
       AccountMeta(address: systemProgram, role: AccountRole.readonly),
       AccountMeta(address: tokenProgram, role: AccountRole.readonly),
     ],

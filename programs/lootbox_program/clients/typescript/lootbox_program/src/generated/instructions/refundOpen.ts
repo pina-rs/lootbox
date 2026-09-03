@@ -7,7 +7,7 @@
  */
 
 import { getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
+import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
@@ -15,8 +15,8 @@ export const REFUND_OPEN_DISCRIMINATOR = 7;
 
 export function getRefundOpenDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(REFUND_OPEN_DISCRIMINATOR); }
 
-export type RefundOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountRecipient extends string | AccountMeta<string> = string, TAccountLootbox extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountRecipientBoxAccount extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountRandomness extends string | AccountMeta<string> = string, TAccountClock extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
-Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountRecipient extends string ? WritableAccount<TAccountRecipient> : TAccountRecipient, TAccountLootbox extends string ? WritableAccount<TAccountLootbox> : TAccountLootbox, TAccountVault extends string ? ReadonlyAccount<TAccountVault> : TAccountVault, TAccountBoxMint extends string ? WritableAccount<TAccountBoxMint> : TAccountBoxMint, TAccountRecipientBoxAccount extends string ? WritableAccount<TAccountRecipientBoxAccount> : TAccountRecipientBoxAccount, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountRandomness extends string ? ReadonlyAccount<TAccountRandomness> : TAccountRandomness, TAccountClock extends string ? ReadonlyAccount<TAccountClock> : TAccountClock, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
+export type RefundOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountRecipient extends string | AccountMeta<string> = string, TAccountLootbox extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountRandomness extends string | AccountMeta<string> = string, TAccountClock extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountRecipient extends string ? WritableSignerAccount<TAccountRecipient> & AccountSignerMeta<TAccountRecipient> : TAccountRecipient, TAccountLootbox extends string ? WritableAccount<TAccountLootbox> : TAccountLootbox, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountRandomness extends string ? ReadonlyAccount<TAccountRandomness> : TAccountRandomness, TAccountClock extends string ? ReadonlyAccount<TAccountClock> : TAccountClock, ...TRemainingAccounts]>;
 
 export type RefundOpenInstructionData = { discriminator: number;  };
 
@@ -34,34 +34,29 @@ export function getRefundOpenInstructionDataCodec(): FixedSizeCodec<RefundOpenIn
     return combineCodec(getRefundOpenInstructionDataEncoder(), getRefundOpenInstructionDataDecoder());
 }
 
-export type RefundOpenInput<TAccountRecipient extends string = string, TAccountLootbox extends string = string, TAccountVault extends string = string, TAccountBoxMint extends string = string, TAccountRecipientBoxAccount extends string = string, TAccountOpening extends string = string, TAccountRandomness extends string = string, TAccountClock extends string = string, TAccountTokenProgram extends string = string> =  {
-  recipient: Address<TAccountRecipient>;
+export type RefundOpenInput<TAccountRecipient extends string = string, TAccountLootbox extends string = string, TAccountVault extends string = string, TAccountBoxMint extends string = string, TAccountOpening extends string = string, TAccountRandomness extends string = string, TAccountClock extends string = string> =  {
+  recipient: TransactionSigner<TAccountRecipient>;
 lootbox: Address<TAccountLootbox>;
 vault: Address<TAccountVault>;
 boxMint: Address<TAccountBoxMint>;
-recipientBoxAccount: Address<TAccountRecipientBoxAccount>;
 opening: Address<TAccountOpening>;
 randomness: Address<TAccountRandomness>;
 clock: Address<TAccountClock>;
-tokenProgram?: Address<TAccountTokenProgram>;
 }
 
-export function getRefundOpenInstruction<TAccountRecipient extends string, TAccountLootbox extends string, TAccountVault extends string, TAccountBoxMint extends string, TAccountRecipientBoxAccount extends string, TAccountOpening extends string, TAccountRandomness extends string, TAccountClock extends string, TAccountTokenProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: RefundOpenInput<TAccountRecipient, TAccountLootbox, TAccountVault, TAccountBoxMint, TAccountRecipientBoxAccount, TAccountOpening, TAccountRandomness, TAccountClock, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): RefundOpenInstruction<TProgramAddress, TAccountRecipient, TAccountLootbox, TAccountVault, TAccountBoxMint, TAccountRecipientBoxAccount, TAccountOpening, TAccountRandomness, TAccountClock, TAccountTokenProgram> {
+export function getRefundOpenInstruction<TAccountRecipient extends string, TAccountLootbox extends string, TAccountVault extends string, TAccountBoxMint extends string, TAccountOpening extends string, TAccountRandomness extends string, TAccountClock extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: RefundOpenInput<TAccountRecipient, TAccountLootbox, TAccountVault, TAccountBoxMint, TAccountOpening, TAccountRandomness, TAccountClock>, config?: { programAddress?: TProgramAddress } ): RefundOpenInstruction<TProgramAddress, TAccountRecipient, TAccountLootbox, TAccountVault, TAccountBoxMint, TAccountOpening, TAccountRandomness, TAccountClock> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
  // Original accounts.
-const originalAccounts = { recipient: { value: input.recipient ?? null, isWritable: true }, lootbox: { value: input.lootbox ?? null, isWritable: true }, vault: { value: input.vault ?? null, isWritable: false }, boxMint: { value: input.boxMint ?? null, isWritable: true }, recipientBoxAccount: { value: input.recipientBoxAccount ?? null, isWritable: true }, opening: { value: input.opening ?? null, isWritable: true }, randomness: { value: input.randomness ?? null, isWritable: false }, clock: { value: input.clock ?? null, isWritable: false }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
+const originalAccounts = { recipient: { value: input.recipient ?? null, isWritable: true }, lootbox: { value: input.lootbox ?? null, isWritable: true }, vault: { value: input.vault ?? null, isWritable: true }, boxMint: { value: input.boxMint ?? null, isWritable: false }, opening: { value: input.opening ?? null, isWritable: true }, randomness: { value: input.randomness ?? null, isWritable: false }, clock: { value: input.clock ?? null, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
-// Resolve default values.
-if (!accounts.tokenProgram.value) {
-accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
-}
+
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("recipient", accounts.recipient), getAccountMeta("lootbox", accounts.lootbox), getAccountMeta("vault", accounts.vault), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("recipientBoxAccount", accounts.recipientBoxAccount), getAccountMeta("opening", accounts.opening), getAccountMeta("randomness", accounts.randomness), getAccountMeta("clock", accounts.clock), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getRefundOpenInstructionDataEncoder().encode({}), programAddress } as RefundOpenInstruction<TProgramAddress, TAccountRecipient, TAccountLootbox, TAccountVault, TAccountBoxMint, TAccountRecipientBoxAccount, TAccountOpening, TAccountRandomness, TAccountClock, TAccountTokenProgram>);
+return Object.freeze({ accounts: [getAccountMeta("recipient", accounts.recipient), getAccountMeta("lootbox", accounts.lootbox), getAccountMeta("vault", accounts.vault), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("opening", accounts.opening), getAccountMeta("randomness", accounts.randomness), getAccountMeta("clock", accounts.clock)], data: getRefundOpenInstructionDataEncoder().encode({}), programAddress } as RefundOpenInstruction<TProgramAddress, TAccountRecipient, TAccountLootbox, TAccountVault, TAccountBoxMint, TAccountOpening, TAccountRandomness, TAccountClock>);
 }
 
 export type ParsedRefundOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
@@ -70,17 +65,15 @@ recipient: TAccountMetas[0];
 lootbox: TAccountMetas[1];
 vault: TAccountMetas[2];
 boxMint: TAccountMetas[3];
-recipientBoxAccount: TAccountMetas[4];
-opening: TAccountMetas[5];
-randomness: TAccountMetas[6];
-clock: TAccountMetas[7];
-tokenProgram: TAccountMetas[8];
+opening: TAccountMetas[4];
+randomness: TAccountMetas[5];
+clock: TAccountMetas[6];
 };
 data: RefundOpenInstructionData; };
 
 export function parseRefundOpenInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(instruction: Instruction<TProgram> & InstructionWithAccounts<TAccountMetas> & InstructionWithData<ReadonlyUint8Array>): ParsedRefundOpenInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 9) {
-  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 9 });
+  if (instruction.accounts.length < 7) {
+  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 7 });
 }
 let accountIndex = 0;
 const getNextAccount = () => {
@@ -88,5 +81,5 @@ const getNextAccount = () => {
   accountIndex += 1;
   return accountMeta;
 }
-  return { programAddress: instruction.programAddress, accounts: { recipient: getNextAccount(), lootbox: getNextAccount(), vault: getNextAccount(), boxMint: getNextAccount(), recipientBoxAccount: getNextAccount(), opening: getNextAccount(), randomness: getNextAccount(), clock: getNextAccount(), tokenProgram: getNextAccount() }, data: getRefundOpenInstructionDataDecoder().decode(instruction.data) };
+  return { programAddress: instruction.programAddress, accounts: { recipient: getNextAccount(), lootbox: getNextAccount(), vault: getNextAccount(), boxMint: getNextAccount(), opening: getNextAccount(), randomness: getNextAccount(), clock: getNextAccount() }, data: getRefundOpenInstructionDataDecoder().decode(instruction.data) };
 }

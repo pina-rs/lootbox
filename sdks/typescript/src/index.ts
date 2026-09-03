@@ -1,7 +1,50 @@
 export * from "@pina-rs/lootbox-generated";
 
 export const MAX_OUTCOMES = 8;
+export const MAX_TOTAL_WEIGHT = 0xffff_ffffn;
+export const SWITCHBOARD_REVEAL_DISCRIMINATOR = new Uint8Array([
+	197,
+	181,
+	187,
+	10,
+	30,
+	58,
+	20,
+	73,
+]);
 const MAX_U64 = (1n << 64n) - 1n;
+
+export type SwitchboardReveal = Readonly<{
+	signature: Uint8Array;
+	recoveryId: number;
+	value: Uint8Array;
+}>;
+
+/**
+ * Decode Switchboard's `randomness_reveal` instruction data into arguments
+ * accepted by the generated Lootbox `settleOpen` builder.
+ */
+export function decodeSwitchboardReveal(data: Uint8Array): SwitchboardReveal {
+	if (data.byteLength !== 105) {
+		throw new RangeError(
+			"Switchboard reveal data must contain exactly 105 bytes",
+		);
+	}
+
+	for (const [index, byte] of SWITCHBOARD_REVEAL_DISCRIMINATOR.entries()) {
+		if (data[index] !== byte) {
+			throw new RangeError(
+				"instruction is not a Switchboard randomness reveal",
+			);
+		}
+	}
+
+	return Object.freeze({
+		signature: data.slice(8, 72),
+		recoveryId: data[72] ?? 0,
+		value: data.slice(73, 105),
+	});
+}
 
 export type LootboxOutcomeInput = Readonly<{
 	label: string;
@@ -20,6 +63,7 @@ export type LootboxPlan = Readonly<{
 	maxSupply: bigint;
 	outcomes: readonly LootboxOutcome[];
 	totalWeight: bigint;
+	minimumRewardLamports: bigint;
 	requiredCollateralLamports: bigint;
 }>;
 
@@ -28,6 +72,7 @@ export type PlanErrorCode =
 	| "NO_OUTCOMES"
 	| "TOO_MANY_OUTCOMES"
 	| "ZERO_WEIGHT"
+	| "WEIGHT_LIMIT_EXCEEDED"
 	| "NEGATIVE_REWARD"
 	| "OUT_OF_RANGE"
 	| "ARITHMETIC_OVERFLOW"
@@ -128,10 +173,22 @@ export function createLootboxPlan(input: {
 		);
 	}
 
+	if (totalWeight > MAX_TOTAL_WEIGHT) {
+		throw new LootboxPlanError(
+			"WEIGHT_LIMIT_EXCEEDED",
+			`the sum of outcome weights must not exceed ${MAX_TOTAL_WEIGHT}`,
+		);
+	}
+
 	const maxReward = normalized.reduce(
 		(maximum, outcome) =>
 			outcome.rewardLamports > maximum ? outcome.rewardLamports : maximum,
 		0n,
+	);
+	const minimumRewardLamports = normalized.reduce(
+		(minimum, outcome) =>
+			outcome.rewardLamports < minimum ? outcome.rewardLamports : minimum,
+		normalized[0]?.rewardLamports ?? 0n,
 	);
 	const requiredCollateralLamports = maxSupply * maxReward;
 
@@ -149,6 +206,7 @@ export function createLootboxPlan(input: {
 
 	return Object.freeze({
 		maxSupply,
+		minimumRewardLamports,
 		outcomes: Object.freeze(outcomes),
 		totalWeight,
 		requiredCollateralLamports,

@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
 	createLootboxPlan,
 	decodeOutcomeTable,
+	decodeSwitchboardReveal,
 	LootboxPlanError,
+	SWITCHBOARD_REVEAL_DISCRIMINATOR,
 } from "./index.js";
 
 describe("createLootboxPlan", () => {
@@ -17,6 +19,7 @@ describe("createLootboxPlan", () => {
 		});
 
 		expect(plan.totalWeight).toBe(100n);
+		expect(plan.minimumRewardLamports).toBe(10_000n);
 		expect(plan.requiredCollateralLamports).toBe(5_000_000n);
 		expect(plan.outcomes.map((outcome) => outcome.probability)).toEqual([
 			70,
@@ -73,6 +76,18 @@ describe("createLootboxPlan", () => {
 			})
 		).toThrowError("worst-case collateral exceeds the u64 maximum");
 	});
+
+	it("rejects total weights above the settlement-safe bound", () => {
+		expect(() =>
+			createLootboxPlan({
+				maxSupply: 1,
+				outcomes: [
+					{ label: "Bound", weight: 0xffff_ffffn, rewardLamports: 1 },
+					{ label: "Overflow", weight: 1, rewardLamports: 1 },
+				],
+			})
+		).toThrowError("the sum of outcome weights must not exceed 4294967295");
+	});
 });
 
 describe("decodeOutcomeTable", () => {
@@ -85,5 +100,27 @@ describe("decodeOutcomeTable", () => {
 		expect(decodeOutcomeTable(weights, rewards, 1)).toEqual([
 			{ rewardLamports: 1_000_000n, weight: 75n },
 		]);
+	});
+});
+
+describe("decodeSwitchboardReveal", () => {
+	it("extracts the signed fields for settleOpen", () => {
+		const data = new Uint8Array(105);
+		data.set(SWITCHBOARD_REVEAL_DISCRIMINATOR);
+		data.fill(9, 8, 72);
+		data[72] = 1;
+		data.fill(4, 73);
+
+		expect(decodeSwitchboardReveal(data)).toEqual({
+			recoveryId: 1,
+			signature: new Uint8Array(64).fill(9),
+			value: new Uint8Array(32).fill(4),
+		});
+	});
+
+	it("rejects unrelated instruction data", () => {
+		expect(() => decodeSwitchboardReveal(new Uint8Array(105))).toThrowError(
+			"instruction is not a Switchboard randomness reveal",
+		);
 	});
 });

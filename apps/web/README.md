@@ -1,6 +1,6 @@
 # Lootbox Playground
 
-An animated, responsive interaction sandbox for the lootbox commit → burn → reveal experience.
+An animated, responsive interaction sandbox for the lootbox initialize/commit → burn → reveal/settle experience.
 
 The app uses a typed `LootboxGateway` boundary and ships with a deterministic in-memory Surfpool-themed implementation. It is intentionally not a wallet or mainnet client. The actual on-chain lifecycle is exercised by the Rust Surfpool integration suite in `programs/lootbox_program/tests/surfpool`.
 

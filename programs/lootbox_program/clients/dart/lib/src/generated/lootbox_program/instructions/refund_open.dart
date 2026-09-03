@@ -87,26 +87,22 @@ Instruction getRefundOpenInstruction({
   required Address lootbox,
   required Address vault,
   required Address boxMint,
-  required Address recipientBoxAccount,
   required Address opening,
   required Address randomness,
   required Address clock,
-  required Address tokenProgram,
 }) {
   final instructionData = RefundOpenInstructionData();
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: recipient, role: AccountRole.writable),
+      AccountMeta(address: recipient, role: AccountRole.writableSigner),
       AccountMeta(address: lootbox, role: AccountRole.writable),
-      AccountMeta(address: vault, role: AccountRole.readonly),
-      AccountMeta(address: boxMint, role: AccountRole.writable),
-      AccountMeta(address: recipientBoxAccount, role: AccountRole.writable),
+      AccountMeta(address: vault, role: AccountRole.writable),
+      AccountMeta(address: boxMint, role: AccountRole.readonly),
       AccountMeta(address: opening, role: AccountRole.writable),
       AccountMeta(address: randomness, role: AccountRole.readonly),
       AccountMeta(address: clock, role: AccountRole.readonly),
-      AccountMeta(address: tokenProgram, role: AccountRole.readonly),
     ],
     data: getRefundOpenInstructionDataEncoder().encode(instructionData),
   );

@@ -62,12 +62,12 @@ const phaseCopy: Record<
 		eyebrow: "READY TO CRACK",
 		title: "Unknown cargo. Known odds.",
 		detail:
-			"Opening burns one box, then binds the payout to oracle randomness.",
+			"Opening binds fresh oracle randomness, then consumes one box atomically.",
 	},
 	commit: {
 		eyebrow: "01 / COMMIT",
 		title: "Locking the future…",
-		detail: "Your wallet owns a fresh, unrevealed randomness commitment.",
+		detail: "The opening receipt controls a fresh, unrevealed commitment.",
 	},
 	burn: {
 		eyebrow: "02 / BURN",
@@ -77,7 +77,7 @@ const phaseCopy: Record<
 	reveal: {
 		eyebrow: "03 / REVEAL",
 		title: "The vault is answering…",
-		detail: "Switchboard entropy is being mixed into this opening.",
+		detail: "Switchboard is authenticating the reveal before atomic payout.",
 	},
 	revealed: {
 		eyebrow: "DROP IDENTIFIED",

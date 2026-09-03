@@ -19,25 +19,21 @@ pub struct RefundOpen {
 	pub lootbox: solana_pubkey::Pubkey,
 	pub vault: solana_pubkey::Pubkey,
 	pub box_mint: solana_pubkey::Pubkey,
-	pub recipient_box_account: solana_pubkey::Pubkey,
 	pub opening: solana_pubkey::Pubkey,
 	pub randomness: solana_pubkey::Pubkey,
 	pub clock: solana_pubkey::Pubkey,
-	pub token_program: solana_pubkey::Pubkey,
 }
 
 impl RefundOpen {
-	pub fn new(recipient: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, recipient_box_account: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, clock: solana_pubkey::Pubkey) -> Self {
+	pub fn new(recipient: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, clock: solana_pubkey::Pubkey) -> Self {
 		Self {
 			recipient,
 			lootbox,
 			vault,
 			box_mint,
-			recipient_box_account,
 			opening,
 			randomness,
 			clock,
-			token_program: solana_pubkey::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
 		}
 	}
 
@@ -51,16 +47,14 @@ impl RefundOpen {
 		data: RefundOpenInstructionData,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new(self.recipient, false));
+		let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
+		accounts.push(solana_instruction::AccountMeta::new(self.recipient, true));
 		accounts.push(solana_instruction::AccountMeta::new(self.lootbox, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.vault, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.box_mint, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.recipient_box_account, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.vault, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.randomness, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.clock, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.token_program, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,

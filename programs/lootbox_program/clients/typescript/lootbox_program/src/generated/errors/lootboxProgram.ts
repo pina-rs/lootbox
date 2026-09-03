@@ -15,7 +15,7 @@ export const LOOTBOX_PROGRAM_ERROR__UNAUTHORIZED = 0x0; // 0
 export const LOOTBOX_PROGRAM_ERROR__INVALID_STATE = 0x1; // 1
 /** The configured outcome does not exist or is out of range. */
 export const LOOTBOX_PROGRAM_ERROR__INVALID_OUTCOME = 0x2; // 2
-/** An outcome weight must be non-zero and fit the total weight. */
+/** An outcome weight must be non-zero and keep total weight within the v1 bound. */
 export const LOOTBOX_PROGRAM_ERROR__INVALID_WEIGHT = 0x3; // 3
 /** The lootbox cannot be sealed until at least one outcome exists. */
 export const LOOTBOX_PROGRAM_ERROR__INCOMPLETE_CONFIGURATION = 0x4; // 4
@@ -25,9 +25,9 @@ export const LOOTBOX_PROGRAM_ERROR__INSOLVENT = 0x5; // 5
 export const LOOTBOX_PROGRAM_ERROR__INVALID_MINT = 0x6; // 6
 /** The randomness account, owner, queue, authority, or commitment is invalid. */
 export const LOOTBOX_PROGRAM_ERROR__INVALID_RANDOMNESS = 0x7; // 7
-/** The committed randomness has not been revealed yet. */
+/** The committed randomness is not ready for the requested transition. */
 export const LOOTBOX_PROGRAM_ERROR__RANDOMNESS_NOT_READY = 0x8; // 8
-/** The randomness was already revealed when the open was requested. */
+/** The randomness is already revealed and cannot take this path. */
 export const LOOTBOX_PROGRAM_ERROR__RANDOMNESS_EXPIRED = 0x9; // 9
 /** The pending opening has not reached its refund timeout. */
 export const LOOTBOX_PROGRAM_ERROR__OPENING_NOT_EXPIRED = 0xa; // 10
@@ -37,14 +37,12 @@ export const LOOTBOX_PROGRAM_ERROR__OPENING_ALREADY_FINALIZED = 0xb; // 11
 export const LOOTBOX_PROGRAM_ERROR__INVALID_RECIPIENT = 0xc; // 12
 /** Minting would exceed the configured maximum supply. */
 export const LOOTBOX_PROGRAM_ERROR__SUPPLY_EXCEEDED = 0xd; // 13
-/** Rejection sampling could not map the randomness to an outcome. */
-export const LOOTBOX_PROGRAM_ERROR__OUTCOME_SELECTION_FAILED = 0xe; // 14
 
-export type LootboxProgramError = typeof LOOTBOX_PROGRAM_ERROR__INCOMPLETE_CONFIGURATION | typeof LOOTBOX_PROGRAM_ERROR__INSOLVENT | typeof LOOTBOX_PROGRAM_ERROR__INVALID_MINT | typeof LOOTBOX_PROGRAM_ERROR__INVALID_OUTCOME | typeof LOOTBOX_PROGRAM_ERROR__INVALID_RANDOMNESS | typeof LOOTBOX_PROGRAM_ERROR__INVALID_RECIPIENT | typeof LOOTBOX_PROGRAM_ERROR__INVALID_STATE | typeof LOOTBOX_PROGRAM_ERROR__INVALID_WEIGHT | typeof LOOTBOX_PROGRAM_ERROR__OPENING_ALREADY_FINALIZED | typeof LOOTBOX_PROGRAM_ERROR__OPENING_NOT_EXPIRED | typeof LOOTBOX_PROGRAM_ERROR__OUTCOME_SELECTION_FAILED | typeof LOOTBOX_PROGRAM_ERROR__RANDOMNESS_EXPIRED | typeof LOOTBOX_PROGRAM_ERROR__RANDOMNESS_NOT_READY | typeof LOOTBOX_PROGRAM_ERROR__SUPPLY_EXCEEDED | typeof LOOTBOX_PROGRAM_ERROR__UNAUTHORIZED;
+export type LootboxProgramError = typeof LOOTBOX_PROGRAM_ERROR__INCOMPLETE_CONFIGURATION | typeof LOOTBOX_PROGRAM_ERROR__INSOLVENT | typeof LOOTBOX_PROGRAM_ERROR__INVALID_MINT | typeof LOOTBOX_PROGRAM_ERROR__INVALID_OUTCOME | typeof LOOTBOX_PROGRAM_ERROR__INVALID_RANDOMNESS | typeof LOOTBOX_PROGRAM_ERROR__INVALID_RECIPIENT | typeof LOOTBOX_PROGRAM_ERROR__INVALID_STATE | typeof LOOTBOX_PROGRAM_ERROR__INVALID_WEIGHT | typeof LOOTBOX_PROGRAM_ERROR__OPENING_ALREADY_FINALIZED | typeof LOOTBOX_PROGRAM_ERROR__OPENING_NOT_EXPIRED | typeof LOOTBOX_PROGRAM_ERROR__RANDOMNESS_EXPIRED | typeof LOOTBOX_PROGRAM_ERROR__RANDOMNESS_NOT_READY | typeof LOOTBOX_PROGRAM_ERROR__SUPPLY_EXCEEDED | typeof LOOTBOX_PROGRAM_ERROR__UNAUTHORIZED;
 
 let lootboxProgramErrorMessages: Record<LootboxProgramError, string> | undefined;
 if (process.env['NODE_ENV'] !== 'production') {
-  lootboxProgramErrorMessages = { [LOOTBOX_PROGRAM_ERROR__INCOMPLETE_CONFIGURATION]: `The lootbox cannot be sealed until at least one outcome exists.`, [LOOTBOX_PROGRAM_ERROR__INSOLVENT]: `The vault cannot cover the worst-case outstanding liability.`, [LOOTBOX_PROGRAM_ERROR__INVALID_MINT]: `The box mint or token account does not match the lootbox.`, [LOOTBOX_PROGRAM_ERROR__INVALID_OUTCOME]: `The configured outcome does not exist or is out of range.`, [LOOTBOX_PROGRAM_ERROR__INVALID_RANDOMNESS]: `The randomness account, owner, queue, authority, or commitment is invalid.`, [LOOTBOX_PROGRAM_ERROR__INVALID_RECIPIENT]: `The supplied recipient does not match the receipt-bound recipient.`, [LOOTBOX_PROGRAM_ERROR__INVALID_STATE]: `The account or lootbox is not in the required state.`, [LOOTBOX_PROGRAM_ERROR__INVALID_WEIGHT]: `An outcome weight must be non-zero and fit the total weight.`, [LOOTBOX_PROGRAM_ERROR__OPENING_ALREADY_FINALIZED]: `The opening receipt has already been settled or refunded.`, [LOOTBOX_PROGRAM_ERROR__OPENING_NOT_EXPIRED]: `The pending opening has not reached its refund timeout.`, [LOOTBOX_PROGRAM_ERROR__OUTCOME_SELECTION_FAILED]: `Rejection sampling could not map the randomness to an outcome.`, [LOOTBOX_PROGRAM_ERROR__RANDOMNESS_EXPIRED]: `The randomness was already revealed when the open was requested.`, [LOOTBOX_PROGRAM_ERROR__RANDOMNESS_NOT_READY]: `The committed randomness has not been revealed yet.`, [LOOTBOX_PROGRAM_ERROR__SUPPLY_EXCEEDED]: `Minting would exceed the configured maximum supply.`, [LOOTBOX_PROGRAM_ERROR__UNAUTHORIZED]: `The signer is not authorized to perform this action.` };
+  lootboxProgramErrorMessages = { [LOOTBOX_PROGRAM_ERROR__INCOMPLETE_CONFIGURATION]: `The lootbox cannot be sealed until at least one outcome exists.`, [LOOTBOX_PROGRAM_ERROR__INSOLVENT]: `The vault cannot cover the worst-case outstanding liability.`, [LOOTBOX_PROGRAM_ERROR__INVALID_MINT]: `The box mint or token account does not match the lootbox.`, [LOOTBOX_PROGRAM_ERROR__INVALID_OUTCOME]: `The configured outcome does not exist or is out of range.`, [LOOTBOX_PROGRAM_ERROR__INVALID_RANDOMNESS]: `The randomness account, owner, queue, authority, or commitment is invalid.`, [LOOTBOX_PROGRAM_ERROR__INVALID_RECIPIENT]: `The supplied recipient does not match the receipt-bound recipient.`, [LOOTBOX_PROGRAM_ERROR__INVALID_STATE]: `The account or lootbox is not in the required state.`, [LOOTBOX_PROGRAM_ERROR__INVALID_WEIGHT]: `An outcome weight must be non-zero and keep total weight within the v1 bound.`, [LOOTBOX_PROGRAM_ERROR__OPENING_ALREADY_FINALIZED]: `The opening receipt has already been settled or refunded.`, [LOOTBOX_PROGRAM_ERROR__OPENING_NOT_EXPIRED]: `The pending opening has not reached its refund timeout.`, [LOOTBOX_PROGRAM_ERROR__RANDOMNESS_EXPIRED]: `The randomness is already revealed and cannot take this path.`, [LOOTBOX_PROGRAM_ERROR__RANDOMNESS_NOT_READY]: `The committed randomness is not ready for the requested transition.`, [LOOTBOX_PROGRAM_ERROR__SUPPLY_EXCEEDED]: `Minting would exceed the configured maximum supply.`, [LOOTBOX_PROGRAM_ERROR__UNAUTHORIZED]: `The signer is not authorized to perform this action.` };
 }
 
 export function getLootboxProgramErrorMessage(code: LootboxProgramError): string {

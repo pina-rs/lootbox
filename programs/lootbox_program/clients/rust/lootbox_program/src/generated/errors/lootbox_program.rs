@@ -25,9 +25,9 @@ pub enum LootboxProgramError {
 	/// 2 - The configured outcome does not exist or is out of range.
 	#[error("The configured outcome does not exist or is out of range.")]
 	InvalidOutcome = 0x2,
-	/// An outcome weight must be non-zero and fit the total weight.
-	/// 3 - An outcome weight must be non-zero and fit the total weight.
-	#[error("An outcome weight must be non-zero and fit the total weight.")]
+	/// An outcome weight must be non-zero and keep total weight within the v1 bound.
+	/// 3 - An outcome weight must be non-zero and keep total weight within the v1 bound.
+	#[error("An outcome weight must be non-zero and keep total weight within the v1 bound.")]
 	InvalidWeight = 0x3,
 	/// The lootbox cannot be sealed until at least one outcome exists.
 	/// 4 - The lootbox cannot be sealed until at least one outcome exists.
@@ -45,13 +45,13 @@ pub enum LootboxProgramError {
 	/// 7 - The randomness account, owner, queue, authority, or commitment is invalid.
 	#[error("The randomness account, owner, queue, authority, or commitment is invalid.")]
 	InvalidRandomness = 0x7,
-	/// The committed randomness has not been revealed yet.
-	/// 8 - The committed randomness has not been revealed yet.
-	#[error("The committed randomness has not been revealed yet.")]
+	/// The committed randomness is not ready for the requested transition.
+	/// 8 - The committed randomness is not ready for the requested transition.
+	#[error("The committed randomness is not ready for the requested transition.")]
 	RandomnessNotReady = 0x8,
-	/// The randomness was already revealed when the open was requested.
-	/// 9 - The randomness was already revealed when the open was requested.
-	#[error("The randomness was already revealed when the open was requested.")]
+	/// The randomness is already revealed and cannot take this path.
+	/// 9 - The randomness is already revealed and cannot take this path.
+	#[error("The randomness is already revealed and cannot take this path.")]
 	RandomnessExpired = 0x9,
 	/// The pending opening has not reached its refund timeout.
 	/// 10 - The pending opening has not reached its refund timeout.
@@ -69,10 +69,6 @@ pub enum LootboxProgramError {
 	/// 13 - Minting would exceed the configured maximum supply.
 	#[error("Minting would exceed the configured maximum supply.")]
 	SupplyExceeded = 0xD,
-	/// Rejection sampling could not map the randomness to an outcome.
-	/// 14 - Rejection sampling could not map the randomness to an outcome.
-	#[error("Rejection sampling could not map the randomness to an outcome.")]
-	OutcomeSelectionFailed = 0xE,
 }
 
 impl From<LootboxProgramError> for solana_program_error::ProgramError {

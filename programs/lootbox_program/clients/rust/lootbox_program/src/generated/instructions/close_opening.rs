@@ -16,14 +16,36 @@ pub const CLOSE_OPENING_DISCRIMINATOR: u8 = 8u8;
 #[derive(Clone, Debug)]
 pub struct CloseOpening {
 	pub recipient: solana_pubkey::Pubkey,
+	pub lootbox: solana_pubkey::Pubkey,
 	pub opening: solana_pubkey::Pubkey,
+	pub randomness: solana_pubkey::Pubkey,
+	pub reward_escrow: solana_pubkey::Pubkey,
+	pub oracle_program: solana_pubkey::Pubkey,
+	pub oracle_program_state: solana_pubkey::Pubkey,
+	pub oracle_lut: solana_pubkey::Pubkey,
+	pub oracle_lut_signer: solana_pubkey::Pubkey,
+	pub system_program: solana_pubkey::Pubkey,
+	pub token_program: solana_pubkey::Pubkey,
+	pub wrapped_sol_mint: solana_pubkey::Pubkey,
+	pub address_lookup_table_program: solana_pubkey::Pubkey,
 }
 
 impl CloseOpening {
-	pub fn new(recipient: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey) -> Self {
+	pub fn new(recipient: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, oracle_lut: solana_pubkey::Pubkey, oracle_lut_signer: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey, address_lookup_table_program: solana_pubkey::Pubkey) -> Self {
 		Self {
 			recipient,
+			lootbox,
 			opening,
+			randomness,
+			reward_escrow,
+			oracle_program,
+			oracle_program_state,
+			oracle_lut,
+			oracle_lut_signer,
+			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
+			token_program: solana_pubkey::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+			wrapped_sol_mint,
+			address_lookup_table_program,
 		}
 	}
 
@@ -37,9 +59,20 @@ impl CloseOpening {
 		data: CloseOpeningInstructionData,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(2 + remaining_accounts.len());
+		let mut accounts = Vec::with_capacity(13 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.recipient, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.lootbox, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.randomness, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.reward_escrow, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_program_state, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.oracle_lut, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_lut_signer, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.token_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.wrapped_sol_mint, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.address_lookup_table_program, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,

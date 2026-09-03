@@ -86,7 +86,18 @@ getCloseOpeningInstructionDataCodec() {
 Instruction getCloseOpeningInstruction({
   required Address programAddress,
   required Address recipient,
+  required Address lootbox,
   required Address opening,
+  required Address randomness,
+  required Address rewardEscrow,
+  required Address oracleProgram,
+  required Address oracleProgramState,
+  required Address oracleLut,
+  required Address oracleLutSigner,
+  required Address systemProgram,
+  required Address tokenProgram,
+  required Address wrappedSolMint,
+  required Address addressLookupTableProgram,
 }) {
   final instructionData = CloseOpeningInstructionData();
 
@@ -94,7 +105,21 @@ Instruction getCloseOpeningInstruction({
     programAddress: programAddress,
     accounts: [
       AccountMeta(address: recipient, role: AccountRole.writable),
+      AccountMeta(address: lootbox, role: AccountRole.readonly),
       AccountMeta(address: opening, role: AccountRole.writable),
+      AccountMeta(address: randomness, role: AccountRole.writable),
+      AccountMeta(address: rewardEscrow, role: AccountRole.writable),
+      AccountMeta(address: oracleProgram, role: AccountRole.readonly),
+      AccountMeta(address: oracleProgramState, role: AccountRole.readonly),
+      AccountMeta(address: oracleLut, role: AccountRole.writable),
+      AccountMeta(address: oracleLutSigner, role: AccountRole.readonly),
+      AccountMeta(address: systemProgram, role: AccountRole.readonly),
+      AccountMeta(address: tokenProgram, role: AccountRole.readonly),
+      AccountMeta(address: wrappedSolMint, role: AccountRole.readonly),
+      AccountMeta(
+        address: addressLookupTableProgram,
+        role: AccountRole.readonly,
+      ),
     ],
     data: getCloseOpeningInstructionDataEncoder().encode(instructionData),
   );

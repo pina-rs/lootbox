@@ -1,10 +1,55 @@
 /// Ergonomic planning helpers over the generated lootbox program client.
 library;
 
+import 'dart:typed_data';
+
 export 'package:lootbox_program_generated/lootbox_program.dart';
 
 const int maxOutcomes = 8;
+const List<int> switchboardRevealDiscriminator = [
+  197,
+  181,
+  187,
+  10,
+  30,
+  58,
+  20,
+  73,
+];
 final BigInt _maxU64 = (BigInt.one << 64) - BigInt.one;
+final BigInt maxTotalWeight = BigInt.from(0xffffffff);
+
+/// Gateway proof fields accepted by `settle_open`.
+final class SwitchboardReveal {
+  const SwitchboardReveal({
+    required this.signature,
+    required this.recoveryId,
+    required this.value,
+  });
+
+  final Uint8List signature;
+  final int recoveryId;
+  final Uint8List value;
+}
+
+/// Decodes Switchboard `randomness_reveal` data for the generated settle API.
+SwitchboardReveal decodeSwitchboardReveal(Uint8List data) {
+  if (data.length != 105) {
+    throw RangeError('Switchboard reveal data must contain exactly 105 bytes');
+  }
+
+  for (final (index, byte) in switchboardRevealDiscriminator.indexed) {
+    if (data[index] != byte) {
+      throw RangeError('instruction is not a Switchboard randomness reveal');
+    }
+  }
+
+  return SwitchboardReveal(
+    signature: Uint8List.fromList(data.sublist(8, 72)),
+    recoveryId: data[72],
+    value: Uint8List.fromList(data.sublist(73, 105)),
+  );
+}
 
 /// One weighted SOL payout.
 final class LootboxOutcome {
@@ -82,6 +127,12 @@ final class LootboxPlan {
         'the lootbox plan exceeds the on-chain u64 range',
       );
     }
+    if (plan.totalWeight > maxTotalWeight) {
+      throw LootboxPlanException(
+        'WEIGHT_LIMIT_EXCEEDED',
+        'the sum of outcome weights must not exceed $maxTotalWeight',
+      );
+    }
 
     return plan;
   }
@@ -101,6 +152,11 @@ final class LootboxPlan {
 
     return maxReward * maxSupply;
   }
+
+  /// Reward paid if an opening reaches the oracle timeout.
+  BigInt get minimumRewardLamports => outcomes
+      .map((outcome) => outcome.rewardLamports)
+      .reduce((left, right) => left < right ? left : right);
 
   /// Probability in basis points, rounded down exactly like integer clients.
   int probabilityBasisPoints(int index) {

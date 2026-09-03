@@ -2,7 +2,7 @@
 
 A small, composable random-reward primitive for Solana, built with [Pina](https://github.com/pina-rs/pina).
 
-Lootbox turns a zero-decimal SPL token into a transferable sealed box. Opening atomically binds a fresh Switchboard commitment and burns one box; once the oracle reveals, anyone can settle the fixed recipient's weighted SOL payout. Every live box is backed by the maximum possible reward.
+Lootbox turns a zero-decimal SPL token into a transferable sealed box. Opening atomically creates and commits fresh Switchboard randomness under a program-controlled receipt PDA, then burns one box. Any relayer can later reveal and settle the fixed recipient's weighted SOL payout in one instruction. Every live box is backed by the maximum possible reward.
 
 > [!IMPORTANT]
 > This repository is an internally security-reviewed development MVP, not a mainnet deployment. The web app is a deterministic interaction sandbox; the Surfpool suite is the executable end-to-end proof against real SBF artifacts.
@@ -10,8 +10,8 @@ Lootbox turns a zero-decimal SPL token into a transferable sealed box. Opening a
 ## What is included
 
 - A `no_std`, Pina-based Solana program with 10 instructions and three PDA account types.
-- Switchboard On-Demand commit/reveal integration with same-transaction burn binding.
-- Fully collateralized SOL reward vaults, permissionless settlement, and timeout refunds.
+- Switchboard On-Demand initialization, commit, reveal, and close CPIs controlled by each opening PDA.
+- Fully collateralized SOL reward vaults, permissionless proof settlement, and recipient-authorized minimum-reward timeouts.
 - Codama-generated Rust, TypeScript, and Dart clients.
 - Ergonomic checked planning APIs in all three languages.
 - An animated React playground with component and Playwright coverage.
@@ -24,10 +24,12 @@ flowchart LR
     A[Configure outcomes] --> B[Fund worst case]
     B --> C[Seal forever]
     C --> D[Mint boxes]
-    D --> E[Commit + burn atomically]
-    E --> F{Oracle result}
-    F -->|revealed| G[Permissionless payout]
-    F -->|still absent after 300 slots| H[Permissionless box refund]
+    D --> E[Initialize + commit + burn]
+    E --> F{Gateway proof arrives?}
+    F -->|yes| G[Reveal + payout atomically]
+    F -->|no, after 300 slots| H[Minimum reward floor]
+    G --> I[Close oracle + receipt]
+    H --> I
 ```
 
 The core invariant is:
@@ -36,7 +38,7 @@ The core invariant is:
 vault balance - rent reserve >= (mint supply + pending openings) * max reward
 ```
 
-The program re-evaluates it whenever supply, pending openings, payouts, refunds, or withdrawals change.
+The program re-evaluates it whenever supply, pending openings, payouts, timeout floors, or withdrawals change.
 
 ## Quick start
 

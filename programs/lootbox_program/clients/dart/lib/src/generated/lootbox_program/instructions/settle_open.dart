@@ -13,25 +13,46 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
 @immutable
 class SettleOpenInstructionData {
-  const SettleOpenInstructionData() : discriminator = 6;
+  const SettleOpenInstructionData({
+    required this.signature,
+    required this.recoveryId,
+    required this.value,
+  }) : discriminator = 6;
 
   final int discriminator;
+  final Uint8List signature;
+  final int recoveryId;
+  final Uint8List value;
 }
 
 Encoder<SettleOpenInstructionData> getSettleOpenInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    (
+      'signature',
+      fixEncoderSize(getBytesEncoder(), 64, allowTruncation: false),
+    ),
+    ('recoveryId', getU8Encoder()),
+    ('value', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
   ]);
 
   return transformEncoder(
     structEncoder,
-    (SettleOpenInstructionData value) => <String, Object?>{'discriminator': 6},
+    (SettleOpenInstructionData value) => <String, Object?>{
+      'discriminator': 6,
+      'signature': value.signature,
+      'recoveryId': value.recoveryId,
+      'value': value.value,
+    },
   );
 }
 
 Decoder<SettleOpenInstructionData> getSettleOpenInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('signature', fixDecoderSize(getBytesDecoder(), 64)),
+    ('recoveryId', getU8Decoder()),
+    ('value', fixDecoderSize(getBytesDecoder(), 32)),
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
@@ -49,7 +70,14 @@ Decoder<SettleOpenInstructionData> getSettleOpenInstructionDataDecoder() {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
     }
 
-    return (SettleOpenInstructionData(), newOffset);
+    return (
+      SettleOpenInstructionData(
+        signature: map['signature']! as Uint8List,
+        recoveryId: map['recoveryId']! as int,
+        value: map['value']! as Uint8List,
+      ),
+      newOffset,
+    );
   }
 
   return switch (structDecoder) {
@@ -84,23 +112,52 @@ getSettleOpenInstructionDataCodec() {
 Instruction getSettleOpenInstruction({
   required Address programAddress,
   required Address recipient,
+  required Address payer,
   required Address lootbox,
   required Address vault,
   required Address boxMint,
   required Address opening,
   required Address randomness,
+  required Address oracleQueue,
+  required Address oracle,
+  required Address oracleStats,
+  required Address recentSlotHashes,
+  required Address oracleProgram,
+  required Address rewardEscrow,
+  required Address oracleProgramState,
+  required Address systemProgram,
+  required Address tokenProgram,
+  required Address wrappedSolMint,
+  required Uint8List signature,
+  required int recoveryId,
+  required Uint8List value,
 }) {
-  final instructionData = SettleOpenInstructionData();
+  final instructionData = SettleOpenInstructionData(
+    signature: signature,
+    recoveryId: recoveryId,
+    value: value,
+  );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
       AccountMeta(address: recipient, role: AccountRole.writable),
+      AccountMeta(address: payer, role: AccountRole.writableSigner),
       AccountMeta(address: lootbox, role: AccountRole.writable),
       AccountMeta(address: vault, role: AccountRole.writable),
       AccountMeta(address: boxMint, role: AccountRole.readonly),
       AccountMeta(address: opening, role: AccountRole.writable),
-      AccountMeta(address: randomness, role: AccountRole.readonly),
+      AccountMeta(address: randomness, role: AccountRole.writable),
+      AccountMeta(address: oracleQueue, role: AccountRole.readonly),
+      AccountMeta(address: oracle, role: AccountRole.readonly),
+      AccountMeta(address: oracleStats, role: AccountRole.writable),
+      AccountMeta(address: recentSlotHashes, role: AccountRole.readonly),
+      AccountMeta(address: oracleProgram, role: AccountRole.readonly),
+      AccountMeta(address: rewardEscrow, role: AccountRole.writable),
+      AccountMeta(address: oracleProgramState, role: AccountRole.readonly),
+      AccountMeta(address: systemProgram, role: AccountRole.readonly),
+      AccountMeta(address: tokenProgram, role: AccountRole.readonly),
+      AccountMeta(address: wrappedSolMint, role: AccountRole.readonly),
     ],
     data: getSettleOpenInstructionDataEncoder().encode(instructionData),
   );

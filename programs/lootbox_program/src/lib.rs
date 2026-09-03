@@ -30,20 +30,33 @@ declare_id!("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
 
 /// Maximum number of weighted outcomes in the first protocol version.
 pub const MAX_OUTCOMES: usize = 8;
-/// Number of slots after which an unfulfilled opening can be refunded.
+/// Number of slots after which an unfulfilled opening receives its reward floor.
 pub const RANDOMNESS_TIMEOUT_SLOTS: u64 = 300;
 
 /// Switchboard On-Demand mainnet program.
 pub const SWITCHBOARD_MAINNET_ID: Address = address!("SBondMDrcV3K4kxZR1HNVT7osZxAHVHgYXL5Ze1oMUv");
 /// Switchboard On-Demand devnet program.
 pub const SWITCHBOARD_DEVNET_ID: Address = address!("Aio4gaXjXzJNVLtzwtNVmSqGKpANtXhybbkhtAC94ji2");
+/// Maximum sum of v1 outcome weights.
+///
+/// This bound makes eight-step rejection sampling failure less likely than
+/// `2^-256`; the final deterministic fallback then guarantees settlement.
+pub const MAX_TOTAL_WEIGHT: u64 = u32::MAX as u64;
 
 const CLOCK_SYSVAR_ID: Address = address!("SysvarC1ock11111111111111111111111111111111");
+const SLOT_HASHES_SYSVAR_ID: Address = address!("SysvarS1otHashes111111111111111111111111111");
 const LOOTBOX_SEED_PREFIX: &[u8] = b"lootbox";
 const VAULT_SEED_PREFIX: &[u8] = b"vault";
 const OPENING_SEED_PREFIX: &[u8] = b"opening";
 const RANDOMNESS_DISCRIMINATOR: [u8; 8] = [10, 66, 229, 135, 220, 239, 217, 114];
 const RANDOMNESS_ACCOUNT_SIZE: usize = 408;
+const RANDOMNESS_INIT_DISCRIMINATOR: [u8; 8] = [9, 9, 204, 33, 50, 116, 113, 15];
+const RANDOMNESS_COMMIT_DISCRIMINATOR: [u8; 8] = [52, 170, 152, 201, 179, 133, 242, 141];
+const RANDOMNESS_REVEAL_DISCRIMINATOR: [u8; 8] = [197, 181, 187, 10, 30, 58, 20, 73];
+const RANDOMNESS_CLOSE_DISCRIMINATOR: [u8; 8] = [146, 101, 14, 74, 225, 246, 0, 156];
+const WRAPPED_SOL_MINT_ID: Address = address!("So11111111111111111111111111111111111111112");
+const ADDRESS_LOOKUP_TABLE_PROGRAM_ID: Address =
+	address!("AddressLookupTab1e1111111111111111111111111");
 const OPENING_PENDING: u8 = 0;
 const OPENING_SETTLED: u8 = 1;
 const OPENING_REFUNDED: u8 = 2;
@@ -58,7 +71,7 @@ pub enum LootboxError {
 	InvalidState = 1,
 	/// The configured outcome does not exist or is out of range.
 	InvalidOutcome = 2,
-	/// An outcome weight must be non-zero and fit the total weight.
+	/// An outcome weight must be non-zero and keep total weight within the v1 bound.
 	InvalidWeight = 3,
 	/// The lootbox cannot be sealed until at least one outcome exists.
 	IncompleteConfiguration = 4,
@@ -68,9 +81,9 @@ pub enum LootboxError {
 	InvalidMint = 6,
 	/// The randomness account, owner, queue, authority, or commitment is invalid.
 	InvalidRandomness = 7,
-	/// The committed randomness has not been revealed yet.
+	/// The committed randomness is not ready for the requested transition.
 	RandomnessNotReady = 8,
-	/// The randomness was already revealed when the open was requested.
+	/// The randomness is already revealed and cannot take this path.
 	RandomnessExpired = 9,
 	/// The pending opening has not reached its refund timeout.
 	OpeningNotExpired = 10,
@@ -80,8 +93,6 @@ pub enum LootboxError {
 	InvalidRecipient = 12,
 	/// Minting would exceed the configured maximum supply.
 	SupplyExceeded = 13,
-	/// Rejection sampling could not map the randomness to an outcome.
-	OutcomeSelectionFailed = 14,
 }
 
 #[discriminator]
@@ -219,11 +230,20 @@ pub struct MintBoxesInstruction {
 
 #[instruction(discriminator = LootboxInstruction::RequestOpen)]
 pub struct RequestOpenInstruction {
+	/// Recent slot used by Switchboard to derive its per-randomness lookup table.
+	pub recent_slot: u64,
 	pub bump: u8,
 }
 
 #[instruction(discriminator = LootboxInstruction::SettleOpen)]
-pub struct SettleOpenInstruction {}
+pub struct SettleOpenInstruction {
+	/// Switchboard enclave signature returned by the randomness gateway.
+	pub signature: [u8; 64],
+	/// Secp256k1 recovery identifier returned by the randomness gateway.
+	pub recovery_id: u8,
+	/// Revealed value covered by `signature`.
+	pub value: [u8; 32],
+}
 
 #[instruction(discriminator = LootboxInstruction::RefundOpen)]
 pub struct RefundOpenInstruction {}
@@ -284,8 +304,18 @@ pub struct RequestOpenAccounts<'a> {
 	pub box_mint: &'a mut AccountView,
 	pub owner_box_account: &'a mut AccountView,
 	pub opening: &'a mut AccountView,
-	pub randomness: &'a AccountView,
-	pub clock: &'a AccountView,
+	pub randomness: &'a mut AccountView,
+	pub reward_escrow: &'a mut AccountView,
+	pub oracle_queue: &'a mut AccountView,
+	pub oracle: &'a mut AccountView,
+	pub recent_slot_hashes: &'a AccountView,
+	pub oracle_program: &'a AccountView,
+	pub oracle_program_state: &'a AccountView,
+	pub oracle_lut_signer: &'a AccountView,
+	pub oracle_lut: &'a mut AccountView,
+	pub associated_token_program: &'a AccountView,
+	pub wrapped_sol_mint: &'a AccountView,
+	pub address_lookup_table_program: &'a AccountView,
 	pub system_program: &'a AccountView,
 	pub token_program: &'a AccountView,
 }
@@ -293,30 +323,50 @@ pub struct RequestOpenAccounts<'a> {
 #[derive(Accounts, Debug)]
 pub struct SettleOpenAccounts<'a> {
 	pub recipient: &'a mut AccountView,
+	pub payer: &'a mut AccountView,
 	pub lootbox: &'a mut AccountView,
 	pub vault: &'a mut AccountView,
 	pub box_mint: &'a AccountView,
 	pub opening: &'a mut AccountView,
-	pub randomness: &'a AccountView,
+	pub randomness: &'a mut AccountView,
+	pub oracle_queue: &'a AccountView,
+	pub oracle: &'a AccountView,
+	pub oracle_stats: &'a mut AccountView,
+	pub recent_slot_hashes: &'a AccountView,
+	pub oracle_program: &'a AccountView,
+	pub reward_escrow: &'a mut AccountView,
+	pub oracle_program_state: &'a AccountView,
+	pub system_program: &'a AccountView,
+	pub token_program: &'a AccountView,
+	pub wrapped_sol_mint: &'a AccountView,
 }
 
 #[derive(Accounts, Debug)]
 pub struct RefundOpenAccounts<'a> {
 	pub recipient: &'a mut AccountView,
 	pub lootbox: &'a mut AccountView,
-	pub vault: &'a AccountView,
-	pub box_mint: &'a mut AccountView,
-	pub recipient_box_account: &'a mut AccountView,
+	pub vault: &'a mut AccountView,
+	pub box_mint: &'a AccountView,
 	pub opening: &'a mut AccountView,
 	pub randomness: &'a AccountView,
 	pub clock: &'a AccountView,
-	pub token_program: &'a AccountView,
 }
 
 #[derive(Accounts, Debug)]
 pub struct CloseOpeningAccounts<'a> {
 	pub recipient: &'a mut AccountView,
+	pub lootbox: &'a AccountView,
 	pub opening: &'a mut AccountView,
+	pub randomness: &'a mut AccountView,
+	pub reward_escrow: &'a mut AccountView,
+	pub oracle_program: &'a AccountView,
+	pub oracle_program_state: &'a AccountView,
+	pub oracle_lut: &'a mut AccountView,
+	pub oracle_lut_signer: &'a AccountView,
+	pub system_program: &'a AccountView,
+	pub token_program: &'a AccountView,
+	pub wrapped_sol_mint: &'a AccountView,
+	pub address_lookup_table_program: &'a AccountView,
 }
 
 #[derive(Accounts, Debug)]
@@ -332,6 +382,7 @@ struct RandomnessSnapshot {
 	authority: Address,
 	queue: Address,
 	seed_slot: u64,
+	oracle: Address,
 	reveal_slot: u64,
 	value: [u8; 32],
 }
@@ -454,6 +505,7 @@ fn parse_randomness(
 		authority: parse_address(&data, 8)?,
 		queue: parse_address(&data, 40)?,
 		seed_slot: parse_u64(&data, 104)?,
+		oracle: parse_address(&data, 112)?,
 		reveal_slot: parse_u64(&data, 144)?,
 		value,
 	})
@@ -491,11 +543,12 @@ fn select_outcome(
 	opening: &Address,
 	total_weight: u64,
 ) -> Result<u64, ProgramError> {
-	if total_weight == 0 {
+	if total_weight == 0 || total_weight > MAX_TOTAL_WEIGHT {
 		return Err(lootbox_error(LootboxError::InvalidWeight));
 	}
 
 	let rejection_threshold = total_weight.wrapping_neg() % total_weight;
+	let mut fallback = 0u64;
 
 	for counter in 0u8..8 {
 		let counter_bytes = [counter];
@@ -509,13 +562,17 @@ fn select_outcome(
 		let mut candidate_bytes = [0u8; 8];
 		candidate_bytes.copy_from_slice(&hash.as_ref()[..8]);
 		let candidate = u64::from_le_bytes(candidate_bytes);
+		fallback = candidate;
 
 		if candidate >= rejection_threshold {
 			return Ok(candidate % total_weight);
 		}
 	}
 
-	Err(lootbox_error(LootboxError::OutcomeSelectionFailed))
+	// With `total_weight <= u32::MAX`, reaching this line has probability below
+	// 2^-256 under SHA-256. A modulo fallback introduces only that negligible
+	// statistical distance while ensuring a revealed receipt can always settle.
+	Ok(fallback % total_weight)
 }
 
 fn outcome_for_target(state: &LootboxStateZc, target: u64) -> Result<(u8, u64), ProgramError> {
@@ -534,6 +591,26 @@ fn outcome_for_target(state: &LootboxStateZc, target: u64) -> Result<(u8, u64), 
 	}
 
 	Err(lootbox_error(LootboxError::InvalidOutcome))
+}
+
+fn minimum_outcome(state: &LootboxStateZc) -> Result<(u8, u64), ProgramError> {
+	if state.outcome_count == 0 {
+		return Err(lootbox_error(LootboxError::IncompleteConfiguration));
+	}
+
+	let mut selected = 0u8;
+	let mut reward = read_outcome_slot(&state.outcome_lamports, 0)?;
+
+	for index in 1..usize::from(state.outcome_count) {
+		let candidate = read_outcome_slot(&state.outcome_lamports, index)?;
+
+		if candidate < reward {
+			selected = u8::try_from(index).map_err(|_| ProgramError::InvalidAccountData)?;
+			reward = candidate;
+		}
+	}
+
+	Ok((selected, reward))
 }
 
 impl<'a> ProcessAccountInfos<'a> for CreateLootboxAccounts<'a> {
@@ -657,6 +734,11 @@ impl<'a> ProcessAccountInfos<'a> for AddOutcomeAccounts<'a> {
 			.get()
 			.checked_add(args.weight.get())
 			.ok_or(ProgramError::ArithmeticOverflow)?;
+
+		if total_weight > MAX_TOTAL_WEIGHT {
+			return Err(lootbox_error(LootboxError::InvalidWeight));
+		}
+
 		write_outcome_slot(&mut state.outcome_weights, index, args.weight.get())?;
 		write_outcome_slot(
 			&mut state.outcome_lamports,
@@ -792,19 +874,36 @@ impl<'a> ProcessAccountInfos<'a> for MintBoxesAccounts<'a> {
 impl<'a> ProcessAccountInfos<'a> for RequestOpenAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = RequestOpenInstruction::try_from_bytes(data)?;
-		let slot = clock_slot(self.clock)?;
 		let lootbox_address = *self.lootbox.address();
 		let owner_address = *self.owner.address();
 		let randomness_address = *self.randomness.address();
+		let opening_address = *self.opening.address();
 		self.owner.assert_signer()?.assert_writable()?;
 		self.system_program.assert_address(&system::ID)?;
 		self.token_program.assert_address(&token::ID)?;
 		self.box_mint.assert_writable()?;
 		self.owner_box_account.assert_writable()?;
 		self.opening.assert_empty()?.assert_writable()?;
+		self.randomness
+			.assert_signer()?
+			.assert_empty()?
+			.assert_writable()?;
+		self.reward_escrow.assert_writable()?;
+		self.oracle_queue.assert_writable()?;
+		self.oracle.assert_writable()?;
+		self.oracle_lut.assert_writable()?;
+		self.recent_slot_hashes
+			.assert_sysvar(&SLOT_HASHES_SYSVAR_ID)?;
+		self.associated_token_program
+			.assert_address(&associated_token_account::ID)?;
+		self.wrapped_sol_mint.assert_address(&WRAPPED_SOL_MINT_ID)?;
+		self.address_lookup_table_program
+			.assert_address(&ADDRESS_LOOKUP_TABLE_PROGRAM_ID)?;
 		let rent_reserve = assert_vault(self.vault, &lootbox_address)?;
 		let mut state = self.lootbox.as_account_mut::<LootboxState>(&ID)?;
 		assert_lootbox_pda(&lootbox_address, &state)?;
+		self.oracle_queue.assert_address(&state.oracle_queue)?;
+		self.oracle_program.assert_program(&state.oracle_program)?;
 
 		if !state.sealed.get() {
 			return Err(lootbox_error(LootboxError::InvalidState));
@@ -822,16 +921,6 @@ impl<'a> ProcessAccountInfos<'a> for RequestOpenAccounts<'a> {
 		}
 		drop(box_account);
 
-		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
-
-		if randomness.authority != owner_address
-			|| randomness.queue != state.oracle_queue
-			|| randomness.reveal_slot != 0
-			|| randomness.seed_slot != slot
-		{
-			return Err(lootbox_error(LootboxError::InvalidRandomness));
-		}
-
 		let opening_seeds = OpeningState::seeds(&lootbox_address, &randomness_address);
 		let opening_seeds_with_bump = opening_seeds.with_bump(args.bump);
 		let canonical_bump = self
@@ -844,6 +933,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestOpenAccounts<'a> {
 
 		self.opening
 			.assert_seeds_with_bump(&opening_seeds_with_bump.as_slices(), &ID)?;
+
 		let pending = state
 			.pending_openings
 			.get()
@@ -865,16 +955,103 @@ impl<'a> ProcessAccountInfos<'a> for RequestOpenAccounts<'a> {
 			bump: args.bump,
 		}
 		.invoke::<OpeningState>()?;
-		token::instructions::Burn::new(self.owner_box_account, self.box_mint, self.owner, 1)
-			.invoke()?;
 
 		let mut opening = self.opening.as_account_mut::<OpeningState>(&ID)?;
 		opening.lootbox = lootbox_address;
 		opening.recipient = owner_address;
 		opening.randomness = randomness_address;
-		opening.seed_slot.set(randomness.seed_slot);
 		opening.status = OPENING_PENDING;
 		opening.bump = args.bump;
+		drop(opening);
+
+		let mut init_data = [0u8; 16];
+		init_data[..8].copy_from_slice(&RANDOMNESS_INIT_DISCRIMINATOR);
+		init_data[8..].copy_from_slice(&args.recent_slot.get().to_le_bytes());
+		let init_accounts = [
+			InstructionAccount::writable_signer(self.randomness.address()),
+			InstructionAccount::writable(self.reward_escrow.address()),
+			InstructionAccount::readonly_signer(self.opening.address()),
+			InstructionAccount::writable(self.oracle_queue.address()),
+			InstructionAccount::writable_signer(self.owner.address()),
+			InstructionAccount::readonly(self.system_program.address()),
+			InstructionAccount::readonly(self.token_program.address()),
+			InstructionAccount::readonly(self.associated_token_program.address()),
+			InstructionAccount::readonly(self.wrapped_sol_mint.address()),
+			InstructionAccount::readonly(self.oracle_program_state.address()),
+			InstructionAccount::readonly(self.oracle_lut_signer.address()),
+			InstructionAccount::writable(self.oracle_lut.address()),
+			InstructionAccount::readonly(self.address_lookup_table_program.address()),
+		];
+		let init_account_views: [&AccountView; 13] = [
+			self.randomness,
+			self.reward_escrow,
+			self.opening,
+			self.oracle_queue,
+			self.owner,
+			self.system_program,
+			self.token_program,
+			self.associated_token_program,
+			self.wrapped_sol_mint,
+			self.oracle_program_state,
+			self.oracle_lut_signer,
+			self.oracle_lut,
+			self.address_lookup_table_program,
+		];
+		let init_instruction = InstructionView {
+			program_id: self.oracle_program.address(),
+			accounts: &init_accounts,
+			data: &init_data,
+		};
+		let opening_signer = opening_seeds_with_bump.to_signer();
+		let signers = [opening_signer.as_signer()];
+		pinocchio::cpi::invoke_signed::<13, _>(&init_instruction, &init_account_views, &signers)?;
+
+		let initialized = parse_randomness(self.randomness, self.oracle_program.address())?;
+
+		if initialized.authority != opening_address
+			|| initialized.queue != *self.oracle_queue.address()
+			|| initialized.seed_slot != 0
+			|| initialized.reveal_slot != 0
+		{
+			return Err(lootbox_error(LootboxError::InvalidRandomness));
+		}
+
+		let instruction_accounts = [
+			InstructionAccount::writable(self.randomness.address()),
+			InstructionAccount::readonly(self.oracle_queue.address()),
+			InstructionAccount::writable(self.oracle.address()),
+			InstructionAccount::readonly(self.recent_slot_hashes.address()),
+			InstructionAccount::readonly_signer(self.opening.address()),
+		];
+		let account_views: [&AccountView; 5] = [
+			self.randomness,
+			self.oracle_queue,
+			self.oracle,
+			self.recent_slot_hashes,
+			self.opening,
+		];
+		let instruction = InstructionView {
+			program_id: self.oracle_program.address(),
+			accounts: &instruction_accounts,
+			data: &RANDOMNESS_COMMIT_DISCRIMINATOR,
+		};
+		pinocchio::cpi::invoke_signed::<5, _>(&instruction, &account_views, &signers)?;
+
+		let committed = parse_randomness(self.randomness, self.oracle_program.address())?;
+
+		if committed.authority != opening_address
+			|| committed.queue != *self.oracle_queue.address()
+			|| committed.seed_slot == 0
+			|| committed.reveal_slot != 0
+		{
+			return Err(lootbox_error(LootboxError::InvalidRandomness));
+		}
+
+		token::instructions::Burn::new(self.owner_box_account, self.box_mint, self.owner, 1)
+			.invoke()?;
+
+		let mut opening = self.opening.as_account_mut::<OpeningState>(&ID)?;
+		opening.seed_slot.set(committed.seed_slot);
 
 		Ok(())
 	}
@@ -882,19 +1059,30 @@ impl<'a> ProcessAccountInfos<'a> for RequestOpenAccounts<'a> {
 
 impl<'a> ProcessAccountInfos<'a> for SettleOpenAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
-		let _ = SettleOpenInstruction::try_from_bytes(data)?;
+		let args = SettleOpenInstruction::try_from_bytes(data)?;
 		let lootbox_address = *self.lootbox.address();
 		let opening_address = *self.opening.address();
 		let randomness_address = *self.randomness.address();
 		let recipient_address = *self.recipient.address();
 		self.recipient.assert_writable()?;
+		self.payer.assert_signer()?.assert_writable()?;
 		self.vault.assert_writable()?;
 		self.opening.assert_writable()?;
+		self.randomness.assert_writable()?;
+		self.oracle_stats.assert_writable()?;
+		self.reward_escrow.assert_writable()?;
+		self.recent_slot_hashes
+			.assert_sysvar(&SLOT_HASHES_SYSVAR_ID)?;
+		self.system_program.assert_address(&system::ID)?;
+		self.token_program.assert_address(&token::ID)?;
+		self.wrapped_sol_mint.assert_address(&WRAPPED_SOL_MINT_ID)?;
 		let rent_reserve = assert_vault(self.vault, &lootbox_address)?;
-		let mut state = self.lootbox.as_account_mut::<LootboxState>(&ID)?;
+		let state = self.lootbox.as_account_mut::<LootboxState>(&ID)?;
 		assert_lootbox_pda(&lootbox_address, &state)?;
+		self.oracle_queue.assert_address(&state.oracle_queue)?;
+		self.oracle_program.assert_program(&state.oracle_program)?;
 		let supply = assert_box_mint(self.box_mint, &lootbox_address, &state.box_mint)?;
-		let mut opening = self.opening.as_account_mut::<OpeningState>(&ID)?;
+		let opening = self.opening.as_account_mut::<OpeningState>(&ID)?;
 
 		if opening.status != OPENING_PENDING {
 			return Err(lootbox_error(LootboxError::OpeningAlreadyFinalized));
@@ -916,15 +1104,78 @@ impl<'a> ProcessAccountInfos<'a> for SettleOpenAccounts<'a> {
 		}
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 
-		if randomness.authority != opening.recipient
+		if randomness.authority != opening_address
 			|| randomness.queue != state.oracle_queue
 			|| randomness.seed_slot != opening.seed_slot.get()
+			|| randomness.oracle != *self.oracle.address()
 		{
 			return Err(lootbox_error(LootboxError::InvalidRandomness));
 		}
 
-		if randomness.reveal_slot == 0 || randomness.reveal_slot <= randomness.seed_slot {
-			return Err(lootbox_error(LootboxError::RandomnessNotReady));
+		if randomness.reveal_slot != 0 {
+			return Err(lootbox_error(LootboxError::RandomnessExpired));
+		}
+		drop(opening);
+		drop(state);
+
+		let mut reveal_data = [0u8; 105];
+		reveal_data[..8].copy_from_slice(&RANDOMNESS_REVEAL_DISCRIMINATOR);
+		reveal_data[8..72].copy_from_slice(&args.signature);
+		reveal_data[72] = args.recovery_id;
+		reveal_data[73..].copy_from_slice(&args.value);
+		let reveal_accounts = [
+			InstructionAccount::writable(self.randomness.address()),
+			InstructionAccount::readonly(self.oracle.address()),
+			InstructionAccount::readonly(self.oracle_queue.address()),
+			InstructionAccount::writable(self.oracle_stats.address()),
+			InstructionAccount::readonly_signer(self.opening.address()),
+			InstructionAccount::writable_signer(self.payer.address()),
+			InstructionAccount::readonly(self.recent_slot_hashes.address()),
+			InstructionAccount::readonly(self.system_program.address()),
+			InstructionAccount::writable(self.reward_escrow.address()),
+			InstructionAccount::readonly(self.token_program.address()),
+			InstructionAccount::readonly(self.wrapped_sol_mint.address()),
+			InstructionAccount::readonly(self.oracle_program_state.address()),
+		];
+		let reveal_account_views: [&AccountView; 12] = [
+			self.randomness,
+			self.oracle,
+			self.oracle_queue,
+			self.oracle_stats,
+			self.opening,
+			self.payer,
+			self.recent_slot_hashes,
+			self.system_program,
+			self.reward_escrow,
+			self.token_program,
+			self.wrapped_sol_mint,
+			self.oracle_program_state,
+		];
+		let reveal_instruction = InstructionView {
+			program_id: self.oracle_program.address(),
+			accounts: &reveal_accounts,
+			data: &reveal_data,
+		};
+		let opening_signer = opening_seeds_with_bump.to_signer();
+		let signers = [opening_signer.as_signer()];
+		pinocchio::cpi::invoke_signed::<12, _>(
+			&reveal_instruction,
+			&reveal_account_views,
+			&signers,
+		)?;
+
+		let mut state = self.lootbox.as_account_mut::<LootboxState>(&ID)?;
+		let mut opening = self.opening.as_account_mut::<OpeningState>(&ID)?;
+		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
+
+		if randomness.authority != opening_address
+			|| randomness.queue != state.oracle_queue
+			|| randomness.seed_slot != opening.seed_slot.get()
+			|| randomness.oracle != *self.oracle.address()
+			|| randomness.reveal_slot <= randomness.seed_slot
+			|| randomness.value != args.value
+		{
+			return Err(lootbox_error(LootboxError::InvalidRandomness));
 		}
 
 		let target = select_outcome(
@@ -979,14 +1230,13 @@ impl<'a> ProcessAccountInfos<'a> for RefundOpenAccounts<'a> {
 		let opening_address = *self.opening.address();
 		let randomness_address = *self.randomness.address();
 		let recipient_address = *self.recipient.address();
-		self.recipient.assert_writable()?;
-		self.box_mint.assert_writable()?;
-		self.recipient_box_account.assert_writable()?;
+		self.recipient.assert_signer()?.assert_writable()?;
+		self.vault.assert_writable()?;
 		self.opening.assert_writable()?;
-		self.token_program.assert_address(&token::ID)?;
 		let rent_reserve = assert_vault(self.vault, &lootbox_address)?;
 		let mut state = self.lootbox.as_account_mut::<LootboxState>(&ID)?;
 		assert_lootbox_pda(&lootbox_address, &state)?;
+		let supply = assert_box_mint(self.box_mint, &lootbox_address, &state.box_mint)?;
 		let mut opening = self.opening.as_account_mut::<OpeningState>(&ID)?;
 
 		if opening.status != OPENING_PENDING {
@@ -1011,7 +1261,7 @@ impl<'a> ProcessAccountInfos<'a> for RefundOpenAccounts<'a> {
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 
 		if randomness.seed_slot != opening.seed_slot.get()
-			|| randomness.authority != opening.recipient
+			|| randomness.authority != opening_address
 			|| randomness.queue != state.oracle_queue
 		{
 			return Err(lootbox_error(LootboxError::InvalidRandomness));
@@ -1031,28 +1281,26 @@ impl<'a> ProcessAccountInfos<'a> for RefundOpenAccounts<'a> {
 			return Err(lootbox_error(LootboxError::OpeningNotExpired));
 		}
 
-		let supply = assert_box_mint(self.box_mint, &lootbox_address, &state.box_mint)?;
-		drop(
-			self.recipient_box_account
-				.as_associated_token_account_checked(
-					&recipient_address,
-					self.box_mint.address(),
-					&token::ID,
-				)?,
-		);
+		let (floor_outcome, floor_lamports) = minimum_outcome(&state)?;
 		let pending = state
 			.pending_openings
 			.get()
 			.checked_sub(1)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
-		let post_refund_supply = supply
-			.checked_add(1)
+		let remaining_liability = required_liability(&state, supply, pending)?;
+		let post_refund_balance = self
+			.vault
+			.lamports()
+			.checked_sub(floor_lamports)
+			.ok_or_else(|| lootbox_error(LootboxError::Insolvent))?;
+		let minimum = rent_reserve
+			.checked_add(remaining_liability)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
-		let liability = required_liability(&state, post_refund_supply, pending)?;
-		assert_solvency(self.vault, rent_reserve, liability)?;
-		let authority = state.authority;
-		let id = state.id.get();
-		let bump = state.bump;
+
+		if post_refund_balance < minimum {
+			return Err(lootbox_error(LootboxError::Insolvent));
+		}
+
 		let refunded = state
 			.refunded
 			.get()
@@ -1060,34 +1308,97 @@ impl<'a> ProcessAccountInfos<'a> for RefundOpenAccounts<'a> {
 			.ok_or(ProgramError::ArithmeticOverflow)?;
 		state.pending_openings.set(pending);
 		state.refunded.set(refunded);
+		opening.reward_lamports.set(floor_lamports);
+		opening.selected_outcome = floor_outcome;
 		opening.status = OPENING_REFUNDED;
 		drop(opening);
 		drop(state);
 
-		let seeds = LootboxState::seeds(&authority, id).with_bump(bump);
-		let signer = seeds.to_signer();
-		let signers = [signer.as_signer()];
-		token::instructions::MintTo::new(self.box_mint, self.recipient_box_account, self.lootbox, 1)
-			.invoke_signed(&signers)
+		self.vault.assert_owner(&ID)?;
+		self.vault.send(floor_lamports, self.recipient)
 	}
 }
 
 impl<'a> ProcessAccountInfos<'a> for CloseOpeningAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = CloseOpeningInstruction::try_from_bytes(data)?;
+		let lootbox_address = *self.lootbox.address();
+		let opening_address = *self.opening.address();
+		let randomness_address = *self.randomness.address();
 		self.recipient.assert_writable()?;
 		self.opening.assert_writable()?;
+		self.randomness.assert_writable()?;
+		self.reward_escrow.assert_writable()?;
+		self.oracle_lut.assert_writable()?;
+		self.system_program.assert_address(&system::ID)?;
+		self.token_program.assert_address(&token::ID)?;
+		self.wrapped_sol_mint.assert_address(&WRAPPED_SOL_MINT_ID)?;
+		self.address_lookup_table_program
+			.assert_address(&ADDRESS_LOOKUP_TABLE_PROGRAM_ID)?;
+		let state = self.lootbox.as_account::<LootboxState>(&ID)?;
+		assert_lootbox_pda(&lootbox_address, &state)?;
+		self.oracle_program.assert_program(&state.oracle_program)?;
 		let opening = self.opening.as_account::<OpeningState>(&ID)?;
 
 		if opening.status == OPENING_PENDING {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
 
-		if opening.recipient != *self.recipient.address() {
+		if opening.recipient != *self.recipient.address()
+			|| opening.lootbox != lootbox_address
+			|| opening.randomness != randomness_address
+		{
 			return Err(lootbox_error(LootboxError::InvalidRecipient));
 		}
 
+		let opening_seeds = OpeningState::seeds(&lootbox_address, &randomness_address);
+		let opening_seeds_with_bump = opening_seeds.with_bump(opening.bump);
+		let expected_opening = create_program_address(&opening_seeds_with_bump.as_slices(), &ID)?;
+
+		if expected_opening != opening_address {
+			return Err(ProgramError::InvalidSeeds);
+		}
+		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
+
+		if randomness.authority != opening_address || randomness.queue != state.oracle_queue {
+			return Err(lootbox_error(LootboxError::InvalidRandomness));
+		}
 		drop(opening);
+		drop(state);
+
+		let close_accounts = [
+			InstructionAccount::writable(self.randomness.address()),
+			InstructionAccount::writable(self.reward_escrow.address()),
+			InstructionAccount::writable_signer(self.opening.address()),
+			InstructionAccount::readonly(self.oracle_program_state.address()),
+			InstructionAccount::readonly(self.system_program.address()),
+			InstructionAccount::readonly(self.token_program.address()),
+			InstructionAccount::readonly(self.wrapped_sol_mint.address()),
+			InstructionAccount::writable(self.oracle_lut.address()),
+			InstructionAccount::readonly(self.oracle_lut_signer.address()),
+			InstructionAccount::readonly(self.address_lookup_table_program.address()),
+		];
+		let close_account_views: [&AccountView; 10] = [
+			self.randomness,
+			self.reward_escrow,
+			self.opening,
+			self.oracle_program_state,
+			self.system_program,
+			self.token_program,
+			self.wrapped_sol_mint,
+			self.oracle_lut,
+			self.oracle_lut_signer,
+			self.address_lookup_table_program,
+		];
+		let close_instruction = InstructionView {
+			program_id: self.oracle_program.address(),
+			accounts: &close_accounts,
+			data: &RANDOMNESS_CLOSE_DISCRIMINATOR,
+		};
+		let opening_signer = opening_seeds_with_bump.to_signer();
+		let signers = [opening_signer.as_signer()];
+		pinocchio::cpi::invoke_signed::<10, _>(&close_instruction, &close_account_views, &signers)?;
+
 		self.opening.close_account_zeroed(self.recipient)
 	}
 }
@@ -1192,12 +1503,33 @@ mod tests {
 	}
 
 	#[test]
+	fn timeout_floor_uses_the_lowest_configured_reward() {
+		let mut bytes = [0u8; LootboxState::SIZE];
+		let state = LootboxState::initialize(&mut bytes).unwrap();
+		state.outcome_count = 3;
+		write_outcome_slot(&mut state.outcome_lamports, 0, 50).expect("first reward");
+		write_outcome_slot(&mut state.outcome_lamports, 1, 10).expect("second reward");
+		write_outcome_slot(&mut state.outcome_lamports, 2, 30).expect("third reward");
+
+		assert_eq!(minimum_outcome(state), Ok((1, 10)));
+	}
+
+	#[test]
 	fn liability_counts_minted_and_pending_boxes_once() {
 		let mut bytes = [0u8; LootboxState::SIZE];
 		let state = LootboxState::initialize(&mut bytes).expect("state");
 		state.max_reward_lamports.set(500_000);
 
 		assert_eq!(required_liability(state, 3, 2), Ok(2_500_000));
+	}
+
+	#[test]
+	fn selection_rejects_weight_domains_above_the_liveness_bound() {
+		let lootbox = Address::new_from_array([1u8; 32]);
+		let opening = Address::new_from_array([2u8; 32]);
+		let result = select_outcome(&[3u8; 32], &lootbox, &opening, MAX_TOTAL_WEIGHT + 1);
+
+		assert_eq!(result, Err(lootbox_error(LootboxError::InvalidWeight)));
 	}
 
 	proptest! {

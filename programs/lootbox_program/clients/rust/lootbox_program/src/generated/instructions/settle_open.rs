@@ -16,22 +16,44 @@ pub const SETTLE_OPEN_DISCRIMINATOR: u8 = 6u8;
 #[derive(Clone, Debug)]
 pub struct SettleOpen {
 	pub recipient: solana_pubkey::Pubkey,
+	pub payer: solana_pubkey::Pubkey,
 	pub lootbox: solana_pubkey::Pubkey,
 	pub vault: solana_pubkey::Pubkey,
 	pub box_mint: solana_pubkey::Pubkey,
 	pub opening: solana_pubkey::Pubkey,
 	pub randomness: solana_pubkey::Pubkey,
+	pub oracle_queue: solana_pubkey::Pubkey,
+	pub oracle: solana_pubkey::Pubkey,
+	pub oracle_stats: solana_pubkey::Pubkey,
+	pub recent_slot_hashes: solana_pubkey::Pubkey,
+	pub oracle_program: solana_pubkey::Pubkey,
+	pub reward_escrow: solana_pubkey::Pubkey,
+	pub oracle_program_state: solana_pubkey::Pubkey,
+	pub system_program: solana_pubkey::Pubkey,
+	pub token_program: solana_pubkey::Pubkey,
+	pub wrapped_sol_mint: solana_pubkey::Pubkey,
 }
 
 impl SettleOpen {
-	pub fn new(recipient: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey) -> Self {
+	pub fn new(recipient: solana_pubkey::Pubkey, payer: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, oracle_stats: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey) -> Self {
 		Self {
 			recipient,
+			payer,
 			lootbox,
 			vault,
 			box_mint,
 			opening,
 			randomness,
+			oracle_queue,
+			oracle,
+			oracle_stats,
+			recent_slot_hashes,
+			oracle_program,
+			reward_escrow,
+			oracle_program_state,
+			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
+			token_program: solana_pubkey::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+			wrapped_sol_mint,
 		}
 	}
 
@@ -45,13 +67,24 @@ impl SettleOpen {
 		data: SettleOpenInstructionData,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
+		let mut accounts = Vec::with_capacity(17 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.recipient, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.payer, true));
 		accounts.push(solana_instruction::AccountMeta::new(self.lootbox, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.vault, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.randomness, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.randomness, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_queue, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.oracle_stats, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.recent_slot_hashes, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_program, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.reward_escrow, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_program_state, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.token_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.wrapped_sol_mint, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -85,4 +118,7 @@ impl SettleOpenInstructionData {
 #[derive(pina::ZeroPod)]
 pub struct SettleOpenInstructionWire {
 	pub discriminator: u8,
+	pub signature: [u8; 64],
+	pub recovery_id: u8,
+	pub value: [u8; 32],
 }

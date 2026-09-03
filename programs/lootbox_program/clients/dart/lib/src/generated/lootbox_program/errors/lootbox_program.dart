@@ -15,8 +15,8 @@ const int lootboxProgramErrorInvalidState = 0x1; // 1
 /// Message: "The configured outcome does not exist or is out of range."
 const int lootboxProgramErrorInvalidOutcome = 0x2; // 2
 
-/// An outcome weight must be non-zero and fit the total weight.
-/// Message: "An outcome weight must be non-zero and fit the total weight."
+/// An outcome weight must be non-zero and keep total weight within the v1 bound.
+/// Message: "An outcome weight must be non-zero and keep total weight within the v1 bound."
 const int lootboxProgramErrorInvalidWeight = 0x3; // 3
 
 /// The lootbox cannot be sealed until at least one outcome exists.
@@ -35,12 +35,12 @@ const int lootboxProgramErrorInvalidMint = 0x6; // 6
 /// Message: "The randomness account, owner, queue, authority, or commitment is invalid."
 const int lootboxProgramErrorInvalidRandomness = 0x7; // 7
 
-/// The committed randomness has not been revealed yet.
-/// Message: "The committed randomness has not been revealed yet."
+/// The committed randomness is not ready for the requested transition.
+/// Message: "The committed randomness is not ready for the requested transition."
 const int lootboxProgramErrorRandomnessNotReady = 0x8; // 8
 
-/// The randomness was already revealed when the open was requested.
-/// Message: "The randomness was already revealed when the open was requested."
+/// The randomness is already revealed and cannot take this path.
+/// Message: "The randomness is already revealed and cannot take this path."
 const int lootboxProgramErrorRandomnessExpired = 0x9; // 9
 
 /// The pending opening has not reached its refund timeout.
@@ -59,10 +59,6 @@ const int lootboxProgramErrorInvalidRecipient = 0xc; // 12
 /// Message: "Minting would exceed the configured maximum supply."
 const int lootboxProgramErrorSupplyExceeded = 0xd; // 13
 
-/// Rejection sampling could not map the randomness to an outcome.
-/// Message: "Rejection sampling could not map the randomness to an outcome."
-const int lootboxProgramErrorOutcomeSelectionFailed = 0xe; // 14
-
 /// Map of error codes to human-readable messages.
 const Map<int, String> _lootboxProgramErrorMessages = {
   lootboxProgramErrorUnauthorized:
@@ -71,8 +67,7 @@ const Map<int, String> _lootboxProgramErrorMessages = {
       'The account or lootbox is not in the required state.',
   lootboxProgramErrorInvalidOutcome:
       'The configured outcome does not exist or is out of range.',
-  lootboxProgramErrorInvalidWeight:
-      'An outcome weight must be non-zero and fit the total weight.',
+  lootboxProgramErrorInvalidWeight: 'An outcome weight must be non-zero and keep total weight within the v1 bound.',
   lootboxProgramErrorIncompleteConfiguration:
       'The lootbox cannot be sealed until at least one outcome exists.',
   lootboxProgramErrorInsolvent:
@@ -81,9 +76,9 @@ const Map<int, String> _lootboxProgramErrorMessages = {
       'The box mint or token account does not match the lootbox.',
   lootboxProgramErrorInvalidRandomness: 'The randomness account, owner, queue, authority, or commitment is invalid.',
   lootboxProgramErrorRandomnessNotReady:
-      'The committed randomness has not been revealed yet.',
+      'The committed randomness is not ready for the requested transition.',
   lootboxProgramErrorRandomnessExpired:
-      'The randomness was already revealed when the open was requested.',
+      'The randomness is already revealed and cannot take this path.',
   lootboxProgramErrorOpeningNotExpired:
       'The pending opening has not reached its refund timeout.',
   lootboxProgramErrorOpeningAlreadyFinalized:
@@ -92,8 +87,6 @@ const Map<int, String> _lootboxProgramErrorMessages = {
       'The supplied recipient does not match the receipt-bound recipient.',
   lootboxProgramErrorSupplyExceeded:
       'Minting would exceed the configured maximum supply.',
-  lootboxProgramErrorOutcomeSelectionFailed:
-      'Rejection sampling could not map the randomness to an outcome.',
 };
 
 /// Get the error message for a LootboxProgram program error code.

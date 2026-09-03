@@ -34,10 +34,11 @@ in
         exec "$PINA_BIN" "$@"
       fi
 
-      cargo bin pina_cli -- "$@"
+      cargo bin pina_cli "$@"
     '';
     "install:all".exec = ''
       set -euo pipefail
+      cargo bin --install
       pnpm install
       (cd sdks/dart && dart pub get)
       pnpm --dir apps/web exec playwright install chromium

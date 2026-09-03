@@ -1,0 +1,24 @@
+[package]
+name = "lootbox_program"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[features]
+default = []
+bpf-entrypoint = []
+
+[dependencies]
+pina = { workspace = true, features = ["derive", "logs", "token"] }
+solana-sha256-hasher = { workspace = true, features = ["sha2"] }
+
+[dev-dependencies]
+proptest.workspace = true
+
+[lints]
+workspace = true

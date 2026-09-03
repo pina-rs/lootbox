@@ -1,0 +1,17 @@
+[package]
+name = "lootbox_program-surfpool-tests"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+# Keep Surfpool's host runtime dependency graph isolated from the program's
+# native Mollusk tests and SBF build.
+[workspace]
+
+[dependencies]
+pina_test = "0.12.2"
+program_under_test = { package = "lootbox_program", path = "../.." }
+solana-message = "=4.4.1"
+solana-rent = "=4.3.0"
+solana-transaction = "=4.1.6"
+surfpool-sdk = "=1.5.0"

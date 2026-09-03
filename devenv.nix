@@ -15,6 +15,7 @@ in
     git
     libiconv
     nodejs_24
+    nixfmt
     perl
     pnpm
     rustup

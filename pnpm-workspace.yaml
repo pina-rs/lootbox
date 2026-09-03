@@ -1,0 +1,15 @@
+packages:
+  - apps/*
+  - programs/*/clients/typescript/*
+  - sdks/typescript
+
+linkWorkspacePackages: true
+preferWorkspacePackages: true
+
+allowBuilds:
+  esbuild: true
+
+onlyBuiltDependencies:
+  - esbuild
+
+nodeVersion: 24.13.0

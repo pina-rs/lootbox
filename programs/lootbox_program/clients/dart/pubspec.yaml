@@ -1,0 +1,18 @@
+name: lootbox_program_generated
+description: Generated Codama client for the Pina lootbox program.
+publish_to: none
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+
+dependencies:
+  meta: ^1.16.0
+  solana_kit_accounts: ^0.8.0
+  solana_kit_addresses: ^0.8.0
+  solana_kit_codecs_core: ^0.8.0
+  solana_kit_codecs_data_structures: ^0.8.0
+  solana_kit_codecs_numbers: ^0.8.0
+  solana_kit_codecs_strings: ^0.8.0
+  solana_kit_errors: ^0.8.0
+  solana_kit_instructions: ^0.8.0
+  solana_kit_rpc_types: ^0.8.0

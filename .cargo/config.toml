@@ -1,0 +1,12 @@
+[alias]
+build-program = "build --release --target bpfel-unknown-none -p lootbox_program -Z build-std=core,alloc -F bpf-entrypoint"
+
+[build]
+target-dir = "target"
+
+[target.bpfel-unknown-none]
+linker = "sbpf-linker"
+rustflags = [
+	"-C",
+	"link-arg=--disable-rodata-globalization",
+]

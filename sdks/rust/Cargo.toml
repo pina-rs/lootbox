@@ -1,0 +1,13 @@
+[package]
+name = "lootbox-sdk"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Ergonomic Rust SDK for the Pina lootbox primitive"
+
+[dependencies]
+lootbox-program-client = { path = "../../programs/lootbox_program/clients/rust/lootbox_program" }
+
+[lints]
+workspace = true

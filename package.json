@@ -1,0 +1,17 @@
+{
+	"name": "@pina-rs/lootbox-workspace",
+	"private": true,
+	"type": "module",
+	"packageManager": "pnpm@10.17.1",
+	"scripts": {
+		"generate": "generate:clients",
+		"build": "pnpm --recursive --if-present build",
+		"check": "pnpm --recursive --if-present check",
+		"test": "pnpm --recursive --if-present test"
+	},
+	"dependencies": {
+		"@codama/renderers-js": "^2.4.0",
+		"codama": "^1.10.2",
+		"codama-renderers-dart": "0.5.1"
+	}
+}

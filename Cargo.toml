@@ -1,0 +1,73 @@
+[workspace]
+resolver = "2"
+members = [
+	"programs/lootbox_program",
+	"programs/lootbox_program/clients/rust/lootbox_program",
+	"sdks/rust",
+]
+exclude = [
+	"programs/lootbox_program/tests/surfpool",
+	"tests/fixtures/mock_switchboard",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+homepage = "https://github.com/pina-rs/lootbox"
+license = "Apache-2.0"
+repository = "https://github.com/pina-rs/lootbox"
+rust-version = "1.89.0"
+
+[workspace.dependencies]
+num-derive = { default-features = false, version = "0.5" }
+num-traits = { default-features = false, version = "0.2" }
+pina = { default-features = false, version = "0.12.0" }
+proptest = { default-features = false, version = "1", features = ["std"] }
+solana-account-info = { default-features = false, version = "3" }
+solana-cpi = { default-features = false, version = "3" }
+solana-instruction = { default-features = false, version = "3" }
+solana-program-error = { default-features = false, version = "3" }
+solana-pubkey = { default-features = false, version = "4", features = ["bytemuck"] }
+solana-sha256-hasher = { default-features = false, version = "3.1.0" }
+thiserror = { default-features = false, version = "2" }
+
+[workspace.metadata.bin]
+pina_cli = { version = "0.12.0", bins = ["pina"], locked = true }
+
+[workspace.lints.rust]
+rust_2021_compatibility = { level = "warn", priority = -1 }
+rust_2024_compatibility = { level = "warn", priority = -1 }
+unsafe_code = "deny"
+unstable_features = "deny"
+unused_extern_crates = "warn"
+unused_import_braces = "warn"
+unused_lifetimes = "warn"
+unused_macro_rules = "warn"
+unused_qualifications = "warn"
+
+[workspace.lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = [
+	'cfg(target_os, values("solana"))',
+	'cfg(target_arch, values("bpf"))',
+]
+
+[workspace.lints.clippy]
+complexity = { level = "warn", priority = -1 }
+correctness = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+perf = { level = "warn", priority = -1 }
+style = { level = "warn", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+expl_impl_clone_on_copy = "allow"
+too_many_lines = "allow"
+wildcard_dependencies = "deny"
+wildcard_imports = "allow"
+
+[profile.release]
+codegen-units = 1
+lto = "fat"
+opt-level = 3
+overflow-checks = true
+panic = "abort"

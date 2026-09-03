@@ -1,0 +1,21 @@
+[package]
+name = "mock_switchboard"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+default = []
+bpf-entrypoint = []
+
+[dependencies]
+pina = { version = "0.12.2", default-features = false, features = ["derive"] }
+
+[lints.rust]
+unsafe_code = "deny"
+unstable_features = "deny"

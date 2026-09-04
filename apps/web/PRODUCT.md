@@ -8,7 +8,7 @@ web
 
 ## Users
 
-Solana developers and project creators configure, fund, and distribute rewards. Recipients receive transferable boxes, inspect current prizes and odds, open after the unlock date, and claim their winnings. The first working environment is a local developer playground.
+Solana developers and project creators configure, fund, lock, and distribute reward series. Recipients receive transferable boxes, inspect current prizes and odds, trade before the reveal date, then open and claim their winnings. The first working environment is a local developer playground.
 
 ## Product Purpose
 
@@ -16,7 +16,7 @@ Make randomized gifts a reusable Solana primitive, with a small API and a playfu
 
 ## Positioning
 
-A reusable treasury-backed minter, not a separately funded account per gift. Discrete bundles can contain SOL, tokens, and multiple NFTs. Remaining inventory changes the current odds and can remove a jackpot from future draws.
+A fixed-supply, treasury-backed market primitive, not a separately funded account per gift. Discrete bundles can contain SOL, tokens, and multiple NFTs. An irreversible lock makes total box issuance equal total funded bundle copies and prevents later dilution. Remaining inventory changes current odds and can remove a jackpot from future draws.
 
 ## Operating Context
 
@@ -25,8 +25,10 @@ React web playground, Pina program, Codama-generated Rust/TypeScript/Dart client
 ## Capabilities and Constraints
 
 - Fully funded finite inventory is the first usable mode. Probabilistic backing remains explicitly in scope as a separate reserve policy; its settlement policy and on-chain implementation are not complete.
-- Transferable Token-2022 units represent unopened boxes; units from one template are interchangeable, not individually unique NFTs.
-- Immutable prize terms and earliest opening date; no result rerolls on a failed delivery.
+- Transferable, zero-decimal Token-2022 units represent unopened boxes; units from one locked template are interchangeable, not individually unique NFTs.
+- Before lock, additions are append-only. Lock atomically issues every missing box, revokes mint authority, freezes the treasury, and requires a future reveal date with pristine inventory.
+- Fixed prize terms and reveal date after lock; no early opening and no result rerolls on a failed delivery.
+- The market desk computes exact remaining-inventory EV from explicit user valuations and integer-only constant-product previews. Production Raydium deployment remains an external wallet/network operation, represented by a checked export manifest.
 - Local wallets, balances, and oracle proofs must be visibly labeled test-only. No mainnet funding or production randomness claims.
 - Creator setup, gifting, receipt recovery, and claims must survive ordinary navigation and reloads where the local network still exists.
 - Local-wallet signing is a test convenience, not production wallet custody. Public deployment and real-oracle readiness are separate release gates.
@@ -44,7 +46,7 @@ The protocol and three SDKs are implemented. Real-SBF Surfpool tests exercise fu
 - Reveal the treasury and the rules, not only the spectacle.
 - Keep creation and receiving understandable without knowing account layouts.
 - Animation presents a recorded result; it never determines the reward.
-- Clearly separate implemented features, experiments, and production guarantees.
+- Clearly separate implemented features, valuation experiments, and production guarantees.
 
 ## Accessibility & Inclusion
 

@@ -18,16 +18,16 @@ export function getAddBundleDiscriminatorBytes(): ReadonlyUint8Array { return ge
 export type AddBundleInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableAccount<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type AddBundleInstructionData = { discriminator: number; quantity: bigint; weight: bigint; assetCount: number; bump: number;  };
+export type AddBundleInstructionData = { discriminator: number; quantity: bigint; assetCount: number; bump: number;  };
 
-export type AddBundleInstructionDataArgs = { quantity: number | bigint; weight: number | bigint; assetCount: number; bump: number;  };
+export type AddBundleInstructionDataArgs = { quantity: number | bigint; assetCount: number; bump: number;  };
 
 export function getAddBundleInstructionDataEncoder(): FixedSizeEncoder<AddBundleInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['quantity', getU64Encoder()], ['weight', getU64Encoder()], ['assetCount', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 11 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['quantity', getU64Encoder()], ['assetCount', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 11 }));
 }
 
 export function getAddBundleInstructionDataDecoder(): FixedSizeDecoder<AddBundleInstructionData> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(ADD_BUNDLE_DISCRIMINATOR, getU8Decoder())], ['quantity', getU64Decoder()], ['weight', getU64Decoder()], ['assetCount', getU8Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(ADD_BUNDLE_DISCRIMINATOR, getU8Decoder())], ['quantity', getU64Decoder()], ['assetCount', getU8Decoder()], ['bump', getU8Decoder()]]);
 }
 
 export function getAddBundleInstructionDataCodec(): FixedSizeCodec<AddBundleInstructionDataArgs, AddBundleInstructionData> {
@@ -40,7 +40,6 @@ template: Address<TAccountTemplate>;
 bundle: Address<TAccountBundle>;
 systemProgram?: Address<TAccountSystemProgram>;
 quantity: AddBundleInstructionDataArgs["quantity"];
-weight: AddBundleInstructionDataArgs["weight"];
 assetCount: AddBundleInstructionDataArgs["assetCount"];
 bump: AddBundleInstructionDataArgs["bump"];
 }

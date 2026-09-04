@@ -17,7 +17,7 @@ pub struct BundleState {
 	pub template: solana_pubkey::Pubkey,
 	pub quantity: u64,
 	pub rent_reserve: u64,
-	/// Four mint addresses; the zero address denotes native SOL.
+	/// Four asset identifiers; the zero address denotes native SOL.
 	pub mints: [u8; 128],
 	/// Four little-endian base-unit amounts paid per winning bundle.
 	pub amounts: [u8; 32],
@@ -25,10 +25,13 @@ pub struct BundleState {
 	pub claimed: [u8; 32],
 	pub kinds: [u8; 4],
 	pub decimals: [u8; 4],
-	pub index: u8,
+	pub activated_version: u64,
+	pub index: u32,
 	pub asset_count: u8,
 	pub funded_assets: u8,
 	pub reclaimed_mask: u8,
+	/// 0 funding, 1 active.
+	pub status: u8,
 	pub bump: u8,
 }
 
@@ -78,7 +81,7 @@ impl BundleState {
 }
 
 impl BundleState {
-	pub fn find_pda(template: &solana_pubkey::Pubkey, index: u8) -> (solana_pubkey::Pubkey, u8) {
+	pub fn find_pda(template: &solana_pubkey::Pubkey, index: u32) -> (solana_pubkey::Pubkey, u8) {
 		solana_pubkey::Pubkey::find_program_address(
 			&[
 				"bundle".as_bytes(),
@@ -89,7 +92,7 @@ impl BundleState {
 		)
 	}
 
-	pub fn create_pda(template: &solana_pubkey::Pubkey, index: u8, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(template: &solana_pubkey::Pubkey, index: u32, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
 			&[
 				"bundle".as_bytes(),

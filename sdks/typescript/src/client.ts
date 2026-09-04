@@ -2,6 +2,8 @@ import * as generated from "@pina-rs/lootbox-generated";
 import { getCreateAccountInstruction } from "@solana-program/system";
 import * as token from "@solana-program/token-2022";
 import {
+	type AccountMeta,
+	AccountRole,
 	type Address,
 	address,
 	appendTransactionMessageInstructions,
@@ -13,6 +15,7 @@ import {
 	getBase64EncodedWireTransaction,
 	getBase64Encoder,
 	getProgramDerivedAddress,
+	getU32Encoder,
 	getU64Encoder,
 	type Instruction,
 	pipe,
@@ -22,9 +25,14 @@ import {
 	signTransactionMessageWithSigners,
 	type TransactionSigner,
 } from "@solana/kit";
+import { marketLockReadiness } from "./market.js";
 import {
 	createTemplatePlan,
 	encodeTemplateText,
+	MAX_TEMPLATE_BUNDLES,
+	type PrizeAsset,
+	type PrizeBundleInput,
+	remainingTemplateBundleCapacity,
 	templateInventory,
 	type TemplatePlan,
 } from "./templates.js";
@@ -33,6 +41,26 @@ export const CLASSIC_TOKEN_PROGRAM = address(
 	"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
 );
 export const BOX_TOKEN_PROGRAM = token.TOKEN_2022_PROGRAM_ADDRESS;
+export const TOKEN_METADATA_PROGRAM = address(
+	"metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+);
+export const CORE_PROGRAM = address(
+	"CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
+);
+export const BUBBLEGUM_PROGRAM = address(
+	"BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY",
+);
+export const ACCOUNT_COMPRESSION_PROGRAM = address(
+	"cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK",
+);
+export const NOOP_PROGRAM = address(
+	"noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV",
+);
+const SYSTEM_PROGRAM = address("11111111111111111111111111111111");
+const INSTRUCTIONS_SYSVAR = address(
+	"Sysvar1nstructions1111111111111111111111111",
+);
+const ASSOCIATED_TOKEN_PROGRAM = token.ASSOCIATED_TOKEN_PROGRAM_ADDRESS;
 const SLOT_HASHES = address("SysvarS1otHashes111111111111111111111111111");
 const WRAPPED_SOL = address("So11111111111111111111111111111111111111112");
 const LOOKUP_TABLE = address("AddressLookupTab1e1111111111111111111111111");
@@ -83,16 +111,20 @@ export function bundleAssets(
 	if (
 		bundle.assetCount < 1 || bundle.assetCount > 4 ||
 		Array.from(bundle.kinds.slice(0, bundle.assetCount)).some((kind) =>
-			kind > 2
+			kind > 6
 		)
 	) throw new Error("invalid prize asset kind or count");
 	return Array.from({ length: bundle.assetCount }, (_, index) => ({
 		index,
-		kind: bundle.kinds[index] === 0
-			? "sol" as const
-			: bundle.kinds[index] === 2
-			? "nft" as const
-			: "token" as const,
+		kind: ([
+			"sol",
+			"token",
+			"nft",
+			"token2022",
+			"metadataNft",
+			"core",
+			"compressedNft",
+		] as const)[bundle.kinds[index] ?? -1],
 		mint: getAddressDecoder().decode(
 			bundle.mints.slice(index * 32, (index + 1) * 32),
 		),
@@ -101,18 +133,74 @@ export function bundleAssets(
 	}));
 }
 
+function accountMeta(
+	address: Address,
+	role = AccountRole.READONLY,
+): AccountMeta {
+	return Object.freeze({ address, role });
+}
+
+function replaceGeneratedTail(
+	instruction: Instruction,
+	replacements: readonly AccountMeta[],
+): Instruction {
+	const accounts = instruction.accounts ?? [];
+	return Object.freeze({
+		...instruction,
+		accounts: Object.freeze([...accounts.slice(0, -1), ...replacements]),
+	});
+}
+
+function expectedStoredKind(asset: PrizeAsset) {
+	if (asset.kind === "token") {
+		return asset.tokenProgram === BOX_TOKEN_PROGRAM ? "token2022" : "token";
+	}
+	if (asset.kind === "nft") return asset.metadata ? "metadataNft" : "nft";
+	return asset.kind;
+}
+
+function prizeIdentifier(asset: PrizeAsset): Address {
+	if (asset.kind === "sol") return SYSTEM_PROGRAM;
+	if (asset.kind === "token" || asset.kind === "nft") return asset.mint;
+	return asset.asset;
+}
+
+/** Reject a resumed funding plan that differs from escrowed on-chain data. */
+export function assertFundedPrizeMatches(
+	bundle: Pick<
+		generated.BundleState,
+		"assetCount" | "kinds" | "mints" | "amounts" | "decimals"
+	>,
+	assetIndex: number,
+	asset: PrizeAsset,
+): void {
+	const existing = bundleAssets(bundle)[assetIndex];
+	const amount = asset.kind === "sol"
+		? asset.lamports
+		: asset.kind === "token"
+		? asset.amount
+		: 1n;
+	if (
+		!existing || existing.kind !== expectedStoredKind(asset) ||
+		existing.amount !== amount || existing.mint !== prizeIdentifier(asset)
+	) throw new Error("saved prize differs from already funded asset");
+}
+
 /** Mirrors the program's domain-separated, bounded rejection sampler. */
 export async function selectTemplateBundle(
 	template: ChainTemplate,
 	opening: ChainOpening,
 ): Promise<number> {
-	const inventory = templateInventory(template.data);
-	const total = inventory.reduce(
-		(sum, item) => sum + item.weight * item.remaining,
+	const eligibleInventory = templateInventory(
+		template.data,
+		opening.data.eligibleBundleCount,
+	);
+	const total = eligibleInventory.reduce(
+		(sum, item) => sum + item.remaining,
 		0n,
 	);
 	if (total <= 0n || total > 0xffff_ffffn) {
-		throw new RangeError("invalid live inventory weight");
+		throw new RangeError("the snapshotted inventory is outside sampler bounds");
 	}
 	const threshold = (1n << 64n) % total;
 	let candidate = 0n;
@@ -130,8 +218,8 @@ export async function selectTemplateBundle(
 	}
 	const target = candidate % total;
 	let cumulative = 0n;
-	for (const item of inventory) {
-		cumulative += item.weight * item.remaining;
+	for (const item of eligibleInventory) {
+		cumulative += item.remaining;
 		if (target < cumulative) return item.index;
 	}
 	throw new Error("no outcome for sampled target");
@@ -209,7 +297,7 @@ export class LootboxClient {
 			seeds: [
 				utf8.encode("bundle"),
 				addressBytes.encode(template),
-				new Uint8Array([index]),
+				getU32Encoder().encode(index),
 			],
 		});
 	}
@@ -235,13 +323,46 @@ export class LootboxClient {
 			tokenProgram,
 		});
 	}
+	async metadataPda(mint: Address) {
+		return (await getProgramDerivedAddress({
+			programAddress: TOKEN_METADATA_PROGRAM,
+			seeds: [
+				utf8.encode("metadata"),
+				addressBytes.encode(TOKEN_METADATA_PROGRAM),
+				addressBytes.encode(mint),
+			],
+		}))[0];
+	}
+	async editionPda(mint: Address) {
+		return (await getProgramDerivedAddress({
+			programAddress: TOKEN_METADATA_PROGRAM,
+			seeds: [
+				utf8.encode("metadata"),
+				addressBytes.encode(TOKEN_METADATA_PROGRAM),
+				addressBytes.encode(mint),
+				utf8.encode("edition"),
+			],
+		}))[0];
+	}
+	async tokenRecordPda(mint: Address, tokenAccount: Address) {
+		return (await getProgramDerivedAddress({
+			programAddress: TOKEN_METADATA_PROGRAM,
+			seeds: [
+				utf8.encode("metadata"),
+				addressBytes.encode(TOKEN_METADATA_PROGRAM),
+				addressBytes.encode(mint),
+				utf8.encode("token_record"),
+				addressBytes.encode(tokenAccount),
+			],
+		}))[0];
+	}
 	async template(template: Address): Promise<ChainTemplate> {
 		return generated.fetchTemplateState(this.rpc, template, { commitment });
 	}
 	async bundles(template: ChainTemplate): Promise<ChainBundle[]> {
 		return Promise.all(
 			Array.from(
-				{ length: template.data.outcomeCount },
+				{ length: template.data.bundleCount },
 				async (_, index) =>
 					generated.fetchBundleState(
 						this.rpc,
@@ -288,6 +409,132 @@ export class LootboxClient {
 		return token.getTokenDecoder().decode(
 			getBase64Encoder().encode(value.data[0]),
 		).amount;
+	}
+	async mintSupply(mint: Address): Promise<bigint> {
+		const response = await this.rpc.getTokenSupply(mint, { commitment }).send();
+		return BigInt(response.value.amount);
+	}
+
+	private async fundAsset(
+		asset: PrizeAsset,
+		template: Address,
+		bundle: Address,
+		bundleNumber: number,
+	) {
+		const authority = this.payer.address;
+		if (asset.kind === "sol") {
+			return this.send([generated.getFundSolPrizeInstruction({
+				authority,
+				template,
+				bundle,
+				lamportsPerWin: asset.lamports,
+			})], `Escrow SOL · bundle ${bundleNumber}`);
+		}
+		if (asset.kind === "token" || (asset.kind === "nft" && !asset.metadata)) {
+			const tokenProgram = asset.kind === "token"
+				? asset.tokenProgram ?? CLASSIC_TOKEN_PROGRAM
+				: CLASSIC_TOKEN_PROGRAM;
+			return this.send([
+				await this.createAta(bundle, asset.mint, tokenProgram),
+				generated.getFundTokenPrizeInstruction({
+					authority,
+					template,
+					bundle,
+					mint: asset.mint,
+					source: await this.ata(authority, asset.mint, tokenProgram),
+					escrow: await this.ata(bundle, asset.mint, tokenProgram),
+					tokenProgram,
+					amountPerWin: asset.kind === "nft" ? 1n : asset.amount,
+					isNft: asset.kind === "nft",
+				}),
+			], `Escrow ${asset.kind} · bundle ${bundleNumber}`);
+		}
+		if (asset.kind === "nft") {
+			const metadata = asset.metadata;
+			if (!metadata) {
+				throw new Error("metadata NFT is missing its metadata PDA");
+			}
+			const source = await this.ata(
+				authority,
+				asset.mint,
+				CLASSIC_TOKEN_PROGRAM,
+			);
+			const escrow = await this.ata(bundle, asset.mint, CLASSIC_TOKEN_PROGRAM);
+			const optional = [
+				accountMeta(asset.edition ?? await this.editionPda(asset.mint)),
+				accountMeta(
+					asset.tokenRecord ?? TOKEN_METADATA_PROGRAM,
+					asset.tokenRecord ? AccountRole.WRITABLE : AccountRole.READONLY,
+				),
+				accountMeta(
+					asset.destinationTokenRecord ?? TOKEN_METADATA_PROGRAM,
+					asset.destinationTokenRecord
+						? AccountRole.WRITABLE
+						: AccountRole.READONLY,
+				),
+				accountMeta(asset.authorizationRulesProgram ?? TOKEN_METADATA_PROGRAM),
+				accountMeta(asset.authorizationRules ?? TOKEN_METADATA_PROGRAM),
+			];
+			const funding = generated.getFundMetadataNftPrizeInstruction({
+				authority: this.payer,
+				template,
+				bundle,
+				mint: asset.mint,
+				source,
+				escrow,
+				metadata,
+				tokenMetadataProgram: TOKEN_METADATA_PROGRAM,
+				systemProgram: SYSTEM_PROGRAM,
+				instructionsSysvar: INSTRUCTIONS_SYSVAR,
+				tokenProgram: CLASSIC_TOKEN_PROGRAM,
+				associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM,
+				optionalAccounts: TOKEN_METADATA_PROGRAM,
+			});
+			return this.send([
+				await this.createAta(bundle, asset.mint, CLASSIC_TOKEN_PROGRAM),
+				replaceGeneratedTail(funding, optional),
+			], `Escrow NFT · bundle ${bundleNumber}`);
+		}
+		if (asset.kind === "core") {
+			const funding = generated.getFundCoreAssetPrizeInstruction({
+				authority: this.payer,
+				template,
+				bundle,
+				asset: asset.asset,
+				collection: asset.collection ?? CORE_PROGRAM,
+				coreProgram: CORE_PROGRAM,
+				systemProgram: SYSTEM_PROGRAM,
+				logWrapper: NOOP_PROGRAM,
+				pluginAccounts: CORE_PROGRAM,
+			});
+			return this.send([
+				replaceGeneratedTail(funding, asset.pluginAccounts ?? []),
+			], `Escrow Core asset · bundle ${bundleNumber}`);
+		}
+
+		const funding = generated.getFundCompressedNftPrizeInstruction({
+			authority: this.payer,
+			template,
+			bundle,
+			treeConfig: asset.proof.treeConfig,
+			merkleTree: asset.proof.tree,
+			bubblegumProgram: BUBBLEGUM_PROGRAM,
+			logWrapper: NOOP_PROGRAM,
+			compressionProgram: ACCOUNT_COMPRESSION_PROGRAM,
+			systemProgram: SYSTEM_PROGRAM,
+			proofAccounts: BUBBLEGUM_PROGRAM,
+			root: asset.proof.root,
+			dataHash: asset.proof.dataHash,
+			creatorHash: asset.proof.creatorHash,
+			nonce: asset.proof.nonce,
+			index: asset.proof.leafIndex,
+		});
+		return this.send([
+			replaceGeneratedTail(
+				funding,
+				asset.proof.proof.map((proof) => accountMeta(proof)),
+			),
+		], `Escrow compressed NFT · bundle ${bundleNumber}`);
 	}
 
 	/** A stable id and mint signer allow re-entry after interrupted creation.
@@ -367,7 +614,6 @@ export class LootboxClient {
 				template,
 				boxMint: mint.address,
 				id,
-				maxSupply: plan.maxSupply,
 				opensAt: plan.opensAt,
 				oracleProgram,
 				oracleQueue: queue,
@@ -376,107 +622,430 @@ export class LootboxClient {
 				bump,
 			})], "Create treasury template");
 		}
-		const state = await this.template(template);
+		let state = await this.template(template);
 		if (
 			state.data.boxMint !== mint.address ||
-			state.data.maxSupply !== plan.maxSupply ||
 			state.data.opensAt !== plan.opensAt ||
 			state.data.oracleProgram !== oracleProgram ||
 			state.data.oracleQueue !== queue ||
-			state.data.outcomeCount > plan.bundles.length ||
+			state.data.bundleCount > plan.bundles.length ||
 			Array.from(state.data.name).join() !==
 				Array.from(encodeTemplateText(plan.name, 32)).join() ||
 			Array.from(state.data.uri).join() !==
 				Array.from(encodeTemplateText(plan.uri, 200)).join()
 		) throw new Error("saved draft does not match the on-chain template");
-		if (state.data.retired) throw new Error("template is retired");
+		if (state.data.status === 2) throw new Error("template is retired");
 		for (const [index, prize] of plan.bundles.entries()) {
-			if (
-				index < state.data.outcomeCount &&
-				readU64(state.data.weights, index) !== prize.weight
-			) throw new Error("saved prize weight differs from chain");
 			const [bundle, bundleBump] = await this.bundleAddress(template, index);
-			if (index >= state.data.outcomeCount) {
+			if (index > state.data.bundleCount) {
+				throw new Error("treasury bundle history is not contiguous");
+			}
+			let funded = await generated.fetchMaybeBundleState(this.rpc, bundle, {
+				commitment,
+			});
+			if (!funded.exists) {
+				if (index < state.data.bundleCount) {
+					throw new Error("an activated bundle account is missing");
+				}
 				await this.send([generated.getAddBundleInstruction({
 					authority,
 					template,
 					bundle,
 					quantity: prize.quantity,
-					weight: prize.weight,
 					assetCount: prize.assets.length,
 					bump: bundleBump,
 				})], `Add prize bundle ${index + 1}`);
+				funded = await generated.fetchMaybeBundleState(this.rpc, bundle, {
+					commitment,
+				});
 			}
-			const funded = await generated.fetchBundleState(this.rpc, bundle, {
-				commitment,
-			});
+			if (!funded.exists) throw new Error("bundle creation did not persist");
 			if (
 				funded.data.quantity !== prize.quantity ||
 				funded.data.assetCount !== prize.assets.length
 			) throw new Error("saved bundle differs from chain");
 			for (const [assetIndex, asset] of prize.assets.entries()) {
 				if (assetIndex < funded.data.fundedAssets) {
-					const existing = bundleAssets(funded.data)[assetIndex];
-					const amount = asset.kind === "sol"
-						? asset.lamports
-						: asset.kind === "nft"
-						? 1n
-						: asset.amount;
-					if (
-						!existing || existing.kind !== asset.kind ||
-						existing.amount !== amount ||
-						(asset.kind !== "sol" && existing.mint !== asset.mint)
-					) throw new Error("saved prize differs from already funded asset");
+					assertFundedPrizeMatches(funded.data, assetIndex, asset);
 					continue;
 				}
-				if (asset.kind === "sol") {
-					await this.send([
-						generated.getFundSolPrizeInstruction({
-							authority,
-							template,
-							bundle,
-							lamportsPerWin: asset.lamports,
-						}),
-					], `Escrow SOL · bundle ${index + 1}`);
-					continue;
-				}
-				await this.send([
-					await this.createAta(bundle, asset.mint, CLASSIC_TOKEN_PROGRAM),
-					generated.getFundTokenPrizeInstruction({
-						authority,
-						template,
-						bundle,
-						mint: asset.mint,
-						source: await this.ata(
-							authority,
-							asset.mint,
-							CLASSIC_TOKEN_PROGRAM,
-						),
-						escrow: await this.ata(bundle, asset.mint, CLASSIC_TOKEN_PROGRAM),
-						amountPerWin: asset.kind === "nft" ? 1n : asset.amount,
-						isNft: asset.kind === "nft",
-					}),
-				], `Escrow ${asset.kind} · bundle ${index + 1}`);
+				await this.fundAsset(asset, template, bundle, index + 1);
+				funded = await generated.fetchMaybeBundleState(this.rpc, bundle, {
+					commitment,
+				});
+				if (!funded.exists) throw new Error("funded bundle disappeared");
+			}
+			if (funded.data.status === 0) {
+				await this.send([generated.getActivateBundleInstruction({
+					authority,
+					template,
+					bundle,
+				})], `Activate prize bundle ${index + 1}`);
+				state = await this.template(template);
 			}
 		}
-		if (state.data.sealed) return state;
-		await this.send([
-			generated.getSealTemplateInstruction({ authority, template }),
-		], "Seal funded template");
+		if (state.data.status === 0) {
+			await this.send([
+				generated.getSealTemplateInstruction({ authority, template }),
+			], "Publish treasury template");
+		}
 		return this.template(template);
 	}
 
 	async mint(template: ChainTemplate, recipient: Address, amount: bigint) {
+		const current = await this.template(template.address);
+		if (current.data.lockedAt !== 0n) {
+			throw new Error("the fixed-supply treasury cannot mint more boxes");
+		}
+
 		return this.send([
-			await this.createAta(recipient, template.data.boxMint),
+			await this.createAta(recipient, current.data.boxMint),
 			generated.getMintTemplateBoxesInstruction({
 				authority: this.payer.address,
-				template: template.address,
-				boxMint: template.data.boxMint,
-				recipientBoxAccount: await this.ata(recipient, template.data.boxMint),
+				template: current.address,
+				boxMint: current.data.boxMint,
+				recipientBoxAccount: await this.ata(recipient, current.data.boxMint),
 				amount,
 			}),
 		], "Mint gift to recipient");
+	}
+	/** Mint every outstanding bundle claim and atomically revoke mint authority.
+	 * The on-chain instruction rechecks exact supply, pristine inventory, the
+	 * unused tail PDA, and the future reveal date before recording the lock.
+	 */
+	async lockTreasury(
+		template: ChainTemplate,
+		recipient: Address = this.payer.address,
+	): Promise<ChainTemplate> {
+		const current = await this.template(template.address);
+		if (current.data.authority !== this.payer.address) {
+			throw new Error("only the treasury creator can lock this series");
+		}
+		if (current.data.lockedAt !== 0n) return current;
+
+		const [supply, slot] = await Promise.all([
+			this.mintSupply(current.data.boxMint),
+			this.rpc.getSlot({ commitment }).send(),
+		]);
+		const chainTime = await this.rpc.getBlockTime(slot).send() ?? 0n;
+		const readiness = marketLockReadiness(current.data, supply, chainTime);
+		if (!readiness.canLock) {
+			throw new Error(`Treasury cannot lock: ${readiness.reasons.join("; ")}`);
+		}
+
+		const [nextBundle] = await this.bundleAddress(
+			current.address,
+			current.data.bundleCount,
+		);
+		const instructions: Instruction[] = [];
+		if (readiness.mintRequired > 0n) {
+			instructions.push(
+				await this.createAta(recipient, current.data.boxMint),
+				generated.getMintTemplateBoxesInstruction({
+					authority: this.payer.address,
+					template: current.address,
+					boxMint: current.data.boxMint,
+					recipientBoxAccount: await this.ata(
+						recipient,
+						current.data.boxMint,
+					),
+					amount: readiness.mintRequired,
+				}),
+			);
+		}
+		instructions.push(generated.getLockTreasuryInstruction({
+			authority: this.payer.address,
+			template: current.address,
+			boxMint: current.data.boxMint,
+			bundle: nextBundle,
+		}));
+
+		await this.send(instructions, "Mint exact supply & lock treasury");
+		return this.template(current.address);
+	}
+	/** Permanently stop creator mutations. Issued, unlocked series may use this
+	 * only after a missed reveal deadline, preserving holder opening rights.
+	 */
+	async retireTemplate(template: ChainTemplate): Promise<ChainTemplate> {
+		const current = await this.template(template.address);
+		if (current.data.authority !== this.payer.address) {
+			throw new Error("only the treasury creator can retire this series");
+		}
+		if (current.data.status === 2) return current;
+
+		await this.send([generated.getRetireTemplateInstruction({
+			authority: this.payer.address,
+			template: current.address,
+		})], "Retire treasury");
+		return this.template(current.address);
+	}
+	async appendBundles(
+		template: ChainTemplate,
+		bundles: readonly PrizeBundleInput[],
+		startBundleCount = template.data.bundleCount,
+	): Promise<ChainTemplate> {
+		const plan = createTemplatePlan({ name: "Treasury append", bundles });
+		let current = await this.template(template.address);
+		if (
+			current.data.authority !== this.payer.address ||
+			current.data.status === 2 ||
+			current.data.lockedAt !== 0n
+		) {
+			throw new Error(
+				"only the creator of an unlocked live treasury can append prize bundles",
+			);
+		}
+		if (
+			!Number.isInteger(startBundleCount) || startBundleCount < 0 ||
+			startBundleCount > current.data.bundleCount ||
+			current.data.bundleCount > startBundleCount + plan.bundles.length
+		) throw new Error("saved treasury addition does not match append history");
+		if (
+			plan.bundles.length > remainingTemplateBundleCapacity(startBundleCount)
+		) {
+			throw new RangeError(
+				`treasury additions cannot exceed ${MAX_TEMPLATE_BUNDLES} total bundles`,
+			);
+		}
+		for (const [offset, prize] of plan.bundles.entries()) {
+			const index = startBundleCount + offset;
+			const [bundle, bump] = await this.bundleAddress(current.address, index);
+			const existing = await generated.fetchMaybeBundleState(this.rpc, bundle, {
+				commitment,
+			});
+			if (!existing.exists) {
+				await this.send([generated.getAddBundleInstruction({
+					authority: this.payer.address,
+					template: current.address,
+					bundle,
+					quantity: prize.quantity,
+					assetCount: prize.assets.length,
+					bump,
+				})], `Stage treasury addition ${index + 1}`);
+			}
+			let draft = await generated.fetchBundleState(this.rpc, bundle, {
+				commitment,
+			});
+			if (
+				draft.data.quantity !== prize.quantity ||
+				draft.data.assetCount !== prize.assets.length
+			) throw new Error("the staged append differs from this bundle");
+			for (const [assetIndex, asset] of prize.assets.entries()) {
+				if (assetIndex < draft.data.fundedAssets) {
+					assertFundedPrizeMatches(draft.data, assetIndex, asset);
+					continue;
+				}
+				await this.fundAsset(asset, current.address, bundle, index + 1);
+				draft = await generated.fetchBundleState(this.rpc, bundle, {
+					commitment,
+				});
+			}
+			if (draft.data.status === 0) {
+				await this.send([generated.getActivateBundleInstruction({
+					authority: this.payer.address,
+					template: current.address,
+					bundle,
+				})], `Publish treasury addition ${index + 1}`);
+			}
+			current = await this.template(current.address);
+		}
+		return current;
+	}
+	async publishTemplate(template: ChainTemplate): Promise<ChainTemplate> {
+		const current = await this.template(template.address);
+		if (current.data.authority !== this.payer.address) {
+			throw new Error("only the treasury creator can publish this template");
+		}
+		if (current.data.status === 1) return current;
+		if (current.data.status !== 0 || current.data.bundleCount === 0) {
+			throw new Error("only a funded draft treasury can be published");
+		}
+		await this.send([generated.getSealTemplateInstruction({
+			authority: this.payer.address,
+			template: current.address,
+		})], "Publish funded treasury");
+		return this.template(current.address);
+	}
+	/** Reclaim every funded asset in the one unpublished bundle at the end of
+	 * the append-only log, then close that staging account. Published bundles
+	 * are deliberately unreachable through this method.
+	 */
+	async cancelFundingBundle(
+		template: ChainTemplate,
+		resolvedAssets: readonly PrizeAsset[] = [],
+	): Promise<ChainTemplate> {
+		const current = await this.template(template.address);
+		if (
+			current.data.authority !== this.payer.address ||
+			current.data.status === 2 ||
+			current.data.lockedAt !== 0n
+		) {
+			throw new Error("only the treasury creator can cancel a staged bundle");
+		}
+		const [bundle] = await this.bundleAddress(
+			current.address,
+			current.data.bundleCount,
+		);
+		const staged = await generated.fetchMaybeBundleState(this.rpc, bundle, {
+			commitment,
+		});
+		if (!staged.exists || staged.data.status !== 0) {
+			throw new Error("this treasury has no staged bundle to cancel");
+		}
+
+		for (const asset of bundleAssets(staged.data)) {
+			if ((staged.data.reclaimedMask & (1 << asset.index)) !== 0) continue;
+			const input = {
+				template: current.address,
+				boxMint: current.data.boxMint,
+				bundle,
+				assetIndex: asset.index,
+			};
+			let instructions: readonly Instruction[];
+			if (asset.kind === "sol") {
+				instructions = [generated.getReclaimSolPrizeInstruction({
+					authority: this.payer.address,
+					...input,
+				})];
+			} else if (["token", "token2022", "nft"].includes(asset.kind ?? "")) {
+				const tokenProgram = asset.kind === "token2022"
+					? BOX_TOKEN_PROGRAM
+					: CLASSIC_TOKEN_PROGRAM;
+				const destination = await this.ata(
+					this.payer.address,
+					asset.mint,
+					tokenProgram,
+				);
+				instructions = [
+					await this.createAta(this.payer.address, asset.mint, tokenProgram),
+					generated.getReclaimTokenPrizeInstruction({
+						authority: this.payer.address,
+						...input,
+						mint: asset.mint,
+						escrow: await this.ata(bundle, asset.mint, tokenProgram),
+						destination,
+						tokenProgram,
+					}),
+				];
+			} else {
+				const resolved = resolvedAssets[asset.index];
+				if (!resolved || prizeIdentifier(resolved) !== asset.mint) {
+					throw new Error(
+						`Staged asset ${
+							asset.index + 1
+						} needs fresh transfer data before it can be reclaimed`,
+					);
+				}
+				if (asset.kind === "metadataNft" && resolved.kind === "nft") {
+					const escrow = await this.ata(
+						bundle,
+						resolved.mint,
+						CLASSIC_TOKEN_PROGRAM,
+					);
+					const destination = await this.ata(
+						this.payer.address,
+						resolved.mint,
+						CLASSIC_TOKEN_PROGRAM,
+					);
+					const reclaim = generated.getReclaimMetadataNftPrizeInstruction({
+						authority: this.payer,
+						...input,
+						mint: resolved.mint,
+						escrow,
+						destination,
+						metadata: resolved.metadata ??
+							await this.metadataPda(resolved.mint),
+						tokenMetadataProgram: TOKEN_METADATA_PROGRAM,
+						systemProgram: SYSTEM_PROGRAM,
+						instructionsSysvar: INSTRUCTIONS_SYSVAR,
+						tokenProgram: CLASSIC_TOKEN_PROGRAM,
+						associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM,
+						optionalAccounts: TOKEN_METADATA_PROGRAM,
+					});
+					instructions = [
+						await this.createAta(
+							this.payer.address,
+							resolved.mint,
+							CLASSIC_TOKEN_PROGRAM,
+						),
+						replaceGeneratedTail(reclaim, [
+							accountMeta(
+								resolved.edition ?? await this.editionPda(resolved.mint),
+							),
+							accountMeta(
+								resolved.tokenRecord ?? TOKEN_METADATA_PROGRAM,
+								resolved.tokenRecord
+									? AccountRole.WRITABLE
+									: AccountRole.READONLY,
+							),
+							accountMeta(
+								resolved.destinationTokenRecord ?? TOKEN_METADATA_PROGRAM,
+								resolved.destinationTokenRecord
+									? AccountRole.WRITABLE
+									: AccountRole.READONLY,
+							),
+							accountMeta(
+								resolved.authorizationRulesProgram ?? TOKEN_METADATA_PROGRAM,
+							),
+							accountMeta(
+								resolved.authorizationRules ?? TOKEN_METADATA_PROGRAM,
+							),
+						]),
+					];
+				} else if (asset.kind === "core" && resolved.kind === "core") {
+					const reclaim = generated.getReclaimCoreAssetPrizeInstruction({
+						authority: this.payer,
+						...input,
+						asset: resolved.asset,
+						collection: resolved.collection ?? CORE_PROGRAM,
+						coreProgram: CORE_PROGRAM,
+						systemProgram: SYSTEM_PROGRAM,
+						logWrapper: NOOP_PROGRAM,
+						pluginAccounts: CORE_PROGRAM,
+					});
+					instructions = [replaceGeneratedTail(
+						reclaim,
+						resolved.pluginAccounts ?? [],
+					)];
+				} else if (
+					asset.kind === "compressedNft" &&
+					resolved.kind === "compressedNft"
+				) {
+					const reclaim = generated.getReclaimCompressedNftPrizeInstruction({
+						authority: this.payer,
+						...input,
+						treeConfig: resolved.proof.treeConfig,
+						merkleTree: resolved.proof.tree,
+						bubblegumProgram: BUBBLEGUM_PROGRAM,
+						logWrapper: NOOP_PROGRAM,
+						compressionProgram: ACCOUNT_COMPRESSION_PROGRAM,
+						systemProgram: SYSTEM_PROGRAM,
+						proofAccounts: BUBBLEGUM_PROGRAM,
+						root: resolved.proof.root,
+						dataHash: resolved.proof.dataHash,
+						creatorHash: resolved.proof.creatorHash,
+						nonce: resolved.proof.nonce,
+						index: resolved.proof.leafIndex,
+					});
+					instructions = [replaceGeneratedTail(
+						reclaim,
+						resolved.proof.proof.map((proof) => accountMeta(proof)),
+					)];
+				} else {
+					throw new Error(
+						"resolved reclaim adapter does not match staged asset kind",
+					);
+				}
+			}
+			await this.send(instructions, `Reclaim staged asset ${asset.index + 1}`);
+		}
+
+		await this.send([generated.getCancelBundleInstruction({
+			authority: this.payer.address,
+			template: current.address,
+			bundle,
+		})], "Cancel staged bundle & recover rent");
+		return this.template(current.address);
 	}
 	/** Create a fixed-supply classic token, including a basic one-of-one NFT.
 	 * Existing mints are validated so a saved creation workflow can resume.
@@ -593,6 +1162,47 @@ export class LootboxClient {
 			commitment,
 		});
 	}
+	/** Forfeit the head receipt after the on-chain oracle timeout. This
+	 * permissionless liveness path never changes the bound recipient and does
+	 * not return a box or consume prize inventory.
+	 */
+	async forfeitTemplateOpen(template: ChainTemplate, opening: ChainOpening) {
+		if (opening.data.status !== 0) {
+			throw new Error("only a pending opening can be forfeited");
+		}
+		return this.send([generated.getForfeitTemplateOpenInstruction({
+			caller: this.payer,
+			template: template.address,
+			opening: opening.address,
+			randomness: opening.data.randomness,
+		})], "Forfeit expired opening & unblock queue");
+	}
+	/** Close a delivered or forfeited receipt and return its account rent. */
+	async closeTemplateOpening(
+		template: ChainTemplate,
+		opening: ChainOpening,
+		oracle: OracleAccounts,
+	) {
+		if (
+			![3, 4].includes(opening.data.status) ||
+			opening.data.recipient !== this.payer.address
+		) {
+			throw new Error("only a completed recipient receipt can be closed");
+		}
+		return this.send([generated.getCloseTemplateOpeningInstruction({
+			recipient: this.payer.address,
+			template: template.address,
+			opening: opening.address,
+			randomness: opening.data.randomness,
+			rewardEscrow: oracle.rewardEscrow,
+			oracleProgram: template.data.oracleProgram,
+			oracleProgramState: oracle.programState,
+			oracleLut: oracle.lut,
+			oracleLutSigner: oracle.lutSigner,
+			wrappedSolMint: WRAPPED_SOL,
+			addressLookupTableProgram: LOOKUP_TABLE,
+		})], "Close receipt & recover rent");
+	}
 	async fulfill(
 		template: ChainTemplate,
 		opening: ChainOpening,
@@ -625,7 +1235,10 @@ export class LootboxClient {
 			}),
 		], "Record prize allocation");
 	}
-	async claim(openingAddress: Address) {
+	async claim(
+		openingAddress: Address,
+		resolvedAssets: readonly PrizeAsset[] = [],
+	) {
 		const opening = await generated.fetchTemplateOpeningState(
 			this.rpc,
 			openingAddress,
@@ -637,7 +1250,7 @@ export class LootboxClient {
 		}
 		const template = opening.data.template;
 		const bundle =
-			(await this.bundleAddress(template, opening.data.selectedOutcome))[0];
+			(await this.bundleAddress(template, opening.data.selectedBundle))[0];
 		const data = await generated.fetchBundleState(this.rpc, bundle, {
 			commitment,
 		});
@@ -650,25 +1263,135 @@ export class LootboxClient {
 				recipient: opening.data.recipient,
 				assetIndex: asset.index,
 			};
-			const instructions = asset.kind === "sol"
-				? [generated.getClaimSolPrizeInstruction(input)]
-				: [
-					await this.createAta(
-						input.recipient,
-						asset.mint,
-						CLASSIC_TOKEN_PROGRAM,
-					),
+			let instructions: readonly Instruction[];
+			if (asset.kind === "sol") {
+				instructions = [generated.getClaimSolPrizeInstruction(input)];
+			} else if (["token", "token2022", "nft"].includes(asset.kind ?? "")) {
+				const tokenProgram = asset.kind === "token2022"
+					? BOX_TOKEN_PROGRAM
+					: CLASSIC_TOKEN_PROGRAM;
+				instructions = [
+					await this.createAta(input.recipient, asset.mint, tokenProgram),
 					generated.getClaimTokenPrizeInstruction({
 						...input,
 						mint: asset.mint,
-						escrow: await this.ata(bundle, asset.mint, CLASSIC_TOKEN_PROGRAM),
+						escrow: await this.ata(bundle, asset.mint, tokenProgram),
 						destination: await this.ata(
 							input.recipient,
 							asset.mint,
-							CLASSIC_TOKEN_PROGRAM,
+							tokenProgram,
 						),
+						tokenProgram,
 					}),
 				];
+			} else {
+				const resolved = resolvedAssets[asset.index];
+				if (!resolved || prizeIdentifier(resolved) !== asset.mint) {
+					throw new Error(
+						`Prize ${
+							asset.index + 1
+						} needs fresh DAS transfer data before it can be delivered`,
+					);
+				}
+				if (asset.kind === "metadataNft" && resolved.kind === "nft") {
+					const escrow = await this.ata(
+						bundle,
+						resolved.mint,
+						CLASSIC_TOKEN_PROGRAM,
+					);
+					const destination = await this.ata(
+						input.recipient,
+						resolved.mint,
+						CLASSIC_TOKEN_PROGRAM,
+					);
+					const optional = [
+						accountMeta(
+							resolved.edition ?? await this.editionPda(resolved.mint),
+						),
+						accountMeta(
+							resolved.tokenRecord ?? TOKEN_METADATA_PROGRAM,
+							resolved.tokenRecord
+								? AccountRole.WRITABLE
+								: AccountRole.READONLY,
+						),
+						accountMeta(
+							resolved.destinationTokenRecord ?? TOKEN_METADATA_PROGRAM,
+							resolved.destinationTokenRecord
+								? AccountRole.WRITABLE
+								: AccountRole.READONLY,
+						),
+						accountMeta(
+							resolved.authorizationRulesProgram ?? TOKEN_METADATA_PROGRAM,
+						),
+						accountMeta(resolved.authorizationRules ?? TOKEN_METADATA_PROGRAM),
+					];
+					const claim = generated.getClaimMetadataNftPrizeInstruction({
+						payer: this.payer,
+						...input,
+						mint: resolved.mint,
+						escrow,
+						destination,
+						metadata: resolved.metadata ??
+							await this.metadataPda(resolved.mint),
+						tokenMetadataProgram: TOKEN_METADATA_PROGRAM,
+						systemProgram: SYSTEM_PROGRAM,
+						instructionsSysvar: INSTRUCTIONS_SYSVAR,
+						tokenProgram: CLASSIC_TOKEN_PROGRAM,
+						associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM,
+						optionalAccounts: TOKEN_METADATA_PROGRAM,
+					});
+					instructions = [
+						await this.createAta(
+							input.recipient,
+							resolved.mint,
+							CLASSIC_TOKEN_PROGRAM,
+						),
+						replaceGeneratedTail(claim, optional),
+					];
+				} else if (asset.kind === "core" && resolved.kind === "core") {
+					const claim = generated.getClaimCoreAssetPrizeInstruction({
+						payer: this.payer,
+						...input,
+						asset: resolved.asset,
+						collection: resolved.collection ?? CORE_PROGRAM,
+						coreProgram: CORE_PROGRAM,
+						systemProgram: SYSTEM_PROGRAM,
+						logWrapper: NOOP_PROGRAM,
+						pluginAccounts: CORE_PROGRAM,
+					});
+					instructions = [replaceGeneratedTail(
+						claim,
+						resolved.pluginAccounts ?? [],
+					)];
+				} else if (
+					asset.kind === "compressedNft" &&
+					resolved.kind === "compressedNft"
+				) {
+					const claim = generated.getClaimCompressedNftPrizeInstruction({
+						...input,
+						treeConfig: resolved.proof.treeConfig,
+						merkleTree: resolved.proof.tree,
+						bubblegumProgram: BUBBLEGUM_PROGRAM,
+						logWrapper: NOOP_PROGRAM,
+						compressionProgram: ACCOUNT_COMPRESSION_PROGRAM,
+						systemProgram: SYSTEM_PROGRAM,
+						proofAccounts: BUBBLEGUM_PROGRAM,
+						root: resolved.proof.root,
+						dataHash: resolved.proof.dataHash,
+						creatorHash: resolved.proof.creatorHash,
+						nonce: resolved.proof.nonce,
+						index: resolved.proof.leafIndex,
+					});
+					instructions = [replaceGeneratedTail(
+						claim,
+						resolved.proof.proof.map((proof) => accountMeta(proof)),
+					)];
+				} else {
+					throw new Error(
+						"resolved prize adapter does not match on-chain asset kind",
+					);
+				}
+			}
 			await this.send(instructions, `Deliver prize asset ${asset.index + 1}`);
 		}
 	}

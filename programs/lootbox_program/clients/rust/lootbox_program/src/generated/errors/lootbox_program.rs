@@ -89,6 +89,22 @@ pub enum LootboxProgramError {
 	/// 18 - This asset has already been delivered for this opening.
 	#[error("This asset has already been delivered for this opening.")]
 	PrizeAlreadyClaimed = 0x12,
+	/// The treasury is permanently locked and cannot accept more bundles.
+	/// 19 - The treasury is permanently locked and cannot accept more bundles.
+	#[error("The treasury is permanently locked and cannot accept more bundles.")]
+	TreasuryLocked = 0x13,
+	/// The treasury must be locked before any box can be opened.
+	/// 20 - The treasury must be locked before any box can be opened.
+	#[error("The treasury must be locked before any box can be opened.")]
+	TreasuryUnlocked = 0x14,
+	/// Fixed box supply does not exactly match the funded bundle inventory.
+	/// 21 - Fixed box supply does not exactly match the funded bundle inventory.
+	#[error("Fixed box supply does not exactly match the funded bundle inventory.")]
+	SupplyMismatch = 0x15,
+	/// A market treasury must be locked before its earliest reveal date.
+	/// 22 - A market treasury must be locked before its earliest reveal date.
+	#[error("A market treasury must be locked before its earliest reveal date.")]
+	RevealDatePassed = 0x16,
 }
 
 impl From<LootboxProgramError> for solana_program_error::ProgramError {

@@ -1,5 +1,7 @@
 //! Retirement stops issuance; it never revokes an existing holder's claim.
 
+use pina::sysvars::Sysvar;
+
 use super::*;
 
 #[instruction(discriminator = LootboxInstruction::RetireTemplate)]
@@ -41,6 +43,21 @@ pub struct ReclaimTokenPrizeAccounts<'a> {
 	pub token_program: &'a AccountView,
 }
 
+fn validate_retirement(state: &TemplateStateZc, now: i64) -> ProgramResult {
+	if state.status != TEMPLATE_LIVE {
+		return Err(lootbox_error(LootboxError::InvalidState));
+	}
+
+	// Before reveal, issued series must use the exact-supply market lock. Once
+	// that deadline is missed, retirement is the bounded recovery seal: all
+	// creator mutations stop, but existing holders may still burn and open.
+	if state.total_minted.get() != 0 && state.locked_at.get() == 0 && state.opens_at.get() > now {
+		return Err(lootbox_error(LootboxError::TreasuryUnlocked));
+	}
+
+	Ok(())
+}
+
 impl<'a> ProcessAccountInfos<'a> for RetireTemplateAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = RetireTemplateInstruction::try_from_bytes(data)?;
@@ -48,13 +65,15 @@ impl<'a> ProcessAccountInfos<'a> for RetireTemplateAccounts<'a> {
 		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
 		assert_template(&address, &state)?;
 		assert_template_authority(self.authority, &state)?;
-		state.retired.set(true);
+		validate_retirement(&state, sysvars::clock::Clock::get()?.unix_timestamp)?;
+
+		state.status = TEMPLATE_RETIRED;
 
 		Ok(())
 	}
 }
 
-fn reclaim_amount(
+pub(super) fn reclaim_amount(
 	state: &TemplateStateZc,
 	bundle: &mut BundleStateZc,
 	supply: u64,
@@ -62,10 +81,6 @@ fn reclaim_amount(
 ) -> Result<u64, ProgramError> {
 	// Allocated but not yet claimed prizes are deliberately excluded from this
 	// recovery: only inventory still in the draw pool belongs to the creator.
-	if !state.retired.get() || supply != 0 || state.pending_openings.get() != 0 {
-		return Err(lootbox_error(LootboxError::InvalidState));
-	}
-
 	if asset_index >= bundle.funded_assets {
 		return Err(lootbox_error(LootboxError::InvalidPrize));
 	}
@@ -78,7 +93,19 @@ fn reclaim_amount(
 	}
 
 	let index = usize::from(asset_index);
-	let unused = read_slot(&state.remaining, usize::from(bundle.index))?;
+	let unused = match bundle.status {
+		BUNDLE_FUNDING => bundle.quantity.get(),
+		BUNDLE_ACTIVE => {
+			if state.status != TEMPLATE_RETIRED || supply != 0 || state.pending_openings.get() != 0
+			{
+				return Err(lootbox_error(LootboxError::InvalidState));
+			}
+			let bundle_index = usize::try_from(bundle.index.get())
+				.map_err(|_| ProgramError::InvalidAccountData)?;
+			read_slot(&state.remaining, bundle_index)?
+		}
+		_ => return Err(lootbox_error(LootboxError::InvalidState)),
+	};
 	let released = read_slot(&bundle.claimed, index)?
 		.checked_add(unused)
 		.ok_or(ProgramError::ArithmeticOverflow)?;
@@ -102,7 +129,12 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimSolPrizeAccounts<'a> {
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
-		let supply = assert_template_mint(self.box_mint, self.template.address(), &state.box_mint)?;
+		let supply = assert_template_mint(
+			self.box_mint,
+			self.template.address(),
+			&state.box_mint,
+			state.locked_at.get() != 0,
+		)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
 		if bundle.kinds.get(index) != Some(&PRIZE_SOL) {
@@ -140,11 +172,25 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
-		self.token_program.assert_address(&token::ID)?;
-		let supply = assert_template_mint(self.box_mint, self.template.address(), &state.box_mint)?;
+		let token_program = *self.token_program.address();
+		if token_program != token::ID && token_program != token_2022::ID {
+			return Err(ProgramError::IncorrectProgramId);
+		}
+		let supply = assert_template_mint(
+			self.box_mint,
+			self.template.address(),
+			&state.box_mint,
+			state.locked_at.get() != 0,
+		)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
-		if !matches!(bundle.kinds.get(index), Some(&PRIZE_TOKEN | &PRIZE_NFT))
+		let expected_kind = if token_program == token_2022::ID {
+			PRIZE_TOKEN_2022
+		} else {
+			bundle.kinds.get(index).copied().unwrap_or(u8::MAX)
+		};
+		if !matches!(expected_kind, PRIZE_TOKEN | PRIZE_NFT | PRIZE_TOKEN_2022)
+			|| bundle.kinds.get(index) != Some(&expected_kind)
 			|| mint_at(&bundle, index)? != *self.mint.address()
 		{
 			return Err(lootbox_error(LootboxError::InvalidPrize));
@@ -153,29 +199,43 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 		drop(self.escrow.as_associated_token_account_checked(
 			&bundle_address,
 			self.mint.address(),
-			&token::ID,
+			&token_program,
 		)?);
 		drop(self.destination.as_associated_token_account_checked(
 			self.authority.address(),
 			self.mint.address(),
-			&token::ID,
+			&token_program,
 		)?);
 		let amount = reclaim_amount(&state, &mut bundle, supply, args.asset_index)?;
 		let template = bundle.template;
-		let seeds = BundleState::seeds(&template, bundle.index).with_bump(bundle.bump);
+		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		let decimals = bundle.decimals[index];
 		drop(bundle);
 		let signer = seeds.to_signer();
 
-		token::instructions::TransferChecked::new(
-			self.escrow,
-			self.mint,
-			self.destination,
-			self.bundle,
-			amount,
-			decimals,
-		)
-		.invoke_signed(&[signer.as_signer()])
+		if token_program == token_2022::ID {
+			self.token_program.assert_address(&token_2022::ID)?;
+			token_2022::instructions::TransferChecked::new(
+				self.escrow,
+				self.mint,
+				self.destination,
+				self.bundle,
+				amount,
+				decimals,
+			)
+			.invoke_signed(&[signer.as_signer()])
+		} else {
+			self.token_program.assert_address(&token::ID)?;
+			token::instructions::TransferChecked::new(
+				self.escrow,
+				self.mint,
+				self.destination,
+				self.bundle,
+				amount,
+				decimals,
+			)
+			.invoke_signed(&[signer.as_signer()])
+		}
 	}
 }
 
@@ -184,15 +244,30 @@ mod tests {
 	use super::*;
 
 	#[test]
+	fn issued_unlocked_treasury_can_only_recover_after_its_deadline() {
+		let mut bytes = [0; TemplateState::SIZE];
+		let state = TemplateState::initialize(&mut bytes).expect("template");
+		state.status = TEMPLATE_LIVE;
+		state.total_minted.set(1);
+		state.opens_at.set(1_001);
+
+		assert!(validate_retirement(state, 1_000).is_err());
+		assert_eq!(validate_retirement(state, 1_001), Ok(()));
+		state.locked_at.set(999);
+		assert_eq!(validate_retirement(state, 1_000), Ok(()));
+	}
+
+	#[test]
 	fn retirement_preserves_allocated_but_unclaimed_prizes() {
 		let mut bytes = [0; TemplateState::SIZE];
 		let state = TemplateState::initialize(&mut bytes).expect("template");
-		state.retired.set(true);
+		state.status = TEMPLATE_RETIRED;
 		write_slot(&mut state.remaining, 0, 3).expect("three undrawn");
 		let mut bundle_bytes = [0; BundleState::SIZE];
 		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
 		bundle.quantity.set(5);
 		bundle.funded_assets = 1;
+		bundle.status = BUNDLE_ACTIVE;
 		write_slot(&mut bundle.amounts, 0, 100).expect("amount");
 		assert!(reclaim_amount(state, bundle, 1, 0).is_err());
 		state.pending_openings.set(1);

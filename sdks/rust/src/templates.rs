@@ -1,8 +1,8 @@
-//! Allocation-free planning for finite prize inventories.
+//! Allocation-free planning for append-only, fully funded prize inventories.
 
-use crate::MAX_OUTCOMES;
-use crate::MAX_TOTAL_WEIGHT;
+use crate::MAX_TEMPLATE_BUNDLES;
 
+const MAX_TOTAL_TICKETS: u64 = u32::MAX as u64;
 // So11111111111111111111111111111111111111112. Match the program's
 // reward policy: use native SOL instead of a wrapped-SOL token prize.
 const WRAPPED_SOL_MINT: [u8; 32] = [
@@ -10,21 +10,30 @@ const WRAPPED_SOL_MINT: [u8; 32] = [
 	235, 59, 85, 152, 160, 240, 0, 0, 0, 0, 1,
 ];
 
-/// A native SOL, classic SPL Token, or unique NFT prize.
+/// A supported treasury asset. External ownership and transfer-rule validation
+/// remains an on-chain concern; this type makes the intended adapter explicit.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PrizeAsset {
 	Sol { lamports: u64 },
-	Token { mint: [u8; 32], amount: u64 },
-	Nft { mint: [u8; 32] },
+	ClassicToken { mint: [u8; 32], amount: u64 },
+	Token2022 { mint: [u8; 32], amount: u64 },
+	LegacyNft { mint: [u8; 32] },
+	MetadataNft { mint: [u8; 32] },
+	CoreAsset { asset: [u8; 32] },
+	CompressedNft { asset: [u8; 32] },
 }
 
 impl PrizeAsset {
-	/// None denotes native SOL, otherwise the token mint address.
+	/// None denotes native SOL; every other value is the stored asset identifier.
 	#[must_use]
-	pub const fn mint(self) -> Option<[u8; 32]> {
+	pub const fn identifier(self) -> Option<[u8; 32]> {
 		match self {
 			Self::Sol { .. } => None,
-			Self::Token { mint, .. } | Self::Nft { mint } => Some(mint),
+			Self::ClassicToken { mint, .. }
+			| Self::Token2022 { mint, .. }
+			| Self::LegacyNft { mint }
+			| Self::MetadataNft { mint } => Some(mint),
+			Self::CoreAsset { asset } | Self::CompressedNft { asset } => Some(asset),
 		}
 	}
 
@@ -33,18 +42,30 @@ impl PrizeAsset {
 	pub const fn amount(self) -> u64 {
 		match self {
 			Self::Sol { lamports } => lamports,
-			Self::Token { amount, .. } => amount,
-			Self::Nft { .. } => 1,
+			Self::ClassicToken { amount, .. } | Self::Token2022 { amount, .. } => amount,
+			Self::LegacyNft { .. }
+			| Self::MetadataNft { .. }
+			| Self::CoreAsset { .. }
+			| Self::CompressedNft { .. } => 1,
 		}
+	}
+
+	#[must_use]
+	pub const fn is_unique(self) -> bool {
+		matches!(
+			self,
+			Self::LegacyNft { .. }
+				| Self::MetadataNft { .. }
+				| Self::CoreAsset { .. }
+				| Self::CompressedNft { .. }
+		)
 	}
 }
 
-/// Complete discrete prize with a finite number of available copies.
+/// Complete discrete prize with a finite number of equal-probability copies.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PrizeBundle<'a> {
 	pub quantity: u64,
-	/// Per-unit weight; selection weight is this multiplied by remaining copies.
-	pub weight: u64,
 	pub assets: &'a [PrizeAsset],
 }
 
@@ -53,85 +74,62 @@ pub struct PrizeBundle<'a> {
 pub enum TemplatePlanError {
 	InvalidBundleCount,
 	InvalidAssetCount,
-	ZeroQuantityOrWeight,
+	ZeroQuantity,
 	InvalidAsset,
 	DuplicateAsset,
-	DuplicateNft,
-	InvalidSupply,
-	WeightLimitExceeded,
+	DuplicateUniqueAsset,
+	TicketLimitExceeded,
 	ArithmeticOverflow,
 }
 
-/// Borrowed, checked prize manifest. Chain-side authority and mint validation
-/// remain mandatory; a planner cannot prove that an NFT really is unique.
+/// Borrowed, checked prize manifest. Its total tickets are the mint capacity.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TemplatePlan<'a> {
 	bundles: &'a [PrizeBundle<'a>],
-	max_supply: u64,
 	total_bundles: u64,
-	total_weight: u64,
 }
 
 impl<'a> TemplatePlan<'a> {
-	/// Validate quantities, weights, collateral products, and NFT uniqueness.
+	/// Validate quantities, collateral products, and unique-asset ownership.
 	///
 	/// # Errors
 	/// Returns [`TemplatePlanError`] for a malformed or overcommitted manifest.
-	pub fn new(max_supply: u64, bundles: &'a [PrizeBundle<'a>]) -> Result<Self, TemplatePlanError> {
-		if bundles.is_empty() || bundles.len() > MAX_OUTCOMES {
+	pub fn new(bundles: &'a [PrizeBundle<'a>]) -> Result<Self, TemplatePlanError> {
+		if bundles.is_empty() || bundles.len() > MAX_TEMPLATE_BUNDLES {
 			return Err(TemplatePlanError::InvalidBundleCount);
 		}
 
 		let mut total_bundles = 0u64;
-		let mut total_weight = 0u64;
 		for (bundle_index, bundle) in bundles.iter().enumerate() {
 			validate_bundle(bundle)?;
 			total_bundles = total_bundles
 				.checked_add(bundle.quantity)
 				.ok_or(TemplatePlanError::ArithmeticOverflow)?;
-			total_weight = bundle
-				.weight
-				.checked_mul(bundle.quantity)
-				.and_then(|weight| total_weight.checked_add(weight))
-				.ok_or(TemplatePlanError::ArithmeticOverflow)?;
+			if total_bundles > MAX_TOTAL_TICKETS {
+				return Err(TemplatePlanError::TicketLimitExceeded);
+			}
 			for asset in bundle.assets {
-				if matches!(asset, PrizeAsset::Nft { .. })
+				if asset.is_unique()
 					&& bundles[..bundle_index]
 						.iter()
 						.flat_map(|previous| previous.assets)
 						.any(|previous| {
-							matches!(previous, PrizeAsset::Nft { .. })
-								&& previous.mint() == asset.mint()
+							previous.is_unique() && previous.identifier() == asset.identifier()
 						}) {
-					return Err(TemplatePlanError::DuplicateNft);
+					return Err(TemplatePlanError::DuplicateUniqueAsset);
 				}
 			}
 		}
 
-		if total_weight > MAX_TOTAL_WEIGHT {
-			return Err(TemplatePlanError::WeightLimitExceeded);
-		}
-
-		if max_supply == 0 || max_supply > total_bundles {
-			return Err(TemplatePlanError::InvalidSupply);
-		}
-
 		let plan = Self {
 			bundles,
-			max_supply,
 			total_bundles,
-			total_weight,
 		};
 		for asset in bundles.iter().flat_map(|bundle| bundle.assets) {
-			plan.required_collateral(asset.mint())?;
+			plan.required_collateral(asset.identifier())?;
 		}
 
 		Ok(plan)
-	}
-
-	#[must_use]
-	pub const fn max_supply(&self) -> u64 {
-		self.max_supply
 	}
 
 	#[must_use]
@@ -139,9 +137,10 @@ impl<'a> TemplatePlan<'a> {
 		self.total_bundles
 	}
 
+	/// Exact zero-decimal box issuance after the treasury is market locked.
 	#[must_use]
-	pub const fn total_weight(&self) -> u64 {
-		self.total_weight
+	pub const fn fixed_supply(&self) -> u64 {
+		self.total_bundles
 	}
 
 	#[must_use]
@@ -152,23 +151,22 @@ impl<'a> TemplatePlan<'a> {
 	/// Exact initial probability as a numerator/denominator pair.
 	#[must_use]
 	pub fn odds(&self, index: usize) -> Option<(u64, u64)> {
-		let bundle = self.bundles.get(index)?;
-		Some((
-			bundle.weight.checked_mul(bundle.quantity)?,
-			self.total_weight,
-		))
+		Some((self.bundles.get(index)?.quantity, self.total_bundles))
 	}
 
-	/// Sum of all escrow deposits for this asset. None selects native SOL.
+	/// Sum all escrow deposits for an identifier. None selects native SOL.
 	///
 	/// # Errors
 	/// Returns arithmetic overflow if a total cannot fit in an on-chain u64.
-	pub fn required_collateral(&self, mint: Option<[u8; 32]>) -> Result<u64, TemplatePlanError> {
+	pub fn required_collateral(
+		&self,
+		identifier: Option<[u8; 32]>,
+	) -> Result<u64, TemplatePlanError> {
 		self.bundles.iter().try_fold(0u64, |total, bundle| {
 			bundle
 				.assets
 				.iter()
-				.filter(|asset| asset.mint() == mint)
+				.filter(|asset| asset.identifier() == identifier)
 				.try_fold(total, |sum, asset| {
 					asset
 						.amount()
@@ -181,29 +179,26 @@ impl<'a> TemplatePlan<'a> {
 }
 
 fn validate_bundle(bundle: &PrizeBundle<'_>) -> Result<(), TemplatePlanError> {
-	if bundle.quantity == 0 || bundle.weight == 0 {
-		return Err(TemplatePlanError::ZeroQuantityOrWeight);
+	if bundle.quantity == 0 {
+		return Err(TemplatePlanError::ZeroQuantity);
 	}
-
 	if bundle.assets.is_empty() || bundle.assets.len() > 4 {
 		return Err(TemplatePlanError::InvalidAssetCount);
 	}
 
 	for (index, asset) in bundle.assets.iter().enumerate() {
 		if asset.amount() == 0
-			|| asset.mint() == Some([0; 32])
-			|| asset.mint() == Some(WRAPPED_SOL_MINT)
+			|| asset.identifier() == Some([0; 32])
+			|| asset.identifier() == Some(WRAPPED_SOL_MINT)
 		{
 			return Err(TemplatePlanError::InvalidAsset);
 		}
-
-		if matches!(asset, PrizeAsset::Nft { .. }) && bundle.quantity != 1 {
-			return Err(TemplatePlanError::DuplicateNft);
+		if asset.is_unique() && bundle.quantity != 1 {
+			return Err(TemplatePlanError::DuplicateUniqueAsset);
 		}
-
 		if bundle.assets[..index]
 			.iter()
-			.any(|previous| previous.mint() == asset.mint())
+			.any(|previous| previous.identifier() == asset.identifier())
 		{
 			return Err(TemplatePlanError::DuplicateAsset);
 		}
@@ -218,23 +213,22 @@ mod tests {
 
 	#[test]
 	fn rejects_wrapped_sol_rewards_like_the_program() {
-		let assets = [PrizeAsset::Token {
+		let assets = [PrizeAsset::ClassicToken {
 			mint: WRAPPED_SOL_MINT,
 			amount: 1,
 		}];
 		let bundle = PrizeBundle {
 			quantity: 1,
-			weight: 1,
 			assets: &assets,
 		};
 		assert_eq!(
-			TemplatePlan::new(1, &[bundle]),
+			TemplatePlan::new(&[bundle]),
 			Err(TemplatePlanError::InvalidAsset)
 		);
 	}
 
 	#[test]
-	fn mixed_bundle_plan_totals_inventory_and_exact_odds() {
+	fn mixed_bundle_plan_totals_inventory_and_uniform_odds() {
 		let small = [PrizeAsset::Sol {
 			lamports: 100_000_000,
 		}];
@@ -242,41 +236,44 @@ mod tests {
 			PrizeAsset::Sol {
 				lamports: 1_000_000_000,
 			},
-			PrizeAsset::Nft { mint: [7; 32] },
+			PrizeAsset::CoreAsset { asset: [7; 32] },
 		];
 		let bundles = [
 			PrizeBundle {
 				quantity: 99,
-				weight: 1,
 				assets: &small,
 			},
 			PrizeBundle {
 				quantity: 1,
-				weight: 1,
 				assets: &jackpot,
 			},
 		];
-		let plan = TemplatePlan::new(100, &bundles).expect("plan");
+		let plan = TemplatePlan::new(&bundles).expect("plan");
 		assert_eq!(plan.odds(1), Some((1, 100)));
+		assert_eq!(plan.fixed_supply(), plan.total_bundles());
 		assert_eq!(plan.required_collateral(None), Ok(10_900_000_000));
 		assert_eq!(plan.required_collateral(Some([7; 32])), Ok(1));
 	}
 
 	#[test]
-	fn rejects_duplicate_nfts_and_overissuance() {
-		let nft = [PrizeAsset::Nft { mint: [7; 32] }];
+	fn rejects_duplicate_unique_assets_and_ticket_overflow() {
+		let nft = [PrizeAsset::CompressedNft { asset: [7; 32] }];
 		let bundle = PrizeBundle {
 			quantity: 1,
-			weight: 1,
 			assets: &nft,
 		};
 		assert_eq!(
-			TemplatePlan::new(2, &[bundle, bundle]),
-			Err(TemplatePlanError::DuplicateNft)
+			TemplatePlan::new(&[bundle, bundle]),
+			Err(TemplatePlanError::DuplicateUniqueAsset)
 		);
+		let sol = [PrizeAsset::Sol { lamports: 1 }];
+		let too_many = [PrizeBundle {
+			quantity: MAX_TOTAL_TICKETS + 1,
+			assets: &sol,
+		}];
 		assert_eq!(
-			TemplatePlan::new(2, &[bundle]),
-			Err(TemplatePlanError::InvalidSupply)
+			TemplatePlan::new(&too_many),
+			Err(TemplatePlanError::TicketLimitExceeded)
 		);
 	}
 }

@@ -11,21 +11,20 @@ void main() {
           PrizeBundle(
             label: 'SOL',
             quantity: BigInt.from(99),
-            weight: BigInt.one,
             assets: [PrizeAsset.sol(BigInt.from(100000000))],
           ),
           PrizeBundle(
             label: 'Jackpot',
             quantity: BigInt.one,
-            weight: BigInt.one,
             assets: [
-              PrizeAsset.nft(nft),
+              PrizeAsset.metadataNft(nft),
               PrizeAsset.sol(BigInt.from(1000000000)),
             ],
           ),
         ],
       );
-      expect(plan.maxSupply, BigInt.from(100));
+      expect(plan.totalBundles, BigInt.from(100));
+      expect(plan.fixedSupply, plan.totalBundles);
       expect(plan.probabilityPercent(1), 1);
       expect(plan.treasury[null], BigInt.from(10900000000));
       expect(plan.treasury[nft], BigInt.one);
@@ -38,8 +37,7 @@ void main() {
             PrizeBundle(
               label: 'NFT',
               quantity: BigInt.two,
-              weight: BigInt.one,
-              assets: [PrizeAsset.nft(nft)],
+              assets: [PrizeAsset.compressedNft(nft)],
             ),
           ],
         ),
@@ -54,7 +52,6 @@ void main() {
             PrizeBundle(
               label: 'SOL',
               quantity: BigInt.two,
-              weight: BigInt.one,
               assets: [PrizeAsset.sol((BigInt.one << 64) - BigInt.one)],
             ),
           ],
@@ -68,7 +65,6 @@ void main() {
       final bundle = PrizeBundle(
         label: 'SOL',
         quantity: BigInt.one,
-        weight: BigInt.one,
         assets: assets,
       );
       final bundles = [bundle];

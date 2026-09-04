@@ -19,7 +19,12 @@ test("local Surfpool control plane is labeled and rejects untrusted requests", {
 		reservation.close((error) => error ? reject(error) : resolve())
 	);
 	const child = spawn(process.execPath, ["tools/playground.mjs"], {
-		env: { ...process.env, LOOTBOX_PLAYGROUND_PORT: String(port) },
+		env: {
+			...process.env,
+			JUPITER_API_KEY: "",
+			DAS_RPC_URL: "",
+			LOOTBOX_PLAYGROUND_PORT: String(port),
+		},
 		stdio: ["ignore", "ignore", "pipe"],
 	});
 	let diagnostics = "";
@@ -85,6 +90,19 @@ test("local Surfpool control plane is labeled and rejects untrusted requests", {
 	);
 	assert.equal(
 		(await fetch(`${base}/proof?randomness=${config.programId}`)).status,
+		400,
+	);
+	const tokens = await (await fetch(`${base}/assets/tokens?q=BONK`)).json();
+	assert.equal(tokens.source, "fallback");
+	assert.equal(tokens.items[0].symbol, "BONK");
+	assert.equal(JSON.stringify(tokens).includes("API_KEY"), true);
+	const nfts = await (
+		await fetch(`${base}/assets/nfts?owner=${config.oracle.stats}&q=`)
+	).json();
+	assert.equal(nfts.source, "unavailable");
+	assert.deepEqual(nfts.items, []);
+	assert.equal(
+		(await fetch(`${base}/assets/nfts?owner=invalid&q=`)).status,
 		400,
 	);
 	assert.equal(

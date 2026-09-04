@@ -61,11 +61,11 @@ in
     '';
     "build:program".exec = ''
       set -euo pipefail
-      pina build --project programs/lootbox_program
+      RUST_LOG=error pina build --project programs/lootbox_program
     '';
     "build:test-programs".exec = ''
       set -euo pipefail
-      pina build --project tests/fixtures/mock_switchboard
+      RUST_LOG=error pina build --project tests/fixtures/mock_switchboard
     '';
     "generate:clients".exec = ''
       set -euo pipefail
@@ -104,17 +104,64 @@ in
     "lint:all".exec = ''
       set -euo pipefail
       pina lint --project programs/lootbox_program
-      cargo clippy --workspace --all-features --all-targets -- -D warnings
+      cargo clippy --workspace --all-features --all-targets --locked -- -D warnings
+      cargo clippy \
+        --manifest-path programs/lootbox_program/tests/surfpool/Cargo.toml \
+        --all-features \
+        --all-targets \
+        --locked \
+        -- \
+        -D warnings
+      cargo clippy \
+        --manifest-path tests/fixtures/mock_switchboard/Cargo.toml \
+        --all-features \
+        --all-targets \
+        --locked \
+        -- \
+        -D warnings
+      RUSTDOCFLAGS="-D warnings" \
+        cargo doc --workspace --all-features --no-deps --locked
       dprint check
       pnpm --dir sdks/typescript check
       pnpm --dir apps/web lint
-      (cd sdks/dart && dart analyze)
+      (cd sdks/dart && dart analyze --fatal-infos --fatal-warnings)
     '';
     "security:audit".exec = ''
       set -euo pipefail
       cargo audit --deny warnings
       cargo audit --deny warnings --file tests/fixtures/mock_switchboard/Cargo.lock
-      cargo deny check advisories bans sources
+      cargo audit \
+        --deny warnings \
+        --file programs/lootbox_program/tests/surfpool/Cargo.lock \
+        --ignore RUSTSEC-2020-0016 \
+        --ignore RUSTSEC-2021-0139 \
+        --ignore RUSTSEC-2021-0145 \
+        --ignore RUSTSEC-2022-0093 \
+        --ignore RUSTSEC-2024-0344 \
+        --ignore RUSTSEC-2024-0375 \
+        --ignore RUSTSEC-2024-0384 \
+        --ignore RUSTSEC-2024-0388 \
+        --ignore RUSTSEC-2024-0421 \
+        --ignore RUSTSEC-2024-0436 \
+        --ignore RUSTSEC-2025-0134 \
+        --ignore RUSTSEC-2025-0141 \
+        --ignore RUSTSEC-2025-0161 \
+        --ignore RUSTSEC-2025-0167 \
+        --ignore RUSTSEC-2026-0097 \
+        --ignore RUSTSEC-2026-0098 \
+        --ignore RUSTSEC-2026-0099 \
+        --ignore RUSTSEC-2026-0104 \
+        --ignore RUSTSEC-2026-0173 \
+        --ignore RUSTSEC-2026-0186 \
+        --ignore RUSTSEC-2026-0247 \
+        --ignore RUSTSEC-2026-0258
+      cargo deny check -D warnings advisories bans sources
+      cargo deny \
+        --manifest-path programs/lootbox_program/tests/surfpool/Cargo.toml \
+        --config programs/lootbox_program/tests/surfpool/deny.toml \
+        check \
+        -D warnings \
+        advisories bans sources
       pnpm audit --audit-level high
     '';
     "verify:all".exec = ''

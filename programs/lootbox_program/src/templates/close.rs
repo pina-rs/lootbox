@@ -43,7 +43,7 @@ impl<'a> ProcessAccountInfos<'a> for CloseTemplateOpeningAccounts<'a> {
 		self.oracle_program.assert_program(&state.oracle_program)?;
 		let opening = self.opening.as_account::<TemplateOpeningState>(&ID)?;
 
-		if opening.status != 3 {
+		if opening.status != 3 && opening.status != 4 {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
 

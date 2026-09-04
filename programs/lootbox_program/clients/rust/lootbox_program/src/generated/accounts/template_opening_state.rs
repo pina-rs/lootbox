@@ -20,9 +20,12 @@ pub struct TemplateOpeningState {
 	pub sequence: u64,
 	pub seed_slot: u64,
 	pub entropy: [u8; 32],
-	/// 0 committed, 1 verified, 2 allocated, 3 fully delivered.
+	/// Treasury version and bundle prefix fixed before the box is burned.
+	pub treasury_version: u64,
+	pub eligible_bundle_count: u32,
+	/// 0 committed, 1 verified, 2 allocated, 3 delivered, 4 forfeited.
 	pub status: u8,
-	pub selected_outcome: u8,
+	pub selected_bundle: u32,
 	pub claimed_mask: u8,
 	pub bump: u8,
 }

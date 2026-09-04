@@ -80,7 +80,6 @@ impl AddBundleInstructionData {
 pub struct AddBundleInstructionWire {
 	pub discriminator: u8,
 	pub quantity: u64,
-	pub weight: u64,
 	pub asset_count: u8,
 	pub bump: u8,
 }

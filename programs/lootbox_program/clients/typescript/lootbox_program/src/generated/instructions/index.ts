@@ -6,9 +6,14 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './activateBundle';
 export * from './addBundle';
 export * from './addOutcome';
 export * from './allocateTemplateOpen';
+export * from './cancelBundle';
+export * from './claimCompressedNftPrize';
+export * from './claimCoreAssetPrize';
+export * from './claimMetadataNftPrize';
 export * from './claimSolPrize';
 export * from './claimTokenPrize';
 export * from './closeOpening';
@@ -16,11 +21,19 @@ export * from './closeTemplateOpening';
 export * from './createLootbox';
 export * from './createTemplate';
 export * from './deposit';
+export * from './forfeitTemplateOpen';
 export * from './fulfillTemplateOpen';
+export * from './fundCompressedNftPrize';
+export * from './fundCoreAssetPrize';
+export * from './fundMetadataNftPrize';
 export * from './fundSolPrize';
 export * from './fundTokenPrize';
+export * from './lockTreasury';
 export * from './mintBoxes';
 export * from './mintTemplateBoxes';
+export * from './reclaimCompressedNftPrize';
+export * from './reclaimCoreAssetPrize';
+export * from './reclaimMetadataNftPrize';
 export * from './reclaimSolPrize';
 export * from './reclaimTokenPrize';
 export * from './refundOpen';

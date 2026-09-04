@@ -83,7 +83,6 @@ impl CreateTemplateInstructionData {
 pub struct CreateTemplateInstructionWire {
 	pub discriminator: u8,
 	pub id: u64,
-	pub max_supply: u64,
 	pub opens_at: i64,
 	pub oracle_program: solana_pubkey::Pubkey,
 	pub oracle_queue: solana_pubkey::Pubkey,

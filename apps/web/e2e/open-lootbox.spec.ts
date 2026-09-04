@@ -18,24 +18,54 @@ test("funds a real Surfpool treasury, gifts boxes, and delivers every bundle", a
 	await page.getByLabel("Template name", { exact: true }).fill(
 		`Browser ${test.info().project.name}`,
 	);
-	const copies = page.getByLabel("Copies", { exact: true });
-	await copies.nth(0).fill("1");
-	await copies.nth(1).fill("1");
-	await page.getByRole("button", { name: "Fund treasury & seal" }).click();
-	await expect(
-		page.getByText("Treasury funded and sealed. Mint your first gift below."),
-	).toBeVisible({ timeout: 60_000 });
-	await page.getByLabel("Boxes", { exact: true }).fill("3");
-	await page.getByRole("button", { name: "Mint a gift", exact: true }).click();
-	await expect(page.getByTestId("box-balance")).toHaveText("3", {
-		timeout: 20_000,
-	});
-	const recipient = address(
-		await page.getByLabel("Recipient address", { exact: true }).inputValue(),
-	);
 	const configResponse = await page.request.get("http://127.0.0.1:8898/config");
 	const config: { rpcUrl: string } = await configResponse.json();
 	const rpc = createSolanaRpc(config.rpcUrl);
+	const slot = await rpc.getSlot({ commitment: "processed" }).send();
+	const timestamp = await rpc.getBlockTime(slot).send();
+	if (timestamp === null) throw new Error("Chain time is unavailable");
+	const reveal = new Date(Number(timestamp + 45n * 60n) * 1000);
+	const localReveal = new Date(
+		reveal.getTime() - reveal.getTimezoneOffset() * 60_000,
+	).toISOString().slice(0, 16);
+	await page.getByLabel("Reveal date", { exact: true }).fill(
+		localReveal.slice(0, 10),
+	);
+	await page.getByLabel("Reveal time", { exact: true }).fill(
+		localReveal.slice(11),
+	);
+	const copies = page.getByLabel("Copies", { exact: true });
+	await copies.nth(0).fill("1");
+	await copies.nth(1).fill("1");
+	await page.getByRole("button", { name: "Fund & publish treasury" }).click();
+	await expect(
+		page.getByText(
+			"Treasury funded and published. Add prizes or lock its exact supply below.",
+		),
+	).toBeVisible({ timeout: 60_000 });
+	await page.getByRole("checkbox").check();
+	await page.getByRole("button", { name: "Mint 3 & lock treasury" }).click();
+	await expect(page.getByText(/exact box supply locked/)).toBeVisible({
+		timeout: 30_000,
+	});
+	await page.getByLabel("Boxes", { exact: true }).fill("3");
+	await page.getByRole("button", { name: "Send sealed boxes" }).click();
+	await expect(page.getByTestId("box-balance")).toHaveText("3", {
+		timeout: 20_000,
+	});
+	await expect(page.getByRole("heading", { name: "Market desk" }))
+		.toBeVisible();
+	await expect(
+		page.getByRole("button", { name: "Waiting for the reveal date" }),
+	)
+		.toBeDisabled();
+	await page.request.post("http://127.0.0.1:8898/time-travel", {
+		data: { timestampSeconds: Math.floor(reveal.getTime() / 1000) + 2 },
+	});
+	await page.reload();
+	const recipient = address(
+		await page.getByLabel("Recipient address", { exact: true }).inputValue(),
+	);
 	const before =
 		(await rpc.getBalance(recipient, { commitment: "processed" }).send()).value;
 	const prizes: string[] = [];
@@ -102,8 +132,8 @@ test("funds a real Surfpool treasury, gifts boxes, and delivers every bundle", a
 		).getBigUint64(64, true)
 	);
 	expect(amounts.sort((a, b) => a < b ? -1 : 1)).toEqual([1n, 1n, 100n]);
-	await expect(page.getByRole("button", { name: "Mint a gift", exact: true }))
-		.toBeDisabled();
+	await expect(page.getByText("Mint authority revoked", { exact: true }))
+		.toBeVisible();
 	await page.reload();
 	await expect(page.getByTestId("box-balance")).toHaveText("0");
 	await expect(page.getByRole("heading", { name: "Cargo secured." }))
@@ -125,26 +155,34 @@ test("resumes partially funded drafts and transfers a time-locked gift", async (
 	await page.getByLabel("Template name", { exact: true }).fill(
 		`Time capsule ${test.info().project.name}`,
 	);
-	const unlock = new Date(Date.now() + 3_600_000);
+	const chainConfigResponse = await page.request.get(
+		"http://127.0.0.1:8898/config",
+	);
+	const chainConfig: { rpcUrl: string } = await chainConfigResponse.json();
+	const chainRpc = createSolanaRpc(chainConfig.rpcUrl);
+	const chainSlot = await chainRpc.getSlot({ commitment: "processed" }).send();
+	const chainTimestamp = await chainRpc.getBlockTime(chainSlot).send();
+	if (chainTimestamp === null) throw new Error("Chain time is unavailable");
+	const unlock = new Date(Number(chainTimestamp + 4n * 3_600n) * 1000);
 	// datetime-local uses browser-local wall time, not a UTC-suffixed string.
 	const localDate = new Date(
 		unlock.getTime() - unlock.getTimezoneOffset() * 60_000,
 	).toISOString().slice(0, 16);
-	await page.getByLabel(/Earliest claim date/).fill(localDate);
-	const prizeTypes = page.getByRole("combobox", { name: "Prize", exact: true });
-	await expect(prizeTypes).toHaveCount(3);
-	for (let index = 0; index < 3; index++) {
-		await prizeTypes.nth(index).selectOption("sol");
-	}
-	for (
-		const quantity of await page.getByLabel("Copies", { exact: true }).all()
-	) await quantity.fill("1");
-	for (
-		const amount of await page.getByLabel("SOL / win", { exact: true }).all()
-	) await amount.fill("40");
-	await page.getByRole("button", { name: "Fund treasury & seal" }).click();
+	await page.getByLabel("Reveal date", { exact: true }).fill(
+		localDate.slice(0, 10),
+	);
+	await page.getByLabel("Reveal time", { exact: true }).fill(
+		localDate.slice(11),
+	);
+	const copies = page.getByLabel("Copies", { exact: true });
+	await copies.nth(0).fill("1");
+	await copies.nth(1).fill("1");
+	const solAmounts = page.getByLabel("SOL amount per win", { exact: true });
+	await solAmounts.nth(0).fill("40");
+	await solAmounts.nth(1).fill("70");
+	await page.getByRole("button", { name: "Fund & publish treasury" }).click();
 	await expect(page.getByRole("alert")).toBeVisible({ timeout: 40_000 });
-	await expect(page.getByRole("button", { name: "Resume funding & seal" }))
+	await expect(page.getByRole("button", { name: "Resume funding" }))
 		.toBeEnabled();
 	await page.reload();
 	await expect(page.getByLabel("Template name", { exact: true }))
@@ -153,14 +191,19 @@ test("resumes partially funded drafts and transfers a time-locked gift", async (
 	await expect(
 		page.getByText("Creator reset to 100 test SOL. Resume funding when ready."),
 	).toBeVisible();
-	await page.getByRole("button", { name: "Resume funding & seal" }).click();
+	await page.getByRole("button", { name: "Resume funding" }).click();
 	await expect(
-		page.getByText("Treasury funded and sealed. Mint your first gift below."),
+		page.getByText(
+			"Treasury funded and published. Add prizes or lock its exact supply below.",
+		),
 	).toBeVisible({ timeout: 40_000 });
-	await page.getByRole("button", { name: "Mint a gift", exact: true }).click();
+	await page.getByRole("checkbox").check();
+	await page.getByRole("button", { name: "Mint 3 & lock treasury" }).click();
+	await page.getByLabel("Boxes", { exact: true }).fill("1");
+	await page.getByRole("button", { name: "Send sealed boxes" }).click();
 	await expect(page.getByTestId("box-balance")).toHaveText("1");
 	await expect(
-		page.getByRole("button", { name: "Waiting for the unlock date" }),
+		page.getByRole("button", { name: "Waiting for the reveal date" }),
 	).toBeDisabled();
 	const response = await page.request.get("http://127.0.0.1:8898/config");
 	const config: { rpcUrl: string } = await response.json();
@@ -177,11 +220,15 @@ test("resumes partially funded drafts and transfers a time-locked gift", async (
 		getBase64Encoder().encode(account.value.data[0]).slice(1, 33),
 	);
 	await page.getByLabel("Recipient address", { exact: true }).fill(creator);
-	await page.getByText("Transfer gifts you already hold", { exact: true })
+	await page.getByText("Transfer boxes from the recipient wallet", {
+		exact: true,
+	})
 		.click();
-	await page.getByRole("button", { name: "Transfer to address above" }).click();
+	await page.getByRole("button", { name: "Transfer recipient boxes" }).click();
 	await expect(page.getByTestId("box-balance")).toHaveText("0");
-	await expect(page.getByText("Sealed gifts transferred", { exact: true }))
+	await expect(
+		page.getByText("Whole sealed boxes transferred", { exact: true }),
+	)
 		.toBeVisible();
 });
 
@@ -195,19 +242,23 @@ test("explains creator validation beside the affected fields", async ({ page }) 
 		.toHaveAttribute("aria-invalid", "true");
 	await expect(page.getByLabel("Template name", { exact: true }))
 		.toHaveAccessibleDescription(/32 UTF-8 bytes/);
-	await page.getByLabel("SOL / win", { exact: true }).fill("invalid");
-	await expect(page.getByLabel("SOL / win", { exact: true }))
+	await page.getByLabel("SOL amount per win", { exact: true }).first().fill(
+		"invalid",
+	);
+	await expect(page.getByLabel("SOL amount per win", { exact: true }).first())
 		.toHaveAccessibleDescription(/positive decimal amount/);
-	await page.getByLabel("Weight", { exact: true }).nth(0).fill("1001");
-	await expect(page.getByLabel("Weight", { exact: true }).nth(0))
-		.toHaveAccessibleDescription(/1 to 1,000/);
-	await expect(page.getByRole("button", { name: "Fund treasury & seal" }))
+	await page.getByLabel("Copies", { exact: true }).nth(0).fill("1000001");
+	await expect(page.getByLabel("Copies", { exact: true }).nth(0))
+		.toHaveAccessibleDescription(/1 to 1,000,000/);
+	await expect(page.getByRole("button", { name: "Fund & publish treasury" }))
 		.toBeDisabled();
 	await expect(page.getByText(/Funding is unavailable/)).toBeVisible();
 	await page.getByLabel("Template name", { exact: true }).fill("Valid draft");
-	await page.getByLabel("SOL / win", { exact: true }).fill("0.1");
-	await page.getByLabel("Weight", { exact: true }).nth(0).fill("1");
-	await expect(page.getByRole("button", { name: "Fund treasury & seal" }))
+	await page.getByLabel("SOL amount per win", { exact: true }).first().fill(
+		"0.1",
+	);
+	await page.getByLabel("Copies", { exact: true }).nth(0).fill("8");
+	await expect(page.getByRole("button", { name: "Fund & publish treasury" }))
 		.toBeEnabled();
 	expect(
 		await page.evaluate(() =>

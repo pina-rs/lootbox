@@ -21,7 +21,7 @@ Future<(Address, int)> findBundlePda({
   final seedValues = <Object>[
     'bundle',
     getAddressEncoder().encode(seeds.template),
-    getU8Encoder().encode(seeds.index),
+    getU32Encoder().encode(seeds.index),
   ];
 
   return getProgramDerivedAddress(

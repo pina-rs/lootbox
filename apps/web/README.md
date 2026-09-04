@@ -1,6 +1,6 @@
 # Lootbox Playground
 
-A real browser-to-Surfpool workspace for reusable treasury templates, transferable gifts, and animated openings. The frontend uses `LootboxClient` over the generated Pina/Codama ABI. No reward balance or winning outcome is simulated in React.
+A browser-to-Surfpool workshop for fixed-supply reward treasuries, transferable whole boxes, pre-reveal market analysis, and animated openings. The React app sends real local transactions through `LootboxClient`; it does not fabricate balances or outcomes.
 
 ## Start locally
 
@@ -14,40 +14,61 @@ build:test-programs
 pnpm playground:rpc
 ```
 
-Leave that terminal running. In a second terminal:
+Leave that process running. In a second terminal:
 
 ```sh
 devenv shell -- pnpm --dir apps/web dev
 ```
 
-Open `http://127.0.0.1:5173`. The control plane must run on its default port, 8898. Allowed browser ports are 5173 and 4173. The UI does not fall back to fake data if the local service is unavailable.
+Open `http://127.0.0.1:5173`. The control plane defaults to port 8898. The UI fails visibly if the service is missing; it never swaps in fake client state.
 
-## Try the full journey
+For live catalog results, set these only on the server process:
 
-1. Choose **Workshop**. The default drop contains eight 0.1 SOL bundles, four 100-token bundles, and one bundle containing 1 SOL plus two unique NFTs. Equal per-copy weights produce initial odds of approximately 61.54%, 30.77%, and 7.69%.
-2. Edit the name, optional metadata URI, optional earliest claim date, quantities, amounts, or weights. The preview totals 1.8 SOL, 400 test tokens, and two NFTs for the default drop. Fees and account rent are additional.
-3. Choose **Fund treasury & seal**. The browser creates fixed-supply test prizes and an immutable Token-2022 box mint, funds the program's escrow accounts, and seals the template. This requires several transactions.
-4. Under **Send a little suspense**, leave the prefilled recipient test wallet or enter another local address, choose a count, and **Mint a gift**. Minting stops when capacity is exhausted or a prize tier has been depleted.
-5. Choose **Open a gift**. Burning and the oracle commitment are atomic. The local proof is then verified by the test oracle, and the prize allocation is recorded in FIFO order.
-6. Choose **Reveal your winnings**, then **Claim your winnings**. The animated reveal does not decide the outcome. Claims deliver every recorded asset to the recipient's wallet; the manifest updates as prizes leave inventory.
-7. Expand **Recipient test wallet**, **Inspect assets**, or **Transaction trail** to inspect addresses and receipts. The default mint is an interchangeable zero-decimal Token-2022 token, not an individually unique NFT.
+```sh
+export JUPITER_API_KEY="your-key"
+export DAS_RPC_URL="https://your-das-rpc.example"
+pnpm playground:rpc
+```
 
-For a short deterministic inventory test, set the first two bundle quantities to one, mint all three boxes before opening, then open all three. Every bundle will be won exactly once, in a random order.
+The browser never receives either credential. Without a Jupiter key, the token picker shows a small labeled fallback list. Without DAS, wallet assets show an unavailable state and manual entry remains usable.
 
-## Recovery and time locks
+## Creator journey
 
-- A draft saves its stable id and test signers before the first transaction. If funding fails, reload and choose **Resume funding & seal**. Completed assets are read from chain and not funded twice. **Reset creator test SOL** restores the creator to 100 test SOL so an interrupted deposit can resume.
-- If proof transport fails after the burn, **Resume opening** uses the existing receipt. Reloading after allocation restores **Reveal your winnings**. A failed claim retains its fixed allocation and per-asset delivery mask.
-- Date inputs use the browser's local timezone; on-chain enforcement uses Unix seconds from Solana's Clock. A box can be transferred before its unlock date. Enter a destination in the dispatch form and expand **Transfer gifts you already hold** to transfer from the recipient test wallet.
-- Do not use time travel across epochs to certify liveness: Surfpool 1.5 has a documented Clock-slot limitation. A missing or expired production oracle proof is **not** solved by the local retry flow.
+1. Open **Workshop**. The default manifest contains eight 0.1 SOL tickets, four 100-token tickets, and one bundle with 1 SOL plus two one-of-one test NFTs. Its initial odds are 61.54%, 30.77%, and 7.69%.
+2. Set the name, optional permanent metadata URI, and future reveal date. The date control separates calendar, time, and browser timezone, shows the pre-reveal trading window, and includes 24-hour, three-day, and next-Friday shortcuts.
+3. Compose one to 256 prize bundles. A bundle has one to four assets and a copy count; every copy is one equal ticket. There are no weights. Bundles containing a unique NFT have exactly one copy.
+4. Use **Add asset to bundle** to search Jupiter Tokens V2, inspect the creator wallet through Metaplex DAS, choose native/local fixtures, or enter an address manually. Source, verification, asset standard, and exact ID remain visible.
+5. Choose **Fund & publish treasury**. Each bundle is staged, fully funded, and activated in sequence. Activation alone changes odds/version/capacity. Multiple creator-signed transactions are expected.
+6. If funding is interrupted, reload and **Resume funding**. Confirmed steps are read from chain. **Reclaim staged draft** returns assets in only the unpublished tail and closes it; already active history stays immutable.
+7. Select a creator-owned live treasury and choose **Add prizes to this treasury**. The console shows its version, published bundles, remaining tickets, and pending openings. New fully funded bundles publish as later versions.
+8. Review the exact equation between funded bundle copies and box supply, accept the irreversible-lock disclosure, then **Mint & lock treasury**. Every missing box is minted to the creator and mint authority is revoked in that transaction. No additions or openings can precede this lock.
+9. Distribute whole boxes from the creator wallet. The market desk accepts explicit token/NFT valuations, calculates remaining EV, previews integer-only constant-product trades, and exports a checked Raydium CPMM deployment manifest. It does not submit a mainnet transaction from the local test wallet.
+
+Catalog choices are mirrored into disposable local assets so the sandbox never tries to transfer mainnet property. Production SDK callers use the selected classic SPL, safe Token-2022, Token Metadata/pNFT, Core, or compressed-NFT adapter with live ownership/proof accounts.
+
+## Recipient journey
+
+1. Select a treasury. The manifest shows fixed on-chain inventory, current odds, bundle types, bundle copies, exact supply, reveal time, box balance, and pending queue.
+2. Before reveal, transfer or trade the identical zero-decimal box token. After reveal, **Open a gift**. One box is burned atomically with a fresh oracle commitment, and the receipt snapshots the locked treasury version and eligible bundle prefix.
+3. Proof verification and FIFO allocation record the prize independently of animation. Reloading or **Resume opening** continues from the receipt; it never samples again.
+4. **Reveal your winnings**, then claim. Every asset is delivered to the receipt recipient and tracked with its own claim bit.
+5. **Close receipt & recover rent** after all assets arrive.
+
+No bundle can be added after the market lock. A depleted tier becomes 0%; each win updates the odds and remaining EV of every unopened box.
+
+## Recovery and safety
+
+- A funding draft persists its template ID, box-mint signer, reward signers, append start index, and input before the first transaction. Resume compares those values with chain state and fails closed on mismatches.
+- A failed claim retries the same allocated asset. It cannot reroll or redirect.
+- After 300 unrevealed slots, only the FIFO-head recipient may **Forfeit & unblock queue**. The burned box is not returned and no prize is consumed. This is intentional: returning it would let somebody inspect an unfavorable off-chain proof and reroll.
+- The creator pays treasury changes, exact issuance, and locking. The box owner pays burn/open in this UI. Program verification, allocation, and claim calls remain permissionless for a sponsored relayer.
+- Transaction progress, signatures, fees/account-rent context, locked actions, validation errors, API degradation, and local-only warnings are visible in the interface.
 
 ## Test-only boundary
 
-The browser creates two disposable wallets, creator and recipient, and stores their seeds on this origin in localStorage. Never import real keys or fund these wallets on a real network. Seeds are not encrypted. A new service instance creates a new namespace; restarting Surfpool destroys its old test state. Clearing browser storage loses saved wallet/draft access.
+The app accepts only loopback origins/RPCs, expected program IDs, and the control plane's test marker. It creates two disposable browser wallets and stores their unencrypted seeds in origin-scoped localStorage. Never import real keys or fund those addresses on a real network. Restarting Surfpool destroys its old chain state; clearing browser storage loses saved local signers.
 
-The UI refuses remote RPCs and mismatched program IDs. All assets and oracle proofs are local test fixtures. It supports SOL, newly created classic test tokens, and basic one-of-one NFTs; it does not import arbitrary NFT standards, connect production wallets, or provide a public hosted backend.
-
-Probabilistic undercollateralization remains an explicit next reserve policy. This UI currently enforces only finite full backing; it does not pretend a percentage buffer guarantees payouts. See [v2 economics and remaining scope](../../docs/treasury-templates.md) and [security reasoning](../../docs/security-templates.md).
+The oracle endpoint is an ABI emulator and does not validate production enclave signatures. Jupiter/DAS results are discovery metadata, not endorsements. This build is not approved for real-value deposits.
 
 ## Verification
 
@@ -55,8 +76,8 @@ After building both SBF programs:
 
 ```sh
 devenv shell -- pnpm --dir apps/web test
-devenv shell -- pnpm --dir apps/web test:e2e
 devenv shell -- pnpm --dir apps/web build
+devenv shell -- pnpm --dir apps/web test:e2e
 ```
 
-Playwright starts Vite and the local control plane when needed. Tests cover desktop and Pixel 7: all mixed prizes reaching real RPC wallet balances, oracle transport failure/reload recovery, partially funded draft resumption, pre-unlock transfers, and offline state. The mobile project also respects reduced-motion preferences. The default interaction retains keyboard focus rings, live status/error announcements, and a single crate-centered opening/reveal animation.
+Playwright covers desktop and Pixel-sized layouts, mixed prize delivery to real local balances, reload/recovery, partial funding, time locks, transfers, offline state, and reduced motion. See the [v2 protocol](../../docs/treasury-templates.md) and [security notes](../../docs/security-templates.md).

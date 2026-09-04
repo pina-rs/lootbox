@@ -4,6 +4,7 @@ library;
 import 'dart:typed_data';
 
 export 'package:lootbox_program_generated/lootbox_program.dart';
+export 'src/templates.dart';
 
 const int maxOutcomes = 8;
 const List<int> switchboardRevealDiscriminator = [

@@ -59,6 +59,26 @@ const int lootboxProgramErrorInvalidRecipient = 0xc; // 12
 /// Message: "Minting would exceed the configured maximum supply."
 const int lootboxProgramErrorSupplyExceeded = 0xd; // 13
 
+/// The template's earliest opening timestamp has not arrived.
+/// Message: "The template's earliest opening timestamp has not arrived."
+const int lootboxProgramErrorClaimLocked = 0xe; // 14
+
+/// An earlier opening must be allocated first.
+/// Message: "An earlier opening must be allocated first."
+const int lootboxProgramErrorAllocationOutOfOrder = 0xf; // 15
+
+/// At least one advertised prize has been exhausted.
+/// Message: "At least one advertised prize has been exhausted."
+const int lootboxProgramErrorPrizeExhausted = 0x10; // 16
+
+/// The asset, quantity, or escrow does not match the immutable prize.
+/// Message: "The asset, quantity, or escrow does not match the immutable prize."
+const int lootboxProgramErrorInvalidPrize = 0x11; // 17
+
+/// This asset has already been delivered for this opening.
+/// Message: "This asset has already been delivered for this opening."
+const int lootboxProgramErrorPrizeAlreadyClaimed = 0x12; // 18
+
 /// Map of error codes to human-readable messages.
 const Map<int, String> _lootboxProgramErrorMessages = {
   lootboxProgramErrorUnauthorized:
@@ -87,6 +107,16 @@ const Map<int, String> _lootboxProgramErrorMessages = {
       'The supplied recipient does not match the receipt-bound recipient.',
   lootboxProgramErrorSupplyExceeded:
       'Minting would exceed the configured maximum supply.',
+  lootboxProgramErrorClaimLocked:
+      'The template\'s earliest opening timestamp has not arrived.',
+  lootboxProgramErrorAllocationOutOfOrder:
+      'An earlier opening must be allocated first.',
+  lootboxProgramErrorPrizeExhausted:
+      'At least one advertised prize has been exhausted.',
+  lootboxProgramErrorInvalidPrize:
+      'The asset, quantity, or escrow does not match the immutable prize.',
+  lootboxProgramErrorPrizeAlreadyClaimed:
+      'This asset has already been delivered for this opening.',
 };
 
 /// Get the error message for a LootboxProgram program error code.

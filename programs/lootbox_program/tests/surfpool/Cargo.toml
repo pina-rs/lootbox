@@ -11,7 +11,10 @@ publish = false
 [dependencies]
 pina_test = "0.12.2"
 program_under_test = { package = "lootbox_program", path = "../.." }
+solana-commitment-config = "=3.1.1"
 solana-message = "=4.4.1"
 solana-rent = "=4.3.0"
 solana-transaction = "=4.1.6"
+spl-token-2022-interface = "=3.1.1"
+spl-token-metadata-interface = "=1.0.1"
 surfpool-sdk = "=1.5.0"

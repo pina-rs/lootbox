@@ -4,6 +4,7 @@
 	"type": "module",
 	"packageManager": "pnpm@10.17.1",
 	"scripts": {
+		"playground:rpc": "node tools/playground.mjs",
 		"generate": "generate:clients",
 		"build": "pnpm --recursive --if-present build",
 		"check": "pnpm --recursive --if-present check",
@@ -13,5 +14,8 @@
 		"@codama/renderers-js": "^2.4.0",
 		"codama": "^1.10.2",
 		"codama-renderers-dart": "0.5.1"
+	},
+	"devDependencies": {
+		"@solana/surfpool": "1.5.0"
 	}
 }

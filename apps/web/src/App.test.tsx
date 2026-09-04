@@ -1,46 +1,35 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
+vi.mock("./lootbox/playground.js", async (original) => ({
+	...await original<typeof import("./lootbox/playground.js")>(),
+	connectPlayground: vi.fn().mockRejectedValue(
+		new Error("Local Surfpool is not running"),
+	),
+}));
 import App from "./App.js";
 
 describe("lootbox playground", () => {
-	beforeEach(() => vi.useFakeTimers());
-	afterEach(() => vi.useRealTimers());
-
-	it("burns a box, reveals a deterministic reward, and redeems it", async () => {
+	it("does not pretend to be connected when the RPC is unavailable", async () => {
 		render(<App />);
-		await act(async () => vi.advanceTimersByTimeAsync(900));
-
-		fireEvent.click(screen.getByRole("button", { name: /crack the seal/i }));
-		expect(screen.getByTestId("lootbox-machine")).toHaveAttribute(
-			"data-phase",
-			"commit",
+		expect(await screen.findByRole("alert")).toHaveTextContent(
+			"Local Surfpool is not running",
 		);
-
-		await act(async () => vi.advanceTimersByTimeAsync(600));
-		expect(screen.getByTestId("inventory-count")).toHaveTextContent("2");
-		expect(screen.getByTestId("lootbox-machine")).toHaveAttribute(
-			"data-phase",
-			"burn",
-		);
-
-		await act(async () => vi.advanceTimersByTimeAsync(1_700));
-		expect(screen.getByTestId("reward-card")).toHaveTextContent("Solar Crown");
-		expect(screen.getByTestId("reward-card")).toHaveTextContent("0.050 SOL");
-
-		fireEvent.click(screen.getByRole("button", { name: /redeem reward/i }));
-		expect(screen.getByTestId("wallet-balance")).toHaveTextContent("0.050 SOL");
-		expect(screen.getByText("REDEMPTION COMPLETE")).toBeVisible();
+		expect(screen.getByRole("button", { name: "Build your first drop" }))
+			.toBeDisabled();
+		expect(screen.getByRole("button", { name: "Retry connection" }))
+			.toBeEnabled();
 	});
-
-	it("exposes the protocol guarantees and exact reward odds", async () => {
+	it("keeps probabilistic backing and production risks visible", async () => {
 		render(<App />);
-		await act(async () => vi.advanceTimersByTimeAsync(900));
-
-		expect(screen.getByText("62%")).toBeVisible();
-		expect(screen.getByText("28%")).toBeVisible();
-		expect(screen.getByText("10%")).toBeVisible();
-		expect(screen.getByText("Burn before reveal")).toBeVisible();
-		expect(screen.getByText("Fully collateralized")).toBeVisible();
+		await screen.findByRole("alert");
+		fireEvent.click(screen.getByRole("button", { name: "How it works" }));
+		expect(
+			screen.getByRole("heading", {
+				name: "Probabilistic backing stays in scope.",
+			}),
+		).toBeVisible();
+		expect(screen.getByText(/A stalled first-in-line commitment/))
+			.toBeVisible();
 	});
 });

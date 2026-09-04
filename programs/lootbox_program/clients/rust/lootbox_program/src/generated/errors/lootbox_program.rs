@@ -69,6 +69,26 @@ pub enum LootboxProgramError {
 	/// 13 - Minting would exceed the configured maximum supply.
 	#[error("Minting would exceed the configured maximum supply.")]
 	SupplyExceeded = 0xD,
+	/// The template's earliest opening timestamp has not arrived.
+	/// 14 - The template's earliest opening timestamp has not arrived.
+	#[error("The template's earliest opening timestamp has not arrived.")]
+	ClaimLocked = 0xE,
+	/// An earlier opening must be allocated first.
+	/// 15 - An earlier opening must be allocated first.
+	#[error("An earlier opening must be allocated first.")]
+	AllocationOutOfOrder = 0xF,
+	/// At least one advertised prize has been exhausted.
+	/// 16 - At least one advertised prize has been exhausted.
+	#[error("At least one advertised prize has been exhausted.")]
+	PrizeExhausted = 0x10,
+	/// The asset, quantity, or escrow does not match the immutable prize.
+	/// 17 - The asset, quantity, or escrow does not match the immutable prize.
+	#[error("The asset, quantity, or escrow does not match the immutable prize.")]
+	InvalidPrize = 0x11,
+	/// This asset has already been delivered for this opening.
+	/// 18 - This asset has already been delivered for this opening.
+	#[error("This asset has already been delivered for this opening.")]
+	PrizeAlreadyClaimed = 0x12,
 }
 
 impl From<LootboxProgramError> for solana_program_error::ProgramError {

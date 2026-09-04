@@ -1,0 +1,386 @@
+{
+	"schemaVersion": 2,
+	"generatedAt": "2026-09-04T07:45:36Z",
+	"title": "Design System: Lootbox by Pina",
+	"extensions": {
+		"colorMeta": {
+			"ink": {
+				"role": "neutral",
+				"displayName": "Night Metal",
+				"tonalRamp": [
+					"oklch(15% 0.0039 164.47)",
+					"oklch(26% 0.0039 164.47)",
+					"oklch(38% 0.0039 164.47)",
+					"oklch(49% 0.0039 164.47)",
+					"oklch(61% 0.0039 164.47)",
+					"oklch(72% 0.0039 164.47)",
+					"oklch(84% 0.0039 164.47)",
+					"oklch(95% 0.0039 164.47)"
+				]
+			},
+			"paper": {
+				"role": "neutral",
+				"displayName": "Warm Paper",
+				"tonalRamp": [
+					"oklch(15% 0.0241 96.57)",
+					"oklch(26% 0.0241 96.57)",
+					"oklch(38% 0.0241 96.57)",
+					"oklch(49% 0.0241 96.57)",
+					"oklch(61% 0.0241 96.57)",
+					"oklch(72% 0.0241 96.57)",
+					"oklch(84% 0.0241 96.57)",
+					"oklch(95% 0.0241 96.57)"
+				]
+			},
+			"muted": {
+				"role": "neutral",
+				"displayName": "Sage Gray",
+				"tonalRamp": [
+					"oklch(15% 0.0168 139.44)",
+					"oklch(26% 0.0168 139.44)",
+					"oklch(38% 0.0168 139.44)",
+					"oklch(49% 0.0168 139.44)",
+					"oklch(61% 0.0168 139.44)",
+					"oklch(72% 0.0168 139.44)",
+					"oklch(84% 0.0168 139.44)",
+					"oklch(95% 0.0168 139.44)"
+				]
+			},
+			"line": {
+				"role": "neutral",
+				"displayName": "Panel Seam",
+				"tonalRamp": [
+					"oklch(15% 0.0090 145.35)",
+					"oklch(26% 0.0090 145.35)",
+					"oklch(38% 0.0090 145.35)",
+					"oklch(49% 0.0090 145.35)",
+					"oklch(61% 0.0090 145.35)",
+					"oklch(72% 0.0090 145.35)",
+					"oklch(84% 0.0090 145.35)",
+					"oklch(95% 0.0090 145.35)"
+				]
+			},
+			"lime": {
+				"role": "primary",
+				"displayName": "Acid Lime",
+				"tonalRamp": [
+					"oklch(15% 0.2115 124.72)",
+					"oklch(26% 0.2115 124.72)",
+					"oklch(38% 0.2115 124.72)",
+					"oklch(49% 0.2115 124.72)",
+					"oklch(61% 0.2115 124.72)",
+					"oklch(72% 0.2115 124.72)",
+					"oklch(84% 0.2115 124.72)",
+					"oklch(95% 0.2115 124.72)"
+				]
+			},
+			"lime-hover": {
+				"role": "primary",
+				"displayName": "Lit Lime",
+				"tonalRamp": [
+					"oklch(15% 0.1467 123.08)",
+					"oklch(26% 0.1467 123.08)",
+					"oklch(38% 0.1467 123.08)",
+					"oklch(49% 0.1467 123.08)",
+					"oklch(61% 0.1467 123.08)",
+					"oklch(72% 0.1467 123.08)",
+					"oklch(84% 0.1467 123.08)",
+					"oklch(95% 0.1467 123.08)"
+				]
+			},
+			"orange": {
+				"role": "secondary",
+				"displayName": "Seal Orange",
+				"tonalRamp": [
+					"oklch(15% 0.2054 34.61)",
+					"oklch(26% 0.2054 34.61)",
+					"oklch(38% 0.2054 34.61)",
+					"oklch(49% 0.2054 34.61)",
+					"oklch(61% 0.2054 34.61)",
+					"oklch(72% 0.2054 34.61)",
+					"oklch(84% 0.2054 34.61)",
+					"oklch(95% 0.2054 34.61)"
+				]
+			},
+			"cyan": {
+				"role": "tertiary",
+				"displayName": "Signal Cyan",
+				"tonalRamp": [
+					"oklch(15% 0.1332 208.31)",
+					"oklch(26% 0.1332 208.31)",
+					"oklch(38% 0.1332 208.31)",
+					"oklch(49% 0.1332 208.31)",
+					"oklch(61% 0.1332 208.31)",
+					"oklch(72% 0.1332 208.31)",
+					"oklch(84% 0.1332 208.31)",
+					"oklch(95% 0.1332 208.31)"
+				]
+			},
+			"field-surface": {
+				"role": "neutral",
+				"displayName": "Recessed Field",
+				"tonalRamp": [
+					"oklch(15% 0.0178 137.92)",
+					"oklch(26% 0.0178 137.92)",
+					"oklch(38% 0.0178 137.92)",
+					"oklch(49% 0.0178 137.92)",
+					"oklch(61% 0.0178 137.92)",
+					"oklch(72% 0.0178 137.92)",
+					"oklch(84% 0.0178 137.92)",
+					"oklch(95% 0.0178 137.92)"
+				]
+			},
+			"field-border": {
+				"role": "neutral",
+				"displayName": "Field Edge",
+				"tonalRamp": [
+					"oklch(15% 0.0249 131.79)",
+					"oklch(26% 0.0249 131.79)",
+					"oklch(38% 0.0249 131.79)",
+					"oklch(49% 0.0249 131.79)",
+					"oklch(61% 0.0249 131.79)",
+					"oklch(72% 0.0249 131.79)",
+					"oklch(84% 0.0249 131.79)",
+					"oklch(95% 0.0249 131.79)"
+				]
+			},
+			"field-error": {
+				"role": "secondary",
+				"displayName": "Soft Warning",
+				"tonalRamp": [
+					"oklch(15% 0.0750 40.14)",
+					"oklch(26% 0.0750 40.14)",
+					"oklch(38% 0.0750 40.14)",
+					"oklch(49% 0.0750 40.14)",
+					"oklch(61% 0.0750 40.14)",
+					"oklch(72% 0.0750 40.14)",
+					"oklch(84% 0.0750 40.14)",
+					"oklch(95% 0.0750 40.14)"
+				]
+			},
+			"invalid-border": {
+				"role": "secondary",
+				"displayName": "Warning Edge",
+				"tonalRamp": [
+					"oklch(15% 0.1132 39.18)",
+					"oklch(26% 0.1132 39.18)",
+					"oklch(38% 0.1132 39.18)",
+					"oklch(49% 0.1132 39.18)",
+					"oklch(61% 0.1132 39.18)",
+					"oklch(72% 0.1132 39.18)",
+					"oklch(84% 0.1132 39.18)",
+					"oklch(95% 0.1132 39.18)"
+				]
+			}
+		},
+		"typographyMeta": {
+			"display": {
+				"displayName": "Display",
+				"purpose": "Workspace and guide headings; fixed at 31px under the small breakpoint."
+			},
+			"title": {
+				"displayName": "Workbench Title",
+				"purpose": "Opening drawer, prize manifest, and funding-summary headings."
+			},
+			"body": {
+				"displayName": "Reading Body",
+				"purpose": "Guide paragraphs; operational supporting copy uses a more compact role-specific range."
+			},
+			"label": {
+				"displayName": "Field Label",
+				"purpose": "Operating labels and quiet actions."
+			},
+			"input": {
+				"displayName": "Field Value",
+				"purpose": "Editable input and select values."
+			},
+			"action": {
+				"displayName": "Primary Action",
+				"purpose": "The next available workbench action."
+			}
+		},
+		"shadows": [
+			{
+				"name": "crate-body-construction",
+				"value": "inset 0 0 0 2px #627062, 12px 16px 0 #050605",
+				"purpose": "Illustrated body edging and physical depth; not a container elevation token."
+			},
+			{
+				"name": "crate-lid-construction",
+				"value": "inset 0 0 0 2px #687668, 12px 10px 0 #050605",
+				"purpose": "Illustrated lid edging and physical depth."
+			},
+			{
+				"name": "crate-core-light",
+				"value": "0 0 20px var(--lime), 0 0 70px #c9ff4388",
+				"purpose": "Light emitted by the revealed crate core."
+			},
+			{
+				"name": "navigation-current",
+				"value": "inset 0 -2px var(--lime)",
+				"purpose": "Current-destination baseline; no floating navigation surface."
+			}
+		],
+		"motion": [
+			{
+				"name": "receive-crate",
+				"value": "850ms cubic-bezier(.16, 1, .3, 1) both",
+				"purpose": "A newly received crate settles from a slight lift and rotation."
+			},
+			{
+				"name": "prize-appear",
+				"value": "650ms cubic-bezier(.16, 1, .3, 1)",
+				"purpose": "Recorded prize text resolves from blur and a small vertical offset."
+			},
+			{
+				"name": "lid-open",
+				"value": "transform 850ms cubic-bezier(0.17, 0.89, 0.24, 1.3), filter 500ms ease",
+				"purpose": "The crate lid opens when its revealed state is presented."
+			},
+			{
+				"name": "odds-update",
+				"value": "transform 450ms ease-out",
+				"purpose": "Proportional inventory bar changes."
+			},
+			{
+				"name": "reduced-motion",
+				"value": "animation: none !important; transition: none !important; scroll-behavior: auto !important",
+				"purpose": "Applied to all workshop descendants and their pseudo-elements under prefers-reduced-motion: reduce."
+			}
+		],
+		"breakpoints": [
+			{
+				"name": "compact-desktop",
+				"value": "1120px"
+			},
+			{
+				"name": "stacked-workshop",
+				"value": "860px"
+			},
+			{
+				"name": "inherited-main-width",
+				"value": "720px"
+			},
+			{
+				"name": "single-column",
+				"value": "600px"
+			}
+		]
+	},
+	"components": [
+		{
+			"name": "Primary Action",
+			"kind": "button",
+			"refersTo": "button-primary",
+			"description": "Cut-corner lime action used for opening, minting, and funding; the minimum height is separate from its padding.",
+			"html": "<button class=\"ds-primary\">Open a gift <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14M12 5l7 7-7 7\"/></svg></button>",
+			"css": ".ds-primary{display:inline-flex;align-items:center;justify-content:center;gap:16px;min-height:50px;padding:14px 22px;color:var(--ink);background:var(--lime);border:0;font-family:\"Space Grotesk Variable\",sans-serif;font-weight:700;font-size:15px;clip-path:polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,9px 100%,0 calc(100% - 9px));cursor:pointer}.ds-primary:hover:not(:disabled){background:#dcff8c}.ds-primary:focus-visible{outline:2px solid var(--ink);outline-offset:-5px}.ds-primary:disabled{cursor:not-allowed;opacity:.48}.ds-primary svg{flex-shrink:0}"
+		},
+		{
+			"name": "Quiet Action",
+			"kind": "button",
+			"refersTo": "button-quiet",
+			"description": "An outlined, non-floating action for adding a bundle or resetting a test balance.",
+			"html": "<button class=\"ds-quiet\">Add prize bundle</button>",
+			"css": ".ds-quiet{min-height:44px;background:transparent;color:var(--paper);border:1px solid #4c5846;padding:10px 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:\"Space Grotesk Variable\",sans-serif;font-size:13px;cursor:pointer}.ds-quiet:hover:not(:disabled){border-color:var(--lime);color:var(--lime)}.ds-quiet:focus-visible{outline:2px solid var(--cyan);outline-offset:4px;}.ds-quiet:disabled{cursor:not-allowed;opacity:.48}"
+		},
+		{
+			"name": "Icon Action",
+			"kind": "button",
+			"refersTo": "button-icon",
+			"description": "A 44px square removal target with an explicit accessible label.",
+			"html": "<button class=\"ds-icon\" aria-label=\"Remove bundle 2\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6\"/></svg></button>",
+			"css": ".ds-icon{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;color:var(--muted);cursor:pointer}.ds-icon:hover{color:#ffad93}.ds-icon:focus-visible{outline:2px solid var(--cyan);outline-offset:4px;}.ds-icon:disabled{cursor:not-allowed;opacity:.48}"
+		},
+		{
+			"name": "Validated Field",
+			"kind": "input",
+			"refersTo": "input",
+			"description": "Recessed input with an adjacent, programmatically associated validation message.",
+			"html": "<label class=\"ds-field\">SOL / win<input value=\"0\" inputmode=\"decimal\" aria-invalid=\"true\" aria-describedby=\"ds-amount-error\"/><span class=\"ds-field-error\" id=\"ds-amount-error\">Enter an amount greater than zero.</span></label>",
+			"css": ".ds-field{display:flex;flex-direction:column;gap:8px;color:#d6dbd0;font-family:\"Space Grotesk Variable\",sans-serif;font-size:13px;min-width:0}.ds-field input{width:100%;min-width:0;min-height:46px;padding:12px;border:1px solid #485042;border-radius:0;background:#151b13;color:var(--paper);font:14px/1.35 \"Space Grotesk Variable\",sans-serif;caret-color:var(--lime)}.ds-field input::placeholder{color:#98a491;opacity:1}.ds-field input[aria-invalid=\"true\"]{border-color:#ec9578}.ds-field-error{color:#ffc3ae;font-size:12px;line-height:1.5}.ds-field input:focus-visible{outline:2px solid var(--cyan);outline-offset:4px;}.ds-field input:disabled{opacity:.65}"
+		},
+		{
+			"name": "Workspace Navigation",
+			"kind": "nav",
+			"refersTo": "navigation",
+			"description": "Visible destinations with a current-page baseline; these are buttons, not a hidden mobile menu.",
+			"html": "<nav class=\"ds-nav\" aria-label=\"Workspace\"><button aria-current=\"page\">Open a gift</button><button>Workshop</button><button>How it works</button></nav>",
+			"css": ".ds-nav{display:flex;gap:8px}.ds-nav button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:0;background:transparent;color:#b4bcb1;padding:10px 16px;font-family:\"Space Grotesk Variable\",sans-serif;font-size:14px;cursor:pointer}.ds-nav button:hover{background:#1e261a;color:var(--paper)}.ds-nav button[aria-current]{color:var(--paper);box-shadow:inset 0 -2px var(--lime)}.ds-nav button:focus-visible{outline:2px solid var(--cyan);outline-offset:4px;}@media(max-width:600px){.ds-nav{gap:0;width:100%}.ds-nav button{flex:1;font-size:12px;padding:12px 6px;gap:6px}}"
+		},
+		{
+			"name": "Prize Manifest Row",
+			"kind": "custom",
+			"description": "Ruled inventory row with an inspectable asset disclosure and proportional odds bar.",
+			"html": "<ol class=\"ds-manifest\"><li><div><strong>0.1 SOL</strong><span>8 left</span></div><b>61.54%</b><div class=\"ds-odds\"><i style=\"transform:scaleX(.6154)\"></i></div><details><summary>Inspect assets</summary><code>Escrow address appears here</code></details></li></ol>",
+			"css": ".ds-manifest{list-style:none;padding:0;margin:20px 0;font-family:\"Space Grotesk Variable\",sans-serif;color:var(--paper)}.ds-manifest li{position:relative;padding:16px 0;border-bottom:1px solid var(--line)}.ds-manifest li>div:first-child{padding-right:56px}.ds-manifest strong{font-size:14px;font-weight:500;line-height:1.5;display:block}.ds-manifest span{font-size:11px;color:var(--muted);display:block;margin-top:4px}.ds-manifest b{position:absolute;top:20px;right:0;color:var(--lime);font-size:12px;font-variant-numeric:tabular-nums}.ds-odds{height:3px;margin:12px 0 8px;background:#262f20}.ds-odds i{display:block;height:100%;background:var(--lime);transform-origin:left;transition:transform 450ms ease-out}.ds-manifest details{font-size:11px}.ds-manifest summary{cursor:pointer;color:#b7c1b0;min-height:32px;line-height:1.6}.ds-manifest summary:hover{color:var(--lime)}.ds-manifest summary:focus-visible{outline:2px solid var(--cyan);outline-offset:4px;}.ds-manifest code{display:block;font-size:10px;color:#b0b9a8;overflow-wrap:anywhere;margin:8px 0}.ds-manifest .ds-depleted strong{text-decoration:line-through;color:var(--muted)}@media(prefers-reduced-motion:reduce){.ds-odds i{transition:none}}"
+		},
+		{
+			"name": "Aligned Facts",
+			"kind": "custom",
+			"description": "Shared definition-list structure for treasury facts and funding totals, not a card.",
+			"html": "<dl class=\"ds-facts\"><div><dt>SOL to escrow</dt><dd>1.8 SOL</dd></div><div><dt>Box standard</dt><dd>Token-2022</dd></div></dl>",
+			"css": ".ds-facts{margin:0;font-family:\"Space Grotesk Variable\",sans-serif;font-size:12px;color:var(--paper)}.ds-facts>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.ds-facts dt{color:var(--muted)}.ds-facts dd{margin:0;text-align:right;max-width:60%;font-variant-numeric:tabular-nums}"
+		},
+		{
+			"name": "Recorded Prize",
+			"kind": "custom",
+			"description": "Lime Bungee reveal text; the persistent polite atomic announcement is separate from the decorative machine.",
+			"html": "<div class=\"ds-prize\"><h2>0.1 SOL</h2><p>Allocated to you · no rerolls</p></div><p class=\"ds-sr-only\" role=\"status\" aria-live=\"polite\" aria-atomic=\"true\">Recorded prize: 0.1 SOL. Not yet claimed. Choose Claim your winnings to receive it.</p>",
+			"css": ".ds-prize{margin:0 0 22px;text-align:center;animation:ds-prize-appear 650ms cubic-bezier(.16,1,.3,1)}.ds-prize h2{color:var(--lime);font:20px/1.4 Bungee,sans-serif;margin:0}.ds-prize p{font-family:\"Space Grotesk Variable\",sans-serif;font-size:12px;color:var(--muted);margin:8px 0 0}.ds-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}@keyframes ds-prize-appear{from{filter:blur(8px);transform:translateY(8px)}to{filter:blur(0);transform:none}}@media(prefers-reduced-motion:reduce){.ds-prize{animation:none}}"
+		},
+		{
+			"name": "Mechanical Crate",
+			"kind": "custom",
+			"description": "The incumbent CSS illustration, shown in its stationary sealed state. Miniature markings are decorative, not a body-text scale.",
+			"html": "<div class=\"ds-machine\" aria-hidden=\"true\"><div class=\"ds-machine__orbit\"><span>SEALED</span><span>UNKNOWN</span><span>YOURS</span></div><div class=\"ds-machine__shadow\"></div><div class=\"ds-crate\"><div class=\"ds-crate__light\"></div><div class=\"ds-crate__lid\"><div class=\"ds-crate__lid-panel\"><svg width=\"28\" height=\"28\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\"/><path d=\"M7 11V7a5 5 0 0 1 10 0v4M12 16v2\"/></svg><span>LOOT / PINA</span></div></div><div class=\"ds-crate__body\"><div class=\"ds-crate__hazard\"></div><div class=\"ds-crate__mark\"><span>HANDLE WITH CURIOSITY</span><strong>UNKNOWN</strong></div><div class=\"ds-crate__rivet ds-crate__rivet--a\"></div><div class=\"ds-crate__rivet ds-crate__rivet--b\"></div><div class=\"ds-crate__rivet ds-crate__rivet--c\"></div><div class=\"ds-crate__rivet ds-crate__rivet--d\"></div></div></div></div>",
+			"css": ".ds-machine {\n\twidth: min(430px, 70vw);\n\theight: 330px;\n\tposition: relative;\n\tdisplay: grid;\n\tplace-items: center;\n\tperspective: 850px;\n}\n\n.ds-machine__orbit {\n\tposition: absolute;\n\tinset: 14px 34px 26px;\n\tborder: 1px dashed #343833;\n\tborder-radius: 50%;\n\tanimation: orbit 18s linear infinite;\n}\n\n.ds-machine__orbit span {\n\tposition: absolute;\n\tpadding: 3px 8px;\n\tbackground: var(--ink);\n\tcolor: #52574f;\n\tfont: 700 9px/1 \"Space Grotesk Variable\", sans-serif;\n\tletter-spacing: 0.12em;\n}\n\n.ds-machine__orbit span:nth-child(1) { left: 12%; top: 7%; }\n.ds-machine__orbit span:nth-child(2) { right: -2%; top: 47%; }\n.ds-machine__orbit span:nth-child(3) { left: 34%; bottom: -2%; }\n\n.ds-machine__shadow {\n\tposition: absolute;\n\twidth: 230px;\n\theight: 25px;\n\tbottom: 36px;\n\tborder-radius: 50%;\n\tbackground: #000;\n\tfilter: blur(11px);\n\topacity: 0.8;\n\ttransform: scaleX(1);\n\ttransition: transform 500ms ease, opacity 500ms ease;\n}\n\n.ds-crate {\n\twidth: 244px;\n\theight: 190px;\n\tposition: relative;\n\ttransform-style: preserve-3d;\n\tanimation: breathe 3.4s ease-in-out infinite;\n}\n\n.ds-crate__body {\n\tposition: absolute;\n\tleft: 0;\n\tright: 0;\n\tbottom: 0;\n\theight: 148px;\n\tbackground: #303b31;\n\tborder: 4px solid #0c0e0c;\n\tbox-shadow:\n\t\tinset 0 0 0 2px #627062,\n\t\t12px 16px 0 #050605;\n\tclip-path: polygon(0 0, 100% 0, 100% 86%, 91% 100%, 9% 100%, 0 86%);\n\toverflow: hidden;\n}\n\n.ds-crate__body::before,\n.ds-crate__body::after {\n\tcontent: \"\";\n\tposition: absolute;\n\ttop: 0;\n\tbottom: 0;\n\twidth: 24px;\n\tbackground: #171c18;\n\tborder-inline: 2px solid #4c584d;\n}\n\n.ds-crate__body::before { left: 20px; }\n.ds-crate__body::after { right: 20px; }\n\n.ds-crate__lid {\n\tposition: absolute;\n\tleft: -7px;\n\ttop: 12px;\n\twidth: 258px;\n\theight: 64px;\n\tbackground: #3d493e;\n\tborder: 4px solid #0c0e0c;\n\tbox-shadow: inset 0 0 0 2px #687668, 12px 10px 0 #050605;\n\tz-index: 5;\n\ttransform-origin: 50% 100%;\n\ttransform-style: preserve-3d;\n\ttransition: transform 850ms cubic-bezier(0.17, 0.89, 0.24, 1.3), filter 500ms ease;\n}\n\n.ds-crate__lid-panel {\n\tdisplay: flex;\n\talign-items: center;\n\tjustify-content: center;\n\tgap: 12px;\n\theight: 100%;\n\tcolor: var(--lime);\n\tfont: 400 13px/1 Bungee, sans-serif;\n\tletter-spacing: 0.07em;\n}\n\n.ds-crate__hazard {\n\tposition: absolute;\n\tinset: 8px 52px auto;\n\theight: 11px;\n\tbackground-color: var(--orange);\n\tbackground-image: url(\"data:image/svg+xml,%3Csvg width='24' height='12' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M-2 12L10 0h8L6 12zm24 0L34 0h8L30 12z' fill='%23171c18'/%3E%3C/svg%3E\");\n}\n\n.ds-crate__mark {\n\tposition: absolute;\n\tinset: 42px 54px 25px;\n\tdisplay: flex;\n\tflex-direction: column;\n\talign-items: center;\n\tjustify-content: center;\n\tborder: 1px solid #687668;\n\tbackground: #222923;\n\tz-index: 2;\n}\n\n.ds-crate__mark span {\n\tfont-size: 9px;\n\tletter-spacing: 0.25em;\n\tcolor: #8f9a8e;\n}\n\n.ds-crate__mark strong {\n\tfont: 400 15px/1.4 Bungee, sans-serif;\n\tcolor: var(--paper);\n}\n\n.ds-crate__rivet {\n\tposition: absolute;\n\twidth: 7px;\n\theight: 7px;\n\tborder-radius: 50%;\n\tbackground: #8e998e;\n\tbox-shadow: inset 2px 2px #d2d7cb;\n\tz-index: 3;\n}\n\n.ds-crate__rivet--a { top: 12px; left: 8px; }\n.ds-crate__rivet--b { top: 12px; right: 8px; }\n.ds-crate__rivet--c { bottom: 19px; left: 8px; }\n.ds-crate__rivet--d { bottom: 19px; right: 8px; }\n\n.ds-crate__light {\n\tposition: absolute;\n\tleft: 24px;\n\tright: 24px;\n\ttop: 71px;\n\theight: 6px;\n\tbackground: var(--lime);\n\tbox-shadow: 0 0 18px var(--lime);\n\tz-index: 4;\n\topacity: 0.75;\n\ttransition: opacity 300ms ease, transform 300ms ease;\n}\n\n.ds-machine__core {\n\tposition: absolute;\n\twidth: 112px;\n\theight: 112px;\n\tdisplay: grid;\n\tplace-items: center;\n\tcolor: var(--ink);\n\tbackground: var(--lime);\n\tborder-radius: 50%;\n\tbox-shadow: 0 0 20px var(--lime), 0 0 70px #c9ff4388;\n\topacity: 0;\n\ttransform: scale(0.15);\n\ttransition: opacity 250ms ease, transform 650ms cubic-bezier(0.17, 0.89, 0.32, 1.49);\n}\n\n\n.ds-machine{font-family:\"Space Grotesk Variable\",sans-serif}.ds-machine__orbit{animation:none}.ds-machine__orbit span{color:#85917c}.ds-crate{animation:none}.ds-crate__mark span{letter-spacing:.03em;font-size:7px}@media(prefers-reduced-motion:reduce){.ds-machine *{animation:none!important;transition:none!important}}"
+		}
+	],
+	"narrative": {
+		"northStar": "The Cargo Gift Workshop",
+		"overview": "Lootbox is a quiet, near-black workbench wrapped around a tangible mechanical crate. Acid-lime actions and warm paper text make the operating surface clear; the crate supplies the suspense through metal plates, a sealed lid, and a luminous reveal. This is an extension of the incumbent identity, not a replacement world.\n\nThe product's playful promise sits beside an inspectable treasury. Forms, facts, receipts, and current odds use restrained rules and legible text so the theatrical object never has to explain transaction state. The interface identifies its local test environment and keeps asynchronous results available as text.",
+		"keyCharacteristics": [
+			"A code-native cargo crate is the signature object.",
+			"Near-black metal, warm paper, and acid-lime controls define the working palette.",
+			"Bungee gives identity and reveals their character; Space Grotesk carries the work.",
+			"Ruled manifests and aligned facts provide structure without a card grid.",
+			"Motion belongs to the opening sequence, with a static reduced-motion equivalent."
+		],
+		"rules": [
+			{
+				"name": "The Signal Has a Job Rule",
+				"body": "Lime identifies an action, an active or completed state, or an inventory value; it also belongs to the crate's luminous material. Orange and cyan remain supporting signals.",
+				"section": "colors"
+			},
+			{
+				"name": "The Two Voices Rule",
+				"body": "Use Bungee for identity, main headings, and the recorded prize; keep forms, navigation, explanations, and financial facts in Space Grotesk. Use tabular numerals for counts, odds, and aligned values.",
+				"section": "typography"
+			},
+			{
+				"name": "The Manifest Before Cards Rule",
+				"body": "Use the implemented ruled rows and aligned fact pairs for inventory and operational data; preserve the stage as the distinct visual region.",
+				"section": "layout"
+			},
+			{
+				"name": "The Object Owns Depth Rule",
+				"body": "Keep dimensional construction and luminous effects on the crate; use rules and tonal separation for the surrounding workbench.",
+				"section": "elevation"
+			}
+		],
+		"dos": [
+			"Do preserve the mechanical crate as the identity anchor and keep the workbench visually quiet.",
+			"Do use the implemented ruled manifests, aligned facts, and tabular numbers for treasury information.",
+			"Do pair invalid fields with adjacent readable errors and accessible descriptions.",
+			"Do retain persistent text status, the polite atomic prize announcement, visible keyboard focus, and reduced-motion behavior.",
+			"Do keep test-network and test-asset limitations visible."
+		],
+		"donts": [
+			"Don't make animation or the decorative crate the only source of result or transaction state.",
+			"Don't replace the incumbent Bungee/Space Grotesk pairing or acid-lime mechanical palette during a local extension.",
+			"Don't import the inactive legacy hero, eyebrow, reward-card, or offset-shadow button styles into new workshop surfaces.",
+			"Don't treat tiny lettering within the crate illustration as a text-size precedent for controls, instructions, or important information."
+		]
+	}
+}

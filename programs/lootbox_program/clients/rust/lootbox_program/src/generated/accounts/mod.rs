@@ -11,7 +11,13 @@
 pub(crate) mod r#lootbox_state;
 pub(crate) mod r#vault_state;
 pub(crate) mod r#opening_state;
+pub(crate) mod r#template_state;
+pub(crate) mod r#bundle_state;
+pub(crate) mod r#template_opening_state;
 
 pub use self::r#lootbox_state::*;
 pub use self::r#vault_state::*;
 pub use self::r#opening_state::*;
+pub use self::r#template_state::*;
+pub use self::r#bundle_state::*;
+pub use self::r#template_opening_state::*;

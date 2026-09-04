@@ -305,7 +305,7 @@ packages:
     source: hosted
     version: "0.8.0"
   solana_kit_addresses:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: solana_kit_addresses
       sha256: "9905a61995a3c50e64b6b935ced606ee63c8b4ac67cabb41f38cf4ace155d496"

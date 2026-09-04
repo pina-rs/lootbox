@@ -12,9 +12,13 @@ export default defineConfig({
 		{ name: "chromium", use: { ...devices["Desktop Chrome"] } },
 		{ name: "mobile", use: { ...devices["Pixel 7"] } },
 	],
-	webServer: {
+	webServer: [{
+		command: "pnpm --dir ../.. playground:rpc",
+		url: "http://127.0.0.1:8898/config",
+		reuseExistingServer: !process.env.CI,
+	}, {
 		command: "pnpm exec vite --host 127.0.0.1 --port 4173",
 		url: "http://127.0.0.1:4173",
 		reuseExistingServer: !process.env.CI,
-	},
+	}],
 });

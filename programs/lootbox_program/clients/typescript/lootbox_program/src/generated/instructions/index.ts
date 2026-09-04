@@ -6,13 +6,28 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './addBundle';
 export * from './addOutcome';
+export * from './allocateTemplateOpen';
+export * from './claimSolPrize';
+export * from './claimTokenPrize';
 export * from './closeOpening';
+export * from './closeTemplateOpening';
 export * from './createLootbox';
+export * from './createTemplate';
 export * from './deposit';
+export * from './fulfillTemplateOpen';
+export * from './fundSolPrize';
+export * from './fundTokenPrize';
 export * from './mintBoxes';
+export * from './mintTemplateBoxes';
+export * from './reclaimSolPrize';
+export * from './reclaimTokenPrize';
 export * from './refundOpen';
 export * from './requestOpen';
+export * from './requestTemplateOpen';
+export * from './retireTemplate';
 export * from './seal';
+export * from './sealTemplate';
 export * from './settleOpen';
 export * from './withdrawSurplus';

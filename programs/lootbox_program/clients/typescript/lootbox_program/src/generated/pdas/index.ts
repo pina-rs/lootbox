@@ -6,6 +6,9 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './bundle';
 export * from './lootbox';
 export * from './opening';
+export * from './template';
+export * from './templateOpening';
 export * from './vault';

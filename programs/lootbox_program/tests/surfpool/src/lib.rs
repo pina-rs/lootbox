@@ -29,10 +29,13 @@ use program_under_test::RequestOpenInstruction;
 use program_under_test::SWITCHBOARD_DEVNET_ID;
 use program_under_test::SettleOpenInstruction;
 use program_under_test::WithdrawSurplusInstruction;
+use solana_commitment_config::CommitmentConfig;
 use solana_message::Message;
 use solana_transaction::Transaction;
 use surfpool_sdk::Surfnet;
 use surfpool_sdk::cheatcodes::builders::DeployProgram;
+
+mod templates;
 
 const ATA_PROGRAM: &str = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
 const ADDRESS_LOOKUP_TABLE_PROGRAM: &str = "AddressLookupTab1e1111111111111111111111111";
@@ -61,6 +64,10 @@ impl Harness {
 			.ok_or_else(|| "PINA_SBF_ARTIFACT is not set; run with pina test".to_owned())?;
 		let surfnet = Surfnet::builder()
 			.offline(true)
+			// Use Solana-like slot duration. The SDK's 1ms default crosses many
+			// epochs in a one-hour jump; Surfpool 1.5's clock helper uses a
+			// relative slot across epoch boundaries instead of an absolute slot.
+			.slot_time_ms(400)
 			.start()
 			.await
 			.map_err(|error| format!("start offline Surfpool: {error}"))?;
@@ -110,6 +117,9 @@ impl Harness {
 		instructions: &[Instruction],
 		signers: &[&dyn Signer],
 	) -> Result<(), String> {
+		// Surfpool 1.5 has a bounded 1,024-event observer channel. Leaving it
+		// unread stalls longer journeys even though the RPC server is healthy.
+		let _ = self.surfnet.events().try_iter().count();
 		let rpc = self.surfnet.rpc_client();
 		let payer = self.surfnet.payer();
 		let mut transaction_signers: Vec<&dyn Signer> = Vec::with_capacity(signers.len() + 1);
@@ -123,9 +133,14 @@ impl Harness {
 		transaction
 			.try_sign(&transaction_signers, blockhash)
 			.map_err(|error| format!("sign transaction: {error}"))?;
-		rpc.send_and_confirm_transaction(&transaction)
-			.map(|_| ())
-			.map_err(|error| format!("execute transaction: {error}"))
+		// A single-node offline network has no independent finality to wait
+		// for. Still confirm execution and propagate transaction errors.
+		rpc.send_and_confirm_transaction_with_spinner_and_commitment(
+			&transaction,
+			CommitmentConfig::processed(),
+		)
+		.map(|_| ())
+		.map_err(|error| format!("execute transaction: {error}"))
 	}
 
 	fn fund(&self, address: &Pubkey, lamports: u64) -> Result<(), String> {
@@ -173,12 +188,11 @@ impl Harness {
 	}
 
 	fn advance_slots(&self, slots: u64) -> Result<(), String> {
-		let current = self
-			.surfnet
-			.rpc_client()
-			.get_epoch_info()
-			.map_err(|error| format!("fetch epoch info: {error}"))?
-			.absolute_slot;
+		// Use the same Clock sysvar as the on-chain oracle, not a potentially
+		// lagging commitment-level epoch snapshot after a large time jump.
+		let clock = self.account(&clock_sysvar_id())?;
+		let current = stored_u64(&clock.data, 0);
+		let _ = self.surfnet.events().try_iter().count();
 		self.surfnet
 			.cheatcodes()
 			.time_travel_to_slot(current.saturating_add(slots))

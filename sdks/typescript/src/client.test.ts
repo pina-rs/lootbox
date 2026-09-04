@@ -30,7 +30,7 @@ describe("chain prize decoding", () => {
 		expect(() =>
 			bundleAssets({
 				assetCount: 1,
-				kinds: new Uint8Array([3]),
+				kinds: new Uint8Array([7]),
 				mints: new Uint8Array(128),
 				amounts: new Uint8Array(32),
 				decimals: new Uint8Array(4),

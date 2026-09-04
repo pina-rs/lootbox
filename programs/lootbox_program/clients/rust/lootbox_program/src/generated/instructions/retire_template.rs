@@ -27,7 +27,10 @@ impl RetireTemplate {
 		}
 	}
 
-	pub fn instruction(&self, data: RetireTemplateInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: RetireTemplateInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -38,7 +41,10 @@ impl RetireTemplate {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(2 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.authority, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.authority,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
@@ -55,11 +61,14 @@ pub struct RetireTemplateInstructionData {
 }
 
 impl RetireTemplateInstructionData {
-	pub fn new(configure: impl FnOnce(&mut RetireTemplateInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut RetireTemplateInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; <RetireTemplateInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
-			let data = <RetireTemplateInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			let data =
+				<RetireTemplateInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
+					.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 			configure(data);
 			data.discriminator = RETIRE_TEMPLATE_DISCRIMINATOR;
 		}

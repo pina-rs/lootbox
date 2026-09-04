@@ -1,70 +1,106 @@
 # Treasury-backed templates (v2)
 
-Status: protocol, SDK foundation, and connected creator/recipient playground implemented on `feat/treasury-templates`, tested against local Surfpool. Public hosting and real-network readiness remain incomplete. This is not a mainnet release.
+Status: implemented and tested on local Surfpool. This is an experimental development build, not an independently audited mainnet release.
 
-## What a box represents
+## Product model
 
-A template is a reusable minter, an immutable prize manifest, and a shared logical treasury. One transferable, zero-decimal Token-2022 token represents one unopened claim against that treasury. Tokens from the same template are interchangeable; they are **not individually unique NFTs**. Prize bundles may contain unique NFTs. The template records its name, metadata URI, and earliest opening timestamp.
+A treasury template is an append-only inventory of complete prize bundles. One transferable, zero-decimal Token-2022 token is one unopened lootbox claim. The tokens are interchangeable; NFTs may be prizes inside bundles.
 
-The first v2 mode is a finite, fully escrowed prize pool, drawn without replacement. It does not lend, invest, or probabilistically overcommit the treasury. **Probabilistic undercollateralization remains in scope as a separate reserve policy**, confirmed by the user; it is not implemented by these finite-pool instructions. That mode must model all outstanding obligations, define its shortfall behavior in advance, and retain finite allocation for specific unique NFTs.
+Each bundle contains one to four assets and a positive copy count. Every copy is one equal ticket:
 
-Each outcome specifies a positive per-unit weight, a quantity of complete bundles, and one to four assets. A bundle could contain three specific NFTs and SOL. Its current probability is `weight × remaining / sum(weight × remaining)`. For example, 90 small SOL bundles, 9 token bundles, and 1 NFT bundle with equal per-unit weights start at 90%, 9%, and 1%. After the NFT is allocated its probability is zero, including for boxes already in circulation. Published odds are a snapshot, not a promise of the odds when a future box opens.
+```text
+chance(bundle) = remaining copies of bundle / all remaining eligible copies
+```
 
-## Funding and issuance
+There are no hidden weights and no creator-entered supply cap. If a treasury has eight copies of a 0.001 SOL bundle, four copies of a 100 BONK bundle, one NFT A, one NFT B + D + A bundle, and one 10 SOL bundle, it starts with 15 tickets and can authorize at most 15 lifetime box mints. A unique asset can appear only once and forces that bundle's copy count to one.
 
-- Funding a prize escrows its complete quantity before the template can be sealed.
-- Asset vaults belong to the template's prize bundles, not to individual boxes. This prevents double-counting the same tokens across different advertised prizes.
-- Sealing freezes quantities, weights, assets, amounts, metadata, and claim date.
-- Minting is creator-authorized. The recipient owns and can transfer the box using the standard token program, including before its claim date.
-- `live token supply + unallocated openings + new boxes <= remaining bundles`.
-- Minting also stops as soon as any advertised outcome has no inventory. Previously issued boxes remain redeemable against the remaining inventory.
-- Minting never assumes somebody will forget to open their box.
+The implementation is deliberately fully collateralized. It does not use expected value, fractional reserves, lending, or probabilistic undercollateralization.
 
-## Opening and delivery
+## Append-only lifecycle
 
-`token → burn + oracle commitment → verified entropy → ordered allocation → claim`
+Templates have three states:
 
-1. The holder requests an opening after the template's timestamp. The transaction burns one token and commits fresh Switchboard randomness atomically, binding it to that holder and a monotonically increasing opening sequence.
-2. Anyone may relay the proof. Verified entropy is persisted independently of prize delivery and allocation order.
-3. Allocation follows request order. This prevents someone who knows several results from choosing which result gets first access to a scarce NFT. Each allocation consumes exactly one bundle and advances the queue.
-4. Each asset can be claimed independently, always to the recorded recipient. A failed transfer can be retried but cannot change the allocated outcome.
-5. The reveal animation presents the recorded result; animation timing never draws another result. Reloading must recover the receipt from chain.
+```text
+Draft --publish--> Live --retire--> Retired
+```
 
-## Security boundaries and deliberate exclusions
+Bundles have a separate staging lifecycle:
 
-- Legacy v1 SOL-only accounts/instructions retain their existing ABI and semantics.
-- No creator-controlled odds edits after issuance, arbitrary oracle programs, pre-revealed randomness, destination substitution, duplicate claims, or queue skips.
-- The initial reward-token policy excludes transfer fees, transfer hooks, permanent delegates, pausing, and freeze authorities. A promise of a fixed amount must not silently become a net-of-fees or issuer-revocable promise.
-- NFT classification requires supply one, zero decimals, and revoked mint authority. Compressed NFTs, programmable NFT transfer rules, and arbitrary NFT standards need explicit adapters; they must not be advertised as universally supported.
-- There is no timeout reroll or creator-chosen fallback. Across different assets no objective “cheapest prize” exists. An unavailable oracle can delay the queue. A durable oracle/liveness review and real-network soak are release gates, not solved by local emulation. Do not deploy this experimental implementation for real funds.
-- Fully funded is an asset-quantity guarantee, not a market-value or profitability guarantee. Token prices and the value of the remaining prize pool can fall.
+```text
+Funding --fund every asset--> Active
+Funding --reclaim every funded asset--> Cancelled and closed
+```
 
-## Acceptance checklist
+- A new bundle is always staged at the next sequential `u32` index.
+- It is invisible to draws and adds no mint capacity until every asset is escrowed and `activateBundle` succeeds.
+- Activation atomically appends its inventory, increments the treasury version, and adds its copies to lifetime mint capacity.
+- A live template may receive more bundles at any time. Existing bundles, amounts, identifiers, the unlock time, and metadata cannot be edited or reordered.
+- An interrupted funding workflow is resumable from chain. The creator can reclaim and cancel only the unpublished tail bundle; already active history is immutable.
+- Retirement stops new mints and additions. Outstanding boxes and committed openings remain valid. Unallocated inventory is reclaimable only after box supply and pending openings both reach zero; allocated but unclaimed prizes remain reserved for their recipient.
 
-- [x] Pina program: configuration, escrow, Token-2022 issuance, time gate, oracle boundary, ordered allocation, bundle delivery, retirement, and receipt cleanup.
-- [x] Rust, TypeScript, and Dart generated clients and ergonomic template planners.
-- [x] Real Surfpool transaction tests, including destination substitutions, double claims, scarcity, multiple pending openings, failed-transfer retries, token transfers, retirement, and receipt closure. The oracle is emulated, not a live cryptographic oracle.
-- [x] Creator/recipient UI using real RPC transactions; no simulated balance presented as an on-chain reward.
-- [x] Browser integration tests across desktop/mobile, recovery, time locks, transfers, and reduced-motion support.
-- [x] Reproducible local Surfpool control plane with test-only labeling and HTTP smoke tests.
-- [x] Connected local browser playground with browser-generated disposable test wallets.
-- [ ] Probabilistically undercollateralized reserve policy, risk accounting, and explicit shortfall semantics.
-- [ ] Safe public deployment path and production wallet integration.
-- [ ] Internal security review, complete verification, PR, and green CI.
-- [ ] Independent audit and real-network oracle/liveness review before real-value use.
+## Capacity and snapshots
+
+The client and program enforce both bounds:
+
+```text
+lifetime mints remaining = total activated copies - total boxes ever minted
+live liability headroom = remaining prize copies - live box supply - pending openings
+mint capacity = min(lifetime mints remaining, live liability headroom)
+```
+
+Depleting one bundle does not stop minting while other funded copies remain. A won copy is removed from the pool, so future live odds update automatically.
+
+Opening a box snapshots the current treasury version and active bundle prefix before the token is burned. Bundles appended later are eligible for boxes that have not opened yet, including boxes already circulating, but never enter an already committed receipt. FIFO allocation still observes depletion caused by earlier receipts inside that saved prefix. The snapshot is therefore a promise about the eligible manifest, not a frozen percentage.
+
+## Opening and recovery
+
+```text
+burn + commit -> verify entropy -> FIFO allocation -> per-asset claims -> close receipt
+```
+
+1. After the configured unlock timestamp, the owner signs a request that atomically burns one box and creates fresh Switchboard randomness.
+2. The receipt records the owner, sequence, treasury version, and eligible bundle count.
+3. Anyone may relay a valid proof. Verification persists entropy without moving a prize.
+4. Allocation must process the FIFO head and uses domain-separated, bounded rejection sampling over remaining copies in the saved prefix. There is no reroll.
+5. Claims are permissionless to submit but can deliver only to the recipient recorded at burn time. Each asset has an independent claim bit, so failures retry the same allocation.
+6. A delivered receipt can be closed by its recipient to recover rent.
+
+If the FIFO head remains unrevealed for 300 slots, only its recipient may forfeit it. Forfeiture advances the queue without consuming inventory or returning the burned box. Returning a box would be unsafe: a holder could inspect an unfavorable off-chain proof, suppress it, wait, and reroll. The UI warns about this irreversible tradeoff before signing. Reliable relaying and a production oracle outage policy remain deployment gates.
+
+## Supported prize adapters
+
+| Prize                     | On-chain policy                                                                                                                                                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Native SOL                | Lamports are held by the bundle PDA and transferred directly. Wrapped SOL is rejected as a token prize.                                                                                                                        |
+| Classic SPL token         | Canonical mint and ATA checks, checked transfer, positive base-unit amount, and no freeze authority.                                                                                                                           |
+| Token-2022 token          | Only the explicitly allowlisted Metadata Pointer and Token Metadata extensions are accepted; fee, hook, delegate, pause, and other behavior-changing extensions fail closed.                                                   |
+| Legacy NFT                | Supply one, zero decimals, revoked mint authority, no freeze authority, and a one-copy bundle.                                                                                                                                 |
+| Token Metadata NFT / pNFT | `TransferV1` adapter with supply/decimal and metadata PDA validation. Mint/freeze authority must be revoked or held by the canonical Master Edition PDA; edition, token-record, and authorization-rule accounts are forwarded. |
+| Metaplex Core             | Core transfer adapter with owner, collection, plugin, and external-adapter account validation.                                                                                                                                 |
+| Compressed NFT            | Bubblegum transfer adapter bound to the asset ID, tree, leaf index, hashes, nonce, and fresh Merkle proof accounts.                                                                                                            |
+
+Collection and compressed transfers require fresh account resolution at funding, claim, and reclaim time. The typed SDK prevents silently routing those assets through the generic token path.
+
+## Payers and authority
+
+- The treasury creator signs and pays for creation, staged funding, activation, append operations, cancellation, retirement, and box minting.
+- The box owner signs and pays for burn/commit. The playground also uses that owner for proof verification, FIFO allocation, and claim transactions.
+- Verification, allocation, and claim instructions are permissionless so a relayer may pay instead; destination substitution is impossible.
+- The program does not contain an unbounded on-chain crank subsidy. Production operators may fund a dedicated relayer wallet or sponsor transactions outside the prize inventory. Any future reimbursement policy needs an explicit cap and separate audit.
 
 ## Developer API
 
-The low-level generated clients expose the same 15 v2 instructions in Rust, TypeScript, and Dart; legacy discriminators 0–9 are unchanged. The v2 surface is:
+Legacy v1 discriminators 0–9 are unchanged. V2 uses discriminators 10–36:
 
-| Phase                               | Instructions                                                                              |
-| ----------------------------------- | ----------------------------------------------------------------------------------------- |
-| Configure and escrow                | `createTemplate`, `addBundle`, `fundSolPrize`, `fundTokenPrize`, `sealTemplate`           |
-| Issue and open                      | `mintTemplateBoxes`, `requestTemplateOpen`, `fulfillTemplateOpen`, `allocateTemplateOpen` |
-| Deliver and clean up                | `claimSolPrize`, `claimTokenPrize`, `closeTemplateOpening`                                |
-| Retire and recover unused inventory | `retireTemplate`, `reclaimSolPrize`, `reclaimTokenPrize`                                  |
+| Phase      | Instructions                                                                                                                                            |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Template   | `createTemplate`, `sealTemplate`, `retireTemplate`                                                                                                      |
+| Stage      | `addBundle`, `fundSolPrize`, `fundTokenPrize`, `fundMetadataNftPrize`, `fundCoreAssetPrize`, `fundCompressedNftPrize`, `activateBundle`, `cancelBundle` |
+| Issue/open | `mintTemplateBoxes`, `requestTemplateOpen`, `fulfillTemplateOpen`, `allocateTemplateOpen`, `forfeitTemplateOpen`                                        |
+| Deliver    | `claimSolPrize`, `claimTokenPrize`, `claimMetadataNftPrize`, `claimCoreAssetPrize`, `claimCompressedNftPrize`                                           |
+| Recover    | `reclaimSolPrize`, `reclaimTokenPrize`, `reclaimMetadataNftPrize`, `reclaimCoreAssetPrize`, `reclaimCompressedNftPrize`, `closeTemplateOpening`         |
 
-The planning layer totals full deposits before transaction construction:
+The TypeScript planner calculates exact inventory and collateral before building transactions:
 
 ```ts
 import { createTemplatePlan } from "@pina-rs/lootbox";
@@ -77,49 +113,54 @@ const plan = createTemplatePlan({
 		{
 			label: "A little SOL",
 			quantity: 99n,
-			weight: 1n,
 			assets: [{ kind: "sol", lamports: 100_000_000n }],
 		},
 		{
 			label: "The jackpot",
 			quantity: 1n,
-			weight: 1n,
 			assets: [
-				{ kind: "nft", mint: address("REPLACE_WITH_YOUR_NFT_MINT") },
+				{ kind: "core", asset: address("REPLACE_WITH_CORE_ASSET") },
 				{ kind: "sol", lamports: 1_000_000_000n },
 			],
 		},
 	],
 });
 
-// 100 available boxes; initial jackpot odds 1/100.
-// Full escrow: 10.9 SOL and one NFT, not 100 copies of the jackpot.
-console.log(plan.treasury, plan.bundles[1]?.odds);
+console.log(plan.totalBundles); // 100n
+console.log(plan.bundles[1]?.odds); // { numerator: 1n, denominator: 100n }
+console.log(plan.treasury); // exact deposits grouped by asset identifier
 ```
 
-The address placeholder must be replaced before running the example. The Rust equivalent is `TemplatePlan::new(max_supply, &[PrizeBundle { ... }])`, using `PrizeAsset::Sol`, `PrizeAsset::Token`, and `PrizeAsset::Nft`. Dart exposes `TemplatePlan(bundles: [...])`, `PrizeBundle`, and the `PrizeAsset.sol`, `.token`, and `.nft` constructors. Both expose exact initial odds and collateral totals.
+Replace the placeholder with a valid address before running the example. Rust exposes `TemplatePlan::new(&bundles)` with `PrizeAsset::{Sol, ClassicToken, Token2022, LegacyNft, MetadataNft, CoreAsset, CompressedNft}`. Dart exposes `TemplatePlan`, `PrizeBundle`, and matching `PrizeAsset` constructors. All planners validate the 256-bundle limit, one-to-four asset limit, `u64` collateral math, `u32` ticket limit, and unique-asset ownership.
 
-TypeScript additionally exports `LootboxClient`, used by the playground. It orchestrates `createTemplate`, `mint`, `transfer`, `requestOpen`, `fulfill`, `allocate`, and `claim`; `inventory`, `template`, `bundles`, and `boxBalance` read chain state. The constructor accepts an RPC URL, a Kit transaction signer, and an optional progress callback. `createTemplate` requires a stable template id and mint signer; callers must persist their creation intent before submitting transactions. It checks existing metadata, weights, and funded assets before resuming. `claim` checks the receipt's per-asset claim mask. Confirmation timeout does not automatically resend a potentially completed action.
+`LootboxClient` provides resumable `createTemplate` and `appendBundles`, `publishTemplate`, `cancelFundingBundle`, mint/transfer/open/fulfill/allocate/claim orchestration, timeout forfeiture, receipt closure, and read APIs. It uses processed commitment only for the local single-node sandbox; production applications must choose appropriate finality, transaction simulation, wallet, and oracle transport policies.
 
-This client currently uses `processed` commitment for the local single-node simulator; production-grade finality and oracle transport remain integration work. Rust and Dart expose generated builders and ergonomic planners, not matching high-level RPC orchestration yet. Plan validation never replaces on-chain mint/authority/escrow validation. See the [playground guide](../apps/web/README.md) for the executable journey.
+## Searchable asset picker
 
-## Probabilistic backing: retained scope
+The local control plane exposes:
 
-Full finite inventory is one reserve policy, not a decision to remove undercollateralization. The next policy must explicitly account for every circulating token, committed opening, allocated-but-unpaid asset, and prior reserve allocation. Reserving only expected payouts plus an arbitrary percentage is not a payout guarantee.
+- `GET /assets/tokens?q=...`: Jupiter Tokens V2 search through a server-side `JUPITER_API_KEY`, with a five-minute bounded cache and a clearly labeled fallback list.
+- `GET /assets/nfts?owner=...&q=...`: Metaplex DAS `getAssetsByOwner` through `DAS_RPC_URL`, normalized across standard, Core, and compressed assets.
 
-Before this policy can mint, its immutable terms must define a risk budget, exposure/mint cap, reserve buffer, assumptions about draw dependence, and what a winner receives when reserves are insufficient. Exact entitlement queued for recapitalization and a fully backed floor with risk-bearing bonuses are different products; neither should be silently substituted for the other. Inventory-conditioned draws must not reuse an independent fixed-odds estimate. Unique NFTs retain finite one-winner allocation.
+Keys never reach the browser. Search results show source, verification status, exact identifiers, standard, and warnings. The local playground mirrors selected catalog entries into disposable Surfpool assets; it never moves mainnet property. Manual addresses remain available for integration work.
 
-The UI will distinguish fully funded from probabilistically backed templates before acquisition and show the shortfall terms alongside the prize table. The reserve policy cannot be changed after issuance. No probabilistic policy selector is enabled in this build: the new instructions do not enforce that contract yet.
+Official integration references: [Jupiter Tokens API](https://developers.jup.ag/docs/tokens), [Jupiter token information guide](https://developers.jup.ag/docs/guides/how-to-get-token-information), and [Metaplex DAS `getAssetsByOwner`](https://developers.metaplex.com/dev-tools/das-api/methods/get-assets-by-owner).
 
-## Local control plane
+## Verification and release gates
 
-After building both SBF artifacts, run `pnpm playground:rpc` inside `devenv shell`. The process holds a fresh offline network until Ctrl-C and exposes:
+Implemented verification covers Rust unit/property tests, Rust/TypeScript/Dart planners, generated clients, real SBF transactions in Surfpool, local control-plane tests, React unit tests, and desktop/mobile Playwright journeys. The Surfpool oracle is an ABI emulator, not production randomness, and external Metadata/Core/Bubblegum programs still need real-network compatibility fixtures.
 
-- `GET /config`: RPC/WebSocket endpoints, program ID, test oracle addresses, and a per-network `instanceId` for isolated browser test-wallet persistence.
-- `POST /faucet` with `{ "address": "..." }`: set a test wallet to 100 fake SOL.
-- `GET /proof?randomness=...`: a stable test-only reveal value for that commitment.
-- `POST /time-travel` with `{ "timestampSeconds": ... }`: local clock convenience; heed the cross-epoch Surfpool limitation in the security notes.
+Before real value: independent audit, real Switchboard soak and monitored relayer policy, upgrade-authority policy, external-adapter compatibility tests, production wallet simulation/finality, API reliability controls, jurisdiction-specific review, and incident response.
 
-The HTTP service listens at `127.0.0.1:8898` by default; set `LOOTBOX_PLAYGROUND_PORT` for another loopback port. No payer private key is sent to clients. This process is not designed for public hosting or real oracle proofs.
+## Local run
 
-Run `devenv shell -- test:surfpool` to build the artifacts, execute the real-transaction Rust journeys, and test the HTTP service. Run `devenv shell -- verify:all` for the wider regression suite. `test:web` starts a local Surfpool service when one is not already running and tests real browser-to-chain flows. Build both SBF programs first when running web tests separately.
+```sh
+devenv shell
+build:program
+build:test-programs
+pnpm playground:rpc
+```
+
+The service binds `127.0.0.1:8898` by default. Set `LOOTBOX_PLAYGROUND_PORT` for another loopback port, `JUPITER_API_KEY` for live token search, and `DAS_RPC_URL` for wallet asset discovery. Its faucet, proof, and time controls are test-only.
+
+Use `devenv shell -- test:surfpool` for real transaction journeys and `devenv shell -- verify:all` for the complete regression suite.

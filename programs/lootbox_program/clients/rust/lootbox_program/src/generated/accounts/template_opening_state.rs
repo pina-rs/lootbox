@@ -12,7 +12,7 @@ use pina::zeropod;
 
 #[derive(pina::ZeroPod)]
 pub struct TemplateOpeningState {
-/// A burned box, its verified entropy, and independently claimable winning assets.
+	/// A burned box, its verified entropy, and independently claimable winning assets.
 	pub discriminator: u8,
 	pub template: solana_pubkey::Pubkey,
 	pub recipient: solana_pubkey::Pubkey,
@@ -20,9 +20,12 @@ pub struct TemplateOpeningState {
 	pub sequence: u64,
 	pub seed_slot: u64,
 	pub entropy: [u8; 32],
-	/// 0 committed, 1 verified, 2 allocated, 3 fully delivered.
+	/// Treasury version and bundle prefix fixed before the box is burned.
+	pub treasury_version: u64,
+	pub eligible_bundle_count: u32,
+	/// 0 committed, 1 verified, 2 allocated, 3 delivered, 4 forfeited.
 	pub status: u8,
-	pub selected_outcome: u8,
+	pub selected_bundle: u32,
 	pub claimed_mask: u8,
 	pub bump: u8,
 }
@@ -36,7 +39,9 @@ impl TemplateOpeningState {
 	///
 	/// Every non-discriminator field must accept an all-zero
 	/// representation. Otherwise this method returns `InvalidAccountData`.
-	pub fn initialize(data: &mut [u8]) -> Result<&mut TemplateOpeningStateZc, solana_program_error::ProgramError> {
+	pub fn initialize(
+		data: &mut [u8],
+	) -> Result<&mut TemplateOpeningStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -47,7 +52,9 @@ impl TemplateOpeningState {
 		Ok(account)
 	}
 
-	pub fn from_bytes(data: &[u8]) -> Result<&TemplateOpeningStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes(
+		data: &[u8],
+	) -> Result<&TemplateOpeningStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -59,7 +66,9 @@ impl TemplateOpeningState {
 		Ok(account)
 	}
 
-	pub fn from_bytes_mut(data: &mut [u8]) -> Result<&mut TemplateOpeningStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes_mut(
+		data: &mut [u8],
+	) -> Result<&mut TemplateOpeningStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -73,7 +82,10 @@ impl TemplateOpeningState {
 }
 
 impl TemplateOpeningState {
-	pub fn find_pda(template: &solana_pubkey::Pubkey, randomness: &solana_pubkey::Pubkey) -> (solana_pubkey::Pubkey, u8) {
+	pub fn find_pda(
+		template: &solana_pubkey::Pubkey,
+		randomness: &solana_pubkey::Pubkey,
+	) -> (solana_pubkey::Pubkey, u8) {
 		solana_pubkey::Pubkey::find_program_address(
 			&[
 				"template-opening".as_bytes(),
@@ -84,7 +96,11 @@ impl TemplateOpeningState {
 		)
 	}
 
-	pub fn create_pda(template: &solana_pubkey::Pubkey, randomness: &solana_pubkey::Pubkey, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(
+		template: &solana_pubkey::Pubkey,
+		randomness: &solana_pubkey::Pubkey,
+		bump: u8,
+	) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
 			&[
 				"template-opening".as_bytes(),

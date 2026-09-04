@@ -12,7 +12,7 @@ use pina::zeropod;
 
 #[derive(pina::ZeroPod)]
 pub struct TemplateState {
-/// Immutable template terms and the live finite inventory.
+	/// Immutable template terms and the live finite inventory.
 	pub discriminator: u8,
 	pub authority: solana_pubkey::Pubkey,
 	pub box_mint: solana_pubkey::Pubkey,
@@ -20,24 +20,24 @@ pub struct TemplateState {
 	pub oracle_queue: solana_pubkey::Pubkey,
 	pub id: u64,
 	pub opens_at: i64,
-	pub max_supply: u64,
+	/// Total bundle tickets ever activated. This is the lifetime issuance cap.
+	pub total_bundles: u64,
 	pub total_minted: u64,
 	pub remaining_bundles: u64,
 	pub pending_openings: u64,
 	pub next_request: u64,
 	pub next_allocation: u64,
-	/// Immutable positive per-unit weights, encoded as eight little-endian u64s.
-	pub weights: [u8; 64],
-	/// Undrawn inventory per bundle, encoded as eight little-endian u64s.
-	pub remaining: [u8; 64],
+	/// Increments after every activated append; snapshotted by each opening.
+	pub version: u64,
+	/// Undrawn inventory per append-only bundle, encoded as little-endian u64s.
+	pub remaining: [u8; 2048],
 	/// Null-padded UTF-8 display name; never used for authorization.
 	pub name: [u8; 32],
 	/// Null-padded UTF-8 metadata URI; terms on chain remain authoritative.
 	pub uri: [u8; 200],
-	pub outcome_count: u8,
-	pub funded_outcomes: u8,
-	pub sealed: bool,
-	pub retired: bool,
+	pub bundle_count: u32,
+	/// 0 draft, 1 live, 2 retired.
+	pub status: u8,
 	pub bump: u8,
 }
 
@@ -50,7 +50,9 @@ impl TemplateState {
 	///
 	/// Every non-discriminator field must accept an all-zero
 	/// representation. Otherwise this method returns `InvalidAccountData`.
-	pub fn initialize(data: &mut [u8]) -> Result<&mut TemplateStateZc, solana_program_error::ProgramError> {
+	pub fn initialize(
+		data: &mut [u8],
+	) -> Result<&mut TemplateStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -73,7 +75,9 @@ impl TemplateState {
 		Ok(account)
 	}
 
-	pub fn from_bytes_mut(data: &mut [u8]) -> Result<&mut TemplateStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes_mut(
+		data: &mut [u8],
+	) -> Result<&mut TemplateStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -89,16 +93,16 @@ impl TemplateState {
 impl TemplateState {
 	pub fn find_pda(authority: &solana_pubkey::Pubkey, id: u64) -> (solana_pubkey::Pubkey, u8) {
 		solana_pubkey::Pubkey::find_program_address(
-			&[
-				"template".as_bytes(),
-				authority.as_ref(),
-				&id.to_le_bytes(),
-			],
+			&["template".as_bytes(), authority.as_ref(), &id.to_le_bytes()],
 			&crate::LOOTBOX_PROGRAM_ID,
 		)
 	}
 
-	pub fn create_pda(authority: &solana_pubkey::Pubkey, id: u64, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(
+		authority: &solana_pubkey::Pubkey,
+		id: u64,
+		bump: u8,
+	) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
 			&[
 				"template".as_bytes(),

@@ -17,6 +17,9 @@ pub struct FulfillTemplateOpenInstruction {
 	pub value: [u8; 32],
 }
 
+#[instruction(discriminator = LootboxInstruction::ForfeitTemplateOpen)]
+pub struct ForfeitTemplateOpenInstruction {}
+
 #[derive(Accounts, Debug)]
 pub struct RequestTemplateOpenAccounts<'a> {
 	pub owner: &'a mut AccountView,
@@ -59,6 +62,57 @@ pub struct FulfillTemplateOpenAccounts<'a> {
 	pub wrapped_sol_mint: &'a AccountView,
 }
 
+#[derive(Accounts, Debug)]
+pub struct ForfeitTemplateOpenAccounts<'a> {
+	pub recipient: &'a AccountView,
+	pub template: &'a mut AccountView,
+	pub opening: &'a mut AccountView,
+	pub randomness: &'a AccountView,
+}
+
+fn assert_openable(status: u8) -> ProgramResult {
+	if status == TEMPLATE_DRAFT {
+		return Err(lootbox_error(LootboxError::InvalidState));
+	}
+
+	Ok(())
+}
+
+fn assert_reveal_payer(payer: &Address, recipient: &Address) -> ProgramResult {
+	if payer != recipient {
+		return Err(lootbox_error(LootboxError::InvalidRecipient));
+	}
+
+	Ok(())
+}
+
+fn record_forfeit(
+	state: &mut TemplateStateZc,
+	opening: &mut TemplateOpeningStateZc,
+) -> ProgramResult {
+	if opening.status != OPENING_PENDING {
+		return Err(lootbox_error(LootboxError::OpeningAlreadyFinalized));
+	}
+	if opening.sequence.get() != state.next_allocation.get() {
+		return Err(lootbox_error(LootboxError::AllocationOutOfOrder));
+	}
+	let pending = state
+		.pending_openings
+		.get()
+		.checked_sub(1)
+		.ok_or(ProgramError::ArithmeticOverflow)?;
+	state.pending_openings.set(pending);
+	let next_allocation = state
+		.next_allocation
+		.get()
+		.checked_add(1)
+		.ok_or(ProgramError::ArithmeticOverflow)?;
+	state.next_allocation.set(next_allocation);
+	opening.status = 4;
+
+	Ok(())
+}
+
 impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = RequestTemplateOpenInstruction::try_from_bytes(data)?;
@@ -93,9 +147,9 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		self.oracle_queue.assert_address(&state.oracle_queue)?;
 		self.oracle_program.assert_program(&state.oracle_program)?;
 
-		if !state.sealed.get() {
-			return Err(lootbox_error(LootboxError::InvalidState));
-		}
+		// Retirement closes issuance and additions, but must not strand boxes
+		// already held by recipients. Draft treasuries are the only unopenable state.
+		assert_openable(state.status)?;
 
 		if sysvars::clock::Clock::get()?.unix_timestamp < state.opens_at.get() {
 			return Err(lootbox_error(LootboxError::ClaimLocked));
@@ -142,6 +196,8 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 			return Err(lootbox_error(LootboxError::Insolvent));
 		}
 		let sequence = state.next_request.get();
+		let treasury_version = state.version.get();
+		let eligible_bundle_count = state.bundle_count.get();
 		state.next_request.set(
 			sequence
 				.checked_add(1)
@@ -165,6 +221,8 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		opening.randomness = randomness_address;
 		opening.status = OPENING_PENDING;
 		opening.sequence.set(sequence);
+		opening.treasury_version.set(treasury_version);
+		opening.eligible_bundle_count.set(eligible_bundle_count);
 		opening.bump = args.bump;
 		drop(opening);
 
@@ -287,6 +345,7 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 			return Err(lootbox_error(LootboxError::OpeningAlreadyFinalized));
 		}
 
+		assert_reveal_payer(self.payer.address(), &opening.recipient)?;
 		if opening.template != template_address || opening.randomness != randomness_address {
 			return Err(lootbox_error(LootboxError::InvalidRecipient));
 		}
@@ -378,5 +437,80 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 		opening.status = 1;
 
 		Ok(())
+	}
+}
+
+impl<'a> ProcessAccountInfos<'a> for ForfeitTemplateOpenAccounts<'a> {
+	fn process(self, data: &[u8]) -> ProgramResult {
+		let _ = ForfeitTemplateOpenInstruction::try_from_bytes(data)?;
+		let recipient = *self.recipient.address();
+		let template_address = *self.template.address();
+		let opening_address = *self.opening.address();
+		self.recipient.assert_signer()?;
+		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
+		assert_template(&template_address, &state)?;
+		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
+		assert_template_opening(&opening_address, &opening, &template_address)?;
+		if opening.recipient != recipient || opening.randomness != *self.randomness.address() {
+			return Err(lootbox_error(LootboxError::InvalidRecipient));
+		}
+		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
+		if randomness.authority != opening_address
+			|| randomness.queue != state.oracle_queue
+			|| randomness.seed_slot != opening.seed_slot.get()
+			|| randomness.reveal_slot != 0
+		{
+			return Err(lootbox_error(LootboxError::InvalidRandomness));
+		}
+		let refund_slot = opening
+			.seed_slot
+			.get()
+			.checked_add(RANDOMNESS_TIMEOUT_SLOTS)
+			.ok_or(ProgramError::ArithmeticOverflow)?;
+		if sysvars::clock::Clock::get()?.slot < refund_slot {
+			return Err(lootbox_error(LootboxError::OpeningNotExpired));
+		}
+		record_forfeit(&mut state, &mut opening)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn retirement_preserves_opening_rights_but_drafts_do_not() {
+		assert!(assert_openable(TEMPLATE_DRAFT).is_err());
+		assert_eq!(assert_openable(TEMPLATE_LIVE), Ok(()));
+		assert_eq!(assert_openable(TEMPLATE_RETIRED), Ok(()));
+	}
+
+	#[test]
+	fn reveal_payer_is_the_bound_recipient() {
+		let recipient = Address::default();
+		assert_eq!(assert_reveal_payer(&recipient, &recipient), Ok(()));
+		assert!(assert_reveal_payer(&ID, &recipient).is_err());
+	}
+
+	#[test]
+	fn timeout_forfeits_only_the_fifo_head_without_consuming_inventory() {
+		let mut template_bytes = [0; TemplateState::SIZE];
+		let state = TemplateState::initialize(&mut template_bytes).expect("template");
+		state.remaining_bundles.set(3);
+		state.pending_openings.set(2);
+		state.next_allocation.set(7);
+		let mut opening_bytes = [0; TemplateOpeningState::SIZE];
+		let opening = TemplateOpeningState::initialize(&mut opening_bytes).expect("opening");
+		opening.status = OPENING_PENDING;
+		opening.sequence.set(8);
+		assert!(record_forfeit(state, opening).is_err());
+		assert_eq!(state.pending_openings.get(), 2);
+		opening.sequence.set(7);
+		assert_eq!(record_forfeit(state, opening), Ok(()));
+		assert_eq!(opening.status, 4);
+		assert_eq!(state.pending_openings.get(), 1);
+		assert_eq!(state.next_allocation.get(), 8);
+		assert_eq!(state.remaining_bundles.get(), 3);
+		assert!(record_forfeit(state, opening).is_err());
 	}
 }

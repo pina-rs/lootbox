@@ -20,16 +20,16 @@ describe("lootbox playground", () => {
 		expect(screen.getByRole("button", { name: "Retry connection" }))
 			.toBeEnabled();
 	});
-	it("keeps probabilistic backing and production risks visible", async () => {
+	it("keeps inventory semantics and production risks visible", async () => {
 		render(<App />);
 		await screen.findByRole("alert");
 		fireEvent.click(screen.getByRole("button", { name: "How it works" }));
 		expect(
 			screen.getByRole("heading", {
-				name: "Probabilistic backing stays in scope.",
+				name: "Every opening gets a snapshot.",
 			}),
 		).toBeVisible();
-		expect(screen.getByText(/A stalled first-in-line commitment/))
+		expect(screen.getByText(/independent audit/))
 			.toBeVisible();
 	});
 });

@@ -17,13 +17,11 @@ describe("finite template plans", () => {
 				{
 					label: "SOL",
 					quantity: 99n,
-					weight: 1n,
 					assets: [{ kind: "sol", lamports: 100_000_000n }],
 				},
 				{
 					label: "Jackpot",
 					quantity: 1n,
-					weight: 1n,
 					assets: [{ kind: "nft", mint: nft }, {
 						kind: "sol",
 						lamports: 1_000_000_000n,
@@ -31,14 +29,19 @@ describe("finite template plans", () => {
 				},
 			],
 		});
-		expect(plan.maxSupply).toBe(100n);
+		expect(plan.totalBundles).toBe(100n);
 		expect(plan.bundles.map((bundle) => bundle.probabilityPercent)).toEqual([
 			99,
 			1,
 		]);
-		expect(plan.treasury).toEqual([{ mint: null, amount: 10_900_000_000n }, {
-			mint: nft,
+		expect(plan.treasury).toEqual([{
+			asset: null,
+			amount: 10_900_000_000n,
+			kind: "sol",
+		}, {
+			asset: nft,
 			amount: 1n,
+			kind: "nft",
 		}]);
 	});
 
@@ -49,7 +52,6 @@ describe("finite template plans", () => {
 				bundles: [{
 					label: "NFT",
 					quantity: 2n,
-					weight: 1n,
 					assets: [{ kind: "nft", mint: nft }],
 				}],
 			})
@@ -60,7 +62,6 @@ describe("finite template plans", () => {
 				bundles: [{
 					label: "SOL",
 					quantity: 2n,
-					weight: 1n,
 					assets: [{ kind: "sol", lamports: (1n << 64n) - 1n }],
 				}],
 			})
@@ -74,15 +75,33 @@ describe("finite template plans", () => {
 	});
 
 	it("shows an exhausted prize at zero percent", () => {
-		const weights = new Uint8Array(64);
-		const remaining = new Uint8Array(64);
-		new DataView(weights.buffer).setBigUint64(0, 1n, true);
-		new DataView(weights.buffer).setBigUint64(8, 1n, true);
+		const remaining = new Uint8Array(2048);
 		new DataView(remaining.buffer).setBigUint64(0, 9n, true);
 		expect(
-			templateInventory({ weights, remaining, outcomeCount: 2 }).map((
+			templateInventory({ remaining, bundleCount: 2 }).map((
 				outcome,
 			) => outcome.probabilityPercent),
 		).toEqual([100, 0]);
+	});
+
+	it("supports all 256 append slots and snapshots an earlier prefix", () => {
+		const bundles = Array.from({ length: 256 }, (_, index) => ({
+			label: `Bundle ${index}`,
+			quantity: 1n,
+			assets: [{ kind: "sol" as const, lamports: 1n }],
+		}));
+		const plan = createTemplatePlan({ name: "Large manifest", bundles });
+		expect(plan.totalBundles).toBe(256n);
+		const remaining = new Uint8Array(2048);
+		const view = new DataView(remaining.buffer);
+		for (let index = 0; index < 256; index++) {
+			view.setBigUint64(index * 8, 1n, true);
+		}
+		expect(templateInventory({ remaining, bundleCount: 256 }, 9)).toHaveLength(
+			9,
+		);
+		expect(templateInventory({ remaining, bundleCount: 256 })).toHaveLength(
+			256,
+		);
 	});
 });

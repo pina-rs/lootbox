@@ -11,6 +11,8 @@ pub use templates::*;
 pub const MAX_OUTCOMES: usize = 8;
 /// Maximum sum of v1 outcome weights.
 pub const MAX_TOTAL_WEIGHT: u64 = u32::MAX as u64;
+/// Maximum append-only bundle records supported by a treasury template.
+pub const MAX_TEMPLATE_BUNDLES: usize = 256;
 /// Switchboard `randomness_reveal` Anchor discriminator.
 pub const SWITCHBOARD_REVEAL_DISCRIMINATOR: [u8; 8] = [197, 181, 187, 10, 30, 58, 20, 73];
 

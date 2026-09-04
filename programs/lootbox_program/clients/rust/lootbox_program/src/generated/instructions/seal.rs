@@ -21,10 +21,7 @@ pub struct Seal {
 
 impl Seal {
 	pub fn new(authority: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey) -> Self {
-		Self {
-			authority,
-			lootbox,
-		}
+		Self { authority, lootbox }
 	}
 
 	pub fn instruction(&self, data: SealInstructionData) -> solana_instruction::Instruction {
@@ -38,7 +35,10 @@ impl Seal {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(2 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.authority, true));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.authority,
+			true,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.lootbox, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
@@ -55,7 +55,9 @@ pub struct SealInstructionData {
 }
 
 impl SealInstructionData {
-	pub fn new(configure: impl FnOnce(&mut SealInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut SealInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; <SealInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
 			let data = <SealInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)

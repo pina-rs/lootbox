@@ -42,7 +42,7 @@ pub struct ClaimTokenPrizeAccounts<'a> {
 	pub token_program: &'a AccountView,
 }
 
-fn assert_template_opening(
+pub(super) fn assert_template_opening(
 	address: &Address,
 	opening: &TemplateOpeningStateZc,
 	template: &Address,
@@ -59,17 +59,24 @@ fn assert_template_opening(
 	Ok(())
 }
 
-fn bundle_for_target(state: &TemplateStateZc, target: u64) -> Result<u8, ProgramError> {
+fn bundle_for_target(
+	state: &TemplateStateZc,
+	eligible_bundle_count: u32,
+	target: u64,
+) -> Result<u32, ProgramError> {
 	let mut cumulative = 0u64;
-	for index in 0..usize::from(state.outcome_count) {
-		let weight = read_slot(&state.weights, index)?
-			.checked_mul(read_slot(&state.remaining, index)?)
-			.ok_or(ProgramError::ArithmeticOverflow)?;
+	let count =
+		usize::try_from(eligible_bundle_count).map_err(|_| ProgramError::InvalidAccountData)?;
+	if count > MAX_TEMPLATE_BUNDLES {
+		return Err(ProgramError::InvalidAccountData);
+	}
+	for index in 0..count {
+		let weight = read_slot(&state.remaining, index)?;
 		cumulative = cumulative
 			.checked_add(weight)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
 		if target < cumulative {
-			return u8::try_from(index).map_err(|_| ProgramError::InvalidAccountData);
+			return u32::try_from(index).map_err(|_| ProgramError::InvalidAccountData);
 		}
 	}
 
@@ -80,7 +87,7 @@ fn allocate(
 	state: &mut TemplateStateZc,
 	opening: &mut TemplateOpeningStateZc,
 	address: &Address,
-	bundle_index: u8,
+	bundle_index: u32,
 ) -> ProgramResult {
 	if opening.status != 1 {
 		return Err(lootbox_error(LootboxError::RandomnessNotReady));
@@ -90,18 +97,19 @@ fn allocate(
 		return Err(lootbox_error(LootboxError::AllocationOutOfOrder));
 	}
 
-	let target = select_outcome(
-		&opening.entropy,
-		&opening.template,
-		address,
-		inventory_weight(state)?,
-	)?;
-	let selected = bundle_for_target(state, target)?;
+	if opening.eligible_bundle_count.get() > state.bundle_count.get()
+		|| opening.treasury_version.get() > state.version.get()
+	{
+		return Err(ProgramError::InvalidAccountData);
+	}
+	let inventory = available_in_prefix(state, opening.eligible_bundle_count.get())?;
+	let target = select_outcome(&opening.entropy, &opening.template, address, inventory)?;
+	let selected = bundle_for_target(state, opening.eligible_bundle_count.get(), target)?;
 	if selected != bundle_index {
 		return Err(lootbox_error(LootboxError::InvalidPrize));
 	}
 
-	let index = usize::from(selected);
+	let index = usize::try_from(selected).map_err(|_| ProgramError::InvalidAccountData)?;
 	let remaining = read_slot(&state.remaining, index)?
 		.checked_sub(1)
 		.ok_or(ProgramError::ArithmeticOverflow)?;
@@ -127,7 +135,7 @@ fn allocate(
 			.checked_add(1)
 			.ok_or(ProgramError::ArithmeticOverflow)?,
 	);
-	opening.selected_outcome = selected;
+	opening.selected_bundle.set(selected);
 	opening.status = 2;
 
 	Ok(())
@@ -145,18 +153,24 @@ impl<'a> ProcessAccountInfos<'a> for AllocateTemplateOpenAccounts<'a> {
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&address, &opening, &template)?;
 
-		allocate(&mut state, &mut opening, &address, bundle.index)
+		if bundle.status != BUNDLE_ACTIVE
+			|| bundle.activated_version.get() > opening.treasury_version.get()
+		{
+			return Err(lootbox_error(LootboxError::InvalidPrize));
+		}
+
+		allocate(&mut state, &mut opening, &address, bundle.index.get())
 	}
 }
 
-fn record_claim(
+pub(super) fn record_claim(
 	opening: &mut TemplateOpeningStateZc,
 	bundle: &mut BundleStateZc,
 	recipient: &Address,
 	asset_index: u8,
 ) -> Result<u64, ProgramError> {
 	if opening.status != 2
-		|| opening.selected_outcome != bundle.index
+		|| opening.selected_bundle.get() != bundle.index.get()
 		|| opening.template != bundle.template
 	{
 		return Err(lootbox_error(LootboxError::InvalidState));
@@ -246,12 +260,21 @@ impl<'a> ProcessAccountInfos<'a> for ClaimTokenPrizeAccounts<'a> {
 		let state = self.template.as_account::<TemplateState>(&ID)?;
 		assert_template(self.template.address(), &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
-		self.token_program.assert_address(&token::ID)?;
+		let token_program = *self.token_program.address();
+		if token_program != token::ID && token_program != token_2022::ID {
+			return Err(ProgramError::IncorrectProgramId);
+		}
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&address, &opening, self.template.address())?;
 		let index = usize::from(args.asset_index);
-		if !matches!(bundle.kinds.get(index), Some(&PRIZE_TOKEN | &PRIZE_NFT))
+		let expected_kind = if token_program == token_2022::ID {
+			PRIZE_TOKEN_2022
+		} else {
+			bundle.kinds.get(index).copied().unwrap_or(u8::MAX)
+		};
+		if !matches!(expected_kind, PRIZE_TOKEN | PRIZE_NFT | PRIZE_TOKEN_2022)
+			|| bundle.kinds.get(index) != Some(&expected_kind)
 			|| mint_at(&bundle, index)? != *self.mint.address()
 		{
 			return Err(lootbox_error(LootboxError::InvalidPrize));
@@ -260,12 +283,12 @@ impl<'a> ProcessAccountInfos<'a> for ClaimTokenPrizeAccounts<'a> {
 		drop(self.escrow.as_associated_token_account_checked(
 			&bundle_address,
 			self.mint.address(),
-			&token::ID,
+			&token_program,
 		)?);
 		drop(self.destination.as_associated_token_account_checked(
 			&opening.recipient,
 			self.mint.address(),
-			&token::ID,
+			&token_program,
 		)?);
 		let amount = record_claim(
 			&mut opening,
@@ -275,20 +298,34 @@ impl<'a> ProcessAccountInfos<'a> for ClaimTokenPrizeAccounts<'a> {
 		)?;
 		let decimals = bundle.decimals[index];
 		let template = bundle.template;
-		let seeds = BundleState::seeds(&template, bundle.index).with_bump(bundle.bump);
+		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
 		drop(opening);
 		let signer = seeds.to_signer();
 
-		token::instructions::TransferChecked::new(
-			self.escrow,
-			self.mint,
-			self.destination,
-			self.bundle,
-			amount,
-			decimals,
-		)
-		.invoke_signed(&[signer.as_signer()])
+		if token_program == token_2022::ID {
+			self.token_program.assert_address(&token_2022::ID)?;
+			token_2022::instructions::TransferChecked::new(
+				self.escrow,
+				self.mint,
+				self.destination,
+				self.bundle,
+				amount,
+				decimals,
+			)
+			.invoke_signed(&[signer.as_signer()])
+		} else {
+			self.token_program.assert_address(&token::ID)?;
+			token::instructions::TransferChecked::new(
+				self.escrow,
+				self.mint,
+				self.destination,
+				self.bundle,
+				amount,
+				decimals,
+			)
+			.invoke_signed(&[signer.as_signer()])
+		}
 	}
 }
 
@@ -300,14 +337,13 @@ mod tests {
 
 	fn pool(bytes: &mut [u8; TemplateState::SIZE], quantities: [u64; 3]) -> &mut TemplateStateZc {
 		let state = TemplateState::initialize(bytes).expect("template");
-		state.outcome_count = 3;
-		state.funded_outcomes = 3;
-		state.sealed.set(true);
+		state.bundle_count.set(3);
+		state.version.set(3);
+		state.status = TEMPLATE_LIVE;
 		let total = quantities.iter().sum();
 		state.remaining_bundles.set(total);
-		state.max_supply.set(total);
+		state.total_bundles.set(total);
 		for (index, count) in quantities.into_iter().enumerate() {
-			write_slot(&mut state.weights, index, 1).expect("weight");
 			write_slot(&mut state.remaining, index, count).expect("inventory");
 		}
 		state
@@ -317,18 +353,16 @@ mod tests {
 	fn finite_odds_follow_remaining_units_and_skip_exhausted_prizes() {
 		let mut bytes = [0; TemplateState::SIZE];
 		let state = pool(&mut bytes, [90, 9, 1]);
-		assert_eq!(inventory_weight(state), Ok(100));
-		assert_eq!(bundle_for_target(state, 89), Ok(0));
-		assert_eq!(bundle_for_target(state, 90), Ok(1));
-		assert_eq!(bundle_for_target(state, 99), Ok(2));
+		assert_eq!(available_in_prefix(state, 3), Ok(100));
+		assert_eq!(bundle_for_target(state, 3, 89), Ok(0));
+		assert_eq!(bundle_for_target(state, 3, 90), Ok(1));
+		assert_eq!(bundle_for_target(state, 3, 99), Ok(2));
 		write_slot(&mut state.remaining, 2, 0).expect("jackpot consumed");
-		assert_eq!(inventory_weight(state), Ok(99));
-		assert_eq!(bundle_for_target(state, 98), Ok(1));
-		assert!(bundle_for_target(state, 99).is_err());
-		assert_eq!(
-			validate_issuance(state, 0, 1),
-			Err(lootbox_error(LootboxError::PrizeExhausted))
-		);
+		state.remaining_bundles.set(99);
+		assert_eq!(available_in_prefix(state, 3), Ok(99));
+		assert_eq!(bundle_for_target(state, 3, 98), Ok(1));
+		assert!(bundle_for_target(state, 3, 99).is_err());
+		assert_eq!(validate_issuance(state, 0, 1), Ok(1));
 	}
 
 	#[test]
@@ -357,6 +391,8 @@ mod tests {
 		let opening = TemplateOpeningState::initialize(&mut receipt).expect("opening");
 		opening.status = 1;
 		opening.sequence.set(1);
+		opening.treasury_version.set(3);
+		opening.eligible_bundle_count.set(3);
 		assert_eq!(
 			allocate(state, opening, &Address::default(), 0),
 			Err(lootbox_error(LootboxError::AllocationOutOfOrder))
@@ -398,38 +434,29 @@ mod tests {
 
 	#[test]
 	fn funding_cannot_count_one_asset_twice() {
-		let mut bytes = [0; TemplateState::SIZE];
-		let state = pool(&mut bytes, [3, 3, 1]);
 		let mut bundle_bytes = [0; BundleState::SIZE];
 		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
 		bundle.quantity.set(3);
 		bundle.asset_count = 2;
 		assert_eq!(
-			record_prize(state, bundle, &Address::default(), 10, PRIZE_SOL, 9),
+			record_prize(bundle, &Address::default(), 10, PRIZE_SOL, 9),
 			Ok(30)
 		);
 		assert_eq!(
-			record_prize(state, bundle, &Address::default(), 10, PRIZE_SOL, 9),
+			record_prize(bundle, &Address::default(), 10, PRIZE_SOL, 9),
 			Err(lootbox_error(LootboxError::InvalidPrize))
 		);
 		assert_eq!(bundle.funded_assets, 1);
 	}
 
 	#[test]
-	fn funding_and_weight_overflow_fail_closed() {
-		let mut bytes = [0; TemplateState::SIZE];
-		let state = pool(&mut bytes, [2, 1, 1]);
-		write_slot(&mut state.weights, 0, u64::MAX).expect("weight");
-		assert_eq!(
-			inventory_weight(state),
-			Err(ProgramError::ArithmeticOverflow)
-		);
+	fn funding_overflow_fails_closed() {
 		let mut bundle_bytes = [0; BundleState::SIZE];
 		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
 		bundle.quantity.set(2);
 		bundle.asset_count = 1;
 		assert_eq!(
-			record_prize(state, bundle, &Address::default(), u64::MAX, PRIZE_SOL, 9),
+			record_prize(bundle, &Address::default(), u64::MAX, PRIZE_SOL, 9),
 			Err(ProgramError::ArithmeticOverflow)
 		);
 		assert_eq!(bundle.funded_assets, 0);
@@ -444,6 +471,21 @@ mod tests {
 		assert!(metadata_bytes(&bytes).is_err());
 		assert!(take_metadata_string(&mut [255u8; 4].as_slice()).is_err());
 		assert!(validate_text(&[b'a', 0, b'b'], true).is_err());
+	}
+
+	#[test]
+	fn all_256_append_slots_are_addressable_and_snapshots_exclude_later_bundles() {
+		let mut bytes = [0; TemplateState::SIZE];
+		let state = TemplateState::initialize(&mut bytes).expect("template");
+		state.bundle_count.set(256);
+		for index in 0..MAX_TEMPLATE_BUNDLES {
+			write_slot(&mut state.remaining, index, 1).expect("inventory slot");
+		}
+		assert_eq!(available_in_prefix(state, 9), Ok(9));
+		assert_eq!(available_in_prefix(state, 256), Ok(256));
+		assert_eq!(bundle_for_target(state, 9, 8), Ok(8));
+		assert!(bundle_for_target(state, 9, 9).is_err());
+		assert_eq!(bundle_for_target(state, 256, 255), Ok(255));
 	}
 
 	proptest! {
@@ -461,17 +503,19 @@ mod tests {
 				let opening = TemplateOpeningState::initialize(&mut receipt).expect("opening");
 				opening.status = 1;
 				opening.sequence.set(sequence);
+				opening.treasury_version.set(3);
+				opening.eligible_bundle_count.set(3);
 				opening.entropy = entropy;
-				let target = select_outcome(&entropy, &Address::default(), &Address::default(), inventory_weight(state).expect("weight")).expect("target");
-				let selected = bundle_for_target(state, target).expect("outcome");
+				let target = select_outcome(&entropy, &Address::default(), &Address::default(), available_in_prefix(state, 3).expect("inventory")).expect("target");
+				let selected = bundle_for_target(state, 3, target).expect("outcome");
 				allocate(state, opening, &Address::default(), selected).expect("allocate");
-				awarded[usize::from(selected)] += 1;
+				awarded[usize::try_from(selected).expect("index")] += 1;
 				prop_assert_eq!(state.pending_openings.get(), total - sequence - 1);
 				prop_assert_eq!(state.remaining_bundles.get(), total - sequence - 1);
 				prop_assert!(allocate(state, opening, &Address::default(), selected).is_err());
 			}
 			prop_assert_eq!(awarded, quantities);
-			prop_assert_eq!(inventory_weight(state), Ok(0));
+			prop_assert_eq!(available_in_prefix(state, 3), Ok(0));
 		}
 	}
 }

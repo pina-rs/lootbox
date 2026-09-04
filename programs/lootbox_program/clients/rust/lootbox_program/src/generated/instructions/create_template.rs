@@ -23,17 +23,26 @@ pub struct CreateTemplate {
 }
 
 impl CreateTemplate {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		authority: solana_pubkey::Pubkey,
+		template: solana_pubkey::Pubkey,
+		box_mint: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			authority,
 			template,
 			box_mint,
 			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
-			box_token_program: solana_pubkey::pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
+			box_token_program: solana_pubkey::pubkey!(
+				"TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+			),
 		}
 	}
 
-	pub fn instruction(&self, data: CreateTemplateInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: CreateTemplateInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -46,9 +55,18 @@ impl CreateTemplate {
 		let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_token_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.box_mint,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.system_program,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.box_token_program,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -64,11 +82,14 @@ pub struct CreateTemplateInstructionData {
 }
 
 impl CreateTemplateInstructionData {
-	pub fn new(configure: impl FnOnce(&mut CreateTemplateInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut CreateTemplateInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; <CreateTemplateInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
-			let data = <CreateTemplateInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			let data =
+				<CreateTemplateInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
+					.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 			configure(data);
 			data.discriminator = CREATE_TEMPLATE_DISCRIMINATOR;
 		}
@@ -83,7 +104,6 @@ impl CreateTemplateInstructionData {
 pub struct CreateTemplateInstructionWire {
 	pub discriminator: u8,
 	pub id: u64,
-	pub max_supply: u64,
 	pub opens_at: i64,
 	pub oracle_program: solana_pubkey::Pubkey,
 	pub oracle_queue: solana_pubkey::Pubkey,

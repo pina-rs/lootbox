@@ -12,7 +12,7 @@ use pina::zeropod;
 
 #[derive(pina::ZeroPod)]
 pub struct VaultState {
-/// Program-owned SOL vault for one lootbox definition.
+	/// Program-owned SOL vault for one lootbox definition.
 	pub discriminator: u8,
 	pub lootbox: solana_pubkey::Pubkey,
 	pub rent_reserve: u64,
@@ -28,7 +28,9 @@ impl VaultState {
 	///
 	/// Every non-discriminator field must accept an all-zero
 	/// representation. Otherwise this method returns `InvalidAccountData`.
-	pub fn initialize(data: &mut [u8]) -> Result<&mut VaultStateZc, solana_program_error::ProgramError> {
+	pub fn initialize(
+		data: &mut [u8],
+	) -> Result<&mut VaultStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -51,7 +53,9 @@ impl VaultState {
 		Ok(account)
 	}
 
-	pub fn from_bytes_mut(data: &mut [u8]) -> Result<&mut VaultStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes_mut(
+		data: &mut [u8],
+	) -> Result<&mut VaultStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -67,21 +71,17 @@ impl VaultState {
 impl VaultState {
 	pub fn find_pda(lootbox: &solana_pubkey::Pubkey) -> (solana_pubkey::Pubkey, u8) {
 		solana_pubkey::Pubkey::find_program_address(
-			&[
-				"vault".as_bytes(),
-				lootbox.as_ref(),
-			],
+			&["vault".as_bytes(), lootbox.as_ref()],
 			&crate::LOOTBOX_PROGRAM_ID,
 		)
 	}
 
-	pub fn create_pda(lootbox: &solana_pubkey::Pubkey, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(
+		lootbox: &solana_pubkey::Pubkey,
+		bump: u8,
+	) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
-			&[
-				"vault".as_bytes(),
-				lootbox.as_ref(),
-				&[bump],
-			],
+			&["vault".as_bytes(), lootbox.as_ref(), &[bump]],
 			&crate::LOOTBOX_PROGRAM_ID,
 		)
 	}

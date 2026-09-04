@@ -1,148 +1,155 @@
 import 'package:solana_kit_addresses/solana_kit_addresses.dart';
 
 final BigInt _u64Max = (BigInt.one << 64) - BigInt.one;
-final BigInt _weightMax = BigInt.from(0xffffffff);
+final BigInt _ticketMax = BigInt.from(0xffffffff);
 
-enum PrizeKind { sol, token, nft }
+enum PrizeKind {
+  sol,
+  classicToken,
+  token2022,
+  legacyNft,
+  metadataNft,
+  coreAsset,
+  compressedNft,
+}
 
-/// An exact base-unit payout. Mint authorities and NFT uniqueness must also be
-/// checked on chain; this planning model cannot verify external accounts.
+/// A typed treasury asset. Ownership, extensions, plugins, and Merkle proofs
+/// are validated by the corresponding on-chain transfer adapter.
 final class PrizeAsset {
   const PrizeAsset.sol(BigInt lamports)
     : kind = PrizeKind.sol,
-      mint = null,
+      identifier = null,
       amount = lamports;
 
-  const PrizeAsset.token(Address tokenMint, BigInt baseUnits)
-    : kind = PrizeKind.token,
-      mint = tokenMint,
+  const PrizeAsset.classicToken(Address mint, BigInt baseUnits)
+    : kind = PrizeKind.classicToken,
+      identifier = mint,
       amount = baseUnits;
 
-  PrizeAsset.nft(Address tokenMint)
-    : kind = PrizeKind.nft,
-      mint = tokenMint,
+  const PrizeAsset.token2022(Address mint, BigInt baseUnits)
+    : kind = PrizeKind.token2022,
+      identifier = mint,
+      amount = baseUnits;
+
+  PrizeAsset.legacyNft(Address mint)
+    : kind = PrizeKind.legacyNft,
+      identifier = mint,
+      amount = BigInt.one;
+
+  PrizeAsset.metadataNft(Address mint)
+    : kind = PrizeKind.metadataNft,
+      identifier = mint,
+      amount = BigInt.one;
+
+  PrizeAsset.core(Address asset)
+    : kind = PrizeKind.coreAsset,
+      identifier = asset,
+      amount = BigInt.one;
+
+  PrizeAsset.compressedNft(Address asset)
+    : kind = PrizeKind.compressedNft,
+      identifier = asset,
       amount = BigInt.one;
 
   final PrizeKind kind;
-  final Address? mint;
+  final Address? identifier;
   final BigInt amount;
+
+  bool get isUnique => switch (kind) {
+    PrizeKind.sol || PrizeKind.classicToken || PrizeKind.token2022 => false,
+    PrizeKind.legacyNft ||
+    PrizeKind.metadataNft ||
+    PrizeKind.coreAsset ||
+    PrizeKind.compressedNft => true,
+  };
 }
 
-/// All assets in this outcome are delivered together as one discrete win.
+/// All assets in a bundle are delivered together. Each copy is one ticket.
 final class PrizeBundle {
   PrizeBundle({
     required this.label,
     required this.quantity,
-    required this.weight,
     required List<PrizeAsset> assets,
   }) : assets = List.unmodifiable(assets);
 
   final String label;
   final BigInt quantity;
-  final BigInt weight;
   final List<PrizeAsset> assets;
 }
 
 /// Finite, fully escrowed prize inventory; no statistical insolvency allowance.
 final class TemplatePlan {
-  factory TemplatePlan({
-    required List<PrizeBundle> bundles,
-    BigInt? maxSupply,
-  }) {
-    if (bundles.isEmpty || bundles.length > 8) {
-      throw RangeError('a template needs between one and eight bundles');
+  factory TemplatePlan({required List<PrizeBundle> bundles}) {
+    if (bundles.isEmpty || bundles.length > 256) {
+      throw RangeError('a template needs between one and 256 bundles');
     }
     var totalBundles = BigInt.zero;
-    var totalWeight = BigInt.zero;
     final treasury = <Address?, BigInt>{};
-    final nftMints = <Address>{};
+    final uniqueAssets = <Address>{};
 
     for (final bundle in bundles) {
       _u64(bundle.quantity, 'bundle quantity');
-      _u64(bundle.weight, 'bundle weight');
       if (bundle.quantity == BigInt.zero ||
-          bundle.weight == BigInt.zero ||
           bundle.assets.isEmpty ||
           bundle.assets.length > 4) {
         throw RangeError(
-          'bundles need positive quantity and weight, and one to four assets',
+          'bundles need positive quantity and one to four assets',
         );
       }
       totalBundles = _u64(totalBundles + bundle.quantity, 'total bundles');
-      totalWeight = _u64(
-        totalWeight + bundle.weight * bundle.quantity,
-        'total inventory weight',
-      );
+      if (totalBundles > _ticketMax) {
+        throw RangeError('total bundle copies cannot exceed u32::MAX');
+      }
       final seen = <Address?>{};
       for (final asset in bundle.assets) {
         _u64(asset.amount, 'prize amount');
         if (asset.amount == BigInt.zero ||
-            !seen.add(asset.mint) ||
-            asset.mint?.value == '11111111111111111111111111111111' ||
-            asset.mint?.value ==
+            !seen.add(asset.identifier) ||
+            asset.identifier?.value == '11111111111111111111111111111111' ||
+            asset.identifier?.value ==
                 'So11111111111111111111111111111111111111112') {
           throw RangeError(
             'prize assets must be positive and distinct; use native SOL, not wrapped SOL',
           );
         }
-        if (asset.kind == PrizeKind.nft &&
-            (bundle.quantity != BigInt.one || !nftMints.add(asset.mint!))) {
-          throw RangeError('each unique NFT can fund only one bundle');
+        if (asset.isUnique &&
+            (bundle.quantity != BigInt.one ||
+                !uniqueAssets.add(asset.identifier!))) {
+          throw RangeError('each unique asset can fund only one bundle');
         }
         final deposit = _u64(
           asset.amount * bundle.quantity,
           'prize collateral',
         );
-        treasury[asset.mint] = _u64(
-          (treasury[asset.mint] ?? BigInt.zero) + deposit,
+        treasury[asset.identifier] = _u64(
+          (treasury[asset.identifier] ?? BigInt.zero) + deposit,
           'total asset collateral',
         );
       }
     }
-    if (totalWeight > _weightMax) {
-      throw RangeError('total inventory weight exceeds u32::MAX');
-    }
-    final supply = _u64(maxSupply ?? totalBundles, 'maxSupply');
-    if (supply == BigInt.zero || supply > totalBundles) {
-      throw RangeError(
-        'maxSupply must be between one and the funded bundle count',
-      );
-    }
 
     return TemplatePlan._(
       List.unmodifiable(bundles),
-      supply,
       totalBundles,
-      totalWeight,
       Map.unmodifiable(treasury),
     );
   }
 
-  const TemplatePlan._(
-    this.bundles,
-    this.maxSupply,
-    this.totalBundles,
-    this.totalWeight,
-    this.treasury,
-  );
+  const TemplatePlan._(this.bundles, this.totalBundles, this.treasury);
 
   final List<PrizeBundle> bundles;
-  final BigInt maxSupply;
   final BigInt totalBundles;
-  final BigInt totalWeight;
 
-  /// Null selects native SOL; all other keys are mint addresses.
+  /// Null selects native SOL; all other keys are stored asset identifiers.
   final Map<Address?, BigInt> treasury;
 
   /// Exact initial numerator and denominator; depletion changes future odds.
-  ({BigInt numerator, BigInt denominator}) odds(int index) => (
-    numerator: bundles[index].weight * bundles[index].quantity,
-    denominator: totalWeight,
-  );
+  ({BigInt numerator, BigInt denominator}) odds(int index) =>
+      (numerator: bundles[index].quantity, denominator: totalBundles);
 
   /// Rounded down, with the same precision as the TypeScript planner.
   double probabilityPercent(int index) =>
-      ((odds(index).numerator * BigInt.from(1000000)) ~/ totalWeight).toInt() /
+      ((odds(index).numerator * BigInt.from(1000000)) ~/ totalBundles).toInt() /
       10000;
 }
 

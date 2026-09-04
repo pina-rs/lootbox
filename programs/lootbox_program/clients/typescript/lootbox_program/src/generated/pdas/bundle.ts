@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getAddressEncoder, getProgramDerivedAddress, getU8Encoder, getUtf8Encoder, type Address, type ProgramDerivedAddress } from '@solana/kit';
+import { getAddressEncoder, getProgramDerivedAddress, getU32Encoder, getUtf8Encoder, type Address, type ProgramDerivedAddress } from '@solana/kit';
 
 export type BundleSeeds = {
 template: Address;
@@ -15,5 +15,5 @@ index: number;
 
 export async function findBundlePda(seeds: BundleSeeds, config: { programAddress?: Address | undefined } = {}): Promise<ProgramDerivedAddress> {
   const { programAddress = 'Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op' as Address<'Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op'> } = config;
-  return await getProgramDerivedAddress({ programAddress, seeds: [getUtf8Encoder().encode("bundle"), getAddressEncoder().encode(seeds.template), getU8Encoder().encode(seeds.index)]});
+  return await getProgramDerivedAddress({ programAddress, seeds: [getUtf8Encoder().encode("bundle"), getAddressEncoder().encode(seeds.template), getU32Encoder().encode(seeds.index)]});
 }

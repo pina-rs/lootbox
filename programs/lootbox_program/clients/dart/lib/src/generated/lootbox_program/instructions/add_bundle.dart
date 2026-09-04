@@ -15,14 +15,12 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 class AddBundleInstructionData {
   const AddBundleInstructionData({
     required this.quantity,
-    required this.weight,
     required this.assetCount,
     required this.bump,
   }) : discriminator = 11;
 
   final int discriminator;
   final BigInt quantity;
-  final BigInt weight;
   final int assetCount;
   final int bump;
 }
@@ -31,7 +29,6 @@ Encoder<AddBundleInstructionData> getAddBundleInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
     ('quantity', getU64Encoder()),
-    ('weight', getU64Encoder()),
     ('assetCount', getU8Encoder()),
     ('bump', getU8Encoder()),
   ]);
@@ -41,7 +38,6 @@ Encoder<AddBundleInstructionData> getAddBundleInstructionDataEncoder() {
     (AddBundleInstructionData value) => <String, Object?>{
       'discriminator': 11,
       'quantity': value.quantity,
-      'weight': value.weight,
       'assetCount': value.assetCount,
       'bump': value.bump,
     },
@@ -52,7 +48,6 @@ Decoder<AddBundleInstructionData> getAddBundleInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
     ('quantity', getU64Decoder()),
-    ('weight', getU64Decoder()),
     ('assetCount', getU8Decoder()),
     ('bump', getU8Decoder()),
   ]);
@@ -75,7 +70,6 @@ Decoder<AddBundleInstructionData> getAddBundleInstructionDataDecoder() {
     return (
       AddBundleInstructionData(
         quantity: map['quantity']! as BigInt,
-        weight: map['weight']! as BigInt,
         assetCount: map['assetCount']! as int,
         bump: map['bump']! as int,
       ),
@@ -119,13 +113,11 @@ Instruction getAddBundleInstruction({
   required Address bundle,
   required Address systemProgram,
   required BigInt quantity,
-  required BigInt weight,
   required int assetCount,
   required int bump,
 }) {
   final instructionData = AddBundleInstructionData(
     quantity: quantity,
-    weight: weight,
     assetCount: assetCount,
     bump: bump,
   );

@@ -53,6 +53,18 @@ enum LootboxProgramInstruction {
   reclaimSolPrize,
   reclaimTokenPrize,
   closeTemplateOpening,
+  activateBundle,
+  cancelBundle,
+  fundMetadataNftPrize,
+  claimMetadataNftPrize,
+  reclaimMetadataNftPrize,
+  fundCoreAssetPrize,
+  claimCoreAssetPrize,
+  reclaimCoreAssetPrize,
+  fundCompressedNftPrize,
+  claimCompressedNftPrize,
+  reclaimCompressedNftPrize,
+  forfeitTemplateOpen,
 }
 
 /// Identifies the type of a LootboxProgram instruction.
@@ -131,6 +143,42 @@ LootboxProgramInstruction identifyLootboxProgramInstruction(Uint8List data) {
   }
   if (containsBytes(data, getU8Encoder().encode(24), 0)) {
     return LootboxProgramInstruction.closeTemplateOpening;
+  }
+  if (containsBytes(data, getU8Encoder().encode(25), 0)) {
+    return LootboxProgramInstruction.activateBundle;
+  }
+  if (containsBytes(data, getU8Encoder().encode(26), 0)) {
+    return LootboxProgramInstruction.cancelBundle;
+  }
+  if (containsBytes(data, getU8Encoder().encode(27), 0)) {
+    return LootboxProgramInstruction.fundMetadataNftPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(28), 0)) {
+    return LootboxProgramInstruction.claimMetadataNftPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(29), 0)) {
+    return LootboxProgramInstruction.reclaimMetadataNftPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(30), 0)) {
+    return LootboxProgramInstruction.fundCoreAssetPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(31), 0)) {
+    return LootboxProgramInstruction.claimCoreAssetPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(32), 0)) {
+    return LootboxProgramInstruction.reclaimCoreAssetPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(33), 0)) {
+    return LootboxProgramInstruction.fundCompressedNftPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(34), 0)) {
+    return LootboxProgramInstruction.claimCompressedNftPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(35), 0)) {
+    return LootboxProgramInstruction.reclaimCompressedNftPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(36), 0)) {
+    return LootboxProgramInstruction.forfeitTemplateOpen;
   }
 
   throw SolanaError(SolanaErrorCode.programClientsFailedToIdentifyInstruction, {
@@ -346,6 +394,108 @@ final class ParsedCloseTemplateOpening extends ParsedLootboxProgramInstruction {
   final CloseTemplateOpeningInstructionData data;
 }
 
+/// A parsed ActivateBundle instruction.
+final class ParsedActivateBundle extends ParsedLootboxProgramInstruction {
+  const ParsedActivateBundle({required this.data})
+    : super(LootboxProgramInstruction.activateBundle);
+
+  final ActivateBundleInstructionData data;
+}
+
+/// A parsed CancelBundle instruction.
+final class ParsedCancelBundle extends ParsedLootboxProgramInstruction {
+  const ParsedCancelBundle({required this.data})
+    : super(LootboxProgramInstruction.cancelBundle);
+
+  final CancelBundleInstructionData data;
+}
+
+/// A parsed FundMetadataNftPrize instruction.
+final class ParsedFundMetadataNftPrize extends ParsedLootboxProgramInstruction {
+  const ParsedFundMetadataNftPrize({required this.data})
+    : super(LootboxProgramInstruction.fundMetadataNftPrize);
+
+  final FundMetadataNftPrizeInstructionData data;
+}
+
+/// A parsed ClaimMetadataNftPrize instruction.
+final class ParsedClaimMetadataNftPrize
+    extends ParsedLootboxProgramInstruction {
+  const ParsedClaimMetadataNftPrize({required this.data})
+    : super(LootboxProgramInstruction.claimMetadataNftPrize);
+
+  final ClaimMetadataNftPrizeInstructionData data;
+}
+
+/// A parsed ReclaimMetadataNftPrize instruction.
+final class ParsedReclaimMetadataNftPrize
+    extends ParsedLootboxProgramInstruction {
+  const ParsedReclaimMetadataNftPrize({required this.data})
+    : super(LootboxProgramInstruction.reclaimMetadataNftPrize);
+
+  final ReclaimMetadataNftPrizeInstructionData data;
+}
+
+/// A parsed FundCoreAssetPrize instruction.
+final class ParsedFundCoreAssetPrize extends ParsedLootboxProgramInstruction {
+  const ParsedFundCoreAssetPrize({required this.data})
+    : super(LootboxProgramInstruction.fundCoreAssetPrize);
+
+  final FundCoreAssetPrizeInstructionData data;
+}
+
+/// A parsed ClaimCoreAssetPrize instruction.
+final class ParsedClaimCoreAssetPrize extends ParsedLootboxProgramInstruction {
+  const ParsedClaimCoreAssetPrize({required this.data})
+    : super(LootboxProgramInstruction.claimCoreAssetPrize);
+
+  final ClaimCoreAssetPrizeInstructionData data;
+}
+
+/// A parsed ReclaimCoreAssetPrize instruction.
+final class ParsedReclaimCoreAssetPrize
+    extends ParsedLootboxProgramInstruction {
+  const ParsedReclaimCoreAssetPrize({required this.data})
+    : super(LootboxProgramInstruction.reclaimCoreAssetPrize);
+
+  final ReclaimCoreAssetPrizeInstructionData data;
+}
+
+/// A parsed FundCompressedNftPrize instruction.
+final class ParsedFundCompressedNftPrize
+    extends ParsedLootboxProgramInstruction {
+  const ParsedFundCompressedNftPrize({required this.data})
+    : super(LootboxProgramInstruction.fundCompressedNftPrize);
+
+  final FundCompressedNftPrizeInstructionData data;
+}
+
+/// A parsed ClaimCompressedNftPrize instruction.
+final class ParsedClaimCompressedNftPrize
+    extends ParsedLootboxProgramInstruction {
+  const ParsedClaimCompressedNftPrize({required this.data})
+    : super(LootboxProgramInstruction.claimCompressedNftPrize);
+
+  final ClaimCompressedNftPrizeInstructionData data;
+}
+
+/// A parsed ReclaimCompressedNftPrize instruction.
+final class ParsedReclaimCompressedNftPrize
+    extends ParsedLootboxProgramInstruction {
+  const ParsedReclaimCompressedNftPrize({required this.data})
+    : super(LootboxProgramInstruction.reclaimCompressedNftPrize);
+
+  final ReclaimCompressedNftPrizeInstructionData data;
+}
+
+/// A parsed ForfeitTemplateOpen instruction.
+final class ParsedForfeitTemplateOpen extends ParsedLootboxProgramInstruction {
+  const ParsedForfeitTemplateOpen({required this.data})
+    : super(LootboxProgramInstruction.forfeitTemplateOpen);
+
+  final ForfeitTemplateOpenInstructionData data;
+}
+
 /// Parses a LootboxProgram instruction.
 ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
   Instruction instruction,
@@ -430,5 +580,48 @@ ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
       ParsedCloseTemplateOpening(
         data: parseCloseTemplateOpeningInstruction(instruction),
       ),
+    LootboxProgramInstruction.activateBundle => ParsedActivateBundle(
+      data: parseActivateBundleInstruction(instruction),
+    ),
+    LootboxProgramInstruction.cancelBundle => ParsedCancelBundle(
+      data: parseCancelBundleInstruction(instruction),
+    ),
+    LootboxProgramInstruction.fundMetadataNftPrize =>
+      ParsedFundMetadataNftPrize(
+        data: parseFundMetadataNftPrizeInstruction(instruction),
+      ),
+    LootboxProgramInstruction.claimMetadataNftPrize =>
+      ParsedClaimMetadataNftPrize(
+        data: parseClaimMetadataNftPrizeInstruction(instruction),
+      ),
+    LootboxProgramInstruction.reclaimMetadataNftPrize =>
+      ParsedReclaimMetadataNftPrize(
+        data: parseReclaimMetadataNftPrizeInstruction(instruction),
+      ),
+    LootboxProgramInstruction.fundCoreAssetPrize => ParsedFundCoreAssetPrize(
+      data: parseFundCoreAssetPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.claimCoreAssetPrize => ParsedClaimCoreAssetPrize(
+      data: parseClaimCoreAssetPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.reclaimCoreAssetPrize =>
+      ParsedReclaimCoreAssetPrize(
+        data: parseReclaimCoreAssetPrizeInstruction(instruction),
+      ),
+    LootboxProgramInstruction.fundCompressedNftPrize =>
+      ParsedFundCompressedNftPrize(
+        data: parseFundCompressedNftPrizeInstruction(instruction),
+      ),
+    LootboxProgramInstruction.claimCompressedNftPrize =>
+      ParsedClaimCompressedNftPrize(
+        data: parseClaimCompressedNftPrizeInstruction(instruction),
+      ),
+    LootboxProgramInstruction.reclaimCompressedNftPrize =>
+      ParsedReclaimCompressedNftPrize(
+        data: parseReclaimCompressedNftPrizeInstruction(instruction),
+      ),
+    LootboxProgramInstruction.forfeitTemplateOpen => ParsedForfeitTemplateOpen(
+      data: parseForfeitTemplateOpenInstruction(instruction),
+    ),
   };
 }

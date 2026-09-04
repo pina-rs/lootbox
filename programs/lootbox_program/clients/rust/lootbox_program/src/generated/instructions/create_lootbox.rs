@@ -24,7 +24,11 @@ pub struct CreateLootbox {
 }
 
 impl CreateLootbox {
-	pub fn new(authority: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		authority: solana_pubkey::Pubkey,
+		box_mint: solana_pubkey::Pubkey,
+		lootbox: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			authority,
 			box_mint,
@@ -32,13 +36,17 @@ impl CreateLootbox {
 			vault: solana_pubkey::Pubkey::find_program_address(
 				&["vault".as_bytes(), lootbox.as_ref()],
 				&crate::LOOTBOX_PROGRAM_ID,
-			).0,
+			)
+			.0,
 			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
 			token_program: solana_pubkey::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
 		}
 	}
 
-	pub fn instruction(&self, data: CreateLootboxInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: CreateLootboxInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -50,11 +58,20 @@ impl CreateLootbox {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.box_mint,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.lootbox, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.vault, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.token_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.system_program,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.token_program,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -70,11 +87,14 @@ pub struct CreateLootboxInstructionData {
 }
 
 impl CreateLootboxInstructionData {
-	pub fn new(configure: impl FnOnce(&mut CreateLootboxInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut CreateLootboxInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; <CreateLootboxInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
-			let data = <CreateLootboxInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			let data =
+				<CreateLootboxInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
+					.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 			configure(data);
 			data.discriminator = CREATE_LOOTBOX_DISCRIMINATOR;
 		}

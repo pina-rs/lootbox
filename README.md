@@ -9,9 +9,9 @@ Lootbox turns a treasury template into transferable sealed gifts. The v2 program
 
 ### Treasury template work
 
-The `feat/treasury-templates` branch adds the v2 protocol: reusable templates, finite SOL/token/NFT prize bundles, immutable Token-2022 metadata, earliest claim dates, ordered allocation, independent asset claims, and safe retirement. See the [v2 specification and completion checklist](docs/treasury-templates.md) and [v2 security notes](docs/security-templates.md).
+The `feat/treasury-templates` branch adds the v2 protocol: append-only treasuries, fully funded SOL/token/NFT bundles, immutable Token-2022 box metadata, unlock dates, versioned FIFO allocation, independent claims, staged-funding cancellation, timeout forfeiture, and safe retirement. See the [v2 specification](docs/treasury-templates.md) and [v2 security notes](docs/security-templates.md).
 
-**The web app is connected to v2.** Create and fund a template, mint to the recipient test wallet, open, reveal, and claim. Creator previews show inventory, deposits, and initial odds; the opening table reads live odds and balances. Probabilistic undercollateralization remains in scope as a separate reserve policy, but is not enabled on-chain yet.
+**The web app is connected to v2.** Create, fund, publish, and append a treasury; mint to the recipient test wallet; then open, reveal, claim, and close the receipt. Creator previews show exact inventory, deposits, and per-copy odds. Searchable Jupiter token and Metaplex DAS asset catalogs are proxied server-side and clearly distinguished from local test fixtures.
 
 A separate persistent, local-only Surfpool service is available for integration:
 
@@ -26,17 +26,17 @@ It deploys both SBF artifacts and exposes its RPC addresses and oracle fixture a
 
 ## What is included
 
-- A `no_std`, Pina-based Solana program with the legacy 10-instruction ABI plus 15 v2 template instructions.
+- A `no_std`, Pina-based Solana program with the legacy 10-instruction ABI plus 27 v2 template instructions.
 - Switchboard On-Demand initialization, commit, reveal, and close CPIs controlled by each opening PDA.
-- Fully escrowed finite SOL/token/NFT bundles in v2; the legacy SOL-only v1 retains minimum-reward timeouts.
+- Fully escrowed finite SOL, classic SPL, safe Token-2022, Token Metadata/pNFT, Core, and compressed-NFT bundles in v2; the legacy SOL-only v1 retains minimum-reward timeouts.
 - Codama-generated Rust, TypeScript, and Dart clients.
 - Ergonomic checked planning APIs in all three languages.
-- An animated React creator/recipient playground with real browser-to-Surfpool transactions, disposable test wallets, and desktop/mobile Playwright coverage.
+- An animated React creator/recipient playground with nested bundle composition, a timezone-aware date picker, searchable asset selection, live odds/version/queue state, disposable test wallets, and desktop/mobile Playwright coverage.
 - A test-only Switchboard ABI emulator deployed beside the real lootbox SBF program in offline Surfpool.
 
 ## Legacy v1 protocol
 
-The SOL-only v1 model below remains ABI-compatible. V2 uses finite bundle inventory and currently has no timeout recovery; see the [template specification](docs/treasury-templates.md).
+The SOL-only v1 model below remains ABI-compatible. V2 uses finite bundle inventory and a recipient-signed timeout forfeiture that unblocks FIFO without returning a rerollable box; see the [template specification](docs/treasury-templates.md).
 
 ```mermaid
 flowchart LR
@@ -106,19 +106,17 @@ const plan = createTemplatePlan({
 		{
 			label: "A little SOL",
 			quantity: 99n,
-			weight: 1n,
 			assets: [{ kind: "sol", lamports: 100_000_000n }],
 		},
 		{
 			label: "The jackpot",
 			quantity: 1n,
-			weight: 1n,
 			assets: [{ kind: "sol", lamports: 1_000_000_000n }],
 		},
 	],
 });
 
-console.log(plan.maxSupply); // 100n
+console.log(plan.totalBundles); // 100n
 console.log(plan.treasury); // [{ mint: null, amount: 10_900_000_000n }]
 ```
 

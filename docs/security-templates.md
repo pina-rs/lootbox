@@ -1,65 +1,76 @@
 # V2 security notes
 
-This is an implementation self-review, not an independent audit or a production readiness certificate. The previous [v1 review](security-review.md) still applies to legacy instructions. V2 uses different accounts, instructions, and economics.
+This is an implementation self-review, not an independent audit or a production-readiness certificate. The [v1 review](security-review.md) still applies only to legacy discriminators 0–9.
 
-## Threats addressed in the implementation
+## Security model
 
-| Threat                                                              | Control and reason                                                                                                                                                                                                  |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Many boxes promise the same unique NFT                              | Draw without replacement from fully escrowed finite inventory. A probability buffer cannot duplicate an NFT.                                                                                                        |
-| Counting one balance toward multiple outcomes                       | Each bundle owns separate asset escrow accounts. A transfer funds each recorded prize; declaring an amount does not fund it.                                                                                        |
-| Creator removes collateral after issuance                           | No general withdrawal authority. Retirement stops minting; recovery requires zero live box supply and zero unallocated openings, and excludes allocated but unclaimed prizes.                                       |
-| Updating the jackpot or odds after people acquire boxes             | Prize terms, per-unit weights, metadata pointers, and claim date are frozen. Only inventory counts and lifecycle bookkeeping change.                                                                                |
-| One result is submitted before another to capture the remaining NFT | Request-time FIFO sequence fixes allocation order. Proofs can be persisted out of order, but allocations cannot skip the queue.                                                                                     |
-| Failed prize transfer causes a reroll                               | Verified entropy and allocation are separate transactions from delivery. Each asset has a claim bit; retries use the same recorded outcome.                                                                         |
-| A relayer redirects the prize                                       | The burn signer is stored as recipient. Claims require that exact recipient; token destinations must be their canonical ATA.                                                                                        |
-| Mint more NFTs later or freeze the winning asset                    | NFT prizes require supply one, zero decimals, revoked mint authority, no freeze authority, and bundle quantity one. All reward mints reject freeze authority.                                                       |
-| Transfer fee, hook, or permanent-delegate surprises                 | Initial reward support is classic SPL only. Token-2022 box mints allow only standard metadata extensions, with pointer/update authority revoked.                                                                    |
-| Mutable or misleading box metadata                                  | Metadata pointer targets the box mint; on-mint name/URI must match the template and update authority must be absent. An external URI can still serve mutable content; the on-chain prize manifest is authoritative. |
-| Arithmetic overflow or biased weighted indexing                     | Checked u64 arithmetic, positive quantities and weights, bounded `weight × remaining`, and the existing bounded rejection sampler.                                                                                  |
-| Opening before a specified date                                     | Request checks Solana's Clock Unix timestamp before the burn and commitment. The date applies to all tokens from that template.                                                                                     |
-| Creator-controlled oracle or pre-revealed entropy                   | Known Switchboard program IDs only; fresh randomness account, opening-PDA authority, queue/address/slot binding, atomic commit and burn, verified reveal CPI.                                                       |
+| Threat                                           | Implemented control                                                                                                                                                                                                                                                                     |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Many boxes promise the same unique asset         | Fully escrowed finite inventory, unique identifiers may fund only one one-copy bundle, and allocation draws without replacement.                                                                                                                                                        |
+| One balance is counted in several prizes         | Each bundle owns its own SOL or token escrow. Collection assets transfer into bundle PDA control. Activation requires every declared asset to be funded.                                                                                                                                |
+| A half-funded append changes live odds           | Funding bundles are excluded from inventory, versions, and mint capacity. Only atomic activation appends a completed bundle.                                                                                                                                                            |
+| Creator edits a jackpot after distribution       | Bundle indices, quantities, assets, amounts, unlock time, box mint, and metadata are immutable. Live changes are append-only and versioned.                                                                                                                                             |
+| A pending opening receives a later addition      | Burn-time receipts snapshot the active bundle prefix and treasury version. Allocation cannot inspect bundles outside that prefix.                                                                                                                                                       |
+| Known results are reordered around scarce prizes | Requests receive a monotonic sequence. Proofs may be verified out of order, but only the FIFO head may allocate or forfeit.                                                                                                                                                             |
+| Failed delivery causes a reroll                  | Entropy, allocation, and claims are separate durable states. Per-asset claim bits make retries idempotent against the same selected bundle.                                                                                                                                             |
+| Relayer redirects a reward                       | Recipient is bound at burn and must pay/sign the reveal. SOL uses that address and token claims require its canonical ATA. Core, Metadata, and Bubblegum destinations are derived from stored ownership transitions.                                                                    |
+| Creator overissues boxes                         | Both cumulative activated-copy capacity and current `supply + pending <= remaining inventory` are checked with overflow-safe arithmetic.                                                                                                                                                |
+| Empty tier freezes issuance                      | Capacity is based on aggregate remaining copies. Zero-copy bundles are skipped by the sampler.                                                                                                                                                                                          |
+| Biased or nonterminating selection               | Total tickets are capped at `u32::MAX`; domain-separated SHA-256 rejection sampling uses eight attempts and a deterministic negligible-probability fallback. Property tests cover bounds.                                                                                               |
+| Token behavior changes the promised amount       | Generic Token-2022 support allowlists only metadata extensions. Transfer fees, hooks, delegates, pausing, and other unreviewed extensions fail closed. Classic tokens reject freeze authority.                                                                                          |
+| Fungible token is advertised as an NFT           | Legacy NFTs require supply one, zero decimals, no mint authority, no freeze authority, and a one-copy bundle. Token Metadata NFTs also require supply one and zero decimals; any mint/freeze authority must be the canonical Master Edition PDA. Other standards use explicit adapters. |
+| Creator reclaims backing while claims exist      | Active-bundle recovery requires retirement, zero box supply, and zero pending openings. It releases only undrawn copies; allocated-but-unclaimed quantities stay reserved.                                                                                                              |
+| Interrupted funding strands assets               | Funding state is resumable. The creator can reclaim each funded tail asset, and `cancelBundle` closes only after every funded asset is marked reclaimed.                                                                                                                                |
+| Timeout creates a selective reroll               | Timeout never remints a box and never allocates a prize. Only the bound recipient may irreversibly forfeit the unrevealed FIFO head after 300 slots.                                                                                                                                    |
 
-## What remains a release gate
+## Oracle and FIFO liveness
 
-### Oracle liveness
+Switchboard is an external trust and availability dependency. Requests bind the known program ID, queue, oracle, opening PDA authority, seed slot, and randomness account. Fulfillment rechecks those bindings, requires a later reveal slot, and compares the supplied signed value to the value persisted by the oracle CPI.
 
-V2 intentionally has no timeout refund/reroll or arbitrary fallback winner. A recipient who learns an unfavorable result must not be able to discard it and re-enter the pool. Unlike v1 SOL-only rewards, there is no objective minimum across different NFTs and tokens.
+A holder may see a gateway proof before it appears on chain. Consequently, returning their box or recommitting fresh randomness after timeout would permit selective rerolls. V2 instead offers recipient-signed forfeiture: the burned claim is lost, no inventory is consumed, and the FIFO queue advances. Third parties cannot force that loss. This preserves economic fairness but does not provide a positive payout guarantee during an oracle outage.
 
-This means an unavailable or permanently expired oracle proof can block FIFO allocation. Relayers can save later proofs while waiting, but that does not repair the missing proof at the head of the queue. Durable proof availability, monitored permissionless relaying, outage recovery, and a real Switchboard devnet soak need to be resolved before accepting real-value deposits. Full collateral does not guarantee immediate delivery.
+Production needs monitored relayers, durable proof transport, incident procedures, a real-network soak, and clear user disclosure. A separately funded relayer wallet can sponsor permissionless verification/allocation/claim calls. The prize treasury itself is not an uncapped fee reserve.
 
-### Upgrade and metadata trust
+## Adapter boundaries
 
-The Solana program's upgrade authority can replace program logic. Any production deployment must publish its upgrade policy and authority, and preferably use a reviewed multisig/timelock or immutable deployment. Nothing in these tests removes that trust assumption. Off-chain metadata URLs can change content independently of their immutable on-chain URL.
+The program recognizes seven stored kinds: SOL, classic SPL token, strict legacy NFT, safe Token-2022 token, Token Metadata NFT/pNFT, Core asset, and compressed NFT.
 
-### Asset coverage and fund lifecycle
+- Metadata transfers use `TransferV1`, validate the metadata PDA and mint relationship, and accept the required edition, token-record, and rule accounts as an explicitly ordered tail.
+- Core transfers validate program ownership, asset identity, collection, and forwarded plugin/external-adapter accounts.
+- Compressed transfers validate the stored asset ID and forward the exact tree, root, hashes, nonce, leaf index, and Merkle proof to Bubblegum.
+- Fresh dynamic accounts are required again at claim or reclaim time. A stale proof or changed plugin/rule set fails instead of silently downgrading to a generic transfer.
+- Program IDs are pinned. Remaining-account flags and ordering remain part of the adapter contract and require compatibility tests against deployed external programs.
 
-Compressed NFTs, Metaplex programmable transfer rules, frozen NFTs, Token-2022 reward assets, and arbitrary token adapters are not supported. A token with one unit and no mint authority proves supply constraints, not artistic authenticity.
+The local Surfpool suite deploys the Lootbox SBF and token programs, but it does not deploy production Token Metadata, Core, Bubblegum, compression, or Switchboard services. Those integrations are implemented and fail closed at their account/CPI boundaries; devnet fixtures remain a release gate.
 
-Allocated prizes can be claimed after retirement. Unopened tokens have no expiry; their backing cannot be recovered simply because their holders disappear. Template and bundle account rent remains allocated for discoverability; opening/oracle rent can be reclaimed after all assets are delivered. Oracle lookup-table lifecycle limitations from v1 still need a real-network review.
+## Lifecycle and upgrade trust
 
-### Local test infrastructure
+Retirement is one-way and blocks minting and appends, but holders keep their opening and claim rights. Outstanding standard box tokens do not expire. If a holder loses or deliberately burns one outside the program, the creator cannot force recovery until live mint supply is zero; after safe retirement, only still-undrawn inventory is recoverable.
 
-The mock Switchboard program verifies account relationships and lifecycle but does not verify real enclave signatures. Anyone controlling the local RPC can alter test state. Never deploy it to devnet/mainnet or describe its results as cryptographically verified production randomness.
+The deployed program's upgrade authority can replace all logic. A production release must publish its authority policy and use a reviewed multisig/timelock or immutable deployment. Immutable on-chain metadata pointers do not make the content served by an HTTP/IPFS gateway immutable; the on-chain bundle manifest is authoritative.
 
-The local control plane binds loopback only, rejects unexpected Host/Origin headers, serves no private keys, and caps request bodies. Its faucet, proof endpoint, and clock controls are strictly local test conveniences, not a hosted backend.
+## Browser and API boundary
 
-The browser additionally rejects non-loopback origins/RPC URLs, credentials embedded in RPC URLs, unexpected program IDs, and configurations without the explicit test-network marker. Disposable test seeds are generated in-browser and stored in localStorage, namespaced by a random network instance id. That storage is not encrypted or appropriate for valuable funds: an origin compromise can read it. No imported or real wallet is supported. Restarting Surfpool isolates new wallets from the old instance; clearing browser storage loses saved draft signers and test-wallet access.
+The playground accepts only loopback HTTP origins/RPC URLs, the expected program IDs, and an explicit test-only network marker. It generates disposable browser wallets and stores their seeds in origin-scoped localStorage. They are unencrypted and unsuitable for value. Never import real keys or send real funds.
 
-Browser integration caught a zero-based prize-tag mismatch in the handwritten client (`SOL=0`, `token=1`, `NFT=2`). The mismatch sent the wrong delivery instruction, which the program rejected; it did not allow redirecting rewards. The decoder is corrected, unknown tags fail closed, a unit test fixes the ABI mapping, and browser tests check actual recipient SOL/token/NFT balances after claiming every outcome.
+Jupiter and DAS credentials stay in the local server process. Queries, response sizes, timeouts, body sizes, host/origin values, and caches are bounded. Catalog verification badges are signals, not endorsements. The exact address, program, extensions, transfer rules, plugins, and proof freshness still determine whether funding succeeds.
 
-Creation persists stable draft signers only after plan validation and compares already-funded assets, weights, and immutable metadata before resuming. An out-of-funds browser test funds two bundles, reloads, tops up the creator, then funds only the remaining bundle. Proof transport failure after a successful burn is recoverable from the on-chain opening receipt. The UI does not claim a new random result during retry. Transaction confirmation timeout reports its signature and requires a chain refresh rather than automatically duplicating a mint/open.
+The playground mirrors catalog selections into fixed-supply local fixtures. A successful Surfpool interaction does not prove ownership or transferability of a mainnet asset.
 
-The TypeScript transaction helper currently confirms at `processed` commitment for local Surfpool. It is not a production finality policy. A public frontend must use production wallet signing and stronger confirmation/reconciliation, and must not expose this test control plane or mint emulator assets as real prizes.
+## Verification performed
 
-The isolated Surfpool host dependency graph still has the seven advisories recorded in the [v1 review](security-review.md): `RUSTSEC-2024-0344`, `RUSTSEC-2022-0093`, `RUSTSEC-2026-0258`, `RUSTSEC-2024-0421`, `RUSTSEC-2026-0104`, `RUSTSEC-2026-0098`, and `RUSTSEC-2026-0099`. A separate `cargo audit --file programs/lootbox_program/tests/surfpool/Cargo.lock` fails on these; they are not fixed or suppressed here. `cargo tree` traces them through Agave precompiles and Surfpool's `txtx`/JSON-RPC HTTP dependencies, which require incompatible major-version changes to replace. The production-workspace and mock-oracle audits pass separately. The native JavaScript simulator is also test infrastructure; a clean npm audit alone does not certify its embedded Rust dependency graph.
+- Rust unit and property tests cover 256 indices, snapshot prefixes, finite depletion, FIFO, claim masks, capacity, arithmetic, timeout forfeiture, retirement, and parsers.
+- Surfpool executes real program/token transactions for staged funding, activation, cancellation/reclaim, issuance, pre-unlock rejection, transfer, six FIFO openings, SOL/token/NFT delivery, redirect rejection, duplicate-claim rejection, retirement, recovery, and receipt closure.
+- TypeScript, Rust, and Dart planners share ticket, asset-count, uniqueness, amount, and collateral limits.
+- TypeScript generated/high-level clients, Dart analysis/tests, proxy tests, React tests, production build, and desktop/mobile Playwright flows are part of the verification target.
 
-Surfpool 1.5 uses bounded observer channels; long test journeys drain those channels. Its time-travel helper sets an epoch-relative Clock slot across epoch boundaries. The harness uses 400 ms slots and an intra-epoch one-hour date jump; that test does not validate cross-epoch Surfpool time travel. Offline transactions confirm at processed commitment rather than waiting for network finality on a single-node simulator. These accommodations do not weaken any checks in the lootbox program.
+## Remaining release gates
 
-Codama's Dart renderer generates `Object.hash` calls with more than Dart's 20-argument limit for large accounts. `clean:generated` reproducibly replaces those calls with `Object.hashAll`, covered by a regression test. Generated output must always be reproduced through this pipeline.
+1. Independent program and SDK audit.
+2. Real Switchboard integration, outage drills, monitored relayers, and sustained devnet soak.
+3. Devnet compatibility tests for Metadata/pNFT rules, Core plugins/adapters, Bubblegum, compression, and safe Token-2022 mints.
+4. Published upgrade-authority and emergency communication policy.
+5. Production wallet transaction simulation, finality, priority-fee, RPC failover, and observability strategy.
+6. Jurisdiction-specific review for randomized rewards, disclosures, eligibility, age gates, and any purchase flow.
 
-## Verification scope
-
-Unit/property tests cover finite inventory conservation, exhausted odds, pending liability, FIFO rejection, per-asset claim replay, destination binding, duplicate collateral, overflow, metadata bounds, and retirement liabilities. Rust Surfpool journeys and desktop/mobile browser tests exercise real SBF and token programs, with only the oracle emulated. Browser tests additionally cover reload recovery, insufficient-funds resumption, pre-unlock token transfer, offline UI, and RPC balance assertions. Hosted deployment, production wallet/oracle integration, probabilistic reserve accounting, and an independent audit remain incomplete; consult the live checklist in the v2 specification.
-
-The 2026-09-04 local verification passed `lint:all`, regenerated/formatted all three clients without ABI drift, passed the Rust/TypeScript/Dart unit suites, three real-SBF Surfpool journeys, the HTTP smoke test, five web unit tests, eight desktop/mobile browser tests, and the production web build. Production-workspace and mock-oracle Rust dependency checks passed. `pnpm audit --audit-level high` repeatedly failed with `ERR_SOCKET_TIMEOUT` from npm's advisory endpoint; the combined `verify:all` run is therefore not a clean pass. This external check remains unresolved and must not be treated as evidence of no JavaScript advisories.
+Do not use this build for real-value deposits until those gates are complete.

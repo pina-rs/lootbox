@@ -24,7 +24,13 @@ pub struct MintBoxes {
 }
 
 impl MintBoxes {
-	pub fn new(authority: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, recipient_box_account: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		authority: solana_pubkey::Pubkey,
+		lootbox: solana_pubkey::Pubkey,
+		vault: solana_pubkey::Pubkey,
+		box_mint: solana_pubkey::Pubkey,
+		recipient_box_account: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			authority,
 			lootbox,
@@ -46,12 +52,23 @@ impl MintBoxes {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.authority, true));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.authority,
+			true,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.lootbox, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.vault, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.vault, false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.box_mint, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.recipient_box_account, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.token_program, false));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.recipient_box_account,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.token_program,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -67,7 +84,9 @@ pub struct MintBoxesInstructionData {
 }
 
 impl MintBoxesInstructionData {
-	pub fn new(configure: impl FnOnce(&mut MintBoxesInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut MintBoxesInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; <MintBoxesInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
 			let data = <MintBoxesInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)

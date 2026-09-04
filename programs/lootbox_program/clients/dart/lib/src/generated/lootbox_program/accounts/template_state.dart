@@ -20,20 +20,18 @@ class TemplateState {
     required this.oracleQueue,
     required this.id,
     required this.opensAt,
-    required this.maxSupply,
+    required this.totalBundles,
     required this.totalMinted,
     required this.remainingBundles,
     required this.pendingOpenings,
     required this.nextRequest,
     required this.nextAllocation,
-    required this.weights,
+    required this.version,
     required this.remaining,
     required this.name,
     required this.uri,
-    required this.outcomeCount,
-    required this.fundedOutcomes,
-    required this.sealed,
-    required this.retired,
+    required this.bundleCount,
+    required this.status,
     required this.bump,
   }) : discriminator = 4;
 
@@ -44,20 +42,18 @@ class TemplateState {
   final Address oracleQueue;
   final BigInt id;
   final BigInt opensAt;
-  final BigInt maxSupply;
+  final BigInt totalBundles;
   final BigInt totalMinted;
   final BigInt remainingBundles;
   final BigInt pendingOpenings;
   final BigInt nextRequest;
   final BigInt nextAllocation;
-  final Uint8List weights;
+  final BigInt version;
   final Uint8List remaining;
   final Uint8List name;
   final Uint8List uri;
-  final int outcomeCount;
-  final int fundedOutcomes;
-  final bool sealed;
-  final bool retired;
+  final int bundleCount;
+  final int status;
   final int bump;
 
   @override
@@ -72,24 +68,22 @@ class TemplateState {
           oracleQueue == other.oracleQueue &&
           id == other.id &&
           opensAt == other.opensAt &&
-          maxSupply == other.maxSupply &&
+          totalBundles == other.totalBundles &&
           totalMinted == other.totalMinted &&
           remainingBundles == other.remainingBundles &&
           pendingOpenings == other.pendingOpenings &&
           nextRequest == other.nextRequest &&
           nextAllocation == other.nextAllocation &&
-          weights == other.weights &&
+          version == other.version &&
           remaining == other.remaining &&
           name == other.name &&
           uri == other.uri &&
-          outcomeCount == other.outcomeCount &&
-          fundedOutcomes == other.fundedOutcomes &&
-          sealed == other.sealed &&
-          retired == other.retired &&
+          bundleCount == other.bundleCount &&
+          status == other.status &&
           bump == other.bump;
 
   @override
-  int get hashCode => Object.hashAll([
+  int get hashCode => Object.hash(
     discriminator,
     authority,
     boxMint,
@@ -97,26 +91,24 @@ class TemplateState {
     oracleQueue,
     id,
     opensAt,
-    maxSupply,
+    totalBundles,
     totalMinted,
     remainingBundles,
     pendingOpenings,
     nextRequest,
     nextAllocation,
-    weights,
+    version,
     remaining,
     name,
     uri,
-    outcomeCount,
-    fundedOutcomes,
-    sealed,
-    retired,
+    bundleCount,
+    status,
     bump,
-  ]);
+  );
 
   @override
   String toString() =>
-      'TemplateState(discriminator: $discriminator, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, opensAt: $opensAt, maxSupply: $maxSupply, totalMinted: $totalMinted, remainingBundles: $remainingBundles, pendingOpenings: $pendingOpenings, nextRequest: $nextRequest, nextAllocation: $nextAllocation, weights: $weights, remaining: $remaining, name: $name, uri: $uri, outcomeCount: $outcomeCount, fundedOutcomes: $fundedOutcomes, sealed: $sealed, retired: $retired, bump: $bump)';
+      'TemplateState(discriminator: $discriminator, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, opensAt: $opensAt, totalBundles: $totalBundles, totalMinted: $totalMinted, remainingBundles: $remainingBundles, pendingOpenings: $pendingOpenings, nextRequest: $nextRequest, nextAllocation: $nextAllocation, version: $version, remaining: $remaining, name: $name, uri: $uri, bundleCount: $bundleCount, status: $status, bump: $bump)';
 }
 
 Encoder<TemplateState> getTemplateStateEncoder() {
@@ -128,23 +120,21 @@ Encoder<TemplateState> getTemplateStateEncoder() {
     ('oracleQueue', getAddressEncoder()),
     ('id', getU64Encoder()),
     ('opensAt', getI64Encoder()),
-    ('maxSupply', getU64Encoder()),
+    ('totalBundles', getU64Encoder()),
     ('totalMinted', getU64Encoder()),
     ('remainingBundles', getU64Encoder()),
     ('pendingOpenings', getU64Encoder()),
     ('nextRequest', getU64Encoder()),
     ('nextAllocation', getU64Encoder()),
-    ('weights', fixEncoderSize(getBytesEncoder(), 64, allowTruncation: false)),
+    ('version', getU64Encoder()),
     (
       'remaining',
-      fixEncoderSize(getBytesEncoder(), 64, allowTruncation: false),
+      fixEncoderSize(getBytesEncoder(), 2048, allowTruncation: false),
     ),
     ('name', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     ('uri', fixEncoderSize(getBytesEncoder(), 200, allowTruncation: false)),
-    ('outcomeCount', getU8Encoder()),
-    ('fundedOutcomes', getU8Encoder()),
-    ('sealed', getBooleanEncoder()),
-    ('retired', getBooleanEncoder()),
+    ('bundleCount', getU32Encoder()),
+    ('status', getU8Encoder()),
     ('bump', getU8Encoder()),
   ]);
 
@@ -158,20 +148,18 @@ Encoder<TemplateState> getTemplateStateEncoder() {
       'oracleQueue': value.oracleQueue,
       'id': value.id,
       'opensAt': value.opensAt,
-      'maxSupply': value.maxSupply,
+      'totalBundles': value.totalBundles,
       'totalMinted': value.totalMinted,
       'remainingBundles': value.remainingBundles,
       'pendingOpenings': value.pendingOpenings,
       'nextRequest': value.nextRequest,
       'nextAllocation': value.nextAllocation,
-      'weights': value.weights,
+      'version': value.version,
       'remaining': value.remaining,
       'name': value.name,
       'uri': value.uri,
-      'outcomeCount': value.outcomeCount,
-      'fundedOutcomes': value.fundedOutcomes,
-      'sealed': value.sealed,
-      'retired': value.retired,
+      'bundleCount': value.bundleCount,
+      'status': value.status,
       'bump': value.bump,
     },
   );
@@ -186,20 +174,18 @@ Decoder<TemplateState> getTemplateStateDecoder() {
     ('oracleQueue', getAddressDecoder()),
     ('id', getU64Decoder()),
     ('opensAt', getI64Decoder()),
-    ('maxSupply', getU64Decoder()),
+    ('totalBundles', getU64Decoder()),
     ('totalMinted', getU64Decoder()),
     ('remainingBundles', getU64Decoder()),
     ('pendingOpenings', getU64Decoder()),
     ('nextRequest', getU64Decoder()),
     ('nextAllocation', getU64Decoder()),
-    ('weights', fixDecoderSize(getBytesDecoder(), 64)),
-    ('remaining', fixDecoderSize(getBytesDecoder(), 64)),
+    ('version', getU64Decoder()),
+    ('remaining', fixDecoderSize(getBytesDecoder(), 2048)),
     ('name', fixDecoderSize(getBytesDecoder(), 32)),
     ('uri', fixDecoderSize(getBytesDecoder(), 200)),
-    ('outcomeCount', getU8Decoder()),
-    ('fundedOutcomes', getU8Decoder()),
-    ('sealed', getBooleanDecoder()),
-    ('retired', getBooleanDecoder()),
+    ('bundleCount', getU32Decoder()),
+    ('status', getU8Decoder()),
     ('bump', getU8Decoder()),
   ]);
 
@@ -223,20 +209,18 @@ Decoder<TemplateState> getTemplateStateDecoder() {
         oracleQueue: map['oracleQueue']! as Address,
         id: map['id']! as BigInt,
         opensAt: map['opensAt']! as BigInt,
-        maxSupply: map['maxSupply']! as BigInt,
+        totalBundles: map['totalBundles']! as BigInt,
         totalMinted: map['totalMinted']! as BigInt,
         remainingBundles: map['remainingBundles']! as BigInt,
         pendingOpenings: map['pendingOpenings']! as BigInt,
         nextRequest: map['nextRequest']! as BigInt,
         nextAllocation: map['nextAllocation']! as BigInt,
-        weights: map['weights']! as Uint8List,
+        version: map['version']! as BigInt,
         remaining: map['remaining']! as Uint8List,
         name: map['name']! as Uint8List,
         uri: map['uri']! as Uint8List,
-        outcomeCount: map['outcomeCount']! as int,
-        fundedOutcomes: map['fundedOutcomes']! as int,
-        sealed: map['sealed']! as bool,
-        retired: map['retired']! as bool,
+        bundleCount: map['bundleCount']! as int,
+        status: map['status']! as int,
         bump: map['bump']! as int,
       ),
       newOffset,

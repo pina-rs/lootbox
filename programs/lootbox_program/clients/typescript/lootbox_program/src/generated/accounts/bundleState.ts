@@ -7,7 +7,7 @@
  */
 
 import { fixZeroPodEncoderSize, getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
-import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
+import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findBundlePda, type BundleSeeds } from '../pdas';
 
 export const BUNDLE_STATE_DISCRIMINATOR = 5;
@@ -21,7 +21,9 @@ mints: ReadonlyUint8Array;
 /** Four little-endian base-unit amounts paid per winning bundle. */
 amounts: ReadonlyUint8Array;
 /** Four little-endian counts released through claims or retirement recovery. */
-claimed: ReadonlyUint8Array; kinds: ReadonlyUint8Array; decimals: ReadonlyUint8Array; index: number; assetCount: number; fundedAssets: number; reclaimedMask: number; bump: number;  };
+claimed: ReadonlyUint8Array; kinds: ReadonlyUint8Array; decimals: ReadonlyUint8Array; activatedVersion: bigint; index: number; assetCount: number; fundedAssets: number; reclaimedMask: number;
+/** 0 funding, 1 active. */
+status: number; bump: number;  };
 
 export type BundleStateArgs = { template: Address; quantity: number | bigint; rentReserve: number | bigint;
 /** Four mint addresses; the zero address denotes native SOL. */
@@ -29,16 +31,18 @@ mints: ReadonlyUint8Array;
 /** Four little-endian base-unit amounts paid per winning bundle. */
 amounts: ReadonlyUint8Array;
 /** Four little-endian counts released through claims or retirement recovery. */
-claimed: ReadonlyUint8Array; kinds: ReadonlyUint8Array; decimals: ReadonlyUint8Array; index: number; assetCount: number; fundedAssets: number; reclaimedMask: number; bump: number;  };
+claimed: ReadonlyUint8Array; kinds: ReadonlyUint8Array; decimals: ReadonlyUint8Array; activatedVersion: number | bigint; index: number; assetCount: number; fundedAssets: number; reclaimedMask: number;
+/** 0 funding, 1 active. */
+status: number; bump: number;  };
 
 /** Gets the encoder for {@link BundleStateArgs} account data. */
 export function getBundleStateEncoder(): FixedSizeEncoder<BundleStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['template', getAddressEncoder()], ['quantity', getU64Encoder()], ['rentReserve', getU64Encoder()], ['mints', fixZeroPodEncoderSize(getBytesEncoder(), 128)], ['amounts', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['claimed', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['kinds', fixZeroPodEncoderSize(getBytesEncoder(), 4)], ['decimals', fixZeroPodEncoderSize(getBytesEncoder(), 4)], ['index', getU8Encoder()], ['assetCount', getU8Encoder()], ['fundedAssets', getU8Encoder()], ['reclaimedMask', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 5 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['template', getAddressEncoder()], ['quantity', getU64Encoder()], ['rentReserve', getU64Encoder()], ['mints', fixZeroPodEncoderSize(getBytesEncoder(), 128)], ['amounts', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['claimed', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['kinds', fixZeroPodEncoderSize(getBytesEncoder(), 4)], ['decimals', fixZeroPodEncoderSize(getBytesEncoder(), 4)], ['activatedVersion', getU64Encoder()], ['index', getU32Encoder()], ['assetCount', getU8Encoder()], ['fundedAssets', getU8Encoder()], ['reclaimedMask', getU8Encoder()], ['status', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 5 }));
 }
 
 /** Gets the decoder for {@link BundleState} account data. */
 export function getBundleStateDecoder(): FixedSizeDecoder<BundleState> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(BUNDLE_STATE_DISCRIMINATOR, getU8Decoder())], ['template', getAddressDecoder()], ['quantity', getU64Decoder()], ['rentReserve', getU64Decoder()], ['mints', fixDecoderSize(getBytesDecoder(), 128)], ['amounts', fixDecoderSize(getBytesDecoder(), 32)], ['claimed', fixDecoderSize(getBytesDecoder(), 32)], ['kinds', fixDecoderSize(getBytesDecoder(), 4)], ['decimals', fixDecoderSize(getBytesDecoder(), 4)], ['index', getU8Decoder()], ['assetCount', getU8Decoder()], ['fundedAssets', getU8Decoder()], ['reclaimedMask', getU8Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(BUNDLE_STATE_DISCRIMINATOR, getU8Decoder())], ['template', getAddressDecoder()], ['quantity', getU64Decoder()], ['rentReserve', getU64Decoder()], ['mints', fixDecoderSize(getBytesDecoder(), 128)], ['amounts', fixDecoderSize(getBytesDecoder(), 32)], ['claimed', fixDecoderSize(getBytesDecoder(), 32)], ['kinds', fixDecoderSize(getBytesDecoder(), 4)], ['decimals', fixDecoderSize(getBytesDecoder(), 4)], ['activatedVersion', getU64Decoder()], ['index', getU32Decoder()], ['assetCount', getU8Decoder()], ['fundedAssets', getU8Decoder()], ['reclaimedMask', getU8Decoder()], ['status', getU8Decoder()], ['bump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link BundleState} account data. */

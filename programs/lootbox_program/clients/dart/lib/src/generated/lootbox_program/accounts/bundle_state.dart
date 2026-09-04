@@ -22,10 +22,12 @@ class BundleState {
     required this.claimed,
     required this.kinds,
     required this.decimals,
+    required this.activatedVersion,
     required this.index,
     required this.assetCount,
     required this.fundedAssets,
     required this.reclaimedMask,
+    required this.status,
     required this.bump,
   }) : discriminator = 5;
 
@@ -38,10 +40,12 @@ class BundleState {
   final Uint8List claimed;
   final Uint8List kinds;
   final Uint8List decimals;
+  final BigInt activatedVersion;
   final int index;
   final int assetCount;
   final int fundedAssets;
   final int reclaimedMask;
+  final int status;
   final int bump;
 
   @override
@@ -58,10 +62,12 @@ class BundleState {
           claimed == other.claimed &&
           kinds == other.kinds &&
           decimals == other.decimals &&
+          activatedVersion == other.activatedVersion &&
           index == other.index &&
           assetCount == other.assetCount &&
           fundedAssets == other.fundedAssets &&
           reclaimedMask == other.reclaimedMask &&
+          status == other.status &&
           bump == other.bump;
 
   @override
@@ -75,16 +81,18 @@ class BundleState {
     claimed,
     kinds,
     decimals,
+    activatedVersion,
     index,
     assetCount,
     fundedAssets,
     reclaimedMask,
+    status,
     bump,
   );
 
   @override
   String toString() =>
-      'BundleState(discriminator: $discriminator, template: $template, quantity: $quantity, rentReserve: $rentReserve, mints: $mints, amounts: $amounts, claimed: $claimed, kinds: $kinds, decimals: $decimals, index: $index, assetCount: $assetCount, fundedAssets: $fundedAssets, reclaimedMask: $reclaimedMask, bump: $bump)';
+      'BundleState(discriminator: $discriminator, template: $template, quantity: $quantity, rentReserve: $rentReserve, mints: $mints, amounts: $amounts, claimed: $claimed, kinds: $kinds, decimals: $decimals, activatedVersion: $activatedVersion, index: $index, assetCount: $assetCount, fundedAssets: $fundedAssets, reclaimedMask: $reclaimedMask, status: $status, bump: $bump)';
 }
 
 Encoder<BundleState> getBundleStateEncoder() {
@@ -98,10 +106,12 @@ Encoder<BundleState> getBundleStateEncoder() {
     ('claimed', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     ('kinds', fixEncoderSize(getBytesEncoder(), 4, allowTruncation: false)),
     ('decimals', fixEncoderSize(getBytesEncoder(), 4, allowTruncation: false)),
-    ('index', getU8Encoder()),
+    ('activatedVersion', getU64Encoder()),
+    ('index', getU32Encoder()),
     ('assetCount', getU8Encoder()),
     ('fundedAssets', getU8Encoder()),
     ('reclaimedMask', getU8Encoder()),
+    ('status', getU8Encoder()),
     ('bump', getU8Encoder()),
   ]);
 
@@ -117,10 +127,12 @@ Encoder<BundleState> getBundleStateEncoder() {
       'claimed': value.claimed,
       'kinds': value.kinds,
       'decimals': value.decimals,
+      'activatedVersion': value.activatedVersion,
       'index': value.index,
       'assetCount': value.assetCount,
       'fundedAssets': value.fundedAssets,
       'reclaimedMask': value.reclaimedMask,
+      'status': value.status,
       'bump': value.bump,
     },
   );
@@ -137,10 +149,12 @@ Decoder<BundleState> getBundleStateDecoder() {
     ('claimed', fixDecoderSize(getBytesDecoder(), 32)),
     ('kinds', fixDecoderSize(getBytesDecoder(), 4)),
     ('decimals', fixDecoderSize(getBytesDecoder(), 4)),
-    ('index', getU8Decoder()),
+    ('activatedVersion', getU64Decoder()),
+    ('index', getU32Decoder()),
     ('assetCount', getU8Decoder()),
     ('fundedAssets', getU8Decoder()),
     ('reclaimedMask', getU8Decoder()),
+    ('status', getU8Decoder()),
     ('bump', getU8Decoder()),
   ]);
 
@@ -166,10 +180,12 @@ Decoder<BundleState> getBundleStateDecoder() {
         claimed: map['claimed']! as Uint8List,
         kinds: map['kinds']! as Uint8List,
         decimals: map['decimals']! as Uint8List,
+        activatedVersion: map['activatedVersion']! as BigInt,
         index: map['index']! as int,
         assetCount: map['assetCount']! as int,
         fundedAssets: map['fundedAssets']! as int,
         reclaimedMask: map['reclaimedMask']! as int,
+        status: map['status']! as int,
         bump: map['bump']! as int,
       ),
       newOffset,

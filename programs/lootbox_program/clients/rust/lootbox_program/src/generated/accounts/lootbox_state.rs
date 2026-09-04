@@ -12,7 +12,7 @@ use pina::zeropod;
 
 #[derive(pina::ZeroPod)]
 pub struct LootboxState {
-/// Immutable definition and live accounting for one lootbox mint.
+	/// Immutable definition and live accounting for one lootbox mint.
 	pub discriminator: u8,
 	pub authority: solana_pubkey::Pubkey,
 	pub box_mint: solana_pubkey::Pubkey,
@@ -45,7 +45,9 @@ impl LootboxState {
 	///
 	/// Every non-discriminator field must accept an all-zero
 	/// representation. Otherwise this method returns `InvalidAccountData`.
-	pub fn initialize(data: &mut [u8]) -> Result<&mut LootboxStateZc, solana_program_error::ProgramError> {
+	pub fn initialize(
+		data: &mut [u8],
+	) -> Result<&mut LootboxStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -68,7 +70,9 @@ impl LootboxState {
 		Ok(account)
 	}
 
-	pub fn from_bytes_mut(data: &mut [u8]) -> Result<&mut LootboxStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes_mut(
+		data: &mut [u8],
+	) -> Result<&mut LootboxStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -84,16 +88,16 @@ impl LootboxState {
 impl LootboxState {
 	pub fn find_pda(authority: &solana_pubkey::Pubkey, id: u64) -> (solana_pubkey::Pubkey, u8) {
 		solana_pubkey::Pubkey::find_program_address(
-			&[
-				"lootbox".as_bytes(),
-				authority.as_ref(),
-				&id.to_le_bytes(),
-			],
+			&["lootbox".as_bytes(), authority.as_ref(), &id.to_le_bytes()],
 			&crate::LOOTBOX_PROGRAM_ID,
 		)
 	}
 
-	pub fn create_pda(authority: &solana_pubkey::Pubkey, id: u64, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(
+		authority: &solana_pubkey::Pubkey,
+		id: u64,
+		bump: u8,
+	) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
 			&[
 				"lootbox".as_bytes(),

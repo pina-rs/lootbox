@@ -22,7 +22,11 @@ pub struct AddBundle {
 }
 
 impl AddBundle {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		authority: solana_pubkey::Pubkey,
+		template: solana_pubkey::Pubkey,
+		bundle: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			authority,
 			template,
@@ -45,7 +49,10 @@ impl AddBundle {
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.system_program,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -61,7 +68,9 @@ pub struct AddBundleInstructionData {
 }
 
 impl AddBundleInstructionData {
-	pub fn new(configure: impl FnOnce(&mut AddBundleInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut AddBundleInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; <AddBundleInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
 			let data = <AddBundleInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
@@ -80,7 +89,6 @@ impl AddBundleInstructionData {
 pub struct AddBundleInstructionWire {
 	pub discriminator: u8,
 	pub quantity: u64,
-	pub weight: u64,
 	pub asset_count: u8,
 	pub bump: u8,
 }

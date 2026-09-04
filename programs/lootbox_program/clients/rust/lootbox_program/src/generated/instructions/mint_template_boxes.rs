@@ -23,17 +23,27 @@ pub struct MintTemplateBoxes {
 }
 
 impl MintTemplateBoxes {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, recipient_box_account: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		authority: solana_pubkey::Pubkey,
+		template: solana_pubkey::Pubkey,
+		box_mint: solana_pubkey::Pubkey,
+		recipient_box_account: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			authority,
 			template,
 			box_mint,
 			recipient_box_account,
-			box_token_program: solana_pubkey::pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
+			box_token_program: solana_pubkey::pubkey!(
+				"TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+			),
 		}
 	}
 
-	pub fn instruction(&self, data: MintTemplateBoxesInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: MintTemplateBoxesInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -44,11 +54,20 @@ impl MintTemplateBoxes {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.authority, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.authority,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.box_mint, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.recipient_box_account, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_token_program, false));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.recipient_box_account,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.box_token_program,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -64,11 +83,15 @@ pub struct MintTemplateBoxesInstructionData {
 }
 
 impl MintTemplateBoxesInstructionData {
-	pub fn new(configure: impl FnOnce(&mut MintTemplateBoxesInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut MintTemplateBoxesInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; <MintTemplateBoxesInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
-			let data = <MintTemplateBoxesInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			let data = <MintTemplateBoxesInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(
+				&mut bytes,
+			)
+			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 			configure(data);
 			data.discriminator = MINT_TEMPLATE_BOXES_DISCRIMINATOR;
 		}

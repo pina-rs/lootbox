@@ -12,7 +12,7 @@ use pina::zeropod;
 
 #[derive(pina::ZeroPod)]
 pub struct OpeningState {
-/// Receipt binding a burned box to one unrevealed randomness commitment.
+	/// Receipt binding a burned box to one unrevealed randomness commitment.
 	pub discriminator: u8,
 	pub lootbox: solana_pubkey::Pubkey,
 	pub recipient: solana_pubkey::Pubkey,
@@ -33,7 +33,9 @@ impl OpeningState {
 	///
 	/// Every non-discriminator field must accept an all-zero
 	/// representation. Otherwise this method returns `InvalidAccountData`.
-	pub fn initialize(data: &mut [u8]) -> Result<&mut OpeningStateZc, solana_program_error::ProgramError> {
+	pub fn initialize(
+		data: &mut [u8],
+	) -> Result<&mut OpeningStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -56,7 +58,9 @@ impl OpeningState {
 		Ok(account)
 	}
 
-	pub fn from_bytes_mut(data: &mut [u8]) -> Result<&mut OpeningStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes_mut(
+		data: &mut [u8],
+	) -> Result<&mut OpeningStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -70,18 +74,21 @@ impl OpeningState {
 }
 
 impl OpeningState {
-	pub fn find_pda(lootbox: &solana_pubkey::Pubkey, randomness: &solana_pubkey::Pubkey) -> (solana_pubkey::Pubkey, u8) {
+	pub fn find_pda(
+		lootbox: &solana_pubkey::Pubkey,
+		randomness: &solana_pubkey::Pubkey,
+	) -> (solana_pubkey::Pubkey, u8) {
 		solana_pubkey::Pubkey::find_program_address(
-			&[
-				"opening".as_bytes(),
-				lootbox.as_ref(),
-				randomness.as_ref(),
-			],
+			&["opening".as_bytes(), lootbox.as_ref(), randomness.as_ref()],
 			&crate::LOOTBOX_PROGRAM_ID,
 		)
 	}
 
-	pub fn create_pda(lootbox: &solana_pubkey::Pubkey, randomness: &solana_pubkey::Pubkey, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(
+		lootbox: &solana_pubkey::Pubkey,
+		randomness: &solana_pubkey::Pubkey,
+		bump: u8,
+	) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
 			&[
 				"opening".as_bytes(),

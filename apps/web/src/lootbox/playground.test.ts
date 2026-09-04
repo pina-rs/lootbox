@@ -39,11 +39,11 @@ describe("test wallet and creator safety", () => {
 			validateInput({
 				...initialInput,
 				rows: [{
-					kind: "nft",
-					amount: "1",
+					label: "Impossible copies",
 					quantity: "2",
-					weight: "1",
-					nftCount: "2",
+					assets: [{
+						...initialInput.rows[2]!.assets[1]!,
+					}],
 				}],
 			})
 		).toThrow(/one copy/);

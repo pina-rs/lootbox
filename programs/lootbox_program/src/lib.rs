@@ -2,14 +2,16 @@
 //!
 //! A lootbox definition controls a zero-decimal SPL Token mint. Each token is
 //! one transferable unopened box. Opening burns one token before randomness is
-//! known, records the exact Switchboard commitment, then pays one weighted SOL
-//! reward after that commitment is revealed.
+//! known, records the exact Switchboard commitment, then allocates one escrowed
+//! bundle uniformly without replacement after that commitment is revealed.
 
 #![allow(clippy::inline_always)]
 // AccountView is a copyable handle, but borrowing it makes account access and
 // mutability explicit at helper boundaries.
 #![allow(clippy::trivially_copy_pass_by_ref)]
 #![no_std]
+
+extern crate alloc;
 
 #[cfg(all(
 	not(any(target_os = "solana", target_arch = "bpf")),
@@ -33,6 +35,8 @@ declare_id!("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
 
 /// Maximum number of weighted outcomes in the first protocol version.
 pub const MAX_OUTCOMES: usize = 8;
+/// Maximum append-only prize bundles in an editable template treasury.
+pub const MAX_TEMPLATE_BUNDLES: usize = 256;
 /// Number of slots after which an unfulfilled opening receives its reward floor.
 pub const RANDOMNESS_TIMEOUT_SLOTS: u64 = 300;
 
@@ -135,6 +139,18 @@ pub enum LootboxInstruction {
 	ReclaimSolPrize = 22,
 	ReclaimTokenPrize = 23,
 	CloseTemplateOpening = 24,
+	ActivateBundle = 25,
+	CancelBundle = 26,
+	FundMetadataNftPrize = 27,
+	ClaimMetadataNftPrize = 28,
+	ReclaimMetadataNftPrize = 29,
+	FundCoreAssetPrize = 30,
+	ClaimCoreAssetPrize = 31,
+	ReclaimCoreAssetPrize = 32,
+	FundCompressedNftPrize = 33,
+	ClaimCompressedNftPrize = 34,
+	ReclaimCompressedNftPrize = 35,
+	ForfeitTemplateOpen = 36,
 }
 
 #[discriminator]
@@ -1548,6 +1564,42 @@ pub fn process_instruction(
 		}
 		LootboxInstruction::CloseTemplateOpening => {
 			CloseTemplateOpeningAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ActivateBundle => {
+			ActivateBundleAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::CancelBundle => {
+			CancelBundleAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::FundMetadataNftPrize => {
+			FundMetadataNftPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ClaimMetadataNftPrize => {
+			ClaimMetadataNftPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ReclaimMetadataNftPrize => {
+			ReclaimMetadataNftPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::FundCoreAssetPrize => {
+			FundCoreAssetPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ClaimCoreAssetPrize => {
+			ClaimCoreAssetPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ReclaimCoreAssetPrize => {
+			ReclaimCoreAssetPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::FundCompressedNftPrize => {
+			FundCompressedNftPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ClaimCompressedNftPrize => {
+			ClaimCompressedNftPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ReclaimCompressedNftPrize => {
+			ReclaimCompressedNftPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ForfeitTemplateOpen => {
+			ForfeitTemplateOpenAccounts::try_from((program_id, accounts))?.process(data)
 		}
 	}
 }

@@ -21,9 +21,11 @@ test("funds a real Surfpool treasury, gifts boxes, and delivers every bundle", a
 	const copies = page.getByLabel("Copies", { exact: true });
 	await copies.nth(0).fill("1");
 	await copies.nth(1).fill("1");
-	await page.getByRole("button", { name: "Fund treasury & seal" }).click();
+	await page.getByRole("button", { name: "Fund & publish treasury" }).click();
 	await expect(
-		page.getByText("Treasury funded and sealed. Mint your first gift below."),
+		page.getByText(
+			"Treasury funded and published. Mint your first gift below.",
+		),
 	).toBeVisible({ timeout: 60_000 });
 	await page.getByLabel("Boxes", { exact: true }).fill("3");
 	await page.getByRole("button", { name: "Mint a gift", exact: true }).click();
@@ -130,21 +132,21 @@ test("resumes partially funded drafts and transfers a time-locked gift", async (
 	const localDate = new Date(
 		unlock.getTime() - unlock.getTimezoneOffset() * 60_000,
 	).toISOString().slice(0, 16);
-	await page.getByLabel(/Earliest claim date/).fill(localDate);
-	const prizeTypes = page.getByRole("combobox", { name: "Prize", exact: true });
-	await expect(prizeTypes).toHaveCount(3);
-	for (let index = 0; index < 3; index++) {
-		await prizeTypes.nth(index).selectOption("sol");
-	}
-	for (
-		const quantity of await page.getByLabel("Copies", { exact: true }).all()
-	) await quantity.fill("1");
-	for (
-		const amount of await page.getByLabel("SOL / win", { exact: true }).all()
-	) await amount.fill("40");
-	await page.getByRole("button", { name: "Fund treasury & seal" }).click();
+	await page.getByLabel("Unlock date", { exact: true }).fill(
+		localDate.slice(0, 10),
+	);
+	await page.getByLabel("Unlock time", { exact: true }).fill(
+		localDate.slice(11),
+	);
+	const copies = page.getByLabel("Copies", { exact: true });
+	await copies.nth(0).fill("1");
+	await copies.nth(1).fill("1");
+	const solAmounts = page.getByLabel("SOL amount per win", { exact: true });
+	await solAmounts.nth(0).fill("40");
+	await solAmounts.nth(1).fill("70");
+	await page.getByRole("button", { name: "Fund & publish treasury" }).click();
 	await expect(page.getByRole("alert")).toBeVisible({ timeout: 40_000 });
-	await expect(page.getByRole("button", { name: "Resume funding & seal" }))
+	await expect(page.getByRole("button", { name: "Resume funding" }))
 		.toBeEnabled();
 	await page.reload();
 	await expect(page.getByLabel("Template name", { exact: true }))
@@ -153,9 +155,11 @@ test("resumes partially funded drafts and transfers a time-locked gift", async (
 	await expect(
 		page.getByText("Creator reset to 100 test SOL. Resume funding when ready."),
 	).toBeVisible();
-	await page.getByRole("button", { name: "Resume funding & seal" }).click();
+	await page.getByRole("button", { name: "Resume funding" }).click();
 	await expect(
-		page.getByText("Treasury funded and sealed. Mint your first gift below."),
+		page.getByText(
+			"Treasury funded and published. Mint your first gift below.",
+		),
 	).toBeVisible({ timeout: 40_000 });
 	await page.getByRole("button", { name: "Mint a gift", exact: true }).click();
 	await expect(page.getByTestId("box-balance")).toHaveText("1");
@@ -195,19 +199,23 @@ test("explains creator validation beside the affected fields", async ({ page }) 
 		.toHaveAttribute("aria-invalid", "true");
 	await expect(page.getByLabel("Template name", { exact: true }))
 		.toHaveAccessibleDescription(/32 UTF-8 bytes/);
-	await page.getByLabel("SOL / win", { exact: true }).fill("invalid");
-	await expect(page.getByLabel("SOL / win", { exact: true }))
+	await page.getByLabel("SOL amount per win", { exact: true }).first().fill(
+		"invalid",
+	);
+	await expect(page.getByLabel("SOL amount per win", { exact: true }).first())
 		.toHaveAccessibleDescription(/positive decimal amount/);
-	await page.getByLabel("Weight", { exact: true }).nth(0).fill("1001");
-	await expect(page.getByLabel("Weight", { exact: true }).nth(0))
-		.toHaveAccessibleDescription(/1 to 1,000/);
-	await expect(page.getByRole("button", { name: "Fund treasury & seal" }))
+	await page.getByLabel("Copies", { exact: true }).nth(0).fill("1000001");
+	await expect(page.getByLabel("Copies", { exact: true }).nth(0))
+		.toHaveAccessibleDescription(/1 to 1,000,000/);
+	await expect(page.getByRole("button", { name: "Fund & publish treasury" }))
 		.toBeDisabled();
 	await expect(page.getByText(/Funding is unavailable/)).toBeVisible();
 	await page.getByLabel("Template name", { exact: true }).fill("Valid draft");
-	await page.getByLabel("SOL / win", { exact: true }).fill("0.1");
-	await page.getByLabel("Weight", { exact: true }).nth(0).fill("1");
-	await expect(page.getByRole("button", { name: "Fund treasury & seal" }))
+	await page.getByLabel("SOL amount per win", { exact: true }).first().fill(
+		"0.1",
+	);
+	await page.getByLabel("Copies", { exact: true }).nth(0).fill("8");
+	await expect(page.getByRole("button", { name: "Fund & publish treasury" }))
 		.toBeEnabled();
 	expect(
 		await page.evaluate(() =>

@@ -7,7 +7,7 @@
  */
 
 import { fixZeroPodEncoderSize, getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
-import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
+import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findTemplateOpeningPda, type TemplateOpeningSeeds } from '../pdas';
 
 export const TEMPLATE_OPENING_STATE_DISCRIMINATOR = 6;
@@ -16,21 +16,25 @@ export function getTemplateOpeningStateDiscriminatorBytes(): ReadonlyUint8Array 
 
 /** A burned box, its verified entropy, and independently claimable winning assets. */
 export type TemplateOpeningState = { discriminator: number; template: Address; recipient: Address; randomness: Address; sequence: bigint; seedSlot: bigint; entropy: ReadonlyUint8Array;
-/** 0 committed, 1 verified, 2 allocated, 3 fully delivered. */
-status: number; selectedOutcome: number; claimedMask: number; bump: number;  };
+/** Treasury version and bundle prefix fixed before the box is burned. */
+treasuryVersion: bigint; eligibleBundleCount: number;
+/** 0 committed, 1 verified, 2 allocated, 3 delivered, 4 forfeited. */
+status: number; selectedBundle: number; claimedMask: number; bump: number;  };
 
 export type TemplateOpeningStateArgs = { template: Address; recipient: Address; randomness: Address; sequence: number | bigint; seedSlot: number | bigint; entropy: ReadonlyUint8Array;
-/** 0 committed, 1 verified, 2 allocated, 3 fully delivered. */
-status: number; selectedOutcome: number; claimedMask: number; bump: number;  };
+/** Treasury version and bundle prefix fixed before the box is burned. */
+treasuryVersion: number | bigint; eligibleBundleCount: number;
+/** 0 committed, 1 verified, 2 allocated, 3 delivered, 4 forfeited. */
+status: number; selectedBundle: number; claimedMask: number; bump: number;  };
 
 /** Gets the encoder for {@link TemplateOpeningStateArgs} account data. */
 export function getTemplateOpeningStateEncoder(): FixedSizeEncoder<TemplateOpeningStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['template', getAddressEncoder()], ['recipient', getAddressEncoder()], ['randomness', getAddressEncoder()], ['sequence', getU64Encoder()], ['seedSlot', getU64Encoder()], ['entropy', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['status', getU8Encoder()], ['selectedOutcome', getU8Encoder()], ['claimedMask', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 6 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['template', getAddressEncoder()], ['recipient', getAddressEncoder()], ['randomness', getAddressEncoder()], ['sequence', getU64Encoder()], ['seedSlot', getU64Encoder()], ['entropy', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['treasuryVersion', getU64Encoder()], ['eligibleBundleCount', getU32Encoder()], ['status', getU8Encoder()], ['selectedBundle', getU32Encoder()], ['claimedMask', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 6 }));
 }
 
 /** Gets the decoder for {@link TemplateOpeningState} account data. */
 export function getTemplateOpeningStateDecoder(): FixedSizeDecoder<TemplateOpeningState> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(TEMPLATE_OPENING_STATE_DISCRIMINATOR, getU8Decoder())], ['template', getAddressDecoder()], ['recipient', getAddressDecoder()], ['randomness', getAddressDecoder()], ['sequence', getU64Decoder()], ['seedSlot', getU64Decoder()], ['entropy', fixDecoderSize(getBytesDecoder(), 32)], ['status', getU8Decoder()], ['selectedOutcome', getU8Decoder()], ['claimedMask', getU8Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(TEMPLATE_OPENING_STATE_DISCRIMINATOR, getU8Decoder())], ['template', getAddressDecoder()], ['recipient', getAddressDecoder()], ['randomness', getAddressDecoder()], ['sequence', getU64Decoder()], ['seedSlot', getU64Decoder()], ['entropy', fixDecoderSize(getBytesDecoder(), 32)], ['treasuryVersion', getU64Decoder()], ['eligibleBundleCount', getU32Decoder()], ['status', getU8Decoder()], ['selectedBundle', getU32Decoder()], ['claimedMask', getU8Decoder()], ['bump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link TemplateOpeningState} account data. */

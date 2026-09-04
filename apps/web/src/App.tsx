@@ -20,25 +20,32 @@ import {
 	Plus,
 	RefreshCw,
 	ShieldCheck,
+	Tag,
 	Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AssetPicker } from "./lootbox/AssetPicker.js";
 import { LootboxMachine, type MachinePhase } from "./lootbox/Machine.js";
 import {
+	appendDrop,
+	cancelSavedDraft,
 	connectPlayground,
 	createDrop,
 	creatorErrors,
 	type CreatorInput,
+	type DraftAsset,
 	formatUnits,
 	initialInput,
+	makeAsset,
+	makeBundle,
 	parseUnits,
 	type Playground,
 	previewInput,
-	type PrizeRow,
-	savedInput,
+	savedDraftInfo,
 	settleOpenings,
 	validateInput,
 } from "./lootbox/playground.js";
+import { UnlockDatePicker } from "./lootbox/UnlockDatePicker.js";
 
 type Workspace = {
 	templates: ChainTemplate[];
@@ -49,6 +56,7 @@ type Workspace = {
 	supply: bigint;
 	balance: bigint;
 	chainTime: bigint;
+	chainSlot: bigint;
 };
 const empty: Workspace = {
 	templates: [],
@@ -59,18 +67,25 @@ const empty: Workspace = {
 	supply: 0n,
 	balance: 0n,
 	chainTime: 0n,
+	chainSlot: 0n,
 };
 const short = (value: string) => `${value.slice(0, 5)}…${value.slice(-5)}`;
 const errorMessage = (error: unknown) =>
 	error instanceof Error
 		? error.message
 		: "Something went wrong. Refresh chain state and retry.";
+const statusName = (status: number) =>
+	status === 0 ? "Draft" : status === 1 ? "Live" : "Retired";
 
 function prizeName(bundle: ChainBundle) {
 	const assets = bundleAssets(bundle.data);
-	const nfts = assets.filter((asset) => asset.kind === "nft").length;
+	const uniqueKinds = new Set(["nft", "metadataNft", "core", "compressedNft"]);
+	const nfts =
+		assets.filter((asset) => uniqueKinds.has(asset.kind ?? "")).length;
 	return [
-		...assets.filter((asset) => asset.kind !== "nft").map((asset) =>
+		...assets.filter((asset) => !uniqueKinds.has(asset.kind ?? "")).map((
+			asset,
+		) =>
 			`${
 				formatUnits(asset.amount, asset.kind === "sol" ? 9 : asset.decimals)
 			} ${asset.kind === "sol" ? "SOL" : "tokens"}`
@@ -84,6 +99,8 @@ export default function App() {
 	const [workspace, setWorkspace] = useState<Workspace>(empty);
 	const [tab, setTab] = useState<"receive" | "create" | "guide">("receive");
 	const [input, setInput] = useState<CreatorInput>(initialInput);
+	const [creatorMode, setCreatorMode] = useState<"create" | "append">("create");
+	const [pickerFor, setPickerFor] = useState<number | null>(null);
 	const [hasDraft, setHasDraft] = useState(false);
 	const [busy, setBusy] = useState(false);
 	const [connecting, setConnecting] = useState(true);
@@ -106,7 +123,8 @@ export default function App() {
 			const selected = templates.find((item) => item.address === selection) ??
 				templates.find((item) =>
 					item.data.authority === session.creator.address
-				) ?? templates[0] ?? null;
+				) ??
+				templates[0] ?? null;
 			const [bundles, boxes, supply, balance, slot] = await Promise.all([
 				selected ? client.bundles(selected) : [],
 				selected
@@ -139,6 +157,7 @@ export default function App() {
 				supply,
 				balance: balance.value,
 				chainTime: chainTime ?? 0n,
+				chainSlot: slot,
 			});
 		},
 		[],
@@ -155,29 +174,31 @@ export default function App() {
 				`lootbox:selected:${session.config.instanceId}`,
 			);
 			selectedId.current = saved ? address(saved) : undefined;
-			const draft = savedInput(session);
+			const draft = savedDraftInfo(session);
 			if (draft) {
-				setInput(draft);
+				setInput(draft.input);
+				setCreatorMode(draft.mode);
+				if (draft.template) selectedId.current = address(draft.template);
 				setHasDraft(true);
 				setTab("create");
 			}
 			await refresh(session);
-		} catch (error) {
-			setError(errorMessage(error));
+		} catch (reason) {
+			setError(errorMessage(reason));
 		} finally {
 			setConnecting(false);
 		}
 	}, [refresh]);
-	useEffect(() => {
-		void connect();
-	}, [connect]);
+	useEffect(() => void connect(), [connect]);
 	useEffect(() => {
 		if (!sandbox || busy) return;
-		const timer = setInterval(() => {
-			void refresh(sandbox).catch((error: unknown) =>
-				setError(errorMessage(error))
-			);
-		}, 5000);
+		const timer = setInterval(
+			() =>
+				void refresh(sandbox).catch((reason: unknown) =>
+					setError(errorMessage(reason))
+				),
+			5000,
+		);
 		return () => clearInterval(timer);
 	}, [sandbox, busy, refresh]);
 
@@ -199,23 +220,20 @@ export default function App() {
 		setNotice("");
 		try {
 			await action(sandbox);
-		} catch (error) {
-			setError(errorMessage(error));
+		} catch (reason) {
+			setError(errorMessage(reason));
 		} finally {
 			try {
 				await refresh(sandbox);
-			} catch (error) {
-				setError(errorMessage(error));
-			}
-			try {
-				setHasDraft(savedInput(sandbox) !== null);
-			} catch (error) {
-				setError(errorMessage(error));
+				setHasDraft(savedDraftInfo(sandbox) !== null);
+			} catch (reason) {
+				setError(errorMessage(reason));
 			}
 			setBusy(false);
 			pendingAction.current = false;
 		}
 	};
+
 	const selected = workspace.selected;
 	const preview = previewInput(input);
 	const fieldErrors = creatorErrors(input);
@@ -234,22 +252,26 @@ export default function App() {
 	const receipts = workspace.openings.filter((item) =>
 		item.data.template === selected?.address &&
 		item.data.recipient === sandbox?.recipient.address
-	)
-		.sort((a, b) => a.data.sequence > b.data.sequence ? -1 : 1);
+	).sort((a, b) => a.data.sequence > b.data.sequence ? -1 : 1);
 	const receipt = receipts.find((item) => item.data.status < 3) ?? receipts[0];
 	const delivered = receipt?.data.status === 3;
 	const visiblePrize = receipt && receipt.data.status >= 2 &&
 		(revealed.has(receipt.address) || delivered);
 	const prize = visiblePrize
-		? workspace.bundles[receipt.data.selectedOutcome]
+		? workspace.bundles[receipt.data.selectedBundle]
 		: undefined;
 	const capacity = selected
 		? templateMintCapacity(selected.data, workspace.supply)
 		: 0n;
 	const inventory = selected ? templateInventory(selected.data) : [];
 	const locked = selected && selected.data.opensAt > workspace.chainTime;
-	const mintStopped = selected &&
-		inventory.some((item) => item.remaining === 0n);
+	const recoverySlots = receipt?.data.status === 0 &&
+			receipt.data.seedSlot + 300n > workspace.chainSlot
+		? receipt.data.seedSlot + 300n - workspace.chainSlot
+		: 0n;
+	const forfeitable = receipt?.data.status === 0 && selected &&
+		receipt.data.sequence === selected.data.nextAllocation &&
+		recoverySlots === 0n;
 	const effectivePhase: MachinePhase = busy
 		? phase
 		: visiblePrize
@@ -257,20 +279,54 @@ export default function App() {
 		: phase === "received"
 		? "received"
 		: "idle";
-	const updateRow = (index: number, patch: Partial<PrizeRow>) =>
+	const updateRow = (
+		index: number,
+		patch: Partial<CreatorInput["rows"][number]>,
+	) =>
 		setInput((value) => ({
 			...value,
 			rows: value.rows.map((row, position) =>
 				index === position ? { ...row, ...patch } : row
 			),
 		}));
-	const copy = (value: string) => {
+	const updateAsset = (
+		rowIndex: number,
+		assetIndex: number,
+		patch: Partial<DraftAsset>,
+	) =>
+		setInput((value) => ({
+			...value,
+			rows: value.rows.map((row, position) =>
+				position !== rowIndex ? row : {
+					...row,
+					assets: row.assets.map((asset, current) =>
+						current === assetIndex ? { ...asset, ...patch } : asset
+					),
+				}
+			),
+		}));
+	const beginAppend = () => {
+		if (!selected) return;
+		setCreatorMode("append");
+		setInput({
+			name: decodeTemplateText(selected.data.name),
+			uri: decodeTemplateText(selected.data.uri),
+			opensAt: selected.data.opensAt > 0n
+				? new Date(
+					Number(selected.data.opensAt) * 1000 -
+						new Date().getTimezoneOffset() * 60_000,
+				).toISOString().slice(0, 16)
+				: "",
+			rows: [makeBundle()],
+		});
+		setTab("create");
+	};
+	const copy = (value: string) =>
 		void navigator.clipboard.writeText(value).then(
 			() => setNotice("Address copied"),
 			() =>
 				setError("Clipboard unavailable. Select and copy the address below."),
 		);
-	};
 
 	return (
 		<div className="workshop-shell">
@@ -315,8 +371,8 @@ export default function App() {
 				</div>
 			</header>
 			<div className="test-banner">
-				Real local transactions. Test assets only. Randomness is emulated.{" "}
-				<a
+				Real local transactions. Catalog data may be live; funded assets are
+				test-only.<a
 					href="#guide"
 					onClick={(event) => {
 						event.preventDefault();
@@ -395,33 +451,39 @@ export default function App() {
 										: "A sealed gift. A real treasury. One moment of discovery."}
 								</p>
 							</div>
-							<button className="quiet-button" onClick={() => setTab("create")}>
-								<Plus size={17} />Create a drop
+							<button
+								className="quiet-button"
+								onClick={() => {
+									setCreatorMode("create");
+									setTab("create");
+								}}
+							>
+								<Plus size={17} />Create a treasury
 							</button>
 						</div>
 						<section className="opening-workbench" aria-label="Gift workspace">
 							<aside className="drop-drawer">
 								<h2>Your opening table</h2>
 								<label className="field">
-									Template<div className="select-wrap">
+									Treasury<div className="select-wrap">
 										<select
 											aria-label="Choose template"
 											value={selected?.address ?? ""}
 											disabled={!sandbox || busy || !workspace.templates.length}
 											onChange={(event) => {
+												setPhase("received");
 												if (sandbox) {
-													setPhase("received");
-													void run(async (session) => {
-														await refresh(session, address(event.target.value));
-													});
+													void run((session) =>
+														refresh(session, address(event.target.value))
+													);
 												}
 											}}
 										>
-											<option value="" disabled>No templates yet</option>
+											<option value="" disabled>No treasuries yet</option>
 											{workspace.templates.map((item) => (
 												<option key={item.address} value={item.address}>
-													{decodeTemplateText(item.data.name)}
-													{!item.data.sealed ? " · draft" : ""}
+													{decodeTemplateText(item.data.name)} ·{" "}
+													{statusName(item.data.status).toLowerCase()}
 												</option>
 											))}
 										</select>
@@ -439,7 +501,7 @@ export default function App() {
 								</div>
 								<dl className="facts">
 									<div>
-										<dt>Claim opens</dt>
+										<dt>Unlock</dt>
 										<dd>
 											{selected?.data.opensAt
 												? new Date(Number(selected.data.opensAt) * 1000)
@@ -448,12 +510,24 @@ export default function App() {
 										</dd>
 									</div>
 									<div>
-										<dt>Backing</dt>
-										<dd>Fully funded inventory</dd>
+										<dt>Treasury</dt>
+										<dd>
+											{selected
+												? `${
+													statusName(selected.data.status)
+												} · v${selected.data.version}`
+												: "—"}
+										</dd>
 									</div>
 									<div>
-										<dt>Transferable</dt>
-										<dd>Token-2022</dd>
+										<dt>Open queue</dt>
+										<dd>
+											{selected?.data.pendingOpenings.toString() ?? "0"} pending
+										</dd>
+									</div>
+									<div>
+										<dt>Gift token</dt>
+										<dd>Token-2022 · transferable</dd>
 									</div>
 								</dl>
 								{sandbox && (
@@ -524,19 +598,51 @@ export default function App() {
 										: receipt && receipt.data.status < 2
 										? (
 											<>
-												<p>Your box is burned. Its receipt is safe on-chain.</p>
-												<button
-													className="primary-button"
-													disabled={busy}
-													onClick={() =>
-														void run(async (session) => {
-															await settleOpenings(session, selected, progress);
-															setNotice("Prize recorded. Click to reveal it.");
-														})}
-												>
-													{busy ? "Recording your prize…" : "Resume opening"}
-													<ArrowRight size={18} />
-												</button>
+												<p>
+													{forfeitable
+														? "The oracle window expired. You may forfeit this burned box to unblock later receipts. It is not returned, because that would create a reroll exploit."
+														: "Your box is burned. Its versioned receipt is safe on-chain."}
+												</p>
+												{forfeitable
+													? (
+														<button
+															className="primary-button"
+															disabled={busy}
+															onClick={() =>
+																void run(async (session) => {
+																	await session.client("recipient", progress)
+																		.forfeitTemplateOpen(selected, receipt);
+																	setPhase("received");
+																	setNotice(
+																		"Expired opening forfeited. No prize inventory was consumed, and the queue can continue.",
+																	);
+																})}
+														>
+															Forfeit & unblock queue<RefreshCw size={18} />
+														</button>
+													)
+													: (
+														<button
+															className="primary-button"
+															disabled={busy}
+															onClick={() =>
+																void run(async (session) => {
+																	await settleOpenings(
+																		session,
+																		selected,
+																		progress,
+																	);
+																	setNotice(
+																		"Prize recorded. Click to reveal it.",
+																	);
+																})}
+														>
+															{busy
+																? "Recording your prize…"
+																: "Resume opening"}
+															<ArrowRight size={18} />
+														</button>
+													)}
 											</>
 										)
 										: receipt && receipt.data.status === 2
@@ -572,7 +678,7 @@ export default function App() {
 												<button
 													className="primary-button"
 													disabled={busy || workspace.boxes === 0n ||
-														Boolean(locked) || !selected.data.sealed}
+														Boolean(locked) || selected.data.status === 0}
 													onClick={() =>
 														void run(async (session) => {
 															await session.client("recipient", progress)
@@ -589,13 +695,15 @@ export default function App() {
 														? "Open another gift"
 														: workspace.boxes === 0n
 														? "No sealed gifts yet"
+														: selected.data.status === 0
+														? "Treasury is still a draft"
 														: "Open a gift"}
 													<ArrowRight size={18} />
 												</button>
 												<p>
 													{locked
 														? "You can still transfer this gift before it unlocks."
-														: "Opening burns one token. Reveal and claim are separate steps."}
+														: "The owner pays to burn and request randomness. Anyone may verify and allocate in queue order."}
 												</p>
 											</>
 										)}
@@ -612,10 +720,50 @@ export default function App() {
 									<li className={visiblePrize ? "done" : ""}>Reveal</li>
 									<li className={delivered ? "done" : ""}>Claim</li>
 								</ol>
+								{receipt && (
+									<p className="snapshot-note">
+										Receipt #{receipt.data.sequence.toString()}{" "}
+										· treasury v{receipt.data.treasuryVersion.toString()} ·{" "}
+										{receipt.data.eligibleBundleCount}{" "}
+										eligible bundles{receipt.data.status === 0 && !forfeitable
+											? recoverySlots > 0n
+												? ` · timeout option in ${recoverySlots.toString()} slots`
+												: " · waiting for the earlier receipt"
+											: ""}
+									</p>
+								)}
+								{selected && receipt && delivered && (
+									<button
+										type="button"
+										className="receipt-close"
+										disabled={busy}
+										onClick={() =>
+											void run(async (session) => {
+												await session.client("recipient", progress)
+													.closeTemplateOpening(
+														selected,
+														receipt,
+														session.config.oracle,
+													);
+												setRevealed((items) => {
+													const next = new Set(items);
+													next.delete(receipt.address);
+													return next;
+												});
+												setNotice(
+													"Receipt closed and its account rent returned.",
+												);
+											})}
+									>
+										Close receipt & recover rent
+									</button>
+								)}
 							</div>
 							<aside className="prize-manifest">
 								<h2>What’s in the treasury?</h2>
-								<p>Live odds. Complete prize bundles.</p>
+								<p>
+									Live odds · version {selected?.data.version.toString() ?? "—"}
+								</p>
 								{workspace.bundles.length
 									? (
 										<ol>
@@ -630,7 +778,10 @@ export default function App() {
 													>
 														<div>
 															<strong>{prizeName(bundle)}</strong>
-															<span>{item?.remaining.toString()} left</span>
+															<span>
+																Bundle #{index + 1} ·{" "}
+																{item?.remaining.toString()} left
+															</span>
 														</div>
 														<b>{item?.probabilityPercent.toFixed(2)}%</b>
 														<div className="odds-line">
@@ -643,12 +794,13 @@ export default function App() {
 															/>
 														</div>
 														<details>
-															<summary>Inspect assets</summary>
+															<summary>Inspect asset IDs</summary>
 															{bundleAssets(bundle.data).filter((asset) =>
 																asset.kind !== "sol"
 															).map((asset) => (
 																<code key={asset.index}>
-																	{asset.kind.toUpperCase()} {asset.mint}
+																	{(asset.kind ?? "asset").toUpperCase()}{" "}
+																	{asset.mint}
 																</code>
 															))}
 															<code>Escrow {bundle.address}</code>
@@ -661,15 +813,17 @@ export default function App() {
 									: (
 										<div className="manifest-empty">
 											<Box size={32} />
-											<p>No prizes packed yet.</p>
+											<p>No active prizes yet.</p>
 											<span>
-												The workshop turns one treasury into a whole drop.
+												Draft bundles cannot be drawn until every asset is
+												funded.
 											</span>
 										</div>
 									)}
 								<p className="manifest-note">
-									Each win removes one bundle. Odds change as the treasury
-									empties. Already minted boxes stay redeemable.
+									Each remaining copy is one equal ticket. A win removes one.
+									New additions change future odds, while every burned box keeps
+									its treasury-version snapshot.
 								</p>
 							</aside>
 						</section>
@@ -678,14 +832,25 @@ export default function App() {
 								<div>
 									<h2>Send a little suspense.</h2>
 									<p>
-										{mintStopped
-											? "A prize tier is depleted. New minting has stopped; existing gifts still open."
-											: `${capacity} more boxes can be minted from this treasury.`}
+										{capacity}{" "}
+										more boxes can be minted from the latest funded inventory.
 									</p>
 								</div>
+								{selected.data.authority === sandbox?.creator.address &&
+									selected.data.status !== 2 && (
+									<button
+										type="button"
+										className="quiet-button"
+										onClick={beginAppend}
+										disabled={busy}
+									>
+										<Plus size={16} />Add prizes to this treasury
+									</button>
+								)}
 								<div className="dispatch-fields">
 									<label className="field">
 										Recipient address<input
+											aria-label="Recipient address"
 											value={destination}
 											onChange={(event) => setDestination(event.target.value)}
 											disabled={busy}
@@ -694,6 +859,7 @@ export default function App() {
 									</label>
 									<label className="field field--amount">
 										Boxes<input
+											aria-label="Boxes"
 											type="number"
 											min="1"
 											step="1"
@@ -705,6 +871,7 @@ export default function App() {
 									<button
 										className="primary-button"
 										disabled={busy || capacity === 0n ||
+											selected.data.status !== 1 ||
 											selected.data.authority !== sandbox?.creator.address}
 										onClick={() =>
 											void run(async (session) => {
@@ -728,7 +895,7 @@ export default function App() {
 									<summary>Transfer gifts you already hold</summary>
 									<p>
 										Standard Token-2022 transfer from the recipient test wallet.
-										This does not mint new boxes or change the treasury.
+										This does not mint or change treasury inventory.
 									</p>
 									<button
 										className="quiet-button"
@@ -755,94 +922,212 @@ export default function App() {
 					<>
 						<div className="workspace-title">
 							<div>
-								<h1>Pack the possibilities.</h1>
+								<h1>
+									{creatorMode === "append"
+										? "Restock the unknown."
+										: "Pack the possibilities."}
+								</h1>
 								<p>
-									One template. One funded treasury. A whole lot of surprises.
+									{creatorMode === "append"
+										? "Fund new bundles, then publish them as the next treasury version."
+										: "Each funded bundle becomes one or more fair tickets in the draw."}
 								</p>
 							</div>
 							<span className="mode-label">
-								<ShieldCheck size={16} />Fully funded · finite inventory
+								<ShieldCheck size={16} />Append-only · fully funded
 							</span>
 						</div>
+						<div
+							className="creator-modes"
+							role="group"
+							aria-label="Treasury action"
+						>
+							<button
+								type="button"
+								aria-pressed={creatorMode === "create"}
+								disabled={busy || hasDraft}
+								onClick={() => {
+									setCreatorMode("create");
+									setInput(initialInput);
+								}}
+							>
+								New treasury
+							</button>
+							<button
+								type="button"
+								aria-pressed={creatorMode === "append"}
+								disabled={!selected ||
+									selected.data.authority !== sandbox?.creator.address ||
+									selected.data.status === 2 || busy || hasDraft}
+								onClick={beginAppend}
+							>
+								Add to {selected
+									? decodeTemplateText(selected.data.name)
+									: "live treasury"}
+							</button>
+						</div>
+						{creatorMode === "append" && selected && (
+							<section
+								className="live-console"
+								aria-label="Live treasury console"
+							>
+								<div>
+									<span className="eyebrow">LIVE TREASURY</span>
+									<strong>{decodeTemplateText(selected.data.name)}</strong>
+									<code>{short(selected.address)}</code>
+								</div>
+								<dl>
+									<div>
+										<dt>Version</dt>
+										<dd>v{selected.data.version.toString()}</dd>
+									</div>
+									<div>
+										<dt>Published bundles</dt>
+										<dd>{selected.data.bundleCount}</dd>
+									</div>
+									<div>
+										<dt>Unwon tickets</dt>
+										<dd>{selected.data.remainingBundles.toString()}</dd>
+									</div>
+									<div>
+										<dt>Pending opens</dt>
+										<dd>{selected.data.pendingOpenings.toString()}</dd>
+									</div>
+								</dl>
+							</section>
+						)}
 						<form
 							className="creator-layout"
 							onSubmit={(event) => {
 								event.preventDefault();
 								void run(async (session) => {
 									validateInput(input);
-									const template = await createDrop(session, input, progress);
-									selectedId.current = template.address;
+									if (creatorMode === "append") {
+										if (!selected) {
+											throw new Error(
+												"Choose a live treasury before adding bundles",
+											);
+										}
+										const template = await appendDrop(
+											session,
+											selected,
+											input,
+											progress,
+										);
+										selectedId.current = template.address;
+										setNotice(
+											`Treasury addition published as version ${template.data.version}. New boxes can use it immediately.`,
+										);
+									} else {
+										const template = await createDrop(session, input, progress);
+										selectedId.current = template.address;
+										setNotice(
+											"Treasury funded and published. Mint your first gift below.",
+										);
+									}
 									setHasDraft(false);
 									setPhase("received");
 									setTab("receive");
-									setNotice(
-										"Treasury funded and sealed. Mint your first gift below.",
-									);
 								});
 							}}
 						>
 							<div className="creator-form">
-								<fieldset disabled={busy || hasDraft}>
-									<legend>Your drop</legend>
-									<div className="form-pair">
-										<label className="field">
-											Template name<input
-												aria-label="Template name"
-												{...errorProps("name")}
-												required
-												value={input.name}
-												maxLength={32}
-												onChange={(event) =>
-													setInput({ ...input, name: event.target.value })}
-											/>
-											{fieldError("name")}
-										</label>
-										<label className="field">
-											Earliest claim date{" "}
-											<span>optional · your local time</span>
-											<input
-												type="datetime-local"
-												aria-label="Earliest claim date"
-												{...errorProps("opensAt")}
-												value={input.opensAt}
-												onChange={(event) =>
-													setInput({ ...input, opensAt: event.target.value })}
-											/>
-											{fieldError("opensAt")}
-										</label>
-									</div>
-									<label className="field">
-										Metadata URI <span>optional · immutable after sealing</span>
-										<input
-											type="url"
-											aria-label="Metadata URI"
-											{...errorProps("uri")}
-											placeholder="https://your-project.com/drop.json"
-											maxLength={200}
-											value={input.uri}
-											onChange={(event) =>
-												setInput({ ...input, uri: event.target.value })}
+								{creatorMode === "create" && (
+									<fieldset disabled={busy || hasDraft}>
+										<legend>Drop identity</legend>
+										<div className="form-pair">
+											<label className="field">
+												Template name<input
+													aria-label="Template name"
+													{...errorProps("name")}
+													required
+													value={input.name}
+													maxLength={32}
+													onChange={(event) =>
+														setInput({ ...input, name: event.target.value })}
+												/>
+												{fieldError("name")}
+											</label>
+											<label className="field">
+												Metadata URI <span>optional · permanent</span>
+												<input
+													type="url"
+													aria-label="Metadata URI"
+													{...errorProps("uri")}
+													placeholder="https://your-project.com/drop.json"
+													maxLength={200}
+													value={input.uri}
+													onChange={(event) =>
+														setInput({ ...input, uri: event.target.value })}
+												/>
+												{fieldError("uri")}
+											</label>
+										</div>
+										<UnlockDatePicker
+											disabled={busy || hasDraft}
+											value={input.opensAt}
+											error={fieldErrors.opensAt}
+											onChange={(opensAt) =>
+												setInput({ ...input, opensAt })}
 										/>
-										{fieldError("uri")}
-									</label>
-								</fieldset>
+									</fieldset>
+								)}
 								<fieldset disabled={busy || hasDraft}>
-									<legend>Prize bundles</legend>
+									<legend>
+										{creatorMode === "append"
+											? "New prize bundles"
+											: "Prize bundles"}
+									</legend>
 									{fieldError("bundles")}
 									<p className="field-help">
-										A draw wins one complete row. Quantity sets inventory;
-										weight sets the chance of each remaining copy.
+										One winning ticket delivers every asset in its bundle.
+										Copies are the odds: eight identical copies means eight
+										chances. No hidden weights.
 									</p>
 									<div className="bundle-editor">
 										{input.rows.map((row, index) => (
-											<div className="bundle-row" key={index}>
+											<section
+												className="bundle-row"
+												key={`${row.label}-${index}`}
+												aria-label={`Bundle ${index + 1}`}
+											>
 												<div className="bundle-row__top">
-													<strong>
-														Bundle {index + 1}{" "}
-														<span className="bundle-preview">
-															{preview?.odds[index] ?? "—"} initial chance
-														</span>
-													</strong>
+													<span className="bundle-number">
+														{String(index + 1).padStart(2, "0")}
+													</span>
+													<label className="field bundle-title">
+														Bundle label<input
+															aria-label={`Bundle ${index + 1} label`}
+															{...errorProps(`row-${index}-label`)}
+															value={row.label}
+															onChange={(event) =>
+																updateRow(index, { label: event.target.value })}
+														/>
+														{fieldError(`row-${index}-label`)}
+													</label>
+													<label className="field bundle-copies">
+														Copies<input
+															aria-label="Copies"
+															{...errorProps(`row-${index}-quantity`)}
+															type="number"
+															min="1"
+															max="1000000"
+															required
+															disabled={row.assets.some((asset) =>
+																asset.kind === "nft"
+															)}
+															value={row.quantity}
+															onChange={(event) =>
+																updateRow(index, {
+																	quantity: event.target.value,
+																})}
+														/>
+														{fieldError(`row-${index}-quantity`)}
+													</label>
+													<div className="bundle-odds">
+														<small>INITIAL ODDS</small>
+														<strong>{preview?.odds[index] ?? "—"}</strong>
+													</div>
 													<button
 														type="button"
 														className="icon-button"
@@ -859,173 +1144,184 @@ export default function App() {
 														<Trash2 size={16} />
 													</button>
 												</div>
-												<div className="bundle-fields">
-													<label className="field">
-														Prize<select
-															value={row.kind}
-															onChange={(event) => {
-																const kind = event.target
-																	.value as PrizeRow["kind"];
-																updateRow(index, {
-																	kind,
-																	amount: kind === "token" ? "100" : "0.1",
-																	...(kind === "nft" ? { quantity: "1" } : {}),
-																});
-															}}
-														>
-															<option value="sol">SOL</option>
-															<option value="token">Test tokens</option>
-															<option value="nft">NFT bundle + SOL</option>
-														</select>
-													</label>
-													<label className="field">
-														{row.kind === "nft"
-															? "Bonus SOL"
-															: row.kind === "token"
-															? "Tokens / win"
-															: "SOL / win"}
-														<input
-															required
-															inputMode="decimal"
-															aria-label={row.kind === "nft"
-																? "Bonus SOL"
-																: row.kind === "token"
-																? "Tokens / win"
-																: "SOL / win"}
-															{...errorProps(`row-${index}-amount`)}
-															value={row.amount}
-															onChange={(event) =>
-																updateRow(index, {
-																	amount: event.target.value,
-																})}
-														/>
-														{fieldError(`row-${index}-amount`)}
-													</label>
-													<label className="field">
-														Copies<input
-															aria-label="Copies"
-															{...errorProps(`row-${index}-quantity`)}
-															type="number"
-															min="1"
-															max="1000"
-															required
-															disabled={row.kind === "nft"}
-															value={row.quantity}
-															onChange={(event) =>
-																updateRow(index, {
-																	quantity: event.target.value,
-																})}
-														/>
-														{fieldError(`row-${index}-quantity`)}
-													</label>
-													<label className="field">
-														Weight<input
-															aria-label="Weight"
-															{...errorProps(`row-${index}-weight`)}
-															type="number"
-															min="1"
-															max="1000"
-															required
-															value={row.weight}
-															onChange={(event) =>
-																updateRow(index, {
-																	weight: event.target.value,
-																})}
-														/>
-														{fieldError(`row-${index}-weight`)}
-													</label>
-													{row.kind === "nft" && (
-														<label className="field">
-															Unique NFTs<select
-																value={row.nftCount}
-																onChange={(event) =>
+												{fieldError(`row-${index}-assets`)}
+												<div className="bundle-assets">
+													{row.assets.map((asset, assetIndex) => (
+														<div className="asset-line" key={asset.id}>
+															<div className="asset-mark">
+																{asset.icon
+																	? <img src={asset.icon} alt="" />
+																	: asset.kind === "nft"
+																	? <Gift size={18} />
+																	: asset.kind === "token"
+																	? <Tag size={18} />
+																	: <span>◎</span>}
+															</div>
+															<div className="asset-identity">
+																<strong>{asset.label}</strong>
+																<span>
+																	{asset.standard ?? (asset.kind === "sol"
+																		? "Native SOL"
+																		: `${asset.decimals} decimals`)} ·{" "}
+																	<i>{asset.source}</i>
+																</span>
+																{asset.mint && (
+																	<code title={asset.mint}>
+																		{short(asset.mint)}
+																	</code>
+																)}
+															</div>
+															{asset.kind !== "nft" && (
+																<label className="field asset-amount">
+																	Amount per win<input
+																		aria-label={`${asset.label} amount per win`}
+																		inputMode="decimal"
+																		{...errorProps(
+																			`row-${index}-asset-${assetIndex}-amount`,
+																		)}
+																		value={asset.amount}
+																		onChange={(event) =>
+																			updateAsset(index, assetIndex, {
+																				amount: event.target.value,
+																			})}
+																	/>
+																	{fieldError(
+																		`row-${index}-asset-${assetIndex}-amount`,
+																	)}
+																</label>
+															)}
+															{fieldError(
+																`row-${index}-asset-${assetIndex}-mint`,
+															)}
+															<button
+																type="button"
+																className="icon-button"
+																aria-label={`Remove ${asset.label}`}
+																disabled={row.assets.length === 1}
+																onClick={() =>
 																	updateRow(index, {
-																		nftCount: event.target.value,
+																		assets: row.assets.filter((_, position) =>
+																			position !== assetIndex
+																		),
 																	})}
 															>
-																<option>1</option>
-																<option>2</option>
-																<option>3</option>
-															</select>
-														</label>
-													)}
+																<Trash2 size={15} />
+															</button>
+														</div>
+													))}
 												</div>
-											</div>
+												<button
+													type="button"
+													className="add-asset-button"
+													disabled={row.assets.length >= 4}
+													onClick={() => setPickerFor(index)}
+												>
+													<Plus size={16} />Add asset to bundle{" "}
+													<span>{row.assets.length}/4</span>
+												</button>
+											</section>
 										))}
 									</div>
 									<button
 										type="button"
 										className="quiet-button"
-										disabled={input.rows.length >= 8}
+										disabled={input.rows.length >= 256}
 										onClick={() =>
 											setInput({
 												...input,
-												rows: [...input.rows, {
-													kind: "sol",
-													amount: "0.5",
-													quantity: "1",
-													weight: "1",
-													nftCount: "1",
-												}],
+												rows: [...input.rows, makeBundle()],
 											})}
 									>
-										<Plus size={17} />Add prize bundle
+										<Plus size={17} />Add another bundle
 									</button>
 								</fieldset>
 							</div>
 							<aside className="creation-summary">
-								<h2>Seal it with substance.</h2>
+								<span className="eyebrow">FUNDING MANIFEST</span>
+								<h2>
+									{creatorMode === "append"
+										? "Publish an addition."
+										: "Back every promise."}
+								</h2>
 								<LootboxMachine phase={busy ? "commit" : "idle"} />
 								<p>
-									Every listed prize is deposited before this template can mint
-									a single gift.
+									Assets are escrowed before their tickets become eligible. A
+									half-funded bundle never enters the draw.
 								</p>
 								<dl className="facts">
 									<div>
-										<dt>Prize tiers</dt>
-										<dd>{input.rows.length} / 8</dd>
+										<dt>New bundles</dt>
+										<dd>{input.rows.length} / 256</dd>
+									</div>
+									<div>
+										<dt>Capacity added</dt>
+										<dd>{preview?.copies.toString() ?? "—"} boxes</dd>
 									</div>
 									<div>
 										<dt>SOL to escrow</dt>
 										<dd>{preview ? formatUnits(preview.sol) : "—"} SOL</dd>
 									</div>
 									<div>
-										<dt>Test prizes</dt>
+										<dt>Other assets</dt>
 										<dd>
-											{preview?.tokens.toString() ?? "—"} tokens /{" "}
-											{preview?.nfts ?? "—"} NFTs
+											{preview
+												? `${preview.tokenAssets} token lines · ${preview.nfts} NFTs`
+												: "—"}
 										</dd>
 									</div>
 									<div>
-										<dt>Maximum boxes</dt>
-										<dd>{preview?.copies.toString() ?? "—"}</dd>
+										<dt>Chance model</dt>
+										<dd>Uniform per copy</dd>
 									</div>
 									<div>
-										<dt>Box standard</dt>
-										<dd>Token-2022</dd>
+										<dt>Change payer</dt>
+										<dd>Creator wallet</dd>
 									</div>
 									<div>
-										<dt>Metadata</dt>
-										<dd>Immutable</dd>
+										<dt>Open payer</dt>
+										<dd>Box owner</dd>
 									</div>
 									<div>
-										<dt>Test wallet</dt>
-										<dd>
-											{sandbox
-												? short(sandbox.creator.address)
-												: "Not connected"}
-										</dd>
+										<dt>Network fees</dt>
+										<dd>Shown per signing step</dd>
 									</div>
 								</dl>
 								<p className="field-help">
-									The sandbox creates fresh, fixed-supply test tokens and basic
-									one-of-one NFTs for you. They have no real-world value.
+									Jupiter and DAS choices are mirrored locally. Production
+									integrations fund the selected token, Token-2022 mint,
+									Metadata NFT/pNFT, Core asset, or cNFT through typed SDK
+									adapters.
 								</p>
 								{hasDraft && (
-									<p className="draft-note">
-										An unfinished draft is saved. Resume it to continue from the
-										last funded asset.
-									</p>
+									<div className="draft-actions">
+										<p className="draft-note">
+											An unfinished funding manifest is locked to its saved
+											assets. Resume it, or reclaim only its unpublished tail
+											bundle. Already published bundles stay immutable.
+										</p>
+										<button
+											type="button"
+											className="quiet-button quiet-button--danger"
+											disabled={!sandbox || busy}
+											onClick={() =>
+												void run(async (session) => {
+													const result = await cancelSavedDraft(
+														session,
+														progress,
+													);
+													if (result.template) {
+														selectedId.current = result.template.address;
+													}
+													setNotice(result.message);
+													if (!result.draftRetained) {
+														setInput(initialInput);
+														setCreatorMode("create");
+													}
+												})}
+										>
+											<Trash2 size={15} />Reclaim staged draft
+										</button>
+									</div>
 								)}
 								<button
 									type="submit"
@@ -1033,13 +1329,16 @@ export default function App() {
 										? "creator-validation-summary"
 										: undefined}
 									className="primary-button"
-									disabled={!sandbox || busy || !preview}
+									disabled={!sandbox || busy || !preview ||
+										(creatorMode === "append" && !selected)}
 								>
 									{busy
-										? "Packing your treasury…"
+										? "Funding the manifest…"
 										: hasDraft
-										? "Resume funding & seal"
-										: "Fund treasury & seal"}
+										? "Resume funding"
+										: creatorMode === "append"
+										? "Fund & publish addition"
+										: "Fund & publish treasury"}
 									<ArrowRight size={18} />
 								</button>
 								{!preview && (
@@ -1048,13 +1347,14 @@ export default function App() {
 										className="field-error"
 										role="status"
 									>
-										Funding is unavailable. Fix the highlighted prize or
-										template fields above.
+										Funding is unavailable. Fix the highlighted bundle or
+										identity fields.
 									</p>
 								)}
 								<p className="field-help">
-									Uses creator test SOL for prizes and rent. Several signed
-									transactions; safe to resume after a refresh.
+									Several creator-signed transactions may be required. Confirmed
+									steps are detected on-chain and skipped safely after a
+									refresh.
 								</p>
 								<button
 									type="button"
@@ -1079,58 +1379,64 @@ export default function App() {
 					<article className="guide">
 						<h1>Surprise, with a paper trail.</h1>
 						<p className="guide-lead">
-							Lootbox turns a shared treasury into tradable gifts. The suspense
-							is in what you win—not whether the finite pool contains the
+							Lootbox turns a shared treasury into transferable gifts. The
+							suspense is what you win—not whether the finite pool contains the
 							promised prizes.
 						</p>
-						<h2>A template is the minter.</h2>
+						<h2>Bundles are the tickets.</h2>
 						<p>
-							Choose complete bundles: SOL, tokens, or multiple specific NFTs.
-							Deposit every copy, then seal the template. Its name, URI, unlock
-							date, and prize table cannot be edited after sealing. Each
-							unopened box is one unit of a transferable Token-2022 mint.
+							A creator stages a complete bundle of one to four assets, funds
+							every copy, and activates it. One bundle copy is one
+							equal-probability ticket. SOL, classic SPL, safe Token-2022
+							tokens, Token Metadata NFTs and pNFTs, Core assets, and compressed
+							NFTs each have a typed transfer path.
 						</p>
-						<h2>Odds follow the inventory.</h2>
+						<h2>The treasury only grows.</h2>
 						<p>
-							A bundle’s chance is its remaining copies × its weight, divided by
-							that total across the pool. Winners remove complete bundles
-							without replacement. When a prize tier sells out, minting stops.
-							Existing holders can still draw from the remaining inventory.
+							Live treasuries accept append-only additions. Funding drafts are
+							invisible to draws and can be reclaimed or resumed. Activation
+							increments the treasury version, bundle count, inventory, and mint
+							capacity together. Existing terms and bundle IDs never change.
 						</p>
-						<h2>Opening is a commitment.</h2>
+						<h2>Every opening gets a snapshot.</h2>
 						<p>
-							Burning a box and committing fresh randomness happen together.
-							Proofs are verified and openings allocated in request order, so a
-							fast caller cannot jump the queue. Clicking reveal only unveils an
-							already-recorded result. Claims deliver every asset to the
-							recorded recipient; failed deliveries resume without drawing
-							again.
+							Burning a box records the latest version and eligible bundle
+							prefix before randomness is requested. Later additions immediately
+							improve the odds shown for unopened boxes without changing the
+							pool already promised to a pending receipt. Allocation is FIFO and
+							without replacement.
 						</p>
-						<h2>Probabilistic backing stays in scope.</h2>
+						<h2>Payers are explicit.</h2>
 						<p>
-							The current on-chain mode is fully funded finite inventory. A
-							separate probabilistically backed mode will allow reserves below
-							worst-case aggregate payouts, with an explicit risk budget and a
-							defined shortfall contract. It is not enabled by these controls. A
-							reserve buffer is not a payout guarantee, and a unique NFT cannot
-							be promised twice.
+							The creator pays for treasury creation, funding, additions, and
+							gift minting. The box owner pays to burn and request randomness.
+							Verification and allocation are permissionless cranks, while
+							claims always deliver to the recipient recorded at burn time.
+						</p>
+						<h2>Catalog results are not endorsements.</h2>
+						<p>
+							Jupiter Tokens V2 supplies searchable token metadata and
+							verification signals. Metaplex DAS supplies wallet-owned standard,
+							Core, and compressed assets. Always inspect the exact mint, token
+							program, transfer restrictions, plugins, and proof freshness. This
+							local playground mirrors selections as disposable assets rather
+							than moving mainnet property.
 						</p>
 						<h2>This is a local test network.</h2>
 						<p>
 							Surfpool executes the real Lootbox and token programs. The oracle
-							is a test emulator: it does not provide production-grade
-							randomness or verify real enclave signatures. Both test wallets
-							are generated in your browser and stored on this origin. Never
-							import real keys or send real funds. Restarting the local service
-							clears the chain and creates a new wallet namespace.
+							emulator does not provide production-grade randomness or verify
+							real enclave signatures. Test wallets live only in this browser
+							origin. Never import real keys or send real funds.
 						</p>
-						<h2>Before real value is at stake.</h2>
+						<h2>Production gates remain visible.</h2>
 						<p>
-							Production oracle integration, recovery from oracle outages or
-							expired commitments, independent security review, and production
-							wallet connections remain release gates. A stalled first-in-line
-							commitment can currently block subsequent openings. This
-							playground must not be exposed as a public funded service.
+							A production deployment still needs a real oracle service, crank
+							operating policy and reserve, incident recovery procedures,
+							external program compatibility fixtures, an independent audit,
+							jurisdiction-specific review, and real wallet transaction
+							simulation. These are deployment controls—not missing treasury
+							semantics.
 						</p>
 						<p>
 							<a
@@ -1144,6 +1450,20 @@ export default function App() {
 					</article>
 				)}
 
+				{pickerFor !== null && sandbox && (
+					<AssetPicker
+						owner={sandbox.creator.address}
+						onClose={() => setPickerFor(null)}
+						onPick={(asset) => {
+							const row = input.rows[pickerFor];
+							if (!row || row.assets.length >= 4) return;
+							updateRow(pickerFor, {
+								assets: [...row.assets, asset],
+								...(asset.kind === "nft" ? { quantity: "1" } : {}),
+							});
+						}}
+					/>
+				)}
 				{transactions.length > 0 && (
 					<details className="transaction-log">
 						<summary>

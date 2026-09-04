@@ -15,7 +15,6 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 class CreateTemplateInstructionData {
   const CreateTemplateInstructionData({
     required this.id,
-    required this.maxSupply,
     required this.opensAt,
     required this.oracleProgram,
     required this.oracleQueue,
@@ -26,7 +25,6 @@ class CreateTemplateInstructionData {
 
   final int discriminator;
   final BigInt id;
-  final BigInt maxSupply;
   final BigInt opensAt;
   final Address oracleProgram;
   final Address oracleQueue;
@@ -40,7 +38,6 @@ getCreateTemplateInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
     ('id', getU64Encoder()),
-    ('maxSupply', getU64Encoder()),
     ('opensAt', getI64Encoder()),
     ('oracleProgram', getAddressEncoder()),
     ('oracleQueue', getAddressEncoder()),
@@ -54,7 +51,6 @@ getCreateTemplateInstructionDataEncoder() {
     (CreateTemplateInstructionData value) => <String, Object?>{
       'discriminator': 10,
       'id': value.id,
-      'maxSupply': value.maxSupply,
       'opensAt': value.opensAt,
       'oracleProgram': value.oracleProgram,
       'oracleQueue': value.oracleQueue,
@@ -70,7 +66,6 @@ getCreateTemplateInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
     ('id', getU64Decoder()),
-    ('maxSupply', getU64Decoder()),
     ('opensAt', getI64Decoder()),
     ('oracleProgram', getAddressDecoder()),
     ('oracleQueue', getAddressDecoder()),
@@ -100,7 +95,6 @@ getCreateTemplateInstructionDataDecoder() {
     return (
       CreateTemplateInstructionData(
         id: map['id']! as BigInt,
-        maxSupply: map['maxSupply']! as BigInt,
         opensAt: map['opensAt']! as BigInt,
         oracleProgram: map['oracleProgram']! as Address,
         oracleQueue: map['oracleQueue']! as Address,
@@ -149,7 +143,6 @@ Instruction getCreateTemplateInstruction({
   required Address systemProgram,
   required Address boxTokenProgram,
   required BigInt id,
-  required BigInt maxSupply,
   required BigInt opensAt,
   required Address oracleProgram,
   required Address oracleQueue,
@@ -159,7 +152,6 @@ Instruction getCreateTemplateInstruction({
 }) {
   final instructionData = CreateTemplateInstructionData(
     id: id,
-    maxSupply: maxSupply,
     opensAt: opensAt,
     oracleProgram: oracleProgram,
     oracleQueue: oracleQueue,

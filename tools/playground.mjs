@@ -57,6 +57,176 @@ const allowedOrigins = new Set(
 		`http://127.0.0.1:${value}`,
 	]),
 );
+const classicTokenProgram = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const catalogCache = new Map();
+const catalogTtlMs = 5 * 60 * 1000;
+const fallbackTokens = Object.freeze([
+	{
+		id: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6XKj7D3WpqkDmzPK",
+		name: "Bonk",
+		symbol: "BONK",
+		decimals: 5,
+		verified: true,
+		tokenProgram: classicTokenProgram,
+	},
+	{
+		id: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+		name: "USD Coin",
+		symbol: "USDC",
+		decimals: 6,
+		verified: true,
+		tokenProgram: classicTokenProgram,
+	},
+]);
+
+function safeQuery(value, maximum = 120) {
+	if (
+		typeof value !== "string" || value.length > maximum ||
+		/[\u0000-\u001f\u007f]/.test(value)
+	) {
+		throw new RangeError("invalid search query");
+	}
+	return value.trim();
+}
+
+async function cached(key, load) {
+	const hit = catalogCache.get(key);
+	if (hit && Date.now() - hit.at < catalogTtlMs) return hit.value;
+	const value = await load();
+	if (catalogCache.size >= 100) {
+		catalogCache.delete(catalogCache.keys().next().value);
+	}
+	catalogCache.set(key, { at: Date.now(), value });
+	return value;
+}
+
+async function searchTokenCatalog(query) {
+	const match = (token) =>
+		[token.id, token.name, token.symbol].some((value) =>
+			value.toLowerCase().includes(query.toLowerCase())
+		);
+	const fallback = fallbackTokens.filter(match);
+	const apiKey = process.env.JUPITER_API_KEY;
+	if (!apiKey) {
+		return {
+			items: fallback,
+			source: "fallback",
+			message:
+				"Add JUPITER_API_KEY for live Jupiter Tokens V2 results; showing a verified starter list.",
+		};
+	}
+	try {
+		return await cached(`jupiter:${query.toLowerCase()}`, async () => {
+			const upstream = await fetch(
+				`https://api.jup.ag/tokens/v2/search?query=${
+					encodeURIComponent(query || "SOL")
+				}`,
+				{
+					headers: { "x-api-key": apiKey },
+					signal: AbortSignal.timeout(7_000),
+				},
+			);
+			if (!upstream.ok) throw new Error(`Jupiter returned ${upstream.status}`);
+			const payload = await upstream.json();
+			if (!Array.isArray(payload)) {
+				throw new TypeError("invalid Jupiter response");
+			}
+			const items = payload.slice(0, 20).flatMap((item) => {
+				if (
+					!item || !validAddress(item.id) || typeof item.name !== "string" ||
+					typeof item.symbol !== "string" || !Number.isInteger(item.decimals) ||
+					item.decimals < 0 || item.decimals > 9
+				) return [];
+				return [{
+					id: item.id,
+					name: item.name.slice(0, 80),
+					symbol: item.symbol.slice(0, 20),
+					...(typeof item.icon === "string" ? { icon: item.icon } : {}),
+					decimals: item.decimals,
+					verified: item.isVerified === true,
+					tokenProgram: validAddress(item.tokenProgram)
+						? item.tokenProgram
+						: classicTokenProgram,
+				}];
+			});
+			return { items, source: "live" };
+		});
+	} catch (error) {
+		return {
+			items: fallback,
+			source: "fallback",
+			message: `Jupiter is unavailable (${
+				error instanceof Error ? error.message : "request failed"
+			}); showing a verified starter list.`,
+		};
+	}
+}
+
+async function searchNftCatalog(owner, query) {
+	const endpoint = process.env.DAS_RPC_URL;
+	if (!endpoint) {
+		return {
+			items: [],
+			source: "unavailable",
+			message:
+				"Add a DAS_RPC_URL to search this wallet's Metaplex, Core, and compressed NFTs.",
+		};
+	}
+	try {
+		return await cached(`das:${owner}:${query.toLowerCase()}`, async () => {
+			const upstream = await fetch(endpoint, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					jsonrpc: "2.0",
+					id: "lootbox-picker",
+					method: "getAssetsByOwner",
+					params: { ownerAddress: owner, page: 1, limit: 100 },
+				}),
+				signal: AbortSignal.timeout(7_000),
+			});
+			if (!upstream.ok) {
+				throw new Error(`DAS provider returned ${upstream.status}`);
+			}
+			const payload = await upstream.json();
+			if (payload.error) {
+				throw new Error(String(payload.error.message ?? "DAS RPC error"));
+			}
+			const values = payload.result?.items;
+			if (!Array.isArray(values)) throw new TypeError("invalid DAS response");
+			const needle = query.toLowerCase();
+			const items = values.flatMap((item) => {
+				const name = item?.content?.metadata?.name;
+				const standard = item?.interface;
+				if (
+					!validAddress(item?.id) || typeof name !== "string" ||
+					typeof standard !== "string" ||
+					standard.toLowerCase().includes("fungible") ||
+					(needle &&
+						!`${name} ${item.id} ${standard}`.toLowerCase().includes(needle))
+				) return [];
+				const image = item?.content?.links?.image ??
+					item?.content?.files?.[0]?.uri;
+				return [{
+					id: item.id,
+					name: name.slice(0, 100),
+					...(typeof image === "string" ? { image } : {}),
+					standard,
+					compressed: item?.compression?.compressed === true,
+				}];
+			});
+			return { items: items.slice(0, 40), source: "live" };
+		});
+	} catch (error) {
+		return {
+			items: [],
+			source: "unavailable",
+			message: `DAS search is unavailable (${
+				error instanceof Error ? error.message : "request failed"
+			}).`,
+		};
+	}
+}
 
 function validAddress(value) {
 	return typeof value === "string" &&
@@ -109,6 +279,18 @@ const server = createServer(async (request, response) => {
 		const url = new URL(request.url ?? "/", `http://127.0.0.1:${port}`);
 		if (request.method === "GET" && url.pathname === "/config") {
 			reply(response, 200, config);
+			return;
+		}
+		if (request.method === "GET" && url.pathname === "/assets/tokens") {
+			const query = safeQuery(url.searchParams.get("q") ?? "");
+			reply(response, 200, await searchTokenCatalog(query));
+			return;
+		}
+		if (request.method === "GET" && url.pathname === "/assets/nfts") {
+			const owner = safeQuery(url.searchParams.get("owner") ?? "", 44);
+			const query = safeQuery(url.searchParams.get("q") ?? "");
+			if (!validAddress(owner)) throw new RangeError("invalid wallet address");
+			reply(response, 200, await searchNftCatalog(owner, query));
 			return;
 		}
 		if (request.method === "POST" && url.pathname === "/faucet") {

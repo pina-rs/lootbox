@@ -20,8 +20,10 @@ class TemplateOpeningState {
     required this.sequence,
     required this.seedSlot,
     required this.entropy,
+    required this.treasuryVersion,
+    required this.eligibleBundleCount,
     required this.status,
-    required this.selectedOutcome,
+    required this.selectedBundle,
     required this.claimedMask,
     required this.bump,
   }) : discriminator = 6;
@@ -33,8 +35,10 @@ class TemplateOpeningState {
   final BigInt sequence;
   final BigInt seedSlot;
   final Uint8List entropy;
+  final BigInt treasuryVersion;
+  final int eligibleBundleCount;
   final int status;
-  final int selectedOutcome;
+  final int selectedBundle;
   final int claimedMask;
   final int bump;
 
@@ -50,8 +54,10 @@ class TemplateOpeningState {
           sequence == other.sequence &&
           seedSlot == other.seedSlot &&
           entropy == other.entropy &&
+          treasuryVersion == other.treasuryVersion &&
+          eligibleBundleCount == other.eligibleBundleCount &&
           status == other.status &&
-          selectedOutcome == other.selectedOutcome &&
+          selectedBundle == other.selectedBundle &&
           claimedMask == other.claimedMask &&
           bump == other.bump;
 
@@ -64,15 +70,17 @@ class TemplateOpeningState {
     sequence,
     seedSlot,
     entropy,
+    treasuryVersion,
+    eligibleBundleCount,
     status,
-    selectedOutcome,
+    selectedBundle,
     claimedMask,
     bump,
   );
 
   @override
   String toString() =>
-      'TemplateOpeningState(discriminator: $discriminator, template: $template, recipient: $recipient, randomness: $randomness, sequence: $sequence, seedSlot: $seedSlot, entropy: $entropy, status: $status, selectedOutcome: $selectedOutcome, claimedMask: $claimedMask, bump: $bump)';
+      'TemplateOpeningState(discriminator: $discriminator, template: $template, recipient: $recipient, randomness: $randomness, sequence: $sequence, seedSlot: $seedSlot, entropy: $entropy, treasuryVersion: $treasuryVersion, eligibleBundleCount: $eligibleBundleCount, status: $status, selectedBundle: $selectedBundle, claimedMask: $claimedMask, bump: $bump)';
 }
 
 Encoder<TemplateOpeningState> getTemplateOpeningStateEncoder() {
@@ -84,8 +92,10 @@ Encoder<TemplateOpeningState> getTemplateOpeningStateEncoder() {
     ('sequence', getU64Encoder()),
     ('seedSlot', getU64Encoder()),
     ('entropy', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
+    ('treasuryVersion', getU64Encoder()),
+    ('eligibleBundleCount', getU32Encoder()),
     ('status', getU8Encoder()),
-    ('selectedOutcome', getU8Encoder()),
+    ('selectedBundle', getU32Encoder()),
     ('claimedMask', getU8Encoder()),
     ('bump', getU8Encoder()),
   ]);
@@ -100,8 +110,10 @@ Encoder<TemplateOpeningState> getTemplateOpeningStateEncoder() {
       'sequence': value.sequence,
       'seedSlot': value.seedSlot,
       'entropy': value.entropy,
+      'treasuryVersion': value.treasuryVersion,
+      'eligibleBundleCount': value.eligibleBundleCount,
       'status': value.status,
-      'selectedOutcome': value.selectedOutcome,
+      'selectedBundle': value.selectedBundle,
       'claimedMask': value.claimedMask,
       'bump': value.bump,
     },
@@ -117,8 +129,10 @@ Decoder<TemplateOpeningState> getTemplateOpeningStateDecoder() {
     ('sequence', getU64Decoder()),
     ('seedSlot', getU64Decoder()),
     ('entropy', fixDecoderSize(getBytesDecoder(), 32)),
+    ('treasuryVersion', getU64Decoder()),
+    ('eligibleBundleCount', getU32Decoder()),
     ('status', getU8Decoder()),
-    ('selectedOutcome', getU8Decoder()),
+    ('selectedBundle', getU32Decoder()),
     ('claimedMask', getU8Decoder()),
     ('bump', getU8Decoder()),
   ]);
@@ -143,8 +157,10 @@ Decoder<TemplateOpeningState> getTemplateOpeningStateDecoder() {
         sequence: map['sequence']! as BigInt,
         seedSlot: map['seedSlot']! as BigInt,
         entropy: map['entropy']! as Uint8List,
+        treasuryVersion: map['treasuryVersion']! as BigInt,
+        eligibleBundleCount: map['eligibleBundleCount']! as int,
         status: map['status']! as int,
-        selectedOutcome: map['selectedOutcome']! as int,
+        selectedBundle: map['selectedBundle']! as int,
         claimedMask: map['claimedMask']! as int,
         bump: map['bump']! as int,
       ),

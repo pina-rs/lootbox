@@ -82,7 +82,6 @@ fn create_template_data(queue: Pubkey, bump: u8, opens_at: i64) -> Vec<u8> {
 	let mut bytes = vec![0; CreateTemplateInstruction::SIZE];
 	let args = CreateTemplateInstruction::initialize(&mut bytes).expect("create template data");
 	args.id.set(1);
-	args.max_supply.set(6);
 	args.opens_at.set(opens_at);
 	args.oracle_program = SWITCHBOARD_DEVNET_ID;
 	args.oracle_queue = queue.to_bytes().into();
@@ -92,15 +91,20 @@ fn create_template_data(queue: Pubkey, bump: u8, opens_at: i64) -> Vec<u8> {
 	bytes
 }
 
-fn add_bundle(program: &Harness, template: Pubkey, index: u8, quantity: u64, assets: u8) -> Pubkey {
+fn add_bundle(
+	program: &Harness,
+	template: Pubkey,
+	index: u32,
+	quantity: u64,
+	assets: u8,
+) -> Pubkey {
 	let (bundle, bump) = Pubkey::find_program_address(
-		&[b"bundle", template.as_ref(), &[index]],
+		&[b"bundle", template.as_ref(), &index.to_le_bytes()],
 		&program.program_id,
 	);
 	let mut bytes = vec![0; AddBundleInstruction::SIZE];
 	let args = AddBundleInstruction::initialize(&mut bytes).expect("bundle data");
 	args.quantity.set(quantity);
-	args.weight.set(1);
 	args.asset_count = assets;
 	args.bump = bump;
 	program
@@ -115,6 +119,19 @@ fn add_bundle(program: &Harness, template: Pubkey, index: u8, quantity: u64, ass
 		)
 		.expect("add bundle");
 	bundle
+}
+
+fn activate_bundle(program: &Harness, template: Pubkey, bundle: Pubkey) {
+	program
+		.send(
+			&[LootboxInstruction::ActivateBundle as u8],
+			vec![
+				AccountMeta::new_readonly(program.payer(), true),
+				AccountMeta::new(template, false),
+				AccountMeta::new(bundle, false),
+			],
+		)
+		.expect("activate fully funded bundle");
 }
 
 fn fund_sol(
@@ -250,6 +267,7 @@ fn template_request_accounts(
 
 fn fulfill(
 	program: &Harness,
+	payer: &Keypair,
 	template: Pubkey,
 	opening: Pubkey,
 	randomness: Pubkey,
@@ -259,8 +277,8 @@ fn fulfill(
 	value: u8,
 ) -> Result<(), String> {
 	let mut accounts = settle_accounts(
-		&program.payer(),
-		&program.payer(),
+		&payer.pubkey(),
+		&payer.pubkey(),
 		&template,
 		&Pubkey::default(),
 		&Pubkey::default(),
@@ -279,7 +297,7 @@ fn fulfill(
 	args.signature.fill(7);
 	args.recovery_id = 1;
 	args.value.fill(value);
-	program.send(&data, accounts)
+	program.send_with_signers(program.instruction(&data, accounts), &[payer])
 }
 
 fn allocate_any(
@@ -368,11 +386,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 				],
 			)
 			.expect("create template");
-		let bundles = [
-			add_bundle(&program, template, 0, 3, 1),
-			add_bundle(&program, template, 1, 2, 1),
-			add_bundle(&program, template, 2, 1, 3),
-		];
+		let first_bundle = add_bundle(&program, template, 0, 3, 1);
 		let seal_accounts = vec![
 			AccountMeta::new_readonly(payer, true),
 			AccountMeta::new(template, false),
@@ -386,15 +400,21 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 				.is_err(),
 			"unfunded prizes cannot be sold"
 		);
-		fund_sol(&program, template, bundles[0], 100_000).expect("SOL inventory");
-		let reward_mint = fund_token(&program, template, bundles[1], false, 2);
-		fund_sol(&program, template, bundles[2], 1_000_000).expect("jackpot SOL");
+		fund_sol(&program, template, first_bundle, 100_000).expect("SOL inventory");
+		activate_bundle(&program, template, first_bundle);
+		let second_bundle = add_bundle(&program, template, 1, 2, 1);
+		let reward_mint = fund_token(&program, template, second_bundle, false, 2);
+		activate_bundle(&program, template, second_bundle);
+		let third_bundle = add_bundle(&program, template, 2, 1, 3);
+		fund_sol(&program, template, third_bundle, 1_000_000).expect("jackpot SOL");
 		assert!(
-			fund_sol(&program, template, bundles[2], 1_000_000).is_err(),
+			fund_sol(&program, template, third_bundle, 1_000_000).is_err(),
 			"same SOL collateral cannot be recorded twice"
 		);
-		let nft_a = fund_token(&program, template, bundles[2], true, 1);
-		let nft_b = fund_token(&program, template, bundles[2], true, 1);
+		let nft_a = fund_token(&program, template, third_bundle, true, 1);
+		let nft_b = fund_token(&program, template, third_bundle, true, 1);
+		activate_bundle(&program, template, third_bundle);
+		let bundles = [first_bundle, second_bundle, third_bundle];
 		program
 			.send(&[LootboxInstruction::SealTemplate as u8], seal_accounts)
 			.expect("seal funded manifest");
@@ -516,6 +536,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		for (index, (opening, randomness)) in openings.iter().enumerate().rev() {
 			fulfill(
 				&program,
+				&recipient,
 				template,
 				*opening,
 				*randomness,
@@ -695,8 +716,33 @@ fn retirement_recovers_inventory_only_after_all_claims_are_gone() {
 				],
 			)
 			.expect("template");
+		let cancelled = add_bundle(&program, template, 0, 2, 1);
+		fund_sol(&program, template, cancelled, 50_000).expect("fund staged bundle");
+		program
+			.send(
+				&[LootboxInstruction::ReclaimSolPrize as u8, 0],
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new_readonly(mint, false),
+					AccountMeta::new(cancelled, false),
+				],
+			)
+			.expect("reclaim staged collateral");
+		program
+			.send(
+				&[LootboxInstruction::CancelBundle as u8],
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new(cancelled, false),
+				],
+			)
+			.expect("cancel staged bundle");
+		assert!(program.account(&cancelled).is_err());
 		let bundle = add_bundle(&program, template, 0, 8, 1);
 		fund_sol(&program, template, bundle, 100_000).expect("fund eight prizes");
+		activate_bundle(&program, template, bundle);
 		let admin_accounts = vec![
 			AccountMeta::new_readonly(payer, true),
 			AccountMeta::new(template, false),

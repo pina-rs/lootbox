@@ -1,4 +1,5 @@
 export * from "@pina-rs/lootbox-generated";
+export * from "./templates.js";
 
 export const MAX_OUTCOMES = 8;
 export const MAX_TOTAL_WEIGHT = 0xffff_ffffn;

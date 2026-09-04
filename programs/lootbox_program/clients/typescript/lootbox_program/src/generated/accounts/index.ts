@@ -6,6 +6,9 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './bundleState';
 export * from './lootboxState';
 export * from './openingState';
+export * from './templateOpeningState';
+export * from './templateState';
 export * from './vaultState';

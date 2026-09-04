@@ -26,6 +26,9 @@ use core::mem::size_of;
 use pina::*;
 use solana_sha256_hasher::hashv;
 
+mod templates;
+pub use templates::*;
+
 declare_id!("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
 
 /// Maximum number of weighted outcomes in the first protocol version.
@@ -93,6 +96,16 @@ pub enum LootboxError {
 	InvalidRecipient = 12,
 	/// Minting would exceed the configured maximum supply.
 	SupplyExceeded = 13,
+	/// The template's earliest opening timestamp has not arrived.
+	ClaimLocked = 14,
+	/// An earlier opening must be allocated first.
+	AllocationOutOfOrder = 15,
+	/// At least one advertised prize has been exhausted.
+	PrizeExhausted = 16,
+	/// The asset, quantity, or escrow does not match the immutable prize.
+	InvalidPrize = 17,
+	/// This asset has already been delivered for this opening.
+	PrizeAlreadyClaimed = 18,
 }
 
 #[discriminator]
@@ -107,6 +120,21 @@ pub enum LootboxInstruction {
 	RefundOpen = 7,
 	CloseOpening = 8,
 	WithdrawSurplus = 9,
+	CreateTemplate = 10,
+	AddBundle = 11,
+	FundSolPrize = 12,
+	FundTokenPrize = 13,
+	SealTemplate = 14,
+	MintTemplateBoxes = 15,
+	RequestTemplateOpen = 16,
+	FulfillTemplateOpen = 17,
+	AllocateTemplateOpen = 18,
+	ClaimSolPrize = 19,
+	ClaimTokenPrize = 20,
+	RetireTemplate = 21,
+	ReclaimSolPrize = 22,
+	ReclaimTokenPrize = 23,
+	CloseTemplateOpening = 24,
 }
 
 #[discriminator]
@@ -114,6 +142,9 @@ pub enum LootboxAccountType {
 	LootboxState = 1,
 	VaultState = 2,
 	OpeningState = 3,
+	TemplateState = 4,
+	BundleState = 5,
+	TemplateOpeningState = 6,
 }
 
 /// Immutable definition and live accounting for one lootbox mint.
@@ -1472,6 +1503,51 @@ pub fn process_instruction(
 		}
 		LootboxInstruction::WithdrawSurplus => {
 			WithdrawSurplusAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::CreateTemplate => {
+			CreateTemplateAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::AddBundle => {
+			AddBundleAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::FundSolPrize => {
+			FundSolPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::FundTokenPrize => {
+			FundTokenPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::SealTemplate => {
+			SealTemplateAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::MintTemplateBoxes => {
+			MintTemplateBoxesAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::RequestTemplateOpen => {
+			RequestTemplateOpenAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::FulfillTemplateOpen => {
+			FulfillTemplateOpenAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::AllocateTemplateOpen => {
+			AllocateTemplateOpenAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ClaimSolPrize => {
+			ClaimSolPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ClaimTokenPrize => {
+			ClaimTokenPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::RetireTemplate => {
+			RetireTemplateAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ReclaimSolPrize => {
+			ReclaimSolPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ReclaimTokenPrize => {
+			ReclaimTokenPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::CloseTemplateOpening => {
+			CloseTemplateOpeningAccounts::try_from((program_id, accounts))?.process(data)
 		}
 	}
 }

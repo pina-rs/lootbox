@@ -53,6 +53,7 @@ in
     '';
     "clean:generated".exec = ''
       set -euo pipefail
+      node tools/normalize-generated.mjs
       find programs/lootbox_program/clients \
         -type f \
         \( -name '*.rs' -o -name '*.ts' -o -name '*.dart' -o -name '*.toml' -o -name '*.yaml' \) \
@@ -76,6 +77,7 @@ in
     '';
     "test:unit".exec = ''
       set -euo pipefail
+      node --test tools/normalize-generated.test.mjs
       cargo test --workspace --all-features
       pnpm --dir sdks/typescript test
       (cd sdks/dart && dart test)
@@ -92,6 +94,7 @@ in
           -- \
           --ignored \
           --nocapture
+      node --test tools/playground.test.mjs
     '';
     "test:web".exec = ''
       set -euo pipefail

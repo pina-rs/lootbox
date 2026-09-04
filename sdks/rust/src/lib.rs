@@ -4,6 +4,9 @@
 
 pub use lootbox_program_client as generated;
 
+mod templates;
+pub use templates::*;
+
 /// Maximum number of outcomes supported by the v1 on-chain account.
 pub const MAX_OUTCOMES: usize = 8;
 /// Maximum sum of v1 outcome weights.

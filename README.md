@@ -7,6 +7,23 @@ Lootbox turns a zero-decimal SPL token into a transferable sealed box. Opening a
 > [!IMPORTANT]
 > This repository is an internally security-reviewed development MVP, not a mainnet deployment. The web app is a deterministic interaction sandbox; the Surfpool suite is the executable end-to-end proof against real SBF artifacts.
 
+### Treasury template work
+
+The `feat/treasury-templates` branch adds the v2 protocol: reusable templates, finite SOL/token/NFT prize bundles, immutable Token-2022 metadata, earliest claim dates, ordered allocation, independent asset claims, and safe retirement. See the [v2 specification and completion checklist](docs/treasury-templates.md) and [v2 security notes](docs/security-templates.md).
+
+**The existing web app still demonstrates v1.** It is not yet connected to the v2 program. Do not mistake its simulated balances for Surfpool transactions.
+
+A separate persistent, local-only Surfpool service is available for integration:
+
+```sh
+devenv shell
+build:program
+build:test-programs
+pnpm playground:rpc
+```
+
+It deploys both SBF artifacts and exposes its RPC addresses and oracle fixture accounts at `http://127.0.0.1:8898/config`. It uses an emulated oracle and valueless test balances; restarting clears the network. This is **not a public deployment**.
+
 ## What is included
 
 - A `no_std`, Pina-based Solana program with 10 instructions and three PDA account types.

@@ -24,6 +24,8 @@ Templates retain three lifecycle statuses plus an independent permanent lock:
 Draft --publish--> Live --retire--> Retired
                     |
                     +--lock exact supply--> Market locked
+
+Live + missed reveal deadline --retire--> Retired recovery
 ```
 
 Bundles have a separate staging lifecycle:
@@ -40,7 +42,7 @@ Funding --reclaim every funded asset--> Cancelled and closed
 - An interrupted funding workflow is resumable from chain. The creator can reclaim and cancel only the unpublished tail bundle; already active history is immutable.
 - Market lock requires a live treasury, future reveal time, pristine inventory, no opening history, no staged tail, and actual mint supply matching recorded issuance. It atomically mints every missing claim to the creator-selected account, proves `mint supply == active bundle copies`, revokes mint authority, and records `lockedAt`.
 - After lock, additions and mints fail permanently. Boxes can transfer immediately but cannot open before the reveal timestamp.
-- Retirement stops any remaining lifecycle operations but does not undo a market lock. Outstanding locked boxes and committed openings remain valid. Unallocated inventory is reclaimable only after box supply and pending openings both reach zero; allocated but unclaimed prizes remain reserved for their recipient.
+- Retirement stops any remaining lifecycle operations but does not undo a market lock. Before reveal, an issued unlocked treasury cannot retire around the exact-supply invariant. At or after a missed reveal deadline, retirement becomes a non-market recovery seal: creator mutations stop and existing holders may still open, but the series is never presented as market-locked. Unallocated inventory is reclaimable only after box supply and pending openings both reach zero; allocated but unclaimed prizes remain reserved for their recipient.
 
 ## Capacity and snapshots
 
@@ -61,7 +63,7 @@ mint authority after lock = none
 
 A won copy is removed from the pool and its corresponding box was burned, so circulating supply and remaining prize copies decline together. Future live odds and remaining expected value update automatically.
 
-Opening is impossible until the treasury is locked, so every box in a tradable series has the same eligible manifest. Burning a box snapshots the locked treasury version and active bundle prefix. FIFO allocation still observes depletion caused by earlier receipts inside that saved prefix. The snapshot is therefore a promise about the eligible manifest, not a frozen percentage.
+Opening is impossible for an active unlocked treasury, so every box in a tradable series has the same locked eligible manifest. The only exception is an explicitly retired, non-market recovery series after a missed reveal deadline. Burning a box snapshots the treasury version and active bundle prefix. FIFO allocation still observes depletion caused by earlier receipts inside that saved prefix. The snapshot is therefore a promise about the eligible manifest, not a frozen percentage.
 
 ## Opening and recovery
 
@@ -69,7 +71,7 @@ Opening is impossible until the treasury is locked, so every box in a tradable s
 burn + commit -> verify entropy -> FIFO allocation -> per-asset claims -> close receipt
 ```
 
-1. After both market lock and the configured reveal timestamp, the owner signs a request that atomically burns one box and creates fresh Switchboard randomness.
+1. After the configured reveal timestamp, the owner signs a request that atomically burns one box and creates fresh Switchboard randomness. The treasury must be market-locked or permanently retired through the missed-deadline recovery path.
 2. The receipt records the owner, sequence, treasury version, and eligible bundle count.
 3. Anyone may relay a valid proof. Verification persists entropy without moving a prize.
 4. Allocation must process the FIFO head and uses domain-separated, bounded rejection sampling over remaining copies in the saved prefix. There is no reroll.

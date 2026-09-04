@@ -77,7 +77,7 @@ fn assert_openable(state: &TemplateStateZc) -> ProgramResult {
 		return Err(lootbox_error(LootboxError::InvalidState));
 	}
 
-	if state.locked_at.get() == 0 {
+	if state.locked_at.get() == 0 && state.status != TEMPLATE_RETIRED {
 		return Err(lootbox_error(LootboxError::TreasuryUnlocked));
 	}
 
@@ -153,16 +153,20 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		self.oracle_queue.assert_address(&state.oracle_queue)?;
 		self.oracle_program.assert_program(&state.oracle_program)?;
 
-		// Retirement closes administration, but the irreversible market lock
-		// preserves every holder's right to open an already issued box.
+		// Retirement closes administration. A market lock or a missed-deadline
+		// recovery retirement preserves every issued holder's right to open.
 		assert_openable(&state)?;
 
 		if sysvars::clock::Clock::get()?.unix_timestamp < state.opens_at.get() {
 			return Err(lootbox_error(LootboxError::ClaimLocked));
 		}
 
-		let mint_supply =
-			assert_template_mint(self.box_mint, &template_address, &state.box_mint, true)?;
+		let mint_supply = assert_template_mint(
+			self.box_mint,
+			&template_address,
+			&state.box_mint,
+			state.locked_at.get() != 0,
+		)?;
 		let box_account = self.owner_box_account.as_associated_token_account_checked(
 			&owner_address,
 			self.box_mint.address(),
@@ -492,6 +496,9 @@ mod tests {
 		assert!(assert_openable(state).is_err());
 		state.status = TEMPLATE_LIVE;
 		assert!(assert_openable(state).is_err());
+		state.status = TEMPLATE_RETIRED;
+		assert_eq!(assert_openable(state), Ok(()));
+		state.status = TEMPLATE_LIVE;
 		state.locked_at.set(1);
 		assert_eq!(assert_openable(state), Ok(()));
 		state.status = TEMPLATE_RETIRED;

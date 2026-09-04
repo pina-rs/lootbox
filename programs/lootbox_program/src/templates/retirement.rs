@@ -1,5 +1,7 @@
 //! Retirement stops issuance; it never revokes an existing holder's claim.
 
+use pina::sysvars::Sysvar;
+
 use super::*;
 
 #[instruction(discriminator = LootboxInstruction::RetireTemplate)]
@@ -41,6 +43,21 @@ pub struct ReclaimTokenPrizeAccounts<'a> {
 	pub token_program: &'a AccountView,
 }
 
+fn validate_retirement(state: &TemplateStateZc, now: i64) -> ProgramResult {
+	if state.status != TEMPLATE_LIVE {
+		return Err(lootbox_error(LootboxError::InvalidState));
+	}
+
+	// Before reveal, issued series must use the exact-supply market lock. Once
+	// that deadline is missed, retirement is the bounded recovery seal: all
+	// creator mutations stop, but existing holders may still burn and open.
+	if state.total_minted.get() != 0 && state.locked_at.get() == 0 && state.opens_at.get() > now {
+		return Err(lootbox_error(LootboxError::TreasuryUnlocked));
+	}
+
+	Ok(())
+}
+
 impl<'a> ProcessAccountInfos<'a> for RetireTemplateAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = RetireTemplateInstruction::try_from_bytes(data)?;
@@ -48,15 +65,7 @@ impl<'a> ProcessAccountInfos<'a> for RetireTemplateAccounts<'a> {
 		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
 		assert_template(&address, &state)?;
 		assert_template_authority(self.authority, &state)?;
-		if state.status != TEMPLATE_LIVE {
-			return Err(lootbox_error(LootboxError::InvalidState));
-		}
-
-		// Issued market boxes may only be retired after the irreversible lock;
-		// otherwise the creator could strand holders before their reveal date.
-		if state.total_minted.get() != 0 && state.locked_at.get() == 0 {
-			return Err(lootbox_error(LootboxError::TreasuryUnlocked));
-		}
+		validate_retirement(&state, sysvars::clock::Clock::get()?.unix_timestamp)?;
 
 		state.status = TEMPLATE_RETIRED;
 
@@ -233,6 +242,20 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	#[test]
+	fn issued_unlocked_treasury_can_only_recover_after_its_deadline() {
+		let mut bytes = [0; TemplateState::SIZE];
+		let state = TemplateState::initialize(&mut bytes).expect("template");
+		state.status = TEMPLATE_LIVE;
+		state.total_minted.set(1);
+		state.opens_at.set(1_001);
+
+		assert!(validate_retirement(state, 1_000).is_err());
+		assert_eq!(validate_retirement(state, 1_001), Ok(()));
+		state.locked_at.set(999);
+		assert_eq!(validate_retirement(state, 1_000), Ok(()));
+	}
 
 	#[test]
 	fn retirement_preserves_allocated_but_unclaimed_prizes() {

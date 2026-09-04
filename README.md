@@ -9,7 +9,7 @@ Lootbox turns a treasury template into a fixed supply of transferable sealed gif
 
 ### Treasury template work
 
-The v2 protocol includes pre-lock append-only treasuries, fully funded SOL/token/NFT bundles, irreversible exact-supply locking, immutable Token-2022 box metadata, reveal dates, versioned FIFO allocation, independent claims, staged-funding cancellation, timeout forfeiture, and safe retirement. See the [v2 specification](docs/treasury-templates.md) and [v2 security notes](docs/security-templates.md).
+The v2 protocol includes pre-lock append-only treasuries, fully funded SOL/token/NFT bundles, irreversible exact-supply locking, immutable Token-2022 box metadata, reveal dates, versioned FIFO allocation, independent claims, staged-funding cancellation, timeout forfeiture, safe retirement, and a bounded non-market recovery seal for a missed lock deadline. See the [v2 specification](docs/treasury-templates.md) and [v2 security notes](docs/security-templates.md).
 
 **The web app is connected to v2.** Create, fund, publish, append, then mint the exact supply and lock a treasury. Distribute or transfer whole boxes, inspect remaining EV and a constant-product trade preview, then open, reveal, claim, and close the receipt. Creator previews show exact inventory, deposits, and per-copy odds. Searchable Jupiter token and Metaplex DAS asset catalogs are proxied server-side and clearly distinguished from local test fixtures.
 

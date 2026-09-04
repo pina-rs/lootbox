@@ -165,6 +165,27 @@ function prizeIdentifier(asset: PrizeAsset): Address {
 	return asset.asset;
 }
 
+/** Reject a resumed funding plan that differs from escrowed on-chain data. */
+export function assertFundedPrizeMatches(
+	bundle: Pick<
+		generated.BundleState,
+		"assetCount" | "kinds" | "mints" | "amounts" | "decimals"
+	>,
+	assetIndex: number,
+	asset: PrizeAsset,
+): void {
+	const existing = bundleAssets(bundle)[assetIndex];
+	const amount = asset.kind === "sol"
+		? asset.lamports
+		: asset.kind === "token"
+		? asset.amount
+		: 1n;
+	if (
+		!existing || existing.kind !== expectedStoredKind(asset) ||
+		existing.amount !== amount || existing.mint !== prizeIdentifier(asset)
+	) throw new Error("saved prize differs from already funded asset");
+}
+
 /** Mirrors the program's domain-separated, bounded rejection sampler. */
 export async function selectTemplateBundle(
 	template: ChainTemplate,
@@ -645,17 +666,7 @@ export class LootboxClient {
 			) throw new Error("saved bundle differs from chain");
 			for (const [assetIndex, asset] of prize.assets.entries()) {
 				if (assetIndex < funded.data.fundedAssets) {
-					const existing = bundleAssets(funded.data)[assetIndex];
-					const amount = asset.kind === "sol"
-						? asset.lamports
-						: asset.kind === "token"
-						? asset.amount
-						: 1n;
-					if (
-						!existing || existing.kind !== expectedStoredKind(asset) ||
-						existing.amount !== amount ||
-						existing.mint !== prizeIdentifier(asset)
-					) throw new Error("saved prize differs from already funded asset");
+					assertFundedPrizeMatches(funded.data, assetIndex, asset);
 					continue;
 				}
 				await this.fundAsset(asset, template, bundle, index + 1);
@@ -752,6 +763,22 @@ export class LootboxClient {
 		await this.send(instructions, "Mint exact supply & lock treasury");
 		return this.template(current.address);
 	}
+	/** Permanently stop creator mutations. Issued, unlocked series may use this
+	 * only after a missed reveal deadline, preserving holder opening rights.
+	 */
+	async retireTemplate(template: ChainTemplate): Promise<ChainTemplate> {
+		const current = await this.template(template.address);
+		if (current.data.authority !== this.payer.address) {
+			throw new Error("only the treasury creator can retire this series");
+		}
+		if (current.data.status === 2) return current;
+
+		await this.send([generated.getRetireTemplateInstruction({
+			authority: this.payer.address,
+			template: current.address,
+		})], "Retire treasury");
+		return this.template(current.address);
+	}
 	async appendBundles(
 		template: ChainTemplate,
 		bundles: readonly PrizeBundleInput[],
@@ -804,7 +831,10 @@ export class LootboxClient {
 				draft.data.assetCount !== prize.assets.length
 			) throw new Error("the staged append differs from this bundle");
 			for (const [assetIndex, asset] of prize.assets.entries()) {
-				if (assetIndex < draft.data.fundedAssets) continue;
+				if (assetIndex < draft.data.fundedAssets) {
+					assertFundedPrizeMatches(draft.data, assetIndex, asset);
+					continue;
+				}
 				await this.fundAsset(asset, current.address, bundle, index + 1);
 				draft = await generated.fetchBundleState(this.rpc, bundle, {
 					commitment,

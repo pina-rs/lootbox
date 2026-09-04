@@ -1,0 +1,42 @@
+[graph]
+all-features = true
+
+[advisories]
+db-path = "../../../../target/advisory-db"
+db-urls = ["https://github.com/RustSec/advisory-db.git"]
+ignore = [
+	# Surfpool 1.5.0 is the latest release. These are transitive dependencies of
+	# the offline, host-only integration harness and are never shipped in the
+	# on-chain program, SDKs, or web app. Re-evaluate every ID on Surfpool update.
+	"RUSTSEC-2020-0016",
+	"RUSTSEC-2021-0139",
+	"RUSTSEC-2022-0093",
+	"RUSTSEC-2024-0344",
+	"RUSTSEC-2024-0375",
+	"RUSTSEC-2024-0384",
+	"RUSTSEC-2024-0388",
+	"RUSTSEC-2024-0421",
+	"RUSTSEC-2024-0436",
+	"RUSTSEC-2025-0134",
+	"RUSTSEC-2025-0141",
+	"RUSTSEC-2025-0161",
+	"RUSTSEC-2026-0098",
+	"RUSTSEC-2026-0099",
+	"RUSTSEC-2026-0104",
+	"RUSTSEC-2026-0173",
+	"RUSTSEC-2026-0247",
+	"RUSTSEC-2026-0258",
+]
+
+[bans]
+# Agave/Surfpool intentionally spans several Solana compatibility generations.
+multiple-versions = "allow"
+wildcards = "deny"
+highlight = "all"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = [
+	"https://github.com/rust-lang/crates.io-index",
+]

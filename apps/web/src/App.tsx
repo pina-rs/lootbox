@@ -86,7 +86,7 @@ const statusName = (status: number, lockedAt = 0n) =>
 		? "Draft"
 		: status === 1
 		? "Live · editable"
-		: "Retired";
+		: "Retired · recovery";
 
 function prizeName(bundle: ChainBundle) {
 	const assets = bundleAssets(bundle.data);
@@ -292,6 +292,13 @@ export default function App() {
 	const treasuryLocked = Boolean(selected && selected.data.lockedAt > 0n);
 	const revealPending = Boolean(
 		selected && selected.data.opensAt > workspace.chainTime,
+	);
+	const recoveryRetired = Boolean(
+		selected && selected.data.status === 2 && !treasuryLocked,
+	);
+	const holderOpenable = treasuryLocked || recoveryRetired;
+	const recoveryAvailable = Boolean(
+		selected && selected.data.status === 1 && !treasuryLocked && !revealPending,
 	);
 	const isCreator = selected?.data.authority === sandbox?.creator.address;
 	const recoverySlots = receipt?.data.status === 0 &&
@@ -737,7 +744,7 @@ export default function App() {
 												<button
 													className="primary-button"
 													disabled={busy || workspace.boxes === 0n ||
-														!treasuryLocked || revealPending ||
+														!holderOpenable || revealPending ||
 														selected.data.status === 0}
 													onClick={() =>
 														void run(async (session) => {
@@ -749,7 +756,7 @@ export default function App() {
 												>
 													{busy
 														? "Opening your gift…"
-														: !treasuryLocked
+														: !holderOpenable
 														? "Treasury must be locked"
 														: revealPending
 														? "Waiting for the reveal date"
@@ -763,8 +770,10 @@ export default function App() {
 													<ArrowRight size={18} />
 												</button>
 												<p>
-													{!treasuryLocked
+													{!holderOpenable
 														? "The creator must fix supply and revoke mint authority before any box can reveal."
+														: recoveryRetired
+														? "This missed-deadline series is retired. Existing holders may still open, but it is not market-locked."
 														: revealPending
 														? "You can still transfer this gift before its reveal date."
 														: "The owner pays to burn and request randomness. Anyone may verify and allocate in queue order."}
@@ -888,28 +897,36 @@ export default function App() {
 								<p className="manifest-note">
 									{treasuryLocked
 										? "Every remaining copy is one equal ticket. Supply and inventory are permanently fixed; each reveal burns one box and removes one outcome."
+										: recoveryRetired
+										? "This series missed its market lock. Retirement freezes creator changes so existing holders can still reveal; surplus outcomes remain escrowed until every box and opening is gone."
 										: "Every bundle copy is one equal ticket. The creator may still add prizes; no box can open until supply and inventory are permanently locked."}
 								</p>
 							</aside>
 						</section>
 						{selected && (
 							<section className="dispatch">
-								{treasuryLocked
+								{holderOpenable
 									? (
 										<>
 											<div className="dispatch-heading">
 												<div>
-													<h2>Distribute the fixed series.</h2>
+													<h2>
+														{treasuryLocked
+															? "Distribute the fixed series."
+															: "Preserve the recovery series."}
+													</h2>
 													<p>
 														The creator holds{" "}
 														{workspace.creatorBoxes.toString()} of{" "}
-														{selected.data.totalBundles.toString()}{" "}
-														boxes. Every send is a standard transfer; minting is
+														{workspace.supply.toString()}{" "}
+														live boxes. Every send is a standard transfer;
+														creator issuance and treasury changes are
 														permanently disabled.
 													</p>
 												</div>
 												<span className="lock-stamp">
-													<ShieldCheck size={17} />FIXED SUPPLY
+													<ShieldCheck size={17} />
+													{treasuryLocked ? "FIXED SUPPLY" : "RECOVERY SEALED"}
 												</span>
 											</div>
 											<div className="dispatch-fields">
@@ -986,20 +1003,22 @@ export default function App() {
 										<div className="lock-console">
 											<div className="dispatch-heading">
 												<div>
-													<h2>Fix the market supply.</h2>
+													<h2>
+														{recoveryAvailable
+															? "Seal a missed deadline."
+															: "Fix the market supply."}
+													</h2>
 													<p>
-														{selected.data.bundleCount} bundle types contain
-														{" "}
-														{selected.data.totalBundles.toString()}{" "}
-														copies. Locking mints
-														{capacity === 0n
-															? " no additional"
-															: ` ${capacity}`}{" "}
-														boxes so fixed issuance is exactly{" "}
-														{selected.data.totalBundles.toString()}.
+														{recoveryAvailable
+															? "The reveal date passed before market lock. Retirement permanently stops creator changes while preserving every issued holder claim."
+															: `${selected.data.bundleCount} bundle types contain ${selected.data.totalBundles} copies. Locking mints${
+																capacity === 0n
+																	? " no additional"
+																	: ` ${capacity}`
+															} boxes so fixed issuance is exactly ${selected.data.totalBundles}.`}
 													</p>
 												</div>
-												{isCreator && selected.data.status !== 2 && (
+												{isCreator && !recoveryAvailable && (
 													<button
 														type="button"
 														className="quiet-button"
@@ -1010,63 +1029,94 @@ export default function App() {
 													</button>
 												)}
 											</div>
-											<div
-												className="supply-equation"
-												aria-label="Fixed supply equation"
-											>
-												<span>
-													<b>{selected.data.totalBundles.toString()}</b>{" "}
-													funded bundle copies
-												</span>
-												<i>=</i>
-												<span>
-													<b>{selected.data.totalBundles.toString()}</b>{" "}
-													indivisible boxes
-												</span>
-											</div>
-											<label className="risk-check">
-												<input
-													type="checkbox"
-													checked={lockAcknowledged}
-													onChange={(event) =>
-														setLockAcknowledged(event.target.checked)}
-													disabled={busy || !isCreator}
-												/>
-												<span>
-													I understand this permanently freezes prizes and
-													supply, boxes may be worth less than paid, and I meet
-													the eligibility rules that apply to me.
-												</span>
-											</label>
-											<button
-												className="primary-button lock-button"
-												disabled={busy || !isCreator || !lockAcknowledged ||
-													selected.data.status !== 1 || !revealPending}
-												onClick={() =>
-													void run(async (session) => {
-														await session.client("creator", progress)
-															.lockTreasury(
-																selected,
-																session.creator.address,
-															);
-														setLockAcknowledged(false);
-														setNotice(
-															"Treasury and exact box supply locked. The series is ready to trade.",
-														);
-													})}
-											>
-												<ShieldCheck size={18} />
-												{busy
-													? "Locking treasury…"
-													: capacity === 0n
-													? "Lock exact supply"
-													: `Mint ${capacity} & lock treasury`}
-											</button>
-											<p className="lock-disclosure">
-												Requires a future reveal date, pristine inventory, no
-												opening history, and no staged bundle. The program
-												rechecks all four.
-											</p>
+											{recoveryAvailable
+												? (
+													<>
+														<button
+															className="primary-button lock-button"
+															disabled={busy || !isCreator}
+															onClick={() =>
+																void run(async (session) => {
+																	await session.client("creator", progress)
+																		.retireTemplate(selected);
+																	setNotice(
+																		"Recovery sealed. Existing boxes can now reveal; this series is not market-certified.",
+																	);
+																})}
+														>
+															<ShieldCheck size={18} />Retire & preserve claims
+														</button>
+														<p className="lock-disclosure">
+															Recovery does not create a tradable fixed-supply
+															market. Surplus prizes stay escrowed until live
+															box supply and pending openings both reach zero.
+														</p>
+													</>
+												)
+												: (
+													<>
+														<div
+															className="supply-equation"
+															aria-label="Fixed supply equation"
+														>
+															<span>
+																<b>{selected.data.totalBundles.toString()}</b>
+																{" "}
+																funded bundle copies
+															</span>
+															<i>=</i>
+															<span>
+																<b>{selected.data.totalBundles.toString()}</b>
+																{" "}
+																indivisible boxes
+															</span>
+														</div>
+														<label className="risk-check">
+															<input
+																type="checkbox"
+																checked={lockAcknowledged}
+																onChange={(event) =>
+																	setLockAcknowledged(event.target.checked)}
+																disabled={busy || !isCreator}
+															/>
+															<span>
+																I understand this permanently freezes prizes and
+																supply, boxes may be worth less than paid, and I
+																meet the eligibility rules that apply to me.
+															</span>
+														</label>
+														<button
+															className="primary-button lock-button"
+															disabled={busy || !isCreator ||
+																!lockAcknowledged ||
+																selected.data.status !== 1 || !revealPending}
+															onClick={() =>
+																void run(async (session) => {
+																	await session.client("creator", progress)
+																		.lockTreasury(
+																			selected,
+																			session.creator.address,
+																		);
+																	setLockAcknowledged(false);
+																	setNotice(
+																		"Treasury and exact box supply locked. The series is ready to trade.",
+																	);
+																})}
+														>
+															<ShieldCheck size={18} />
+															{busy
+																? "Locking treasury…"
+																: capacity === 0n
+																? "Lock exact supply"
+																: `Mint ${capacity} & lock treasury`}
+														</button>
+														<p className="lock-disclosure">
+															Requires a future reveal date, pristine inventory,
+															no opening history, and no staged bundle. The
+															program rechecks all four.
+														</p>
+													</>
+												)}
 										</div>
 									)}
 							</section>

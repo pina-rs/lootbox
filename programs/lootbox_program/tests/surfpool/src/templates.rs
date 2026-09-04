@@ -743,6 +743,118 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 
 #[test]
 #[ignore = "run with `devenv shell -- test:surfpool`"]
+fn missed_market_lock_retires_without_stranding_holder_claims() {
+	pina_test::run(async {
+		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
+			.await
+			.expect("Surfpool");
+		let (queue, oracle, cpi) = oracle_fixture(&mut program);
+		let payer = program.payer();
+		let (template, bump) = Pubkey::find_program_address(
+			&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
+			&program.program_id,
+		);
+		let mint = mint_with_metadata(&program, &template);
+		let owner_ata = box_ata(&program, &payer, &mint);
+		let opens_at = chain_timestamp(&program) + 60;
+		program
+			.send(
+				&create_template_data(queue, bump, opens_at),
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new_readonly(mint, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("create template");
+		let bundle = add_bundle(&program, template, 0, 2, 1);
+		fund_sol(&program, template, bundle, 100_000).expect("fund prizes");
+		activate_bundle(&program, template, bundle);
+		let admin_accounts = vec![
+			AccountMeta::new_readonly(payer, true),
+			AccountMeta::new(template, false),
+		];
+		program
+			.send(
+				&[LootboxInstruction::SealTemplate as u8],
+				admin_accounts.clone(),
+			)
+			.expect("seal");
+		program
+			.send(
+				&template_mint_data(1),
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new(mint, false),
+					AccountMeta::new(owner_ata, false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("issue short recovery supply");
+		assert!(
+			program
+				.send(
+					&[LootboxInstruction::RetireTemplate as u8],
+					admin_accounts.clone(),
+				)
+				.is_err(),
+			"issued treasury must use exact lock before reveal",
+		);
+		program
+			.surfnet
+			.cheatcodes()
+			.time_travel_to_timestamp(u64::try_from(opens_at + 1).expect("timestamp") * 1000)
+			.expect("miss reveal deadline");
+		program
+			.send(&[LootboxInstruction::RetireTemplate as u8], admin_accounts)
+			.expect("bounded recovery retirement");
+		assert_eq!(
+			&program.account(&mint).expect("mint").data[..4],
+			&[1, 0, 0, 0],
+			"recovery is not represented as a market lock",
+		);
+
+		let randomness = Keypair::new();
+		let (opening, opening_bump) = Pubkey::find_program_address(
+			&[
+				b"template-opening",
+				template.as_ref(),
+				randomness.pubkey().as_ref(),
+			],
+			&program.program_id,
+		);
+		program
+			.send_with_signers(
+				program.instruction(
+					&template_request_data(opening_bump),
+					template_request_accounts(&TemplateRequestContext {
+						owner: payer,
+						template,
+						mint,
+						ata: owner_ata,
+						opening,
+						randomness: randomness.pubkey(),
+						queue,
+						oracle,
+						cpi: &cpi,
+					}),
+				),
+				&[&randomness],
+			)
+			.expect("retired recovery box can still open");
+		assert_eq!(
+			token_amount(&program.account(&owner_ata).expect("burned box")),
+			0,
+		);
+		program.stop().expect("stop Surfpool");
+	});
+}
+
+#[test]
+#[ignore = "run with `devenv shell -- test:surfpool`"]
 fn expired_fifo_head_can_be_forfeited_by_an_unrelated_signer() {
 	pina_test::run(async {
 		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))

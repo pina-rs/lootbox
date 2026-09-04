@@ -287,10 +287,16 @@ fn assert_template_authority(authority: &AccountView, state: &TemplateStateZc) -
 	assert_authority_address(authority, &state.authority)
 }
 
-fn assert_treasury_editable(state: &TemplateStateZc) -> ProgramResult {
+fn assert_treasury_unlocked(state: &TemplateStateZc) -> ProgramResult {
 	if state.locked_at.get() != 0 {
 		return Err(lootbox_error(LootboxError::TreasuryLocked));
 	}
+
+	Ok(())
+}
+
+fn assert_treasury_editable(state: &TemplateStateZc) -> ProgramResult {
+	assert_treasury_unlocked(state)?;
 
 	if state.status == TEMPLATE_RETIRED {
 		return Err(lootbox_error(LootboxError::InvalidState));
@@ -918,7 +924,10 @@ impl<'a> ProcessAccountInfos<'a> for CancelBundleAccounts<'a> {
 		let state = self.template.as_account::<TemplateState>(&ID)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
-		assert_treasury_editable(&state)?;
+		// Cancellation only closes an unfunded or fully reclaimed staging account.
+		// Recovery-retired treasuries may therefore release its rent without
+		// reopening any creator mutation path.
+		assert_treasury_unlocked(&state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		let bundle = self.bundle.as_account::<BundleState>(&ID)?;
 		let reclaimed = if bundle.funded_assets == 0 {
@@ -1006,5 +1015,18 @@ mod market_lock_tests {
 		assert!(validate_market_lock(state, 7, 1_001).is_err());
 		state.locked_at.set(999);
 		assert!(validate_market_lock(state, 7, 1_000).is_err());
+	}
+
+	#[test]
+	fn recovery_retirement_only_allows_staging_cleanup() {
+		let mut bytes = [0; TemplateState::SIZE];
+		let state = TemplateState::initialize(&mut bytes).expect("template");
+		state.status = TEMPLATE_RETIRED;
+
+		assert_eq!(assert_treasury_unlocked(state), Ok(()));
+		assert!(assert_treasury_editable(state).is_err());
+
+		state.locked_at.set(1);
+		assert!(assert_treasury_unlocked(state).is_err());
 	}
 }

@@ -1,6 +1,6 @@
 import { address, getAddressEncoder } from "@solana/kit";
 import { describe, expect, it } from "vitest";
-import { bundleAssets, readU64 } from "./client.js";
+import { assertFundedPrizeMatches, bundleAssets, readU64 } from "./client.js";
 
 describe("chain prize decoding", () => {
 	it("uses the program's zero-based SOL/token/NFT tags", () => {
@@ -41,5 +41,37 @@ describe("chain prize decoding", () => {
 		const bytes = new Uint8Array(8).fill(255);
 		expect(readU64(bytes, 0)).toBe((1n << 64n) - 1n);
 		expect(() => readU64(bytes, 1)).toThrow();
+	});
+	it("rejects a changed asset when append funding resumes", () => {
+		const storedMint = address(
+			"Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op",
+		);
+		const changedMint = address("11111111111111111111111111111111");
+		const mints = new Uint8Array(128);
+		mints.set(getAddressEncoder().encode(storedMint));
+		const amounts = new Uint8Array(32);
+		new DataView(amounts.buffer).setBigUint64(0, 100n, true);
+		const bundle = {
+			assetCount: 1,
+			kinds: new Uint8Array([1, 0, 0, 0]),
+			mints,
+			amounts,
+			decimals: new Uint8Array([0, 0, 0, 0]),
+		};
+
+		expect(() =>
+			assertFundedPrizeMatches(bundle, 0, {
+				kind: "token",
+				mint: storedMint,
+				amount: 100n,
+			})
+		).not.toThrow();
+		expect(() =>
+			assertFundedPrizeMatches(bundle, 0, {
+				kind: "token",
+				mint: changedMint,
+				amount: 100n,
+			})
+		).toThrow(/saved prize differs/);
 	});
 });

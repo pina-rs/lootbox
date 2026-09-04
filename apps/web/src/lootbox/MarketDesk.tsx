@@ -51,16 +51,27 @@ export function MarketDesk({ template, bundles, supply, chainTime }: Props) {
 	const [copied, setCopied] = useState(false);
 
 	useEffect(() => {
-		setValuations(Object.fromEntries(bundles.map((bundle) => {
-			const value = solOnlyValue(bundle);
-			return [bundle.address, value === undefined ? "" : formatUnits(value)];
-		})));
+		setValuations({});
 		const initialReserve = template.data.totalBundles > 1n
 			? template.data.totalBundles / 2n
 			: 1n;
 		setBoxReserve(initialReserve.toString());
 		setCopied(false);
 	}, [template.address]);
+
+	useEffect(() => {
+		setValuations((current) => {
+			let changed = false;
+			const next = { ...current };
+			for (const bundle of bundles) {
+				if (bundle.address in next) continue;
+				const value = solOnlyValue(bundle);
+				next[bundle.address] = value === undefined ? "" : formatUnits(value);
+				changed = true;
+			}
+			return changed ? next : current;
+		});
+	}, [bundles]);
 
 	const expectedValue = useMemo(() => {
 		const values = bundles.flatMap((bundle, index) => {

@@ -777,6 +777,7 @@ impl<'a> ProcessAccountInfos<'a> for ActivateBundleAccounts<'a> {
 
 		if bundle.status != BUNDLE_FUNDING
 			|| bundle.funded_assets != bundle.asset_count
+			|| bundle.reclaimed_mask != 0
 			|| bundle.index.get() != state.bundle_count.get()
 		{
 			return Err(lootbox_error(LootboxError::IncompleteConfiguration));

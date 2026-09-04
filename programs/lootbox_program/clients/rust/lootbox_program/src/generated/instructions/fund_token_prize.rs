@@ -32,7 +32,6 @@ impl FundTokenPrize {
 		mint: solana_pubkey::Pubkey,
 		source: solana_pubkey::Pubkey,
 		escrow: solana_pubkey::Pubkey,
-		token_program: solana_pubkey::Pubkey,
 	) -> Self {
 		Self {
 			authority,
@@ -41,7 +40,7 @@ impl FundTokenPrize {
 			mint,
 			source,
 			escrow,
-			token_program,
+			token_program: solana_pubkey::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
 		}
 	}
 

@@ -15,7 +15,7 @@ export const FUND_TOKEN_PRIZE_DISCRIMINATOR = 13;
 
 export function getFundTokenPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(FUND_TOKEN_PRIZE_DISCRIMINATOR); }
 
-export type FundTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountSource extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+export type FundTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountSource extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlyAccount<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountSource extends string ? WritableAccount<TAccountSource> : TAccountSource, TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
 export type FundTokenPrizeInstructionData = { discriminator: number; amountPerWin: bigint; isNft: boolean;  };
@@ -41,7 +41,7 @@ bundle: Address<TAccountBundle>;
 mint: Address<TAccountMint>;
 source: Address<TAccountSource>;
 escrow: Address<TAccountEscrow>;
-tokenProgram: Address<TAccountTokenProgram>;
+tokenProgram?: Address<TAccountTokenProgram>;
 amountPerWin: FundTokenPrizeInstructionDataArgs["amountPerWin"];
 isNft: FundTokenPrizeInstructionDataArgs["isNft"];
 }
@@ -59,7 +59,10 @@ const accounts = originalAccounts as Record<keyof typeof originalAccounts, Resol
 const args = { ...input,  };
 
 
-
+// Resolve default values.
+if (!accounts.tokenProgram.value) {
+accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+}
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
 return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("bundle", accounts.bundle), getAccountMeta("mint", accounts.mint), getAccountMeta("source", accounts.source), getAccountMeta("escrow", accounts.escrow), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getFundTokenPrizeInstructionDataEncoder().encode(args as FundTokenPrizeInstructionDataArgs), programAddress } as FundTokenPrizeInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountMint, TAccountSource, TAccountEscrow, TAccountTokenProgram>);

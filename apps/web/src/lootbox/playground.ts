@@ -262,7 +262,7 @@ export async function searchTokens(
 	const raw = await control(
 		`/assets/tokens?q=${encodeURIComponent(query.trim())}`,
 	);
-	return searchResponse(raw, (value) => {
+	const response = searchResponse(raw, (value) => {
 		const item = record(value);
 		const icon = optionalString(item.icon);
 		return Object.freeze({
@@ -270,10 +270,16 @@ export async function searchTokens(
 			name: string(item.name),
 			symbol: string(item.symbol),
 			...(icon ? { icon } : {}),
-			decimals: integer(item.decimals),
+			decimals: integer(item.decimals, -1),
 			verified: item.verified === true,
 			tokenProgram: string(item.tokenProgram),
 		});
+	});
+	return Object.freeze({
+		...response,
+		items: Object.freeze(
+			response.items.filter(({ decimals }) => decimals >= 0 && decimals <= 9),
+		),
 	});
 }
 export async function searchNfts(

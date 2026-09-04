@@ -36,7 +36,7 @@ It deploys both SBF artifacts and exposes its RPC addresses and oracle fixture a
 
 ## Legacy v1 protocol
 
-The SOL-only v1 model below remains ABI-compatible. V2 uses finite bundle inventory and a recipient-signed timeout forfeiture that unblocks FIFO without returning a rerollable box; see the [template specification](docs/treasury-templates.md).
+The SOL-only v1 model below remains ABI-compatible. V2 uses finite bundle inventory and a permissionless timeout forfeiture that unblocks FIFO without returning a rerollable box or changing the bound recipient; see the [template specification](docs/treasury-templates.md).
 
 ```mermaid
 flowchart LR

@@ -34,7 +34,6 @@ impl ClaimTokenPrize {
 		mint: solana_pubkey::Pubkey,
 		escrow: solana_pubkey::Pubkey,
 		destination: solana_pubkey::Pubkey,
-		token_program: solana_pubkey::Pubkey,
 	) -> Self {
 		Self {
 			template,
@@ -44,7 +43,7 @@ impl ClaimTokenPrize {
 			mint,
 			escrow,
 			destination,
-			token_program,
+			token_program: solana_pubkey::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
 		}
 	}
 

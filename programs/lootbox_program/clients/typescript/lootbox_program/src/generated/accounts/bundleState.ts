@@ -16,7 +16,7 @@ export function getBundleStateDiscriminatorBytes(): ReadonlyUint8Array { return 
 
 /** A complete prize outcome and its escrow authority, shared across all boxes. */
 export type BundleState = { discriminator: number; template: Address; quantity: bigint; rentReserve: bigint;
-/** Four mint addresses; the zero address denotes native SOL. */
+/** Four asset identifiers; the zero address denotes native SOL. */
 mints: ReadonlyUint8Array;
 /** Four little-endian base-unit amounts paid per winning bundle. */
 amounts: ReadonlyUint8Array;
@@ -26,7 +26,7 @@ claimed: ReadonlyUint8Array; kinds: ReadonlyUint8Array; decimals: ReadonlyUint8A
 status: number; bump: number;  };
 
 export type BundleStateArgs = { template: Address; quantity: number | bigint; rentReserve: number | bigint;
-/** Four mint addresses; the zero address denotes native SOL. */
+/** Four asset identifiers; the zero address denotes native SOL. */
 mints: ReadonlyUint8Array;
 /** Four little-endian base-unit amounts paid per winning bundle. */
 amounts: ReadonlyUint8Array;

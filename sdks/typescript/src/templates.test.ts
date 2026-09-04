@@ -4,6 +4,7 @@ import {
 	createTemplatePlan,
 	decodeTemplateText,
 	encodeTemplateText,
+	remainingTemplateBundleCapacity,
 	templateInventory,
 } from "./templates.js";
 
@@ -103,5 +104,13 @@ describe("finite template plans", () => {
 		expect(templateInventory({ remaining, bundleCount: 256 })).toHaveLength(
 			256,
 		);
+	});
+
+	it("rejects an append before any partial bundle can exceed the slot cap", () => {
+		expect(remainingTemplateBundleCapacity(0)).toBe(256);
+		expect(remainingTemplateBundleCapacity(255)).toBe(1);
+		expect(remainingTemplateBundleCapacity(256)).toBe(0);
+		expect(() => remainingTemplateBundleCapacity(-1)).toThrow("bundle count");
+		expect(() => remainingTemplateBundleCapacity(257)).toThrow("bundle count");
 	});
 });

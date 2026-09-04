@@ -64,7 +64,9 @@ pub struct FulfillTemplateOpenAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct ForfeitTemplateOpenAccounts<'a> {
-	pub recipient: &'a AccountView,
+	/// Any signer may advance an expired FIFO head; the stored recipient and
+	/// their exclusive claim rights are never changed.
+	pub caller: &'a AccountView,
 	pub template: &'a mut AccountView,
 	pub opening: &'a mut AccountView,
 	pub randomness: &'a AccountView,
@@ -443,16 +445,15 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 impl<'a> ProcessAccountInfos<'a> for ForfeitTemplateOpenAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = ForfeitTemplateOpenInstruction::try_from_bytes(data)?;
-		let recipient = *self.recipient.address();
 		let template_address = *self.template.address();
 		let opening_address = *self.opening.address();
-		self.recipient.assert_signer()?;
+		self.caller.assert_signer()?;
 		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
 		assert_template(&template_address, &state)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&opening_address, &opening, &template_address)?;
-		if opening.recipient != recipient || opening.randomness != *self.randomness.address() {
-			return Err(lootbox_error(LootboxError::InvalidRecipient));
+		if opening.randomness != *self.randomness.address() {
+			return Err(lootbox_error(LootboxError::InvalidRandomness));
 		}
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 		if randomness.authority != opening_address

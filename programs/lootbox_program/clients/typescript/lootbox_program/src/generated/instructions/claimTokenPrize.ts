@@ -15,7 +15,7 @@ export const CLAIM_TOKEN_PRIZE_DISCRIMINATOR = 20;
 
 export function getClaimTokenPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLAIM_TOKEN_PRIZE_DISCRIMINATOR); }
 
-export type ClaimTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountRecipient extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountDestination extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+export type ClaimTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountRecipient extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountDestination extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountRecipient extends string ? ReadonlyAccount<TAccountRecipient> : TAccountRecipient, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow, TAccountDestination extends string ? WritableAccount<TAccountDestination> : TAccountDestination, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
 export type ClaimTokenPrizeInstructionData = { discriminator: number; assetIndex: number;  };
@@ -42,7 +42,7 @@ recipient: Address<TAccountRecipient>;
 mint: Address<TAccountMint>;
 escrow: Address<TAccountEscrow>;
 destination: Address<TAccountDestination>;
-tokenProgram: Address<TAccountTokenProgram>;
+tokenProgram?: Address<TAccountTokenProgram>;
 assetIndex: ClaimTokenPrizeInstructionDataArgs["assetIndex"];
 }
 
@@ -59,7 +59,10 @@ const accounts = originalAccounts as Record<keyof typeof originalAccounts, Resol
 const args = { ...input,  };
 
 
-
+// Resolve default values.
+if (!accounts.tokenProgram.value) {
+accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+}
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
 return Object.freeze({ accounts: [getAccountMeta("template", accounts.template), getAccountMeta("opening", accounts.opening), getAccountMeta("bundle", accounts.bundle), getAccountMeta("recipient", accounts.recipient), getAccountMeta("mint", accounts.mint), getAccountMeta("escrow", accounts.escrow), getAccountMeta("destination", accounts.destination), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getClaimTokenPrizeInstructionDataEncoder().encode(args as ClaimTokenPrizeInstructionDataArgs), programAddress } as ClaimTokenPrizeInstruction<TProgramAddress, TAccountTemplate, TAccountOpening, TAccountBundle, TAccountRecipient, TAccountMint, TAccountEscrow, TAccountDestination, TAccountTokenProgram>);

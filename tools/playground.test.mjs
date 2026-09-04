@@ -19,7 +19,12 @@ test("local Surfpool control plane is labeled and rejects untrusted requests", {
 		reservation.close((error) => error ? reject(error) : resolve())
 	);
 	const child = spawn(process.execPath, ["tools/playground.mjs"], {
-		env: { ...process.env, LOOTBOX_PLAYGROUND_PORT: String(port) },
+		env: {
+			...process.env,
+			JUPITER_API_KEY: "",
+			DAS_RPC_URL: "",
+			LOOTBOX_PLAYGROUND_PORT: String(port),
+		},
 		stdio: ["ignore", "ignore", "pipe"],
 	});
 	let diagnostics = "";

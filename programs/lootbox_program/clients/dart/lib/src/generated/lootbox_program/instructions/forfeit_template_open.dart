@@ -90,7 +90,7 @@ getForfeitTemplateOpenInstructionDataCodec() {
 /// Creates a [ForfeitTemplateOpen] instruction.
 Instruction getForfeitTemplateOpenInstruction({
   required Address programAddress,
-  required Address recipient,
+  required Address caller,
   required Address template,
   required Address opening,
   required Address randomness,
@@ -100,7 +100,7 @@ Instruction getForfeitTemplateOpenInstruction({
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: recipient, role: AccountRole.readonlySigner),
+      AccountMeta(address: caller, role: AccountRole.readonlySigner),
       AccountMeta(address: template, role: AccountRole.writable),
       AccountMeta(address: opening, role: AccountRole.writable),
       AccountMeta(address: randomness, role: AccountRole.readonly),

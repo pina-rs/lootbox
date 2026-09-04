@@ -17,7 +17,7 @@ pub struct BundleState {
 	pub template: solana_pubkey::Pubkey,
 	pub quantity: u64,
 	pub rent_reserve: u64,
-	/// Four mint addresses; the zero address denotes native SOL.
+	/// Four asset identifiers; the zero address denotes native SOL.
 	pub mints: [u8; 128],
 	/// Four little-endian base-unit amounts paid per winning bundle.
 	pub amounts: [u8; 32],

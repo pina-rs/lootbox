@@ -15,7 +15,9 @@ pub const FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 36u8;
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ForfeitTemplateOpen {
-	pub recipient: solana_pubkey::Pubkey,
+	/// Any signer may advance an expired FIFO head; the stored recipient and
+	/// their exclusive claim rights are never changed.
+	pub caller: solana_pubkey::Pubkey,
 	pub template: solana_pubkey::Pubkey,
 	pub opening: solana_pubkey::Pubkey,
 	pub randomness: solana_pubkey::Pubkey,
@@ -23,13 +25,13 @@ pub struct ForfeitTemplateOpen {
 
 impl ForfeitTemplateOpen {
 	pub fn new(
-		recipient: solana_pubkey::Pubkey,
+		caller: solana_pubkey::Pubkey,
 		template: solana_pubkey::Pubkey,
 		opening: solana_pubkey::Pubkey,
 		randomness: solana_pubkey::Pubkey,
 	) -> Self {
 		Self {
-			recipient,
+			caller,
 			template,
 			opening,
 			randomness,
@@ -51,7 +53,7 @@ impl ForfeitTemplateOpen {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.recipient,
+			self.caller,
 			true,
 		));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));

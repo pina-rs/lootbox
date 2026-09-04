@@ -4,6 +4,8 @@ import {
 	type ChainOpening,
 	type ChainTemplate,
 	decodeTemplateText,
+	MAX_TEMPLATE_BUNDLES,
+	remainingTemplateBundleCapacity,
 	templateInventory,
 	templateMintCapacity,
 } from "@pina-rs/lootbox";
@@ -236,6 +238,10 @@ export default function App() {
 
 	const selected = workspace.selected;
 	const preview = previewInput(input);
+	const bundleBudget = creatorMode === "append"
+		? selected ? remainingTemplateBundleCapacity(selected.data.bundleCount) : 0
+		: MAX_TEMPLATE_BUNDLES;
+	const exceedsBundleBudget = input.rows.length > bundleBudget;
 	const fieldErrors = creatorErrors(input);
 	const errorProps = (key: string) => ({
 		"aria-invalid": Boolean(fieldErrors[key]),
@@ -1001,6 +1007,13 @@ export default function App() {
 							onSubmit={(event) => {
 								event.preventDefault();
 								void run(async (session) => {
+									if (exceedsBundleBudget) {
+										throw new Error(
+											`This treasury has room for ${bundleBudget} more bundle${
+												bundleBudget === 1 ? "" : "s"
+											}`,
+										);
+									}
 									validateInput(input);
 									if (creatorMode === "append") {
 										if (!selected) {
@@ -1225,7 +1238,7 @@ export default function App() {
 									<button
 										type="button"
 										className="quiet-button"
-										disabled={input.rows.length >= 256}
+										disabled={input.rows.length >= bundleBudget}
 										onClick={() =>
 											setInput({
 												...input,
@@ -1251,7 +1264,7 @@ export default function App() {
 								<dl className="facts">
 									<div>
 										<dt>New bundles</dt>
-										<dd>{input.rows.length} / 256</dd>
+										<dd>{input.rows.length} / {bundleBudget}</dd>
 									</div>
 									<div>
 										<dt>Capacity added</dt>
@@ -1325,11 +1338,14 @@ export default function App() {
 								)}
 								<button
 									type="submit"
-									aria-describedby={!preview
+									aria-describedby={exceedsBundleBudget
+										? "bundle-budget-error"
+										: !preview
 										? "creator-validation-summary"
 										: undefined}
 									className="primary-button"
 									disabled={!sandbox || busy || !preview ||
+										exceedsBundleBudget ||
 										(creatorMode === "append" && !selected)}
 								>
 									{busy
@@ -1341,6 +1357,17 @@ export default function App() {
 										: "Fund & publish treasury"}
 									<ArrowRight size={18} />
 								</button>
+								{exceedsBundleBudget && (
+									<p
+										id="bundle-budget-error"
+										className="field-error"
+										role="alert"
+									>
+										This treasury has room for {bundleBudget} more bundle
+										{bundleBudget === 1 ? "" : "s"}. Remove bundles from this
+										manifest or create a new treasury.
+									</p>
+								)}
 								{!preview && (
 									<p
 										id="creator-validation-summary"

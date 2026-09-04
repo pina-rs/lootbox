@@ -7,7 +7,7 @@ import {
 } from "@solana/kit";
 
 const U64_MAX = (1n << 64n) - 1n;
-const MAX_BUNDLES = 256;
+export const MAX_TEMPLATE_BUNDLES = 256;
 const MAX_TOTAL_TICKETS = 0xffff_ffffn;
 const ZERO_ADDRESS = address("11111111111111111111111111111111");
 const WRAPPED_SOL = address("So11111111111111111111111111111111111111112");
@@ -113,6 +113,19 @@ function assetAmount(asset: PrizeAsset): bigint {
 	return 1n;
 }
 
+/** Return the number of append-only bundle slots that remain. */
+export function remainingTemplateBundleCapacity(bundleCount: number): number {
+	if (
+		!Number.isSafeInteger(bundleCount) || bundleCount < 0 ||
+		bundleCount > MAX_TEMPLATE_BUNDLES
+	) {
+		throw new RangeError(
+			`bundle count must be between 0 and ${MAX_TEMPLATE_BUNDLES}`,
+		);
+	}
+	return MAX_TEMPLATE_BUNDLES - bundleCount;
+}
+
 /** Encode a bounded on-chain UTF-8 field without silently truncating it. */
 export function encodeTemplateText(value: string, length: number): Uint8Array {
 	if (!Number.isSafeInteger(length) || length < 0 || length > 200) {
@@ -162,9 +175,12 @@ export function createTemplatePlan(
 	) {
 		throw new RangeError("opensAt must be a nonnegative i64 Unix timestamp");
 	}
-	if (input.bundles.length < 1 || input.bundles.length > MAX_BUNDLES) {
+	if (
+		input.bundles.length < 1 ||
+		input.bundles.length > MAX_TEMPLATE_BUNDLES
+	) {
 		throw new RangeError(
-			`a template needs between one and ${MAX_BUNDLES} prize bundles`,
+			`a template needs between one and ${MAX_TEMPLATE_BUNDLES} prize bundles`,
 		);
 	}
 
@@ -256,9 +272,10 @@ export function templateInventory(
 	eligibleBundleCount = state.bundleCount,
 ): readonly InventoryOutcome[] {
 	if (
-		state.remaining.length !== MAX_BUNDLES * 8 ||
+		state.remaining.length !== MAX_TEMPLATE_BUNDLES * 8 ||
 		!Number.isInteger(state.bundleCount) || state.bundleCount < 0 ||
-		state.bundleCount > MAX_BUNDLES || !Number.isInteger(eligibleBundleCount) ||
+		state.bundleCount > MAX_TEMPLATE_BUNDLES ||
+		!Number.isInteger(eligibleBundleCount) ||
 		eligibleBundleCount < 0 || eligibleBundleCount > state.bundleCount
 	) throw new RangeError("invalid on-chain inventory table");
 	const remaining = Uint8Array.from(state.remaining);

@@ -65,7 +65,7 @@ burn + commit -> verify entropy -> FIFO allocation -> per-asset claims -> close 
 5. Claims are permissionless to submit but can deliver only to the recipient recorded at burn time. Each asset has an independent claim bit, so failures retry the same allocation.
 6. A delivered receipt can be closed by its recipient to recover rent.
 
-If the FIFO head remains unrevealed for 300 slots, only its recipient may forfeit it. Forfeiture advances the queue without consuming inventory or returning the burned box. Returning a box would be unsafe: a holder could inspect an unfavorable off-chain proof, suppress it, wait, and reroll. The UI warns about this irreversible tradeoff before signing. Reliable relaying and a production oracle outage policy remain deployment gates.
+If the FIFO head remains unrevealed for 300 slots, any signer may forfeit it. Forfeiture advances the queue without consuming inventory, changing the bound recipient, or returning the burned box. Returning a box would be unsafe: a holder could inspect an unfavorable off-chain proof, suppress it, wait, and reroll. Permissionless expiry prevents an inactive recipient from blocking every later opening, while making the disclosed deadline final. Reliable relaying and a production oracle outage policy remain deployment gates.
 
 ## Supported prize adapters
 

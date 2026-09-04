@@ -1,11 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	assertLoopback,
 	formatUnits,
 	initialInput,
 	parseUnits,
+	searchTokens,
 	validateInput,
 } from "./playground.js";
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("test wallet and creator safety", () => {
 	it("refuses nonlocal RPCs, credentials, and lookalike hosts", () => {
@@ -50,5 +53,46 @@ describe("test wallet and creator safety", () => {
 		expect(() => validateInput({ ...initialInput, rows: [] })).toThrow();
 		expect(() => validateInput({ ...initialInput, name: "🎁".repeat(10) }))
 			.toThrow(/UTF-8/);
+	});
+	it("hides catalog tokens that the amount parser cannot represent", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () =>
+				new Response(
+					JSON.stringify({
+						source: "live",
+						items: [
+							{
+								id: "nine",
+								name: "Supported",
+								symbol: "NINE",
+								decimals: 9,
+								verified: true,
+								tokenProgram: "classic",
+							},
+							{
+								id: "ten",
+								name: "Unsupported",
+								symbol: "TEN",
+								decimals: 10,
+								verified: true,
+								tokenProgram: "classic",
+							},
+							{
+								id: "missing",
+								name: "Malformed",
+								symbol: "NONE",
+								verified: false,
+								tokenProgram: "classic",
+							},
+						],
+					}),
+					{ status: 200 },
+				)
+			),
+		);
+
+		const response = await searchTokens("token");
+		expect(response.items.map(({ symbol }) => symbol)).toEqual(["NINE"]);
 	});
 });

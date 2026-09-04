@@ -245,6 +245,9 @@ fn invoke_metadata_transfer(
 	optional_accounts: &[AccountView],
 	signers: &[Signer<'_, '_>],
 ) -> ProgramResult {
+	// Token Metadata TransferV1 ABI pinned to upstream commit
+	// 6f5dbcbfcb658ce1c371ea517b46583c0d23a90f: discriminator [49, 0],
+	// amount 1, no authorization data, and the 17-account order below.
 	if optional_accounts.len() != 5 {
 		return Err(ProgramError::NotEnoughAccountKeys);
 	}
@@ -413,6 +416,9 @@ fn invoke_core_transfer(
 	plugin_accounts: &[AccountView],
 	signers: &[Signer<'_, '_>],
 ) -> ProgramResult {
+	// Core TransferV1 ABI pinned to upstream commit
+	// 83131e07872b9e98dcdb6dde8ec53931813c0d20: discriminator [14], no
+	// compression proof, and the seven fixed accounts followed by adapters.
 	let mut metas = Vec::with_capacity(7 + plugin_accounts.len());
 	metas.extend_from_slice(&[
 		InstructionAccount::writable(accounts.asset.address()),
@@ -488,6 +494,9 @@ fn invoke_compressed_transfer(
 	proof: &CompressedProof<'_>,
 	signers: &[Signer<'_, '_>],
 ) -> ProgramResult {
+	// Bubblegum transfer ABI pinned to upstream commit
+	// f03717ae97c331e4bf4ae576793990c4e3436db1: discriminator and
+	// root/data/creator hashes, nonce, index, then root-to-leaf proof accounts.
 	let mut metas = Vec::with_capacity(8 + proof_accounts.len());
 	metas.extend_from_slice(&[
 		InstructionAccount::readonly(accounts.tree_config.address()),

@@ -265,6 +265,37 @@ fn template_request_accounts(
 	accounts
 }
 
+fn oracle_fixture(program: &mut Harness) -> (Pubkey, Pubkey, OracleCpiAccounts) {
+	let artifact = std::env::var("MOCK_SWITCHBOARD_SBF_ARTIFACT").expect("oracle artifact");
+	program
+		.deploy_program(oracle_program_id(), Path::new(&artifact))
+		.expect("oracle emulator");
+	let queue = Pubkey::new_unique();
+	let oracle = Pubkey::new_unique();
+	let cpi = OracleCpiAccounts {
+		reward_escrow: Pubkey::new_unique(),
+		program_state: Pubkey::new_unique(),
+		lut_signer: Pubkey::new_unique(),
+		lut: Pubkey::new_unique(),
+		stats: Pubkey::new_unique(),
+	};
+	program
+		.fund_many(
+			&[
+				queue,
+				oracle,
+				cpi.reward_escrow,
+				cpi.program_state,
+				cpi.lut_signer,
+				cpi.lut,
+				cpi.stats,
+			],
+			rent_minimum(0),
+		)
+		.expect("oracle infrastructure");
+	(queue, oracle, cpi)
+}
+
 fn fulfill(
 	program: &Harness,
 	payer: &Keypair,
@@ -332,38 +363,12 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
 			.await
 			.expect("Surfpool");
-		let artifact = std::env::var("MOCK_SWITCHBOARD_SBF_ARTIFACT").expect("oracle artifact");
-		program
-			.deploy_program(oracle_program_id(), Path::new(&artifact))
-			.expect("oracle emulator");
+		let (queue, oracle, cpi) = oracle_fixture(&mut program);
 		let payer = program.payer();
 		let recipient = Keypair::new();
 		program
 			.fund(&recipient.pubkey(), 100_000_000)
 			.expect("recipient fee funds");
-		let queue = Pubkey::new_unique();
-		let oracle = Pubkey::new_unique();
-		let cpi = OracleCpiAccounts {
-			reward_escrow: Pubkey::new_unique(),
-			program_state: Pubkey::new_unique(),
-			lut_signer: Pubkey::new_unique(),
-			lut: Pubkey::new_unique(),
-			stats: Pubkey::new_unique(),
-		};
-		program
-			.fund_many(
-				&[
-					queue,
-					oracle,
-					cpi.reward_escrow,
-					cpi.program_state,
-					cpi.lut_signer,
-					cpi.lut,
-					cpi.stats,
-				],
-				rent_minimum(0),
-			)
-			.expect("oracle infrastructure");
 		let (template, bump) = Pubkey::find_program_address(
 			&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
 			&program.program_id,
@@ -692,6 +697,175 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 
 #[test]
 #[ignore = "run with `devenv shell -- test:surfpool`"]
+fn expired_fifo_head_can_be_forfeited_by_an_unrelated_signer() {
+	pina_test::run(async {
+		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
+			.await
+			.expect("Surfpool");
+		let (queue, oracle, cpi) = oracle_fixture(&mut program);
+		let payer = program.payer();
+		let recipient = Keypair::new();
+		program
+			.fund(&recipient.pubkey(), 100_000_000)
+			.expect("recipient fee funds");
+		let (template, bump) = Pubkey::find_program_address(
+			&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
+			&program.program_id,
+		);
+		let mint = mint_with_metadata(&program, &template);
+		let recipient_ata = box_ata(&program, &recipient.pubkey(), &mint);
+		program
+			.send(
+				&create_template_data(queue, bump, 0),
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new_readonly(mint, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("create template");
+		let bundle = add_bundle(&program, template, 0, 2, 1);
+		fund_sol(&program, template, bundle, 100_000).expect("fund prizes");
+		activate_bundle(&program, template, bundle);
+		let admin_accounts = vec![
+			AccountMeta::new_readonly(payer, true),
+			AccountMeta::new(template, false),
+		];
+		program
+			.send(
+				&[LootboxInstruction::SealTemplate as u8],
+				admin_accounts.clone(),
+			)
+			.expect("seal");
+		program
+			.send(
+				&template_mint_data(2),
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new(mint, false),
+					AccountMeta::new(recipient_ata, false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("issue recipient boxes");
+		let randomness = Keypair::new();
+		let (opening, opening_bump) = Pubkey::find_program_address(
+			&[
+				b"template-opening",
+				template.as_ref(),
+				randomness.pubkey().as_ref(),
+			],
+			&program.program_id,
+		);
+		program
+			.send_with_signers(
+				program.instruction(
+					&template_request_data(opening_bump),
+					template_request_accounts(
+						recipient.pubkey(),
+						template,
+						mint,
+						recipient_ata,
+						opening,
+						randomness.pubkey(),
+						queue,
+						oracle,
+						&cpi,
+					),
+				),
+				&[&recipient, &randomness],
+			)
+			.expect("burn and commit");
+		program
+			.advance_slots(RANDOMNESS_TIMEOUT_SLOTS + 1)
+			.expect("expire opening");
+		let forfeit_accounts = vec![
+			AccountMeta::new_readonly(payer, true),
+			AccountMeta::new(template, false),
+			AccountMeta::new(opening, false),
+			AccountMeta::new_readonly(randomness.pubkey(), false),
+		];
+		program
+			.send(
+				&[LootboxInstruction::ForfeitTemplateOpen as u8],
+				forfeit_accounts.clone(),
+			)
+			.expect("unrelated signer unblocks expired FIFO head");
+		program.advance_one_slot().expect("new blockhash");
+		assert!(
+			program
+				.send(
+					&[LootboxInstruction::ForfeitTemplateOpen as u8],
+					forfeit_accounts,
+				)
+				.is_err(),
+			"forfeiture is final",
+		);
+		assert!(
+			program
+				.send(
+					&[LootboxInstruction::CloseTemplateOpening as u8],
+					close_accounts(&payer, &template, &opening, &randomness.pubkey(), &cpi),
+				)
+				.is_err(),
+			"caller cannot redirect receipt rent",
+		);
+		program
+			.send(
+				&[LootboxInstruction::CloseTemplateOpening as u8],
+				close_accounts(
+					&recipient.pubkey(),
+					&template,
+					&opening,
+					&randomness.pubkey(),
+					&cpi,
+				),
+			)
+			.expect("bound recipient closes forfeited receipt");
+		program
+			.send(&[LootboxInstruction::RetireTemplate as u8], admin_accounts)
+			.expect("retire");
+		program
+			.send_instructions_with_signers(
+				&[token_ix::burn_checked(
+					&token_2022(),
+					&recipient_ata,
+					&mint,
+					&recipient.pubkey(),
+					&[],
+					1,
+					0,
+				)
+				.expect("burn remaining box")],
+				&[&recipient],
+			)
+			.expect("remove outstanding supply");
+		let before = program.balance(&bundle).expect("funded escrow");
+		program
+			.send(
+				&[LootboxInstruction::ReclaimSolPrize as u8, 0],
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new_readonly(mint, false),
+					AccountMeta::new(bundle, false),
+				],
+			)
+			.expect("reclaim both unallocated prizes");
+		assert_eq!(
+			before - program.balance(&bundle).expect("rent retained"),
+			200_000,
+			"forfeiture consumes no prize inventory",
+		);
+		program.stop().expect("stop Surfpool");
+	});
+}
+
+#[test]
+#[ignore = "run with `devenv shell -- test:surfpool`"]
 fn retirement_recovers_inventory_only_after_all_claims_are_gone() {
 	pina_test::run(async {
 		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
@@ -729,6 +903,19 @@ fn retirement_recovers_inventory_only_after_all_claims_are_gone() {
 				],
 			)
 			.expect("reclaim staged collateral");
+		assert!(
+			program
+				.send(
+					&[LootboxInstruction::ActivateBundle as u8],
+					vec![
+						AccountMeta::new_readonly(payer, true),
+						AccountMeta::new(template, false),
+						AccountMeta::new(cancelled, false),
+					],
+				)
+				.is_err(),
+			"reclaimed collateral cannot be activated",
+		);
 		program
 			.send(
 				&[LootboxInstruction::CancelBundle as u8],

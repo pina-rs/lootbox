@@ -28,8 +28,10 @@ import {
 import {
 	createTemplatePlan,
 	encodeTemplateText,
+	MAX_TEMPLATE_BUNDLES,
 	type PrizeAsset,
 	type PrizeBundleInput,
+	remainingTemplateBundleCapacity,
 	templateInventory,
 	type TemplatePlan,
 } from "./templates.js";
@@ -705,6 +707,13 @@ export class LootboxClient {
 			startBundleCount > current.data.bundleCount ||
 			current.data.bundleCount > startBundleCount + plan.bundles.length
 		) throw new Error("saved treasury addition does not match append history");
+		if (
+			plan.bundles.length > remainingTemplateBundleCapacity(startBundleCount)
+		) {
+			throw new RangeError(
+				`treasury additions cannot exceed ${MAX_TEMPLATE_BUNDLES} total bundles`,
+			);
+		}
 		for (const [offset, prize] of plan.bundles.entries()) {
 			const index = startBundleCount + offset;
 			const [bundle, bump] = await this.bundleAddress(current.address, index);
@@ -1055,20 +1064,16 @@ export class LootboxClient {
 			commitment,
 		});
 	}
-	/** Forfeit the head receipt after the on-chain oracle timeout. This unblocks
-	 * FIFO without returning a box that could be used to reroll an inspected,
-	 * unfavorable off-chain proof. The recipient must explicitly sign.
+	/** Forfeit the head receipt after the on-chain oracle timeout. This
+	 * permissionless liveness path never changes the bound recipient and does
+	 * not return a box or consume prize inventory.
 	 */
 	async forfeitTemplateOpen(template: ChainTemplate, opening: ChainOpening) {
-		if (
-			opening.data.status !== 0 || opening.data.recipient !== this.payer.address
-		) {
-			throw new Error(
-				"only the recipient can forfeit an expired committed opening",
-			);
+		if (opening.data.status !== 0) {
+			throw new Error("only a pending opening can be forfeited");
 		}
 		return this.send([generated.getForfeitTemplateOpenInstruction({
-			recipient: this.payer,
+			caller: this.payer,
 			template: template.address,
 			opening: opening.address,
 			randomness: opening.data.randomness,

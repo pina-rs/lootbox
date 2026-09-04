@@ -15,8 +15,8 @@ export const FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR = 36;
 
 export function getForfeitTemplateOpenDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR); }
 
-export type ForfeitTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountRecipient extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountRandomness extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
-Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountRecipient extends string ? ReadonlySignerAccount<TAccountRecipient> & AccountSignerMeta<TAccountRecipient> : TAccountRecipient, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountRandomness extends string ? ReadonlyAccount<TAccountRandomness> : TAccountRandomness, ...TRemainingAccounts]>;
+export type ForfeitTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountCaller extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountRandomness extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountCaller extends string ? ReadonlySignerAccount<TAccountCaller> & AccountSignerMeta<TAccountCaller> : TAccountCaller, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountRandomness extends string ? ReadonlyAccount<TAccountRandomness> : TAccountRandomness, ...TRemainingAccounts]>;
 
 export type ForfeitTemplateOpenInstructionData = { discriminator: number;  };
 
@@ -34,31 +34,39 @@ export function getForfeitTemplateOpenInstructionDataCodec(): FixedSizeCodec<For
     return combineCodec(getForfeitTemplateOpenInstructionDataEncoder(), getForfeitTemplateOpenInstructionDataDecoder());
 }
 
-export type ForfeitTemplateOpenInput<TAccountRecipient extends string = string, TAccountTemplate extends string = string, TAccountOpening extends string = string, TAccountRandomness extends string = string> =  {
-  recipient: TransactionSigner<TAccountRecipient>;
+export type ForfeitTemplateOpenInput<TAccountCaller extends string = string, TAccountTemplate extends string = string, TAccountOpening extends string = string, TAccountRandomness extends string = string> =  {
+  /**
+ * Any signer may advance an expired FIFO head; the stored recipient and
+ * their exclusive claim rights are never changed.
+ */
+caller: TransactionSigner<TAccountCaller>;
 template: Address<TAccountTemplate>;
 opening: Address<TAccountOpening>;
 randomness: Address<TAccountRandomness>;
 }
 
-export function getForfeitTemplateOpenInstruction<TAccountRecipient extends string, TAccountTemplate extends string, TAccountOpening extends string, TAccountRandomness extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: ForfeitTemplateOpenInput<TAccountRecipient, TAccountTemplate, TAccountOpening, TAccountRandomness>, config?: { programAddress?: TProgramAddress } ): ForfeitTemplateOpenInstruction<TProgramAddress, TAccountRecipient, TAccountTemplate, TAccountOpening, TAccountRandomness> {
+export function getForfeitTemplateOpenInstruction<TAccountCaller extends string, TAccountTemplate extends string, TAccountOpening extends string, TAccountRandomness extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: ForfeitTemplateOpenInput<TAccountCaller, TAccountTemplate, TAccountOpening, TAccountRandomness>, config?: { programAddress?: TProgramAddress } ): ForfeitTemplateOpenInstruction<TProgramAddress, TAccountCaller, TAccountTemplate, TAccountOpening, TAccountRandomness> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
  // Original accounts.
-const originalAccounts = { recipient: { value: input.recipient ?? null, isWritable: false }, template: { value: input.template ?? null, isWritable: true }, opening: { value: input.opening ?? null, isWritable: true }, randomness: { value: input.randomness ?? null, isWritable: false } }
+const originalAccounts = { caller: { value: input.caller ?? null, isWritable: false }, template: { value: input.template ?? null, isWritable: true }, opening: { value: input.opening ?? null, isWritable: true }, randomness: { value: input.randomness ?? null, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
 
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("recipient", accounts.recipient), getAccountMeta("template", accounts.template), getAccountMeta("opening", accounts.opening), getAccountMeta("randomness", accounts.randomness)], data: getForfeitTemplateOpenInstructionDataEncoder().encode({}), programAddress } as ForfeitTemplateOpenInstruction<TProgramAddress, TAccountRecipient, TAccountTemplate, TAccountOpening, TAccountRandomness>);
+return Object.freeze({ accounts: [getAccountMeta("caller", accounts.caller), getAccountMeta("template", accounts.template), getAccountMeta("opening", accounts.opening), getAccountMeta("randomness", accounts.randomness)], data: getForfeitTemplateOpenInstructionDataEncoder().encode({}), programAddress } as ForfeitTemplateOpenInstruction<TProgramAddress, TAccountCaller, TAccountTemplate, TAccountOpening, TAccountRandomness>);
 }
 
 export type ParsedForfeitTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
-recipient: TAccountMetas[0];
+/**
+ * Any signer may advance an expired FIFO head; the stored recipient and
+ * their exclusive claim rights are never changed.
+ */
+caller: TAccountMetas[0];
 template: TAccountMetas[1];
 opening: TAccountMetas[2];
 randomness: TAccountMetas[3];
@@ -75,5 +83,5 @@ const getNextAccount = () => {
   accountIndex += 1;
   return accountMeta;
 }
-  return { programAddress: instruction.programAddress, accounts: { recipient: getNextAccount(), template: getNextAccount(), opening: getNextAccount(), randomness: getNextAccount() }, data: getForfeitTemplateOpenInstructionDataDecoder().decode(instruction.data) };
+  return { programAddress: instruction.programAddress, accounts: { caller: getNextAccount(), template: getNextAccount(), opening: getNextAccount(), randomness: getNextAccount() }, data: getForfeitTemplateOpenInstructionDataDecoder().decode(instruction.data) };
 }

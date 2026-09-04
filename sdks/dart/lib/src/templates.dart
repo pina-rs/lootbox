@@ -140,6 +140,9 @@ final class TemplatePlan {
   final List<PrizeBundle> bundles;
   final BigInt totalBundles;
 
+  /// Exact zero-decimal box issuance after the treasury is market locked.
+  BigInt get fixedSupply => totalBundles;
+
   /// Null selects native SOL; all other keys are stored asset identifiers.
   final Map<Address?, BigInt> treasury;
 

@@ -61,11 +61,11 @@ in
     '';
     "build:program".exec = ''
       set -euo pipefail
-      pina build --project programs/lootbox_program
+      RUST_LOG=error pina build --project programs/lootbox_program
     '';
     "build:test-programs".exec = ''
       set -euo pipefail
-      pina build --project tests/fixtures/mock_switchboard
+      RUST_LOG=error pina build --project tests/fixtures/mock_switchboard
     '';
     "generate:clients".exec = ''
       set -euo pipefail
@@ -104,17 +104,33 @@ in
     "lint:all".exec = ''
       set -euo pipefail
       pina lint --project programs/lootbox_program
-      cargo clippy --workspace --all-features --all-targets -- -D warnings
+      cargo clippy --workspace --all-features --all-targets --locked -- -D warnings
+      cargo clippy \
+        --manifest-path programs/lootbox_program/tests/surfpool/Cargo.toml \
+        --all-features \
+        --all-targets \
+        --locked \
+        -- \
+        -D warnings
+      cargo clippy \
+        --manifest-path tests/fixtures/mock_switchboard/Cargo.toml \
+        --all-features \
+        --all-targets \
+        --locked \
+        -- \
+        -D warnings
+      RUSTDOCFLAGS="-D warnings" \
+        cargo doc --workspace --all-features --no-deps --locked
       dprint check
       pnpm --dir sdks/typescript check
       pnpm --dir apps/web lint
-      (cd sdks/dart && dart analyze)
+      (cd sdks/dart && dart analyze --fatal-infos --fatal-warnings)
     '';
     "security:audit".exec = ''
       set -euo pipefail
       cargo audit --deny warnings
       cargo audit --deny warnings --file tests/fixtures/mock_switchboard/Cargo.lock
-      cargo deny check advisories bans sources
+      cargo deny check -D warnings advisories bans sources
       pnpm audit --audit-level high
     '';
     "verify:all".exec = ''

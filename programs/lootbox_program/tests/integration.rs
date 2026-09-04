@@ -7,6 +7,7 @@ fn instruction_discriminators_are_stable() {
 	assert_eq!(LootboxInstruction::CreateLootbox as u8, 0);
 	assert_eq!(LootboxInstruction::RequestOpen as u8, 5);
 	assert_eq!(LootboxInstruction::WithdrawSurplus as u8, 9);
+	assert_eq!(LootboxInstruction::LockTreasury as u8, 37);
 }
 
 #[test]

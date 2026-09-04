@@ -110,6 +110,14 @@ pub enum LootboxError {
 	InvalidPrize = 17,
 	/// This asset has already been delivered for this opening.
 	PrizeAlreadyClaimed = 18,
+	/// The treasury is permanently locked and cannot accept more bundles.
+	TreasuryLocked = 19,
+	/// The treasury must be locked before any box can be opened.
+	TreasuryUnlocked = 20,
+	/// Fixed box supply does not exactly match the funded bundle inventory.
+	SupplyMismatch = 21,
+	/// A market treasury must be locked before its earliest reveal date.
+	RevealDatePassed = 22,
 }
 
 #[discriminator]
@@ -151,6 +159,7 @@ pub enum LootboxInstruction {
 	ClaimCompressedNftPrize = 34,
 	ReclaimCompressedNftPrize = 35,
 	ForfeitTemplateOpen = 36,
+	LockTreasury = 37,
 }
 
 #[discriminator]
@@ -1600,6 +1609,9 @@ pub fn process_instruction(
 		}
 		LootboxInstruction::ForfeitTemplateOpen => {
 			ForfeitTemplateOpenAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::LockTreasury => {
+			LockTreasuryAccounts::try_from((program_id, accounts))?.process(data)
 		}
 	}
 }

@@ -35,23 +35,7 @@ pub struct SettleOpen {
 }
 
 impl SettleOpen {
-	pub fn new(
-		recipient: solana_pubkey::Pubkey,
-		payer: solana_pubkey::Pubkey,
-		lootbox: solana_pubkey::Pubkey,
-		vault: solana_pubkey::Pubkey,
-		box_mint: solana_pubkey::Pubkey,
-		opening: solana_pubkey::Pubkey,
-		randomness: solana_pubkey::Pubkey,
-		oracle_queue: solana_pubkey::Pubkey,
-		oracle: solana_pubkey::Pubkey,
-		oracle_stats: solana_pubkey::Pubkey,
-		recent_slot_hashes: solana_pubkey::Pubkey,
-		oracle_program: solana_pubkey::Pubkey,
-		reward_escrow: solana_pubkey::Pubkey,
-		oracle_program_state: solana_pubkey::Pubkey,
-		wrapped_sol_mint: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(recipient: solana_pubkey::Pubkey, payer: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, oracle_stats: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey) -> Self {
 		Self {
 			recipient,
 			payer,
@@ -88,52 +72,19 @@ impl SettleOpen {
 		accounts.push(solana_instruction::AccountMeta::new(self.payer, true));
 		accounts.push(solana_instruction::AccountMeta::new(self.lootbox, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.vault, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.box_mint,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.randomness, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.oracle_queue,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.oracle,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.oracle_stats,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.recent_slot_hashes,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.oracle_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.reward_escrow,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.oracle_program_state,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.system_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.token_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.wrapped_sol_mint,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_queue, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.oracle_stats, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.recent_slot_hashes, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_program, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.reward_escrow, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_program_state, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.token_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.wrapped_sol_mint, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -149,14 +100,11 @@ pub struct SettleOpenInstructionData {
 }
 
 impl SettleOpenInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut SettleOpenInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(configure: impl FnOnce(&mut SettleOpenInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; <SettleOpenInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
-			let data =
-				<SettleOpenInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-					.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			let data = <SettleOpenInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
+				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 			configure(data);
 			data.discriminator = SETTLE_OPEN_DISCRIMINATOR;
 		}

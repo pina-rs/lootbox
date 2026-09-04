@@ -38,6 +38,12 @@ describe("test wallet and creator safety", () => {
 	});
 	it("validates finite inventory and one-copy NFT bundles", () => {
 		expect(() => validateInput(initialInput)).not.toThrow();
+		expect(() => validateInput({ ...initialInput, opensAt: "" })).toThrow(
+			/future reveal date/,
+		);
+		expect(() =>
+			validateInput({ ...initialInput, opensAt: "2020-01-01T00:00" })
+		).toThrow(/at least one minute/);
 		expect(() =>
 			validateInput({
 				...initialInput,

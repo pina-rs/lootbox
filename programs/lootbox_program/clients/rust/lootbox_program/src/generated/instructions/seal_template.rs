@@ -27,10 +27,7 @@ impl SealTemplate {
 		}
 	}
 
-	pub fn instruction(
-		&self,
-		data: SealTemplateInstructionData,
-	) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: SealTemplateInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -41,10 +38,7 @@ impl SealTemplate {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(2 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.authority,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.authority, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
@@ -61,14 +55,11 @@ pub struct SealTemplateInstructionData {
 }
 
 impl SealTemplateInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut SealTemplateInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(configure: impl FnOnce(&mut SealTemplateInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; <SealTemplateInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
-			let data =
-				<SealTemplateInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-					.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			let data = <SealTemplateInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
+				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 			configure(data);
 			data.discriminator = SEAL_TEMPLATE_DISCRIMINATOR;
 		}

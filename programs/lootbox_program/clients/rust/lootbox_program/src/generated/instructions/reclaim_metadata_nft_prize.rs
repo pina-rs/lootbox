@@ -33,22 +33,7 @@ pub struct ReclaimMetadataNftPrize {
 }
 
 impl ReclaimMetadataNftPrize {
-	pub fn new(
-		authority: solana_pubkey::Pubkey,
-		template: solana_pubkey::Pubkey,
-		box_mint: solana_pubkey::Pubkey,
-		bundle: solana_pubkey::Pubkey,
-		mint: solana_pubkey::Pubkey,
-		escrow: solana_pubkey::Pubkey,
-		destination: solana_pubkey::Pubkey,
-		metadata: solana_pubkey::Pubkey,
-		token_metadata_program: solana_pubkey::Pubkey,
-		system_program: solana_pubkey::Pubkey,
-		instructions_sysvar: solana_pubkey::Pubkey,
-		token_program: solana_pubkey::Pubkey,
-		associated_token_program: solana_pubkey::Pubkey,
-		optional_accounts: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, mint: solana_pubkey::Pubkey, escrow: solana_pubkey::Pubkey, destination: solana_pubkey::Pubkey, metadata: solana_pubkey::Pubkey, token_metadata_program: solana_pubkey::Pubkey, system_program: solana_pubkey::Pubkey, instructions_sysvar: solana_pubkey::Pubkey, token_program: solana_pubkey::Pubkey, associated_token_program: solana_pubkey::Pubkey, optional_accounts: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			template,
@@ -67,10 +52,7 @@ impl ReclaimMetadataNftPrize {
 		}
 	}
 
-	pub fn instruction(
-		&self,
-		data: ReclaimMetadataNftPrizeInstructionData,
-	) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: ReclaimMetadataNftPrizeInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -82,48 +64,19 @@ impl ReclaimMetadataNftPrize {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(14 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.template,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.box_mint,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.mint, false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.mint, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.escrow, false));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.destination,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new(self.destination, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.metadata, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.token_metadata_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.system_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.instructions_sysvar,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.token_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.associated_token_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.optional_accounts,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.token_metadata_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.instructions_sysvar, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.token_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.associated_token_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.optional_accounts, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -139,16 +92,10 @@ pub struct ReclaimMetadataNftPrizeInstructionData {
 }
 
 impl ReclaimMetadataNftPrizeInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut ReclaimMetadataNftPrizeInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes =
-			vec![0u8; <ReclaimMetadataNftPrizeInstructionWire as pina::ZeroPodFixed>::SIZE];
+	pub fn new(configure: impl FnOnce(&mut ReclaimMetadataNftPrizeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+		let mut bytes = vec![0u8; <ReclaimMetadataNftPrizeInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
-			let data =
-				<ReclaimMetadataNftPrizeInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(
-					&mut bytes,
-				)
+			let data = <ReclaimMetadataNftPrizeInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
 				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 			configure(data);
 			data.discriminator = RECLAIM_METADATA_NFT_PRIZE_DISCRIMINATOR;

@@ -89,6 +89,8 @@ export type TemplatePlan = Readonly<{
 	opensAt: bigint;
 	bundles: readonly PrizeBundlePlan[];
 	totalBundles: bigint;
+	/** Exact box issuance after the treasury receives its market lock. */
+	fixedSupply: bigint;
 	treasury: readonly TreasuryRequirement[];
 }>;
 
@@ -245,6 +247,7 @@ export function createTemplatePlan(
 		uri,
 		opensAt,
 		totalBundles,
+		fixedSupply: totalBundles,
 		bundles: Object.freeze(normalized.map((bundle) =>
 			Object.freeze({
 				...bundle,
@@ -265,6 +268,13 @@ export type InventoryOutcome = Readonly<{
 	remaining: bigint;
 	probabilityPercent: number;
 }>;
+
+/** True after the creator has irreversibly fixed inventory and box supply. */
+export function isTreasuryLocked(
+	state: Pick<TemplateState, "lockedAt">,
+): boolean {
+	return state.lockedAt > 0n;
+}
 
 /** Read uniform live odds. Depleted bundles stay visible with zero probability. */
 export function templateInventory(
@@ -305,7 +315,7 @@ export function templateMintCapacity(
 	mintSupply: bigint,
 ): bigint {
 	u64(mintSupply, "mint supply");
-	if (state.status !== 1) return 0n;
+	if (state.status !== 1 || isTreasuryLocked(state)) return 0n;
 	const inventoryCapacity = state.remainingBundles - mintSupply -
 		state.pendingOpenings;
 	const lifetimeCapacity = state.totalBundles - state.totalMinted;

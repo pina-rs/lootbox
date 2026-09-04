@@ -22,12 +22,7 @@ pub struct ClaimSolPrize {
 }
 
 impl ClaimSolPrize {
-	pub fn new(
-		template: solana_pubkey::Pubkey,
-		opening: solana_pubkey::Pubkey,
-		bundle: solana_pubkey::Pubkey,
-		recipient: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, recipient: solana_pubkey::Pubkey) -> Self {
 		Self {
 			template,
 			opening,
@@ -36,10 +31,7 @@ impl ClaimSolPrize {
 		}
 	}
 
-	pub fn instruction(
-		&self,
-		data: ClaimSolPrizeInstructionData,
-	) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: ClaimSolPrizeInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -50,10 +42,7 @@ impl ClaimSolPrize {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.template,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.recipient, false));
@@ -72,14 +61,11 @@ pub struct ClaimSolPrizeInstructionData {
 }
 
 impl ClaimSolPrizeInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut ClaimSolPrizeInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(configure: impl FnOnce(&mut ClaimSolPrizeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; <ClaimSolPrizeInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
-			let data =
-				<ClaimSolPrizeInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-					.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			let data = <ClaimSolPrizeInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
+				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 			configure(data);
 			data.discriminator = CLAIM_SOL_PRIZE_DISCRIMINATOR;
 		}

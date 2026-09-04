@@ -10,42 +10,46 @@
 
 use pina::zeropod;
 
-pub const RECLAIM_SOL_PRIZE_DISCRIMINATOR: u8 = 22u8;
+pub const LOCK_TREASURY_DISCRIMINATOR: u8 = 37u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
-pub struct ReclaimSolPrize {
+pub struct LockTreasury {
 	pub authority: solana_pubkey::Pubkey,
 	pub template: solana_pubkey::Pubkey,
 	pub box_mint: solana_pubkey::Pubkey,
+	/// The first unused bundle PDA proves that no funded tail was omitted.
 	pub bundle: solana_pubkey::Pubkey,
+	pub box_token_program: solana_pubkey::Pubkey,
 }
 
-impl ReclaimSolPrize {
+impl LockTreasury {
 	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			template,
 			box_mint,
 			bundle,
+			box_token_program: solana_pubkey::pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
 		}
 	}
 
-	pub fn instruction(&self, data: ReclaimSolPrizeInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: LockTreasuryInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
 	#[allow(clippy::arithmetic_side_effects)]
 	pub fn instruction_with_remaining_accounts(
 		&self,
-		data: ReclaimSolPrizeInstructionData,
+		data: LockTreasuryInstructionData,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new(self.authority, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
+		let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.authority, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.box_mint, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.bundle, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_token_program, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -56,20 +60,20 @@ impl ReclaimSolPrize {
 }
 
 /// Opaque, fully initialized instruction storage.
-pub struct ReclaimSolPrizeInstructionData {
+pub struct LockTreasuryInstructionData {
 	bytes: Vec<u8>,
 }
 
-impl ReclaimSolPrizeInstructionData {
-	pub fn new(configure: impl FnOnce(&mut ReclaimSolPrizeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; <ReclaimSolPrizeInstructionWire as pina::ZeroPodFixed>::SIZE];
+impl LockTreasuryInstructionData {
+	pub fn new(configure: impl FnOnce(&mut LockTreasuryInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+		let mut bytes = vec![0u8; <LockTreasuryInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
-			let data = <ReclaimSolPrizeInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
+			let data = <LockTreasuryInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
 				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 			configure(data);
-			data.discriminator = RECLAIM_SOL_PRIZE_DISCRIMINATOR;
+			data.discriminator = LOCK_TREASURY_DISCRIMINATOR;
 		}
-		<ReclaimSolPrizeInstructionWire as pina::ZeroPodFixed>::validate(&bytes)
+		<LockTreasuryInstructionWire as pina::ZeroPodFixed>::validate(&bytes)
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
@@ -77,7 +81,6 @@ impl ReclaimSolPrizeInstructionData {
 
 #[doc(hidden)]
 #[derive(pina::ZeroPod)]
-pub struct ReclaimSolPrizeInstructionWire {
+pub struct LockTreasuryInstructionWire {
 	pub discriminator: u8,
-	pub asset_index: u8,
 }

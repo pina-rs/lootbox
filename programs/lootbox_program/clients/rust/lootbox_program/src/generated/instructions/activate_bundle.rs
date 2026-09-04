@@ -21,11 +21,7 @@ pub struct ActivateBundle {
 }
 
 impl ActivateBundle {
-	pub fn new(
-		authority: solana_pubkey::Pubkey,
-		template: solana_pubkey::Pubkey,
-		bundle: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			template,
@@ -33,10 +29,7 @@ impl ActivateBundle {
 		}
 	}
 
-	pub fn instruction(
-		&self,
-		data: ActivateBundleInstructionData,
-	) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: ActivateBundleInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -47,10 +40,7 @@ impl ActivateBundle {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.authority,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.authority, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
 		accounts.extend_from_slice(remaining_accounts);
@@ -68,14 +58,11 @@ pub struct ActivateBundleInstructionData {
 }
 
 impl ActivateBundleInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut ActivateBundleInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(configure: impl FnOnce(&mut ActivateBundleInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; <ActivateBundleInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
-			let data =
-				<ActivateBundleInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-					.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			let data = <ActivateBundleInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
+				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 			configure(data);
 			data.discriminator = ACTIVATE_BUNDLE_DISCRIMINATOR;
 		}

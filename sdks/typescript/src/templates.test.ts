@@ -31,6 +31,7 @@ describe("finite template plans", () => {
 			],
 		});
 		expect(plan.totalBundles).toBe(100n);
+		expect(plan.fixedSupply).toBe(plan.totalBundles);
 		expect(plan.bundles.map((bundle) => bundle.probabilityPercent)).toEqual([
 			99,
 			1,

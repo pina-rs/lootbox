@@ -51,6 +51,13 @@ impl<'a> ProcessAccountInfos<'a> for RetireTemplateAccounts<'a> {
 		if state.status != TEMPLATE_LIVE {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
+
+		// Issued market boxes may only be retired after the irreversible lock;
+		// otherwise the creator could strand holders before their reveal date.
+		if state.total_minted.get() != 0 && state.locked_at.get() == 0 {
+			return Err(lootbox_error(LootboxError::TreasuryUnlocked));
+		}
+
 		state.status = TEMPLATE_RETIRED;
 
 		Ok(())
@@ -113,7 +120,12 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimSolPrizeAccounts<'a> {
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
-		let supply = assert_template_mint(self.box_mint, self.template.address(), &state.box_mint)?;
+		let supply = assert_template_mint(
+			self.box_mint,
+			self.template.address(),
+			&state.box_mint,
+			state.locked_at.get() != 0,
+		)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
 		if bundle.kinds.get(index) != Some(&PRIZE_SOL) {
@@ -155,7 +167,12 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 		if token_program != token::ID && token_program != token_2022::ID {
 			return Err(ProgramError::IncorrectProgramId);
 		}
-		let supply = assert_template_mint(self.box_mint, self.template.address(), &state.box_mint)?;
+		let supply = assert_template_mint(
+			self.box_mint,
+			self.template.address(),
+			&state.box_mint,
+			state.locked_at.get() != 0,
+		)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
 		let expected_kind = if token_program == token_2022::ID {

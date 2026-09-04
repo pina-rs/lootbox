@@ -20,6 +20,7 @@ class TemplateState {
     required this.oracleQueue,
     required this.id,
     required this.opensAt,
+    required this.lockedAt,
     required this.totalBundles,
     required this.totalMinted,
     required this.remainingBundles,
@@ -42,6 +43,7 @@ class TemplateState {
   final Address oracleQueue;
   final BigInt id;
   final BigInt opensAt;
+  final BigInt lockedAt;
   final BigInt totalBundles;
   final BigInt totalMinted;
   final BigInt remainingBundles;
@@ -68,6 +70,7 @@ class TemplateState {
           oracleQueue == other.oracleQueue &&
           id == other.id &&
           opensAt == other.opensAt &&
+          lockedAt == other.lockedAt &&
           totalBundles == other.totalBundles &&
           totalMinted == other.totalMinted &&
           remainingBundles == other.remainingBundles &&
@@ -83,7 +86,7 @@ class TemplateState {
           bump == other.bump;
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     discriminator,
     authority,
     boxMint,
@@ -91,6 +94,7 @@ class TemplateState {
     oracleQueue,
     id,
     opensAt,
+    lockedAt,
     totalBundles,
     totalMinted,
     remainingBundles,
@@ -104,11 +108,11 @@ class TemplateState {
     bundleCount,
     status,
     bump,
-  );
+  ]);
 
   @override
   String toString() =>
-      'TemplateState(discriminator: $discriminator, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, opensAt: $opensAt, totalBundles: $totalBundles, totalMinted: $totalMinted, remainingBundles: $remainingBundles, pendingOpenings: $pendingOpenings, nextRequest: $nextRequest, nextAllocation: $nextAllocation, version: $version, remaining: $remaining, name: $name, uri: $uri, bundleCount: $bundleCount, status: $status, bump: $bump)';
+      'TemplateState(discriminator: $discriminator, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, opensAt: $opensAt, lockedAt: $lockedAt, totalBundles: $totalBundles, totalMinted: $totalMinted, remainingBundles: $remainingBundles, pendingOpenings: $pendingOpenings, nextRequest: $nextRequest, nextAllocation: $nextAllocation, version: $version, remaining: $remaining, name: $name, uri: $uri, bundleCount: $bundleCount, status: $status, bump: $bump)';
 }
 
 Encoder<TemplateState> getTemplateStateEncoder() {
@@ -120,6 +124,7 @@ Encoder<TemplateState> getTemplateStateEncoder() {
     ('oracleQueue', getAddressEncoder()),
     ('id', getU64Encoder()),
     ('opensAt', getI64Encoder()),
+    ('lockedAt', getI64Encoder()),
     ('totalBundles', getU64Encoder()),
     ('totalMinted', getU64Encoder()),
     ('remainingBundles', getU64Encoder()),
@@ -148,6 +153,7 @@ Encoder<TemplateState> getTemplateStateEncoder() {
       'oracleQueue': value.oracleQueue,
       'id': value.id,
       'opensAt': value.opensAt,
+      'lockedAt': value.lockedAt,
       'totalBundles': value.totalBundles,
       'totalMinted': value.totalMinted,
       'remainingBundles': value.remainingBundles,
@@ -174,6 +180,7 @@ Decoder<TemplateState> getTemplateStateDecoder() {
     ('oracleQueue', getAddressDecoder()),
     ('id', getU64Decoder()),
     ('opensAt', getI64Decoder()),
+    ('lockedAt', getI64Decoder()),
     ('totalBundles', getU64Decoder()),
     ('totalMinted', getU64Decoder()),
     ('remainingBundles', getU64Decoder()),
@@ -209,6 +216,7 @@ Decoder<TemplateState> getTemplateStateDecoder() {
         oracleQueue: map['oracleQueue']! as Address,
         id: map['id']! as BigInt,
         opensAt: map['opensAt']! as BigInt,
+        lockedAt: map['lockedAt']! as BigInt,
         totalBundles: map['totalBundles']! as BigInt,
         totalMinted: map['totalMinted']! as BigInt,
         remainingBundles: map['remainingBundles']! as BigInt,

@@ -25,6 +25,7 @@ import {
 	signTransactionMessageWithSigners,
 	type TransactionSigner,
 } from "@solana/kit";
+import { marketLockReadiness } from "./market.js";
 import {
 	createTemplatePlan,
 	encodeTemplateText,
@@ -388,6 +389,10 @@ export class LootboxClient {
 			getBase64Encoder().encode(value.data[0]),
 		).amount;
 	}
+	async mintSupply(mint: Address): Promise<bigint> {
+		const response = await this.rpc.getTokenSupply(mint, { commitment }).send();
+		return BigInt(response.value.amount);
+	}
 
 	private async fundAsset(
 		asset: PrizeAsset,
@@ -677,16 +682,75 @@ export class LootboxClient {
 	}
 
 	async mint(template: ChainTemplate, recipient: Address, amount: bigint) {
+		const current = await this.template(template.address);
+		if (current.data.lockedAt !== 0n) {
+			throw new Error("the fixed-supply treasury cannot mint more boxes");
+		}
+
 		return this.send([
-			await this.createAta(recipient, template.data.boxMint),
+			await this.createAta(recipient, current.data.boxMint),
 			generated.getMintTemplateBoxesInstruction({
 				authority: this.payer.address,
-				template: template.address,
-				boxMint: template.data.boxMint,
-				recipientBoxAccount: await this.ata(recipient, template.data.boxMint),
+				template: current.address,
+				boxMint: current.data.boxMint,
+				recipientBoxAccount: await this.ata(recipient, current.data.boxMint),
 				amount,
 			}),
 		], "Mint gift to recipient");
+	}
+	/** Mint every outstanding bundle claim and atomically revoke mint authority.
+	 * The on-chain instruction rechecks exact supply, pristine inventory, the
+	 * unused tail PDA, and the future reveal date before recording the lock.
+	 */
+	async lockTreasury(
+		template: ChainTemplate,
+		recipient: Address = this.payer.address,
+	): Promise<ChainTemplate> {
+		const current = await this.template(template.address);
+		if (current.data.authority !== this.payer.address) {
+			throw new Error("only the treasury creator can lock this series");
+		}
+		if (current.data.lockedAt !== 0n) return current;
+
+		const [supply, slot] = await Promise.all([
+			this.mintSupply(current.data.boxMint),
+			this.rpc.getSlot({ commitment }).send(),
+		]);
+		const chainTime = await this.rpc.getBlockTime(slot).send() ?? 0n;
+		const readiness = marketLockReadiness(current.data, supply, chainTime);
+		if (!readiness.canLock) {
+			throw new Error(`Treasury cannot lock: ${readiness.reasons.join("; ")}`);
+		}
+
+		const [nextBundle] = await this.bundleAddress(
+			current.address,
+			current.data.bundleCount,
+		);
+		const instructions: Instruction[] = [];
+		if (readiness.mintRequired > 0n) {
+			instructions.push(
+				await this.createAta(recipient, current.data.boxMint),
+				generated.getMintTemplateBoxesInstruction({
+					authority: this.payer.address,
+					template: current.address,
+					boxMint: current.data.boxMint,
+					recipientBoxAccount: await this.ata(
+						recipient,
+						current.data.boxMint,
+					),
+					amount: readiness.mintRequired,
+				}),
+			);
+		}
+		instructions.push(generated.getLockTreasuryInstruction({
+			authority: this.payer.address,
+			template: current.address,
+			boxMint: current.data.boxMint,
+			bundle: nextBundle,
+		}));
+
+		await this.send(instructions, "Mint exact supply & lock treasury");
+		return this.template(current.address);
 	}
 	async appendBundles(
 		template: ChainTemplate,
@@ -696,10 +760,12 @@ export class LootboxClient {
 		const plan = createTemplatePlan({ name: "Treasury append", bundles });
 		let current = await this.template(template.address);
 		if (
-			current.data.authority !== this.payer.address || current.data.status === 2
+			current.data.authority !== this.payer.address ||
+			current.data.status === 2 ||
+			current.data.lockedAt !== 0n
 		) {
 			throw new Error(
-				"only the live treasury creator can append prize bundles",
+				"only the creator of an unlocked live treasury can append prize bundles",
 			);
 		}
 		if (
@@ -780,7 +846,9 @@ export class LootboxClient {
 	): Promise<ChainTemplate> {
 		const current = await this.template(template.address);
 		if (
-			current.data.authority !== this.payer.address || current.data.status === 2
+			current.data.authority !== this.payer.address ||
+			current.data.status === 2 ||
+			current.data.lockedAt !== 0n
 		) {
 			throw new Error("only the treasury creator can cancel a staged bundle");
 		}

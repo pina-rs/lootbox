@@ -12,7 +12,7 @@ use pina::zeropod;
 
 #[derive(pina::ZeroPod)]
 pub struct BundleState {
-	/// A complete prize outcome and its escrow authority, shared across all boxes.
+/// A complete prize outcome and its escrow authority, shared across all boxes.
 	pub discriminator: u8,
 	pub template: solana_pubkey::Pubkey,
 	pub quantity: u64,
@@ -44,9 +44,7 @@ impl BundleState {
 	///
 	/// Every non-discriminator field must accept an all-zero
 	/// representation. Otherwise this method returns `InvalidAccountData`.
-	pub fn initialize(
-		data: &mut [u8],
-	) -> Result<&mut BundleStateZc, solana_program_error::ProgramError> {
+	pub fn initialize(data: &mut [u8]) -> Result<&mut BundleStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -69,9 +67,7 @@ impl BundleState {
 		Ok(account)
 	}
 
-	pub fn from_bytes_mut(
-		data: &mut [u8],
-	) -> Result<&mut BundleStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes_mut(data: &mut [u8]) -> Result<&mut BundleStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -87,16 +83,16 @@ impl BundleState {
 impl BundleState {
 	pub fn find_pda(template: &solana_pubkey::Pubkey, index: u32) -> (solana_pubkey::Pubkey, u8) {
 		solana_pubkey::Pubkey::find_program_address(
-			&["bundle".as_bytes(), template.as_ref(), &index.to_le_bytes()],
+			&[
+				"bundle".as_bytes(),
+				template.as_ref(),
+				&index.to_le_bytes(),
+			],
 			&crate::LOOTBOX_PROGRAM_ID,
 		)
 	}
 
-	pub fn create_pda(
-		template: &solana_pubkey::Pubkey,
-		index: u32,
-		bump: u8,
-	) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(template: &solana_pubkey::Pubkey, index: u32, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
 			&[
 				"bundle".as_bytes(),

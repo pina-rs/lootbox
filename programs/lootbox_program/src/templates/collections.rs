@@ -567,7 +567,7 @@ impl<'a> ProcessAccountInfos<'a> for FundMetadataNftPrizeAccounts<'a> {
 		let state = self.template.as_account::<TemplateState>(&ID)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
-		assert_not_retired(&state)?;
+		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		validate_metadata_accounts(
 			&MetadataValidation {
@@ -718,7 +718,12 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMetadataNftPrizeAccounts<'a> {
 			},
 			self.optional_accounts,
 		)?;
-		let supply = assert_template_mint(self.box_mint, self.template.address(), &state.box_mint)?;
+		let supply = assert_template_mint(
+			self.box_mint,
+			self.template.address(),
+			&state.box_mint,
+			state.locked_at.get() != 0,
+		)?;
 		let bundle_address = *self.bundle.address();
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
@@ -776,7 +781,7 @@ impl<'a> ProcessAccountInfos<'a> for FundCoreAssetPrizeAccounts<'a> {
 		let state = self.template.as_account::<TemplateState>(&ID)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
-		assert_not_retired(&state)?;
+		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		validate_core_accounts(
 			self.asset,
@@ -877,7 +882,12 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCoreAssetPrizeAccounts<'a> {
 			self.system_program,
 			self.log_wrapper,
 		)?;
-		let supply = assert_template_mint(self.box_mint, self.template.address(), &state.box_mint)?;
+		let supply = assert_template_mint(
+			self.box_mint,
+			self.template.address(),
+			&state.box_mint,
+			state.locked_at.get() != 0,
+		)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
 		if bundle.kinds.get(index) != Some(&PRIZE_CORE_ASSET)
@@ -919,7 +929,7 @@ impl<'a> ProcessAccountInfos<'a> for FundCompressedNftPrizeAccounts<'a> {
 		let state = self.template.as_account::<TemplateState>(&ID)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
-		assert_not_retired(&state)?;
+		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		let asset = compressed_asset_id(self.merkle_tree.address(), args.nonce.get())?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
@@ -1021,7 +1031,12 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCompressedNftPrizeAccounts<'a> {
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
-		let supply = assert_template_mint(self.box_mint, self.template.address(), &state.box_mint)?;
+		let supply = assert_template_mint(
+			self.box_mint,
+			self.template.address(),
+			&state.box_mint,
+			state.locked_at.get() != 0,
+		)?;
 		let asset = compressed_asset_id(self.merkle_tree.address(), args.nonce.get())?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);

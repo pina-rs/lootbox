@@ -2,16 +2,16 @@
 
 A small, composable random-reward primitive for Solana, built with [Pina](https://github.com/pina-rs/pina).
 
-Lootbox turns a treasury template into transferable sealed gifts. The v2 program escrows finite bundles of SOL, tokens, and unique NFTs, then issues zero-decimal Token-2022 boxes. Opening burns a box and commits fresh randomness; ordered allocation records a complete prize bundle, which can be revealed and claimed asset by asset.
+Lootbox turns a treasury template into a fixed supply of transferable sealed gifts. The v2 program escrows finite bundles of SOL, tokens, and unique NFTs, then atomically issues one zero-decimal Token-2022 box per bundle copy and revokes mint authority. Opening after the reveal date burns a box and commits fresh randomness; ordered allocation records a complete prize bundle, which can be revealed and claimed asset by asset.
 
 > [!IMPORTANT]
 > This is an experimental, internally reviewed development implementation, not an independently audited mainnet release. The web app submits real transactions to local Surfpool. Its assets have no value and its oracle is a test emulator.
 
 ### Treasury template work
 
-The `feat/treasury-templates` branch adds the v2 protocol: append-only treasuries, fully funded SOL/token/NFT bundles, immutable Token-2022 box metadata, unlock dates, versioned FIFO allocation, independent claims, staged-funding cancellation, timeout forfeiture, and safe retirement. See the [v2 specification](docs/treasury-templates.md) and [v2 security notes](docs/security-templates.md).
+The v2 protocol includes pre-lock append-only treasuries, fully funded SOL/token/NFT bundles, irreversible exact-supply locking, immutable Token-2022 box metadata, reveal dates, versioned FIFO allocation, independent claims, staged-funding cancellation, timeout forfeiture, and safe retirement. See the [v2 specification](docs/treasury-templates.md) and [v2 security notes](docs/security-templates.md).
 
-**The web app is connected to v2.** Create, fund, publish, and append a treasury; mint to the recipient test wallet; then open, reveal, claim, and close the receipt. Creator previews show exact inventory, deposits, and per-copy odds. Searchable Jupiter token and Metaplex DAS asset catalogs are proxied server-side and clearly distinguished from local test fixtures.
+**The web app is connected to v2.** Create, fund, publish, append, then mint the exact supply and lock a treasury. Distribute or transfer whole boxes, inspect remaining EV and a constant-product trade preview, then open, reveal, claim, and close the receipt. Creator previews show exact inventory, deposits, and per-copy odds. Searchable Jupiter token and Metaplex DAS asset catalogs are proxied server-side and clearly distinguished from local test fixtures.
 
 A separate persistent, local-only Surfpool service is available for integration:
 
@@ -26,12 +26,12 @@ It deploys both SBF artifacts and exposes its RPC addresses and oracle fixture a
 
 ## What is included
 
-- A `no_std`, Pina-based Solana program with the legacy 10-instruction ABI plus 27 v2 template instructions.
+- A `no_std`, Pina-based Solana program with the legacy 10-instruction ABI plus 28 v2 template instructions.
 - Switchboard On-Demand initialization, commit, reveal, and close CPIs controlled by each opening PDA.
 - Fully escrowed finite SOL, classic SPL, safe Token-2022, Token Metadata/pNFT, Core, and compressed-NFT bundles in v2; the legacy SOL-only v1 retains minimum-reward timeouts.
 - Codama-generated Rust, TypeScript, and Dart clients.
 - Ergonomic checked planning APIs in all three languages.
-- An animated React creator/recipient playground with nested bundle composition, a timezone-aware date picker, searchable asset selection, live odds/version/queue state, disposable test wallets, and desktop/mobile Playwright coverage.
+- An animated React creator/recipient playground with nested bundle composition, a timezone-aware reveal picker, exact-supply lock workflow, market desk, searchable asset selection, live odds/version/queue state, disposable test wallets, and desktop/mobile Playwright coverage.
 - A test-only Switchboard ABI emulator deployed beside the real lootbox SBF program in offline Surfpool.
 
 ## Legacy v1 protocol
@@ -117,6 +117,7 @@ const plan = createTemplatePlan({
 });
 
 console.log(plan.totalBundles); // 100n
+console.log(plan.fixedSupply); // 100n after market lock
 console.log(plan.treasury); // [{ mint: null, amount: 10_900_000_000n }]
 ```
 

@@ -24,12 +24,7 @@ pub struct ForfeitTemplateOpen {
 }
 
 impl ForfeitTemplateOpen {
-	pub fn new(
-		caller: solana_pubkey::Pubkey,
-		template: solana_pubkey::Pubkey,
-		opening: solana_pubkey::Pubkey,
-		randomness: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(caller: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey) -> Self {
 		Self {
 			caller,
 			template,
@@ -38,10 +33,7 @@ impl ForfeitTemplateOpen {
 		}
 	}
 
-	pub fn instruction(
-		&self,
-		data: ForfeitTemplateOpenInstructionData,
-	) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: ForfeitTemplateOpenInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -52,16 +44,10 @@ impl ForfeitTemplateOpen {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.caller,
-			true,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.caller, true));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.randomness,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.randomness, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -77,15 +63,11 @@ pub struct ForfeitTemplateOpenInstructionData {
 }
 
 impl ForfeitTemplateOpenInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut ForfeitTemplateOpenInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(configure: impl FnOnce(&mut ForfeitTemplateOpenInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; <ForfeitTemplateOpenInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
-			let data = <ForfeitTemplateOpenInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(
-				&mut bytes,
-			)
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			let data = <ForfeitTemplateOpenInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
+				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 			configure(data);
 			data.discriminator = FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR;
 		}

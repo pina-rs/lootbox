@@ -137,6 +137,12 @@ impl<'a> TemplatePlan<'a> {
 		self.total_bundles
 	}
 
+	/// Exact zero-decimal box issuance after the treasury is market locked.
+	#[must_use]
+	pub const fn fixed_supply(&self) -> u64 {
+		self.total_bundles
+	}
+
 	#[must_use]
 	pub const fn bundles(&self) -> &'a [PrizeBundle<'a>] {
 		self.bundles
@@ -244,6 +250,7 @@ mod tests {
 		];
 		let plan = TemplatePlan::new(&bundles).expect("plan");
 		assert_eq!(plan.odds(1), Some((1, 100)));
+		assert_eq!(plan.fixed_supply(), plan.total_bundles());
 		assert_eq!(plan.required_collateral(None), Ok(10_900_000_000));
 		assert_eq!(plan.required_collateral(Some([7; 32])), Ok(1));
 	}

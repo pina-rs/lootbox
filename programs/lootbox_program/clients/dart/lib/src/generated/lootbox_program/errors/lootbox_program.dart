@@ -79,6 +79,22 @@ const int lootboxProgramErrorInvalidPrize = 0x11; // 17
 /// Message: "This asset has already been delivered for this opening."
 const int lootboxProgramErrorPrizeAlreadyClaimed = 0x12; // 18
 
+/// The treasury is permanently locked and cannot accept more bundles.
+/// Message: "The treasury is permanently locked and cannot accept more bundles."
+const int lootboxProgramErrorTreasuryLocked = 0x13; // 19
+
+/// The treasury must be locked before any box can be opened.
+/// Message: "The treasury must be locked before any box can be opened."
+const int lootboxProgramErrorTreasuryUnlocked = 0x14; // 20
+
+/// Fixed box supply does not exactly match the funded bundle inventory.
+/// Message: "Fixed box supply does not exactly match the funded bundle inventory."
+const int lootboxProgramErrorSupplyMismatch = 0x15; // 21
+
+/// A market treasury must be locked before its earliest reveal date.
+/// Message: "A market treasury must be locked before its earliest reveal date."
+const int lootboxProgramErrorRevealDatePassed = 0x16; // 22
+
 /// Map of error codes to human-readable messages.
 const Map<int, String> _lootboxProgramErrorMessages = {
   lootboxProgramErrorUnauthorized:
@@ -117,6 +133,14 @@ const Map<int, String> _lootboxProgramErrorMessages = {
       'The asset, quantity, or escrow does not match the immutable prize.',
   lootboxProgramErrorPrizeAlreadyClaimed:
       'This asset has already been delivered for this opening.',
+  lootboxProgramErrorTreasuryLocked:
+      'The treasury is permanently locked and cannot accept more bundles.',
+  lootboxProgramErrorTreasuryUnlocked:
+      'The treasury must be locked before any box can be opened.',
+  lootboxProgramErrorSupplyMismatch:
+      'Fixed box supply does not exactly match the funded bundle inventory.',
+  lootboxProgramErrorRevealDatePassed:
+      'A market treasury must be locked before its earliest reveal date.',
 };
 
 /// Get the error message for a LootboxProgram program error code.

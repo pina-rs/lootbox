@@ -12,7 +12,7 @@ use pina::zeropod;
 
 #[derive(pina::ZeroPod)]
 pub struct TemplateOpeningState {
-	/// A burned box, its verified entropy, and independently claimable winning assets.
+/// A burned box, its verified entropy, and independently claimable winning assets.
 	pub discriminator: u8,
 	pub template: solana_pubkey::Pubkey,
 	pub recipient: solana_pubkey::Pubkey,
@@ -39,9 +39,7 @@ impl TemplateOpeningState {
 	///
 	/// Every non-discriminator field must accept an all-zero
 	/// representation. Otherwise this method returns `InvalidAccountData`.
-	pub fn initialize(
-		data: &mut [u8],
-	) -> Result<&mut TemplateOpeningStateZc, solana_program_error::ProgramError> {
+	pub fn initialize(data: &mut [u8]) -> Result<&mut TemplateOpeningStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -52,9 +50,7 @@ impl TemplateOpeningState {
 		Ok(account)
 	}
 
-	pub fn from_bytes(
-		data: &[u8],
-	) -> Result<&TemplateOpeningStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes(data: &[u8]) -> Result<&TemplateOpeningStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -66,9 +62,7 @@ impl TemplateOpeningState {
 		Ok(account)
 	}
 
-	pub fn from_bytes_mut(
-		data: &mut [u8],
-	) -> Result<&mut TemplateOpeningStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes_mut(data: &mut [u8]) -> Result<&mut TemplateOpeningStateZc, solana_program_error::ProgramError> {
 		if data.len() != Self::LEN {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
@@ -82,10 +76,7 @@ impl TemplateOpeningState {
 }
 
 impl TemplateOpeningState {
-	pub fn find_pda(
-		template: &solana_pubkey::Pubkey,
-		randomness: &solana_pubkey::Pubkey,
-	) -> (solana_pubkey::Pubkey, u8) {
+	pub fn find_pda(template: &solana_pubkey::Pubkey, randomness: &solana_pubkey::Pubkey) -> (solana_pubkey::Pubkey, u8) {
 		solana_pubkey::Pubkey::find_program_address(
 			&[
 				"template-opening".as_bytes(),
@@ -96,11 +87,7 @@ impl TemplateOpeningState {
 		)
 	}
 
-	pub fn create_pda(
-		template: &solana_pubkey::Pubkey,
-		randomness: &solana_pubkey::Pubkey,
-		bump: u8,
-	) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(template: &solana_pubkey::Pubkey, randomness: &solana_pubkey::Pubkey, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
 			&[
 				"template-opening".as_bytes(),

@@ -25,15 +25,7 @@ pub struct RefundOpen {
 }
 
 impl RefundOpen {
-	pub fn new(
-		recipient: solana_pubkey::Pubkey,
-		lootbox: solana_pubkey::Pubkey,
-		vault: solana_pubkey::Pubkey,
-		box_mint: solana_pubkey::Pubkey,
-		opening: solana_pubkey::Pubkey,
-		randomness: solana_pubkey::Pubkey,
-		clock: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(recipient: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, clock: solana_pubkey::Pubkey) -> Self {
 		Self {
 			recipient,
 			lootbox,
@@ -59,18 +51,10 @@ impl RefundOpen {
 		accounts.push(solana_instruction::AccountMeta::new(self.recipient, true));
 		accounts.push(solana_instruction::AccountMeta::new(self.lootbox, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.vault, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.box_mint,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.randomness,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.clock, false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.randomness, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.clock, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -86,14 +70,11 @@ pub struct RefundOpenInstructionData {
 }
 
 impl RefundOpenInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut RefundOpenInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(configure: impl FnOnce(&mut RefundOpenInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; <RefundOpenInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
-			let data =
-				<RefundOpenInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-					.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			let data = <RefundOpenInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
+				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 			configure(data);
 			data.discriminator = REFUND_OPEN_DISCRIMINATOR;
 		}

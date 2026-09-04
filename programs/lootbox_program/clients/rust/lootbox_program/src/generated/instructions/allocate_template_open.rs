@@ -21,11 +21,7 @@ pub struct AllocateTemplateOpen {
 }
 
 impl AllocateTemplateOpen {
-	pub fn new(
-		template: solana_pubkey::Pubkey,
-		opening: solana_pubkey::Pubkey,
-		bundle: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey) -> Self {
 		Self {
 			template,
 			opening,
@@ -33,10 +29,7 @@ impl AllocateTemplateOpen {
 		}
 	}
 
-	pub fn instruction(
-		&self,
-		data: AllocateTemplateOpenInstructionData,
-	) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: AllocateTemplateOpenInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -49,10 +42,7 @@ impl AllocateTemplateOpen {
 		let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.bundle,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.bundle, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -68,16 +58,11 @@ pub struct AllocateTemplateOpenInstructionData {
 }
 
 impl AllocateTemplateOpenInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut AllocateTemplateOpenInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes =
-			vec![0u8; <AllocateTemplateOpenInstructionWire as pina::ZeroPodFixed>::SIZE];
+	pub fn new(configure: impl FnOnce(&mut AllocateTemplateOpenInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+		let mut bytes = vec![0u8; <AllocateTemplateOpenInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
-			let data = <AllocateTemplateOpenInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(
-				&mut bytes,
-			)
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			let data = <AllocateTemplateOpenInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
+				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 			configure(data);
 			data.discriminator = ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR;
 		}

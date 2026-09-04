@@ -65,6 +65,7 @@ enum LootboxProgramInstruction {
   claimCompressedNftPrize,
   reclaimCompressedNftPrize,
   forfeitTemplateOpen,
+  lockTreasury,
 }
 
 /// Identifies the type of a LootboxProgram instruction.
@@ -179,6 +180,9 @@ LootboxProgramInstruction identifyLootboxProgramInstruction(Uint8List data) {
   }
   if (containsBytes(data, getU8Encoder().encode(36), 0)) {
     return LootboxProgramInstruction.forfeitTemplateOpen;
+  }
+  if (containsBytes(data, getU8Encoder().encode(37), 0)) {
+    return LootboxProgramInstruction.lockTreasury;
   }
 
   throw SolanaError(SolanaErrorCode.programClientsFailedToIdentifyInstruction, {
@@ -496,6 +500,14 @@ final class ParsedForfeitTemplateOpen extends ParsedLootboxProgramInstruction {
   final ForfeitTemplateOpenInstructionData data;
 }
 
+/// A parsed LockTreasury instruction.
+final class ParsedLockTreasury extends ParsedLootboxProgramInstruction {
+  const ParsedLockTreasury({required this.data})
+    : super(LootboxProgramInstruction.lockTreasury);
+
+  final LockTreasuryInstructionData data;
+}
+
 /// Parses a LootboxProgram instruction.
 ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
   Instruction instruction,
@@ -622,6 +634,9 @@ ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
       ),
     LootboxProgramInstruction.forfeitTemplateOpen => ParsedForfeitTemplateOpen(
       data: parseForfeitTemplateOpenInstruction(instruction),
+    ),
+    LootboxProgramInstruction.lockTreasury => ParsedLockTreasury(
+      data: parseLockTreasuryInstruction(instruction),
     ),
   };
 }

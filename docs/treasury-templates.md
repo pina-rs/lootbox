@@ -4,7 +4,7 @@ Status: implemented and tested on local Surfpool. This is an experimental develo
 
 ## Product model
 
-A treasury template is an append-only inventory of complete prize bundles. One transferable, zero-decimal Token-2022 token is one unopened lootbox claim. The tokens are interchangeable; NFTs may be prizes inside bundles.
+A treasury template begins as an append-only inventory of complete prize bundles. An irreversible market lock turns it into a fixed series: one transferable, zero-decimal Token-2022 token is one unopened lootbox claim. Tokens from the same locked treasury are interchangeable; NFTs may be prizes inside bundles.
 
 Each bundle contains one to four assets and a positive copy count. Every copy is one equal ticket:
 
@@ -12,16 +12,18 @@ Each bundle contains one to four assets and a positive copy count. Every copy is
 chance(bundle) = remaining copies of bundle / all remaining eligible copies
 ```
 
-There are no hidden weights and no creator-entered supply cap. If a treasury has eight copies of a 0.001 SOL bundle, four copies of a 100 BONK bundle, one NFT A, one NFT B + D + A bundle, and one 10 SOL bundle, it starts with 15 tickets and can authorize at most 15 lifetime box mints. A unique asset can appear only once and forces that bundle's copy count to one.
+There are no hidden weights and no creator-entered supply cap. If a treasury has eight copies of a 0.001 SOL bundle, four copies of a 100 BONK bundle, one NFT A, one NFT B + D + A bundle, and one 10 SOL bundle, it has 15 outcomes. Locking succeeds only when exactly 15 boxes exist; the lock transaction mints any missing boxes before revoking mint authority. A unique asset can appear only once and forces that bundle's copy count to one.
 
 The implementation is deliberately fully collateralized. It does not use expected value, fractional reserves, lending, or probabilistic undercollateralization.
 
 ## Append-only lifecycle
 
-Templates have three states:
+Templates retain three lifecycle statuses plus an independent permanent lock:
 
 ```text
 Draft --publish--> Live --retire--> Retired
+                    |
+                    +--lock exact supply--> Market locked
 ```
 
 Bundles have a separate staging lifecycle:
@@ -34,13 +36,15 @@ Funding --reclaim every funded asset--> Cancelled and closed
 - A new bundle is always staged at the next sequential `u32` index.
 - It is invisible to draws and adds no mint capacity until every asset is escrowed and `activateBundle` succeeds.
 - Activation atomically appends its inventory, increments the treasury version, and adds its copies to lifetime mint capacity.
-- A live template may receive more bundles at any time. Existing bundles, amounts, identifiers, the unlock time, and metadata cannot be edited or reordered.
+- An unlocked live template may receive more bundles before its reveal date. Existing bundles, amounts, identifiers, the reveal time, and metadata cannot be edited or reordered.
 - An interrupted funding workflow is resumable from chain. The creator can reclaim and cancel only the unpublished tail bundle; already active history is immutable.
-- Retirement stops new mints and additions. Outstanding boxes and committed openings remain valid. Unallocated inventory is reclaimable only after box supply and pending openings both reach zero; allocated but unclaimed prizes remain reserved for their recipient.
+- Market lock requires a live treasury, future reveal time, pristine inventory, no opening history, no staged tail, and actual mint supply matching recorded issuance. It atomically mints every missing claim to the creator-selected account, proves `mint supply == active bundle copies`, revokes mint authority, and records `lockedAt`.
+- After lock, additions and mints fail permanently. Boxes can transfer immediately but cannot open before the reveal timestamp.
+- Retirement stops any remaining lifecycle operations but does not undo a market lock. Outstanding locked boxes and committed openings remain valid. Unallocated inventory is reclaimable only after box supply and pending openings both reach zero; allocated but unclaimed prizes remain reserved for their recipient.
 
 ## Capacity and snapshots
 
-The client and program enforce both bounds:
+Before lock, the client and program enforce both issuance bounds:
 
 ```text
 lifetime mints remaining = total activated copies - total boxes ever minted
@@ -48,9 +52,16 @@ live liability headroom = remaining prize copies - live box supply - pending ope
 mint capacity = min(lifetime mints remaining, live liability headroom)
 ```
 
-Depleting one bundle does not stop minting while other funded copies remain. A won copy is removed from the pool, so future live odds update automatically.
+Lock converts that capacity into a strict equality:
 
-Opening a box snapshots the current treasury version and active bundle prefix before the token is burned. Bundles appended later are eligible for boxes that have not opened yet, including boxes already circulating, but never enter an already committed receipt. FIFO allocation still observes depletion caused by earlier receipts inside that saved prefix. The snapshot is therefore a promise about the eligible manifest, not a frozen percentage.
+```text
+fixed box issuance = total active bundle copies
+mint authority after lock = none
+```
+
+A won copy is removed from the pool and its corresponding box was burned, so circulating supply and remaining prize copies decline together. Future live odds and remaining expected value update automatically.
+
+Opening is impossible until the treasury is locked, so every box in a tradable series has the same eligible manifest. Burning a box snapshots the locked treasury version and active bundle prefix. FIFO allocation still observes depletion caused by earlier receipts inside that saved prefix. The snapshot is therefore a promise about the eligible manifest, not a frozen percentage.
 
 ## Opening and recovery
 
@@ -58,7 +69,7 @@ Opening a box snapshots the current treasury version and active bundle prefix be
 burn + commit -> verify entropy -> FIFO allocation -> per-asset claims -> close receipt
 ```
 
-1. After the configured unlock timestamp, the owner signs a request that atomically burns one box and creates fresh Switchboard randomness.
+1. After both market lock and the configured reveal timestamp, the owner signs a request that atomically burns one box and creates fresh Switchboard randomness.
 2. The receipt records the owner, sequence, treasury version, and eligible bundle count.
 3. Anyone may relay a valid proof. Verification persists entropy without moving a prize.
 4. Allocation must process the FIFO head and uses domain-separated, bounded rejection sampling over remaining copies in the saved prefix. There is no reroll.
@@ -83,18 +94,18 @@ Collection and compressed transfers require fresh account resolution at funding,
 
 ## Payers and authority
 
-- The treasury creator signs and pays for creation, staged funding, activation, append operations, cancellation, retirement, and box minting.
+- The treasury creator signs and pays for creation, staged funding, activation, append operations, cancellation, exact box issuance, market lock, and retirement.
 - The box owner signs and pays for burn/commit. The playground also uses that owner for proof verification, FIFO allocation, and claim transactions.
 - Verification, allocation, and claim instructions are permissionless so a relayer may pay instead; destination substitution is impossible.
 - The program does not contain an unbounded on-chain crank subsidy. Production operators may fund a dedicated relayer wallet or sponsor transactions outside the prize inventory. Any future reimbursement policy needs an explicit cap and separate audit.
 
 ## Developer API
 
-Legacy v1 discriminators 0–9 are unchanged. V2 uses discriminators 10–36:
+Legacy v1 discriminators 0–9 are unchanged. V2 uses discriminators 10–37:
 
 | Phase      | Instructions                                                                                                                                            |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Template   | `createTemplate`, `sealTemplate`, `retireTemplate`                                                                                                      |
+| Template   | `createTemplate`, `sealTemplate`, `lockTreasury`, `retireTemplate`                                                                                      |
 | Stage      | `addBundle`, `fundSolPrize`, `fundTokenPrize`, `fundMetadataNftPrize`, `fundCoreAssetPrize`, `fundCompressedNftPrize`, `activateBundle`, `cancelBundle` |
 | Issue/open | `mintTemplateBoxes`, `requestTemplateOpen`, `fulfillTemplateOpen`, `allocateTemplateOpen`, `forfeitTemplateOpen`                                        |
 | Deliver    | `claimSolPrize`, `claimTokenPrize`, `claimMetadataNftPrize`, `claimCoreAssetPrize`, `claimCompressedNftPrize`                                           |
@@ -127,13 +138,14 @@ const plan = createTemplatePlan({
 });
 
 console.log(plan.totalBundles); // 100n
+console.log(plan.fixedSupply); // 100n after market lock
 console.log(plan.bundles[1]?.odds); // { numerator: 1n, denominator: 100n }
 console.log(plan.treasury); // exact deposits grouped by asset identifier
 ```
 
 Replace the placeholder with a valid address before running the example. Rust exposes `TemplatePlan::new(&bundles)` with `PrizeAsset::{Sol, ClassicToken, Token2022, LegacyNft, MetadataNft, CoreAsset, CompressedNft}`. Dart exposes `TemplatePlan`, `PrizeBundle`, and matching `PrizeAsset` constructors. All planners validate the 256-bundle limit, one-to-four asset limit, `u64` collateral math, `u32` ticket limit, and unique-asset ownership.
 
-`LootboxClient` provides resumable `createTemplate` and `appendBundles`, `publishTemplate`, `cancelFundingBundle`, mint/transfer/open/fulfill/allocate/claim orchestration, timeout forfeiture, receipt closure, and read APIs. It uses processed commitment only for the local single-node sandbox; production applications must choose appropriate finality, transaction simulation, wallet, and oracle transport policies.
+`LootboxClient` provides resumable `createTemplate` and `appendBundles`, `publishTemplate`, `cancelFundingBundle`, exact `lockTreasury`, transfer/open/fulfill/allocate/claim orchestration, timeout forfeiture, receipt closure, and read APIs. Market helpers validate lock readiness, compute explicit remaining-inventory EV, quote integer-only constant-product trades, and export a checked Raydium CPMM deployment manifest. Pool creation itself stays in a production wallet/network adapter. The client uses processed commitment only for the local single-node sandbox; production applications must choose appropriate finality, transaction simulation, wallet, and oracle transport policies.
 
 ## Searchable asset picker
 
@@ -148,7 +160,7 @@ Official integration references: [Jupiter Tokens API](https://developers.jup.ag/
 
 ## Verification and release gates
 
-Implemented verification covers Rust unit/property tests, Rust/TypeScript/Dart planners, generated clients, real SBF transactions in Surfpool, local control-plane tests, React unit tests, and desktop/mobile Playwright journeys. The Surfpool oracle is an ABI emulator, not production randomness, and external Metadata/Core/Bubblegum programs still need real-network compatibility fixtures.
+Implemented verification covers Rust unit/property tests, Rust/TypeScript/Dart planners, generated clients, exact issuance and mint-authority revocation through real SBF transactions in Surfpool, local control-plane tests, React unit tests, and desktop/mobile Playwright journeys. The Surfpool oracle is an ABI emulator, not production randomness, and external Metadata/Core/Bubblegum programs still need real-network compatibility fixtures.
 
 Before real value: independent audit, real Switchboard soak and monitored relayer policy, upgrade-authority policy, external-adapter compatibility tests, production wallet simulation/finality, API reliability controls, jurisdiction-specific review, and incident response.
 

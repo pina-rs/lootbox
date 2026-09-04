@@ -18,26 +18,54 @@ test("funds a real Surfpool treasury, gifts boxes, and delivers every bundle", a
 	await page.getByLabel("Template name", { exact: true }).fill(
 		`Browser ${test.info().project.name}`,
 	);
+	const configResponse = await page.request.get("http://127.0.0.1:8898/config");
+	const config: { rpcUrl: string } = await configResponse.json();
+	const rpc = createSolanaRpc(config.rpcUrl);
+	const slot = await rpc.getSlot({ commitment: "processed" }).send();
+	const timestamp = await rpc.getBlockTime(slot).send();
+	if (timestamp === null) throw new Error("Chain time is unavailable");
+	const reveal = new Date(Number(timestamp + 45n * 60n) * 1000);
+	const localReveal = new Date(
+		reveal.getTime() - reveal.getTimezoneOffset() * 60_000,
+	).toISOString().slice(0, 16);
+	await page.getByLabel("Reveal date", { exact: true }).fill(
+		localReveal.slice(0, 10),
+	);
+	await page.getByLabel("Reveal time", { exact: true }).fill(
+		localReveal.slice(11),
+	);
 	const copies = page.getByLabel("Copies", { exact: true });
 	await copies.nth(0).fill("1");
 	await copies.nth(1).fill("1");
 	await page.getByRole("button", { name: "Fund & publish treasury" }).click();
 	await expect(
 		page.getByText(
-			"Treasury funded and published. Mint your first gift below.",
+			"Treasury funded and published. Add prizes or lock its exact supply below.",
 		),
 	).toBeVisible({ timeout: 60_000 });
+	await page.getByRole("checkbox").check();
+	await page.getByRole("button", { name: "Mint 3 & lock treasury" }).click();
+	await expect(page.getByText(/exact box supply locked/)).toBeVisible({
+		timeout: 30_000,
+	});
 	await page.getByLabel("Boxes", { exact: true }).fill("3");
-	await page.getByRole("button", { name: "Mint a gift", exact: true }).click();
+	await page.getByRole("button", { name: "Send sealed boxes" }).click();
 	await expect(page.getByTestId("box-balance")).toHaveText("3", {
 		timeout: 20_000,
 	});
+	await expect(page.getByRole("heading", { name: "Market desk" }))
+		.toBeVisible();
+	await expect(
+		page.getByRole("button", { name: "Waiting for the reveal date" }),
+	)
+		.toBeDisabled();
+	await page.request.post("http://127.0.0.1:8898/time-travel", {
+		data: { timestampSeconds: Math.floor(reveal.getTime() / 1000) + 2 },
+	});
+	await page.reload();
 	const recipient = address(
 		await page.getByLabel("Recipient address", { exact: true }).inputValue(),
 	);
-	const configResponse = await page.request.get("http://127.0.0.1:8898/config");
-	const config: { rpcUrl: string } = await configResponse.json();
-	const rpc = createSolanaRpc(config.rpcUrl);
 	const before =
 		(await rpc.getBalance(recipient, { commitment: "processed" }).send()).value;
 	const prizes: string[] = [];
@@ -104,8 +132,8 @@ test("funds a real Surfpool treasury, gifts boxes, and delivers every bundle", a
 		).getBigUint64(64, true)
 	);
 	expect(amounts.sort((a, b) => a < b ? -1 : 1)).toEqual([1n, 1n, 100n]);
-	await expect(page.getByRole("button", { name: "Mint a gift", exact: true }))
-		.toBeDisabled();
+	await expect(page.getByText("Mint authority revoked", { exact: true }))
+		.toBeVisible();
 	await page.reload();
 	await expect(page.getByTestId("box-balance")).toHaveText("0");
 	await expect(page.getByRole("heading", { name: "Cargo secured." }))
@@ -127,15 +155,23 @@ test("resumes partially funded drafts and transfers a time-locked gift", async (
 	await page.getByLabel("Template name", { exact: true }).fill(
 		`Time capsule ${test.info().project.name}`,
 	);
-	const unlock = new Date(Date.now() + 3_600_000);
+	const chainConfigResponse = await page.request.get(
+		"http://127.0.0.1:8898/config",
+	);
+	const chainConfig: { rpcUrl: string } = await chainConfigResponse.json();
+	const chainRpc = createSolanaRpc(chainConfig.rpcUrl);
+	const chainSlot = await chainRpc.getSlot({ commitment: "processed" }).send();
+	const chainTimestamp = await chainRpc.getBlockTime(chainSlot).send();
+	if (chainTimestamp === null) throw new Error("Chain time is unavailable");
+	const unlock = new Date(Number(chainTimestamp + 4n * 3_600n) * 1000);
 	// datetime-local uses browser-local wall time, not a UTC-suffixed string.
 	const localDate = new Date(
 		unlock.getTime() - unlock.getTimezoneOffset() * 60_000,
 	).toISOString().slice(0, 16);
-	await page.getByLabel("Unlock date", { exact: true }).fill(
+	await page.getByLabel("Reveal date", { exact: true }).fill(
 		localDate.slice(0, 10),
 	);
-	await page.getByLabel("Unlock time", { exact: true }).fill(
+	await page.getByLabel("Reveal time", { exact: true }).fill(
 		localDate.slice(11),
 	);
 	const copies = page.getByLabel("Copies", { exact: true });
@@ -158,13 +194,16 @@ test("resumes partially funded drafts and transfers a time-locked gift", async (
 	await page.getByRole("button", { name: "Resume funding" }).click();
 	await expect(
 		page.getByText(
-			"Treasury funded and published. Mint your first gift below.",
+			"Treasury funded and published. Add prizes or lock its exact supply below.",
 		),
 	).toBeVisible({ timeout: 40_000 });
-	await page.getByRole("button", { name: "Mint a gift", exact: true }).click();
+	await page.getByRole("checkbox").check();
+	await page.getByRole("button", { name: "Mint 3 & lock treasury" }).click();
+	await page.getByLabel("Boxes", { exact: true }).fill("1");
+	await page.getByRole("button", { name: "Send sealed boxes" }).click();
 	await expect(page.getByTestId("box-balance")).toHaveText("1");
 	await expect(
-		page.getByRole("button", { name: "Waiting for the unlock date" }),
+		page.getByRole("button", { name: "Waiting for the reveal date" }),
 	).toBeDisabled();
 	const response = await page.request.get("http://127.0.0.1:8898/config");
 	const config: { rpcUrl: string } = await response.json();
@@ -181,11 +220,15 @@ test("resumes partially funded drafts and transfers a time-locked gift", async (
 		getBase64Encoder().encode(account.value.data[0]).slice(1, 33),
 	);
 	await page.getByLabel("Recipient address", { exact: true }).fill(creator);
-	await page.getByText("Transfer gifts you already hold", { exact: true })
+	await page.getByText("Transfer boxes from the recipient wallet", {
+		exact: true,
+	})
 		.click();
-	await page.getByRole("button", { name: "Transfer to address above" }).click();
+	await page.getByRole("button", { name: "Transfer recipient boxes" }).click();
 	await expect(page.getByTestId("box-balance")).toHaveText("0");
-	await expect(page.getByText("Sealed gifts transferred", { exact: true }))
+	await expect(
+		page.getByText("Whole sealed boxes transferred", { exact: true }),
+	)
 		.toBeVisible();
 });
 

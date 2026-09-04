@@ -72,9 +72,13 @@ pub struct ForfeitTemplateOpenAccounts<'a> {
 	pub randomness: &'a AccountView,
 }
 
-fn assert_openable(status: u8) -> ProgramResult {
-	if status == TEMPLATE_DRAFT {
+fn assert_openable(state: &TemplateStateZc) -> ProgramResult {
+	if state.status == TEMPLATE_DRAFT {
 		return Err(lootbox_error(LootboxError::InvalidState));
+	}
+
+	if state.locked_at.get() == 0 {
+		return Err(lootbox_error(LootboxError::TreasuryUnlocked));
 	}
 
 	Ok(())
@@ -149,15 +153,16 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		self.oracle_queue.assert_address(&state.oracle_queue)?;
 		self.oracle_program.assert_program(&state.oracle_program)?;
 
-		// Retirement closes issuance and additions, but must not strand boxes
-		// already held by recipients. Draft treasuries are the only unopenable state.
-		assert_openable(state.status)?;
+		// Retirement closes administration, but the irreversible market lock
+		// preserves every holder's right to open an already issued box.
+		assert_openable(&state)?;
 
 		if sysvars::clock::Clock::get()?.unix_timestamp < state.opens_at.get() {
 			return Err(lootbox_error(LootboxError::ClaimLocked));
 		}
 
-		let mint_supply = assert_template_mint(self.box_mint, &template_address, &state.box_mint)?;
+		let mint_supply =
+			assert_template_mint(self.box_mint, &template_address, &state.box_mint, true)?;
 		let box_account = self.owner_box_account.as_associated_token_account_checked(
 			&owner_address,
 			self.box_mint.address(),
@@ -481,9 +486,16 @@ mod tests {
 
 	#[test]
 	fn retirement_preserves_opening_rights_but_drafts_do_not() {
-		assert!(assert_openable(TEMPLATE_DRAFT).is_err());
-		assert_eq!(assert_openable(TEMPLATE_LIVE), Ok(()));
-		assert_eq!(assert_openable(TEMPLATE_RETIRED), Ok(()));
+		let mut bytes = [0; TemplateState::SIZE];
+		let state = TemplateState::initialize(&mut bytes).expect("template");
+
+		assert!(assert_openable(state).is_err());
+		state.status = TEMPLATE_LIVE;
+		assert!(assert_openable(state).is_err());
+		state.locked_at.set(1);
+		assert_eq!(assert_openable(state), Ok(()));
+		state.status = TEMPLATE_RETIRED;
+		assert_eq!(assert_openable(state), Ok(()));
 	}
 
 	#[test]

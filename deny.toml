@@ -1,0 +1,25 @@
+[graph]
+all-features = true
+
+[advisories]
+db-path = "target/advisory-db"
+db-urls = ["https://github.com/RustSec/advisory-db.git"]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+highlight = "all"
+skip = [
+	# The generated client still uses Solana's 3.x host API while Pina's
+	# Pinocchio stack uses the 5.x syscall definitions on-chain.
+	{ name = "solana-define-syscall", version = "4.0.1" },
+	# Solana's host API uses syn 2 while Pina's current derive stack uses syn 3.
+	{ name = "syn", version = "2.0.119" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = [
+	"https://github.com/rust-lang/crates.io-index",
+]

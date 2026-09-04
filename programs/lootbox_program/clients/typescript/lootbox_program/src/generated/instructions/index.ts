@@ -28,6 +28,7 @@ export * from './fundCoreAssetPrize';
 export * from './fundMetadataNftPrize';
 export * from './fundSolPrize';
 export * from './fundTokenPrize';
+export * from './lockTreasury';
 export * from './mintBoxes';
 export * from './mintTemplateBoxes';
 export * from './reclaimCompressedNftPrize';

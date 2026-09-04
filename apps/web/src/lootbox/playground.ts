@@ -358,10 +358,15 @@ export function makeAsset(kind: DraftAsset["kind"] = "sol"): DraftAsset {
 export function makeBundle(asset: DraftAsset = makeAsset()): PrizeRow {
 	return { label: "Prize bundle", quantity: "1", assets: [asset] };
 }
+function defaultRevealDate(): string {
+	const date = new Date(Date.now() + 24 * 3_600_000);
+	return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+		.toISOString().slice(0, 16);
+}
 export const initialInput: CreatorInput = {
 	name: "Midnight cargo",
 	uri: "",
-	opensAt: "",
+	opensAt: defaultRevealDate(),
 	rows: [
 		{ label: "Pocket spark", quantity: "8", assets: [makeAsset("sol")] },
 		{ label: "BONK crate", quantity: "4", assets: [makeAsset("token")] },
@@ -403,8 +408,11 @@ export function creatorErrors(input: CreatorInput): Record<string, string> {
 			throw new Error("Use an http, https, ipfs, or ar metadata URI");
 		}
 	});
-	if (input.opensAt && !Number.isFinite(Date.parse(input.opensAt))) {
-		errors.opensAt = "Choose a valid local date and time";
+	const revealTime = Date.parse(input.opensAt);
+	if (!input.opensAt || !Number.isFinite(revealTime)) {
+		errors.opensAt = "Choose a valid future reveal date and time";
+	} else if (revealTime <= Date.now() + 60_000) {
+		errors.opensAt = "Reveal must be at least one minute in the future";
 	}
 	if (input.rows.length < 1 || input.rows.length > MAX_BUNDLES) {
 		errors.bundles = `Use one to ${MAX_BUNDLES} bundles`;
@@ -655,9 +663,7 @@ export async function createDrop(
 	const plan = createTemplatePlan({
 		name: input.name,
 		uri: input.uri,
-		opensAt: input.opensAt
-			? BigInt(Math.floor(Date.parse(input.opensAt) / 1000))
-			: 0n,
+		opensAt: BigInt(Math.floor(Date.parse(input.opensAt) / 1000)),
 		bundles: await localBundles(sandbox, draft, progress),
 	});
 	const template = await sandbox.client("creator", progress).createTemplate(

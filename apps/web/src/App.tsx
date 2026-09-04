@@ -28,6 +28,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AssetPicker } from "./lootbox/AssetPicker.js";
 import { LootboxMachine, type MachinePhase } from "./lootbox/Machine.js";
+import { MarketDesk } from "./lootbox/MarketDesk.js";
 import {
 	appendDrop,
 	cancelSavedDraft,
@@ -55,6 +56,7 @@ type Workspace = {
 	bundles: ChainBundle[];
 	selected: ChainTemplate | null;
 	boxes: bigint;
+	creatorBoxes: bigint;
 	supply: bigint;
 	balance: bigint;
 	chainTime: bigint;
@@ -66,6 +68,7 @@ const empty: Workspace = {
 	bundles: [],
 	selected: null,
 	boxes: 0n,
+	creatorBoxes: 0n,
 	supply: 0n,
 	balance: 0n,
 	chainTime: 0n,
@@ -76,8 +79,14 @@ const errorMessage = (error: unknown) =>
 	error instanceof Error
 		? error.message
 		: "Something went wrong. Refresh chain state and retry.";
-const statusName = (status: number) =>
-	status === 0 ? "Draft" : status === 1 ? "Live" : "Retired";
+const statusName = (status: number, lockedAt = 0n) =>
+	lockedAt > 0n
+		? "Market locked"
+		: status === 0
+		? "Draft"
+		: status === 1
+		? "Live · editable"
+		: "Retired";
 
 function prizeName(bundle: ChainBundle) {
 	const assets = bundleAssets(bundle.data);
@@ -112,6 +121,7 @@ export default function App() {
 	const [revealed, setRevealed] = useState<Set<string>>(new Set());
 	const [giftAmount, setGiftAmount] = useState("1");
 	const [destination, setDestination] = useState("");
+	const [lockAcknowledged, setLockAcknowledged] = useState(false);
 	const [transactions, setTransactions] = useState<
 		{ label: string; signature: string }[]
 	>([]);
@@ -127,21 +137,28 @@ export default function App() {
 					item.data.authority === session.creator.address
 				) ??
 				templates[0] ?? null;
-			const [bundles, boxes, supply, balance, slot] = await Promise.all([
-				selected ? client.bundles(selected) : [],
-				selected
-					? client.boxBalance(session.recipient.address, selected.data.boxMint)
-					: 0n,
-				selected
-					? client.rpc.getTokenSupply(selected.data.boxMint, {
+			const [bundles, boxes, creatorBoxes, supply, balance, slot] =
+				await Promise.all([
+					selected ? client.bundles(selected) : [],
+					selected
+						? client.boxBalance(
+							session.recipient.address,
+							selected.data.boxMint,
+						)
+						: 0n,
+					selected
+						? client.boxBalance(session.creator.address, selected.data.boxMint)
+						: 0n,
+					selected
+						? client.rpc.getTokenSupply(selected.data.boxMint, {
+							commitment: "processed",
+						}).send().then((response) => BigInt(response.value.amount))
+						: 0n,
+					client.rpc.getBalance(session.recipient.address, {
 						commitment: "processed",
-					}).send().then((response) => BigInt(response.value.amount))
-					: 0n,
-				client.rpc.getBalance(session.recipient.address, {
-					commitment: "processed",
-				}).send(),
-				client.rpc.getSlot({ commitment: "processed" }).send(),
-			]);
+					}).send(),
+					client.rpc.getSlot({ commitment: "processed" }).send(),
+				]);
 			const chainTime = await client.rpc.getBlockTime(slot).send();
 			selectedId.current = selected?.address;
 			if (selected) {
@@ -156,6 +173,7 @@ export default function App() {
 				selected,
 				bundles,
 				boxes,
+				creatorBoxes,
 				supply,
 				balance: balance.value,
 				chainTime: chainTime ?? 0n,
@@ -192,6 +210,7 @@ export default function App() {
 		}
 	}, [refresh]);
 	useEffect(() => void connect(), [connect]);
+	useEffect(() => setLockAcknowledged(false), [workspace.selected?.address]);
 	useEffect(() => {
 		if (!sandbox || busy) return;
 		const timer = setInterval(
@@ -270,7 +289,11 @@ export default function App() {
 		? templateMintCapacity(selected.data, workspace.supply)
 		: 0n;
 	const inventory = selected ? templateInventory(selected.data) : [];
-	const locked = selected && selected.data.opensAt > workspace.chainTime;
+	const treasuryLocked = Boolean(selected && selected.data.lockedAt > 0n);
+	const revealPending = Boolean(
+		selected && selected.data.opensAt > workspace.chainTime,
+	);
+	const isCreator = selected?.data.authority === sandbox?.creator.address;
 	const recoverySlots = receipt?.data.status === 0 &&
 			receipt.data.seedSlot + 300n > workspace.chainSlot
 		? receipt.data.seedSlot + 300n - workspace.chainSlot
@@ -313,6 +336,12 @@ export default function App() {
 		}));
 	const beginAppend = () => {
 		if (!selected) return;
+		if (selected.data.lockedAt > 0n) {
+			setError(
+				"This treasury is permanently locked and cannot accept additions.",
+			);
+			return;
+		}
 		setCreatorMode("append");
 		setInput({
 			name: decodeTemplateText(selected.data.name),
@@ -488,8 +517,10 @@ export default function App() {
 											<option value="" disabled>No treasuries yet</option>
 											{workspace.templates.map((item) => (
 												<option key={item.address} value={item.address}>
-													{decodeTemplateText(item.data.name)} ·{" "}
-													{statusName(item.data.status).toLowerCase()}
+													{decodeTemplateText(item.data.name)} · {statusName(
+														item.data.status,
+														item.data.lockedAt,
+													).toLowerCase()}
 												</option>
 											))}
 										</select>
@@ -507,7 +538,7 @@ export default function App() {
 								</div>
 								<dl className="facts">
 									<div>
-										<dt>Unlock</dt>
+										<dt>Reveal date</dt>
 										<dd>
 											{selected?.data.opensAt
 												? new Date(Number(selected.data.opensAt) * 1000)
@@ -520,7 +551,10 @@ export default function App() {
 										<dd>
 											{selected
 												? `${
-													statusName(selected.data.status)
+													statusName(
+														selected.data.status,
+														selected.data.lockedAt,
+													)
 												} · v${selected.data.version}`
 												: "—"}
 										</dd>
@@ -532,8 +566,27 @@ export default function App() {
 										</dd>
 									</div>
 									<div>
+										<dt>Bundle types</dt>
+										<dd>{selected?.data.bundleCount.toString() ?? "0"}</dd>
+									</div>
+									<div>
+										<dt>Bundle copies</dt>
+										<dd>{selected?.data.totalBundles.toString() ?? "0"}</dd>
+									</div>
+									<div>
+										<dt>Unwon copies</dt>
+										<dd>{selected?.data.remainingBundles.toString() ?? "0"}</dd>
+									</div>
+									<div>
+										<dt>Box supply</dt>
+										<dd>
+											{workspace.supply.toString()} /{" "}
+											{selected?.data.totalBundles.toString() ?? "0"}
+										</dd>
+									</div>
+									<div>
 										<dt>Gift token</dt>
-										<dd>Token-2022 · transferable</dd>
+										<dd>Token-2022 · 0 decimals</dd>
 									</div>
 								</dl>
 								{sandbox && (
@@ -684,7 +737,8 @@ export default function App() {
 												<button
 													className="primary-button"
 													disabled={busy || workspace.boxes === 0n ||
-														Boolean(locked) || selected.data.status === 0}
+														!treasuryLocked || revealPending ||
+														selected.data.status === 0}
 													onClick={() =>
 														void run(async (session) => {
 															await session.client("recipient", progress)
@@ -695,8 +749,10 @@ export default function App() {
 												>
 													{busy
 														? "Opening your gift…"
-														: locked
-														? "Waiting for the unlock date"
+														: !treasuryLocked
+														? "Treasury must be locked"
+														: revealPending
+														? "Waiting for the reveal date"
 														: delivered && workspace.boxes > 0n
 														? "Open another gift"
 														: workspace.boxes === 0n
@@ -707,8 +763,10 @@ export default function App() {
 													<ArrowRight size={18} />
 												</button>
 												<p>
-													{locked
-														? "You can still transfer this gift before it unlocks."
+													{!treasuryLocked
+														? "The creator must fix supply and revoke mint authority before any box can reveal."
+														: revealPending
+														? "You can still transfer this gift before its reveal date."
 														: "The owner pays to burn and request randomness. Anyone may verify and allocate in queue order."}
 												</p>
 											</>
@@ -768,7 +826,8 @@ export default function App() {
 							<aside className="prize-manifest">
 								<h2>What’s in the treasury?</h2>
 								<p>
-									Live odds · version {selected?.data.version.toString() ?? "—"}
+									{treasuryLocked ? "Fixed" : "Latest"} odds · version{" "}
+									{selected?.data.version.toString() ?? "—"}
 								</p>
 								{workspace.bundles.length
 									? (
@@ -827,99 +886,198 @@ export default function App() {
 										</div>
 									)}
 								<p className="manifest-note">
-									Each remaining copy is one equal ticket. A win removes one.
-									New additions change future odds, while every burned box keeps
-									its treasury-version snapshot.
+									{treasuryLocked
+										? "Every remaining copy is one equal ticket. Supply and inventory are permanently fixed; each reveal burns one box and removes one outcome."
+										: "Every bundle copy is one equal ticket. The creator may still add prizes; no box can open until supply and inventory are permanently locked."}
 								</p>
 							</aside>
 						</section>
 						{selected && (
 							<section className="dispatch">
-								<div>
-									<h2>Send a little suspense.</h2>
-									<p>
-										{capacity}{" "}
-										more boxes can be minted from the latest funded inventory.
-									</p>
-								</div>
-								{selected.data.authority === sandbox?.creator.address &&
-									selected.data.status !== 2 && (
-									<button
-										type="button"
-										className="quiet-button"
-										onClick={beginAppend}
-										disabled={busy}
-									>
-										<Plus size={16} />Add prizes to this treasury
-									</button>
-								)}
-								<div className="dispatch-fields">
-									<label className="field">
-										Recipient address<input
-											aria-label="Recipient address"
-											value={destination}
-											onChange={(event) => setDestination(event.target.value)}
-											disabled={busy}
-											spellCheck={false}
-										/>
-									</label>
-									<label className="field field--amount">
-										Boxes<input
-											aria-label="Boxes"
-											type="number"
-											min="1"
-											step="1"
-											value={giftAmount}
-											onChange={(event) => setGiftAmount(event.target.value)}
-											disabled={busy}
-										/>
-									</label>
-									<button
-										className="primary-button"
-										disabled={busy || capacity === 0n ||
-											selected.data.status !== 1 ||
-											selected.data.authority !== sandbox?.creator.address}
-										onClick={() =>
-											void run(async (session) => {
-												await session.client("creator", progress).mint(
-													selected,
-													address(destination),
-													parseUnits(giftAmount, 0),
-												);
-												setPhase("received");
-												setNotice(
-													`${giftAmount} sealed gift${
-														giftAmount === "1" ? "" : "s"
-													} minted to ${short(destination)}`,
-												);
-											})}
-									>
-										<Gift size={18} />Mint a gift
-									</button>
-								</div>
-								<details>
-									<summary>Transfer gifts you already hold</summary>
-									<p>
-										Standard Token-2022 transfer from the recipient test wallet.
-										This does not mint or change treasury inventory.
-									</p>
-									<button
-										className="quiet-button"
-										disabled={busy || workspace.boxes === 0n}
-										onClick={() =>
-											void run(async (session) => {
-												await session.client("recipient", progress).transfer(
-													selected,
-													address(destination),
-													parseUnits(giftAmount, 0),
-												);
-												setNotice("Sealed gifts transferred");
-											})}
-									>
-										Transfer to address above <ArrowRight size={15} />
-									</button>
-								</details>
+								{treasuryLocked
+									? (
+										<>
+											<div className="dispatch-heading">
+												<div>
+													<h2>Distribute the fixed series.</h2>
+													<p>
+														The creator holds{" "}
+														{workspace.creatorBoxes.toString()} of{" "}
+														{selected.data.totalBundles.toString()}{" "}
+														boxes. Every send is a standard transfer; minting is
+														permanently disabled.
+													</p>
+												</div>
+												<span className="lock-stamp">
+													<ShieldCheck size={17} />FIXED SUPPLY
+												</span>
+											</div>
+											<div className="dispatch-fields">
+												<label className="field">
+													Recipient address<input
+														aria-label="Recipient address"
+														value={destination}
+														onChange={(event) =>
+															setDestination(event.target.value)}
+														disabled={busy}
+														spellCheck={false}
+													/>
+												</label>
+												<label className="field field--amount">
+													Boxes<input
+														aria-label="Boxes"
+														type="number"
+														min="1"
+														step="1"
+														value={giftAmount}
+														onChange={(event) =>
+															setGiftAmount(event.target.value)}
+														disabled={busy}
+													/>
+												</label>
+												<button
+													className="primary-button"
+													disabled={busy || !isCreator ||
+														workspace.creatorBoxes === 0n}
+													onClick={() =>
+														void run(async (session) => {
+															await session.client("creator", progress)
+																.transfer(
+																	selected,
+																	address(destination),
+																	parseUnits(giftAmount, 0),
+																);
+															setPhase("received");
+															setNotice("Whole sealed boxes transferred");
+														})}
+												>
+													<Gift size={18} />Send sealed boxes
+												</button>
+											</div>
+											<details>
+												<summary>
+													Transfer boxes from the recipient wallet
+												</summary>
+												<p>
+													The recipient currently holds{" "}
+													{workspace.boxes.toString()}. Transfers preserve the
+													sealed outcome and do not touch inventory.
+												</p>
+												<button
+													className="quiet-button"
+													disabled={busy || workspace.boxes === 0n}
+													onClick={() =>
+														void run(async (session) => {
+															await session.client("recipient", progress)
+																.transfer(
+																	selected,
+																	address(destination),
+																	parseUnits(giftAmount, 0),
+																);
+															setNotice("Whole sealed boxes transferred");
+														})}
+												>
+													Transfer recipient boxes <ArrowRight size={15} />
+												</button>
+											</details>
+										</>
+									)
+									: (
+										<div className="lock-console">
+											<div className="dispatch-heading">
+												<div>
+													<h2>Fix the market supply.</h2>
+													<p>
+														{selected.data.bundleCount} bundle types contain
+														{" "}
+														{selected.data.totalBundles.toString()}{" "}
+														copies. Locking mints
+														{capacity === 0n
+															? " no additional"
+															: ` ${capacity}`}{" "}
+														boxes so fixed issuance is exactly{" "}
+														{selected.data.totalBundles.toString()}.
+													</p>
+												</div>
+												{isCreator && selected.data.status !== 2 && (
+													<button
+														type="button"
+														className="quiet-button"
+														onClick={beginAppend}
+														disabled={busy}
+													>
+														<Plus size={16} />Add prizes before locking
+													</button>
+												)}
+											</div>
+											<div
+												className="supply-equation"
+												aria-label="Fixed supply equation"
+											>
+												<span>
+													<b>{selected.data.totalBundles.toString()}</b>{" "}
+													funded bundle copies
+												</span>
+												<i>=</i>
+												<span>
+													<b>{selected.data.totalBundles.toString()}</b>{" "}
+													indivisible boxes
+												</span>
+											</div>
+											<label className="risk-check">
+												<input
+													type="checkbox"
+													checked={lockAcknowledged}
+													onChange={(event) =>
+														setLockAcknowledged(event.target.checked)}
+													disabled={busy || !isCreator}
+												/>
+												<span>
+													I understand this permanently freezes prizes and
+													supply, boxes may be worth less than paid, and I meet
+													the eligibility rules that apply to me.
+												</span>
+											</label>
+											<button
+												className="primary-button lock-button"
+												disabled={busy || !isCreator || !lockAcknowledged ||
+													selected.data.status !== 1 || !revealPending}
+												onClick={() =>
+													void run(async (session) => {
+														await session.client("creator", progress)
+															.lockTreasury(
+																selected,
+																session.creator.address,
+															);
+														setLockAcknowledged(false);
+														setNotice(
+															"Treasury and exact box supply locked. The series is ready to trade.",
+														);
+													})}
+											>
+												<ShieldCheck size={18} />
+												{busy
+													? "Locking treasury…"
+													: capacity === 0n
+													? "Lock exact supply"
+													: `Mint ${capacity} & lock treasury`}
+											</button>
+											<p className="lock-disclosure">
+												Requires a future reveal date, pristine inventory, no
+												opening history, and no staged bundle. The program
+												rechecks all four.
+											</p>
+										</div>
+									)}
 							</section>
+						)}
+						{selected && treasuryLocked && (
+							<MarketDesk
+								template={selected}
+								bundles={workspace.bundles}
+								supply={workspace.supply}
+								chainTime={workspace.chainTime}
+							/>
 						)}
 					</>
 				)}
@@ -964,7 +1122,8 @@ export default function App() {
 								aria-pressed={creatorMode === "append"}
 								disabled={!selected ||
 									selected.data.authority !== sandbox?.creator.address ||
-									selected.data.status === 2 || busy || hasDraft}
+									selected.data.status === 2 || selected.data.lockedAt > 0n ||
+									busy || hasDraft}
 								onClick={beginAppend}
 							>
 								Add to {selected
@@ -1035,7 +1194,7 @@ export default function App() {
 										const template = await createDrop(session, input, progress);
 										selectedId.current = template.address;
 										setNotice(
-											"Treasury funded and published. Mint your first gift below.",
+											"Treasury funded and published. Add prizes or lock its exact supply below.",
 										);
 									}
 									setHasDraft(false);
@@ -1420,25 +1579,44 @@ export default function App() {
 						</p>
 						<h2>The treasury only grows.</h2>
 						<p>
-							Live treasuries accept append-only additions. Funding drafts are
-							invisible to draws and can be reclaimed or resumed. Activation
-							increments the treasury version, bundle count, inventory, and mint
-							capacity together. Existing terms and bundle IDs never change.
+							Before locking, live treasuries accept append-only additions.
+							Funding drafts are invisible to draws and can be reclaimed or
+							resumed. Activation increments the treasury version, bundle count,
+							inventory, and mint capacity together. Existing terms and bundle
+							IDs never change.
+						</p>
+						<h2>Locking creates the tradable series.</h2>
+						<p>
+							The creator chooses a future reveal date, finishes every bundle,
+							and locks once. In the same transaction, every missing box is
+							minted so total supply exactly equals funded bundle copies. Mint
+							authority is revoked and treasury additions stop forever. Each
+							Token-2022 box has zero decimals, so wallets and markets can only
+							move whole boxes.
+						</p>
+						<h2>Time creates a pre-reveal market.</h2>
+						<p>
+							Locked boxes can transfer and trade before reveal, while none can
+							be opened early. Buyers can compare the visible remaining
+							inventory, their own bundle valuations, and market price. Once
+							prizes begin to leave the treasury, both the displayed odds and
+							expected value update.
 						</p>
 						<h2>Every opening gets a snapshot.</h2>
 						<p>
-							Burning a box records the latest version and eligible bundle
-							prefix before randomness is requested. Later additions immediately
-							improve the odds shown for unopened boxes without changing the
-							pool already promised to a pending receipt. Allocation is FIFO and
-							without replacement.
+							After the reveal date, burning a box records the locked version
+							and eligible bundle prefix before randomness is requested.
+							Allocation is FIFO and without replacement, so each win updates
+							the odds for every unopened box while pending receipts retain
+							their snapshot.
 						</p>
 						<h2>Payers are explicit.</h2>
 						<p>
-							The creator pays for treasury creation, funding, additions, and
-							gift minting. The box owner pays to burn and request randomness.
-							Verification and allocation are permissionless cranks, while
-							claims always deliver to the recipient recorded at burn time.
+							The creator pays for treasury creation, funding, additions, exact
+							issuance, and locking. The box owner pays to burn and request
+							randomness. Verification and allocation are permissionless cranks,
+							while claims always deliver to the recipient recorded at burn
+							time.
 						</p>
 						<h2>Catalog results are not endorsements.</h2>
 						<p>

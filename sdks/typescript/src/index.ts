@@ -1,5 +1,6 @@
 export * from "@pina-rs/lootbox-generated";
 export * from "./client.js";
+export * from "./market.js";
 export * from "./templates.js";
 
 export const MAX_OUTCOMES = 8;

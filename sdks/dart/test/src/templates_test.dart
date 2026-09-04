@@ -24,6 +24,7 @@ void main() {
         ],
       );
       expect(plan.totalBundles, BigInt.from(100));
+      expect(plan.fixedSupply, plan.totalBundles);
       expect(plan.probabilityPercent(1), 1);
       expect(plan.treasury[null], BigInt.from(10900000000));
       expect(plan.treasury[nft], BigInt.one);

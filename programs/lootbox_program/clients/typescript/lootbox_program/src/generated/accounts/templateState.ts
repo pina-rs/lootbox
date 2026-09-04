@@ -16,6 +16,11 @@ export function getTemplateStateDiscriminatorBytes(): ReadonlyUint8Array { retur
 
 /** Immutable template terms and the live finite inventory. */
 export type TemplateState = { discriminator: number; authority: Address; boxMint: Address; oracleProgram: Address; oracleQueue: Address; id: bigint; opensAt: bigint;
+/**
+ * Timestamp at which the creator irreversibly fixed inventory and supply.
+ * Zero means the treasury is still editable.
+ */
+lockedAt: bigint;
 /** Total bundle tickets ever activated. This is the lifetime issuance cap. */
 totalBundles: bigint; totalMinted: bigint; remainingBundles: bigint; pendingOpenings: bigint; nextRequest: bigint; nextAllocation: bigint;
 /** Increments after every activated append; snapshotted by each opening. */
@@ -26,10 +31,18 @@ remaining: ReadonlyUint8Array;
 name: ReadonlyUint8Array;
 /** Null-padded UTF-8 metadata URI; terms on chain remain authoritative. */
 uri: ReadonlyUint8Array; bundleCount: number;
-/** 0 draft, 1 live, 2 retired. */
+/**
+ * 0 draft, 1 live, 2 retired. `locked_at` independently records the
+ * irreversible market lock so retirement never erases that fact.
+ */
 status: number; bump: number;  };
 
 export type TemplateStateArgs = { authority: Address; boxMint: Address; oracleProgram: Address; oracleQueue: Address; id: number | bigint; opensAt: number | bigint;
+/**
+ * Timestamp at which the creator irreversibly fixed inventory and supply.
+ * Zero means the treasury is still editable.
+ */
+lockedAt: number | bigint;
 /** Total bundle tickets ever activated. This is the lifetime issuance cap. */
 totalBundles: number | bigint; totalMinted: number | bigint; remainingBundles: number | bigint; pendingOpenings: number | bigint; nextRequest: number | bigint; nextAllocation: number | bigint;
 /** Increments after every activated append; snapshotted by each opening. */
@@ -40,17 +53,20 @@ remaining: ReadonlyUint8Array;
 name: ReadonlyUint8Array;
 /** Null-padded UTF-8 metadata URI; terms on chain remain authoritative. */
 uri: ReadonlyUint8Array; bundleCount: number;
-/** 0 draft, 1 live, 2 retired. */
+/**
+ * 0 draft, 1 live, 2 retired. `locked_at` independently records the
+ * irreversible market lock so retirement never erases that fact.
+ */
 status: number; bump: number;  };
 
 /** Gets the encoder for {@link TemplateStateArgs} account data. */
 export function getTemplateStateEncoder(): FixedSizeEncoder<TemplateStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['authority', getAddressEncoder()], ['boxMint', getAddressEncoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['id', getU64Encoder()], ['opensAt', getI64Encoder()], ['totalBundles', getU64Encoder()], ['totalMinted', getU64Encoder()], ['remainingBundles', getU64Encoder()], ['pendingOpenings', getU64Encoder()], ['nextRequest', getU64Encoder()], ['nextAllocation', getU64Encoder()], ['version', getU64Encoder()], ['remaining', fixZeroPodEncoderSize(getBytesEncoder(), 2048)], ['name', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['uri', fixZeroPodEncoderSize(getBytesEncoder(), 200)], ['bundleCount', getU32Encoder()], ['status', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 4 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['authority', getAddressEncoder()], ['boxMint', getAddressEncoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['id', getU64Encoder()], ['opensAt', getI64Encoder()], ['lockedAt', getI64Encoder()], ['totalBundles', getU64Encoder()], ['totalMinted', getU64Encoder()], ['remainingBundles', getU64Encoder()], ['pendingOpenings', getU64Encoder()], ['nextRequest', getU64Encoder()], ['nextAllocation', getU64Encoder()], ['version', getU64Encoder()], ['remaining', fixZeroPodEncoderSize(getBytesEncoder(), 2048)], ['name', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['uri', fixZeroPodEncoderSize(getBytesEncoder(), 200)], ['bundleCount', getU32Encoder()], ['status', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 4 }));
 }
 
 /** Gets the decoder for {@link TemplateState} account data. */
 export function getTemplateStateDecoder(): FixedSizeDecoder<TemplateState> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(TEMPLATE_STATE_DISCRIMINATOR, getU8Decoder())], ['authority', getAddressDecoder()], ['boxMint', getAddressDecoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['id', getU64Decoder()], ['opensAt', getI64Decoder()], ['totalBundles', getU64Decoder()], ['totalMinted', getU64Decoder()], ['remainingBundles', getU64Decoder()], ['pendingOpenings', getU64Decoder()], ['nextRequest', getU64Decoder()], ['nextAllocation', getU64Decoder()], ['version', getU64Decoder()], ['remaining', fixDecoderSize(getBytesDecoder(), 2048)], ['name', fixDecoderSize(getBytesDecoder(), 32)], ['uri', fixDecoderSize(getBytesDecoder(), 200)], ['bundleCount', getU32Decoder()], ['status', getU8Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(TEMPLATE_STATE_DISCRIMINATOR, getU8Decoder())], ['authority', getAddressDecoder()], ['boxMint', getAddressDecoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['id', getU64Decoder()], ['opensAt', getI64Decoder()], ['lockedAt', getI64Decoder()], ['totalBundles', getU64Decoder()], ['totalMinted', getU64Decoder()], ['remainingBundles', getU64Decoder()], ['pendingOpenings', getU64Decoder()], ['nextRequest', getU64Decoder()], ['nextAllocation', getU64Decoder()], ['version', getU64Decoder()], ['remaining', fixDecoderSize(getBytesDecoder(), 2048)], ['name', fixDecoderSize(getBytesDecoder(), 32)], ['uri', fixDecoderSize(getBytesDecoder(), 200)], ['bundleCount', getU32Decoder()], ['status', getU8Decoder()], ['bump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link TemplateState} account data. */

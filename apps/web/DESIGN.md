@@ -96,7 +96,7 @@ The product's playful promise sits beside an inspectable treasury. Forms, facts,
 - A code-native cargo crate is the signature object.
 - Near-black metal, warm paper, and acid-lime controls define the working palette.
 - Bungee gives identity and reveals their character; Space Grotesk carries the work.
-- Ruled manifests and aligned facts provide structure without a card grid.
+- Ruled manifests, supply equations, and aligned facts provide structure without a decorative card grid.
 - Motion belongs to the opening sequence, with a static reduced-motion equivalent.
 
 Recorded from the effective cascade in `src/styles.css` followed by `src/workshop.css`, the rendered components in `src/App.tsx` and `src/lootbox/Machine.tsx`, and the desktop/mobile review captures. The token values above describe implemented roles; they are not all CSS custom properties.
@@ -159,6 +159,8 @@ The opening workbench is a ruled three-column composition: a narrow control draw
 
 Creator setup is a flexible form beside a funding summary (320px), separated by a larger gutter (64px). Prize rows use aligned fields, not floating cards. The guide is a narrower reading column (maximum 760px); helper copy is limited to 70ch.
 
+The post-lock market desk is a ruled two-column operating surface: remaining expected value on the left and a whole-box AMM preview on the right. A four-cell proof strip makes immutability, revoked mint authority, exact issuance, and zero decimals scannable before financial controls. It collapses to one column before the mobile breakpoint.
+
 Responsive changes are structural:
 
 - At 1120px and below, shell padding and column widths tighten, the creator gutter contracts, and prize fields become two columns.
@@ -203,6 +205,14 @@ The three workspace destinations are text-and-icon buttons inside a labeled navi
 ### Manifests / Facts
 
 Prize rows carry a name, remaining count, right-aligned percentage, a thin proportional lime bar, and a disclosure for technical assets. Depleted prizes are muted and struck through. Aligned definition-list pairs carry facts and funding totals. These are rows within a shared surface, not interchangeable decorative cards.
+
+### Reveal Schedule / Market Lock
+
+The schedule control separates local calendar date and time, states the browser timezone, provides future-oriented shortcuts, and describes the resulting pre-reveal trading window. Immediate reveal is intentionally unavailable for a market series.
+
+Before lock, an equality strip maps funded bundle copies to indivisible boxes. A plain-language acknowledgement sits immediately beside the irreversible action. After lock, the same region becomes distribution controls and a fixed-supply stamp; mint controls never remain visible.
+
+The market desk labels all prices as estimates. SOL-only bundles can be valued mechanically; token and NFT fields remain empty until the user supplies a value. Constant-product output is rounded to whole boxes and explicitly marked as a local preview. Production pool creation is a checked manifest handoff, not a simulated successful trade.
 
 ### Feedback / Reveal
 

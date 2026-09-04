@@ -226,6 +226,34 @@ fn template_mint_data(amount: u64) -> Vec<u8> {
 	data
 }
 
+fn chain_timestamp(program: &Harness) -> i64 {
+	let clock = program.account(&clock_sysvar_id()).expect("clock");
+	i64::from_le_bytes(clock.data[32..40].try_into().expect("timestamp"))
+}
+
+fn lock_treasury(program: &Harness, template: Pubkey, mint: Pubkey, bundle_count: u32) {
+	let next_bundle = Pubkey::find_program_address(
+		&[b"bundle", template.as_ref(), &bundle_count.to_le_bytes()],
+		&program.program_id,
+	)
+	.0;
+	program
+		.send(
+			&[LootboxInstruction::LockTreasury as u8],
+			vec![
+				AccountMeta::new_readonly(program.payer(), true),
+				AccountMeta::new(template, false),
+				AccountMeta::new(mint, false),
+				AccountMeta::new_readonly(next_bundle, false),
+				AccountMeta::new_readonly(token_2022(), false),
+			],
+		)
+		.expect("lock exact treasury supply");
+
+	let mint_account = program.account(&mint).expect("locked mint");
+	assert_eq!(&mint_account.data[..4], &[0; 4], "mint authority revoked");
+}
+
 fn template_request_data(bump: u8) -> Vec<u8> {
 	let mut data = vec![0; RequestTemplateOpenInstruction::SIZE];
 	let args = RequestTemplateOpenInstruction::initialize(&mut data).expect("request data");
@@ -234,7 +262,7 @@ fn template_request_data(bump: u8) -> Vec<u8> {
 	data
 }
 
-fn template_request_accounts(
+struct TemplateRequestContext<'a> {
 	owner: Pubkey,
 	template: Pubkey,
 	mint: Pubkey,
@@ -243,19 +271,21 @@ fn template_request_accounts(
 	randomness: Pubkey,
 	queue: Pubkey,
 	oracle: Pubkey,
-	cpi: &OracleCpiAccounts,
-) -> Vec<AccountMeta> {
+	cpi: &'a OracleCpiAccounts,
+}
+
+fn template_request_accounts(context: &TemplateRequestContext<'_>) -> Vec<AccountMeta> {
 	let mut accounts = request_accounts(
-		&owner,
-		&template,
+		&context.owner,
+		&context.template,
 		&Pubkey::default(),
-		&mint,
-		&ata,
-		&opening,
-		&randomness,
-		&queue,
-		&oracle,
-		cpi,
+		&context.mint,
+		&context.ata,
+		&context.opening,
+		&context.randomness,
+		&context.queue,
+		&context.oracle,
+		context.cpi,
 	);
 	accounts.remove(2);
 	accounts.insert(
@@ -296,28 +326,29 @@ fn oracle_fixture(program: &mut Harness) -> (Pubkey, Pubkey, OracleCpiAccounts) 
 	(queue, oracle, cpi)
 }
 
-fn fulfill(
-	program: &Harness,
-	payer: &Keypair,
+struct FulfillContext<'a> {
+	program: &'a Harness,
+	payer: &'a Keypair,
 	template: Pubkey,
 	opening: Pubkey,
 	randomness: Pubkey,
 	queue: Pubkey,
 	oracle: Pubkey,
-	cpi: &OracleCpiAccounts,
-	value: u8,
-) -> Result<(), String> {
+	cpi: &'a OracleCpiAccounts,
+}
+
+fn fulfill(context: &FulfillContext<'_>, value: u8) -> Result<(), String> {
 	let mut accounts = settle_accounts(
-		&payer.pubkey(),
-		&payer.pubkey(),
-		&template,
+		&context.payer.pubkey(),
+		&context.payer.pubkey(),
+		&context.template,
 		&Pubkey::default(),
 		&Pubkey::default(),
-		&opening,
-		&randomness,
-		&queue,
-		&oracle,
-		cpi,
+		&context.opening,
+		&context.randomness,
+		&context.queue,
+		&context.oracle,
+		context.cpi,
 	);
 	for index in [4, 3, 0] {
 		accounts.remove(index);
@@ -328,7 +359,10 @@ fn fulfill(
 	args.signature.fill(7);
 	args.recovery_id = 1;
 	args.value.fill(value);
-	program.send_with_signers(program.instruction(&data, accounts), &[payer])
+	context.program.send_with_signers(
+		context.program.instruction(&data, accounts),
+		&[context.payer],
+	)
 }
 
 fn allocate_any(
@@ -376,8 +410,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		let mint = mint_with_metadata(&program, &template);
 		let creator_ata = box_ata(&program, &payer, &mint);
 		let owner_ata = box_ata(&program, &recipient.pubkey(), &mint);
-		let clock = program.account(&clock_sysvar_id()).expect("clock");
-		let now = i64::from_le_bytes(clock.data[32..40].try_into().expect("timestamp"));
+		let now = chain_timestamp(&program);
 		let opens_at = now + 3600;
 		program
 			.send(
@@ -434,8 +467,19 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 			.send(&template_mint_data(6), mint_accounts.clone())
 			.expect("mint six tradable claims");
 		assert!(
-			program.send(&template_mint_data(1), mint_accounts).is_err(),
+			program
+				.send(&template_mint_data(1), mint_accounts.clone())
+				.is_err(),
 			"no overissuance"
+		);
+		lock_treasury(&program, template, mint, 3);
+		assert!(
+			program.send(&template_mint_data(1), mint_accounts).is_err(),
+			"locked treasury rejects any later issuance",
+		);
+		assert!(
+			fund_sol(&program, template, first_bundle, 100_000).is_err(),
+			"locked treasury rejects every funding mutation",
 		);
 		program
 			.send_instruction(
@@ -473,17 +517,17 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 			);
 			let request = program.instruction(
 				&template_request_data(bump),
-				template_request_accounts(
-					recipient.pubkey(),
+				template_request_accounts(&TemplateRequestContext {
+					owner: recipient.pubkey(),
 					template,
 					mint,
-					owner_ata,
+					ata: owner_ata,
 					opening,
-					randomness.pubkey(),
+					randomness: randomness.pubkey(),
 					queue,
 					oracle,
-					&cpi,
-				),
+					cpi: &cpi,
+				}),
 			);
 			if index == 0 {
 				assert!(
@@ -540,14 +584,16 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		program.advance_one_slot().expect("oracle delay");
 		for (index, (opening, randomness)) in openings.iter().enumerate().rev() {
 			fulfill(
-				&program,
-				&recipient,
-				template,
-				*opening,
-				*randomness,
-				queue,
-				oracle,
-				&cpi,
+				&FulfillContext {
+					program: &program,
+					payer: &recipient,
+					template,
+					opening: *opening,
+					randomness: *randomness,
+					queue,
+					oracle,
+					cpi: &cpi,
+				},
 				u8::try_from(index + 1).expect("value"),
 			)
 			.expect("persist proof independently of allocation order");
@@ -714,9 +760,10 @@ fn expired_fifo_head_can_be_forfeited_by_an_unrelated_signer() {
 		);
 		let mint = mint_with_metadata(&program, &template);
 		let recipient_ata = box_ata(&program, &recipient.pubkey(), &mint);
+		let opens_at = chain_timestamp(&program) + 60;
 		program
 			.send(
-				&create_template_data(queue, bump, 0),
+				&create_template_data(queue, bump, opens_at),
 				vec![
 					AccountMeta::new(payer, true),
 					AccountMeta::new(template, false),
@@ -751,6 +798,12 @@ fn expired_fifo_head_can_be_forfeited_by_an_unrelated_signer() {
 				],
 			)
 			.expect("issue recipient boxes");
+		lock_treasury(&program, template, mint, 1);
+		program
+			.surfnet
+			.cheatcodes()
+			.time_travel_to_timestamp(u64::try_from(opens_at + 1).expect("timestamp") * 1000)
+			.expect("reveal date");
 		let randomness = Keypair::new();
 		let (opening, opening_bump) = Pubkey::find_program_address(
 			&[
@@ -764,17 +817,17 @@ fn expired_fifo_head_can_be_forfeited_by_an_unrelated_signer() {
 			.send_with_signers(
 				program.instruction(
 					&template_request_data(opening_bump),
-					template_request_accounts(
-						recipient.pubkey(),
+					template_request_accounts(&TemplateRequestContext {
+						owner: recipient.pubkey(),
 						template,
 						mint,
-						recipient_ata,
+						ata: recipient_ata,
 						opening,
-						randomness.pubkey(),
+						randomness: randomness.pubkey(),
 						queue,
 						oracle,
-						&cpi,
-					),
+						cpi: &cpi,
+					}),
 				),
 				&[&recipient, &randomness],
 			)
@@ -878,9 +931,10 @@ fn retirement_recovers_inventory_only_after_all_claims_are_gone() {
 		);
 		let mint = mint_with_metadata(&program, &template);
 		let owner_ata = box_ata(&program, &payer, &mint);
+		let opens_at = chain_timestamp(&program) + 60;
 		program
 			.send(
-				&create_template_data(Pubkey::new_unique(), bump, 0),
+				&create_template_data(Pubkey::new_unique(), bump, opens_at),
 				vec![
 					AccountMeta::new(payer, true),
 					AccountMeta::new(template, false),
@@ -948,8 +1002,9 @@ fn retirement_recovers_inventory_only_after_all_claims_are_gone() {
 			AccountMeta::new_readonly(token_2022(), false),
 		];
 		program
-			.send(&template_mint_data(2), mint_accounts.clone())
-			.expect("issue two boxes");
+			.send(&template_mint_data(8), mint_accounts.clone())
+			.expect("issue one box for every prize-bundle copy");
+		lock_treasury(&program, template, mint, 1);
 		let reclaim_accounts = vec![
 			AccountMeta::new(payer, true),
 			AccountMeta::new_readonly(template, false),
@@ -976,7 +1031,7 @@ fn retirement_recovers_inventory_only_after_all_claims_are_gone() {
 		// opening request. This forfeits that claim; retirement cannot force it.
 		program
 			.send_instruction(
-				token_ix::burn_checked(&token_2022(), &owner_ata, &mint, &payer, &[], 2, 0)
+				token_ix::burn_checked(&token_2022(), &owner_ata, &mint, &payer, &[], 8, 0)
 					.expect("burn instruction"),
 			)
 			.expect("holder abandons both claims");

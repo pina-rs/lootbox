@@ -11,11 +11,8 @@ function localValue(date: Date): string {
 	const shifted = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
 	return shifted.toISOString().slice(0, 16);
 }
-function atTomorrow(hour: number) {
-	const date = new Date();
-	date.setDate(date.getDate() + 1);
-	date.setHours(hour, 0, 0, 0);
-	return localValue(date);
+function afterHours(hours: number) {
+	return localValue(new Date(Date.now() + hours * 3_600_000));
 }
 function nextFriday() {
 	const date = new Date();
@@ -33,22 +30,28 @@ export function UnlockDatePicker({ value, disabled, error, onChange }: Props) {
 		? new Date(value)
 		: null;
 	const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+	const windowLength = selected
+		? Math.max(0, selected.getTime() - Date.now())
+		: 0;
+	const windowDays = Math.floor(windowLength / 86_400_000);
+	const windowHours = Math.floor(windowLength % 86_400_000 / 3_600_000);
 
 	return (
 		<div className="unlock-picker">
 			<div className="unlock-picker__head">
 				<span>
-					<CalendarClock size={17} />Opening window
+					<CalendarClock size={17} />Reveal schedule
 				</span>
-				<small>{timezone}</small>
+				<small>Your timezone · {timezone}</small>
 			</div>
 			<div className="unlock-picker__fields">
 				<label className="field">
-					Unlock date<input
-						aria-label="Unlock date"
+					Reveal date<input
+						aria-label="Reveal date"
 						aria-invalid={Boolean(error)}
 						aria-describedby={error ? "error-opensAt" : "unlock-preview"}
 						type="date"
+						min={localValue(new Date()).slice(0, 10)}
 						disabled={disabled}
 						value={date}
 						onChange={(event) => update(event.target.value, time)}
@@ -56,7 +59,7 @@ export function UnlockDatePicker({ value, disabled, error, onChange }: Props) {
 				</label>
 				<label className="field">
 					Time<input
-						aria-label="Unlock time"
+						aria-label="Reveal time"
 						aria-invalid={Boolean(error)}
 						aria-describedby={error ? "error-opensAt" : "unlock-preview"}
 						type="time"
@@ -66,20 +69,20 @@ export function UnlockDatePicker({ value, disabled, error, onChange }: Props) {
 					/>
 				</label>
 			</div>
-			<div className="unlock-picker__quick" aria-label="Quick unlock dates">
+			<div className="unlock-picker__quick" aria-label="Quick reveal dates">
 				<button
 					type="button"
 					disabled={disabled}
-					onClick={() => onChange(localValue(new Date()))}
+					onClick={() => onChange(afterHours(24))}
 				>
-					Now
+					24 hours
 				</button>
 				<button
 					type="button"
 					disabled={disabled}
-					onClick={() => onChange(atTomorrow(9))}
+					onClick={() => onChange(afterHours(72))}
 				>
-					Tomorrow · 09:00
+					3 days
 				</button>
 				<button
 					type="button"
@@ -94,7 +97,7 @@ export function UnlockDatePicker({ value, disabled, error, onChange }: Props) {
 						disabled={disabled}
 						onClick={() => onChange("")}
 					>
-						<X size={13} />Clear
+						<X size={13} />Clear date
 					</button>
 				)}
 			</div>
@@ -104,8 +107,8 @@ export function UnlockDatePicker({ value, disabled, error, onChange }: Props) {
 					<p id="unlock-preview" className="unlock-picker__preview">
 						<Check size={14} />
 						{selected
-							? `Boxes unlock ${selected.toLocaleString()}`
-							: "Boxes can open immediately after minting"}
+							? `Reveal ${selected.toLocaleString()} · ${windowDays}d ${windowHours}h pre-reveal trading window`
+							: "Choose a future reveal date before funding"}
 					</p>
 				)}
 		</div>

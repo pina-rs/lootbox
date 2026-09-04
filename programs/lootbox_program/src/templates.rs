@@ -1,5 +1,7 @@
 //! Finite, fully escrowed prize bundles and reusable Token-2022 box templates.
 
+use pina::sysvars::Sysvar;
+
 use crate::*;
 
 mod opening;
@@ -53,6 +55,9 @@ pub struct TemplateState {
 	pub oracle_queue: Address,
 	pub id: u64,
 	pub opens_at: i64,
+	/// Timestamp at which the creator irreversibly fixed inventory and supply.
+	/// Zero means the treasury is still editable.
+	pub locked_at: i64,
 	/// Total bundle tickets ever activated. This is the lifetime issuance cap.
 	pub total_bundles: u64,
 	pub total_minted: u64,
@@ -69,7 +74,8 @@ pub struct TemplateState {
 	/// Null-padded UTF-8 metadata URI; terms on chain remain authoritative.
 	pub uri: [u8; 200],
 	pub bundle_count: u32,
-	/// 0 draft, 1 live, 2 retired.
+	/// 0 draft, 1 live, 2 retired. `locked_at` independently records the
+	/// irreversible market lock so retirement never erases that fact.
 	pub status: u8,
 	pub bump: u8,
 }
@@ -127,8 +133,8 @@ mod layout_tests {
 
 	#[test]
 	fn template_layout_reserves_all_256_inventory_slots() {
-		assert_eq!(TemplateState::SIZE, 2_487);
-		assert_eq!(size_of::<TemplateStateZc>(), 2_487);
+		assert_eq!(TemplateState::SIZE, 2_495);
+		assert_eq!(size_of::<TemplateStateZc>(), 2_495);
 	}
 }
 
@@ -163,6 +169,9 @@ pub struct FundTokenPrizeInstruction {
 
 #[instruction(discriminator = LootboxInstruction::SealTemplate)]
 pub struct SealTemplateInstruction {}
+
+#[instruction(discriminator = LootboxInstruction::LockTreasury)]
+pub struct LockTreasuryInstruction {}
 
 #[instruction(discriminator = LootboxInstruction::MintTemplateBoxes)]
 pub struct MintTemplateBoxesInstruction {
@@ -218,6 +227,16 @@ pub struct SealTemplateAccounts<'a> {
 }
 
 #[derive(Accounts, Debug)]
+pub struct LockTreasuryAccounts<'a> {
+	pub authority: &'a AccountView,
+	pub template: &'a mut AccountView,
+	pub box_mint: &'a mut AccountView,
+	/// The first unused bundle PDA proves that no funded tail was omitted.
+	pub bundle: &'a AccountView,
+	pub box_token_program: &'a AccountView,
+}
+
+#[derive(Accounts, Debug)]
 pub struct MintTemplateBoxesAccounts<'a> {
 	pub authority: &'a AccountView,
 	pub template: &'a mut AccountView,
@@ -268,7 +287,11 @@ fn assert_template_authority(authority: &AccountView, state: &TemplateStateZc) -
 	assert_authority_address(authority, &state.authority)
 }
 
-fn assert_not_retired(state: &TemplateStateZc) -> ProgramResult {
+fn assert_treasury_editable(state: &TemplateStateZc) -> ProgramResult {
+	if state.locked_at.get() != 0 {
+		return Err(lootbox_error(LootboxError::TreasuryLocked));
+	}
+
 	if state.status == TEMPLATE_RETIRED {
 		return Err(lootbox_error(LootboxError::InvalidState));
 	}
@@ -334,6 +357,7 @@ fn assert_template_mint(
 	mint: &AccountView,
 	template: &Address,
 	expected: &Address,
+	is_locked: bool,
 ) -> Result<u64, ProgramError> {
 	mint.assert_address(expected)?;
 	let data = mint
@@ -343,8 +367,10 @@ fn assert_template_mint(
 			token_2022::state::ExtensionType::TokenMetadata,
 		])?;
 
+	let expected_authority = if is_locked { None } else { Some(template) };
+
 	if data.decimals() != 0
-		|| data.mint_authority() != Some(template)
+		|| data.mint_authority() != expected_authority
 		|| data.freeze_authority().is_some()
 	{
 		return Err(lootbox_error(LootboxError::InvalidMint));
@@ -474,6 +500,7 @@ impl<'a> ProcessAccountInfos<'a> for CreateTemplateAccounts<'a> {
 			self.box_mint,
 			self.template.address(),
 			self.box_mint.address(),
+			false,
 		)? != 0
 		{
 			return Err(lootbox_error(LootboxError::InvalidMint));
@@ -511,7 +538,7 @@ impl<'a> ProcessAccountInfos<'a> for AddBundleAccounts<'a> {
 		let state = self.template.as_account::<TemplateState>(&ID)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
-		assert_not_retired(&state)?;
+		assert_treasury_editable(&state)?;
 		self.authority.assert_writable()?;
 		self.system_program.assert_address(&system::ID)?;
 		self.bundle.assert_empty()?.assert_writable()?;
@@ -596,7 +623,7 @@ impl<'a> ProcessAccountInfos<'a> for FundSolPrizeAccounts<'a> {
 		let state = self.template.as_account::<TemplateState>(&ID)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
-		assert_not_retired(&state)?;
+		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, &template_address)?;
 		self.system_program.assert_address(&system::ID)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
@@ -630,7 +657,7 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 		let state = self.template.as_account::<TemplateState>(&ID)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
-		assert_not_retired(&state)?;
+		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, &template_address)?;
 		let token_program = *self.token_program.address();
 		if token_program != token::ID && token_program != token_2022::ID {
@@ -739,6 +766,71 @@ impl<'a> ProcessAccountInfos<'a> for SealTemplateAccounts<'a> {
 	}
 }
 
+fn validate_market_lock(state: &TemplateStateZc, supply: u64, now: i64) -> ProgramResult {
+	if state.status != TEMPLATE_LIVE || state.locked_at.get() != 0 {
+		return Err(lootbox_error(LootboxError::InvalidState));
+	}
+
+	if state.opens_at.get() <= now {
+		return Err(lootbox_error(LootboxError::RevealDatePassed));
+	}
+
+	let total = state.total_bundles.get();
+	let is_pristine = total != 0
+		&& state.bundle_count.get() != 0
+		&& state.remaining_bundles.get() == total
+		&& state.pending_openings.get() == 0
+		&& state.next_request.get() == 0
+		&& state.next_allocation.get() == 0;
+	let exact_supply = state.total_minted.get() == total && supply == total;
+
+	if !is_pristine || !exact_supply {
+		return Err(lootbox_error(LootboxError::SupplyMismatch));
+	}
+
+	Ok(())
+}
+
+impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
+	fn process(self, data: &[u8]) -> ProgramResult {
+		let _ = LockTreasuryInstruction::try_from_bytes(data)?;
+		let template_address = *self.template.address();
+		let now = sysvars::clock::Clock::get()?.unix_timestamp;
+		self.box_token_program.assert_address(&token_2022::ID)?;
+		let state = self.template.as_account_mut::<TemplateState>(&ID)?;
+		assert_template(&template_address, &state)?;
+		assert_template_authority(self.authority, &state)?;
+		let supply =
+			assert_template_mint(self.box_mint, &template_address, &state.box_mint, false)?;
+		validate_market_lock(&state, supply, now)?;
+
+		let next_bundle_seeds = BundleState::seeds(&template_address, state.bundle_count.get());
+		self.bundle
+			.assert_canonical_bump(&next_bundle_seeds.as_slices(), &ID)?;
+		self.bundle.assert_empty()?;
+
+		let authority = state.authority;
+		let id = state.id.get();
+		let bump = state.bump;
+		drop(state);
+
+		let seeds = TemplateState::seeds(&authority, id).with_bump(bump);
+		let signer = seeds.to_signer();
+		token_2022::instructions::SetAuthority::new(
+			self.box_mint,
+			self.template,
+			token_2022::instructions::AuthorityType::MintTokens,
+			None,
+		)
+		.invoke_signed(&[signer.as_signer()])?;
+
+		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
+		state.locked_at.set(now);
+
+		Ok(())
+	}
+}
+
 fn validate_issuance(
 	state: &TemplateStateZc,
 	supply: u64,
@@ -771,7 +863,7 @@ impl<'a> ProcessAccountInfos<'a> for ActivateBundleAccounts<'a> {
 		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
-		assert_not_retired(&state)?;
+		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, &template_address)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 
@@ -826,7 +918,7 @@ impl<'a> ProcessAccountInfos<'a> for CancelBundleAccounts<'a> {
 		let state = self.template.as_account::<TemplateState>(&ID)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
-		assert_not_retired(&state)?;
+		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		let bundle = self.bundle.as_account::<BundleState>(&ID)?;
 		let reclaimed = if bundle.funded_assets == 0 {
@@ -854,8 +946,10 @@ impl<'a> ProcessAccountInfos<'a> for MintTemplateBoxesAccounts<'a> {
 		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
+		assert_treasury_editable(&state)?;
 		self.box_token_program.assert_address(&token_2022::ID)?;
-		let supply = assert_template_mint(self.box_mint, &template_address, &state.box_mint)?;
+		let supply =
+			assert_template_mint(self.box_mint, &template_address, &state.box_mint, false)?;
 		let account = self
 			.recipient_box_account
 			.as_token_account_for_program(&token_2022::ID)?;
@@ -883,5 +977,34 @@ impl<'a> ProcessAccountInfos<'a> for MintTemplateBoxesAccounts<'a> {
 			args.amount.get(),
 		)
 		.invoke_signed(&[signer.as_signer()])
+	}
+}
+
+#[cfg(test)]
+mod market_lock_tests {
+	use super::*;
+
+	#[test]
+	fn market_lock_requires_exact_pristine_supply_before_reveal() {
+		let mut bytes = [0; TemplateState::SIZE];
+		let state = TemplateState::initialize(&mut bytes).expect("template");
+		state.status = TEMPLATE_LIVE;
+		state.bundle_count.set(2);
+		state.total_bundles.set(7);
+		state.total_minted.set(7);
+		state.remaining_bundles.set(7);
+		state.opens_at.set(1_001);
+
+		assert_eq!(validate_market_lock(state, 7, 1_000), Ok(()));
+
+		state.total_minted.set(6);
+		assert!(validate_market_lock(state, 6, 1_000).is_err());
+		state.total_minted.set(7);
+		state.remaining_bundles.set(6);
+		assert!(validate_market_lock(state, 7, 1_000).is_err());
+		state.remaining_bundles.set(7);
+		assert!(validate_market_lock(state, 7, 1_001).is_err());
+		state.locked_at.set(999);
+		assert!(validate_market_lock(state, 7, 1_000).is_err());
 	}
 }

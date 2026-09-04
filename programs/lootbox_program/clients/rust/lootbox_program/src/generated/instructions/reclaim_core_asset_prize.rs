@@ -29,18 +29,7 @@ pub struct ReclaimCoreAssetPrize {
 }
 
 impl ReclaimCoreAssetPrize {
-	pub fn new(
-		authority: solana_pubkey::Pubkey,
-		template: solana_pubkey::Pubkey,
-		box_mint: solana_pubkey::Pubkey,
-		bundle: solana_pubkey::Pubkey,
-		asset: solana_pubkey::Pubkey,
-		collection: solana_pubkey::Pubkey,
-		core_program: solana_pubkey::Pubkey,
-		system_program: solana_pubkey::Pubkey,
-		log_wrapper: solana_pubkey::Pubkey,
-		plugin_accounts: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, asset: solana_pubkey::Pubkey, collection: solana_pubkey::Pubkey, core_program: solana_pubkey::Pubkey, system_program: solana_pubkey::Pubkey, log_wrapper: solana_pubkey::Pubkey, plugin_accounts: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			template,
@@ -55,10 +44,7 @@ impl ReclaimCoreAssetPrize {
 		}
 	}
 
-	pub fn instruction(
-		&self,
-		data: ReclaimCoreAssetPrizeInstructionData,
-	) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: ReclaimCoreAssetPrizeInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -70,36 +56,15 @@ impl ReclaimCoreAssetPrize {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(10 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.template,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.box_mint,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.asset, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.collection,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.core_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.system_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.log_wrapper,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.plugin_accounts,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.collection, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.core_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.log_wrapper, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.plugin_accounts, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -115,16 +80,10 @@ pub struct ReclaimCoreAssetPrizeInstructionData {
 }
 
 impl ReclaimCoreAssetPrizeInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut ReclaimCoreAssetPrizeInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes =
-			vec![0u8; <ReclaimCoreAssetPrizeInstructionWire as pina::ZeroPodFixed>::SIZE];
+	pub fn new(configure: impl FnOnce(&mut ReclaimCoreAssetPrizeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+		let mut bytes = vec![0u8; <ReclaimCoreAssetPrizeInstructionWire as pina::ZeroPodFixed>::SIZE];
 		{
-			let data =
-				<ReclaimCoreAssetPrizeInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(
-					&mut bytes,
-				)
+			let data = <ReclaimCoreAssetPrizeInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
 				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 			configure(data);
 			data.discriminator = RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR;

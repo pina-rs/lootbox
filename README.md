@@ -2,16 +2,16 @@
 
 A small, composable random-reward primitive for Solana, built with [Pina](https://github.com/pina-rs/pina).
 
-Lootbox turns a zero-decimal SPL token into a transferable sealed box. Opening atomically creates and commits fresh Switchboard randomness under a program-controlled receipt PDA, then burns one box. Any relayer can later reveal and settle the fixed recipient's weighted SOL payout in one instruction. Every live box is backed by the maximum possible reward.
+Lootbox turns a treasury template into transferable sealed gifts. The v2 program escrows finite bundles of SOL, tokens, and unique NFTs, then issues zero-decimal Token-2022 boxes. Opening burns a box and commits fresh randomness; ordered allocation records a complete prize bundle, which can be revealed and claimed asset by asset.
 
 > [!IMPORTANT]
-> This repository is an internally security-reviewed development MVP, not a mainnet deployment. The web app is a deterministic interaction sandbox; the Surfpool suite is the executable end-to-end proof against real SBF artifacts.
+> This is an experimental, internally reviewed development implementation, not an independently audited mainnet release. The web app submits real transactions to local Surfpool. Its assets have no value and its oracle is a test emulator.
 
 ### Treasury template work
 
 The `feat/treasury-templates` branch adds the v2 protocol: reusable templates, finite SOL/token/NFT prize bundles, immutable Token-2022 metadata, earliest claim dates, ordered allocation, independent asset claims, and safe retirement. See the [v2 specification and completion checklist](docs/treasury-templates.md) and [v2 security notes](docs/security-templates.md).
 
-**The existing web app still demonstrates v1.** It is not yet connected to the v2 program. Do not mistake its simulated balances for Surfpool transactions.
+**The web app is connected to v2.** Create and fund a template, mint to the recipient test wallet, open, reveal, and claim. Creator previews show inventory, deposits, and initial odds; the opening table reads live odds and balances. Probabilistic undercollateralization remains in scope as a separate reserve policy, but is not enabled on-chain yet.
 
 A separate persistent, local-only Surfpool service is available for integration:
 
@@ -26,15 +26,17 @@ It deploys both SBF artifacts and exposes its RPC addresses and oracle fixture a
 
 ## What is included
 
-- A `no_std`, Pina-based Solana program with 10 instructions and three PDA account types.
+- A `no_std`, Pina-based Solana program with the legacy 10-instruction ABI plus 15 v2 template instructions.
 - Switchboard On-Demand initialization, commit, reveal, and close CPIs controlled by each opening PDA.
-- Fully collateralized SOL reward vaults, permissionless proof settlement, and recipient-authorized minimum-reward timeouts.
+- Fully escrowed finite SOL/token/NFT bundles in v2; the legacy SOL-only v1 retains minimum-reward timeouts.
 - Codama-generated Rust, TypeScript, and Dart clients.
 - Ergonomic checked planning APIs in all three languages.
-- An animated React playground with component and Playwright coverage.
+- An animated React creator/recipient playground with real browser-to-Surfpool transactions, disposable test wallets, and desktop/mobile Playwright coverage.
 - A test-only Switchboard ABI emulator deployed beside the real lootbox SBF program in offline Surfpool.
 
-## Protocol at a glance
+## Legacy v1 protocol
+
+The SOL-only v1 model below remains ABI-compatible. V2 uses finite bundle inventory and currently has no timeout recovery; see the [template specification](docs/treasury-templates.md).
 
 ```mermaid
 flowchart LR
@@ -83,32 +85,44 @@ test:web
 lint:all
 ```
 
-Start the UI at `http://127.0.0.1:5173`:
+Keep `pnpm playground:rpc` running after building both programs, then start the UI in another development shell at `http://127.0.0.1:5173`:
 
 ```sh
 pnpm --dir apps/web dev
 ```
+
+Follow the [interactive playground guide](apps/web/README.md). No browser wallet extension is required; never use real wallet keys or funds in this local sandbox.
 
 ## Developer API
 
 The generated clients expose the exact on-chain surface. The handwritten SDK layer catches invalid plans and calculates collateral before a transaction is built:
 
 ```ts
-import { createLootboxPlan } from "@pina-rs/lootbox";
+import { createTemplatePlan } from "@pina-rs/lootbox";
 
-const plan = createLootboxPlan({
-	maxSupply: 250,
-	outcomes: [
-		{ label: "Static Bloom", weight: 62, rewardLamports: 5_000_000 },
-		{ label: "Neon Cache", weight: 28, rewardLamports: 15_000_000 },
-		{ label: "Solar Crown", weight: 10, rewardLamports: 50_000_000 },
+const plan = createTemplatePlan({
+	name: "A little suspense",
+	bundles: [
+		{
+			label: "A little SOL",
+			quantity: 99n,
+			weight: 1n,
+			assets: [{ kind: "sol", lamports: 100_000_000n }],
+		},
+		{
+			label: "The jackpot",
+			quantity: 1n,
+			weight: 1n,
+			assets: [{ kind: "sol", lamports: 1_000_000_000n }],
+		},
 	],
 });
 
-console.log(plan.requiredCollateralLamports); // 12_500_000_000n
+console.log(plan.maxSupply); // 100n
+console.log(plan.treasury); // [{ mint: null, amount: 10_900_000_000n }]
 ```
 
-See [API](docs/api.md), [architecture](docs/architecture.md), [randomness integration](docs/randomness.md), and the [security review](docs/security-review.md) for the full contract.
+See the [template API and economics](docs/treasury-templates.md) for token/NFT bundles and `LootboxClient` transaction orchestration. The [legacy API](docs/api.md), [architecture](docs/architecture.md), [randomness integration](docs/randomness.md), and [v1 security review](docs/security-review.md) document the retained SOL-only contract.
 
 ## Repository map
 

@@ -42,6 +42,7 @@ surfnet.fundSolMany(
 const config = Object.freeze({
 	network: "surfpool",
 	testOnly: true,
+	instanceId: randomBytes(16).toString("hex"),
 	programId,
 	oracleProgram,
 	rpcUrl: surfnet.rpcUrl,

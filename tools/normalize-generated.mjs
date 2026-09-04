@@ -38,4 +38,14 @@ if (
 			"../programs/lootbox_program/clients/dart/lib",
 		),
 	);
+	// Keep generated and ergonomic clients on the same Kit major as the token
+	// instruction builders. Codama's default package versions currently lag it.
+	const manifestPath = resolve(
+		dirname(fileURLToPath(import.meta.url)),
+		"../programs/lootbox_program/clients/typescript/lootbox_program/package.json",
+	);
+	const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+	manifest.dependencies["@solana/program-client-core"] = "^7.0.0";
+	manifest.peerDependencies["@solana/kit"] = "^7.0.0";
+	writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }

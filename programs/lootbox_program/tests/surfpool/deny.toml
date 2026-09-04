@@ -2,7 +2,7 @@
 all-features = true
 
 [advisories]
-db-path = "../../../../target/advisory-db"
+db-path = "target/advisory-db"
 db-urls = ["https://github.com/RustSec/advisory-db.git"]
 ignore = [
 	# Surfpool 1.5.0 is the latest release. These are transitive dependencies of

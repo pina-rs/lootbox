@@ -86,13 +86,17 @@ Creators choose both service options when the treasury is created. They become i
 - When enabled, the creator prepays the current rent-exempt minimum for exactly one `ResultReceipt` PDA per box at market lock. Allocation creates the PDA from that reserved balance; reveal callers never pay its rent.
 - A `ResultReceipt` permanently binds the treasury, opening, box authority, beneficiary, consumer program and 32-byte context, locked manifest hash, randomness account, request sequence, and selected bundle. It has no update or close instruction.
 - A per-settlement bounty is also optional. The creator prepays exactly one bounty per box at lock, and the signer who successfully fulfills or expires the FIFO head receives it. Prize collateral is never used for service costs.
-- After retirement and final settlement, the creator may close the service vault and recover only unused prepaid receipt rent and bounties.
+- The service account also holds one zero-data rent-exempt reserve so every valid low-bounty configuration can lock. That reserve is not spendable as a bounty or receipt and returns to the creator when the service account closes.
+- After retirement and final settlement, the creator may close the service vault and recover its rent reserve plus any unused prepaid receipt rent and bounties.
 
 The lock deposit is exact:
 
 ```text
 service deposit = box supply × (settlement bounty + enabled receipt rent)
+                + one zero-data service-account rent reserve
 ```
+
+The final term is present only when at least one service is enabled.
 
 Each opening may name a beneficiary distinct from its box authority and may bind a consumer program plus opaque context. A nonzero context is rejected unless a consumer program is supplied. Integrators must additionally record a one-time-use marker in their own state when consuming a result.
 
@@ -167,7 +171,7 @@ console.log(plan.treasury); // exact deposits grouped by asset identifier
 
 Replace the placeholder with a valid address before running the example. Rust exposes `TemplatePlan::new(&bundles)` with `PrizeAsset::{Sol, ClassicToken, Token2022, LegacyNft, MetadataNft, CoreAsset, CompressedNft}`. Dart exposes `TemplatePlan`, `PrizeBundle`, and matching `PrizeAsset` constructors. All planners validate the 256-bundle limit, one-to-four asset limit, `u64` collateral math, `u32` ticket limit, and unique-asset ownership.
 
-`LootboxClient` provides resumable `createTemplate` and `appendBundles`, `publishTemplate`, `cancelFundingBundle`, exact `lockTreasury`, transfer/open/fulfill/allocate/claim orchestration, timeout forfeiture, receipt closure, and read APIs. Market helpers validate lock readiness, compute explicit remaining-inventory EV, quote integer-only constant-product trades, and export a checked Raydium CPMM deployment manifest. Pool creation itself stays in a production wallet/network adapter. The client uses processed commitment only for the local single-node sandbox; production applications must choose appropriate finality, transaction simulation, wallet, and oracle transport policies.
+`LootboxClient` provides resumable `createTemplate` and `appendBundles`, `publishTemplate`, `cancelFundingBundle`, exact `lockTreasury`, transfer/open/fulfill/allocate/claim orchestration, timeout forfeiture, receipt closure, and read APIs. Prize delivery keeps each asset's setup and claim atomic, partitions mixed bundles into transaction-size/account-bounded batches, and refetches the claim mask after every confirmed batch. Market helpers validate lock readiness, compute explicit remaining-inventory EV, quote integer-only constant-product trades, and export a checked Raydium CPMM deployment manifest. Pool creation itself stays in a production wallet/network adapter. The client uses processed commitment only for the local single-node sandbox; production applications must choose appropriate finality, transaction simulation, wallet, and oracle transport policies.
 
 ## Searchable asset picker
 

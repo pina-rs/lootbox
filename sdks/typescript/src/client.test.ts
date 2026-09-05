@@ -1,8 +1,59 @@
-import { address, getAddressEncoder } from "@solana/kit";
+import {
+	AccountRole,
+	address,
+	getAddressDecoder,
+	getAddressEncoder,
+	type Instruction,
+} from "@solana/kit";
 import { describe, expect, it } from "vitest";
-import { assertFundedPrizeMatches, bundleAssets, readU64 } from "./client.js";
+import {
+	assertFundedPrizeMatches,
+	bundleAssets,
+	partitionPrizeDeliveryInstructions,
+	readU64,
+} from "./client.js";
+
+const payer = address("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
+
+function instructionWithAccounts(offset: number, count: number): Instruction {
+	return Object.freeze({
+		programAddress: address("11111111111111111111111111111111"),
+		accounts: Object.freeze(Array.from({ length: count }, (_, index) => {
+			const bytes = new Uint8Array(32);
+			bytes[0] = offset + index + 1;
+			return Object.freeze({
+				address: getAddressDecoder().decode(bytes),
+				role: AccountRole.READONLY,
+			});
+		})),
+		data: new Uint8Array(32),
+	});
+}
 
 describe("chain prize decoding", () => {
+	it("keeps each prize atomic while splitting oversized bundle delivery", () => {
+		const first = [
+			instructionWithAccounts(0, 10),
+			instructionWithAccounts(10, 10),
+		];
+		const second = [
+			instructionWithAccounts(20, 10),
+			instructionWithAccounts(30, 10),
+		];
+		const batches = partitionPrizeDeliveryInstructions(payer, [first, second]);
+		expect(batches).toHaveLength(2);
+		expect(batches[0]).toEqual(first);
+		expect(batches[1]).toEqual(second);
+	});
+
+	it("rejects a single prize that cannot fit in one transaction", () => {
+		expect(() =>
+			partitionPrizeDeliveryInstructions(payer, [[
+				instructionWithAccounts(0, 65),
+			]])
+		).toThrow(/one prize delivery exceeds/);
+	});
+
 	it("uses the program's zero-based SOL/token/NFT tags", () => {
 		const mint = address("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
 		const mints = new Uint8Array(128);

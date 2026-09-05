@@ -1,10 +1,23 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+	assertWorkspaceVersions,
 	normalizeDartHashes,
 	normalizeDartManifest,
 	normalizeRustManifest,
 } from "./normalize-generated.mjs";
+
+test("requires every handwritten client to use the workspace version", () => {
+	const cargo = '[workspace.package]\nversion = "0.0.1-alpha.0"\n';
+	const dart = "name: lootbox\nversion: 0.0.1-alpha.0\n";
+	assert.doesNotThrow(() =>
+		assertWorkspaceVersions("0.0.1-alpha.0", cargo, dart)
+	);
+	assert.throws(
+		() => assertWorkspaceVersions("0.0.2-alpha.0", cargo, dart),
+		/Client versions must match/,
+	);
+});
 
 test("normalizes oversized generated hash calls reproducibly", () => {
 	const fields = Array.from({ length: 22 }, (_, index) => `field${index}`).join(

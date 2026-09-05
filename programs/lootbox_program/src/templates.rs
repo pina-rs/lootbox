@@ -183,17 +183,21 @@ mod layout_tests {
 	#[test]
 	fn template_layout_reserves_all_256_inventory_slots() {
 		assert_eq!(TemplateState::SIZE, size_of::<TemplateStateZc>());
-		const { assert!(TemplateState::SIZE > 2_495) };
-		const { assert!(TemplateState::SIZE <= 2_800) };
 		assert_eq!(BundleState::SIZE, size_of::<BundleStateZc>());
-		const { assert!(BundleState::SIZE <= 320) };
 		assert_eq!(
 			TemplateOpeningState::SIZE,
 			size_of::<TemplateOpeningStateZc>()
 		);
-		const { assert!(TemplateOpeningState::SIZE <= 384) };
 		assert_eq!(ResultReceiptState::SIZE, size_of::<ResultReceiptStateZc>());
-		const { assert!(ResultReceiptState::SIZE <= 320) };
+		assert_eq!(
+			(
+				TemplateState::SIZE,
+				BundleState::SIZE,
+				TemplateOpeningState::SIZE,
+				ResultReceiptState::SIZE,
+			),
+			(2_593, 266, 292, 270),
+		);
 	}
 
 	#[test]
@@ -982,8 +986,9 @@ fn validate_market_lock(state: &TemplateStateZc, supply: u64, now: i64) -> Progr
 }
 
 fn service_budget(state: &TemplateStateZc) -> Result<(u64, u64), ProgramError> {
+	let rent = Rent::get()?;
 	let receipt_rent = if state.result_receipts_enabled.get() {
-		Rent::get()?.try_minimum_balance(ResultReceiptState::SIZE)?
+		rent.try_minimum_balance(ResultReceiptState::SIZE)?
 	} else {
 		0
 	};
@@ -995,9 +1000,16 @@ fn service_budget(state: &TemplateStateZc) -> Result<(u64, u64), ProgramError> {
 		.get()
 		.checked_mul(state.total_bundles.get())
 		.ok_or(ProgramError::ArithmeticOverflow)?;
-	let total = receipt_budget
+	let reserve = receipt_budget
 		.checked_add(bounty_budget)
 		.ok_or(ProgramError::ArithmeticOverflow)?;
+	let total = if reserve == 0 {
+		0
+	} else {
+		reserve
+			.checked_add(rent.try_minimum_balance(0)?)
+			.ok_or(ProgramError::ArithmeticOverflow)?
+	};
 
 	Ok((receipt_rent, total))
 }

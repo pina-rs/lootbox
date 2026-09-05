@@ -60,6 +60,35 @@ export function normalizeDartManifest(source, version) {
 	return manifest;
 }
 
+function manifestVersion(source, pattern, label) {
+	const version = source.match(pattern)?.[1];
+	if (!version) throw new Error(`Cannot read ${label} package version`);
+	return version;
+}
+
+/** Fail generation before one published client can drift from the others. */
+export function assertWorkspaceVersions(
+	typescriptVersion,
+	cargoManifest,
+	dartManifest,
+) {
+	const cargoVersion = manifestVersion(
+		cargoManifest,
+		/\[workspace\.package\][\s\S]*?^version\s*=\s*"([^"]+)"/m,
+		"Cargo workspace",
+	);
+	const dartVersion = manifestVersion(
+		dartManifest,
+		/^version:\s*([^\s#]+)/m,
+		"Dart SDK",
+	);
+	if (cargoVersion !== typescriptVersion || dartVersion !== typescriptVersion) {
+		throw new Error(
+			`Client versions must match: Cargo ${cargoVersion}, Dart ${dartVersion}, TypeScript ${typescriptVersion}`,
+		);
+	}
+}
+
 function normalizeRustClient(root) {
 	const manifestPath = join(root, "Cargo.toml");
 	const libraryPath = join(root, "src/lib.rs");
@@ -77,38 +106,36 @@ function normalizeRustClient(root) {
 if (
 	process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
+	const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 	const version = JSON.parse(readFileSync(
-		resolve(
-			dirname(fileURLToPath(import.meta.url)),
-			"../sdks/typescript/package.json",
-		),
+		resolve(root, "sdks/typescript/package.json"),
 		"utf8",
 	)).version;
+	const dartSdkManifestPath = resolve(root, "sdks/dart/pubspec.yaml");
+	assertWorkspaceVersions(
+		version,
+		readFileSync(resolve(root, "Cargo.toml"), "utf8"),
+		readFileSync(dartSdkManifestPath, "utf8"),
+	);
 	normalizeDirectory(
-		resolve(
-			dirname(fileURLToPath(import.meta.url)),
-			"../programs/lootbox_program/clients/dart/lib",
-		),
+		resolve(root, "programs/lootbox_program/clients/dart/lib"),
 	);
 	const dartManifestPath = resolve(
-		dirname(fileURLToPath(import.meta.url)),
-		"../programs/lootbox_program/clients/dart/pubspec.yaml",
+		root,
+		"programs/lootbox_program/clients/dart/pubspec.yaml",
 	);
 	writeFileSync(
 		dartManifestPath,
 		normalizeDartManifest(readFileSync(dartManifestPath, "utf8"), version),
 	);
 	normalizeRustClient(
-		resolve(
-			dirname(fileURLToPath(import.meta.url)),
-			"../programs/lootbox_program/clients/rust/lootbox_program",
-		),
+		resolve(root, "programs/lootbox_program/clients/rust/lootbox_program"),
 	);
 	// Keep generated and ergonomic clients on the same Kit major as the token
 	// instruction builders. Codama's default package versions currently lag it.
 	const manifestPath = resolve(
-		dirname(fileURLToPath(import.meta.url)),
-		"../programs/lootbox_program/clients/typescript/lootbox_program/package.json",
+		root,
+		"programs/lootbox_program/clients/typescript/lootbox_program/package.json",
 	);
 	const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 	manifest.version = version;

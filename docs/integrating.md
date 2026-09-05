@@ -38,7 +38,7 @@ await lootbox.requestOpen(template, oracle, {
 });
 ```
 
-The TypeScript client also provides `settle`, which verifies the oracle proof and allocates the predicted bundle in one atomic transaction. `claim` batches all supported assets in the selected bundle into one delivery transaction.
+The TypeScript client also provides `settle`, which verifies the oracle proof and allocates the predicted bundle in one atomic transaction. `claim` keeps each asset's setup and transfer atomic, partitions mixed bundles across transaction-size/account-bounded batches, and refetches the on-chain claim mask after each batch so interrupted delivery resumes safely.
 
 ## Verifying immutable results
 

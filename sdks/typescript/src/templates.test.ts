@@ -150,12 +150,26 @@ describe("finite template plans", () => {
 				assets: [{ kind: "sol", lamports: 1n }],
 			}],
 		});
-		expect(requiredServiceBudget(plan, 2_000_000n)).toBe(6_150_000n);
+		expect(requiredServiceBudget(plan, 2_000_000n, 890_880n)).toBe(
+			7_040_880n,
+		);
 		expect(
 			requiredServiceBudget(
 				{ ...plan, resultReceiptsEnabled: false },
 				2_000_000n,
+				890_880n,
 			),
-		).toBe(150_000n);
+		).toBe(1_040_880n);
+		expect(
+			requiredServiceBudget(
+				{
+					...plan,
+					resultReceiptsEnabled: false,
+					settlementBountyLamports: 0n,
+				},
+				2_000_000n,
+				890_880n,
+			),
+		).toBe(0n);
 	});
 });

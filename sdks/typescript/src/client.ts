@@ -18,8 +18,10 @@ import {
 	getU32Encoder,
 	getU64Encoder,
 	type Instruction,
+	isTransactionMessageWithinSizeLimit,
 	pipe,
 	type ReadonlyUint8Array,
+	setTransactionMessageFeePayer,
 	setTransactionMessageFeePayerSigner,
 	setTransactionMessageLifetimeUsingBlockhash,
 	signTransactionMessageWithSigners,
@@ -102,9 +104,77 @@ export type OpenRequest = Readonly<{
 }>;
 export type ServiceFundingQuote = Readonly<{
 	resultReceiptRent: bigint;
+	serviceVaultRent: bigint;
 	reservedForResultsAndBounties: bigint;
 	totalCreatorDebit: bigint;
 }>;
+
+const MAX_TRANSACTION_ACCOUNTS = 64;
+
+function transactionAccountCount(
+	payer: Address,
+	instructions: readonly Instruction[],
+): number {
+	const addresses = new Set<Address>([payer]);
+	for (const instruction of instructions) {
+		addresses.add(instruction.programAddress);
+		for (const account of instruction.accounts ?? []) {
+			addresses.add(account.address);
+		}
+	}
+	return addresses.size;
+}
+
+function instructionBatchFits(
+	payer: Address,
+	instructions: readonly Instruction[],
+): boolean {
+	if (transactionAccountCount(payer, instructions) > MAX_TRANSACTION_ACCOUNTS) {
+		return false;
+	}
+	try {
+		const message = pipe(
+			createTransactionMessage({ version: 0 }),
+			(current) => setTransactionMessageFeePayer(payer, current),
+			(current) => appendTransactionMessageInstructions(instructions, current),
+		);
+		return isTransactionMessageWithinSizeLimit(message);
+	} catch {
+		return false;
+	}
+}
+
+/** Pack atomic per-asset instruction groups into independently valid versioned
+ * transactions. A group is never split because ATA creation and its matching
+ * claim must succeed or fail together.
+ */
+export function partitionPrizeDeliveryInstructions(
+	payer: Address,
+	assetInstructionGroups: readonly (readonly Instruction[])[],
+): readonly (readonly Instruction[])[] {
+	const batches: Instruction[][] = [];
+	let current: Instruction[] = [];
+	for (const group of assetInstructionGroups) {
+		if (group.length === 0) continue;
+		const candidate = [...current, ...group];
+		if (instructionBatchFits(payer, candidate)) {
+			current = candidate;
+			continue;
+		}
+		if (current.length > 0) {
+			batches.push(current);
+			current = [];
+		}
+		if (!instructionBatchFits(payer, group)) {
+			throw new RangeError(
+				"one prize delivery exceeds Solana transaction limits; shorten its proof or supply an address lookup table",
+			);
+		}
+		current = [...group];
+	}
+	if (current.length > 0) batches.push(current);
+	return batches;
+}
 
 export function readU64(bytes: ReadonlyUint8Array, index: number): bigint {
 	return new DataView(Uint8Array.from(bytes).buffer).getBigUint64(
@@ -807,20 +877,40 @@ export class LootboxClient {
 	async serviceFundingQuote(
 		template: ChainTemplate,
 	): Promise<ServiceFundingQuote> {
-		const resultReceiptRent = template.data.resultReceiptsEnabled
-			? await this.rpc.getMinimumBalanceForRentExemption(
-				BigInt(generated.getResultReceiptStateEncoder().fixedSize),
-			).send()
-			: 0n;
-		const reservedForResultsAndBounties = requiredServiceBudget({
-			totalBundles: template.data.totalBundles,
-			settlementBountyLamports: template.data.settlementBountyLamports,
-			resultReceiptsEnabled: template.data.resultReceiptsEnabled,
-		}, resultReceiptRent);
+		const servicesEnabled = template.data.resultReceiptsEnabled ||
+			template.data.settlementBountyLamports > 0n;
+		const [resultReceiptRent, serviceVaultRent] = await Promise.all([
+			template.data.resultReceiptsEnabled
+				? this.rpc.getMinimumBalanceForRentExemption(
+					BigInt(generated.getResultReceiptStateEncoder().fixedSize),
+				).send()
+				: Promise.resolve(0n),
+			servicesEnabled
+				? this.rpc.getMinimumBalanceForRentExemption(0n).send()
+				: Promise.resolve(0n),
+		]);
+		const reservedForResultsAndBounties = requiredServiceBudget(
+			{
+				totalBundles: template.data.totalBundles,
+				settlementBountyLamports: template.data.settlementBountyLamports,
+				resultReceiptsEnabled: template.data.resultReceiptsEnabled,
+			},
+			resultReceiptRent,
+			0n,
+		);
 		return Object.freeze({
 			resultReceiptRent,
+			serviceVaultRent,
 			reservedForResultsAndBounties,
-			totalCreatorDebit: reservedForResultsAndBounties,
+			totalCreatorDebit: requiredServiceBudget(
+				{
+					totalBundles: template.data.totalBundles,
+					settlementBountyLamports: template.data.settlementBountyLamports,
+					resultReceiptsEnabled: template.data.resultReceiptsEnabled,
+				},
+				resultReceiptRent,
+				serviceVaultRent,
+			),
 		});
 	}
 	/** Permanently stop creator mutations. Issued, unlocked series may use this
@@ -1386,7 +1476,7 @@ export class LootboxClient {
 		openingAddress: Address,
 		resolvedAssets: readonly PrizeAsset[] = [],
 	) {
-		const opening = await generated.fetchTemplateOpeningState(
+		let opening = await generated.fetchTemplateOpeningState(
 			this.rpc,
 			openingAddress,
 			{ commitment },
@@ -1401,149 +1491,176 @@ export class LootboxClient {
 		const data = await generated.fetchBundleState(this.rpc, bundle, {
 			commitment,
 		});
-		const deliveryInstructions: Instruction[] = [];
-		for (const asset of bundleAssets(data.data)) {
-			if ((opening.data.claimedMask & (1 << asset.index)) !== 0) continue;
-			const input = {
-				template,
-				opening: openingAddress,
-				bundle,
-				recipient: opening.data.beneficiary,
-				assetIndex: asset.index,
-			};
-			let instructions: readonly Instruction[];
-			if (asset.kind === "sol") {
-				instructions = [generated.getClaimSolPrizeInstruction(input)];
-			} else if (["token", "token2022", "nft"].includes(asset.kind ?? "")) {
-				const tokenProgram = asset.kind === "token2022"
-					? BOX_TOKEN_PROGRAM
-					: CLASSIC_TOKEN_PROGRAM;
-				instructions = [
-					await this.createAta(input.recipient, asset.mint, tokenProgram),
-					generated.getClaimTokenPrizeInstruction({
-						...input,
-						mint: asset.mint,
-						escrow: await this.ata(bundle, asset.mint, tokenProgram),
-						destination: await this.ata(
-							input.recipient,
-							asset.mint,
-							tokenProgram,
-						),
-						tokenProgram,
-					}),
-				];
-			} else {
-				const resolved = resolvedAssets[asset.index];
-				if (!resolved || prizeIdentifier(resolved) !== asset.mint) {
-					throw new Error(
-						`Prize ${
-							asset.index + 1
-						} needs fresh DAS transfer data before it can be delivered`,
-					);
-				}
-				if (asset.kind === "metadataNft" && resolved.kind === "nft") {
-					const escrow = await this.ata(
-						bundle,
-						resolved.mint,
-						CLASSIC_TOKEN_PROGRAM,
-					);
-					const destination = await this.ata(
-						input.recipient,
-						resolved.mint,
-						CLASSIC_TOKEN_PROGRAM,
-					);
-					const optional = [
-						accountMeta(
-							resolved.edition ?? await this.editionPda(resolved.mint),
-						),
-						accountMeta(
-							resolved.tokenRecord ?? TOKEN_METADATA_PROGRAM,
-							resolved.tokenRecord
-								? AccountRole.WRITABLE
-								: AccountRole.READONLY,
-						),
-						accountMeta(
-							resolved.destinationTokenRecord ?? TOKEN_METADATA_PROGRAM,
-							resolved.destinationTokenRecord
-								? AccountRole.WRITABLE
-								: AccountRole.READONLY,
-						),
-						accountMeta(
-							resolved.authorizationRulesProgram ?? TOKEN_METADATA_PROGRAM,
-						),
-						accountMeta(resolved.authorizationRules ?? TOKEN_METADATA_PROGRAM),
-					];
-					const claim = generated.getClaimMetadataNftPrizeInstruction({
-						payer: this.payer,
-						...input,
-						mint: resolved.mint,
-						escrow,
-						destination,
-						metadata: resolved.metadata ??
-							await this.metadataPda(resolved.mint),
-						tokenMetadataProgram: TOKEN_METADATA_PROGRAM,
-						systemProgram: SYSTEM_PROGRAM,
-						instructionsSysvar: INSTRUCTIONS_SYSVAR,
-						tokenProgram: CLASSIC_TOKEN_PROGRAM,
-						associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM,
-						optionalAccounts: TOKEN_METADATA_PROGRAM,
-					});
+		for (let attempt = 0; attempt < data.data.assetCount; attempt++) {
+			if (opening.data.status === 3) return;
+			if (opening.data.status !== 2) {
+				throw new Error("opening left the allocated state during delivery");
+			}
+			const deliveryGroups: (readonly Instruction[])[] = [];
+			for (const asset of bundleAssets(data.data)) {
+				if ((opening.data.claimedMask & (1 << asset.index)) !== 0) continue;
+				const input = {
+					template,
+					opening: openingAddress,
+					bundle,
+					recipient: opening.data.beneficiary,
+					assetIndex: asset.index,
+				};
+				let instructions: readonly Instruction[];
+				if (asset.kind === "sol") {
+					instructions = [generated.getClaimSolPrizeInstruction(input)];
+				} else if (["token", "token2022", "nft"].includes(asset.kind ?? "")) {
+					const tokenProgram = asset.kind === "token2022"
+						? BOX_TOKEN_PROGRAM
+						: CLASSIC_TOKEN_PROGRAM;
 					instructions = [
-						await this.createAta(
+						await this.createAta(input.recipient, asset.mint, tokenProgram),
+						generated.getClaimTokenPrizeInstruction({
+							...input,
+							mint: asset.mint,
+							escrow: await this.ata(bundle, asset.mint, tokenProgram),
+							destination: await this.ata(
+								input.recipient,
+								asset.mint,
+								tokenProgram,
+							),
+							tokenProgram,
+						}),
+					];
+				} else {
+					const resolved = resolvedAssets[asset.index];
+					if (!resolved || prizeIdentifier(resolved) !== asset.mint) {
+						throw new Error(
+							`Prize ${
+								asset.index + 1
+							} needs fresh DAS transfer data before it can be delivered`,
+						);
+					}
+					if (asset.kind === "metadataNft" && resolved.kind === "nft") {
+						const escrow = await this.ata(
+							bundle,
+							resolved.mint,
+							CLASSIC_TOKEN_PROGRAM,
+						);
+						const destination = await this.ata(
 							input.recipient,
 							resolved.mint,
 							CLASSIC_TOKEN_PROGRAM,
-						),
-						replaceGeneratedTail(claim, optional),
-					];
-				} else if (asset.kind === "core" && resolved.kind === "core") {
-					const claim = generated.getClaimCoreAssetPrizeInstruction({
-						payer: this.payer,
-						...input,
-						asset: resolved.asset,
-						collection: resolved.collection ?? CORE_PROGRAM,
-						coreProgram: CORE_PROGRAM,
-						systemProgram: SYSTEM_PROGRAM,
-						logWrapper: NOOP_PROGRAM,
-						pluginAccounts: CORE_PROGRAM,
-					});
-					instructions = [replaceGeneratedTail(
-						claim,
-						resolved.pluginAccounts ?? [],
-					)];
-				} else if (
-					asset.kind === "compressedNft" &&
-					resolved.kind === "compressedNft"
-				) {
-					const claim = generated.getClaimCompressedNftPrizeInstruction({
-						...input,
-						treeConfig: resolved.proof.treeConfig,
-						merkleTree: resolved.proof.tree,
-						bubblegumProgram: BUBBLEGUM_PROGRAM,
-						logWrapper: NOOP_PROGRAM,
-						compressionProgram: ACCOUNT_COMPRESSION_PROGRAM,
-						systemProgram: SYSTEM_PROGRAM,
-						proofAccounts: BUBBLEGUM_PROGRAM,
-						root: resolved.proof.root,
-						dataHash: resolved.proof.dataHash,
-						creatorHash: resolved.proof.creatorHash,
-						nonce: resolved.proof.nonce,
-						index: resolved.proof.leafIndex,
-					});
-					instructions = [replaceGeneratedTail(
-						claim,
-						resolved.proof.proof.map((proof) => accountMeta(proof)),
-					)];
-				} else {
-					throw new Error(
-						"resolved prize adapter does not match on-chain asset kind",
-					);
+						);
+						const optional = [
+							accountMeta(
+								resolved.edition ?? await this.editionPda(resolved.mint),
+							),
+							accountMeta(
+								resolved.tokenRecord ?? TOKEN_METADATA_PROGRAM,
+								resolved.tokenRecord
+									? AccountRole.WRITABLE
+									: AccountRole.READONLY,
+							),
+							accountMeta(
+								resolved.destinationTokenRecord ?? TOKEN_METADATA_PROGRAM,
+								resolved.destinationTokenRecord
+									? AccountRole.WRITABLE
+									: AccountRole.READONLY,
+							),
+							accountMeta(
+								resolved.authorizationRulesProgram ?? TOKEN_METADATA_PROGRAM,
+							),
+							accountMeta(
+								resolved.authorizationRules ?? TOKEN_METADATA_PROGRAM,
+							),
+						];
+						const claim = generated.getClaimMetadataNftPrizeInstruction({
+							payer: this.payer,
+							...input,
+							mint: resolved.mint,
+							escrow,
+							destination,
+							metadata: resolved.metadata ??
+								await this.metadataPda(resolved.mint),
+							tokenMetadataProgram: TOKEN_METADATA_PROGRAM,
+							systemProgram: SYSTEM_PROGRAM,
+							instructionsSysvar: INSTRUCTIONS_SYSVAR,
+							tokenProgram: CLASSIC_TOKEN_PROGRAM,
+							associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM,
+							optionalAccounts: TOKEN_METADATA_PROGRAM,
+						});
+						instructions = [
+							await this.createAta(
+								input.recipient,
+								resolved.mint,
+								CLASSIC_TOKEN_PROGRAM,
+							),
+							replaceGeneratedTail(claim, optional),
+						];
+					} else if (asset.kind === "core" && resolved.kind === "core") {
+						const claim = generated.getClaimCoreAssetPrizeInstruction({
+							payer: this.payer,
+							...input,
+							asset: resolved.asset,
+							collection: resolved.collection ?? CORE_PROGRAM,
+							coreProgram: CORE_PROGRAM,
+							systemProgram: SYSTEM_PROGRAM,
+							logWrapper: NOOP_PROGRAM,
+							pluginAccounts: CORE_PROGRAM,
+						});
+						instructions = [replaceGeneratedTail(
+							claim,
+							resolved.pluginAccounts ?? [],
+						)];
+					} else if (
+						asset.kind === "compressedNft" &&
+						resolved.kind === "compressedNft"
+					) {
+						const claim = generated.getClaimCompressedNftPrizeInstruction({
+							...input,
+							treeConfig: resolved.proof.treeConfig,
+							merkleTree: resolved.proof.tree,
+							bubblegumProgram: BUBBLEGUM_PROGRAM,
+							logWrapper: NOOP_PROGRAM,
+							compressionProgram: ACCOUNT_COMPRESSION_PROGRAM,
+							systemProgram: SYSTEM_PROGRAM,
+							proofAccounts: BUBBLEGUM_PROGRAM,
+							root: resolved.proof.root,
+							dataHash: resolved.proof.dataHash,
+							creatorHash: resolved.proof.creatorHash,
+							nonce: resolved.proof.nonce,
+							index: resolved.proof.leafIndex,
+						});
+						instructions = [replaceGeneratedTail(
+							claim,
+							resolved.proof.proof.map((proof) => accountMeta(proof)),
+						)];
+					} else {
+						throw new Error(
+							"resolved prize adapter does not match on-chain asset kind",
+						);
+					}
 				}
+				deliveryGroups.push(instructions);
 			}
-			deliveryInstructions.push(...instructions);
+			const batch = partitionPrizeDeliveryInstructions(
+				this.payer.address,
+				deliveryGroups,
+			)[0];
+			if (!batch) {
+				throw new Error("allocated opening has no unclaimed prize assets");
+			}
+			const previousClaimedMask = opening.data.claimedMask;
+			await this.send(batch, "Deliver prize bundle batch");
+			opening = await generated.fetchTemplateOpeningState(
+				this.rpc,
+				openingAddress,
+				{ commitment },
+			);
+			if (
+				opening.data.status !== 3 &&
+				opening.data.claimedMask === previousClaimedMask
+			) {
+				throw new Error("prize delivery confirmed without recording progress");
+			}
 		}
-		if (deliveryInstructions.length > 0) {
-			await this.send(deliveryInstructions, "Deliver complete prize bundle");
-		}
+		if (opening.data.status === 3) return;
+		throw new Error("prize delivery exceeded the bundle asset limit");
 	}
 }

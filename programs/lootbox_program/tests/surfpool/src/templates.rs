@@ -520,6 +520,11 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		)
 		.0;
 		assert_eq!(
+			program.balance(&service_vault).expect("service balance"),
+			rent_minimum(0) + 6 * (rent_minimum(ResultReceiptState::SIZE as u64) + 1_000),
+			"service reserve includes one recoverable zero-data rent floor",
+		);
+		assert_eq!(
 			program
 				.account(&service_vault)
 				.expect("service vault")

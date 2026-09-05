@@ -172,8 +172,9 @@ impl<'a> TemplatePlan<'a> {
 
 	/// Calculate the service funding transferred at treasury lock.
 	///
-	/// `result_receipt_rent` must be the cluster's current rent-exempt minimum
-	/// for one generated result receipt account.
+	/// `result_receipt_rent` and `service_vault_rent` must be the cluster's
+	/// current rent-exempt minimums for one result receipt and a zero-data
+	/// service vault, respectively.
 	///
 	/// # Errors
 	/// Returns arithmetic overflow when the full creator budget does not fit in
@@ -181,6 +182,7 @@ impl<'a> TemplatePlan<'a> {
 	pub fn required_service_budget(
 		&self,
 		result_receipt_rent: u64,
+		service_vault_rent: u64,
 	) -> Result<u64, TemplatePlanError> {
 		let receipt_budget = if self.services.result_receipts_enabled {
 			result_receipt_rent
@@ -195,9 +197,17 @@ impl<'a> TemplatePlan<'a> {
 			.checked_mul(self.total_bundles)
 			.ok_or(TemplatePlanError::ArithmeticOverflow)?;
 
-		receipt_budget
+		let reserve = receipt_budget
 			.checked_add(bounty_budget)
-			.ok_or(TemplatePlanError::ArithmeticOverflow)
+			.ok_or(TemplatePlanError::ArithmeticOverflow)?;
+
+		if reserve == 0 {
+			Ok(0)
+		} else {
+			reserve
+				.checked_add(service_vault_rent)
+				.ok_or(TemplatePlanError::ArithmeticOverflow)
+		}
 	}
 
 	/// Exact initial probability as a numerator/denominator pair.
@@ -337,13 +347,16 @@ mod tests {
 			assets: &sol,
 		}];
 		let plan = TemplatePlan::new(&bundles).expect("plan");
-		assert_eq!(plan.required_service_budget(2_000_000), Ok(0));
+		assert_eq!(plan.required_service_budget(2_000_000, 890_880), Ok(0));
 
 		let plan = plan.with_services(ServicePlan {
 			settlement_bounty_lamports: 50_000,
 			result_receipts_enabled: true,
 		});
-		assert_eq!(plan.required_service_budget(2_000_000), Ok(6_150_000));
+		assert_eq!(
+			plan.required_service_budget(2_000_000, 890_880),
+			Ok(7_040_880)
+		);
 		assert_eq!(plan.services().settlement_bounty_lamports, 50_000);
 		assert!(plan.services().result_receipts_enabled);
 	}

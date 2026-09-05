@@ -103,8 +103,10 @@ export function requiredServiceBudget(
 		"totalBundles" | "settlementBountyLamports" | "resultReceiptsEnabled"
 	>,
 	resultReceiptRent: bigint,
+	serviceVaultRent: bigint,
 ): bigint {
 	const rent = u64(resultReceiptRent, "result receipt rent");
+	const vaultRent = u64(serviceVaultRent, "service vault rent");
 	const receiptBudget = plan.resultReceiptsEnabled
 		? u64(rent * plan.totalBundles, "result receipt budget")
 		: 0n;
@@ -112,7 +114,8 @@ export function requiredServiceBudget(
 		plan.settlementBountyLamports * plan.totalBundles,
 		"settlement bounty budget",
 	);
-	return u64(receiptBudget + bountyBudget, "service budget");
+	const reserve = u64(receiptBudget + bountyBudget, "service reserve");
+	return reserve === 0n ? 0n : u64(reserve + vaultRent, "service budget");
 }
 
 function u64(value: bigint, field: string): bigint {

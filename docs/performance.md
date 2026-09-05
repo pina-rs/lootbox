@@ -4,13 +4,13 @@ The protocol keeps prize accounting on chain and fully collateralized. That make
 
 ## Hot paths
 
-| Path        | Shared writable accounts                                          | Practical consequence                                            | Current mitigation                                               |
-| ----------- | ----------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Request     | Treasury, holder box ATA, opening, oracle accounts                | Requests for one treasury serialize on its inventory counters    | Use multiple independent treasuries for very large campaigns     |
-| Fulfill     | Treasury, opening, oracle accounts, optional service vault        | Oracle and treasury contention; external CPI dominates compute   | Atomic SDK `settle`; bounded creator-funded bounty               |
-| Allocate    | Treasury, opening, selected bundle, optional service vault/result | Every allocation updates the same finite inventory and FIFO head | Constant 256-slot scan; no unbounded accounts or loops           |
-| Claim       | Opening and selected bundle plus adapter accounts                 | Complex NFT adapters can make transactions account-heavy         | Per-asset claim bits; SDK batches a complete bundle when it fits |
-| Create/fund | One bundle at a time plus asset programs                          | Large manifests require several creator signatures               | Resumable draft state and idempotent chain reads                 |
+| Path        | Shared writable accounts                                          | Practical consequence                                            | Current mitigation                                              |
+| ----------- | ----------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------- |
+| Request     | Treasury, holder box ATA, opening, oracle accounts                | Requests for one treasury serialize on its inventory counters    | Use multiple independent treasuries for very large campaigns    |
+| Fulfill     | Treasury, opening, oracle accounts, optional service vault        | Oracle and treasury contention; external CPI dominates compute   | Atomic SDK `settle`; bounded creator-funded bounty              |
+| Allocate    | Treasury, opening, selected bundle, optional service vault/result | Every allocation updates the same finite inventory and FIFO head | Constant 256-slot scan; no unbounded accounts or loops          |
+| Claim       | Opening and selected bundle plus adapter accounts                 | Complex NFT adapters can make transactions account-heavy         | Per-asset claim bits; SDK size/account-bounds each atomic batch |
+| Create/fund | One bundle at a time plus asset programs                          | Large manifests require several creator signatures               | Resumable draft state and idempotent chain reads                |
 
 ## Hard limits
 
@@ -53,4 +53,5 @@ Only introduce inventory lanes after measurements show that a single series need
 - Keep proof fetchers and transaction senders separate, with durable queues and idempotent opening-address keys.
 - Use several RPC providers, explicit commitment policies, simulation, priority fees, and alerting for the oldest FIFO head.
 - Pre-resolve dynamic NFT accounts immediately before claim; cached proofs and authorization-rule accounts expire.
+- Let the SDK split mixed prize delivery and resume from the current claim mask. A single compressed proof that cannot fit by itself still requires proof compression or an application-managed address lookup table.
 - Cap initial treasury value and supply, then increase only after observed load and adapter compatibility are stable.

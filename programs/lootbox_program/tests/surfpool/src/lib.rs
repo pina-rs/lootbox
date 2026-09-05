@@ -34,6 +34,9 @@ use solana_message::Message;
 use solana_transaction::Transaction;
 use surfpool_sdk::Surfnet;
 use surfpool_sdk::cheatcodes::builders::DeployProgram;
+use switchboard_randomness_cpi::RANDOMNESS_ACCOUNT_LEN;
+use switchboard_randomness_cpi::RandomnessSnapshot;
+use switchboard_randomness_cpi::parse_randomness_account;
 
 mod templates;
 
@@ -45,7 +48,7 @@ const TOKEN_PROGRAM: &str = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 const WRAPPED_SOL_MINT: &str = "So11111111111111111111111111111111111111112";
 const RANDOMNESS_COMMIT_DISCRIMINATOR: [u8; 8] = [52, 170, 152, 201, 179, 133, 242, 141];
 const RANDOMNESS_REVEAL_DISCRIMINATOR: [u8; 8] = [197, 181, 187, 10, 30, 58, 20, 73];
-const RANDOMNESS_SPACE: u64 = 408;
+const RANDOMNESS_SPACE: u64 = RANDOMNESS_ACCOUNT_LEN as u64;
 const MINT_SPACE: u64 = 82;
 const FUND: u64 = 50_000_000;
 const BOXES: u64 = 2;
@@ -520,6 +523,10 @@ fn stored_u64(data: &[u8], offset: usize) -> u64 {
 	u64::from_le_bytes(data[offset..offset + 8].try_into().expect("stored u64"))
 }
 
+fn randomness_snapshot(account: &Account) -> RandomnessSnapshot {
+	parse_randomness_account(&account.data).expect("valid Switchboard randomness account")
+}
+
 #[test]
 #[ignore = "run with `devenv shell -- test:surfpool`"]
 fn commit_burn_reveal_and_payout_round_trip() {
@@ -730,25 +737,58 @@ fn commit_burn_reveal_and_payout_round_trip() {
 
 		let randomness = Keypair::new();
 		let (opening, opening_bump) = opening_pda(&program_id, &lootbox, &randomness.pubkey());
+		let revealed_value = [42u8; 32];
+		let settle_instruction_data = settle_data(revealed_value);
+		let request_instruction = program.instruction(
+			&request_data(recent_slot, opening_bump),
+			request_accounts(
+				&recipient.pubkey(),
+				&lootbox,
+				&vault,
+				&mint,
+				&recipient_ata,
+				&opening,
+				&randomness.pubkey(),
+				&queue,
+				&oracle,
+				&oracle_cpi,
+			),
+		);
+		let same_slot_settlement = program.instruction(
+			&settle_instruction_data,
+			settle_accounts(
+				&recipient.pubkey(),
+				&authority,
+				&lootbox,
+				&vault,
+				&mint,
+				&opening,
+				&randomness.pubkey(),
+				&queue,
+				&oracle,
+				&oracle_cpi,
+			),
+		);
+		assert!(
+			program
+				.send_instructions_with_signers(
+					&[request_instruction.clone(), same_slot_settlement],
+					&[&recipient, &randomness],
+				)
+				.is_err(),
+			"the on-chain oracle rejects reveal in the commitment transaction"
+		);
+		assert!(
+			program.account(&randomness.pubkey()).is_err(),
+			"failed same-slot reveal rolls back randomness creation"
+		);
+		assert_eq!(
+			token_amount(&program.account(&recipient_ata).expect("recipient ATA")),
+			BOXES,
+			"failed same-slot reveal rolls back the box burn"
+		);
 		program
-			.send_with_signers(
-				program.instruction(
-					&request_data(recent_slot, opening_bump),
-					request_accounts(
-						&recipient.pubkey(),
-						&lootbox,
-						&vault,
-						&mint,
-						&recipient_ata,
-						&opening,
-						&randomness.pubkey(),
-						&queue,
-						&oracle,
-						&oracle_cpi,
-					),
-				),
-				&[&recipient, &randomness],
-			)
+			.send_with_signers(request_instruction, &[&recipient, &randomness])
 			.expect("program-authorized initialize, commit, and burn are atomic");
 		let committed = program
 			.account(&randomness.pubkey())
@@ -765,16 +805,16 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		);
 		assert_eq!(
 			committed.data.len(),
-			408,
+			RANDOMNESS_ACCOUNT_LEN,
 			"canonical randomness account size"
 		);
-		assert_eq!(&committed.data[8..40], opening.as_ref());
-		assert_eq!(&committed.data[40..72], queue.as_ref());
-		assert_eq!(
-			stored_u64(&committed.data, 144),
-			0,
-			"commitment is unrevealed"
-		);
+		let committed_randomness = randomness_snapshot(&committed);
+		assert_eq!(committed_randomness.authority.as_ref(), opening.as_ref());
+		assert_eq!(committed_randomness.queue.as_ref(), queue.as_ref());
+		assert_eq!(committed_randomness.oracle.as_ref(), oracle.as_ref());
+		assert_eq!(committed_randomness.seed_slot, seed_slot);
+		assert_eq!(committed_randomness.reveal_slot, 0);
+		assert_eq!(committed_randomness.value, [0; 32]);
 		assert!(
 			seed_slot <= current_slot,
 			"committed slot is not in the future"
@@ -851,8 +891,6 @@ fn commit_burn_reveal_and_payout_round_trip() {
 			.advance_one_slot()
 			.expect("advance beyond the commitment slot");
 
-		let revealed_value = [42u8; 32];
-		let settle_instruction_data = settle_data(revealed_value);
 		let mut direct_reveal_data = RANDOMNESS_REVEAL_DISCRIMINATOR.to_vec();
 		direct_reveal_data.extend_from_slice(&settle_instruction_data[1..]);
 		assert!(
@@ -931,6 +969,15 @@ fn commit_burn_reveal_and_payout_round_trip() {
 				),
 			)
 			.expect("reveal and settle the opening permissionlessly");
+		let revealed_account = program
+			.account(&randomness.pubkey())
+			.expect("revealed randomness account");
+		let revealed_randomness = randomness_snapshot(&revealed_account);
+		assert_eq!(revealed_randomness.authority.as_ref(), opening.as_ref());
+		assert_eq!(revealed_randomness.queue.as_ref(), queue.as_ref());
+		assert_eq!(revealed_randomness.oracle.as_ref(), oracle.as_ref());
+		assert!(revealed_randomness.reveal_slot > revealed_randomness.seed_slot);
+		assert_eq!(revealed_randomness.value, revealed_value);
 
 		let opening_account = program.account(&opening).expect("opening receipt");
 		let reward = stored_u64(&opening_account.data, 105);
@@ -963,6 +1010,45 @@ fn commit_burn_reveal_and_payout_round_trip() {
 			stored_u64(&settled_state.data, 161),
 			1,
 			"opened incremented"
+		);
+		let recipient_after = program
+			.balance(&recipient.pubkey())
+			.expect("recipient after settlement");
+		assert!(
+			program
+				.send(
+					&settle_instruction_data,
+					settle_accounts(
+						&recipient.pubkey(),
+						&authority,
+						&lootbox,
+						&vault,
+						&mint,
+						&opening,
+						&randomness.pubkey(),
+						&queue,
+						&oracle,
+						&oracle_cpi,
+					),
+				)
+				.is_err(),
+			"a revealed opening cannot be settled twice"
+		);
+		assert_eq!(
+			program
+				.balance(&recipient.pubkey())
+				.expect("recipient after duplicate settlement"),
+			recipient_after,
+			"duplicate settlement cannot pay twice"
+		);
+		assert_eq!(
+			randomness_snapshot(
+				&program
+					.account(&randomness.pubkey())
+					.expect("randomness after duplicate settlement")
+			),
+			revealed_randomness,
+			"duplicate settlement cannot mutate the oracle receipt"
 		);
 
 		program

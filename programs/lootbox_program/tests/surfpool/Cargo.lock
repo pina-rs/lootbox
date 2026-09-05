@@ -4009,6 +4009,7 @@ version = "0.0.1-alpha.0"
 dependencies = [
  "pina",
  "solana-sha256-hasher 3.1.0",
+ "switchboard_randomness_cpi",
 ]
 
 [[package]]
@@ -4024,6 +4025,7 @@ dependencies = [
  "spl-token-2022-interface 3.1.1",
  "spl-token-metadata-interface 1.0.1",
  "surfpool-sdk",
+ "switchboard_randomness_cpi",
 ]
 
 [[package]]
@@ -10360,6 +10362,14 @@ dependencies = [
  "txtx-addon-network-svm-types",
  "url 1.7.2",
  "uuid",
+]
+
+[[package]]
+name = "switchboard_randomness_cpi"
+version = "0.0.1-alpha.0"
+dependencies = [
+ "pinocchio",
+ "solana-address 2.6.1",
 ]
 
 [[package]]

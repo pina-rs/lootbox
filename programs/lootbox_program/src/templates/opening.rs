@@ -324,47 +324,27 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		opening.bump = args.bump;
 		drop(opening);
 
-		let mut init_data = [0u8; 16];
-		init_data[..8].copy_from_slice(&RANDOMNESS_INIT_DISCRIMINATOR);
-		init_data[8..].copy_from_slice(&args.recent_slot.get().to_le_bytes());
-		let init_accounts = [
-			InstructionAccount::writable_signer(self.randomness.address()),
-			InstructionAccount::writable(self.reward_escrow.address()),
-			InstructionAccount::readonly_signer(self.opening.address()),
-			InstructionAccount::writable(self.oracle_queue.address()),
-			InstructionAccount::writable_signer(self.payer.address()),
-			InstructionAccount::readonly(self.system_program.address()),
-			InstructionAccount::readonly(self.token_program.address()),
-			InstructionAccount::readonly(self.associated_token_program.address()),
-			InstructionAccount::readonly(self.wrapped_sol_mint.address()),
-			InstructionAccount::readonly(self.oracle_program_state.address()),
-			InstructionAccount::readonly(self.oracle_lut_signer.address()),
-			InstructionAccount::writable(self.oracle_lut.address()),
-			InstructionAccount::readonly(self.address_lookup_table_program.address()),
-		];
-		let init_account_views: [&AccountView; 13] = [
-			self.randomness,
-			self.reward_escrow,
-			self.opening,
-			self.oracle_queue,
-			self.payer,
-			self.system_program,
-			self.token_program,
-			self.associated_token_program,
-			self.wrapped_sol_mint,
-			self.oracle_program_state,
-			self.oracle_lut_signer,
-			self.oracle_lut,
-			self.address_lookup_table_program,
-		];
-		let init_instruction = InstructionView {
-			program_id: self.oracle_program.address(),
-			accounts: &init_accounts,
-			data: &init_data,
-		};
 		let opening_signer = opening_seeds_with_bump.to_signer();
 		let signers = [opening_signer.as_signer()];
-		pinocchio::cpi::invoke_signed::<13, _>(&init_instruction, &init_account_views, &signers)?;
+
+		RandomnessInit {
+			program_id: self.oracle_program.address(),
+			randomness: self.randomness,
+			reward_escrow: self.reward_escrow,
+			authority: self.opening,
+			queue: self.oracle_queue,
+			payer: self.payer,
+			system_program: self.system_program,
+			token_program: self.token_program,
+			associated_token_program: self.associated_token_program,
+			wrapped_sol_mint: self.wrapped_sol_mint,
+			program_state: self.oracle_program_state,
+			lut_signer: self.oracle_lut_signer,
+			lut: self.oracle_lut,
+			address_lookup_table_program: self.address_lookup_table_program,
+			recent_slot: args.recent_slot.get(),
+		}
+		.invoke_signed(&signers)?;
 
 		let initialized = parse_randomness(self.randomness, self.oracle_program.address())?;
 
@@ -376,26 +356,15 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 			return Err(lootbox_error(LootboxError::InvalidRandomness));
 		}
 
-		let instruction_accounts = [
-			InstructionAccount::writable(self.randomness.address()),
-			InstructionAccount::readonly(self.oracle_queue.address()),
-			InstructionAccount::writable(self.oracle.address()),
-			InstructionAccount::readonly(self.recent_slot_hashes.address()),
-			InstructionAccount::readonly_signer(self.opening.address()),
-		];
-		let account_views: [&AccountView; 5] = [
-			self.randomness,
-			self.oracle_queue,
-			self.oracle,
-			self.recent_slot_hashes,
-			self.opening,
-		];
-		let instruction = InstructionView {
+		RandomnessCommit {
 			program_id: self.oracle_program.address(),
-			accounts: &instruction_accounts,
-			data: &RANDOMNESS_COMMIT_DISCRIMINATOR,
-		};
-		pinocchio::cpi::invoke_signed::<5, _>(&instruction, &account_views, &signers)?;
+			randomness: self.randomness,
+			queue: self.oracle_queue,
+			oracle: self.oracle,
+			recent_slot_hashes: self.recent_slot_hashes,
+			authority: self.opening,
+		}
+		.invoke_signed(&signers)?;
 
 		let committed = parse_randomness(self.randomness, self.oracle_program.address())?;
 
@@ -472,51 +441,28 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 		drop(opening);
 		drop(state);
 
-		let mut reveal_data = [0u8; 105];
-		reveal_data[..8].copy_from_slice(&RANDOMNESS_REVEAL_DISCRIMINATOR);
-		reveal_data[8..72].copy_from_slice(&args.signature);
-		reveal_data[72] = args.recovery_id;
-		reveal_data[73..].copy_from_slice(&args.value);
-		let reveal_accounts = [
-			InstructionAccount::writable(self.randomness.address()),
-			InstructionAccount::readonly(self.oracle.address()),
-			InstructionAccount::readonly(self.oracle_queue.address()),
-			InstructionAccount::writable(self.oracle_stats.address()),
-			InstructionAccount::readonly_signer(self.opening.address()),
-			InstructionAccount::writable_signer(self.payer.address()),
-			InstructionAccount::readonly(self.recent_slot_hashes.address()),
-			InstructionAccount::readonly(self.system_program.address()),
-			InstructionAccount::writable(self.reward_escrow.address()),
-			InstructionAccount::readonly(self.token_program.address()),
-			InstructionAccount::readonly(self.wrapped_sol_mint.address()),
-			InstructionAccount::readonly(self.oracle_program_state.address()),
-		];
-		let reveal_account_views: [&AccountView; 12] = [
-			self.randomness,
-			self.oracle,
-			self.oracle_queue,
-			self.oracle_stats,
-			self.opening,
-			self.payer,
-			self.recent_slot_hashes,
-			self.system_program,
-			self.reward_escrow,
-			self.token_program,
-			self.wrapped_sol_mint,
-			self.oracle_program_state,
-		];
-		let reveal_instruction = InstructionView {
-			program_id: self.oracle_program.address(),
-			accounts: &reveal_accounts,
-			data: &reveal_data,
-		};
 		let opening_signer = opening_seeds_with_bump.to_signer();
 		let signers = [opening_signer.as_signer()];
-		pinocchio::cpi::invoke_signed::<12, _>(
-			&reveal_instruction,
-			&reveal_account_views,
-			&signers,
-		)?;
+
+		RandomnessReveal {
+			program_id: self.oracle_program.address(),
+			randomness: self.randomness,
+			oracle: self.oracle,
+			queue: self.oracle_queue,
+			oracle_stats: self.oracle_stats,
+			authority: self.opening,
+			payer: self.payer,
+			recent_slot_hashes: self.recent_slot_hashes,
+			system_program: self.system_program,
+			reward_escrow: self.reward_escrow,
+			token_program: self.token_program,
+			wrapped_sol_mint: self.wrapped_sol_mint,
+			program_state: self.oracle_program_state,
+			signature: &args.signature,
+			recovery_id: args.recovery_id,
+			value: &args.value,
+		}
+		.invoke_signed(&signers)?;
 
 		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;

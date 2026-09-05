@@ -79,10 +79,6 @@ path = "programs/lootbox_program"
 type = "cargo"
 publish = { enabled = false }
 
-[package.switchboard_randomness_cpi]
-path = "crates/switchboard-randomness-cpi"
-type = "cargo"
-
 [package.lootbox_sdk]
 path = "sdks/rust"
 type = "cargo"
@@ -105,7 +101,6 @@ trusted_publishing = { enabled = true, repository = "pina-rs/lootbox", workflow 
 [group.lootbox]
 packages = [
 	"lootbox_program",
-	"switchboard_randomness_cpi",
 	"lootbox_sdk",
 	"lootbox_cli",
 ]

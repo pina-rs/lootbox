@@ -17,7 +17,7 @@ path = "src/lib.rs"
 [dependencies]
 base64 = { default-features = false, version = "0.22" }
 clap = { features = ["derive"], version = "4" }
-lootbox-program-client = { path = "../../programs/lootbox_program/clients/rust/lootbox_program", version = "0.0.0" }
+lootbox-program-client = { path = "../../programs/lootbox_program/clients/rust/lootbox_program" }
 serde_json = { default-features = false, version = "1", features = ["std"] }
 solana-client = { default-features = false, version = "4.2" }
 solana-commitment-config = { default-features = false, version = "3.1" }

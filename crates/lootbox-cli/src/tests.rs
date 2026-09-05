@@ -379,7 +379,7 @@ fn create_template_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 10);
-	assert_eq!(instruction.data.len(), 314);
+	assert_eq!(instruction.data.len(), 323);
 }
 
 #[test]
@@ -518,13 +518,15 @@ fn mint_template_boxes_builds() {
 fn request_template_open_builds() {
 	let instruction = build_from(&[
 		"request-template-open",
-		"--owner",
+		"--box-authority",
 		PK1,
 		"--template",
 		PK2,
 		"--box-mint",
 		PK3,
-		"--owner-box-account",
+		"--payer",
+		PK2,
+		"--box-account",
 		PK1,
 		"--opening",
 		PK2,
@@ -536,6 +538,12 @@ fn request_template_open_builds() {
 		PK2,
 		"--oracle",
 		PK3,
+		"--beneficiary",
+		PK2,
+		"--consumer-program",
+		PK3,
+		"--consumer-context",
+		format!("0x{}", "ab".repeat(32)).as_str(),
 		"--recent-slot-hashes",
 		PK1,
 		"--oracle-program",
@@ -558,7 +566,7 @@ fn request_template_open_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 16);
-	assert_eq!(instruction.data.len(), 1 + 8 + 1);
+	assert_eq!(instruction.data.len(), 106);
 }
 
 #[test]
@@ -570,6 +578,8 @@ fn fulfill_template_open_builds() {
 		"--template",
 		PK2,
 		"--opening",
+		PK3,
+		"--service-vault",
 		PK3,
 		"--randomness",
 		PK1,
@@ -583,8 +593,6 @@ fn fulfill_template_open_builds() {
 		PK2,
 		"--oracle-program",
 		PROGRAM,
-		"--reward-escrow",
-		PK3,
 		"--oracle-program-state",
 		PK1,
 		"--wrapped-sol-mint",
@@ -612,11 +620,15 @@ fn allocate_template_open_builds() {
 		PK2,
 		"--bundle",
 		PK3,
+		"--service-vault",
+		PK1,
+		"--result-receipt",
+		PK2,
 	])
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 18);
-	assert_eq!(instruction.data.len(), 1);
+	assert_eq!(instruction.data.len(), 2);
 }
 
 #[test]
@@ -627,6 +639,8 @@ fn forfeit_template_open_builds() {
 		PK1,
 		"--template",
 		PK2,
+		"--service-vault",
+		PK3,
 		"--opening",
 		PK3,
 		"--randomness",
@@ -692,11 +706,13 @@ fn lock_treasury_builds() {
 		PK3,
 		"--bundle",
 		PK1,
+		"--service-vault",
+		PK2,
 	])
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 37);
-	assert_eq!(instruction.data.len(), 1);
+	assert_eq!(instruction.data.len(), 2);
 }
 
 #[test]
@@ -1719,10 +1735,14 @@ fn allocate_template_open_with_default_bump() {
 		PK2,
 		"--bundle",
 		PK3,
+		"--service-vault",
+		PK1,
+		"--result-receipt",
+		PK2,
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data.len(), 1);
+	assert_eq!(instruction.data.len(), 2);
 }
 
 #[test]

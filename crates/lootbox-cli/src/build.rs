@@ -766,7 +766,10 @@ impl InstructionBuilder for MintTemplateBoxesArgs {
 pub struct RequestTemplateOpenArgs {
 	/// Box holder opening the template box.
 	#[arg(long)]
-	pub owner: Pubkey,
+	pub box_authority: Pubkey,
+	/// Payer funding oracle bookkeeping.
+	#[arg(long)]
+	pub payer: Pubkey,
 	/// Template whose box is opened.
 	#[arg(long)]
 	pub template: Pubkey,
@@ -775,7 +778,7 @@ pub struct RequestTemplateOpenArgs {
 	pub box_mint: Pubkey,
 	/// Holder's box token account.
 	#[arg(long)]
-	pub owner_box_account: Pubkey,
+	pub box_account: Pubkey,
 	/// Template-opening receipt PDA.
 	#[arg(long)]
 	pub opening: Pubkey,
@@ -812,6 +815,15 @@ pub struct RequestTemplateOpenArgs {
 	/// Address-lookup-table program.
 	#[arg(long)]
 	pub address_lookup_table_program: Pubkey,
+	/// Beneficiary for the consumer program.
+	#[arg(long)]
+	pub beneficiary: Pubkey,
+	/// Consumer program for the consumer context.
+	#[arg(long)]
+	pub consumer_program: Pubkey,
+	/// Consumer context (hex).
+	#[arg(long)]
+	pub consumer_context: String,
 	/// Recent slot used by Switchboard to derive its lookup table.
 	#[arg(long)]
 	pub recent_slot: u64,
@@ -823,10 +835,11 @@ pub struct RequestTemplateOpenArgs {
 impl InstructionBuilder for RequestTemplateOpenArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
 		let accounts = generated::RequestTemplateOpen::new(
-			self.owner,
+			self.box_authority,
+			self.payer,
 			self.template,
 			self.box_mint,
-			self.owner_box_account,
+			self.box_account,
 			self.opening,
 			self.randomness,
 			self.reward_escrow,
@@ -840,9 +853,15 @@ impl InstructionBuilder for RequestTemplateOpenArgs {
 			self.wrapped_sol_mint,
 			self.address_lookup_table_program,
 		);
+		let beneficiary = self.beneficiary;
+		let consumer_program = self.consumer_program;
+		let consumer_context = hex_arg::<32>(&self.consumer_context, "consumer_context")?;
 		let recent_slot = self.recent_slot;
 		let bump = self.bump;
 		let data = generated::RequestTemplateOpenInstructionData::new(|wire| {
+			wire.beneficiary = beneficiary;
+			wire.consumer_program = consumer_program;
+			wire.consumer_context = consumer_context;
 			wire.recent_slot = recent_slot.into();
 			wire.bump = bump;
 		})?;
@@ -863,6 +882,9 @@ pub struct FulfillTemplateOpenArgs {
 	/// Template-opening receipt.
 	#[arg(long)]
 	pub opening: Pubkey,
+	/// Service vault PDA.
+	#[arg(long)]
+	pub service_vault: Pubkey,
 	/// Randomness account.
 	#[arg(long)]
 	pub randomness: Pubkey,
@@ -881,9 +903,6 @@ pub struct FulfillTemplateOpenArgs {
 	/// Switchboard On-Demand program.
 	#[arg(long)]
 	pub oracle_program: Pubkey,
-	/// Reward escrow.
-	#[arg(long)]
-	pub reward_escrow: Pubkey,
 	/// Switchboard program state.
 	#[arg(long)]
 	pub oracle_program_state: Pubkey,
@@ -906,6 +925,8 @@ impl InstructionBuilder for FulfillTemplateOpenArgs {
 		let accounts = generated::FulfillTemplateOpen::new(
 			self.payer,
 			self.template,
+			self.service_vault,
+			self.service_vault,
 			self.opening,
 			self.randomness,
 			self.oracle_queue,
@@ -913,7 +934,6 @@ impl InstructionBuilder for FulfillTemplateOpenArgs {
 			self.oracle_stats,
 			self.recent_slot_hashes,
 			self.oracle_program,
-			self.reward_escrow,
 			self.oracle_program_state,
 			self.wrapped_sol_mint,
 		);
@@ -942,12 +962,23 @@ pub struct AllocateTemplateOpenArgs {
 	/// Bundle PDA receiving the allocation.
 	#[arg(long)]
 	pub bundle: Pubkey,
+	/// Service vault PDA.
+	#[arg(long)]
+	pub service_vault: Pubkey,
+	/// Result receipt PDA.
+	#[arg(long)]
+	pub result_receipt: Pubkey,
 }
 
 impl InstructionBuilder for AllocateTemplateOpenArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let accounts =
-			generated::AllocateTemplateOpen::new(self.template, self.opening, self.bundle);
+		let accounts = generated::AllocateTemplateOpen::new(
+			self.template,
+			self.opening,
+			self.bundle,
+			self.service_vault,
+			self.result_receipt,
+		);
 		let data = generated::AllocateTemplateOpenInstructionData::new(|_wire| {})?;
 
 		Ok(accounts.instruction(data))
@@ -966,6 +997,9 @@ pub struct ForfeitTemplateOpenArgs {
 	/// Template-opening receipt.
 	#[arg(long)]
 	pub opening: Pubkey,
+	/// Service vault PDA.
+	#[arg(long)]
+	pub service_vault: Pubkey,
 	/// Randomness account.
 	#[arg(long)]
 	pub randomness: Pubkey,
@@ -976,6 +1010,7 @@ impl InstructionBuilder for ForfeitTemplateOpenArgs {
 		let accounts = generated::ForfeitTemplateOpen::new(
 			self.caller,
 			self.template,
+			self.service_vault,
 			self.opening,
 			self.randomness,
 		);
@@ -1079,12 +1114,20 @@ pub struct LockTreasuryArgs {
 	/// Bundle PDA.
 	#[arg(long)]
 	pub bundle: Pubkey,
+	/// Service vault PDA.
+	#[arg(long)]
+	pub service_vault: Pubkey,
 }
 
 impl InstructionBuilder for LockTreasuryArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let accounts =
-			generated::LockTreasury::new(self.authority, self.template, self.box_mint, self.bundle);
+		let accounts = generated::LockTreasury::new(
+			self.authority,
+			self.template,
+			self.box_mint,
+			self.bundle,
+			self.service_vault,
+		);
 		let data = generated::LockTreasuryInstructionData::new(|_wire| {})?;
 
 		Ok(accounts.instruction(data))

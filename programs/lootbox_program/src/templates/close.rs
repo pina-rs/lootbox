@@ -87,7 +87,7 @@ impl<'a> ProcessAccountInfos<'a> for CloseTemplateOpeningAccounts<'a> {
 		RandomnessClose {
 			program_id: self.oracle_program.address(),
 			randomness: self.randomness,
-			escrow: self.reward_escrow,
+			reward_escrow: self.reward_escrow,
 			authority: self.opening,
 			program_state: self.oracle_program_state,
 			system_program: self.system_program,

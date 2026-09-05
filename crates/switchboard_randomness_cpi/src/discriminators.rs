@@ -2,10 +2,8 @@
 //!
 //! Switchboard On-Demand is an Anchor-style program, so its instructions and
 //! accounts are addressed by 8-byte discriminators rather than compact
-//! ordinals. The values below are pinned to `switchboard-on-demand` 0.13.0
-//! (`src/on_demand/instructions/randomness_commit.rs` and
-//! `src/on_demand/accounts/randomness.rs`); unit tests cross-check each one
-//! against the literal byte arrays from that source.
+//! ordinals. The values below are pinned to the deployed program's published
+//! Anchor IDL; unit tests cross-check each one against the literal IDL bytes.
 //!
 //! Every discriminator is stored as a little-endian `u64` so it can be
 //! written, matched, and compared with plain integer operations.
@@ -83,8 +81,7 @@ impl RandomnessInstruction {
 
 /// Discriminator of the Switchboard `RandomnessAccountData` account.
 ///
-/// Source: `switchboard-on-demand` 0.13.0
-/// `src/on_demand/accounts/randomness.rs`.
+/// Source: `RandomnessAccountData` in `switchboard-on-demand` 0.13.0.
 pub const RANDOMNESS_ACCOUNT_DISCRIMINATOR: [u8; 8] = [10, 66, 229, 135, 220, 239, 217, 114];
 
 #[cfg(test)]
@@ -92,7 +89,7 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn discriminators_match_switchboard_source() {
+	fn discriminators_match_switchboard_deployed_idl() {
 		assert_eq!(
 			RandomnessInstruction::Init.to_bytes(),
 			[9, 9, 204, 33, 50, 116, 113, 15]

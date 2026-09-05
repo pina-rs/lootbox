@@ -346,7 +346,7 @@ dependencies = [
  "pina",
  "proptest",
  "solana-sha256-hasher",
- "switchboard-randomness-cpi",
+ "switchboard_randomness_cpi",
 ]
 
 [[package]]
@@ -930,8 +930,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
-name = "switchboard-randomness-cpi"
-version = "0.1.0"
+name = "switchboard_randomness_cpi"
+version = "0.0.1-alpha.0"
 dependencies = [
  "pinocchio",
  "solana-address",

@@ -330,7 +330,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		RandomnessInit {
 			program_id: self.oracle_program.address(),
 			randomness: self.randomness,
-			escrow: self.reward_escrow,
+			reward_escrow: self.reward_escrow,
 			authority: self.opening,
 			queue: self.oracle_queue,
 			payer: self.payer,
@@ -454,7 +454,7 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 			payer: self.payer,
 			recent_slot_hashes: self.recent_slot_hashes,
 			system_program: self.system_program,
-			escrow: self.reward_escrow,
+			reward_escrow: self.reward_escrow,
 			token_program: self.token_program,
 			wrapped_sol_mint: self.wrapped_sol_mint,
 			program_state: self.oracle_program_state,

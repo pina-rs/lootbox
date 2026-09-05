@@ -385,7 +385,19 @@ fn fulfill(context: &FulfillContext<'_>, value: u8) -> Result<(), String> {
 	context.program.send_with_signers(
 		context.program.instruction(&data, accounts),
 		&[context.payer],
-	)
+	)?;
+	let account = context.program.account(&context.randomness)?;
+	let snapshot = randomness_snapshot(&account);
+	if snapshot.authority.as_ref() != context.opening.as_ref()
+		|| snapshot.queue.as_ref() != context.queue.as_ref()
+		|| snapshot.oracle.as_ref() != context.oracle.as_ref()
+		|| snapshot.reveal_slot <= snapshot.seed_slot
+		|| snapshot.value != [value; 32]
+	{
+		return Err("on-chain randomness receipt does not match the fulfilled proof".to_owned());
+	}
+
+	Ok(())
 }
 
 fn allocate_any(

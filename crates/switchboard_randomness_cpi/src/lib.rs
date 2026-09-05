@@ -15,7 +15,7 @@
 //! | Builder field | Lootbox account |
 //! | --- | --- |
 //! | `randomness` | Client-held randomness keypair account |
-//! | `escrow` | Reward escrow |
+//! | `reward_escrow` | Wrapped-SOL reward escrow |
 //! | `authority` | Opening PDA (signs via `invoke_signed` seeds) |
 //! | `queue` | Switchboard queue from the template state |
 //! | `payer` | Transaction payer |
@@ -23,11 +23,13 @@
 //! | `program_state` | Switchboard program state account |
 //! | `lut_signer` / `lut` | Switchboard lookup-table signer and LUT |
 //!
-//! Discriminator and account-layout values are pinned to
-//! `switchboard-on-demand` 0.13.0; unit tests cross-check every constant
-//! against the literal byte arrays from that source.
+//! The account layout is pinned to `switchboard-on-demand` 0.13.0. The
+//! instruction discriminators and account order are pinned to the published
+//! IDL of the deployed Switchboard On-Demand programs; unit and Surfpool tests
+//! exercise those values through actual SBF cross-program invocations.
 
 #![no_std]
+#![deny(missing_docs)]
 
 #[cfg(any(test, feature = "std"))]
 extern crate std;

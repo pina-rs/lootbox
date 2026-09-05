@@ -1,5 +1,5 @@
 [package]
-name = "switchboard-randomness-cpi"
+name = "switchboard_randomness_cpi"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

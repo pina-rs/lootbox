@@ -47,7 +47,7 @@ pub struct RandomnessInit<'a> {
 	/// Fresh randomness account — writable, signed by the enclosing transaction.
 	pub randomness: &'a AccountView,
 	/// Reward escrow the oracle may fund — writable.
-	pub escrow: &'a AccountView,
+	pub reward_escrow: &'a AccountView,
 	/// PDA authorized to commit and reveal — read-only signer.
 	pub authority: &'a AccountView,
 	/// Switchboard queue — writable.
@@ -89,7 +89,7 @@ impl RandomnessInit<'_> {
 		let data = init_data(self.recent_slot);
 		let accounts = [
 			InstructionAccount::writable_signer(self.randomness.address()),
-			InstructionAccount::writable(self.escrow.address()),
+			InstructionAccount::writable(self.reward_escrow.address()),
 			InstructionAccount::readonly_signer(self.authority.address()),
 			InstructionAccount::writable(self.queue.address()),
 			InstructionAccount::writable_signer(self.payer.address()),
@@ -104,7 +104,7 @@ impl RandomnessInit<'_> {
 		];
 		let views: [&AccountView; 13] = [
 			self.randomness,
-			self.escrow,
+			self.reward_escrow,
 			self.authority,
 			self.queue,
 			self.payer,
@@ -212,7 +212,7 @@ pub struct RandomnessReveal<'a, 'b> {
 	/// System program.
 	pub system_program: &'a AccountView,
 	/// Escrow receiving any oracle fee rebate — writable.
-	pub escrow: &'a AccountView,
+	pub reward_escrow: &'a AccountView,
 	/// Token program backing the escrow.
 	pub token_program: &'a AccountView,
 	/// Wrapped-SOL mint backing the escrow.
@@ -249,7 +249,7 @@ impl RandomnessReveal<'_, '_> {
 			InstructionAccount::writable_signer(self.payer.address()),
 			InstructionAccount::readonly(self.recent_slot_hashes.address()),
 			InstructionAccount::readonly(self.system_program.address()),
-			InstructionAccount::writable(self.escrow.address()),
+			InstructionAccount::writable(self.reward_escrow.address()),
 			InstructionAccount::readonly(self.token_program.address()),
 			InstructionAccount::readonly(self.wrapped_sol_mint.address()),
 			InstructionAccount::readonly(self.program_state.address()),
@@ -263,7 +263,7 @@ impl RandomnessReveal<'_, '_> {
 			self.payer,
 			self.recent_slot_hashes,
 			self.system_program,
-			self.escrow,
+			self.reward_escrow,
 			self.token_program,
 			self.wrapped_sol_mint,
 			self.program_state,
@@ -280,7 +280,8 @@ impl RandomnessReveal<'_, '_> {
 
 /// CPI arguments for `randomness_close`.
 ///
-/// Closes the randomness account and forwards its rent to `escrow`.
+/// Closes the randomness account and its wrapped-SOL reward escrow. The
+/// randomness account rent is returned to `authority`.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke_signed is called"]
 pub struct RandomnessClose<'a> {
@@ -288,8 +289,8 @@ pub struct RandomnessClose<'a> {
 	pub program_id: &'a Address,
 	/// Randomness account to close — writable, owned by Switchboard.
 	pub randomness: &'a AccountView,
-	/// Recipient of the reclaimed rent — writable.
-	pub escrow: &'a AccountView,
+	/// Wrapped-SOL reward escrow closed with the randomness account — writable.
+	pub reward_escrow: &'a AccountView,
 	/// PDA authorized to close — writable signer.
 	pub authority: &'a AccountView,
 	/// Switchboard program state — read-only.
@@ -323,7 +324,7 @@ impl RandomnessClose<'_> {
 		let data = RandomnessInstruction::Close.to_bytes();
 		let accounts = [
 			InstructionAccount::writable(self.randomness.address()),
-			InstructionAccount::writable(self.escrow.address()),
+			InstructionAccount::writable(self.reward_escrow.address()),
 			InstructionAccount::writable_signer(self.authority.address()),
 			InstructionAccount::readonly(self.program_state.address()),
 			InstructionAccount::readonly(self.system_program.address()),
@@ -335,7 +336,7 @@ impl RandomnessClose<'_> {
 		];
 		let views: [&AccountView; 10] = [
 			self.randomness,
-			self.escrow,
+			self.reward_escrow,
 			self.authority,
 			self.program_state,
 			self.system_program,

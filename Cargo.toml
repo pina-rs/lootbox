@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-	"crates/switchboard-randomness-cpi",
+	"crates/switchboard_randomness_cpi",
 	"programs/lootbox_program",
 	"programs/lootbox_program/clients/rust/lootbox_program",
 	"sdks/rust",
@@ -32,7 +32,7 @@ solana-instruction = { default-features = false, version = "3" }
 solana-program-error = { default-features = false, version = "3" }
 solana-pubkey = { default-features = false, version = "4", features = ["bytemuck"] }
 solana-sha256-hasher = { default-features = false, version = "3.1.0" }
-switchboard-randomness-cpi = { path = "crates/switchboard-randomness-cpi", version = "0.1.0" }
+switchboard_randomness_cpi = { path = "crates/switchboard_randomness_cpi", version = "0.0.1-alpha.0" }
 thiserror = { default-features = false, version = "2" }
 
 [workspace.metadata.bin]

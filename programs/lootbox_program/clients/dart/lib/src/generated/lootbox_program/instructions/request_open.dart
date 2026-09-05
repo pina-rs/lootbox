@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,12 +12,14 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
+
 @immutable
 class RequestOpenInstructionData {
   const RequestOpenInstructionData({
     required this.recentSlot,
     required this.bump,
-  }) : discriminator = 5;
+  }) :
+      discriminator = 5;
 
   final int discriminator;
   final BigInt recentSlot;
@@ -48,15 +51,20 @@ Decoder<RequestOpenInstructionData> getRequestOpenInstructionDataDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'requestOpen instruction decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'requestOpen instruction decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
   (RequestOpenInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(5)).read(bytes, offset + 0);
+    getConstantDecoder(
+      getU8Encoder().encode(5),
+    ).read(bytes, offset + 0);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
@@ -64,8 +72,8 @@ Decoder<RequestOpenInstructionData> getRequestOpenInstructionDataDecoder() {
 
     return (
       RequestOpenInstructionData(
-        recentSlot: map['recentSlot']! as BigInt,
-        bump: map['bump']! as int,
+      recentSlot: map['recentSlot']! as BigInt,
+      bump: map['bump']! as int,
       ),
       newOffset,
     );
@@ -91,12 +99,8 @@ Decoder<RequestOpenInstructionData> getRequestOpenInstructionDataDecoder() {
   };
 }
 
-Codec<RequestOpenInstructionData, RequestOpenInstructionData>
-getRequestOpenInstructionDataCodec() {
-  return combineCodec(
-    getRequestOpenInstructionDataEncoder(),
-    getRequestOpenInstructionDataDecoder(),
-  );
+Codec<RequestOpenInstructionData, RequestOpenInstructionData> getRequestOpenInstructionDataCodec() {
+  return combineCodec(getRequestOpenInstructionDataEncoder(), getRequestOpenInstructionDataDecoder());
 }
 
 /// Creates a [RequestOpen] instruction.
@@ -126,44 +130,39 @@ Instruction getRequestOpenInstruction({
   required int bump,
 }) {
   final instructionData = RequestOpenInstructionData(
-    recentSlot: recentSlot,
-    bump: bump,
+      recentSlot: recentSlot,
+      bump: bump,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: owner, role: AccountRole.writableSigner),
-      AccountMeta(address: lootbox, role: AccountRole.writable),
-      AccountMeta(address: vault, role: AccountRole.readonly),
-      AccountMeta(address: boxMint, role: AccountRole.writable),
-      AccountMeta(address: ownerBoxAccount, role: AccountRole.writable),
-      AccountMeta(address: opening, role: AccountRole.writable),
-      AccountMeta(address: randomness, role: AccountRole.writableSigner),
-      AccountMeta(address: rewardEscrow, role: AccountRole.writable),
-      AccountMeta(address: oracleQueue, role: AccountRole.writable),
-      AccountMeta(address: oracle, role: AccountRole.writable),
-      AccountMeta(address: recentSlotHashes, role: AccountRole.readonly),
-      AccountMeta(address: oracleProgram, role: AccountRole.readonly),
-      AccountMeta(address: oracleProgramState, role: AccountRole.readonly),
-      AccountMeta(address: oracleLutSigner, role: AccountRole.readonly),
-      AccountMeta(address: oracleLut, role: AccountRole.writable),
-      AccountMeta(address: associatedTokenProgram, role: AccountRole.readonly),
-      AccountMeta(address: wrappedSolMint, role: AccountRole.readonly),
-      AccountMeta(
-        address: addressLookupTableProgram,
-        role: AccountRole.readonly,
-      ),
-      AccountMeta(address: systemProgram, role: AccountRole.readonly),
-      AccountMeta(address: tokenProgram, role: AccountRole.readonly),
+    AccountMeta(address: owner, role: AccountRole.writableSigner),
+    AccountMeta(address: lootbox, role: AccountRole.writable),
+    AccountMeta(address: vault, role: AccountRole.readonly),
+    AccountMeta(address: boxMint, role: AccountRole.writable),
+    AccountMeta(address: ownerBoxAccount, role: AccountRole.writable),
+    AccountMeta(address: opening, role: AccountRole.writable),
+    AccountMeta(address: randomness, role: AccountRole.writableSigner),
+    AccountMeta(address: rewardEscrow, role: AccountRole.writable),
+    AccountMeta(address: oracleQueue, role: AccountRole.writable),
+    AccountMeta(address: oracle, role: AccountRole.writable),
+    AccountMeta(address: recentSlotHashes, role: AccountRole.readonly),
+    AccountMeta(address: oracleProgram, role: AccountRole.readonly),
+    AccountMeta(address: oracleProgramState, role: AccountRole.readonly),
+    AccountMeta(address: oracleLutSigner, role: AccountRole.readonly),
+    AccountMeta(address: oracleLut, role: AccountRole.writable),
+    AccountMeta(address: associatedTokenProgram, role: AccountRole.readonly),
+    AccountMeta(address: wrappedSolMint, role: AccountRole.readonly),
+    AccountMeta(address: addressLookupTableProgram, role: AccountRole.readonly),
+    AccountMeta(address: systemProgram, role: AccountRole.readonly),
+    AccountMeta(address: tokenProgram, role: AccountRole.readonly),
     ],
     data: getRequestOpenInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [RequestOpen] instruction from raw instruction data.
-RequestOpenInstructionData parseRequestOpenInstruction(
-  Instruction instruction,
-) {
+RequestOpenInstructionData parseRequestOpenInstruction(Instruction instruction) {
   return getRequestOpenInstructionDataDecoder().decode(instruction.data!);
 }

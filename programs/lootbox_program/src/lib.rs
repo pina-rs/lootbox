@@ -41,14 +41,14 @@ pub use templates::*;
 
 declare_id!("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
 
-/// Maximum number of weighted outcomes in the first protocol version.
+/// Maximum number of weighted outcomes in the single-reward model.
 pub const MAX_OUTCOMES: usize = 8;
 /// Maximum append-only prize bundles in an editable template treasury.
 pub const MAX_TEMPLATE_BUNDLES: usize = 256;
 /// Number of slots after which an unfulfilled opening receives its reward floor.
 pub const RANDOMNESS_TIMEOUT_SLOTS: u64 = 300;
 
-/// Maximum sum of v1 outcome weights.
+/// Maximum sum of outcome weights.
 ///
 /// This bound makes eight-step rejection sampling failure less likely than
 /// `2^-256`; the final deterministic fallback then guarantees settlement.
@@ -65,7 +65,7 @@ const ADDRESS_LOOKUP_TABLE_PROGRAM_ID: Address =
 const OPENING_PENDING: u8 = 0;
 const OPENING_SETTLED: u8 = 1;
 const OPENING_REFUNDED: u8 = 2;
-const OUTCOME_DOMAIN: &[u8] = b"pina-lootbox-outcome-v1";
+const OUTCOME_DOMAIN: &[u8] = b"pina-lootbox-outcome";
 
 #[error]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -76,7 +76,7 @@ pub enum LootboxError {
 	InvalidState = 1,
 	/// The configured outcome does not exist or is out of range.
 	InvalidOutcome = 2,
-	/// An outcome weight must be non-zero and keep total weight within the v1 bound.
+	/// An outcome weight must be non-zero and keep total weight within the bound.
 	InvalidWeight = 3,
 	/// The lootbox cannot be sealed until at least one outcome exists.
 	IncompleteConfiguration = 4,
@@ -116,6 +116,10 @@ pub enum LootboxError {
 	SupplyMismatch = 21,
 	/// A market treasury must be locked before its earliest reveal date.
 	RevealDatePassed = 22,
+	/// The optional service vault or result receipt is invalid.
+	InvalidServiceAccount = 23,
+	/// The creator-funded receipt or settlement budget is exhausted.
+	ServiceBudgetExhausted = 24,
 }
 
 #[discriminator]
@@ -158,6 +162,7 @@ pub enum LootboxInstruction {
 	ReclaimCompressedNftPrize = 35,
 	ForfeitTemplateOpen = 36,
 	LockTreasury = 37,
+	CloseServiceVault = 38,
 }
 
 #[discriminator]
@@ -168,6 +173,7 @@ pub enum LootboxAccountType {
 	TemplateState = 4,
 	BundleState = 5,
 	TemplateOpeningState = 6,
+	ResultReceiptState = 7,
 }
 
 /// Immutable definition and live accounting for one lootbox mint.
@@ -1502,6 +1508,9 @@ pub fn process_instruction(
 		}
 		LootboxInstruction::LockTreasury => {
 			LockTreasuryAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::CloseServiceVault => {
+			CloseServiceVaultAccounts::try_from((program_id, accounts))?.process(data)
 		}
 	}
 }

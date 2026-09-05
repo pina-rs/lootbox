@@ -112,7 +112,7 @@ async function searchTokenCatalog(query) {
 			items: fallback,
 			source: "fallback",
 			message:
-				"Add JUPITER_API_KEY for live Jupiter Tokens V2 results; showing a verified starter list.",
+				"Add JUPITER_API_KEY for live Jupiter Tokens results; showing a verified starter list.",
 		};
 	}
 	try {

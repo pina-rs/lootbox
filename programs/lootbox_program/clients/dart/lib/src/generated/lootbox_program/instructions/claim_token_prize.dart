@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,17 +12,19 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
+
 @immutable
 class ClaimTokenPrizeInstructionData {
-  const ClaimTokenPrizeInstructionData({required this.assetIndex})
-    : discriminator = 20;
+  const ClaimTokenPrizeInstructionData({
+    required this.assetIndex,
+  }) :
+      discriminator = 20;
 
   final int discriminator;
   final int assetIndex;
 }
 
-Encoder<ClaimTokenPrizeInstructionData>
-getClaimTokenPrizeInstructionDataEncoder() {
+Encoder<ClaimTokenPrizeInstructionData> getClaimTokenPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
     ('assetIndex', getU8Encoder()),
@@ -36,33 +39,36 @@ getClaimTokenPrizeInstructionDataEncoder() {
   );
 }
 
-Decoder<ClaimTokenPrizeInstructionData>
-getClaimTokenPrizeInstructionDataDecoder() {
+Decoder<ClaimTokenPrizeInstructionData> getClaimTokenPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
     ('assetIndex', getU8Decoder()),
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'claimTokenPrize instruction decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'claimTokenPrize instruction decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
-  (ClaimTokenPrizeInstructionData, int) readTopLevel(
-    Uint8List bytes,
-    int offset,
-  ) {
-    getConstantDecoder(getU8Encoder().encode(20)).read(bytes, offset + 0);
+  (ClaimTokenPrizeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
+    getConstantDecoder(
+      getU8Encoder().encode(20),
+    ).read(bytes, offset + 0);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
     }
 
     return (
-      ClaimTokenPrizeInstructionData(assetIndex: map['assetIndex']! as int),
+      ClaimTokenPrizeInstructionData(
+      assetIndex: map['assetIndex']! as int,
+      ),
       newOffset,
     );
   }
@@ -87,12 +93,8 @@ getClaimTokenPrizeInstructionDataDecoder() {
   };
 }
 
-Codec<ClaimTokenPrizeInstructionData, ClaimTokenPrizeInstructionData>
-getClaimTokenPrizeInstructionDataCodec() {
-  return combineCodec(
-    getClaimTokenPrizeInstructionDataEncoder(),
-    getClaimTokenPrizeInstructionDataDecoder(),
-  );
+Codec<ClaimTokenPrizeInstructionData, ClaimTokenPrizeInstructionData> getClaimTokenPrizeInstructionDataCodec() {
+  return combineCodec(getClaimTokenPrizeInstructionDataEncoder(), getClaimTokenPrizeInstructionDataDecoder());
 }
 
 /// Creates a [ClaimTokenPrize] instruction.
@@ -109,28 +111,26 @@ Instruction getClaimTokenPrizeInstruction({
   required int assetIndex,
 }) {
   final instructionData = ClaimTokenPrizeInstructionData(
-    assetIndex: assetIndex,
+      assetIndex: assetIndex,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: template, role: AccountRole.readonly),
-      AccountMeta(address: opening, role: AccountRole.writable),
-      AccountMeta(address: bundle, role: AccountRole.writable),
-      AccountMeta(address: recipient, role: AccountRole.readonly),
-      AccountMeta(address: mint, role: AccountRole.readonly),
-      AccountMeta(address: escrow, role: AccountRole.writable),
-      AccountMeta(address: destination, role: AccountRole.writable),
-      AccountMeta(address: tokenProgram, role: AccountRole.readonly),
+    AccountMeta(address: template, role: AccountRole.readonly),
+    AccountMeta(address: opening, role: AccountRole.writable),
+    AccountMeta(address: bundle, role: AccountRole.writable),
+    AccountMeta(address: recipient, role: AccountRole.readonly),
+    AccountMeta(address: mint, role: AccountRole.readonly),
+    AccountMeta(address: escrow, role: AccountRole.writable),
+    AccountMeta(address: destination, role: AccountRole.writable),
+    AccountMeta(address: tokenProgram, role: AccountRole.readonly),
     ],
     data: getClaimTokenPrizeInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [ClaimTokenPrize] instruction from raw instruction data.
-ClaimTokenPrizeInstructionData parseClaimTokenPrizeInstruction(
-  Instruction instruction,
-) {
+ClaimTokenPrizeInstructionData parseClaimTokenPrizeInstruction(Instruction instruction) {
   return getClaimTokenPrizeInstructionDataDecoder().decode(instruction.data!);
 }

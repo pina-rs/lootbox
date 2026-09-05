@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,15 +12,16 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
+
 @immutable
 class FundCoreAssetPrizeInstructionData {
-  const FundCoreAssetPrizeInstructionData() : discriminator = 30;
+  const FundCoreAssetPrizeInstructionData() :
+      discriminator = 30;
 
   final int discriminator;
 }
 
-Encoder<FundCoreAssetPrizeInstructionData>
-getFundCoreAssetPrizeInstructionDataEncoder() {
+Encoder<FundCoreAssetPrizeInstructionData> getFundCoreAssetPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
   ]);
@@ -32,31 +34,37 @@ getFundCoreAssetPrizeInstructionDataEncoder() {
   );
 }
 
-Decoder<FundCoreAssetPrizeInstructionData>
-getFundCoreAssetPrizeInstructionDataDecoder() {
+Decoder<FundCoreAssetPrizeInstructionData> getFundCoreAssetPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'fundCoreAssetPrize instruction decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'fundCoreAssetPrize instruction decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
-  (FundCoreAssetPrizeInstructionData, int) readTopLevel(
-    Uint8List bytes,
-    int offset,
-  ) {
-    getConstantDecoder(getU8Encoder().encode(30)).read(bytes, offset + 0);
+  (FundCoreAssetPrizeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
+    getConstantDecoder(
+      getU8Encoder().encode(30),
+    ).read(bytes, offset + 0);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
     }
 
-    return (FundCoreAssetPrizeInstructionData(), newOffset);
+    return (
+      FundCoreAssetPrizeInstructionData(
+
+      ),
+      newOffset,
+    );
   }
 
   return switch (structDecoder) {
@@ -79,12 +87,8 @@ getFundCoreAssetPrizeInstructionDataDecoder() {
   };
 }
 
-Codec<FundCoreAssetPrizeInstructionData, FundCoreAssetPrizeInstructionData>
-getFundCoreAssetPrizeInstructionDataCodec() {
-  return combineCodec(
-    getFundCoreAssetPrizeInstructionDataEncoder(),
-    getFundCoreAssetPrizeInstructionDataDecoder(),
-  );
+Codec<FundCoreAssetPrizeInstructionData, FundCoreAssetPrizeInstructionData> getFundCoreAssetPrizeInstructionDataCodec() {
+  return combineCodec(getFundCoreAssetPrizeInstructionDataEncoder(), getFundCoreAssetPrizeInstructionDataDecoder());
 }
 
 /// Creates a [FundCoreAssetPrize] instruction.
@@ -99,31 +103,30 @@ Instruction getFundCoreAssetPrizeInstruction({
   required Address systemProgram,
   required Address logWrapper,
   required Address pluginAccounts,
+
 }) {
-  final instructionData = FundCoreAssetPrizeInstructionData();
+  final instructionData = FundCoreAssetPrizeInstructionData(
+
+  );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.writableSigner),
-      AccountMeta(address: template, role: AccountRole.readonly),
-      AccountMeta(address: bundle, role: AccountRole.writable),
-      AccountMeta(address: asset, role: AccountRole.writable),
-      AccountMeta(address: collection, role: AccountRole.readonly),
-      AccountMeta(address: coreProgram, role: AccountRole.readonly),
-      AccountMeta(address: systemProgram, role: AccountRole.readonly),
-      AccountMeta(address: logWrapper, role: AccountRole.readonly),
-      AccountMeta(address: pluginAccounts, role: AccountRole.readonly),
+    AccountMeta(address: authority, role: AccountRole.writableSigner),
+    AccountMeta(address: template, role: AccountRole.readonly),
+    AccountMeta(address: bundle, role: AccountRole.writable),
+    AccountMeta(address: asset, role: AccountRole.writable),
+    AccountMeta(address: collection, role: AccountRole.readonly),
+    AccountMeta(address: coreProgram, role: AccountRole.readonly),
+    AccountMeta(address: systemProgram, role: AccountRole.readonly),
+    AccountMeta(address: logWrapper, role: AccountRole.readonly),
+    AccountMeta(address: pluginAccounts, role: AccountRole.readonly),
     ],
     data: getFundCoreAssetPrizeInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [FundCoreAssetPrize] instruction from raw instruction data.
-FundCoreAssetPrizeInstructionData parseFundCoreAssetPrizeInstruction(
-  Instruction instruction,
-) {
-  return getFundCoreAssetPrizeInstructionDataDecoder().decode(
-    instruction.data!,
-  );
+FundCoreAssetPrizeInstructionData parseFundCoreAssetPrizeInstruction(Instruction instruction) {
+  return getFundCoreAssetPrizeInstructionDataDecoder().decode(instruction.data!);
 }

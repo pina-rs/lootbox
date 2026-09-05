@@ -1,8 +1,12 @@
 [package]
 name = "lootbox-program-client"
-version = "0.0.0"
-edition = "2021"
-publish = false
+version.workspace = true
+edition.workspace = true
+
+description = "Generated interface and CPI helpers for the Pina Lootbox program"
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
 pina = { workspace = true }

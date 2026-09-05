@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,6 +12,7 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
+
 @immutable
 class FundCompressedNftPrizeInstructionData {
   const FundCompressedNftPrizeInstructionData({
@@ -19,7 +21,8 @@ class FundCompressedNftPrizeInstructionData {
     required this.creatorHash,
     required this.nonce,
     required this.index,
-  }) : discriminator = 33;
+  }) :
+      discriminator = 33;
 
   final int discriminator;
   final Uint8List root;
@@ -29,16 +32,12 @@ class FundCompressedNftPrizeInstructionData {
   final int index;
 }
 
-Encoder<FundCompressedNftPrizeInstructionData>
-getFundCompressedNftPrizeInstructionDataEncoder() {
+Encoder<FundCompressedNftPrizeInstructionData> getFundCompressedNftPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
     ('root', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     ('dataHash', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
-    (
-      'creatorHash',
-      fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false),
-    ),
+    ('creatorHash', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     ('nonce', getU64Encoder()),
     ('index', getU32Encoder()),
   ]);
@@ -56,8 +55,7 @@ getFundCompressedNftPrizeInstructionDataEncoder() {
   );
 }
 
-Decoder<FundCompressedNftPrizeInstructionData>
-getFundCompressedNftPrizeInstructionDataDecoder() {
+Decoder<FundCompressedNftPrizeInstructionData> getFundCompressedNftPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
     ('root', fixDecoderSize(getBytesDecoder(), 32)),
@@ -68,18 +66,20 @@ getFundCompressedNftPrizeInstructionDataDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'fundCompressedNftPrize instruction decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'fundCompressedNftPrize instruction decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
-  (FundCompressedNftPrizeInstructionData, int) readTopLevel(
-    Uint8List bytes,
-    int offset,
-  ) {
-    getConstantDecoder(getU8Encoder().encode(33)).read(bytes, offset + 0);
+  (FundCompressedNftPrizeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
+    getConstantDecoder(
+      getU8Encoder().encode(33),
+    ).read(bytes, offset + 0);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
@@ -87,11 +87,11 @@ getFundCompressedNftPrizeInstructionDataDecoder() {
 
     return (
       FundCompressedNftPrizeInstructionData(
-        root: map['root']! as Uint8List,
-        dataHash: map['dataHash']! as Uint8List,
-        creatorHash: map['creatorHash']! as Uint8List,
-        nonce: map['nonce']! as BigInt,
-        index: map['index']! as int,
+      root: map['root']! as Uint8List,
+      dataHash: map['dataHash']! as Uint8List,
+      creatorHash: map['creatorHash']! as Uint8List,
+      nonce: map['nonce']! as BigInt,
+      index: map['index']! as int,
       ),
       newOffset,
     );
@@ -117,15 +117,8 @@ getFundCompressedNftPrizeInstructionDataDecoder() {
   };
 }
 
-Codec<
-  FundCompressedNftPrizeInstructionData,
-  FundCompressedNftPrizeInstructionData
->
-getFundCompressedNftPrizeInstructionDataCodec() {
-  return combineCodec(
-    getFundCompressedNftPrizeInstructionDataEncoder(),
-    getFundCompressedNftPrizeInstructionDataDecoder(),
-  );
+Codec<FundCompressedNftPrizeInstructionData, FundCompressedNftPrizeInstructionData> getFundCompressedNftPrizeInstructionDataCodec() {
+  return combineCodec(getFundCompressedNftPrizeInstructionDataEncoder(), getFundCompressedNftPrizeInstructionDataDecoder());
 }
 
 /// Creates a [FundCompressedNftPrize] instruction.
@@ -148,38 +141,32 @@ Instruction getFundCompressedNftPrizeInstruction({
   required int index,
 }) {
   final instructionData = FundCompressedNftPrizeInstructionData(
-    root: root,
-    dataHash: dataHash,
-    creatorHash: creatorHash,
-    nonce: nonce,
-    index: index,
+      root: root,
+      dataHash: dataHash,
+      creatorHash: creatorHash,
+      nonce: nonce,
+      index: index,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.readonlySigner),
-      AccountMeta(address: template, role: AccountRole.readonly),
-      AccountMeta(address: bundle, role: AccountRole.writable),
-      AccountMeta(address: treeConfig, role: AccountRole.readonly),
-      AccountMeta(address: merkleTree, role: AccountRole.writable),
-      AccountMeta(address: bubblegumProgram, role: AccountRole.readonly),
-      AccountMeta(address: logWrapper, role: AccountRole.readonly),
-      AccountMeta(address: compressionProgram, role: AccountRole.readonly),
-      AccountMeta(address: systemProgram, role: AccountRole.readonly),
-      AccountMeta(address: proofAccounts, role: AccountRole.readonly),
+    AccountMeta(address: authority, role: AccountRole.readonlySigner),
+    AccountMeta(address: template, role: AccountRole.readonly),
+    AccountMeta(address: bundle, role: AccountRole.writable),
+    AccountMeta(address: treeConfig, role: AccountRole.readonly),
+    AccountMeta(address: merkleTree, role: AccountRole.writable),
+    AccountMeta(address: bubblegumProgram, role: AccountRole.readonly),
+    AccountMeta(address: logWrapper, role: AccountRole.readonly),
+    AccountMeta(address: compressionProgram, role: AccountRole.readonly),
+    AccountMeta(address: systemProgram, role: AccountRole.readonly),
+    AccountMeta(address: proofAccounts, role: AccountRole.readonly),
     ],
-    data: getFundCompressedNftPrizeInstructionDataEncoder().encode(
-      instructionData,
-    ),
+    data: getFundCompressedNftPrizeInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [FundCompressedNftPrize] instruction from raw instruction data.
-FundCompressedNftPrizeInstructionData parseFundCompressedNftPrizeInstruction(
-  Instruction instruction,
-) {
-  return getFundCompressedNftPrizeInstructionDataDecoder().decode(
-    instruction.data!,
-  );
+FundCompressedNftPrizeInstructionData parseFundCompressedNftPrizeInstruction(Instruction instruction) {
+  return getFundCompressedNftPrizeInstructionDataDecoder().decode(instruction.data!);
 }

@@ -85,7 +85,7 @@ The production workspace, test-oracle workspace, and pnpm workspace have no know
 - Switchboard `randomness_close` deactivates its per-randomness lookup table, but the address lookup table's cooldown prevents reclaiming that LUT rent in the same call. This is an [open upstream lifecycle limitation](https://github.com/switchboard-xyz/on-demand/issues/9), not locked lootbox reward collateral.
 - The timeout guarantees only the configured minimum reward; it cannot guarantee oracle availability, the originally sampled outcome, or transaction inclusion.
 - Full maximum-reward collateralization is safe but capital-inefficient.
-- V1 supports SOL and classic SPL Token boxes only; it does not support Token-2022 extensions, SPL/NFT reward inventory, or bundles.
+- Single-reward protocol supports SOL and classic SPL Token boxes only; it does not support Token-2022 extensions, SPL/NFT reward inventory, or bundles.
 - Upgrade-authority policy, deployment reproducibility, multisig control, monitoring, and incident response must be decided before public deployment.
 
 Recommended production gates: independent audit, devnet soak against the live Switchboard program, reproducible binary verification, multisig upgrade authority, capped launch supply/value, monitoring for pending receipts and vault coverage, and a published incident process.

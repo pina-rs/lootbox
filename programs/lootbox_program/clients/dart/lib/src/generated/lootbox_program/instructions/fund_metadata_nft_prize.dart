@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,15 +12,16 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
+
 @immutable
 class FundMetadataNftPrizeInstructionData {
-  const FundMetadataNftPrizeInstructionData() : discriminator = 27;
+  const FundMetadataNftPrizeInstructionData() :
+      discriminator = 27;
 
   final int discriminator;
 }
 
-Encoder<FundMetadataNftPrizeInstructionData>
-getFundMetadataNftPrizeInstructionDataEncoder() {
+Encoder<FundMetadataNftPrizeInstructionData> getFundMetadataNftPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
   ]);
@@ -32,31 +34,37 @@ getFundMetadataNftPrizeInstructionDataEncoder() {
   );
 }
 
-Decoder<FundMetadataNftPrizeInstructionData>
-getFundMetadataNftPrizeInstructionDataDecoder() {
+Decoder<FundMetadataNftPrizeInstructionData> getFundMetadataNftPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'fundMetadataNftPrize instruction decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'fundMetadataNftPrize instruction decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
-  (FundMetadataNftPrizeInstructionData, int) readTopLevel(
-    Uint8List bytes,
-    int offset,
-  ) {
-    getConstantDecoder(getU8Encoder().encode(27)).read(bytes, offset + 0);
+  (FundMetadataNftPrizeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
+    getConstantDecoder(
+      getU8Encoder().encode(27),
+    ).read(bytes, offset + 0);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
     }
 
-    return (FundMetadataNftPrizeInstructionData(), newOffset);
+    return (
+      FundMetadataNftPrizeInstructionData(
+
+      ),
+      newOffset,
+    );
   }
 
   return switch (structDecoder) {
@@ -79,12 +87,8 @@ getFundMetadataNftPrizeInstructionDataDecoder() {
   };
 }
 
-Codec<FundMetadataNftPrizeInstructionData, FundMetadataNftPrizeInstructionData>
-getFundMetadataNftPrizeInstructionDataCodec() {
-  return combineCodec(
-    getFundMetadataNftPrizeInstructionDataEncoder(),
-    getFundMetadataNftPrizeInstructionDataDecoder(),
-  );
+Codec<FundMetadataNftPrizeInstructionData, FundMetadataNftPrizeInstructionData> getFundMetadataNftPrizeInstructionDataCodec() {
+  return combineCodec(getFundMetadataNftPrizeInstructionDataEncoder(), getFundMetadataNftPrizeInstructionDataDecoder());
 }
 
 /// Creates a [FundMetadataNftPrize] instruction.
@@ -103,37 +107,34 @@ Instruction getFundMetadataNftPrizeInstruction({
   required Address tokenProgram,
   required Address associatedTokenProgram,
   required Address optionalAccounts,
+
 }) {
-  final instructionData = FundMetadataNftPrizeInstructionData();
+  final instructionData = FundMetadataNftPrizeInstructionData(
+
+  );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.writableSigner),
-      AccountMeta(address: template, role: AccountRole.readonly),
-      AccountMeta(address: bundle, role: AccountRole.writable),
-      AccountMeta(address: mint, role: AccountRole.readonly),
-      AccountMeta(address: source, role: AccountRole.writable),
-      AccountMeta(address: escrow, role: AccountRole.writable),
-      AccountMeta(address: metadata, role: AccountRole.writable),
-      AccountMeta(address: tokenMetadataProgram, role: AccountRole.readonly),
-      AccountMeta(address: systemProgram, role: AccountRole.readonly),
-      AccountMeta(address: instructionsSysvar, role: AccountRole.readonly),
-      AccountMeta(address: tokenProgram, role: AccountRole.readonly),
-      AccountMeta(address: associatedTokenProgram, role: AccountRole.readonly),
-      AccountMeta(address: optionalAccounts, role: AccountRole.readonly),
+    AccountMeta(address: authority, role: AccountRole.writableSigner),
+    AccountMeta(address: template, role: AccountRole.readonly),
+    AccountMeta(address: bundle, role: AccountRole.writable),
+    AccountMeta(address: mint, role: AccountRole.readonly),
+    AccountMeta(address: source, role: AccountRole.writable),
+    AccountMeta(address: escrow, role: AccountRole.writable),
+    AccountMeta(address: metadata, role: AccountRole.writable),
+    AccountMeta(address: tokenMetadataProgram, role: AccountRole.readonly),
+    AccountMeta(address: systemProgram, role: AccountRole.readonly),
+    AccountMeta(address: instructionsSysvar, role: AccountRole.readonly),
+    AccountMeta(address: tokenProgram, role: AccountRole.readonly),
+    AccountMeta(address: associatedTokenProgram, role: AccountRole.readonly),
+    AccountMeta(address: optionalAccounts, role: AccountRole.readonly),
     ],
-    data: getFundMetadataNftPrizeInstructionDataEncoder().encode(
-      instructionData,
-    ),
+    data: getFundMetadataNftPrizeInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [FundMetadataNftPrize] instruction from raw instruction data.
-FundMetadataNftPrizeInstructionData parseFundMetadataNftPrizeInstruction(
-  Instruction instruction,
-) {
-  return getFundMetadataNftPrizeInstructionDataDecoder().decode(
-    instruction.data!,
-  );
+FundMetadataNftPrizeInstructionData parseFundMetadataNftPrizeInstruction(Instruction instruction) {
+  return getFundMetadataNftPrizeInstructionDataDecoder().decode(instruction.data!);
 }

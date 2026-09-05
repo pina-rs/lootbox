@@ -31,7 +31,19 @@ pub struct TemplateState {
 	pub next_request: u64,
 	pub next_allocation: u64,
 	/// Increments after every activated append; snapshotted by each opening.
-	pub version: u64,
+	pub revision: u64,
+	/// Incremental commitment to every activated bundle in append order.
+	pub manifest_accumulator: [u8; 32],
+	/// Final treasury commitment. Zero until the treasury is locked.
+	pub manifest_hash: [u8; 32],
+	/// Reward paid from the creator-funded service vault to a successful crank.
+	pub settlement_bounty_lamports: u64,
+	/// Rent prepaid for each optional immutable result receipt at market lock.
+	pub result_receipt_rent_lamports: u64,
+	/// Receipt allocations still covered by the isolated service vault.
+	pub remaining_result_receipts: u64,
+	/// Settlement or forfeiture cranks still covered by the service vault.
+	pub remaining_settlement_bounties: u64,
 	/// Undrawn inventory per append-only bundle, encoded as little-endian u64s.
 	pub remaining: [u8; 2048],
 	/// Null-padded UTF-8 display name; never used for authorization.
@@ -42,7 +54,11 @@ pub struct TemplateState {
 	/// 0 draft, 1 live, 2 retired. `locked_at` independently records the
 	/// irreversible market lock so retirement never erases that fact.
 	pub status: u8,
+	/// Whether allocation creates a permanent result receipt at creator expense.
+	pub result_receipts_enabled: bool,
 	pub bump: u8,
+	/// Canonical service vault bump, fixed when the treasury is locked.
+	pub service_vault_bump: u8,
 }
 
 pub const TEMPLATE_STATE_DISCRIMINATOR: u8 = 4u8;

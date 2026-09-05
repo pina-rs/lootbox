@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,13 +12,15 @@ import 'package:solana_kit_codecs_data_structures/solana_kit_codecs_data_structu
 import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 
+
 @immutable
 class VaultState {
   const VaultState({
     required this.lootbox,
     required this.rentReserve,
     required this.bump,
-  }) : discriminator = 2;
+  }) :
+      discriminator = 2;
 
   final int discriminator;
   final Address lootbox;
@@ -38,9 +41,9 @@ class VaultState {
   int get hashCode => Object.hash(discriminator, lootbox, rentReserve, bump);
 
   @override
-  String toString() =>
-      'VaultState(discriminator: $discriminator, lootbox: $lootbox, rentReserve: $rentReserve, bump: $bump)';
+  String toString() => 'VaultState(discriminator: $discriminator, lootbox: $lootbox, rentReserve: $rentReserve, bump: $bump)';
 }
+
 
 Encoder<VaultState> getVaultStateEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
@@ -70,38 +73,44 @@ Decoder<VaultState> getVaultStateDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'vaultState account decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'vaultState account decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
   (VaultState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(2)).read(bytes, offset + 0);
+    getConstantDecoder(
+      getU8Encoder().encode(2),
+    ).read(bytes, offset + 0);
     final (map, newOffset) = structDecoder.read(bytes, offset);
 
     return (
       VaultState(
-        lootbox: map['lootbox']! as Address,
-        rentReserve: map['rentReserve']! as BigInt,
-        bump: map['bump']! as int,
+      lootbox: map['lootbox']! as Address,
+      rentReserve: map['rentReserve']! as BigInt,
+      bump: map['bump']! as int,
       ),
       newOffset,
     );
   }
 
   return switch (structDecoder) {
-    FixedSizeDecoder<Map<String, Object?>>() => FixedSizeDecoder<VaultState>(
-      fixedSize: structDecoder.fixedSize,
-      read: (bytes, offset) {
-        final bytesLength = bytes.length - offset;
-        if (bytesLength < structDecoder.fixedSize) {
-          throwInvalidByteLength(structDecoder.fixedSize, bytesLength);
-        }
-        return readTopLevel(bytes, offset);
-      },
-    ),
+    FixedSizeDecoder<Map<String, Object?>>() =>
+      FixedSizeDecoder<VaultState>(
+        fixedSize: structDecoder.fixedSize,
+        read: (bytes, offset) {
+          final bytesLength = bytes.length - offset;
+          if (bytesLength < structDecoder.fixedSize) {
+            throwInvalidByteLength(structDecoder.fixedSize, bytesLength);
+          }
+          return readTopLevel(bytes, offset);
+        },
+      ),
     VariableSizeDecoder<Map<String, Object?>>() =>
       VariableSizeDecoder<VaultState>(
         read: readTopLevel,

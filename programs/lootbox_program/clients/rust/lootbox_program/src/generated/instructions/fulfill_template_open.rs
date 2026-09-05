@@ -17,6 +17,7 @@ pub const FULFILL_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 17u8;
 pub struct FulfillTemplateOpen {
 	pub payer: solana_pubkey::Pubkey,
 	pub template: solana_pubkey::Pubkey,
+	pub service_vault: solana_pubkey::Pubkey,
 	pub opening: solana_pubkey::Pubkey,
 	pub randomness: solana_pubkey::Pubkey,
 	pub oracle_queue: solana_pubkey::Pubkey,
@@ -32,10 +33,11 @@ pub struct FulfillTemplateOpen {
 }
 
 impl FulfillTemplateOpen {
-	pub fn new(payer: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, oracle_stats: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey) -> Self {
+	pub fn new(payer: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, service_vault: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, oracle_stats: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey) -> Self {
 		Self {
 			payer,
 			template,
+			service_vault,
 			opening,
 			randomness,
 			oracle_queue,
@@ -61,9 +63,10 @@ impl FulfillTemplateOpen {
 		data: FulfillTemplateOpenInstructionData,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(14 + remaining_accounts.len());
+		let mut accounts = Vec::with_capacity(15 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.payer, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.service_vault, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.randomness, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_queue, false));

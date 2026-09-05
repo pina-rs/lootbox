@@ -7,6 +7,9 @@ use super::*;
 #[instruction(discriminator = LootboxInstruction::RequestTemplateOpen)]
 pub struct RequestTemplateOpenInstruction {
 	pub recent_slot: u64,
+	pub beneficiary: Address,
+	pub consumer_program: Address,
+	pub consumer_context: [u8; 32],
 	pub bump: u8,
 }
 
@@ -22,10 +25,18 @@ pub struct ForfeitTemplateOpenInstruction {}
 
 #[derive(Accounts, Debug)]
 pub struct RequestTemplateOpenAccounts<'a> {
-	pub owner: &'a mut AccountView,
+	/// Owns the box token account and authorizes burning exactly one box.
+	pub box_authority: &'a AccountView,
+	/// Pays for the opening and oracle initialization; may be a sponsor.
+	///
+	/// The immutable authority intentionally precedes the mutable payer so the
+	/// same signer may fill both roles after Solana promotes duplicate metas to
+	/// writable. Parsing the mutable alias last preserves the cursor's safety
+	/// checks while supporting the common self-paid opening flow.
+	pub payer: &'a mut AccountView,
 	pub template: &'a mut AccountView,
 	pub box_mint: &'a mut AccountView,
-	pub owner_box_account: &'a mut AccountView,
+	pub box_account: &'a mut AccountView,
 	pub opening: &'a mut AccountView,
 	pub randomness: &'a mut AccountView,
 	pub reward_escrow: &'a mut AccountView,
@@ -47,7 +58,8 @@ pub struct RequestTemplateOpenAccounts<'a> {
 #[derive(Accounts, Debug)]
 pub struct FulfillTemplateOpenAccounts<'a> {
 	pub payer: &'a mut AccountView,
-	pub template: &'a AccountView,
+	pub template: &'a mut AccountView,
+	pub service_vault: &'a mut AccountView,
 	pub opening: &'a mut AccountView,
 	pub randomness: &'a mut AccountView,
 	pub oracle_queue: &'a AccountView,
@@ -64,12 +76,14 @@ pub struct FulfillTemplateOpenAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct ForfeitTemplateOpenAccounts<'a> {
-	/// Any signer may advance an expired FIFO head; the stored recipient and
+	/// Any signer may advance an expired FIFO head; the stored beneficiary and
 	/// their exclusive claim rights are never changed.
-	pub caller: &'a AccountView,
+	pub caller: &'a mut AccountView,
 	pub template: &'a mut AccountView,
+	pub service_vault: &'a mut AccountView,
 	pub opening: &'a mut AccountView,
 	pub randomness: &'a AccountView,
+	pub system_program: &'a AccountView,
 }
 
 fn assert_openable(state: &TemplateStateZc) -> ProgramResult {
@@ -84,9 +98,16 @@ fn assert_openable(state: &TemplateStateZc) -> ProgramResult {
 	Ok(())
 }
 
-fn assert_reveal_payer(payer: &Address, recipient: &Address) -> ProgramResult {
-	if payer != recipient {
-		return Err(lootbox_error(LootboxError::InvalidRecipient));
+fn validate_request_binding(
+	beneficiary: &Address,
+	consumer_program: &Address,
+	consumer_context: &[u8; 32],
+) -> ProgramResult {
+	if *beneficiary == Address::default()
+		|| (*consumer_program == Address::default()
+			&& consumer_context.iter().any(|byte| *byte != 0))
+	{
+		return Err(ProgramError::InvalidArgument);
 	}
 
 	Ok(())
@@ -119,19 +140,75 @@ fn record_forfeit(
 	Ok(())
 }
 
+fn pay_settlement_bounty(
+	template: &Address,
+	state: &mut TemplateStateZc,
+	service_vault: &mut AccountView,
+	recipient: &mut AccountView,
+	system_program: &AccountView,
+) -> ProgramResult {
+	assert_service_vault(service_vault, template, state)?;
+	let bounty = state.settlement_bounty_lamports.get();
+
+	if bounty == 0 {
+		return Ok(());
+	}
+
+	service_vault.assert_writable()?;
+	recipient.assert_writable()?;
+	let service_vault_balance = service_vault.lamports();
+	let remaining = state
+		.remaining_settlement_bounties
+		.get()
+		.checked_sub(1)
+		.ok_or_else(|| lootbox_error(LootboxError::ServiceBudgetExhausted))?;
+	let required_before = required_service_balance(state)?;
+
+	if service_vault_balance < required_before {
+		return Err(lootbox_error(LootboxError::ServiceBudgetExhausted));
+	}
+
+	state.remaining_settlement_bounties.set(remaining);
+	let required_after = required_service_balance(state)?;
+	let balance_after = service_vault
+		.lamports()
+		.checked_sub(bounty)
+		.ok_or_else(|| lootbox_error(LootboxError::ServiceBudgetExhausted))?;
+
+	if balance_after < required_after {
+		return Err(lootbox_error(LootboxError::ServiceBudgetExhausted));
+	}
+
+	system_program.assert_address(&system::ID)?;
+	let service_vault_bump = [state.service_vault_bump];
+	let service_vault_signer = PdaSigner::from_slices([
+		SEED_SERVICE_VAULT,
+		template.as_ref(),
+		service_vault_bump.as_slice(),
+	]);
+	system::instructions::Transfer {
+		from: service_vault,
+		to: recipient,
+		lamports: bounty,
+	}
+	.invoke_signed(&[service_vault_signer.as_signer()])
+}
+
 impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = RequestTemplateOpenInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
-		let owner_address = *self.owner.address();
+		let payer_address = *self.payer.address();
+		let box_authority_address = *self.box_authority.address();
 		let randomness_address = *self.randomness.address();
 		let opening_address = *self.opening.address();
-		self.owner.assert_signer()?.assert_writable()?;
+		self.payer.assert_signer()?.assert_writable()?;
+		self.box_authority.assert_signer()?;
 		self.system_program.assert_address(&system::ID)?;
 		self.token_program.assert_address(&token::ID)?;
 		self.box_token_program.assert_address(&token_2022::ID)?;
 		self.box_mint.assert_writable()?;
-		self.owner_box_account.assert_writable()?;
+		self.box_account.assert_writable()?;
 		self.opening.assert_empty()?.assert_writable()?;
 		self.randomness
 			.assert_signer()?
@@ -153,6 +230,12 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		self.oracle_queue.assert_address(&state.oracle_queue)?;
 		self.oracle_program.assert_program(&state.oracle_program)?;
 
+		validate_request_binding(
+			&args.beneficiary,
+			&args.consumer_program,
+			&args.consumer_context,
+		)?;
+
 		// Retirement closes administration. A market lock or a missed-deadline
 		// recovery retirement preserves every issued holder's right to open.
 		assert_openable(&state)?;
@@ -167,8 +250,8 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 			&state.box_mint,
 			state.locked_at.get() != 0,
 		)?;
-		let box_account = self.owner_box_account.as_associated_token_account_checked(
-			&owner_address,
+		let box_account = self.box_account.as_associated_token_account_checked(
+			&box_authority_address,
 			self.box_mint.address(),
 			&token_2022::ID,
 		)?;
@@ -207,7 +290,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 			return Err(lootbox_error(LootboxError::Insolvent));
 		}
 		let sequence = state.next_request.get();
-		let treasury_version = state.version.get();
+		let treasury_revision = state.revision.get();
 		let eligible_bundle_count = state.bundle_count.get();
 		state.next_request.set(
 			sequence
@@ -219,7 +302,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 
 		CreateProgramAccountWithBump {
 			account: self.opening,
-			payer: self.owner,
+			payer: self.payer,
 			owner: &ID,
 			seeds: &opening_seeds.as_slices(),
 			bump: args.bump,
@@ -228,11 +311,15 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		opening.template = template_address;
-		opening.recipient = owner_address;
+		opening.box_authority = box_authority_address;
+		opening.beneficiary = args.beneficiary;
+		opening.rent_refund = payer_address;
+		opening.consumer_program = args.consumer_program;
+		opening.consumer_context = args.consumer_context;
 		opening.randomness = randomness_address;
 		opening.status = OPENING_PENDING;
 		opening.sequence.set(sequence);
-		opening.treasury_version.set(treasury_version);
+		opening.treasury_revision.set(treasury_revision);
 		opening.eligible_bundle_count.set(eligible_bundle_count);
 		opening.bump = args.bump;
 		drop(opening);
@@ -246,7 +333,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 			escrow: self.reward_escrow,
 			authority: self.opening,
 			queue: self.oracle_queue,
-			payer: self.owner,
+			payer: self.payer,
 			system_program: self.system_program,
 			token_program: self.token_program,
 			associated_token_program: self.associated_token_program,
@@ -289,7 +376,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 			return Err(lootbox_error(LootboxError::InvalidRandomness));
 		}
 
-		token_2022::instructions::Burn::new(self.owner_box_account, self.box_mint, self.owner, 1)
+		token_2022::instructions::Burn::new(self.box_account, self.box_mint, self.box_authority, 1)
 			.invoke()?;
 
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
@@ -306,6 +393,7 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 		let opening_address = *self.opening.address();
 		let randomness_address = *self.randomness.address();
 		self.payer.assert_signer()?.assert_writable()?;
+		self.service_vault.assert_writable()?;
 		self.opening.assert_writable()?;
 		self.randomness.assert_writable()?;
 		self.oracle_stats.assert_writable()?;
@@ -317,6 +405,7 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 		self.wrapped_sol_mint.assert_address(&WRAPPED_SOL_MINT_ID)?;
 		let state = self.template.as_account::<TemplateState>(&ID)?;
 		assert_template(&template_address, &state)?;
+		assert_service_vault(self.service_vault, &template_address, &state)?;
 		self.oracle_queue.assert_address(&state.oracle_queue)?;
 		self.oracle_program.assert_program(&state.oracle_program)?;
 		let opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
@@ -325,7 +414,6 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 			return Err(lootbox_error(LootboxError::OpeningAlreadyFinalized));
 		}
 
-		assert_reveal_payer(self.payer.address(), &opening.recipient)?;
 		if opening.template != template_address || opening.randomness != randomness_address {
 			return Err(lootbox_error(LootboxError::InvalidRecipient));
 		}
@@ -376,7 +464,7 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 		}
 		.invoke_signed(&signers)?;
 
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 
@@ -392,6 +480,14 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 
 		opening.entropy = randomness.value;
 		opening.status = 1;
+		drop(opening);
+		pay_settlement_bounty(
+			&template_address,
+			&mut state,
+			self.service_vault,
+			self.payer,
+			self.system_program,
+		)?;
 
 		Ok(())
 	}
@@ -402,9 +498,12 @@ impl<'a> ProcessAccountInfos<'a> for ForfeitTemplateOpenAccounts<'a> {
 		let _ = ForfeitTemplateOpenInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
 		let opening_address = *self.opening.address();
-		self.caller.assert_signer()?;
+		self.caller.assert_signer()?.assert_writable()?;
+		self.service_vault.assert_writable()?;
+		self.system_program.assert_address(&system::ID)?;
 		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
 		assert_template(&template_address, &state)?;
+		assert_service_vault(self.service_vault, &template_address, &state)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&opening_address, &opening, &template_address)?;
 		if opening.randomness != *self.randomness.address() {
@@ -426,7 +525,16 @@ impl<'a> ProcessAccountInfos<'a> for ForfeitTemplateOpenAccounts<'a> {
 		if sysvars::clock::Clock::get()?.slot < refund_slot {
 			return Err(lootbox_error(LootboxError::OpeningNotExpired));
 		}
-		record_forfeit(&mut state, &mut opening)
+		record_forfeit(&mut state, &mut opening)?;
+		drop(opening);
+
+		pay_settlement_bounty(
+			&template_address,
+			&mut state,
+			self.service_vault,
+			self.caller,
+			self.system_program,
+		)
 	}
 }
 
@@ -452,10 +560,17 @@ mod tests {
 	}
 
 	#[test]
-	fn reveal_payer_is_the_bound_recipient() {
-		let recipient = Address::default();
-		assert_eq!(assert_reveal_payer(&recipient, &recipient), Ok(()));
-		assert!(assert_reveal_payer(&ID, &recipient).is_err());
+	fn consumer_context_requires_a_consumer_program() {
+		let beneficiary = Address::new_from_array([1; 32]);
+		assert_eq!(
+			validate_request_binding(&beneficiary, &Address::default(), &[0; 32]),
+			Ok(())
+		);
+		assert!(validate_request_binding(&beneficiary, &Address::default(), &[1; 32]).is_err());
+		assert_eq!(
+			validate_request_binding(&beneficiary, &ID, &[1; 32]),
+			Ok(())
+		);
 	}
 
 	#[test]

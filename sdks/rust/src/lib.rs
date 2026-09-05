@@ -7,9 +7,9 @@ pub use lootbox_program_client as generated;
 mod templates;
 pub use templates::*;
 
-/// Maximum number of outcomes supported by the v1 on-chain account.
+/// Maximum number of outcomes supported by the single-reward protocol on-chain account.
 pub const MAX_OUTCOMES: usize = 8;
-/// Maximum sum of v1 outcome weights.
+/// Maximum sum of single-reward protocol outcome weights.
 pub const MAX_TOTAL_WEIGHT: u64 = u32::MAX as u64;
 /// Maximum append-only bundle records supported by a treasury template.
 pub const MAX_TEMPLATE_BUNDLES: usize = 256;

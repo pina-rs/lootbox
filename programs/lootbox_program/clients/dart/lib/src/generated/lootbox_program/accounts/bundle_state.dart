@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -10,6 +11,7 @@ import 'package:solana_kit_codecs_core/solana_kit_codecs_core.dart';
 import 'package:solana_kit_codecs_data_structures/solana_kit_codecs_data_structures.dart';
 import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
+
 
 @immutable
 class BundleState {
@@ -22,14 +24,15 @@ class BundleState {
     required this.claimed,
     required this.kinds,
     required this.decimals,
-    required this.activatedVersion,
+    required this.activatedRevision,
     required this.index,
     required this.assetCount,
     required this.fundedAssets,
     required this.reclaimedMask,
     required this.status,
     required this.bump,
-  }) : discriminator = 5;
+  }) :
+      discriminator = 5;
 
   final int discriminator;
   final Address template;
@@ -40,7 +43,7 @@ class BundleState {
   final Uint8List claimed;
   final Uint8List kinds;
   final Uint8List decimals;
-  final BigInt activatedVersion;
+  final BigInt activatedRevision;
   final int index;
   final int assetCount;
   final int fundedAssets;
@@ -62,7 +65,7 @@ class BundleState {
           claimed == other.claimed &&
           kinds == other.kinds &&
           decimals == other.decimals &&
-          activatedVersion == other.activatedVersion &&
+          activatedRevision == other.activatedRevision &&
           index == other.index &&
           assetCount == other.assetCount &&
           fundedAssets == other.fundedAssets &&
@@ -71,29 +74,12 @@ class BundleState {
           bump == other.bump;
 
   @override
-  int get hashCode => Object.hash(
-    discriminator,
-    template,
-    quantity,
-    rentReserve,
-    mints,
-    amounts,
-    claimed,
-    kinds,
-    decimals,
-    activatedVersion,
-    index,
-    assetCount,
-    fundedAssets,
-    reclaimedMask,
-    status,
-    bump,
-  );
+  int get hashCode => Object.hash(discriminator, template, quantity, rentReserve, mints, amounts, claimed, kinds, decimals, activatedRevision, index, assetCount, fundedAssets, reclaimedMask, status, bump);
 
   @override
-  String toString() =>
-      'BundleState(discriminator: $discriminator, template: $template, quantity: $quantity, rentReserve: $rentReserve, mints: $mints, amounts: $amounts, claimed: $claimed, kinds: $kinds, decimals: $decimals, activatedVersion: $activatedVersion, index: $index, assetCount: $assetCount, fundedAssets: $fundedAssets, reclaimedMask: $reclaimedMask, status: $status, bump: $bump)';
+  String toString() => 'BundleState(discriminator: $discriminator, template: $template, quantity: $quantity, rentReserve: $rentReserve, mints: $mints, amounts: $amounts, claimed: $claimed, kinds: $kinds, decimals: $decimals, activatedRevision: $activatedRevision, index: $index, assetCount: $assetCount, fundedAssets: $fundedAssets, reclaimedMask: $reclaimedMask, status: $status, bump: $bump)';
 }
+
 
 Encoder<BundleState> getBundleStateEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
@@ -106,7 +92,7 @@ Encoder<BundleState> getBundleStateEncoder() {
     ('claimed', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     ('kinds', fixEncoderSize(getBytesEncoder(), 4, allowTruncation: false)),
     ('decimals', fixEncoderSize(getBytesEncoder(), 4, allowTruncation: false)),
-    ('activatedVersion', getU64Encoder()),
+    ('activatedRevision', getU64Encoder()),
     ('index', getU32Encoder()),
     ('assetCount', getU8Encoder()),
     ('fundedAssets', getU8Encoder()),
@@ -127,7 +113,7 @@ Encoder<BundleState> getBundleStateEncoder() {
       'claimed': value.claimed,
       'kinds': value.kinds,
       'decimals': value.decimals,
-      'activatedVersion': value.activatedVersion,
+      'activatedRevision': value.activatedRevision,
       'index': value.index,
       'assetCount': value.assetCount,
       'fundedAssets': value.fundedAssets,
@@ -149,7 +135,7 @@ Decoder<BundleState> getBundleStateDecoder() {
     ('claimed', fixDecoderSize(getBytesDecoder(), 32)),
     ('kinds', fixDecoderSize(getBytesDecoder(), 4)),
     ('decimals', fixDecoderSize(getBytesDecoder(), 4)),
-    ('activatedVersion', getU64Decoder()),
+    ('activatedRevision', getU64Decoder()),
     ('index', getU32Decoder()),
     ('assetCount', getU8Decoder()),
     ('fundedAssets', getU8Decoder()),
@@ -159,50 +145,56 @@ Decoder<BundleState> getBundleStateDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'bundleState account decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'bundleState account decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
   (BundleState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(5)).read(bytes, offset + 0);
+    getConstantDecoder(
+      getU8Encoder().encode(5),
+    ).read(bytes, offset + 0);
     final (map, newOffset) = structDecoder.read(bytes, offset);
 
     return (
       BundleState(
-        template: map['template']! as Address,
-        quantity: map['quantity']! as BigInt,
-        rentReserve: map['rentReserve']! as BigInt,
-        mints: map['mints']! as Uint8List,
-        amounts: map['amounts']! as Uint8List,
-        claimed: map['claimed']! as Uint8List,
-        kinds: map['kinds']! as Uint8List,
-        decimals: map['decimals']! as Uint8List,
-        activatedVersion: map['activatedVersion']! as BigInt,
-        index: map['index']! as int,
-        assetCount: map['assetCount']! as int,
-        fundedAssets: map['fundedAssets']! as int,
-        reclaimedMask: map['reclaimedMask']! as int,
-        status: map['status']! as int,
-        bump: map['bump']! as int,
+      template: map['template']! as Address,
+      quantity: map['quantity']! as BigInt,
+      rentReserve: map['rentReserve']! as BigInt,
+      mints: map['mints']! as Uint8List,
+      amounts: map['amounts']! as Uint8List,
+      claimed: map['claimed']! as Uint8List,
+      kinds: map['kinds']! as Uint8List,
+      decimals: map['decimals']! as Uint8List,
+      activatedRevision: map['activatedRevision']! as BigInt,
+      index: map['index']! as int,
+      assetCount: map['assetCount']! as int,
+      fundedAssets: map['fundedAssets']! as int,
+      reclaimedMask: map['reclaimedMask']! as int,
+      status: map['status']! as int,
+      bump: map['bump']! as int,
       ),
       newOffset,
     );
   }
 
   return switch (structDecoder) {
-    FixedSizeDecoder<Map<String, Object?>>() => FixedSizeDecoder<BundleState>(
-      fixedSize: structDecoder.fixedSize,
-      read: (bytes, offset) {
-        final bytesLength = bytes.length - offset;
-        if (bytesLength < structDecoder.fixedSize) {
-          throwInvalidByteLength(structDecoder.fixedSize, bytesLength);
-        }
-        return readTopLevel(bytes, offset);
-      },
-    ),
+    FixedSizeDecoder<Map<String, Object?>>() =>
+      FixedSizeDecoder<BundleState>(
+        fixedSize: structDecoder.fixedSize,
+        read: (bytes, offset) {
+          final bytesLength = bytes.length - offset;
+          if (bytesLength < structDecoder.fixedSize) {
+            throwInvalidByteLength(structDecoder.fixedSize, bytesLength);
+          }
+          return readTopLevel(bytes, offset);
+        },
+      ),
     VariableSizeDecoder<Map<String, Object?>>() =>
       VariableSizeDecoder<BundleState>(
         read: readTopLevel,

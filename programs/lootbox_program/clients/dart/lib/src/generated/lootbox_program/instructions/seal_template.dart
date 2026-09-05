@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,9 +12,11 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
+
 @immutable
 class SealTemplateInstructionData {
-  const SealTemplateInstructionData() : discriminator = 14;
+  const SealTemplateInstructionData() :
+      discriminator = 14;
 
   final int discriminator;
 }
@@ -37,21 +40,31 @@ Decoder<SealTemplateInstructionData> getSealTemplateInstructionDataDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'sealTemplate instruction decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'sealTemplate instruction decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
   (SealTemplateInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(14)).read(bytes, offset + 0);
+    getConstantDecoder(
+      getU8Encoder().encode(14),
+    ).read(bytes, offset + 0);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
     }
 
-    return (SealTemplateInstructionData(), newOffset);
+    return (
+      SealTemplateInstructionData(
+
+      ),
+      newOffset,
+    );
   }
 
   return switch (structDecoder) {
@@ -74,12 +87,8 @@ Decoder<SealTemplateInstructionData> getSealTemplateInstructionDataDecoder() {
   };
 }
 
-Codec<SealTemplateInstructionData, SealTemplateInstructionData>
-getSealTemplateInstructionDataCodec() {
-  return combineCodec(
-    getSealTemplateInstructionDataEncoder(),
-    getSealTemplateInstructionDataDecoder(),
-  );
+Codec<SealTemplateInstructionData, SealTemplateInstructionData> getSealTemplateInstructionDataCodec() {
+  return combineCodec(getSealTemplateInstructionDataEncoder(), getSealTemplateInstructionDataDecoder());
 }
 
 /// Creates a [SealTemplate] instruction.
@@ -87,22 +96,23 @@ Instruction getSealTemplateInstruction({
   required Address programAddress,
   required Address authority,
   required Address template,
+
 }) {
-  final instructionData = SealTemplateInstructionData();
+  final instructionData = SealTemplateInstructionData(
+
+  );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.readonly),
-      AccountMeta(address: template, role: AccountRole.writable),
+    AccountMeta(address: authority, role: AccountRole.readonly),
+    AccountMeta(address: template, role: AccountRole.writable),
     ],
     data: getSealTemplateInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [SealTemplate] instruction from raw instruction data.
-SealTemplateInstructionData parseSealTemplateInstruction(
-  Instruction instruction,
-) {
+SealTemplateInstructionData parseSealTemplateInstruction(Instruction instruction) {
   return getSealTemplateInstructionDataDecoder().decode(instruction.data!);
 }

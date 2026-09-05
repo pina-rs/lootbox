@@ -18,8 +18,10 @@ import {
 	getU32Encoder,
 	getU64Encoder,
 	type Instruction,
+	isTransactionMessageWithinSizeLimit,
 	pipe,
 	type ReadonlyUint8Array,
+	setTransactionMessageFeePayer,
 	setTransactionMessageFeePayerSigner,
 	setTransactionMessageLifetimeUsingBlockhash,
 	signTransactionMessageWithSigners,
@@ -33,6 +35,7 @@ import {
 	type PrizeAsset,
 	type PrizeBundleInput,
 	remainingTemplateBundleCapacity,
+	requiredServiceBudget,
 	templateInventory,
 	type TemplatePlan,
 } from "./templates.js";
@@ -94,6 +97,84 @@ export type OracleProof = Readonly<
 	}
 >;
 export type ClientProgress = (message: string, signature?: string) => void;
+export type OpenRequest = Readonly<{
+	beneficiary?: Address;
+	consumerProgram?: Address;
+	consumerContext?: ReadonlyUint8Array;
+}>;
+export type ServiceFundingQuote = Readonly<{
+	resultReceiptRent: bigint;
+	serviceVaultRent: bigint;
+	reservedForResultsAndBounties: bigint;
+	totalCreatorDebit: bigint;
+}>;
+
+const MAX_TRANSACTION_ACCOUNTS = 64;
+
+function transactionAccountCount(
+	payer: Address,
+	instructions: readonly Instruction[],
+): number {
+	const addresses = new Set<Address>([payer]);
+	for (const instruction of instructions) {
+		addresses.add(instruction.programAddress);
+		for (const account of instruction.accounts ?? []) {
+			addresses.add(account.address);
+		}
+	}
+	return addresses.size;
+}
+
+function instructionBatchFits(
+	payer: Address,
+	instructions: readonly Instruction[],
+): boolean {
+	if (transactionAccountCount(payer, instructions) > MAX_TRANSACTION_ACCOUNTS) {
+		return false;
+	}
+	try {
+		const message = pipe(
+			createTransactionMessage({ version: 0 }),
+			(current) => setTransactionMessageFeePayer(payer, current),
+			(current) => appendTransactionMessageInstructions(instructions, current),
+		);
+		return isTransactionMessageWithinSizeLimit(message);
+	} catch {
+		return false;
+	}
+}
+
+/** Pack atomic per-asset instruction groups into independently valid versioned
+ * transactions. A group is never split because ATA creation and its matching
+ * claim must succeed or fail together.
+ */
+export function partitionPrizeDeliveryInstructions(
+	payer: Address,
+	assetInstructionGroups: readonly (readonly Instruction[])[],
+): readonly (readonly Instruction[])[] {
+	const batches: Instruction[][] = [];
+	let current: Instruction[] = [];
+	for (const group of assetInstructionGroups) {
+		if (group.length === 0) continue;
+		const candidate = [...current, ...group];
+		if (instructionBatchFits(payer, candidate)) {
+			current = candidate;
+			continue;
+		}
+		if (current.length > 0) {
+			batches.push(current);
+			current = [];
+		}
+		if (!instructionBatchFits(payer, group)) {
+			throw new RangeError(
+				"one prize delivery exceeds Solana transaction limits; shorten its proof or supply an address lookup table",
+			);
+		}
+		current = [...group];
+	}
+	if (current.length > 0) batches.push(current);
+	return batches;
+}
 
 export function readU64(bytes: ReadonlyUint8Array, index: number): bigint {
 	return new DataView(Uint8Array.from(bytes).buffer).getBigUint64(
@@ -206,7 +287,7 @@ export async function selectTemplateBundle(
 	let candidate = 0n;
 	for (let counter = 0; counter < 8; counter++) {
 		const bytes = Uint8Array.from([
-			...utf8.encode("pina-lootbox-outcome-v1"),
+			...utf8.encode("pina-lootbox-outcome"),
 			...opening.data.entropy,
 			...addressBytes.encode(template.address),
 			...addressBytes.encode(opening.address),
@@ -299,6 +380,18 @@ export class LootboxClient {
 				addressBytes.encode(template),
 				getU32Encoder().encode(index),
 			],
+		});
+	}
+	async serviceVaultAddress(template: Address) {
+		return getProgramDerivedAddress({
+			programAddress: generated.LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
+			seeds: [utf8.encode("service-vault"), addressBytes.encode(template)],
+		});
+	}
+	async resultReceiptAddress(opening: Address) {
+		return getProgramDerivedAddress({
+			programAddress: generated.LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
+			seeds: [utf8.encode("result-receipt"), addressBytes.encode(opening)],
 		});
 	}
 	async ata(
@@ -619,6 +712,8 @@ export class LootboxClient {
 				oracleQueue: queue,
 				name: encodeTemplateText(plan.name, 32),
 				uri: encodeTemplateText(plan.uri, 200),
+				settlementBountyLamports: plan.settlementBountyLamports,
+				resultReceiptsEnabled: plan.resultReceiptsEnabled,
 				bump,
 			})], "Create treasury template");
 		}
@@ -628,6 +723,9 @@ export class LootboxClient {
 			state.data.opensAt !== plan.opensAt ||
 			state.data.oracleProgram !== oracleProgram ||
 			state.data.oracleQueue !== queue ||
+			state.data.settlementBountyLamports !==
+				plan.settlementBountyLamports ||
+			state.data.resultReceiptsEnabled !== plan.resultReceiptsEnabled ||
 			state.data.bundleCount > plan.bundles.length ||
 			Array.from(state.data.name).join() !==
 				Array.from(encodeTemplateText(plan.name, 32)).join() ||
@@ -723,10 +821,17 @@ export class LootboxClient {
 		}
 		if (current.data.lockedAt !== 0n) return current;
 
-		const [supply, slot] = await Promise.all([
+		const [supply, slot, serviceFunding, creatorBalance] = await Promise.all([
 			this.mintSupply(current.data.boxMint),
 			this.rpc.getSlot({ commitment }).send(),
+			this.serviceFundingQuote(current),
+			this.rpc.getBalance(this.payer.address, { commitment }).send(),
 		]);
+		if (creatorBalance.value < serviceFunding.totalCreatorDebit) {
+			throw new Error(
+				`Treasury creator needs at least ${serviceFunding.totalCreatorDebit} lamports for configured result and settlement services`,
+			);
+		}
 		const chainTime = await this.rpc.getBlockTime(slot).send() ?? 0n;
 		const readiness = marketLockReadiness(current.data, supply, chainTime);
 		if (!readiness.canLock) {
@@ -736,6 +841,9 @@ export class LootboxClient {
 		const [nextBundle] = await this.bundleAddress(
 			current.address,
 			current.data.bundleCount,
+		);
+		const [serviceVault, serviceVaultBump] = await this.serviceVaultAddress(
+			current.address,
 		);
 		const instructions: Instruction[] = [];
 		if (readiness.mintRequired > 0n) {
@@ -758,10 +866,52 @@ export class LootboxClient {
 			template: current.address,
 			boxMint: current.data.boxMint,
 			bundle: nextBundle,
+			serviceVault,
+			serviceVaultBump,
 		}));
 
 		await this.send(instructions, "Mint exact supply & lock treasury");
 		return this.template(current.address);
+	}
+	/** Quote the exact creator-funded service reserve before market lock. */
+	async serviceFundingQuote(
+		template: ChainTemplate,
+	): Promise<ServiceFundingQuote> {
+		const servicesEnabled = template.data.resultReceiptsEnabled ||
+			template.data.settlementBountyLamports > 0n;
+		const [resultReceiptRent, serviceVaultRent] = await Promise.all([
+			template.data.resultReceiptsEnabled
+				? this.rpc.getMinimumBalanceForRentExemption(
+					BigInt(generated.getResultReceiptStateEncoder().fixedSize),
+				).send()
+				: Promise.resolve(0n),
+			servicesEnabled
+				? this.rpc.getMinimumBalanceForRentExemption(0n).send()
+				: Promise.resolve(0n),
+		]);
+		const reservedForResultsAndBounties = requiredServiceBudget(
+			{
+				totalBundles: template.data.totalBundles,
+				settlementBountyLamports: template.data.settlementBountyLamports,
+				resultReceiptsEnabled: template.data.resultReceiptsEnabled,
+			},
+			resultReceiptRent,
+			0n,
+		);
+		return Object.freeze({
+			resultReceiptRent,
+			serviceVaultRent,
+			reservedForResultsAndBounties,
+			totalCreatorDebit: requiredServiceBudget(
+				{
+					totalBundles: template.data.totalBundles,
+					settlementBountyLamports: template.data.settlementBountyLamports,
+					resultReceiptsEnabled: template.data.resultReceiptsEnabled,
+				},
+				resultReceiptRent,
+				serviceVaultRent,
+			),
+		});
 	}
 	/** Permanently stop creator mutations. Issued, unlocked series may use this
 	 * only after a missed reveal deadline, preserving holder opening rights.
@@ -778,6 +928,26 @@ export class LootboxClient {
 			template: current.address,
 		})], "Retire treasury");
 		return this.template(current.address);
+	}
+	/** Return unused creator-funded receipt rent and crank bounties after every
+	 * box and pending opening has left circulation. Existing result receipts stay
+	 * immutable and funded in their own accounts.
+	 */
+	async closeServiceVault(
+		template: ChainTemplate,
+	): Promise<string | undefined> {
+		const current = await this.template(template.address);
+		if (
+			!current.data.resultReceiptsEnabled &&
+			current.data.settlementBountyLamports === 0n
+		) return undefined;
+
+		return this.send([generated.getCloseServiceVaultInstruction({
+			authority: this.payer,
+			template: current.address,
+			boxMint: current.data.boxMint,
+			serviceVault: (await this.serviceVaultAddress(current.address))[0],
+		})], "Recover unused service funding");
 	}
 	async appendBundles(
 		template: ChainTemplate,
@@ -1125,8 +1295,16 @@ export class LootboxClient {
 			}),
 		], "Transfer sealed gift");
 	}
-	async requestOpen(template: ChainTemplate, oracle: OracleAccounts) {
+	async requestOpen(
+		template: ChainTemplate,
+		oracle: OracleAccounts,
+		request: OpenRequest = {},
+	) {
 		const randomness = await generateKeyPairSigner();
+		const consumerContext = request.consumerContext ?? new Uint8Array(32);
+		if (consumerContext.length !== 32) {
+			throw new RangeError("consumer context must contain exactly 32 bytes");
+		}
 		const [opening, bump] = await getProgramDerivedAddress({
 			programAddress: generated.LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
 			seeds: [
@@ -1136,10 +1314,11 @@ export class LootboxClient {
 			],
 		});
 		await this.send([generated.getRequestTemplateOpenInstruction({
-			owner: this.payer,
+			payer: this.payer,
+			boxAuthority: this.payer,
 			template: template.address,
 			boxMint: template.data.boxMint,
-			ownerBoxAccount: await this.ata(
+			boxAccount: await this.ata(
 				this.payer.address,
 				template.data.boxMint,
 			),
@@ -1156,6 +1335,9 @@ export class LootboxClient {
 			wrappedSolMint: WRAPPED_SOL,
 			addressLookupTableProgram: LOOKUP_TABLE,
 			recentSlot: await this.rpc.getSlot({ commitment }).send(),
+			beneficiary: request.beneficiary ?? this.payer.address,
+			consumerProgram: request.consumerProgram ?? SYSTEM_PROGRAM,
+			consumerContext,
 			bump,
 		})], "Burn box & commit randomness");
 		return generated.fetchTemplateOpeningState(this.rpc, opening, {
@@ -1173,6 +1355,7 @@ export class LootboxClient {
 		return this.send([generated.getForfeitTemplateOpenInstruction({
 			caller: this.payer,
 			template: template.address,
+			serviceVault: (await this.serviceVaultAddress(template.address))[0],
 			opening: opening.address,
 			randomness: opening.data.randomness,
 		})], "Forfeit expired opening & unblock queue");
@@ -1183,14 +1366,11 @@ export class LootboxClient {
 		opening: ChainOpening,
 		oracle: OracleAccounts,
 	) {
-		if (
-			![3, 4].includes(opening.data.status) ||
-			opening.data.recipient !== this.payer.address
-		) {
-			throw new Error("only a completed recipient receipt can be closed");
+		if (![3, 4].includes(opening.data.status)) {
+			throw new Error("only a completed opening can be closed");
 		}
 		return this.send([generated.getCloseTemplateOpeningInstruction({
-			recipient: this.payer.address,
+			rentRefund: opening.data.rentRefund,
 			template: template.address,
 			opening: opening.address,
 			randomness: opening.data.randomness,
@@ -1212,6 +1392,7 @@ export class LootboxClient {
 		return this.send([generated.getFulfillTemplateOpenInstruction({
 			payer: this.payer,
 			template: template.address,
+			serviceVault: (await this.serviceVaultAddress(template.address))[0],
 			opening: opening.address,
 			randomness: opening.data.randomness,
 			oracleQueue: template.data.oracleQueue,
@@ -1225,13 +1406,69 @@ export class LootboxClient {
 			...proof,
 		})], "Verify randomness proof");
 	}
+	/** Verify oracle entropy and allocate the selected bundle atomically.
+	 * The predicted bundle is derived from the proof value with the exact
+	 * on-chain sampler, so no outcome is exposed between transactions.
+	 */
+	async settle(
+		template: ChainTemplate,
+		opening: ChainOpening,
+		oracle: OracleAccounts,
+		proof: OracleProof,
+	) {
+		if (proof.value.length !== 32) {
+			throw new RangeError("oracle value must contain exactly 32 bytes");
+		}
+		const serviceVault = (await this.serviceVaultAddress(template.address))[0];
+		const revealed: ChainOpening = {
+			address: opening.address,
+			data: { ...opening.data, status: 1, entropy: proof.value },
+		};
+		const index = await selectTemplateBundle(template, revealed);
+		const [resultReceipt, resultReceiptBump] = await this.resultReceiptAddress(
+			opening.address,
+		);
+		return this.send([
+			generated.getFulfillTemplateOpenInstruction({
+				payer: this.payer,
+				template: template.address,
+				serviceVault,
+				opening: opening.address,
+				randomness: opening.data.randomness,
+				oracleQueue: template.data.oracleQueue,
+				oracle: oracle.oracle,
+				oracleStats: oracle.stats,
+				recentSlotHashes: SLOT_HASHES,
+				oracleProgram: template.data.oracleProgram,
+				rewardEscrow: oracle.rewardEscrow,
+				oracleProgramState: oracle.programState,
+				wrappedSolMint: WRAPPED_SOL,
+				...proof,
+			}),
+			generated.getAllocateTemplateOpenInstruction({
+				template: template.address,
+				opening: opening.address,
+				bundle: (await this.bundleAddress(template.address, index))[0],
+				serviceVault,
+				resultReceipt,
+				resultReceiptBump,
+			}),
+		], "Verify randomness & record prize");
+	}
 	async allocate(template: ChainTemplate, opening: ChainOpening) {
 		const index = await selectTemplateBundle(template, opening);
+		const [serviceVault] = await this.serviceVaultAddress(template.address);
+		const [resultReceipt, resultReceiptBump] = await this.resultReceiptAddress(
+			opening.address,
+		);
 		return this.send([
 			generated.getAllocateTemplateOpenInstruction({
 				template: template.address,
 				opening: opening.address,
 				bundle: (await this.bundleAddress(template.address, index))[0],
+				serviceVault,
+				resultReceipt,
+				resultReceiptBump,
 			}),
 		], "Record prize allocation");
 	}
@@ -1239,7 +1476,7 @@ export class LootboxClient {
 		openingAddress: Address,
 		resolvedAssets: readonly PrizeAsset[] = [],
 	) {
-		const opening = await generated.fetchTemplateOpeningState(
+		let opening = await generated.fetchTemplateOpeningState(
 			this.rpc,
 			openingAddress,
 			{ commitment },
@@ -1254,145 +1491,176 @@ export class LootboxClient {
 		const data = await generated.fetchBundleState(this.rpc, bundle, {
 			commitment,
 		});
-		for (const asset of bundleAssets(data.data)) {
-			if ((opening.data.claimedMask & (1 << asset.index)) !== 0) continue;
-			const input = {
-				template,
-				opening: openingAddress,
-				bundle,
-				recipient: opening.data.recipient,
-				assetIndex: asset.index,
-			};
-			let instructions: readonly Instruction[];
-			if (asset.kind === "sol") {
-				instructions = [generated.getClaimSolPrizeInstruction(input)];
-			} else if (["token", "token2022", "nft"].includes(asset.kind ?? "")) {
-				const tokenProgram = asset.kind === "token2022"
-					? BOX_TOKEN_PROGRAM
-					: CLASSIC_TOKEN_PROGRAM;
-				instructions = [
-					await this.createAta(input.recipient, asset.mint, tokenProgram),
-					generated.getClaimTokenPrizeInstruction({
-						...input,
-						mint: asset.mint,
-						escrow: await this.ata(bundle, asset.mint, tokenProgram),
-						destination: await this.ata(
-							input.recipient,
-							asset.mint,
-							tokenProgram,
-						),
-						tokenProgram,
-					}),
-				];
-			} else {
-				const resolved = resolvedAssets[asset.index];
-				if (!resolved || prizeIdentifier(resolved) !== asset.mint) {
-					throw new Error(
-						`Prize ${
-							asset.index + 1
-						} needs fresh DAS transfer data before it can be delivered`,
-					);
-				}
-				if (asset.kind === "metadataNft" && resolved.kind === "nft") {
-					const escrow = await this.ata(
-						bundle,
-						resolved.mint,
-						CLASSIC_TOKEN_PROGRAM,
-					);
-					const destination = await this.ata(
-						input.recipient,
-						resolved.mint,
-						CLASSIC_TOKEN_PROGRAM,
-					);
-					const optional = [
-						accountMeta(
-							resolved.edition ?? await this.editionPda(resolved.mint),
-						),
-						accountMeta(
-							resolved.tokenRecord ?? TOKEN_METADATA_PROGRAM,
-							resolved.tokenRecord
-								? AccountRole.WRITABLE
-								: AccountRole.READONLY,
-						),
-						accountMeta(
-							resolved.destinationTokenRecord ?? TOKEN_METADATA_PROGRAM,
-							resolved.destinationTokenRecord
-								? AccountRole.WRITABLE
-								: AccountRole.READONLY,
-						),
-						accountMeta(
-							resolved.authorizationRulesProgram ?? TOKEN_METADATA_PROGRAM,
-						),
-						accountMeta(resolved.authorizationRules ?? TOKEN_METADATA_PROGRAM),
-					];
-					const claim = generated.getClaimMetadataNftPrizeInstruction({
-						payer: this.payer,
-						...input,
-						mint: resolved.mint,
-						escrow,
-						destination,
-						metadata: resolved.metadata ??
-							await this.metadataPda(resolved.mint),
-						tokenMetadataProgram: TOKEN_METADATA_PROGRAM,
-						systemProgram: SYSTEM_PROGRAM,
-						instructionsSysvar: INSTRUCTIONS_SYSVAR,
-						tokenProgram: CLASSIC_TOKEN_PROGRAM,
-						associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM,
-						optionalAccounts: TOKEN_METADATA_PROGRAM,
-					});
+		for (let attempt = 0; attempt < data.data.assetCount; attempt++) {
+			if (opening.data.status === 3) return;
+			if (opening.data.status !== 2) {
+				throw new Error("opening left the allocated state during delivery");
+			}
+			const deliveryGroups: (readonly Instruction[])[] = [];
+			for (const asset of bundleAssets(data.data)) {
+				if ((opening.data.claimedMask & (1 << asset.index)) !== 0) continue;
+				const input = {
+					template,
+					opening: openingAddress,
+					bundle,
+					recipient: opening.data.beneficiary,
+					assetIndex: asset.index,
+				};
+				let instructions: readonly Instruction[];
+				if (asset.kind === "sol") {
+					instructions = [generated.getClaimSolPrizeInstruction(input)];
+				} else if (["token", "token2022", "nft"].includes(asset.kind ?? "")) {
+					const tokenProgram = asset.kind === "token2022"
+						? BOX_TOKEN_PROGRAM
+						: CLASSIC_TOKEN_PROGRAM;
 					instructions = [
-						await this.createAta(
+						await this.createAta(input.recipient, asset.mint, tokenProgram),
+						generated.getClaimTokenPrizeInstruction({
+							...input,
+							mint: asset.mint,
+							escrow: await this.ata(bundle, asset.mint, tokenProgram),
+							destination: await this.ata(
+								input.recipient,
+								asset.mint,
+								tokenProgram,
+							),
+							tokenProgram,
+						}),
+					];
+				} else {
+					const resolved = resolvedAssets[asset.index];
+					if (!resolved || prizeIdentifier(resolved) !== asset.mint) {
+						throw new Error(
+							`Prize ${
+								asset.index + 1
+							} needs fresh DAS transfer data before it can be delivered`,
+						);
+					}
+					if (asset.kind === "metadataNft" && resolved.kind === "nft") {
+						const escrow = await this.ata(
+							bundle,
+							resolved.mint,
+							CLASSIC_TOKEN_PROGRAM,
+						);
+						const destination = await this.ata(
 							input.recipient,
 							resolved.mint,
 							CLASSIC_TOKEN_PROGRAM,
-						),
-						replaceGeneratedTail(claim, optional),
-					];
-				} else if (asset.kind === "core" && resolved.kind === "core") {
-					const claim = generated.getClaimCoreAssetPrizeInstruction({
-						payer: this.payer,
-						...input,
-						asset: resolved.asset,
-						collection: resolved.collection ?? CORE_PROGRAM,
-						coreProgram: CORE_PROGRAM,
-						systemProgram: SYSTEM_PROGRAM,
-						logWrapper: NOOP_PROGRAM,
-						pluginAccounts: CORE_PROGRAM,
-					});
-					instructions = [replaceGeneratedTail(
-						claim,
-						resolved.pluginAccounts ?? [],
-					)];
-				} else if (
-					asset.kind === "compressedNft" &&
-					resolved.kind === "compressedNft"
-				) {
-					const claim = generated.getClaimCompressedNftPrizeInstruction({
-						...input,
-						treeConfig: resolved.proof.treeConfig,
-						merkleTree: resolved.proof.tree,
-						bubblegumProgram: BUBBLEGUM_PROGRAM,
-						logWrapper: NOOP_PROGRAM,
-						compressionProgram: ACCOUNT_COMPRESSION_PROGRAM,
-						systemProgram: SYSTEM_PROGRAM,
-						proofAccounts: BUBBLEGUM_PROGRAM,
-						root: resolved.proof.root,
-						dataHash: resolved.proof.dataHash,
-						creatorHash: resolved.proof.creatorHash,
-						nonce: resolved.proof.nonce,
-						index: resolved.proof.leafIndex,
-					});
-					instructions = [replaceGeneratedTail(
-						claim,
-						resolved.proof.proof.map((proof) => accountMeta(proof)),
-					)];
-				} else {
-					throw new Error(
-						"resolved prize adapter does not match on-chain asset kind",
-					);
+						);
+						const optional = [
+							accountMeta(
+								resolved.edition ?? await this.editionPda(resolved.mint),
+							),
+							accountMeta(
+								resolved.tokenRecord ?? TOKEN_METADATA_PROGRAM,
+								resolved.tokenRecord
+									? AccountRole.WRITABLE
+									: AccountRole.READONLY,
+							),
+							accountMeta(
+								resolved.destinationTokenRecord ?? TOKEN_METADATA_PROGRAM,
+								resolved.destinationTokenRecord
+									? AccountRole.WRITABLE
+									: AccountRole.READONLY,
+							),
+							accountMeta(
+								resolved.authorizationRulesProgram ?? TOKEN_METADATA_PROGRAM,
+							),
+							accountMeta(
+								resolved.authorizationRules ?? TOKEN_METADATA_PROGRAM,
+							),
+						];
+						const claim = generated.getClaimMetadataNftPrizeInstruction({
+							payer: this.payer,
+							...input,
+							mint: resolved.mint,
+							escrow,
+							destination,
+							metadata: resolved.metadata ??
+								await this.metadataPda(resolved.mint),
+							tokenMetadataProgram: TOKEN_METADATA_PROGRAM,
+							systemProgram: SYSTEM_PROGRAM,
+							instructionsSysvar: INSTRUCTIONS_SYSVAR,
+							tokenProgram: CLASSIC_TOKEN_PROGRAM,
+							associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM,
+							optionalAccounts: TOKEN_METADATA_PROGRAM,
+						});
+						instructions = [
+							await this.createAta(
+								input.recipient,
+								resolved.mint,
+								CLASSIC_TOKEN_PROGRAM,
+							),
+							replaceGeneratedTail(claim, optional),
+						];
+					} else if (asset.kind === "core" && resolved.kind === "core") {
+						const claim = generated.getClaimCoreAssetPrizeInstruction({
+							payer: this.payer,
+							...input,
+							asset: resolved.asset,
+							collection: resolved.collection ?? CORE_PROGRAM,
+							coreProgram: CORE_PROGRAM,
+							systemProgram: SYSTEM_PROGRAM,
+							logWrapper: NOOP_PROGRAM,
+							pluginAccounts: CORE_PROGRAM,
+						});
+						instructions = [replaceGeneratedTail(
+							claim,
+							resolved.pluginAccounts ?? [],
+						)];
+					} else if (
+						asset.kind === "compressedNft" &&
+						resolved.kind === "compressedNft"
+					) {
+						const claim = generated.getClaimCompressedNftPrizeInstruction({
+							...input,
+							treeConfig: resolved.proof.treeConfig,
+							merkleTree: resolved.proof.tree,
+							bubblegumProgram: BUBBLEGUM_PROGRAM,
+							logWrapper: NOOP_PROGRAM,
+							compressionProgram: ACCOUNT_COMPRESSION_PROGRAM,
+							systemProgram: SYSTEM_PROGRAM,
+							proofAccounts: BUBBLEGUM_PROGRAM,
+							root: resolved.proof.root,
+							dataHash: resolved.proof.dataHash,
+							creatorHash: resolved.proof.creatorHash,
+							nonce: resolved.proof.nonce,
+							index: resolved.proof.leafIndex,
+						});
+						instructions = [replaceGeneratedTail(
+							claim,
+							resolved.proof.proof.map((proof) => accountMeta(proof)),
+						)];
+					} else {
+						throw new Error(
+							"resolved prize adapter does not match on-chain asset kind",
+						);
+					}
 				}
+				deliveryGroups.push(instructions);
 			}
-			await this.send(instructions, `Deliver prize asset ${asset.index + 1}`);
+			const batch = partitionPrizeDeliveryInstructions(
+				this.payer.address,
+				deliveryGroups,
+			)[0];
+			if (!batch) {
+				throw new Error("allocated opening has no unclaimed prize assets");
+			}
+			const previousClaimedMask = opening.data.claimedMask;
+			await this.send(batch, "Deliver prize bundle batch");
+			opening = await generated.fetchTemplateOpeningState(
+				this.rpc,
+				openingAddress,
+				{ commitment },
+			);
+			if (
+				opening.data.status !== 3 &&
+				opening.data.claimedMask === previousClaimedMask
+			) {
+				throw new Error("prize delivery confirmed without recording progress");
+			}
 		}
+		if (opening.data.status === 3) return;
+		throw new Error("prize delivery exceeded the bundle asset limit");
 	}
 }

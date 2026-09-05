@@ -21,7 +21,7 @@ mints: ReadonlyUint8Array;
 /** Four little-endian base-unit amounts paid per winning bundle. */
 amounts: ReadonlyUint8Array;
 /** Four little-endian counts released through claims or retirement recovery. */
-claimed: ReadonlyUint8Array; kinds: ReadonlyUint8Array; decimals: ReadonlyUint8Array; activatedVersion: bigint; index: number; assetCount: number; fundedAssets: number; reclaimedMask: number;
+claimed: ReadonlyUint8Array; kinds: ReadonlyUint8Array; decimals: ReadonlyUint8Array; activatedRevision: bigint; index: number; assetCount: number; fundedAssets: number; reclaimedMask: number;
 /** 0 funding, 1 active. */
 status: number; bump: number;  };
 
@@ -31,18 +31,18 @@ mints: ReadonlyUint8Array;
 /** Four little-endian base-unit amounts paid per winning bundle. */
 amounts: ReadonlyUint8Array;
 /** Four little-endian counts released through claims or retirement recovery. */
-claimed: ReadonlyUint8Array; kinds: ReadonlyUint8Array; decimals: ReadonlyUint8Array; activatedVersion: number | bigint; index: number; assetCount: number; fundedAssets: number; reclaimedMask: number;
+claimed: ReadonlyUint8Array; kinds: ReadonlyUint8Array; decimals: ReadonlyUint8Array; activatedRevision: number | bigint; index: number; assetCount: number; fundedAssets: number; reclaimedMask: number;
 /** 0 funding, 1 active. */
 status: number; bump: number;  };
 
 /** Gets the encoder for {@link BundleStateArgs} account data. */
 export function getBundleStateEncoder(): FixedSizeEncoder<BundleStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['template', getAddressEncoder()], ['quantity', getU64Encoder()], ['rentReserve', getU64Encoder()], ['mints', fixZeroPodEncoderSize(getBytesEncoder(), 128)], ['amounts', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['claimed', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['kinds', fixZeroPodEncoderSize(getBytesEncoder(), 4)], ['decimals', fixZeroPodEncoderSize(getBytesEncoder(), 4)], ['activatedVersion', getU64Encoder()], ['index', getU32Encoder()], ['assetCount', getU8Encoder()], ['fundedAssets', getU8Encoder()], ['reclaimedMask', getU8Encoder()], ['status', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 5 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['template', getAddressEncoder()], ['quantity', getU64Encoder()], ['rentReserve', getU64Encoder()], ['mints', fixZeroPodEncoderSize(getBytesEncoder(), 128)], ['amounts', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['claimed', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['kinds', fixZeroPodEncoderSize(getBytesEncoder(), 4)], ['decimals', fixZeroPodEncoderSize(getBytesEncoder(), 4)], ['activatedRevision', getU64Encoder()], ['index', getU32Encoder()], ['assetCount', getU8Encoder()], ['fundedAssets', getU8Encoder()], ['reclaimedMask', getU8Encoder()], ['status', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 5 }));
 }
 
 /** Gets the decoder for {@link BundleState} account data. */
 export function getBundleStateDecoder(): FixedSizeDecoder<BundleState> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(BUNDLE_STATE_DISCRIMINATOR, getU8Decoder())], ['template', getAddressDecoder()], ['quantity', getU64Decoder()], ['rentReserve', getU64Decoder()], ['mints', fixDecoderSize(getBytesDecoder(), 128)], ['amounts', fixDecoderSize(getBytesDecoder(), 32)], ['claimed', fixDecoderSize(getBytesDecoder(), 32)], ['kinds', fixDecoderSize(getBytesDecoder(), 4)], ['decimals', fixDecoderSize(getBytesDecoder(), 4)], ['activatedVersion', getU64Decoder()], ['index', getU32Decoder()], ['assetCount', getU8Decoder()], ['fundedAssets', getU8Decoder()], ['reclaimedMask', getU8Decoder()], ['status', getU8Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(BUNDLE_STATE_DISCRIMINATOR, getU8Decoder())], ['template', getAddressDecoder()], ['quantity', getU64Decoder()], ['rentReserve', getU64Decoder()], ['mints', fixDecoderSize(getBytesDecoder(), 128)], ['amounts', fixDecoderSize(getBytesDecoder(), 32)], ['claimed', fixDecoderSize(getBytesDecoder(), 32)], ['kinds', fixDecoderSize(getBytesDecoder(), 4)], ['decimals', fixDecoderSize(getBytesDecoder(), 4)], ['activatedRevision', getU64Decoder()], ['index', getU32Decoder()], ['assetCount', getU8Decoder()], ['fundedAssets', getU8Decoder()], ['reclaimedMask', getU8Decoder()], ['status', getU8Decoder()], ['bump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link BundleState} account data. */

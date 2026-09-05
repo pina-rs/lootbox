@@ -79,7 +79,15 @@ final class PrizeBundle {
 
 /// Finite, fully escrowed prize inventory; no statistical insolvency allowance.
 final class TemplatePlan {
-  factory TemplatePlan({required List<PrizeBundle> bundles}) {
+  factory TemplatePlan({
+    required List<PrizeBundle> bundles,
+    BigInt? settlementBountyLamports,
+    bool resultReceiptsEnabled = false,
+  }) {
+    final bounty = _u64(
+      settlementBountyLamports ?? BigInt.zero,
+      'settlement bounty',
+    );
     if (bundles.isEmpty || bundles.length > 256) {
       throw RangeError('a template needs between one and 256 bundles');
     }
@@ -132,19 +140,45 @@ final class TemplatePlan {
       List.unmodifiable(bundles),
       totalBundles,
       Map.unmodifiable(treasury),
+      bounty,
+      resultReceiptsEnabled,
     );
   }
 
-  const TemplatePlan._(this.bundles, this.totalBundles, this.treasury);
+  const TemplatePlan._(
+    this.bundles,
+    this.totalBundles,
+    this.treasury,
+    this.settlementBountyLamports,
+    this.resultReceiptsEnabled,
+  );
 
   final List<PrizeBundle> bundles;
   final BigInt totalBundles;
+  final BigInt settlementBountyLamports;
+  final bool resultReceiptsEnabled;
 
   /// Exact zero-decimal box issuance after the treasury is market locked.
   BigInt get fixedSupply => totalBundles;
 
   /// Null selects native SOL; all other keys are stored asset identifiers.
   final Map<Address?, BigInt> treasury;
+
+  /// Exact creator-funded service deposit collected when the treasury locks.
+  ///
+  /// [resultReceiptRent] is the cluster's current rent-exempt minimum for one
+  /// immutable result receipt. Disabled receipts contribute no rent cost.
+  BigInt requiredServiceBudget(BigInt resultReceiptRent) {
+    _u64(resultReceiptRent, 'result receipt rent');
+    final receiptBudget = resultReceiptsEnabled
+        ? _u64(resultReceiptRent * totalBundles, 'result receipt budget')
+        : BigInt.zero;
+    final bountyBudget = _u64(
+      settlementBountyLamports * totalBundles,
+      'settlement bounty budget',
+    );
+    return _u64(receiptBudget + bountyBudget, 'service budget');
+  }
 
   /// Exact initial numerator and denominator; depletion changes future odds.
   ({BigInt numerator, BigInt denominator}) odds(int index) =>

@@ -88,5 +88,7 @@ pub struct CreateTemplateInstructionWire {
 	pub oracle_queue: solana_pubkey::Pubkey,
 	pub name: [u8; 32],
 	pub uri: [u8; 200],
+	pub settlement_bounty_lamports: u64,
+	pub result_receipts_enabled: bool,
 	pub bump: u8,
 }

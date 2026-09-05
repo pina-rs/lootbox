@@ -2,16 +2,18 @@
 
 A small, composable random-reward primitive for Solana, built with [Pina](https://github.com/pina-rs/pina).
 
-Lootbox turns a treasury template into a fixed supply of transferable sealed gifts. The v2 program escrows finite bundles of SOL, tokens, and unique NFTs, then atomically issues one zero-decimal Token-2022 box per bundle copy and revokes mint authority. Opening after the reveal date burns a box and commits fresh randomness; ordered allocation records a complete prize bundle, which can be revealed and claimed asset by asset.
+Lootbox turns a treasury template into a fixed supply of transferable sealed gifts. The program escrows finite bundles of SOL, tokens, and unique NFTs, then atomically issues one zero-decimal Token-2022 box per bundle copy and revokes mint authority. Opening after the reveal date burns a box and commits fresh randomness; ordered allocation records a complete prize bundle, which can be revealed and claimed asset by asset. Creators may also prepay bounded settlement bounties and optional immutable result PDAs for on-chain consumers.
 
 > [!IMPORTANT]
 > This is an experimental, internally reviewed development implementation, not an independently audited mainnet release. The web app submits real transactions to local Surfpool. Its assets have no value and its oracle is a test emulator.
 
+The repository is pre-release: there is no compatibility release line yet and breaking design changes are allowed. Protocol compatibility naming begins only after both a release tag and a supported live on-chain deployment exist.
+
 ### Treasury template work
 
-The v2 protocol includes pre-lock append-only treasuries, fully funded SOL/token/NFT bundles, irreversible exact-supply locking, immutable Token-2022 box metadata, reveal dates, versioned FIFO allocation, independent claims, staged-funding cancellation, timeout forfeiture, safe retirement, and a bounded non-market recovery seal for a missed lock deadline. See the [v2 specification](docs/treasury-templates.md) and [v2 security notes](docs/security-templates.md).
+The treasury protocol includes pre-lock append-only treasuries, fully funded SOL/token/NFT bundles, irreversible exact-supply locking, immutable Token-2022 box metadata, reveal dates, FIFO allocation, independent claims, staged-funding cancellation, timeout forfeiture, safe retirement, and a bounded non-market recovery seal for a missed lock deadline. See the [treasury specification](docs/treasury-templates.md) and [treasury security notes](docs/security-templates.md).
 
-**The web app is connected to v2.** Create, fund, publish, append, then mint the exact supply and lock a treasury. Distribute or transfer whole boxes, inspect remaining EV and a constant-product trade preview, then open, reveal, claim, and close the receipt. Creator previews show exact inventory, deposits, and per-copy odds. Searchable Jupiter token and Metaplex DAS asset catalogs are proxied server-side and clearly distinguished from local test fixtures.
+**The web app is connected to the treasury protocol.** Create, fund, publish, append, then mint the exact supply and lock a treasury. Distribute or transfer whole boxes, inspect remaining EV and a constant-product trade preview, then open, reveal, claim, and close the receipt. Creator previews show exact inventory, deposits, and per-copy odds. Searchable Jupiter token and Metaplex DAS asset catalogs are proxied server-side and clearly distinguished from local test fixtures.
 
 A separate persistent, local-only Surfpool service is available for integration:
 
@@ -26,17 +28,17 @@ It deploys both SBF artifacts and exposes its RPC addresses and oracle fixture a
 
 ## What is included
 
-- A `no_std`, Pina-based Solana program with the legacy 10-instruction ABI plus 28 v2 template instructions.
+- A `no_std`, Pina-based Solana program with the legacy 10-instruction ABI plus template instructions.
 - Switchboard On-Demand initialization, commit, reveal, and close CPIs controlled by each opening PDA.
-- Fully escrowed finite SOL, classic SPL, safe Token-2022, Token Metadata/pNFT, Core, and compressed-NFT bundles in v2; the legacy SOL-only v1 retains minimum-reward timeouts.
+- Fully escrowed finite SOL, classic SPL, safe Token-2022, standard Token Metadata NFT, Core, and compressed-NFT bundles in treasury templates; the single-reward SOL model retains minimum-reward timeouts.
 - Codama-generated Rust, TypeScript, and Dart clients.
 - Ergonomic checked planning APIs in all three languages.
-- An animated React creator/recipient playground with nested bundle composition, a timezone-aware reveal picker, exact-supply lock workflow, market desk, searchable asset selection, live odds/version/queue state, disposable test wallets, and desktop/mobile Playwright coverage.
+- An animated React creator/recipient playground with nested bundle composition, a timezone-aware reveal picker, exact-supply lock workflow, market desk, searchable asset selection, live odds/revision/queue state, disposable test wallets, and desktop/mobile Playwright coverage.
 - A test-only Switchboard ABI emulator deployed beside the real lootbox SBF program in offline Surfpool.
 
-## Legacy v1 protocol
+## Single-reward protocol
 
-The SOL-only v1 model below remains ABI-compatible. V2 uses finite bundle inventory and a permissionless timeout forfeiture that unblocks FIFO without returning a rerollable box or changing the bound recipient; see the [template specification](docs/treasury-templates.md).
+The SOL-only single-reward model below remains ABI-compatible. The treasury model uses finite bundle inventory and a permissionless timeout forfeiture that unblocks FIFO without returning a rerollable box or changing the bound recipient; see the [template specification](docs/treasury-templates.md).
 
 ```mermaid
 flowchart LR
@@ -121,7 +123,9 @@ console.log(plan.fixedSupply); // 100n after market lock
 console.log(plan.treasury); // [{ mint: null, amount: 10_900_000_000n }]
 ```
 
-See the [template API and economics](docs/treasury-templates.md) for token/NFT bundles and `LootboxClient` transaction orchestration. The [legacy API](docs/api.md), [architecture](docs/architecture.md), [randomness integration](docs/randomness.md), and [v1 security review](docs/security-review.md) document the retained SOL-only contract.
+See the [template API and economics](docs/treasury-templates.md) for token/NFT bundles and `LootboxClient` transaction orchestration. The [legacy API](docs/api.md), [architecture](docs/architecture.md), [randomness integration](docs/randomness.md), and [single-reward security review](docs/security-review.md) document the retained SOL-only contract.
+
+For reuse in other projects, see the [integration and CPI guide](docs/integrating.md), [performance and scaling analysis](docs/performance.md), [adoption plan](docs/adoption.md), and [treasury security review](docs/security-templates.md).
 
 ## Repository map
 

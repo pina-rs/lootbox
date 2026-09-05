@@ -12,6 +12,7 @@ export 'claim_metadata_nft_prize.dart';
 export 'claim_sol_prize.dart';
 export 'claim_token_prize.dart';
 export 'close_opening.dart';
+export 'close_service_vault.dart';
 export 'close_template_opening.dart';
 export 'create_lootbox.dart';
 export 'create_template.dart';

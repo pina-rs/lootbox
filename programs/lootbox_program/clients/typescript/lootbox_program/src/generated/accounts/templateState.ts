@@ -6,8 +6,8 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixZeroPodEncoderSize, getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
-import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getI64Decoder, getI64Encoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
+import { fixZeroPodEncoderSize, getZeroPodBooleanDecoder, getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBooleanDecoder, getBooleanEncoder, getBytesDecoder, getBytesEncoder, getI64Decoder, getI64Encoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findTemplatePda, type TemplateSeeds } from '../pdas';
 
 export const TEMPLATE_STATE_DISCRIMINATOR = 4;
@@ -24,7 +24,19 @@ lockedAt: bigint;
 /** Total bundle tickets ever activated. This is the lifetime issuance cap. */
 totalBundles: bigint; totalMinted: bigint; remainingBundles: bigint; pendingOpenings: bigint; nextRequest: bigint; nextAllocation: bigint;
 /** Increments after every activated append; snapshotted by each opening. */
-version: bigint;
+revision: bigint;
+/** Incremental commitment to every activated bundle in append order. */
+manifestAccumulator: ReadonlyUint8Array;
+/** Final treasury commitment. Zero until the treasury is locked. */
+manifestHash: ReadonlyUint8Array;
+/** Reward paid from the creator-funded service vault to a successful crank. */
+settlementBountyLamports: bigint;
+/** Rent prepaid for each optional immutable result receipt at market lock. */
+resultReceiptRentLamports: bigint;
+/** Receipt allocations still covered by the isolated service vault. */
+remainingResultReceipts: bigint;
+/** Settlement or forfeiture cranks still covered by the service vault. */
+remainingSettlementBounties: bigint;
 /** Undrawn inventory per append-only bundle, encoded as little-endian u64s. */
 remaining: ReadonlyUint8Array;
 /** Null-padded UTF-8 display name; never used for authorization. */
@@ -35,7 +47,11 @@ uri: ReadonlyUint8Array; bundleCount: number;
  * 0 draft, 1 live, 2 retired. `locked_at` independently records the
  * irreversible market lock so retirement never erases that fact.
  */
-status: number; bump: number;  };
+status: number;
+/** Whether allocation creates a permanent result receipt at creator expense. */
+resultReceiptsEnabled: boolean; bump: number;
+/** Canonical service vault bump, fixed when the treasury is locked. */
+serviceVaultBump: number;  };
 
 export type TemplateStateArgs = { authority: Address; boxMint: Address; oracleProgram: Address; oracleQueue: Address; id: number | bigint; opensAt: number | bigint;
 /**
@@ -46,7 +62,19 @@ lockedAt: number | bigint;
 /** Total bundle tickets ever activated. This is the lifetime issuance cap. */
 totalBundles: number | bigint; totalMinted: number | bigint; remainingBundles: number | bigint; pendingOpenings: number | bigint; nextRequest: number | bigint; nextAllocation: number | bigint;
 /** Increments after every activated append; snapshotted by each opening. */
-version: number | bigint;
+revision: number | bigint;
+/** Incremental commitment to every activated bundle in append order. */
+manifestAccumulator: ReadonlyUint8Array;
+/** Final treasury commitment. Zero until the treasury is locked. */
+manifestHash: ReadonlyUint8Array;
+/** Reward paid from the creator-funded service vault to a successful crank. */
+settlementBountyLamports: number | bigint;
+/** Rent prepaid for each optional immutable result receipt at market lock. */
+resultReceiptRentLamports: number | bigint;
+/** Receipt allocations still covered by the isolated service vault. */
+remainingResultReceipts: number | bigint;
+/** Settlement or forfeiture cranks still covered by the service vault. */
+remainingSettlementBounties: number | bigint;
 /** Undrawn inventory per append-only bundle, encoded as little-endian u64s. */
 remaining: ReadonlyUint8Array;
 /** Null-padded UTF-8 display name; never used for authorization. */
@@ -57,16 +85,20 @@ uri: ReadonlyUint8Array; bundleCount: number;
  * 0 draft, 1 live, 2 retired. `locked_at` independently records the
  * irreversible market lock so retirement never erases that fact.
  */
-status: number; bump: number;  };
+status: number;
+/** Whether allocation creates a permanent result receipt at creator expense. */
+resultReceiptsEnabled: boolean; bump: number;
+/** Canonical service vault bump, fixed when the treasury is locked. */
+serviceVaultBump: number;  };
 
 /** Gets the encoder for {@link TemplateStateArgs} account data. */
 export function getTemplateStateEncoder(): FixedSizeEncoder<TemplateStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['authority', getAddressEncoder()], ['boxMint', getAddressEncoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['id', getU64Encoder()], ['opensAt', getI64Encoder()], ['lockedAt', getI64Encoder()], ['totalBundles', getU64Encoder()], ['totalMinted', getU64Encoder()], ['remainingBundles', getU64Encoder()], ['pendingOpenings', getU64Encoder()], ['nextRequest', getU64Encoder()], ['nextAllocation', getU64Encoder()], ['version', getU64Encoder()], ['remaining', fixZeroPodEncoderSize(getBytesEncoder(), 2048)], ['name', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['uri', fixZeroPodEncoderSize(getBytesEncoder(), 200)], ['bundleCount', getU32Encoder()], ['status', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 4 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['authority', getAddressEncoder()], ['boxMint', getAddressEncoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['id', getU64Encoder()], ['opensAt', getI64Encoder()], ['lockedAt', getI64Encoder()], ['totalBundles', getU64Encoder()], ['totalMinted', getU64Encoder()], ['remainingBundles', getU64Encoder()], ['pendingOpenings', getU64Encoder()], ['nextRequest', getU64Encoder()], ['nextAllocation', getU64Encoder()], ['revision', getU64Encoder()], ['manifestAccumulator', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['manifestHash', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['settlementBountyLamports', getU64Encoder()], ['resultReceiptRentLamports', getU64Encoder()], ['remainingResultReceipts', getU64Encoder()], ['remainingSettlementBounties', getU64Encoder()], ['remaining', fixZeroPodEncoderSize(getBytesEncoder(), 2048)], ['name', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['uri', fixZeroPodEncoderSize(getBytesEncoder(), 200)], ['bundleCount', getU32Encoder()], ['status', getU8Encoder()], ['resultReceiptsEnabled', getBooleanEncoder()], ['bump', getU8Encoder()], ['serviceVaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 4 }));
 }
 
 /** Gets the decoder for {@link TemplateState} account data. */
 export function getTemplateStateDecoder(): FixedSizeDecoder<TemplateState> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(TEMPLATE_STATE_DISCRIMINATOR, getU8Decoder())], ['authority', getAddressDecoder()], ['boxMint', getAddressDecoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['id', getU64Decoder()], ['opensAt', getI64Decoder()], ['lockedAt', getI64Decoder()], ['totalBundles', getU64Decoder()], ['totalMinted', getU64Decoder()], ['remainingBundles', getU64Decoder()], ['pendingOpenings', getU64Decoder()], ['nextRequest', getU64Decoder()], ['nextAllocation', getU64Decoder()], ['version', getU64Decoder()], ['remaining', fixDecoderSize(getBytesDecoder(), 2048)], ['name', fixDecoderSize(getBytesDecoder(), 32)], ['uri', fixDecoderSize(getBytesDecoder(), 200)], ['bundleCount', getU32Decoder()], ['status', getU8Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(TEMPLATE_STATE_DISCRIMINATOR, getU8Decoder())], ['authority', getAddressDecoder()], ['boxMint', getAddressDecoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['id', getU64Decoder()], ['opensAt', getI64Decoder()], ['lockedAt', getI64Decoder()], ['totalBundles', getU64Decoder()], ['totalMinted', getU64Decoder()], ['remainingBundles', getU64Decoder()], ['pendingOpenings', getU64Decoder()], ['nextRequest', getU64Decoder()], ['nextAllocation', getU64Decoder()], ['revision', getU64Decoder()], ['manifestAccumulator', fixDecoderSize(getBytesDecoder(), 32)], ['manifestHash', fixDecoderSize(getBytesDecoder(), 32)], ['settlementBountyLamports', getU64Decoder()], ['resultReceiptRentLamports', getU64Decoder()], ['remainingResultReceipts', getU64Decoder()], ['remainingSettlementBounties', getU64Decoder()], ['remaining', fixDecoderSize(getBytesDecoder(), 2048)], ['name', fixDecoderSize(getBytesDecoder(), 32)], ['uri', fixDecoderSize(getBytesDecoder(), 200)], ['bundleCount', getU32Decoder()], ['status', getU8Decoder()], ['resultReceiptsEnabled', getZeroPodBooleanDecoder()], ['bump', getU8Decoder()], ['serviceVaultBump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link TemplateState} account data. */

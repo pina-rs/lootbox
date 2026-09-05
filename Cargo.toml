@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+	"crates/lootbox-cli",
 	"programs/lootbox_program",
 	"programs/lootbox_program/clients/rust/lootbox_program",
 	"sdks/rust",
@@ -25,8 +26,8 @@ pina = { default-features = false, version = "0.12.0" }
 proptest = { default-features = false, version = "1", features = ["std"] }
 solana-account-info = { default-features = false, version = "3" }
 solana-cpi = { default-features = false, version = "3" }
-solana-instruction = { default-features = false, version = "3" }
-solana-program-error = { default-features = false, version = "3" }
+solana-instruction = { default-features = false, version = "3.4" }
+solana-program-error = { default-features = false, version = "3.0" }
 solana-pubkey = { default-features = false, version = "4", features = ["bytemuck"] }
 solana-sha256-hasher = { default-features = false, version = "3.1.0" }
 thiserror = { default-features = false, version = "2" }

@@ -6,8 +6,10 @@ in
   packages = with pkgs; [
     cargo-audit
     cargo-deny
+    cargo-llvm-cov
     cargo-run-bin
     custom.agave
+    custom.monochange
     custom.sbpf-linker
     custom.surfpool
     dart
@@ -82,6 +84,12 @@ in
       pnpm --dir sdks/typescript test
       (cd sdks/dart && dart test)
     '';
+    "test:coverage".exec = ''
+      set -euo pipefail
+      cargo llvm-cov test -p lootbox-cli --all-features --locked \
+        --fail-under-lines 96 \
+        --ignore-filename-regex 'lootbox-cli/src/main\.rs$'
+    '';
     "test:surfpool".exec = ''
       set -euo pipefail
       build:program
@@ -125,6 +133,7 @@ in
       pnpm --dir sdks/typescript check
       pnpm --dir apps/web lint
       (cd sdks/dart && dart analyze --fatal-infos --fatal-warnings)
+      ${custom.monochange}/bin/monochange check
     '';
     "security:audit".exec = ''
       set -euo pipefail
@@ -169,6 +178,7 @@ in
       lint:all
       security:audit
       test:unit
+      test:coverage
       test:surfpool
       pnpm --dir apps/web build
       test:web

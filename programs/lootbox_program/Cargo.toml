@@ -16,6 +16,7 @@ bpf-entrypoint = []
 [dependencies]
 pina = { workspace = true, features = ["derive", "logs", "token"] }
 solana-sha256-hasher = { workspace = true, features = ["sha2"] }
+switchboard-randomness-cpi = { workspace = true }
 
 [dev-dependencies]
 proptest.workspace = true

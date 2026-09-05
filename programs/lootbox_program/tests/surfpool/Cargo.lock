@@ -4009,6 +4009,7 @@ version = "0.1.0"
 dependencies = [
  "pina",
  "solana-sha256-hasher 3.1.0",
+ "switchboard-randomness-cpi",
 ]
 
 [[package]]
@@ -10360,6 +10361,14 @@ dependencies = [
  "txtx-addon-network-svm-types",
  "url 1.7.2",
  "uuid",
+]
+
+[[package]]
+name = "switchboard-randomness-cpi"
+version = "0.1.0"
+dependencies = [
+ "pinocchio",
+ "solana-address 2.6.1",
 ]
 
 [[package]]

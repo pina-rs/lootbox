@@ -7,6 +7,7 @@ description = "Generated interface and CPI helpers for the Pina Lootbox program"
 license.workspace = true
 homepage.workspace = true
 repository.workspace = true
+publish = false
 
 [dependencies]
 pina = { workspace = true }

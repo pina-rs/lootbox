@@ -20,6 +20,20 @@ skip = [
 	{ name = "solana-define-syscall", version = "4.0.1" },
 	# Solana's host API uses syn 2 while Pina's current derive stack uses syn 3.
 	{ name = "syn", version = "2.0.119" },
+	# The lootbox-cli adds solana-client (4.x host API) which pulls in the
+	# 3.x solana crate train alongside pina's 4.x pinocchio stack.
+	{ name = "base64" },
+	{ name = "block-buffer" },
+	{ name = "combine" },
+	{ name = "cpufeatures" },
+	{ name = "crypto-common" },
+	{ name = "darling" },
+	{ name = "darling_core" },
+	{ name = "darling_macro" },
+	{ name = "digest" },
+	{ name = "getrandom" },
+	{ name = "hashbrown" },
+	{ name = "bincode", version = "1.3.3" },
 ]
 
 [sources]

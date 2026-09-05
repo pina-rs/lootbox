@@ -92,7 +92,7 @@ final class LootboxPlan {
     if (outcomes.length > maxOutcomes) {
       throw const LootboxPlanException(
         'TOO_MANY_OUTCOMES',
-        'v1 supports at most 8 outcomes',
+        'single-reward protocol supports at most 8 outcomes',
       );
     }
 

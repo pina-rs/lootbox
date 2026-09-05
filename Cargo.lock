@@ -319,7 +319,7 @@ dependencies = [
 
 [[package]]
 name = "lootbox-program-client"
-version = "0.0.0"
+version = "0.0.1-alpha.0"
 dependencies = [
  "num-derive",
  "num-traits",
@@ -334,14 +334,14 @@ dependencies = [
 
 [[package]]
 name = "lootbox-sdk"
-version = "0.1.0"
+version = "0.0.1-alpha.0"
 dependencies = [
  "lootbox-program-client",
 ]
 
 [[package]]
 name = "lootbox_program"
-version = "0.1.0"
+version = "0.0.1-alpha.0"
 dependencies = [
  "pina",
  "proptest",

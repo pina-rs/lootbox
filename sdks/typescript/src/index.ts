@@ -135,7 +135,7 @@ export function createLootboxPlan(input: {
 	if (input.outcomes.length > MAX_OUTCOMES) {
 		throw new LootboxPlanError(
 			"TOO_MANY_OUTCOMES",
-			`v1 supports at most ${MAX_OUTCOMES} outcomes`,
+			`single-reward protocol supports at most ${MAX_OUTCOMES} outcomes`,
 		);
 	}
 

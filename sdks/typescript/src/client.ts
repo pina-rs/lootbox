@@ -33,6 +33,7 @@ import {
 	type PrizeAsset,
 	type PrizeBundleInput,
 	remainingTemplateBundleCapacity,
+	requiredServiceBudget,
 	templateInventory,
 	type TemplatePlan,
 } from "./templates.js";
@@ -94,6 +95,16 @@ export type OracleProof = Readonly<
 	}
 >;
 export type ClientProgress = (message: string, signature?: string) => void;
+export type OpenRequest = Readonly<{
+	beneficiary?: Address;
+	consumerProgram?: Address;
+	consumerContext?: ReadonlyUint8Array;
+}>;
+export type ServiceFundingQuote = Readonly<{
+	resultReceiptRent: bigint;
+	reservedForResultsAndBounties: bigint;
+	totalCreatorDebit: bigint;
+}>;
 
 export function readU64(bytes: ReadonlyUint8Array, index: number): bigint {
 	return new DataView(Uint8Array.from(bytes).buffer).getBigUint64(
@@ -206,7 +217,7 @@ export async function selectTemplateBundle(
 	let candidate = 0n;
 	for (let counter = 0; counter < 8; counter++) {
 		const bytes = Uint8Array.from([
-			...utf8.encode("pina-lootbox-outcome-v1"),
+			...utf8.encode("pina-lootbox-outcome"),
 			...opening.data.entropy,
 			...addressBytes.encode(template.address),
 			...addressBytes.encode(opening.address),
@@ -299,6 +310,18 @@ export class LootboxClient {
 				addressBytes.encode(template),
 				getU32Encoder().encode(index),
 			],
+		});
+	}
+	async serviceVaultAddress(template: Address) {
+		return getProgramDerivedAddress({
+			programAddress: generated.LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
+			seeds: [utf8.encode("service-vault"), addressBytes.encode(template)],
+		});
+	}
+	async resultReceiptAddress(opening: Address) {
+		return getProgramDerivedAddress({
+			programAddress: generated.LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
+			seeds: [utf8.encode("result-receipt"), addressBytes.encode(opening)],
 		});
 	}
 	async ata(
@@ -619,6 +642,8 @@ export class LootboxClient {
 				oracleQueue: queue,
 				name: encodeTemplateText(plan.name, 32),
 				uri: encodeTemplateText(plan.uri, 200),
+				settlementBountyLamports: plan.settlementBountyLamports,
+				resultReceiptsEnabled: plan.resultReceiptsEnabled,
 				bump,
 			})], "Create treasury template");
 		}
@@ -628,6 +653,9 @@ export class LootboxClient {
 			state.data.opensAt !== plan.opensAt ||
 			state.data.oracleProgram !== oracleProgram ||
 			state.data.oracleQueue !== queue ||
+			state.data.settlementBountyLamports !==
+				plan.settlementBountyLamports ||
+			state.data.resultReceiptsEnabled !== plan.resultReceiptsEnabled ||
 			state.data.bundleCount > plan.bundles.length ||
 			Array.from(state.data.name).join() !==
 				Array.from(encodeTemplateText(plan.name, 32)).join() ||
@@ -723,10 +751,17 @@ export class LootboxClient {
 		}
 		if (current.data.lockedAt !== 0n) return current;
 
-		const [supply, slot] = await Promise.all([
+		const [supply, slot, serviceFunding, creatorBalance] = await Promise.all([
 			this.mintSupply(current.data.boxMint),
 			this.rpc.getSlot({ commitment }).send(),
+			this.serviceFundingQuote(current),
+			this.rpc.getBalance(this.payer.address, { commitment }).send(),
 		]);
+		if (creatorBalance.value < serviceFunding.totalCreatorDebit) {
+			throw new Error(
+				`Treasury creator needs at least ${serviceFunding.totalCreatorDebit} lamports for configured result and settlement services`,
+			);
+		}
 		const chainTime = await this.rpc.getBlockTime(slot).send() ?? 0n;
 		const readiness = marketLockReadiness(current.data, supply, chainTime);
 		if (!readiness.canLock) {
@@ -736,6 +771,9 @@ export class LootboxClient {
 		const [nextBundle] = await this.bundleAddress(
 			current.address,
 			current.data.bundleCount,
+		);
+		const [serviceVault, serviceVaultBump] = await this.serviceVaultAddress(
+			current.address,
 		);
 		const instructions: Instruction[] = [];
 		if (readiness.mintRequired > 0n) {
@@ -758,10 +796,32 @@ export class LootboxClient {
 			template: current.address,
 			boxMint: current.data.boxMint,
 			bundle: nextBundle,
+			serviceVault,
+			serviceVaultBump,
 		}));
 
 		await this.send(instructions, "Mint exact supply & lock treasury");
 		return this.template(current.address);
+	}
+	/** Quote the exact creator-funded service reserve before market lock. */
+	async serviceFundingQuote(
+		template: ChainTemplate,
+	): Promise<ServiceFundingQuote> {
+		const resultReceiptRent = template.data.resultReceiptsEnabled
+			? await this.rpc.getMinimumBalanceForRentExemption(
+				BigInt(generated.getResultReceiptStateEncoder().fixedSize),
+			).send()
+			: 0n;
+		const reservedForResultsAndBounties = requiredServiceBudget({
+			totalBundles: template.data.totalBundles,
+			settlementBountyLamports: template.data.settlementBountyLamports,
+			resultReceiptsEnabled: template.data.resultReceiptsEnabled,
+		}, resultReceiptRent);
+		return Object.freeze({
+			resultReceiptRent,
+			reservedForResultsAndBounties,
+			totalCreatorDebit: reservedForResultsAndBounties,
+		});
 	}
 	/** Permanently stop creator mutations. Issued, unlocked series may use this
 	 * only after a missed reveal deadline, preserving holder opening rights.
@@ -778,6 +838,26 @@ export class LootboxClient {
 			template: current.address,
 		})], "Retire treasury");
 		return this.template(current.address);
+	}
+	/** Return unused creator-funded receipt rent and crank bounties after every
+	 * box and pending opening has left circulation. Existing result receipts stay
+	 * immutable and funded in their own accounts.
+	 */
+	async closeServiceVault(
+		template: ChainTemplate,
+	): Promise<string | undefined> {
+		const current = await this.template(template.address);
+		if (
+			!current.data.resultReceiptsEnabled &&
+			current.data.settlementBountyLamports === 0n
+		) return undefined;
+
+		return this.send([generated.getCloseServiceVaultInstruction({
+			authority: this.payer,
+			template: current.address,
+			boxMint: current.data.boxMint,
+			serviceVault: (await this.serviceVaultAddress(current.address))[0],
+		})], "Recover unused service funding");
 	}
 	async appendBundles(
 		template: ChainTemplate,
@@ -1125,8 +1205,16 @@ export class LootboxClient {
 			}),
 		], "Transfer sealed gift");
 	}
-	async requestOpen(template: ChainTemplate, oracle: OracleAccounts) {
+	async requestOpen(
+		template: ChainTemplate,
+		oracle: OracleAccounts,
+		request: OpenRequest = {},
+	) {
 		const randomness = await generateKeyPairSigner();
+		const consumerContext = request.consumerContext ?? new Uint8Array(32);
+		if (consumerContext.length !== 32) {
+			throw new RangeError("consumer context must contain exactly 32 bytes");
+		}
 		const [opening, bump] = await getProgramDerivedAddress({
 			programAddress: generated.LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
 			seeds: [
@@ -1136,10 +1224,11 @@ export class LootboxClient {
 			],
 		});
 		await this.send([generated.getRequestTemplateOpenInstruction({
-			owner: this.payer,
+			payer: this.payer,
+			boxAuthority: this.payer,
 			template: template.address,
 			boxMint: template.data.boxMint,
-			ownerBoxAccount: await this.ata(
+			boxAccount: await this.ata(
 				this.payer.address,
 				template.data.boxMint,
 			),
@@ -1156,6 +1245,9 @@ export class LootboxClient {
 			wrappedSolMint: WRAPPED_SOL,
 			addressLookupTableProgram: LOOKUP_TABLE,
 			recentSlot: await this.rpc.getSlot({ commitment }).send(),
+			beneficiary: request.beneficiary ?? this.payer.address,
+			consumerProgram: request.consumerProgram ?? SYSTEM_PROGRAM,
+			consumerContext,
 			bump,
 		})], "Burn box & commit randomness");
 		return generated.fetchTemplateOpeningState(this.rpc, opening, {
@@ -1173,6 +1265,7 @@ export class LootboxClient {
 		return this.send([generated.getForfeitTemplateOpenInstruction({
 			caller: this.payer,
 			template: template.address,
+			serviceVault: (await this.serviceVaultAddress(template.address))[0],
 			opening: opening.address,
 			randomness: opening.data.randomness,
 		})], "Forfeit expired opening & unblock queue");
@@ -1183,14 +1276,11 @@ export class LootboxClient {
 		opening: ChainOpening,
 		oracle: OracleAccounts,
 	) {
-		if (
-			![3, 4].includes(opening.data.status) ||
-			opening.data.recipient !== this.payer.address
-		) {
-			throw new Error("only a completed recipient receipt can be closed");
+		if (![3, 4].includes(opening.data.status)) {
+			throw new Error("only a completed opening can be closed");
 		}
 		return this.send([generated.getCloseTemplateOpeningInstruction({
-			recipient: this.payer.address,
+			rentRefund: opening.data.rentRefund,
 			template: template.address,
 			opening: opening.address,
 			randomness: opening.data.randomness,
@@ -1212,6 +1302,7 @@ export class LootboxClient {
 		return this.send([generated.getFulfillTemplateOpenInstruction({
 			payer: this.payer,
 			template: template.address,
+			serviceVault: (await this.serviceVaultAddress(template.address))[0],
 			opening: opening.address,
 			randomness: opening.data.randomness,
 			oracleQueue: template.data.oracleQueue,
@@ -1225,13 +1316,69 @@ export class LootboxClient {
 			...proof,
 		})], "Verify randomness proof");
 	}
+	/** Verify oracle entropy and allocate the selected bundle atomically.
+	 * The predicted bundle is derived from the proof value with the exact
+	 * on-chain sampler, so no outcome is exposed between transactions.
+	 */
+	async settle(
+		template: ChainTemplate,
+		opening: ChainOpening,
+		oracle: OracleAccounts,
+		proof: OracleProof,
+	) {
+		if (proof.value.length !== 32) {
+			throw new RangeError("oracle value must contain exactly 32 bytes");
+		}
+		const serviceVault = (await this.serviceVaultAddress(template.address))[0];
+		const revealed: ChainOpening = {
+			address: opening.address,
+			data: { ...opening.data, status: 1, entropy: proof.value },
+		};
+		const index = await selectTemplateBundle(template, revealed);
+		const [resultReceipt, resultReceiptBump] = await this.resultReceiptAddress(
+			opening.address,
+		);
+		return this.send([
+			generated.getFulfillTemplateOpenInstruction({
+				payer: this.payer,
+				template: template.address,
+				serviceVault,
+				opening: opening.address,
+				randomness: opening.data.randomness,
+				oracleQueue: template.data.oracleQueue,
+				oracle: oracle.oracle,
+				oracleStats: oracle.stats,
+				recentSlotHashes: SLOT_HASHES,
+				oracleProgram: template.data.oracleProgram,
+				rewardEscrow: oracle.rewardEscrow,
+				oracleProgramState: oracle.programState,
+				wrappedSolMint: WRAPPED_SOL,
+				...proof,
+			}),
+			generated.getAllocateTemplateOpenInstruction({
+				template: template.address,
+				opening: opening.address,
+				bundle: (await this.bundleAddress(template.address, index))[0],
+				serviceVault,
+				resultReceipt,
+				resultReceiptBump,
+			}),
+		], "Verify randomness & record prize");
+	}
 	async allocate(template: ChainTemplate, opening: ChainOpening) {
 		const index = await selectTemplateBundle(template, opening);
+		const [serviceVault] = await this.serviceVaultAddress(template.address);
+		const [resultReceipt, resultReceiptBump] = await this.resultReceiptAddress(
+			opening.address,
+		);
 		return this.send([
 			generated.getAllocateTemplateOpenInstruction({
 				template: template.address,
 				opening: opening.address,
 				bundle: (await this.bundleAddress(template.address, index))[0],
+				serviceVault,
+				resultReceipt,
+				resultReceiptBump,
 			}),
 		], "Record prize allocation");
 	}
@@ -1254,13 +1401,14 @@ export class LootboxClient {
 		const data = await generated.fetchBundleState(this.rpc, bundle, {
 			commitment,
 		});
+		const deliveryInstructions: Instruction[] = [];
 		for (const asset of bundleAssets(data.data)) {
 			if ((opening.data.claimedMask & (1 << asset.index)) !== 0) continue;
 			const input = {
 				template,
 				opening: openingAddress,
 				bundle,
-				recipient: opening.data.recipient,
+				recipient: opening.data.beneficiary,
 				assetIndex: asset.index,
 			};
 			let instructions: readonly Instruction[];
@@ -1392,7 +1540,10 @@ export class LootboxClient {
 					);
 				}
 			}
-			await this.send(instructions, `Deliver prize asset ${asset.index + 1}`);
+			deliveryInstructions.push(...instructions);
+		}
+		if (deliveryInstructions.length > 0) {
+			await this.send(deliveryInstructions, "Deliver complete prize bundle");
 		}
 	}
 }

@@ -46,6 +46,7 @@ pub(crate) mod r#claim_compressed_nft_prize;
 pub(crate) mod r#reclaim_compressed_nft_prize;
 pub(crate) mod r#forfeit_template_open;
 pub(crate) mod r#lock_treasury;
+pub(crate) mod r#close_service_vault;
 
 pub use self::r#create_lootbox::*;
 pub use self::r#add_outcome::*;
@@ -85,3 +86,4 @@ pub use self::r#claim_compressed_nft_prize::*;
 pub use self::r#reclaim_compressed_nft_prize::*;
 pub use self::r#forfeit_template_open::*;
 pub use self::r#lock_treasury::*;
+pub use self::r#close_service_vault::*;

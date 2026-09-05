@@ -5,6 +5,7 @@ import {
 	decodeTemplateText,
 	encodeTemplateText,
 	remainingTemplateBundleCapacity,
+	requiredServiceBudget,
 	templateInventory,
 } from "./templates.js";
 
@@ -70,6 +71,29 @@ describe("finite template plans", () => {
 		).toThrow("collateral");
 	});
 
+	it("rejects mutable collection transfer policies", () => {
+		expect(() =>
+			createTemplatePlan({
+				name: "Mutable programmable NFT",
+				bundles: [{
+					label: "NFT",
+					quantity: 1n,
+					assets: [{ kind: "nft", mint: nft, tokenRecord: nft }],
+				}],
+			})
+		).toThrow("programmable NFT");
+		expect(() =>
+			createTemplatePlan({
+				name: "Mutable Core",
+				bundles: [{
+					label: "Core",
+					quantity: 1n,
+					assets: [{ kind: "core", asset: nft, collection: nft }],
+				}],
+			})
+		).toThrow("uncollected Core");
+	});
+
 	it("bounds metadata by UTF-8 bytes and rejects hidden control text", () => {
 		expect(decodeTemplateText(encodeTemplateText("🎁", 32))).toBe("🎁");
 		expect(() => encodeTemplateText("🎁".repeat(9), 32)).toThrow("UTF-8");
@@ -113,5 +137,25 @@ describe("finite template plans", () => {
 		expect(remainingTemplateBundleCapacity(256)).toBe(0);
 		expect(() => remainingTemplateBundleCapacity(-1)).toThrow("bundle count");
 		expect(() => remainingTemplateBundleCapacity(257)).toThrow("bundle count");
+	});
+
+	it("funds optional services exactly at lock", () => {
+		const plan = createTemplatePlan({
+			name: "Services",
+			settlementBountyLamports: 50_000n,
+			resultReceiptsEnabled: true,
+			bundles: [{
+				label: "SOL",
+				quantity: 3n,
+				assets: [{ kind: "sol", lamports: 1n }],
+			}],
+		});
+		expect(requiredServiceBudget(plan, 2_000_000n)).toBe(6_150_000n);
+		expect(
+			requiredServiceBudget(
+				{ ...plan, resultReceiptsEnabled: false },
+				2_000_000n,
+			),
+		).toBe(150_000n);
 	});
 });

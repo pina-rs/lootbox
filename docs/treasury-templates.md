@@ -1,4 +1,4 @@
-# Treasury-backed templates (v2)
+# Treasury-backed templates
 
 Status: implemented and tested on local Surfpool. This is an experimental development build, not an independently audited mainnet release.
 
@@ -37,7 +37,7 @@ Funding --reclaim every funded asset--> Cancelled and closed
 
 - A new bundle is always staged at the next sequential `u32` index.
 - It is invisible to draws and adds no mint capacity until every asset is escrowed and `activateBundle` succeeds.
-- Activation atomically appends its inventory, increments the treasury version, and adds its copies to lifetime mint capacity.
+- Activation atomically appends its inventory, increments the treasury revision, and adds its copies to lifetime mint capacity.
 - An unlocked live template may receive more bundles before its reveal date. Existing bundles, amounts, identifiers, the reveal time, and metadata cannot be edited or reordered.
 - An interrupted funding workflow is resumable from chain. The creator can reclaim and cancel only the unpublished tail bundle; already active history is immutable.
 - Market lock requires a live treasury, future reveal time, pristine inventory, no opening history, no staged tail, and actual mint supply matching recorded issuance. It atomically mints every missing claim to the creator-selected account, proves `mint supply == active bundle copies`, revokes mint authority, and records `lockedAt`.
@@ -63,7 +63,7 @@ mint authority after lock = none
 
 A won copy is removed from the pool and its corresponding box was burned, so circulating supply and remaining prize copies decline together. Future live odds and remaining expected value update automatically.
 
-Opening is impossible for an active unlocked treasury, so every box in a tradable series has the same locked eligible manifest. The only exception is an explicitly retired, non-market recovery series after a missed reveal deadline. Burning a box snapshots the treasury version and active bundle prefix. FIFO allocation still observes depletion caused by earlier receipts inside that saved prefix. The snapshot is therefore a promise about the eligible manifest, not a frozen percentage.
+Opening is impossible for an active unlocked treasury, so every box in a tradable series has the same locked eligible manifest. The only exception is an explicitly retired, non-market recovery series after a missed reveal deadline. Burning a box snapshots the treasury revision and active bundle prefix. FIFO allocation still observes depletion caused by earlier receipts inside that saved prefix. The snapshot is therefore a promise about the eligible manifest, not a frozen percentage.
 
 ## Opening and recovery
 
@@ -72,46 +72,64 @@ burn + commit -> verify entropy -> FIFO allocation -> per-asset claims -> close 
 ```
 
 1. After the configured reveal timestamp, the owner signs a request that atomically burns one box and creates fresh Switchboard randomness. The treasury must be market-locked or permanently retired through the missed-deadline recovery path.
-2. The receipt records the owner, sequence, treasury version, and eligible bundle count.
+2. The opening records the box authority, prize beneficiary, rent-refund address, optional consumer binding, sequence, treasury revision, and eligible bundle count.
 3. Anyone may relay a valid proof. Verification persists entropy without moving a prize.
 4. Allocation must process the FIFO head and uses domain-separated, bounded rejection sampling over remaining copies in the saved prefix. There is no reroll.
 5. Claims are permissionless to submit but can deliver only to the recipient recorded at burn time. Each asset has an independent claim bit, so failures retry the same allocation.
-6. A delivered receipt can be closed by its recipient to recover rent.
+6. A delivered opening can be closed and its rent always returns to the original request payer.
+
+### Optional immutable results and settlement bounties
+
+Creators choose both service options when the treasury is created. They become immutable with the rest of the treasury terms:
+
+- `resultReceiptsEnabled = false` is the default. Allocation creates no result account and charges neither the creator nor the opener any result-account rent.
+- When enabled, the creator prepays the current rent-exempt minimum for exactly one `ResultReceipt` PDA per box at market lock. Allocation creates the PDA from that reserved balance; reveal callers never pay its rent.
+- A `ResultReceipt` permanently binds the treasury, opening, box authority, beneficiary, consumer program and 32-byte context, locked manifest hash, randomness account, request sequence, and selected bundle. It has no update or close instruction.
+- A per-settlement bounty is also optional. The creator prepays exactly one bounty per box at lock, and the signer who successfully fulfills or expires the FIFO head receives it. Prize collateral is never used for service costs.
+- After retirement and final settlement, the creator may close the service vault and recover only unused prepaid receipt rent and bounties.
+
+The lock deposit is exact:
+
+```text
+service deposit = box supply × (settlement bounty + enabled receipt rent)
+```
+
+Each opening may name a beneficiary distinct from its box authority and may bind a consumer program plus opaque context. A nonzero context is rejected unless a consumer program is supplied. Integrators must additionally record a one-time-use marker in their own state when consuming a result.
 
 If the FIFO head remains unrevealed for 300 slots, any signer may forfeit it. Forfeiture advances the queue without consuming inventory, changing the bound recipient, or returning the burned box. Returning a box would be unsafe: a holder could inspect an unfavorable off-chain proof, suppress it, wait, and reroll. Permissionless expiry prevents an inactive recipient from blocking every later opening, while making the disclosed deadline final. Reliable relaying and a production oracle outage policy remain deployment gates.
 
 ## Supported prize adapters
 
-| Prize                     | On-chain policy                                                                                                                                                                                                                |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Native SOL                | Lamports are held by the bundle PDA and transferred directly. Wrapped SOL is rejected as a token prize.                                                                                                                        |
-| Classic SPL token         | Canonical mint and ATA checks, checked transfer, positive base-unit amount, and no freeze authority.                                                                                                                           |
-| Token-2022 token          | Only the explicitly allowlisted Metadata Pointer and Token Metadata extensions are accepted; fee, hook, delegate, pause, and other behavior-changing extensions fail closed.                                                   |
-| Legacy NFT                | Supply one, zero decimals, revoked mint authority, no freeze authority, and a one-copy bundle.                                                                                                                                 |
-| Token Metadata NFT / pNFT | `TransferV1` adapter with supply/decimal and metadata PDA validation. Mint/freeze authority must be revoked or held by the canonical Master Edition PDA; edition, token-record, and authorization-rule accounts are forwarded. |
-| Metaplex Core             | Core transfer adapter with owner, collection, plugin, and external-adapter account validation.                                                                                                                                 |
-| Compressed NFT            | Bubblegum transfer adapter bound to the asset ID, tree, leaf index, hashes, nonce, and fresh Merkle proof accounts.                                                                                                            |
+| Prize              | On-chain policy                                                                                                                                                                                                                                                      |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Native SOL         | Lamports are held by the bundle PDA and transferred directly. Wrapped SOL is rejected as a token prize.                                                                                                                                                              |
+| Classic SPL token  | Canonical mint and ATA checks, checked transfer, positive base-unit amount, and no freeze authority.                                                                                                                                                                 |
+| Token-2022 token   | Only the explicitly allowlisted Metadata Pointer and Token Metadata extensions are accepted; fee, hook, delegate, pause, and other behavior-changing extensions fail closed.                                                                                         |
+| Legacy NFT         | Supply one, zero decimals, revoked mint authority, no freeze authority, and a one-copy bundle.                                                                                                                                                                       |
+| Token Metadata NFT | Transfer adapter with supply/decimal and metadata PDA validation. Mint/freeze authority must be revoked or held by the canonical Master Edition PDA. Programmable token records and authorization rules are rejected until their mutability is compatibility-tested. |
+| Metaplex Core      | Only plain, uncollected Core assets with no plugins or external adapters are admitted, preventing a third-party mutable transfer policy from stranding escrow.                                                                                                       |
+| Compressed NFT     | Bubblegum transfer adapter bound to the asset ID, tree, leaf index, hashes, nonce, and fresh Merkle proof accounts.                                                                                                                                                  |
 
 Collection and compressed transfers require fresh account resolution at funding, claim, and reclaim time. The typed SDK prevents silently routing those assets through the generic token path.
 
 ## Payers and authority
 
-- The treasury creator signs and pays for creation, staged funding, activation, append operations, cancellation, exact box issuance, market lock, and retirement.
-- The box owner signs and pays for burn/commit. The playground also uses that owner for proof verification, FIFO allocation, and claim transactions.
-- Verification, allocation, and claim instructions are permissionless so a relayer may pay instead; destination substitution is impossible.
-- The program does not contain an unbounded on-chain crank subsidy. Production operators may fund a dedicated relayer wallet or sponsor transactions outside the prize inventory. Any future reimbursement policy needs an explicit cap and separate audit.
+- The treasury creator signs and pays for creation, staged funding, activation, append operations, cancellation, exact box issuance, market lock, retirement, and any optional result/bounty service reserve.
+- The box authority signs the burn. The transaction payer may be a sponsor and is recorded as the rent-refund address; the beneficiary may be another wallet or an integrating program's controlled account.
+- Verification, allocation, and claim instructions are permissionless so a relayer may pay; destination substitution is impossible.
+- The bounded creator-funded bounty rewards successful fulfillment or timeout recovery without exposing prize collateral or requiring the beneficiary to sign.
 
 ## Developer API
 
-Legacy v1 discriminators 0–9 are unchanged. V2 uses discriminators 10–37:
+The generated interface currently exposes these treasury instructions:
 
-| Phase      | Instructions                                                                                                                                            |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Template   | `createTemplate`, `sealTemplate`, `lockTreasury`, `retireTemplate`                                                                                      |
-| Stage      | `addBundle`, `fundSolPrize`, `fundTokenPrize`, `fundMetadataNftPrize`, `fundCoreAssetPrize`, `fundCompressedNftPrize`, `activateBundle`, `cancelBundle` |
-| Issue/open | `mintTemplateBoxes`, `requestTemplateOpen`, `fulfillTemplateOpen`, `allocateTemplateOpen`, `forfeitTemplateOpen`                                        |
-| Deliver    | `claimSolPrize`, `claimTokenPrize`, `claimMetadataNftPrize`, `claimCoreAssetPrize`, `claimCompressedNftPrize`                                           |
-| Recover    | `reclaimSolPrize`, `reclaimTokenPrize`, `reclaimMetadataNftPrize`, `reclaimCoreAssetPrize`, `reclaimCompressedNftPrize`, `closeTemplateOpening`         |
+| Phase      | Instructions                                                                                                                                                         |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Template   | `createTemplate`, `sealTemplate`, `lockTreasury`, `retireTemplate`                                                                                                   |
+| Stage      | `addBundle`, `fundSolPrize`, `fundTokenPrize`, `fundMetadataNftPrize`, `fundCoreAssetPrize`, `fundCompressedNftPrize`, `activateBundle`, `cancelBundle`              |
+| Issue/open | `mintTemplateBoxes`, `requestTemplateOpen`, `fulfillTemplateOpen`, `allocateTemplateOpen`, `forfeitTemplateOpen`                                                     |
+| Deliver    | `claimSolPrize`, `claimTokenPrize`, `claimMetadataNftPrize`, `claimCoreAssetPrize`, `claimCompressedNftPrize`                                                        |
+| Recover    | `reclaimSolPrize`, `reclaimTokenPrize`, `reclaimMetadataNftPrize`, `reclaimCoreAssetPrize`, `reclaimCompressedNftPrize`, `closeTemplateOpening`, `closeServiceVault` |
 
 The TypeScript planner calculates exact inventory and collateral before building transactions:
 
@@ -122,6 +140,8 @@ import { address } from "@solana/kit";
 const plan = createTemplatePlan({
 	name: "A small miracle",
 	opensAt: BigInt(Math.floor(Date.now() / 1000) + 86_400),
+	resultReceiptsEnabled: true,
+	settlementBountyLamports: 50_000n,
 	bundles: [
 		{
 			label: "A little SOL",
@@ -153,7 +173,7 @@ Replace the placeholder with a valid address before running the example. Rust ex
 
 The local control plane exposes:
 
-- `GET /assets/tokens?q=...`: Jupiter Tokens V2 search through a server-side `JUPITER_API_KEY`, with a five-minute bounded cache and a clearly labeled fallback list.
+- `GET /assets/tokens?q=...`: Jupiter Tokens search through a server-side `JUPITER_API_KEY`, with a five-minute bounded cache and a clearly labeled fallback list.
 - `GET /assets/nfts?owner=...&q=...`: Metaplex DAS `getAssetsByOwner` through `DAS_RPC_URL`, normalized across standard, Core, and compressed assets.
 
 Keys never reach the browser. Search results show source, verification status, exact identifiers, standard, and warnings. The local playground mirrors selected catalog entries into disposable Surfpool assets; it never moves mainnet property. Manual addresses remain available for integration work.

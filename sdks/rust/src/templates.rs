@@ -82,11 +82,19 @@ pub enum TemplatePlanError {
 	ArithmeticOverflow,
 }
 
+/// Creator-funded optional services attached to a locked treasury.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct ServicePlan {
+	pub settlement_bounty_lamports: u64,
+	pub result_receipts_enabled: bool,
+}
+
 /// Borrowed, checked prize manifest. Its total tickets are the mint capacity.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TemplatePlan<'a> {
 	bundles: &'a [PrizeBundle<'a>],
 	total_bundles: u64,
+	services: ServicePlan,
 }
 
 impl<'a> TemplatePlan<'a> {
@@ -124,12 +132,21 @@ impl<'a> TemplatePlan<'a> {
 		let plan = Self {
 			bundles,
 			total_bundles,
+			services: ServicePlan::default(),
 		};
 		for asset in bundles.iter().flat_map(|bundle| bundle.assets) {
 			plan.required_collateral(asset.identifier())?;
 		}
 
 		Ok(plan)
+	}
+
+	/// Attach creator-funded receipt and settlement options.
+	#[must_use]
+	pub const fn with_services(mut self, services: ServicePlan) -> Self {
+		self.services = services;
+
+		self
 	}
 
 	#[must_use]
@@ -146,6 +163,41 @@ impl<'a> TemplatePlan<'a> {
 	#[must_use]
 	pub const fn bundles(&self) -> &'a [PrizeBundle<'a>] {
 		self.bundles
+	}
+
+	#[must_use]
+	pub const fn services(&self) -> ServicePlan {
+		self.services
+	}
+
+	/// Calculate the service funding transferred at treasury lock.
+	///
+	/// `result_receipt_rent` must be the cluster's current rent-exempt minimum
+	/// for one generated result receipt account.
+	///
+	/// # Errors
+	/// Returns arithmetic overflow when the full creator budget does not fit in
+	/// an on-chain `u64` balance.
+	pub fn required_service_budget(
+		&self,
+		result_receipt_rent: u64,
+	) -> Result<u64, TemplatePlanError> {
+		let receipt_budget = if self.services.result_receipts_enabled {
+			result_receipt_rent
+				.checked_mul(self.total_bundles)
+				.ok_or(TemplatePlanError::ArithmeticOverflow)?
+		} else {
+			0
+		};
+		let bounty_budget = self
+			.services
+			.settlement_bounty_lamports
+			.checked_mul(self.total_bundles)
+			.ok_or(TemplatePlanError::ArithmeticOverflow)?;
+
+		receipt_budget
+			.checked_add(bounty_budget)
+			.ok_or(TemplatePlanError::ArithmeticOverflow)
 	}
 
 	/// Exact initial probability as a numerator/denominator pair.
@@ -275,5 +327,24 @@ mod tests {
 			TemplatePlan::new(&too_many),
 			Err(TemplatePlanError::TicketLimitExceeded)
 		);
+	}
+
+	#[test]
+	fn creator_service_budget_is_exact_and_optional() {
+		let sol = [PrizeAsset::Sol { lamports: 1 }];
+		let bundles = [PrizeBundle {
+			quantity: 3,
+			assets: &sol,
+		}];
+		let plan = TemplatePlan::new(&bundles).expect("plan");
+		assert_eq!(plan.required_service_budget(2_000_000), Ok(0));
+
+		let plan = plan.with_services(ServicePlan {
+			settlement_bounty_lamports: 50_000,
+			result_receipts_enabled: true,
+		});
+		assert_eq!(plan.required_service_budget(2_000_000), Ok(6_150_000));
+		assert_eq!(plan.services().settlement_bounty_lamports, 50_000);
+		assert!(plan.services().result_receipts_enabled);
 	}
 }

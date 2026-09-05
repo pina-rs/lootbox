@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,6 +12,7 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
+
 @immutable
 class CreateLootboxInstructionData {
   const CreateLootboxInstructionData({
@@ -20,7 +22,8 @@ class CreateLootboxInstructionData {
     required this.oracleQueue,
     required this.bump,
     required this.vaultBump,
-  }) : discriminator = 0;
+  }) :
+      discriminator = 0;
 
   final int discriminator;
   final BigInt id;
@@ -68,18 +71,20 @@ Decoder<CreateLootboxInstructionData> getCreateLootboxInstructionDataDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'createLootbox instruction decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'createLootbox instruction decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
-  (CreateLootboxInstructionData, int) readTopLevel(
-    Uint8List bytes,
-    int offset,
-  ) {
-    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 0);
+  (CreateLootboxInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
+    getConstantDecoder(
+      getU8Encoder().encode(0),
+    ).read(bytes, offset + 0);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
@@ -87,12 +92,12 @@ Decoder<CreateLootboxInstructionData> getCreateLootboxInstructionDataDecoder() {
 
     return (
       CreateLootboxInstructionData(
-        id: map['id']! as BigInt,
-        maxSupply: map['maxSupply']! as BigInt,
-        oracleProgram: map['oracleProgram']! as Address,
-        oracleQueue: map['oracleQueue']! as Address,
-        bump: map['bump']! as int,
-        vaultBump: map['vaultBump']! as int,
+      id: map['id']! as BigInt,
+      maxSupply: map['maxSupply']! as BigInt,
+      oracleProgram: map['oracleProgram']! as Address,
+      oracleQueue: map['oracleQueue']! as Address,
+      bump: map['bump']! as int,
+      vaultBump: map['vaultBump']! as int,
       ),
       newOffset,
     );
@@ -118,12 +123,8 @@ Decoder<CreateLootboxInstructionData> getCreateLootboxInstructionDataDecoder() {
   };
 }
 
-Codec<CreateLootboxInstructionData, CreateLootboxInstructionData>
-getCreateLootboxInstructionDataCodec() {
-  return combineCodec(
-    getCreateLootboxInstructionDataEncoder(),
-    getCreateLootboxInstructionDataDecoder(),
-  );
+Codec<CreateLootboxInstructionData, CreateLootboxInstructionData> getCreateLootboxInstructionDataCodec() {
+  return combineCodec(getCreateLootboxInstructionDataEncoder(), getCreateLootboxInstructionDataDecoder());
 }
 
 /// Creates a [CreateLootbox] instruction.
@@ -143,31 +144,29 @@ Instruction getCreateLootboxInstruction({
   required int vaultBump,
 }) {
   final instructionData = CreateLootboxInstructionData(
-    id: id,
-    maxSupply: maxSupply,
-    oracleProgram: oracleProgram,
-    oracleQueue: oracleQueue,
-    bump: bump,
-    vaultBump: vaultBump,
+      id: id,
+      maxSupply: maxSupply,
+      oracleProgram: oracleProgram,
+      oracleQueue: oracleQueue,
+      bump: bump,
+      vaultBump: vaultBump,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.writableSigner),
-      AccountMeta(address: boxMint, role: AccountRole.readonly),
-      AccountMeta(address: lootbox, role: AccountRole.writable),
-      AccountMeta(address: vault, role: AccountRole.writable),
-      AccountMeta(address: systemProgram, role: AccountRole.readonly),
-      AccountMeta(address: tokenProgram, role: AccountRole.readonly),
+    AccountMeta(address: authority, role: AccountRole.writableSigner),
+    AccountMeta(address: boxMint, role: AccountRole.readonly),
+    AccountMeta(address: lootbox, role: AccountRole.writable),
+    AccountMeta(address: vault, role: AccountRole.writable),
+    AccountMeta(address: systemProgram, role: AccountRole.readonly),
+    AccountMeta(address: tokenProgram, role: AccountRole.readonly),
     ],
     data: getCreateLootboxInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [CreateLootbox] instruction from raw instruction data.
-CreateLootboxInstructionData parseCreateLootboxInstruction(
-  Instruction instruction,
-) {
+CreateLootboxInstructionData parseCreateLootboxInstruction(Instruction instruction) {
   return getCreateLootboxInstructionDataDecoder().decode(instruction.data!);
 }

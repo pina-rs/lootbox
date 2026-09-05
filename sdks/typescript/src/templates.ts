@@ -87,12 +87,33 @@ export type TemplatePlan = Readonly<{
 	name: string;
 	uri: string;
 	opensAt: bigint;
+	settlementBountyLamports: bigint;
+	resultReceiptsEnabled: boolean;
 	bundles: readonly PrizeBundlePlan[];
 	totalBundles: bigint;
 	/** Exact box issuance after the treasury receives its market lock. */
 	fixedSupply: bigint;
 	treasury: readonly TreasuryRequirement[];
 }>;
+
+/** Exact creator-funded service deposit collected when a treasury locks. */
+export function requiredServiceBudget(
+	plan: Pick<
+		TemplatePlan,
+		"totalBundles" | "settlementBountyLamports" | "resultReceiptsEnabled"
+	>,
+	resultReceiptRent: bigint,
+): bigint {
+	const rent = u64(resultReceiptRent, "result receipt rent");
+	const receiptBudget = plan.resultReceiptsEnabled
+		? u64(rent * plan.totalBundles, "result receipt budget")
+		: 0n;
+	const bountyBudget = u64(
+		plan.settlementBountyLamports * plan.totalBundles,
+		"settlement bounty budget",
+	);
+	return u64(receiptBudget + bountyBudget, "service budget");
+}
 
 function u64(value: bigint, field: string): bigint {
 	if (typeof value !== "bigint" || value < 0n || value > U64_MAX) {
@@ -162,11 +183,18 @@ export function createTemplatePlan(
 		name: string;
 		uri?: string;
 		opensAt?: bigint;
+		settlementBountyLamports?: bigint;
+		resultReceiptsEnabled?: boolean;
 		bundles: readonly PrizeBundleInput[];
 	}>,
 ): TemplatePlan {
 	const uri = input.uri ?? "";
 	const opensAt = input.opensAt ?? 0n;
+	const settlementBountyLamports = u64(
+		input.settlementBountyLamports ?? 0n,
+		"settlement bounty",
+	);
+	const resultReceiptsEnabled = input.resultReceiptsEnabled ?? false;
 	if (input.name.trim().length === 0) {
 		throw new RangeError("template name is required");
 	}
@@ -204,6 +232,23 @@ export function createTemplatePlan(
 		}
 		const seen = new Set<Address | null>();
 		const assets = bundle.assets.map((asset): PrizeAsset => {
+			if (
+				asset.kind === "nft" &&
+				(asset.tokenRecord || asset.destinationTokenRecord ||
+					asset.authorizationRulesProgram || asset.authorizationRules)
+			) {
+				throw new RangeError(
+					"programmable NFT rules are not admitted until their mutability is compatibility-tested",
+				);
+			}
+			if (
+				asset.kind === "core" &&
+				(asset.collection || (asset.pluginAccounts?.length ?? 0) > 0)
+			) {
+				throw new RangeError(
+					"only plain uncollected Core assets without plugins are admitted",
+				);
+			}
 			const identifier = assetAddress(asset);
 			const amount = u64(assetAmount(asset), "prize amount");
 			if (
@@ -246,6 +291,8 @@ export function createTemplatePlan(
 		name: input.name,
 		uri,
 		opensAt,
+		settlementBountyLamports,
+		resultReceiptsEnabled,
 		totalBundles,
 		fixedSupply: totalBundles,
 		bundles: Object.freeze(normalized.map((bundle) =>

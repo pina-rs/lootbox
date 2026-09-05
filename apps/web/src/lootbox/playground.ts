@@ -46,10 +46,12 @@ export type CreatorInput = {
 	name: string;
 	uri: string;
 	opensAt: string;
+	resultReceiptsEnabled: boolean;
+	settlementBountySol: string;
 	rows: PrizeRow[];
 };
 type Draft = {
-	version: 2;
+	format: "treasury";
 	mode: "create" | "append";
 	template?: string;
 	startBundleCount?: number;
@@ -367,6 +369,8 @@ export const initialInput: CreatorInput = {
 	name: "Midnight cargo",
 	uri: "",
 	opensAt: defaultRevealDate(),
+	resultReceiptsEnabled: false,
+	settlementBountySol: "0",
 	rows: [
 		{ label: "Pocket spark", quantity: "8", assets: [makeAsset("sol")] },
 		{ label: "BONK crate", quantity: "4", assets: [makeAsset("token")] },
@@ -414,6 +418,9 @@ export function creatorErrors(input: CreatorInput): Record<string, string> {
 	} else if (revealTime <= Date.now() + 60_000) {
 		errors.opensAt = "Reveal must be at least one minute in the future";
 	}
+	check("settlementBountySol", () => {
+		parseUnits(input.settlementBountySol, 9);
+	});
 	if (input.rows.length < 1 || input.rows.length > MAX_BUNDLES) {
 		errors.bundles = `Use one to ${MAX_BUNDLES} bundles`;
 	}
@@ -509,12 +516,13 @@ export function previewInput(input: CreatorInput) {
 }
 
 const draftKey = (sandbox: Playground) =>
-	`lootbox:draft:v2:${sandbox.config.instanceId}`;
+	`lootbox:draft:${sandbox.config.instanceId}`;
 function parseDraft(raw: string): Draft {
 	const value: unknown = JSON.parse(raw);
 	const draft = record(value);
 	if (
-		draft.version !== 2 || (draft.mode !== "create" && draft.mode !== "append")
+		draft.format !== "treasury" ||
+		(draft.mode !== "create" && draft.mode !== "append")
 	) {
 		throw new Error(
 			"This saved draft uses an older treasury format and cannot be resumed",
@@ -552,7 +560,7 @@ function createDraft(
 	startBundleCount?: number,
 ): Draft {
 	return {
-		version: 2,
+		format: "treasury",
 		mode,
 		...(template ? { template } : {}),
 		...(startBundleCount === undefined ? {} : { startBundleCount }),
@@ -664,6 +672,8 @@ export async function createDrop(
 		name: input.name,
 		uri: input.uri,
 		opensAt: BigInt(Math.floor(Date.parse(input.opensAt) / 1000)),
+		resultReceiptsEnabled: input.resultReceiptsEnabled,
+		settlementBountyLamports: parseUnits(input.settlementBountySol, 9),
 		bundles: await localBundles(sandbox, draft, progress),
 	});
 	const template = await sandbox.client("creator", progress).createTemplate(
@@ -800,11 +810,17 @@ export async function settleOpenings(
 			if (proof.testOnly !== true || typeof proof.recoveryId !== "number") {
 				throw new Error("Expected an emulator proof");
 			}
-			await client.fulfill(template, opening, sandbox.config.oracle, {
-				signature: bytes(proof.signature, 64),
-				recoveryId: proof.recoveryId,
-				value: bytes(proof.value, 32),
-			});
+			await client.settle(
+				await client.template(template.address),
+				opening,
+				sandbox.config.oracle,
+				{
+					signature: bytes(proof.signature, 64),
+					recoveryId: proof.recoveryId,
+					value: bytes(proof.value, 32),
+				},
+			);
+			continue;
 		}
 		const current = await client.rpc.getAccountInfo(opening.address, {
 			commitment: "processed",

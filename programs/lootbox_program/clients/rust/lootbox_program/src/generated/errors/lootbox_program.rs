@@ -25,9 +25,9 @@ pub enum LootboxProgramError {
 	/// 2 - The configured outcome does not exist or is out of range.
 	#[error("The configured outcome does not exist or is out of range.")]
 	InvalidOutcome = 0x2,
-	/// An outcome weight must be non-zero and keep total weight within the v1 bound.
-	/// 3 - An outcome weight must be non-zero and keep total weight within the v1 bound.
-	#[error("An outcome weight must be non-zero and keep total weight within the v1 bound.")]
+	/// An outcome weight must be non-zero and keep total weight within the bound.
+	/// 3 - An outcome weight must be non-zero and keep total weight within the bound.
+	#[error("An outcome weight must be non-zero and keep total weight within the bound.")]
 	InvalidWeight = 0x3,
 	/// The lootbox cannot be sealed until at least one outcome exists.
 	/// 4 - The lootbox cannot be sealed until at least one outcome exists.
@@ -105,6 +105,14 @@ pub enum LootboxProgramError {
 	/// 22 - A market treasury must be locked before its earliest reveal date.
 	#[error("A market treasury must be locked before its earliest reveal date.")]
 	RevealDatePassed = 0x16,
+	/// The optional service vault or result receipt is invalid.
+	/// 23 - The optional service vault or result receipt is invalid.
+	#[error("The optional service vault or result receipt is invalid.")]
+	InvalidServiceAccount = 0x17,
+	/// The creator-funded receipt or settlement budget is exhausted.
+	/// 24 - The creator-funded receipt or settlement budget is exhausted.
+	#[error("The creator-funded receipt or settlement budget is exhausted.")]
+	ServiceBudgetExhausted = 0x18,
 }
 
 impl From<LootboxProgramError> for solana_program_error::ProgramError {

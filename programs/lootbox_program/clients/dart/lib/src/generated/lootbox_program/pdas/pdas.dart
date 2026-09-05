@@ -4,6 +4,7 @@
 export 'bundle.dart';
 export 'lootbox.dart';
 export 'opening.dart';
+export 'result_receipt.dart';
 export 'template.dart';
 export 'template_opening.dart';
 export 'vault.dart';

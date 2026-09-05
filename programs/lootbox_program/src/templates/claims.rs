@@ -3,7 +3,9 @@
 use super::*;
 
 #[instruction(discriminator = LootboxInstruction::AllocateTemplateOpen)]
-pub struct AllocateTemplateOpenInstruction {}
+pub struct AllocateTemplateOpenInstruction {
+	pub result_receipt_bump: u8,
+}
 
 #[instruction(discriminator = LootboxInstruction::ClaimSolPrize)]
 pub struct ClaimSolPrizeInstruction {
@@ -20,6 +22,11 @@ pub struct AllocateTemplateOpenAccounts<'a> {
 	pub template: &'a mut AccountView,
 	pub opening: &'a mut AccountView,
 	pub bundle: &'a AccountView,
+	/// Creator-funded when permanent result receipts are enabled.
+	pub service_vault: &'a mut AccountView,
+	/// Created only when enabled in the locked treasury configuration.
+	pub result_receipt: &'a mut AccountView,
+	pub system_program: &'a AccountView,
 }
 
 #[derive(Accounts, Debug)]
@@ -98,7 +105,7 @@ fn allocate(
 	}
 
 	if opening.eligible_bundle_count.get() > state.bundle_count.get()
-		|| opening.treasury_version.get() > state.version.get()
+		|| opening.treasury_revision.get() > state.revision.get()
 	{
 		return Err(ProgramError::InvalidAccountData);
 	}
@@ -143,23 +150,115 @@ fn allocate(
 
 impl<'a> ProcessAccountInfos<'a> for AllocateTemplateOpenAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
-		let _ = AllocateTemplateOpenInstruction::try_from_bytes(data)?;
+		let args = AllocateTemplateOpenInstruction::try_from_bytes(data)?;
 		let template = *self.template.address();
 		let address = *self.opening.address();
+		self.service_vault.assert_writable()?;
+		self.result_receipt.assert_empty()?.assert_writable()?;
+		self.system_program.assert_address(&system::ID)?;
 		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
 		assert_template(&template, &state)?;
+		assert_service_vault(self.service_vault, &template, &state)?;
 		assert_bundle(self.bundle, &template)?;
 		let bundle = self.bundle.as_account::<BundleState>(&ID)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&address, &opening, &template)?;
 
 		if bundle.status != BUNDLE_ACTIVE
-			|| bundle.activated_version.get() > opening.treasury_version.get()
+			|| bundle.activated_revision.get() > opening.treasury_revision.get()
 		{
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 
-		allocate(&mut state, &mut opening, &address, bundle.index.get())
+		allocate(&mut state, &mut opening, &address, bundle.index.get())?;
+
+		if !state.result_receipts_enabled.get() {
+			return Ok(());
+		}
+
+		let result_receipt_seeds = ResultReceiptState::seeds(&address);
+		if self
+			.result_receipt
+			.assert_canonical_bump(&result_receipt_seeds.as_slices(), &ID)?
+			!= args.result_receipt_bump
+		{
+			return Err(ProgramError::InvalidSeeds);
+		}
+
+		let selected_bundle = opening.selected_bundle.get();
+		let box_authority = opening.box_authority;
+		let beneficiary = opening.beneficiary;
+		let consumer_program = opening.consumer_program;
+		let consumer_context = opening.consumer_context;
+		let randomness = opening.randomness;
+		let sequence = opening.sequence.get();
+		let manifest_hash = state.manifest_hash;
+		let service_vault_bump = state.service_vault_bump;
+		drop(opening);
+		drop(bundle);
+
+		let service_vault_balance = self.service_vault.lamports();
+		let required_before = required_service_balance(&state)?;
+		let remaining_receipts = state
+			.remaining_result_receipts
+			.get()
+			.checked_sub(1)
+			.ok_or_else(|| lootbox_error(LootboxError::ServiceBudgetExhausted))?;
+
+		if service_vault_balance < required_before {
+			return Err(lootbox_error(LootboxError::ServiceBudgetExhausted));
+		}
+
+		let receipt_rent_lamports = state.result_receipt_rent_lamports.get();
+		state.remaining_result_receipts.set(remaining_receipts);
+		let required_after = required_service_balance(&state)?;
+		drop(state);
+
+		let service_vault_bump = [service_vault_bump];
+		let service_vault_signer = PdaSigner::from_slices([
+			SEED_SERVICE_VAULT,
+			template.as_ref(),
+			service_vault_bump.as_slice(),
+		]);
+		// The isolated vault is a zero-data System account controlled by this PDA,
+		// so its prepaid balance can fund receipt creation through ordinary System
+		// Program CPIs without making the opener sign or pay.
+		system::instructions::Transfer {
+			from: self.service_vault,
+			to: self.result_receipt,
+			lamports: receipt_rent_lamports,
+		}
+		.invoke_signed(&[service_vault_signer.as_signer()])?;
+
+		CreateProgramAccountWithBump {
+			account: self.result_receipt,
+			payer: self.service_vault,
+			owner: &ID,
+			seeds: &result_receipt_seeds.as_slices(),
+			bump: args.result_receipt_bump,
+		}
+		.invoke_signed::<ResultReceiptState>(&[service_vault_signer.as_signer()])?;
+
+		if self.service_vault.lamports() < required_after {
+			return Err(lootbox_error(LootboxError::ServiceBudgetExhausted));
+		}
+
+		let mut result_receipt = self
+			.result_receipt
+			.as_account_mut::<ResultReceiptState>(&ID)?;
+		result_receipt.template = template;
+		result_receipt.opening = address;
+		result_receipt.box_authority = box_authority;
+		result_receipt.beneficiary = beneficiary;
+		result_receipt.consumer_program = consumer_program;
+		result_receipt.consumer_context = consumer_context;
+		result_receipt.manifest_hash = manifest_hash;
+		result_receipt.randomness = randomness;
+		result_receipt.sequence.set(sequence);
+		result_receipt.selected_bundle.set(selected_bundle);
+		result_receipt.bump = args.result_receipt_bump;
+
+		Ok(())
 	}
 }
 
@@ -176,7 +275,7 @@ pub(super) fn record_claim(
 		return Err(lootbox_error(LootboxError::InvalidState));
 	}
 
-	if opening.recipient != *recipient {
+	if opening.beneficiary != *recipient {
 		return Err(lootbox_error(LootboxError::InvalidRecipient));
 	}
 
@@ -286,7 +385,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimTokenPrizeAccounts<'a> {
 			&token_program,
 		)?);
 		drop(self.destination.as_associated_token_account_checked(
-			&opening.recipient,
+			&opening.beneficiary,
 			self.mint.address(),
 			&token_program,
 		)?);
@@ -338,7 +437,7 @@ mod tests {
 	fn pool(bytes: &mut [u8; TemplateState::SIZE], quantities: [u64; 3]) -> &mut TemplateStateZc {
 		let state = TemplateState::initialize(bytes).expect("template");
 		state.bundle_count.set(3);
-		state.version.set(3);
+		state.revision.set(3);
 		state.status = TEMPLATE_LIVE;
 		let total = quantities.iter().sum();
 		state.remaining_bundles.set(total);
@@ -391,7 +490,7 @@ mod tests {
 		let opening = TemplateOpeningState::initialize(&mut receipt).expect("opening");
 		opening.status = 1;
 		opening.sequence.set(1);
-		opening.treasury_version.set(3);
+		opening.treasury_revision.set(3);
 		opening.eligible_bundle_count.set(3);
 		assert_eq!(
 			allocate(state, opening, &Address::default(), 0),
@@ -503,7 +602,7 @@ mod tests {
 				let opening = TemplateOpeningState::initialize(&mut receipt).expect("opening");
 				opening.status = 1;
 				opening.sequence.set(sequence);
-				opening.treasury_version.set(3);
+				opening.treasury_revision.set(3);
 				opening.eligible_bundle_count.set(3);
 				opening.entropy = entropy;
 				let target = select_outcome(&entropy, &Address::default(), &Address::default(), available_in_prefix(state, 3).expect("inventory")).expect("target");

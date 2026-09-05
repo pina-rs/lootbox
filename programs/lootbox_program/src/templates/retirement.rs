@@ -68,6 +68,13 @@ impl<'a> ProcessAccountInfos<'a> for RetireTemplateAccounts<'a> {
 		validate_retirement(&state, sysvars::clock::Clock::get()?.unix_timestamp)?;
 
 		state.status = TEMPLATE_RETIRED;
+		if state.locked_at.get() == 0 {
+			// The optional services are funded only by a successful market lock.
+			// A missed-deadline recovery therefore preserves opening rights without
+			// promising receipts or bounties that were never collateralized.
+			state.result_receipts_enabled.set(false);
+			state.settlement_bounty_lamports.set(0);
+		}
 
 		Ok(())
 	}

@@ -15,13 +15,22 @@ pub struct TemplateOpeningState {
 /// A burned box, its verified entropy, and independently claimable winning assets.
 	pub discriminator: u8,
 	pub template: solana_pubkey::Pubkey,
-	pub recipient: solana_pubkey::Pubkey,
+	/// Authority that owned and burned the box.
+	pub box_authority: solana_pubkey::Pubkey,
+	/// Immutable destination for every prize claim.
+	pub beneficiary: solana_pubkey::Pubkey,
+	/// Account that receives opening rent when the lifecycle is closed.
+	pub rent_refund: solana_pubkey::Pubkey,
+	/// Optional program expected to consume the result receipt.
+	pub consumer_program: solana_pubkey::Pubkey,
+	/// Consumer-selected correlation key, fixed before randomness is known.
+	pub consumer_context: [u8; 32],
 	pub randomness: solana_pubkey::Pubkey,
 	pub sequence: u64,
 	pub seed_slot: u64,
 	pub entropy: [u8; 32],
-	/// Treasury version and bundle prefix fixed before the box is burned.
-	pub treasury_version: u64,
+	/// Treasury revision and bundle prefix fixed before the box is burned.
+	pub treasury_revision: u64,
 	pub eligible_bundle_count: u32,
 	/// 0 committed, 1 verified, 2 allocated, 3 delivered, 4 forfeited.
 	pub status: u8,

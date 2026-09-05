@@ -1,13 +1,19 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
+
 import 'package:meta/meta.dart';
 import 'package:solana_kit_addresses/solana_kit_addresses.dart';
 import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 
+
 @immutable
 class BundleSeeds {
-  const BundleSeeds({required this.template, required this.index});
+  const BundleSeeds({
+    required this.template,
+    required this.index,
+  });
 
   final Address template;
   final int index;

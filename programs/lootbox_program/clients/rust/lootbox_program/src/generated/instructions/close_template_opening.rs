@@ -15,7 +15,7 @@ pub const CLOSE_TEMPLATE_OPENING_DISCRIMINATOR: u8 = 24u8;
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct CloseTemplateOpening {
-	pub recipient: solana_pubkey::Pubkey,
+	pub rent_refund: solana_pubkey::Pubkey,
 	pub template: solana_pubkey::Pubkey,
 	pub opening: solana_pubkey::Pubkey,
 	pub randomness: solana_pubkey::Pubkey,
@@ -31,9 +31,9 @@ pub struct CloseTemplateOpening {
 }
 
 impl CloseTemplateOpening {
-	pub fn new(recipient: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, oracle_lut: solana_pubkey::Pubkey, oracle_lut_signer: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey, address_lookup_table_program: solana_pubkey::Pubkey) -> Self {
+	pub fn new(rent_refund: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, oracle_lut: solana_pubkey::Pubkey, oracle_lut_signer: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey, address_lookup_table_program: solana_pubkey::Pubkey) -> Self {
 		Self {
-			recipient,
+			rent_refund,
 			template,
 			opening,
 			randomness,
@@ -60,7 +60,7 @@ impl CloseTemplateOpening {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(13 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new(self.recipient, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.rent_refund, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.randomness, false));

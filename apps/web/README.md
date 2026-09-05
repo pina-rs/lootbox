@@ -37,19 +37,19 @@ The browser never receives either credential. Without a Jupiter key, the token p
 1. Open **Workshop**. The default manifest contains eight 0.1 SOL tickets, four 100-token tickets, and one bundle with 1 SOL plus two one-of-one test NFTs. Its initial odds are 61.54%, 30.77%, and 7.69%.
 2. Set the name, optional permanent metadata URI, and future reveal date. The date control separates calendar, time, and browser timezone, shows the pre-reveal trading window, and includes 24-hour, three-day, and next-Friday shortcuts.
 3. Compose one to 256 prize bundles. A bundle has one to four assets and a copy count; every copy is one equal ticket. There are no weights. Bundles containing a unique NFT have exactly one copy.
-4. Use **Add asset to bundle** to search Jupiter Tokens V2, inspect the creator wallet through Metaplex DAS, choose native/local fixtures, or enter an address manually. Source, verification, asset standard, and exact ID remain visible.
-5. Choose **Fund & publish treasury**. Each bundle is staged, fully funded, and activated in sequence. Activation alone changes odds/version/capacity. Multiple creator-signed transactions are expected.
+4. Use **Add asset to bundle** to search Jupiter Tokens, inspect the creator wallet through Metaplex DAS, choose native/local fixtures, or enter an address manually. Source, verification, asset standard, and exact ID remain visible.
+5. Choose **Fund & publish treasury**. Each bundle is staged, fully funded, and activated in sequence. Activation alone changes odds/revision/capacity. Multiple creator-signed transactions are expected.
 6. If funding is interrupted, reload and **Resume funding**. Confirmed steps are read from chain. **Reclaim staged draft** returns assets in only the unpublished tail and closes it; already active history stays immutable.
-7. Select a creator-owned live treasury and choose **Add prizes to this treasury**. The console shows its version, published bundles, remaining tickets, and pending openings. New fully funded bundles publish as later versions.
+7. Select a creator-owned live treasury and choose **Add prizes to this treasury**. The console shows its revision, published bundles, remaining tickets, and pending openings. New fully funded bundles publish as later revisions.
 8. Review the exact equation between funded bundle copies and box supply, accept the irreversible-lock disclosure, then **Mint & lock treasury**. Every missing box is minted to the creator and mint authority is revoked in that transaction. No additions or openings can precede this lock.
 9. Distribute whole boxes from the creator wallet. The market desk accepts explicit token/NFT valuations, calculates remaining EV, previews integer-only constant-product trades, and exports a checked Raydium CPMM deployment manifest. It does not submit a mainnet transaction from the local test wallet.
 
-Catalog choices are mirrored into disposable local assets so the sandbox never tries to transfer mainnet property. Production SDK callers use the selected classic SPL, safe Token-2022, Token Metadata/pNFT, Core, or compressed-NFT adapter with live ownership/proof accounts.
+Catalog choices are mirrored into disposable local assets so the sandbox never tries to transfer mainnet property. Production SDK callers use the selected classic SPL, safe Token-2022, standard Token Metadata NFT, Core, or compressed-NFT adapter with live ownership/proof accounts.
 
 ## Recipient journey
 
 1. Select a treasury. The manifest shows fixed on-chain inventory, current odds, bundle types, bundle copies, exact supply, reveal time, box balance, and pending queue.
-2. Before reveal, transfer or trade the identical zero-decimal box token. After reveal, **Open a gift**. One box is burned atomically with a fresh oracle commitment, and the receipt snapshots the locked treasury version and eligible bundle prefix.
+2. Before reveal, transfer or trade the identical zero-decimal box token. After reveal, **Open a gift**. One box is burned atomically with a fresh oracle commitment, and the receipt snapshots the locked treasury revision and eligible bundle prefix.
 3. Proof verification and FIFO allocation record the prize independently of animation. Reloading or **Resume opening** continues from the receipt; it never samples again.
 4. **Reveal your winnings**, then claim. Every asset is delivered to the receipt recipient and tracked with its own claim bit.
 5. **Close receipt & recover rent** after all assets arrive.
@@ -80,4 +80,4 @@ devenv shell -- pnpm --dir apps/web build
 devenv shell -- pnpm --dir apps/web test:e2e
 ```
 
-Playwright covers desktop and Pixel-sized layouts, mixed prize delivery to real local balances, reload/recovery, partial funding, time locks, transfers, offline state, and reduced motion. See the [v2 protocol](../../docs/treasury-templates.md) and [security notes](../../docs/security-templates.md).
+Playwright covers desktop and Pixel-sized layouts, mixed prize delivery to real local balances, reload/recovery, partial funding, time locks, transfers, offline state, and reduced motion. See the [treasury protocol](../../docs/treasury-templates.md) and [security notes](../../docs/security-templates.md).

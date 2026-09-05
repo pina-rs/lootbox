@@ -1,6 +1,7 @@
 //! Finite, fully escrowed prize bundles and reusable Token-2022 box templates.
 
 use pina::sysvars::Sysvar;
+use pina::sysvars::rent::Rent;
 
 use crate::*;
 
@@ -22,6 +23,10 @@ pub use close::*;
 const SEED_TEMPLATE: &[u8] = b"template";
 const SEED_BUNDLE: &[u8] = b"bundle";
 const SEED_TEMPLATE_OPENING: &[u8] = b"template-opening";
+const SEED_SERVICE_VAULT: &[u8] = b"service-vault";
+const SEED_RESULT_RECEIPT: &[u8] = b"result-receipt";
+const MANIFEST_BUNDLE_DOMAIN: &[u8] = b"pina-lootbox-manifest-bundle";
+const MANIFEST_DOMAIN: &[u8] = b"pina-lootbox-manifest";
 /// Maximum assets delivered by one winning bundle.
 pub const MAX_PRIZE_ASSETS: usize = 4;
 /// A native SOL prize, denominated in lamports.
@@ -32,7 +37,7 @@ pub const PRIZE_TOKEN: u8 = 1;
 pub const PRIZE_NFT: u8 = 2;
 /// A safe fungible Token-2022 prize.
 pub const PRIZE_TOKEN_2022: u8 = 3;
-/// A Token Metadata NFT or programmable NFT.
+/// A standard Token Metadata NFT with no programmable transfer rules.
 pub const PRIZE_METADATA_NFT: u8 = 4;
 /// A Metaplex Core asset.
 pub const PRIZE_CORE_ASSET: u8 = 5;
@@ -66,7 +71,19 @@ pub struct TemplateState {
 	pub next_request: u64,
 	pub next_allocation: u64,
 	/// Increments after every activated append; snapshotted by each opening.
-	pub version: u64,
+	pub revision: u64,
+	/// Incremental commitment to every activated bundle in append order.
+	pub manifest_accumulator: [u8; 32],
+	/// Final treasury commitment. Zero until the treasury is locked.
+	pub manifest_hash: [u8; 32],
+	/// Reward paid from the creator-funded service vault to a successful crank.
+	pub settlement_bounty_lamports: u64,
+	/// Rent prepaid for each optional immutable result receipt at market lock.
+	pub result_receipt_rent_lamports: u64,
+	/// Receipt allocations still covered by the isolated service vault.
+	pub remaining_result_receipts: u64,
+	/// Settlement or forfeiture cranks still covered by the service vault.
+	pub remaining_settlement_bounties: u64,
 	/// Undrawn inventory per append-only bundle, encoded as little-endian u64s.
 	pub remaining: [u8; 2048],
 	/// Null-padded UTF-8 display name; never used for authorization.
@@ -77,7 +94,11 @@ pub struct TemplateState {
 	/// 0 draft, 1 live, 2 retired. `locked_at` independently records the
 	/// irreversible market lock so retirement never erases that fact.
 	pub status: u8,
+	/// Whether allocation creates a permanent result receipt at creator expense.
+	pub result_receipts_enabled: bool,
 	pub bump: u8,
+	/// Canonical service vault bump, fixed when the treasury is locked.
+	pub service_vault_bump: u8,
 }
 
 /// A complete prize outcome and its escrow authority, shared across all boxes.
@@ -95,7 +116,7 @@ pub struct BundleState {
 	pub claimed: [u8; 32],
 	pub kinds: [u8; 4],
 	pub decimals: [u8; 4],
-	pub activated_version: u64,
+	pub activated_revision: u64,
 	pub index: u32,
 	pub asset_count: u8,
 	pub funded_assets: u8,
@@ -110,18 +131,46 @@ pub struct BundleState {
 #[pda(seeds = [SEED_TEMPLATE_OPENING, template: Address, randomness: Address], bump = bump)]
 pub struct TemplateOpeningState {
 	pub template: Address,
-	pub recipient: Address,
+	/// Authority that owned and burned the box.
+	pub box_authority: Address,
+	/// Immutable destination for every prize claim.
+	pub beneficiary: Address,
+	/// Account that receives opening rent when the lifecycle is closed.
+	pub rent_refund: Address,
+	/// Optional program expected to consume the result receipt.
+	pub consumer_program: Address,
+	/// Consumer-selected correlation key, fixed before randomness is known.
+	pub consumer_context: [u8; 32],
 	pub randomness: Address,
 	pub sequence: u64,
 	pub seed_slot: u64,
 	pub entropy: [u8; 32],
-	/// Treasury version and bundle prefix fixed before the box is burned.
-	pub treasury_version: u64,
+	/// Treasury revision and bundle prefix fixed before the box is burned.
+	pub treasury_revision: u64,
 	pub eligible_bundle_count: u32,
 	/// 0 committed, 1 verified, 2 allocated, 3 delivered, 4 forfeited.
 	pub status: u8,
 	pub selected_bundle: u32,
 	pub claimed_mask: u8,
+	pub bump: u8,
+}
+
+/// Optional immutable allocation result for consumption by another program.
+///
+/// No instruction mutates or closes this account after initialization.
+#[account(discriminator = LootboxAccountType)]
+#[pda(seeds = [SEED_RESULT_RECEIPT, opening: Address], bump = bump)]
+pub struct ResultReceiptState {
+	pub template: Address,
+	pub opening: Address,
+	pub box_authority: Address,
+	pub beneficiary: Address,
+	pub consumer_program: Address,
+	pub consumer_context: [u8; 32],
+	pub manifest_hash: [u8; 32],
+	pub randomness: Address,
+	pub sequence: u64,
+	pub selected_bundle: u32,
 	pub bump: u8,
 }
 
@@ -133,8 +182,41 @@ mod layout_tests {
 
 	#[test]
 	fn template_layout_reserves_all_256_inventory_slots() {
-		assert_eq!(TemplateState::SIZE, 2_495);
-		assert_eq!(size_of::<TemplateStateZc>(), 2_495);
+		assert_eq!(TemplateState::SIZE, size_of::<TemplateStateZc>());
+		const { assert!(TemplateState::SIZE > 2_495) };
+		const { assert!(TemplateState::SIZE <= 2_800) };
+		assert_eq!(BundleState::SIZE, size_of::<BundleStateZc>());
+		const { assert!(BundleState::SIZE <= 320) };
+		assert_eq!(
+			TemplateOpeningState::SIZE,
+			size_of::<TemplateOpeningStateZc>()
+		);
+		const { assert!(TemplateOpeningState::SIZE <= 384) };
+		assert_eq!(ResultReceiptState::SIZE, size_of::<ResultReceiptStateZc>());
+		const { assert!(ResultReceiptState::SIZE <= 320) };
+	}
+
+	#[test]
+	fn manifest_commits_to_bundle_and_service_terms() {
+		let mut bundle_bytes = [0; BundleState::SIZE];
+		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
+		bundle.index.set(3);
+		bundle.quantity.set(7);
+		bundle.asset_count = 1;
+		bundle.amounts[..8].copy_from_slice(&42u64.to_le_bytes());
+		let first = next_manifest_accumulator(&[0; 32], bundle);
+		bundle.amounts[..8].copy_from_slice(&43u64.to_le_bytes());
+		assert_ne!(first, next_manifest_accumulator(&[0; 32], bundle));
+
+		let mut template_bytes = [0; TemplateState::SIZE];
+		let template = TemplateState::initialize(&mut template_bytes).expect("template");
+		template.total_bundles.set(7);
+		template.bundle_count.set(1);
+		template.manifest_accumulator = first;
+		let address = Address::new_from_array([9; 32]);
+		let without_receipts = locked_manifest_hash(&address, template);
+		template.result_receipts_enabled.set(true);
+		assert_ne!(without_receipts, locked_manifest_hash(&address, template));
 	}
 }
 
@@ -146,6 +228,8 @@ pub struct CreateTemplateInstruction {
 	pub oracle_queue: Address,
 	pub name: [u8; 32],
 	pub uri: [u8; 200],
+	pub settlement_bounty_lamports: u64,
+	pub result_receipts_enabled: bool,
 	pub bump: u8,
 }
 
@@ -171,7 +255,9 @@ pub struct FundTokenPrizeInstruction {
 pub struct SealTemplateInstruction {}
 
 #[instruction(discriminator = LootboxInstruction::LockTreasury)]
-pub struct LockTreasuryInstruction {}
+pub struct LockTreasuryInstruction {
+	pub service_vault_bump: u8,
+}
 
 #[instruction(discriminator = LootboxInstruction::MintTemplateBoxes)]
 pub struct MintTemplateBoxesInstruction {
@@ -228,11 +314,14 @@ pub struct SealTemplateAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct LockTreasuryAccounts<'a> {
-	pub authority: &'a AccountView,
+	pub authority: &'a mut AccountView,
 	pub template: &'a mut AccountView,
 	pub box_mint: &'a mut AccountView,
 	/// The first unused bundle PDA proves that no funded tail was omitted.
 	pub bundle: &'a AccountView,
+	/// Created and creator-funded only when receipts or crank bounties are enabled.
+	pub service_vault: &'a mut AccountView,
+	pub system_program: &'a AccountView,
 	pub box_token_program: &'a AccountView,
 }
 
@@ -280,6 +369,46 @@ fn assert_bundle(account: &AccountView, template: &Address) -> ProgramResult {
 	account.assert_seeds_with_bump(&seeds.as_slices(), &ID)?;
 
 	Ok(())
+}
+
+fn has_service_vault(state: &TemplateStateZc) -> bool {
+	state.result_receipts_enabled.get() || state.settlement_bounty_lamports.get() != 0
+}
+
+fn assert_service_vault(
+	account: &AccountView,
+	template: &Address,
+	state: &TemplateStateZc,
+) -> ProgramResult {
+	if !has_service_vault(state) {
+		return Ok(());
+	}
+
+	let bump = [state.service_vault_bump];
+	let seeds = [SEED_SERVICE_VAULT, template.as_ref(), bump.as_slice()];
+	account.assert_seeds_with_bump(&seeds, &ID)?;
+	if account.owner() != &system::ID || !account.is_data_empty() {
+		return Err(lootbox_error(LootboxError::InvalidServiceAccount));
+	}
+
+	Ok(())
+}
+
+fn required_service_balance(state: &TemplateStateZc) -> Result<u64, ProgramError> {
+	let receipts = state
+		.result_receipt_rent_lamports
+		.get()
+		.checked_mul(state.remaining_result_receipts.get())
+		.ok_or(ProgramError::ArithmeticOverflow)?;
+	let bounties = state
+		.settlement_bounty_lamports
+		.get()
+		.checked_mul(state.remaining_settlement_bounties.get())
+		.ok_or(ProgramError::ArithmeticOverflow)?;
+
+	receipts
+		.checked_add(bounties)
+		.ok_or(ProgramError::ArithmeticOverflow)
 }
 
 fn assert_template_authority(authority: &AccountView, state: &TemplateStateZc) -> ProgramResult {
@@ -336,6 +465,55 @@ fn write_slot<const N: usize>(slots: &mut [u8; N], index: usize, value: u64) -> 
 		.copy_from_slice(&value.to_le_bytes());
 
 	Ok(())
+}
+
+fn next_manifest_accumulator(previous: &[u8; 32], bundle: &BundleStateZc) -> [u8; 32] {
+	let index = bundle.index.get().to_le_bytes();
+	let quantity = bundle.quantity.get().to_le_bytes();
+	let asset_count = [bundle.asset_count];
+	let digest = hashv(&[
+		MANIFEST_BUNDLE_DOMAIN,
+		previous,
+		&index,
+		&quantity,
+		&asset_count,
+		&bundle.mints,
+		&bundle.amounts,
+		&bundle.kinds,
+		&bundle.decimals,
+	]);
+	let mut result = [0u8; 32];
+	result.copy_from_slice(digest.as_ref());
+
+	result
+}
+
+fn locked_manifest_hash(template: &Address, state: &TemplateStateZc) -> [u8; 32] {
+	let id = state.id.get().to_le_bytes();
+	let opens_at = state.opens_at.get().to_le_bytes();
+	let total_bundles = state.total_bundles.get().to_le_bytes();
+	let bundle_count = state.bundle_count.get().to_le_bytes();
+	let settlement_bounty = state.settlement_bounty_lamports.get().to_le_bytes();
+	let result_receipts_enabled = [u8::from(state.result_receipts_enabled.get())];
+	let digest = hashv(&[
+		MANIFEST_DOMAIN,
+		template.as_ref(),
+		state.authority.as_ref(),
+		state.box_mint.as_ref(),
+		state.oracle_program.as_ref(),
+		state.oracle_queue.as_ref(),
+		&id,
+		&opens_at,
+		&total_bundles,
+		&bundle_count,
+		&settlement_bounty,
+		&result_receipts_enabled,
+		&state.manifest_accumulator,
+	]);
+	let mut result = [0u8; 32];
+	result.copy_from_slice(digest.as_ref());
+
+	result
 }
 
 fn mint_at(bundle: &BundleStateZc, index: usize) -> Result<Address, ProgramError> {
@@ -530,6 +708,12 @@ impl<'a> ProcessAccountInfos<'a> for CreateTemplateAccounts<'a> {
 		state.opens_at.set(args.opens_at.get());
 		state.name = args.name;
 		state.uri = args.uri;
+		state
+			.settlement_bounty_lamports
+			.set(args.settlement_bounty_lamports.get());
+		state
+			.result_receipts_enabled
+			.set(args.result_receipts_enabled.get());
 		state.status = TEMPLATE_DRAFT;
 		state.bump = args.bump;
 
@@ -797,11 +981,34 @@ fn validate_market_lock(state: &TemplateStateZc, supply: u64, now: i64) -> Progr
 	Ok(())
 }
 
+fn service_budget(state: &TemplateStateZc) -> Result<(u64, u64), ProgramError> {
+	let receipt_rent = if state.result_receipts_enabled.get() {
+		Rent::get()?.try_minimum_balance(ResultReceiptState::SIZE)?
+	} else {
+		0
+	};
+	let receipt_budget = receipt_rent
+		.checked_mul(state.total_bundles.get())
+		.ok_or(ProgramError::ArithmeticOverflow)?;
+	let bounty_budget = state
+		.settlement_bounty_lamports
+		.get()
+		.checked_mul(state.total_bundles.get())
+		.ok_or(ProgramError::ArithmeticOverflow)?;
+	let total = receipt_budget
+		.checked_add(bounty_budget)
+		.ok_or(ProgramError::ArithmeticOverflow)?;
+
+	Ok((receipt_rent, total))
+}
+
 impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
-		let _ = LockTreasuryInstruction::try_from_bytes(data)?;
+		let args = LockTreasuryInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
 		let now = sysvars::clock::Clock::get()?.unix_timestamp;
+		self.authority.assert_writable()?;
+		self.system_program.assert_address(&system::ID)?;
 		self.box_token_program.assert_address(&token_2022::ID)?;
 		let state = self.template.as_account_mut::<TemplateState>(&ID)?;
 		assert_template(&template_address, &state)?;
@@ -814,11 +1021,42 @@ impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 		self.bundle
 			.assert_canonical_bump(&next_bundle_seeds.as_slices(), &ID)?;
 		self.bundle.assert_empty()?;
+		let service_vault_seeds = [SEED_SERVICE_VAULT, template_address.as_ref()];
+		if self
+			.service_vault
+			.assert_canonical_bump(&service_vault_seeds, &ID)?
+			!= args.service_vault_bump
+		{
+			return Err(ProgramError::InvalidSeeds);
+		}
+		self.service_vault.assert_empty()?.assert_writable()?;
+		let (receipt_rent, service_budget) = service_budget(&state)?;
+		let total_bundles = state.total_bundles.get();
+		let settlement_bounty = state.settlement_bounty_lamports.get();
+		let receipts_enabled = state.result_receipts_enabled.get();
+		let manifest_hash = locked_manifest_hash(&template_address, &state);
 
 		let authority = state.authority;
 		let id = state.id.get();
 		let bump = state.bump;
 		drop(state);
+
+		if service_budget != 0 {
+			let service_vault_bump = [args.service_vault_bump];
+			let service_vault_signer = PdaSigner::from_slices([
+				SEED_SERVICE_VAULT,
+				template_address.as_ref(),
+				service_vault_bump.as_slice(),
+			]);
+			system::instructions::CreateAccount {
+				from: self.authority,
+				to: self.service_vault,
+				lamports: service_budget,
+				space: 0,
+				owner: &system::ID,
+			}
+			.invoke_signed(&[service_vault_signer.as_signer()])?;
+		}
 
 		let seeds = TemplateState::seeds(&authority, id).with_bump(bump);
 		let signer = seeds.to_signer();
@@ -832,6 +1070,19 @@ impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 
 		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
 		state.locked_at.set(now);
+		state.manifest_hash = manifest_hash;
+		state.service_vault_bump = args.service_vault_bump;
+		state.result_receipt_rent_lamports.set(receipt_rent);
+		state
+			.remaining_result_receipts
+			.set(if receipts_enabled { total_bundles } else { 0 });
+		state
+			.remaining_settlement_bounties
+			.set(if settlement_bounty == 0 {
+				0
+			} else {
+				total_bundles
+			});
 
 		Ok(())
 	}
@@ -899,20 +1150,22 @@ impl<'a> ProcessAccountInfos<'a> for ActivateBundleAccounts<'a> {
 		}
 		state.remaining_bundles.set(remaining_bundles);
 		state.total_bundles.set(total_bundles);
-		let version = state
-			.version
+		let revision = state
+			.revision
 			.get()
 			.checked_add(1)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
-		state.version.set(version);
+		state.revision.set(revision);
 		let bundle_count = state
 			.bundle_count
 			.get()
 			.checked_add(1)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
 		state.bundle_count.set(bundle_count);
-		bundle.activated_version.set(version);
+		bundle.activated_revision.set(revision);
 		bundle.status = BUNDLE_ACTIVE;
+		state.manifest_accumulator =
+			next_manifest_accumulator(&state.manifest_accumulator, &bundle);
 
 		Ok(())
 	}

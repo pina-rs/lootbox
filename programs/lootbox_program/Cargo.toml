@@ -4,7 +4,8 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 publish = false
-repository.workspace = true
+repository = "https://github.com/pina-rs/lootbox/tree/main/programs/lootbox_program"
+description = "A fully collateralized random-reward primitive for Solana"
 
 [lib]
 crate-type = ["cdylib", "lib"]

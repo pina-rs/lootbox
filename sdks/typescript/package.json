@@ -1,34 +1,37 @@
 {
-	"name": "@pina-rs/lootbox",
-	"version": "0.0.1-alpha.0",
-	"description": "Solana transaction SDK for provably backed Pina reward packs",
-	"license": "Apache-2.0",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/pina-rs/lootbox.git"
-	},
-	"publishConfig": {
-		"access": "public"
-	},
-	"files": ["src"],
-	"type": "module",
-	"exports": {
-		".": "./src/index.ts"
-	},
-	"scripts": {
-		"build": "tsc --noEmit",
-		"check": "tsc --noEmit",
-		"test": "vitest run"
-	},
 	"dependencies": {
 		"@pina-rs/lootbox-generated": "workspace:*",
 		"@solana-program/system": "0.13.0",
 		"@solana-program/token-2022": "0.13.0",
 		"@solana/kit": "^7.0.0"
 	},
+	"description": "Solana transaction SDK for provably backed Pina reward packs",
 	"devDependencies": {
 		"@types/node": "^24.3.1",
 		"typescript": "^5.9.2",
 		"vitest": "^3.2.4"
-	}
+	},
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"files": [
+		"src"
+	],
+	"license": "Apache-2.0",
+	"name": "@pina-rs/lootbox",
+	"private": true,
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/pina-rs/lootbox.git"
+	},
+	"scripts": {
+		"build": "tsc --noEmit",
+		"check": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"type": "module",
+	"version": "0.0.1-alpha.0"
 }

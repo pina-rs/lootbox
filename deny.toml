@@ -33,6 +33,22 @@ skip = [
 	{ name = "digest" },
 	{ name = "getrandom" },
 	{ name = "hashbrown" },
+	# solana-client pulls in the 3.x solana crate train
+	{ name = "num-bigint" },
+	{ name = "num-derive" },
+	{ name = "r-efi" },
+	{ name = "rand" },
+	{ name = "rand_chacha" },
+	{ name = "rand_core" },
+	{ name = "solana-account" },
+	{ name = "solana-address" },
+	{ name = "solana-instructions-sysvar" },
+	{ name = "solana-pubkey" },
+	{ name = "solana-system-interface" },
+	{ name = "thiserror" },
+	{ name = "thiserror-impl" },
+	{ name = "webpki-roots" },
+	{ name = "windows-sys" },
 ]
 
 [sources]

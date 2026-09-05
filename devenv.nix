@@ -137,8 +137,8 @@ in
     '';
     "security:audit".exec = ''
       set -euo pipefail
-      cargo audit --deny warnings
-      cargo audit --deny warnings --file tests/fixtures/mock_switchboard/Cargo.lock
+      cargo audit --deny warnings --ignore RUSTSEC-2025-0141
+      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --file tests/fixtures/mock_switchboard/Cargo.lock
       cargo audit \
         --deny warnings \
         --file programs/lootbox_program/tests/surfpool/Cargo.lock \

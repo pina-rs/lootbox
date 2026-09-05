@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 publish = false
-repository.workspace = true
+repository = "https://github.com/pina-rs/lootbox/tree/main/crates/switchboard_randomness_cpi"
 description = "Pinocchio CPI helpers for the Switchboard On-Demand randomness program"
 
 [features]

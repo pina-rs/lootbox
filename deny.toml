@@ -33,7 +33,6 @@ skip = [
 	{ name = "digest" },
 	{ name = "getrandom" },
 	{ name = "hashbrown" },
-	{ name = "bincode", version = "1.3.3" },
 ]
 
 [sources]

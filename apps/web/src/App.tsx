@@ -9,7 +9,7 @@ import {
 	templateInventory,
 	templateMintCapacity,
 } from "@pina-rs/lootbox";
-import { type Address, address } from "@solana/kit";
+import { type Address, address, type ReadonlyUint8Array } from "@solana/kit";
 import {
 	ArrowDownToLine,
 	ArrowRight,
@@ -75,6 +75,14 @@ const empty: Workspace = {
 	chainSlot: 0n,
 };
 const short = (value: string) => `${value.slice(0, 5)}…${value.slice(-5)}`;
+const shortHash = (value: ReadonlyUint8Array) => {
+	if (Array.from(value).every((byte) => byte === 0)) {
+		return "Locks with treasury";
+	}
+	const hex = Array.from(value, (byte) => byte.toString(16).padStart(2, "0"))
+		.join("");
+	return `${hex.slice(0, 10)}…${hex.slice(-10)}`;
+};
 const errorMessage = (error: unknown) =>
 	error instanceof Error
 		? error.message
@@ -276,7 +284,7 @@ export default function App() {
 			: null;
 	const receipts = workspace.openings.filter((item) =>
 		item.data.template === selected?.address &&
-		item.data.recipient === sandbox?.recipient.address
+		item.data.beneficiary === sandbox?.recipient.address
 	).sort((a, b) => a.data.sequence > b.data.sequence ? -1 : 1);
 	const receipt = receipts.find((item) => item.data.status < 3) ?? receipts[0];
 	const delivered = receipt?.data.status === 3;
@@ -359,6 +367,11 @@ export default function App() {
 						new Date().getTimezoneOffset() * 60_000,
 				).toISOString().slice(0, 16)
 				: "",
+			resultReceiptsEnabled: selected.data.resultReceiptsEnabled,
+			settlementBountySol: formatUnits(
+				selected.data.settlementBountyLamports,
+				9,
+			),
 			rows: [makeBundle()],
 		});
 		setTab("create");
@@ -488,7 +501,9 @@ export default function App() {
 								<p>
 									{visiblePrize
 										? delivered
-											? "Your prize is in your test wallet. The receipt stays on-chain."
+											? selected?.data.resultReceiptsEnabled
+												? "Your prize is in your test wallet. Its immutable integration result stays on-chain."
+												: "Your prize is in your test wallet. Recover the temporary opening rent when ready."
 											: "The result is recorded. Claim it whenever you’re ready."
 										: "A sealed gift. A real treasury. One moment of discovery."}
 								</p>
@@ -562,7 +577,7 @@ export default function App() {
 														selected.data.status,
 														selected.data.lockedAt,
 													)
-												} · v${selected.data.version}`
+												} · revision ${selected.data.revision}`
 												: "—"}
 										</dd>
 									</div>
@@ -594,6 +609,20 @@ export default function App() {
 									<div>
 										<dt>Gift token</dt>
 										<dd>Token-2022 · 0 decimals</dd>
+									</div>
+									<div>
+										<dt>Result receipts</dt>
+										<dd>
+											{selected?.data.resultReceiptsEnabled
+												? "Permanent · creator prepaid"
+												: "Off · no receipt rent"}
+										</dd>
+									</div>
+									<div>
+										<dt>Manifest hash</dt>
+										<dd>
+											{selected ? shortHash(selected.data.manifestHash) : "—"}
+										</dd>
 									</div>
 								</dl>
 								{sandbox && (
@@ -667,7 +696,7 @@ export default function App() {
 												<p>
 													{forfeitable
 														? "The oracle window expired. You may forfeit this burned box to unblock later receipts. It is not returned, because that would create a reroll exploit."
-														: "Your box is burned. Its versioned receipt is safe on-chain."}
+														: "Your box is burned. Its opening record is safe on-chain."}
 												</p>
 												{forfeitable
 													? (
@@ -796,7 +825,8 @@ export default function App() {
 								{receipt && (
 									<p className="snapshot-note">
 										Receipt #{receipt.data.sequence.toString()}{" "}
-										· treasury v{receipt.data.treasuryVersion.toString()} ·{" "}
+										· treasury revision{" "}
+										{receipt.data.treasuryRevision.toString()} ·{" "}
 										{receipt.data.eligibleBundleCount}{" "}
 										eligible bundles{receipt.data.status === 0 && !forfeitable
 											? recoverySlots > 0n
@@ -835,8 +865,8 @@ export default function App() {
 							<aside className="prize-manifest">
 								<h2>What’s in the treasury?</h2>
 								<p>
-									{treasuryLocked ? "Fixed" : "Latest"} odds · version{" "}
-									{selected?.data.version.toString() ?? "—"}
+									{treasuryLocked ? "Fixed" : "Latest"} odds · revision{" "}
+									{selected?.data.revision.toString() ?? "—"}
 								</p>
 								{workspace.bundles.length
 									? (
@@ -971,6 +1001,52 @@ export default function App() {
 													<Gift size={18} />Send sealed boxes
 												</button>
 											</div>
+											{isCreator && treasuryLocked && (
+												<details>
+													<summary>Creator lifecycle controls</summary>
+													<p>
+														Retirement stops lifecycle changes but preserves
+														holder transfers, reveals, and claims. Optional
+														service funding can be recovered only after supply
+														and pending openings reach zero.
+													</p>
+													{selected.data.status !== 2
+														? (
+															<button
+																className="quiet-button"
+																disabled={busy}
+																onClick={() =>
+																	void run(async (session) => {
+																		await session.client("creator", progress)
+																			.retireTemplate(selected);
+																		setNotice(
+																			"Treasury retired; holder rights remain available.",
+																		);
+																	})}
+															>
+																Retire treasury
+															</button>
+														)
+														: (selected.data.resultReceiptsEnabled ||
+															selected.data.settlementBountyLamports > 0n) && (
+															<button
+																className="quiet-button"
+																disabled={busy || workspace.supply !== 0n ||
+																	selected.data.pendingOpenings !== 0n}
+																onClick={() =>
+																	void run(async (session) => {
+																		await session.client("creator", progress)
+																			.closeServiceVault(selected);
+																		setNotice(
+																			"Unused service funding returned to the creator.",
+																		);
+																	})}
+															>
+																Recover unused service funding
+															</button>
+														)}
+												</details>
+											)}
 											<details>
 												<summary>
 													Transfer boxes from the recipient wallet
@@ -1143,7 +1219,7 @@ export default function App() {
 								</h1>
 								<p>
 									{creatorMode === "append"
-										? "Fund new bundles, then publish them as the next treasury version."
+										? "Fund new bundles, then publish them as the next treasury revision."
 										: "Each funded bundle becomes one or more fair tickets in the draw."}
 								</p>
 							</div>
@@ -1193,8 +1269,8 @@ export default function App() {
 								</div>
 								<dl>
 									<div>
-										<dt>Version</dt>
-										<dd>v{selected.data.version.toString()}</dd>
+										<dt>Revision</dt>
+										<dd>{selected.data.revision.toString()}</dd>
 									</div>
 									<div>
 										<dt>Published bundles</dt>
@@ -1238,7 +1314,7 @@ export default function App() {
 										);
 										selectedId.current = template.address;
 										setNotice(
-											`Treasury addition published as version ${template.data.version}. New boxes can use it immediately.`,
+											`Treasury addition published as revision ${template.data.revision}. New boxes can use it immediately.`,
 										);
 									} else {
 										const template = await createDrop(session, input, progress);
@@ -1292,6 +1368,40 @@ export default function App() {
 											onChange={(opensAt) =>
 												setInput({ ...input, opensAt })}
 										/>
+										<div className="form-pair">
+											<label className="field">
+												Settlement bounty <span>optional · SOL per reveal</span>
+												<input
+													aria-label="Settlement bounty"
+													inputMode="decimal"
+													{...errorProps("settlementBountySol")}
+													value={input.settlementBountySol}
+													onChange={(event) =>
+														setInput({
+															...input,
+															settlementBountySol: event.target.value,
+														})}
+												/>
+												{fieldError("settlementBountySol")}
+											</label>
+											<label className="field service-option">
+												<span>Immutable result receipts</span>
+												<input
+													type="checkbox"
+													checked={input.resultReceiptsEnabled}
+													onChange={(event) =>
+														setInput({
+															...input,
+															resultReceiptsEnabled: event.target.checked,
+														})}
+												/>
+												<small>
+													Creator prepays rent at lock. Leave off when your
+													project does not need permanent CPI-verifiable
+													results.
+												</small>
+											</label>
+										</div>
 									</fieldset>
 								)}
 								<fieldset disabled={busy || hasDraft}>
@@ -1504,6 +1614,18 @@ export default function App() {
 										<dd>Box owner</dd>
 									</div>
 									<div>
+										<dt>Permanent results</dt>
+										<dd>
+											{input.resultReceiptsEnabled
+												? "Creator prepays at lock"
+												: "Off · no extra rent"}
+										</dd>
+									</div>
+									<div>
+										<dt>Settlement bounty</dt>
+										<dd>{input.settlementBountySol || "0"} SOL / box</dd>
+									</div>
+									<div>
 										<dt>Network fees</dt>
 										<dd>Shown per signing step</dd>
 									</div>
@@ -1511,8 +1633,8 @@ export default function App() {
 								<p className="field-help">
 									Jupiter and DAS choices are mirrored locally. Production
 									integrations fund the selected token, Token-2022 mint,
-									Metadata NFT/pNFT, Core asset, or cNFT through typed SDK
-									adapters.
+									standard Metadata NFT, plain Core asset, or cNFT through typed
+									SDK adapters.
 								</p>
 								{hasDraft && (
 									<div className="draft-actions">
@@ -1624,16 +1746,16 @@ export default function App() {
 							A creator stages a complete bundle of one to four assets, funds
 							every copy, and activates it. One bundle copy is one
 							equal-probability ticket. SOL, classic SPL, safe Token-2022
-							tokens, Token Metadata NFTs and pNFTs, Core assets, and compressed
-							NFTs each have a typed transfer path.
+							tokens, standard Token Metadata NFTs, plain Core assets, and
+							compressed NFTs each have a typed transfer path.
 						</p>
 						<h2>The treasury only grows.</h2>
 						<p>
 							Before locking, live treasuries accept append-only additions.
 							Funding drafts are invisible to draws and can be reclaimed or
-							resumed. Activation increments the treasury version, bundle count,
-							inventory, and mint capacity together. Existing terms and bundle
-							IDs never change.
+							resumed. Activation increments the treasury revision, bundle
+							count, inventory, and mint capacity together. Existing terms and
+							bundle IDs never change.
 						</p>
 						<h2>Locking creates the tradable series.</h2>
 						<p>
@@ -1654,7 +1776,7 @@ export default function App() {
 						</p>
 						<h2>Every opening gets a snapshot.</h2>
 						<p>
-							After the reveal date, burning a box records the locked version
+							After the reveal date, burning a box records the locked revision
 							and eligible bundle prefix before randomness is requested.
 							Allocation is FIFO and without replacement, so each win updates
 							the odds for every unopened box while pending receipts retain
@@ -1670,12 +1792,12 @@ export default function App() {
 						</p>
 						<h2>Catalog results are not endorsements.</h2>
 						<p>
-							Jupiter Tokens V2 supplies searchable token metadata and
-							verification signals. Metaplex DAS supplies wallet-owned standard,
-							Core, and compressed assets. Always inspect the exact mint, token
-							program, transfer restrictions, plugins, and proof freshness. This
-							local playground mirrors selections as disposable assets rather
-							than moving mainnet property.
+							Jupiter Tokens supplies searchable token metadata and verification
+							signals. Metaplex DAS supplies wallet-owned standard, Core, and
+							compressed assets. Always inspect the exact mint, token program,
+							transfer restrictions, plugins, and proof freshness. This local
+							playground mirrors selections as disposable assets rather than
+							moving mainnet property.
 						</p>
 						<h2>This is a local test network.</h2>
 						<p>

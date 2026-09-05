@@ -1,4 +1,4 @@
-//! V2 tests use real token programs and real lootbox SBF. Only the external
+//! current treasury protocol tests use real token programs and real lootbox SBF. Only the external
 //! oracle boundary is emulated; no lootbox account is fabricated or mutated.
 
 use program_under_test::*;
@@ -78,7 +78,12 @@ fn box_ata(program: &Harness, owner: &Pubkey, mint: &Pubkey) -> Pubkey {
 	address
 }
 
-fn create_template_data(queue: Pubkey, bump: u8, opens_at: i64) -> Vec<u8> {
+fn create_template_data(
+	queue: Pubkey,
+	bump: u8,
+	opens_at: i64,
+	result_receipts_enabled: bool,
+) -> Vec<u8> {
 	let mut bytes = vec![0; CreateTemplateInstruction::SIZE];
 	let args = CreateTemplateInstruction::initialize(&mut bytes).expect("create template data");
 	args.id.set(1);
@@ -87,6 +92,9 @@ fn create_template_data(queue: Pubkey, bump: u8, opens_at: i64) -> Vec<u8> {
 	args.oracle_queue = queue.to_bytes().into();
 	args.name[..NAME.len()].copy_from_slice(NAME.as_bytes());
 	args.uri[..URI.len()].copy_from_slice(URI.as_bytes());
+	args.settlement_bounty_lamports
+		.set(if result_receipts_enabled { 1_000 } else { 0 });
+	args.result_receipts_enabled.set(result_receipts_enabled);
 	args.bump = bump;
 	bytes
 }
@@ -237,14 +245,22 @@ fn lock_treasury(program: &Harness, template: Pubkey, mint: Pubkey, bundle_count
 		&program.program_id,
 	)
 	.0;
+	let (service_vault, service_vault_bump) =
+		Pubkey::find_program_address(&[b"service-vault", template.as_ref()], &program.program_id);
+	let mut data = vec![0; LockTreasuryInstruction::SIZE];
+	LockTreasuryInstruction::initialize(&mut data)
+		.expect("lock data")
+		.service_vault_bump = service_vault_bump;
 	program
 		.send(
-			&[LootboxInstruction::LockTreasury as u8],
+			&data,
 			vec![
-				AccountMeta::new_readonly(program.payer(), true),
+				AccountMeta::new(program.payer(), true),
 				AccountMeta::new(template, false),
 				AccountMeta::new(mint, false),
 				AccountMeta::new_readonly(next_bundle, false),
+				AccountMeta::new(service_vault, false),
+				AccountMeta::new_readonly(Pubkey::default(), false),
 				AccountMeta::new_readonly(token_2022(), false),
 			],
 		)
@@ -254,10 +270,11 @@ fn lock_treasury(program: &Harness, template: Pubkey, mint: Pubkey, bundle_count
 	assert_eq!(&mint_account.data[..4], &[0; 4], "mint authority revoked");
 }
 
-fn template_request_data(bump: u8) -> Vec<u8> {
+fn template_request_data(bump: u8, beneficiary: Pubkey) -> Vec<u8> {
 	let mut data = vec![0; RequestTemplateOpenInstruction::SIZE];
 	let args = RequestTemplateOpenInstruction::initialize(&mut data).expect("request data");
 	args.recent_slot.set(1);
+	args.beneficiary = beneficiary.to_bytes().into();
 	args.bump = bump;
 	data
 }
@@ -288,6 +305,7 @@ fn template_request_accounts(context: &TemplateRequestContext<'_>) -> Vec<Accoun
 		context.cpi,
 	);
 	accounts.remove(2);
+	accounts.insert(0, AccountMeta::new_readonly(context.owner, true));
 	accounts.insert(
 		accounts.len() - 1,
 		AccountMeta::new_readonly(token_2022(), false),
@@ -353,7 +371,12 @@ fn fulfill(context: &FulfillContext<'_>, value: u8) -> Result<(), String> {
 	for index in [4, 3, 0] {
 		accounts.remove(index);
 	}
-	accounts[1].is_writable = false;
+	let service_vault = Pubkey::find_program_address(
+		&[b"service-vault", context.template.as_ref()],
+		&context.program.program_id,
+	)
+	.0;
+	accounts.insert(2, AccountMeta::new(service_vault, false));
 	let mut data = vec![0; FulfillTemplateOpenInstruction::SIZE];
 	let args = FulfillTemplateOpenInstruction::initialize(&mut data).expect("fulfill");
 	args.signature.fill(7);
@@ -372,22 +395,40 @@ fn allocate_any(
 	bundles: &[Pubkey; 3],
 ) -> Result<usize, String> {
 	// Exercise wrong-prize account rejection as well as the successful path.
+	let mut failures = Vec::with_capacity(bundles.len());
 	for (index, bundle) in bundles.iter().enumerate() {
-		if program
-			.send(
-				&[LootboxInstruction::AllocateTemplateOpen as u8],
-				vec![
-					AccountMeta::new(template, false),
-					AccountMeta::new(opening, false),
-					AccountMeta::new_readonly(*bundle, false),
-				],
-			)
-			.is_ok()
-		{
-			return Ok(index);
+		let service_vault = Pubkey::find_program_address(
+			&[b"service-vault", template.as_ref()],
+			&program.program_id,
+		)
+		.0;
+		let (result_receipt, result_receipt_bump) = Pubkey::find_program_address(
+			&[b"result-receipt", opening.as_ref()],
+			&program.program_id,
+		);
+		let mut data = vec![0; AllocateTemplateOpenInstruction::SIZE];
+		AllocateTemplateOpenInstruction::initialize(&mut data)
+			.expect("allocate")
+			.result_receipt_bump = result_receipt_bump;
+		match program.send(
+			&data,
+			vec![
+				AccountMeta::new(template, false),
+				AccountMeta::new(opening, false),
+				AccountMeta::new(*bundle, false),
+				AccountMeta::new(service_vault, false),
+				AccountMeta::new(result_receipt, false),
+				AccountMeta::new_readonly(Pubkey::default(), false),
+			],
+		) {
+			Ok(()) => return Ok(index),
+			Err(error) => failures.push(format!("bundle {index}: {error}")),
 		}
 	}
-	Err("no bundle can be allocated".to_owned())
+	Err(format!(
+		"no bundle can be allocated: {}",
+		failures.join("; ")
+	))
 }
 
 #[test]
@@ -414,7 +455,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		let opens_at = now + 3600;
 		program
 			.send(
-				&create_template_data(queue, bump, opens_at),
+				&create_template_data(queue, bump, opens_at, true),
 				vec![
 					AccountMeta::new(payer, true),
 					AccountMeta::new(template, false),
@@ -473,6 +514,24 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 			"no overissuance"
 		);
 		lock_treasury(&program, template, mint, 3);
+		let service_vault = Pubkey::find_program_address(
+			&[b"service-vault", template.as_ref()],
+			&program.program_id,
+		)
+		.0;
+		assert_eq!(
+			program.balance(&service_vault).expect("service balance"),
+			rent_minimum(0) + 6 * (rent_minimum(ResultReceiptState::SIZE as u64) + 1_000),
+			"service reserve includes one recoverable zero-data rent floor",
+		);
+		assert_eq!(
+			program
+				.account(&service_vault)
+				.expect("service vault")
+				.owner,
+			Pubkey::default(),
+			"creator-funded services are isolated from prizes",
+		);
 		assert!(
 			program.send(&template_mint_data(1), mint_accounts).is_err(),
 			"locked treasury rejects any later issuance",
@@ -516,7 +575,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 				&program.program_id,
 			);
 			let request = program.instruction(
-				&template_request_data(bump),
+				&template_request_data(bump, recipient.pubkey()),
 				template_request_accounts(&TemplateRequestContext {
 					owner: recipient.pubkey(),
 					template,
@@ -623,6 +682,18 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		for (opening, _) in &openings {
 			let index =
 				allocate_any(&program, template, *opening, &bundles).expect("FIFO allocation");
+			let result_receipt = Pubkey::find_program_address(
+				&[b"result-receipt", opening.as_ref()],
+				&program.program_id,
+			)
+			.0;
+			assert_eq!(
+				program
+					.account(&result_receipt)
+					.expect("immutable result receipt")
+					.owner,
+				program.program_id,
+			);
 			counts[index] += 1;
 			let assets = match index {
 				0 => vec![None],
@@ -719,6 +790,11 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 			);
 		}
 		for (opening, randomness) in &openings {
+			let result_receipt = Pubkey::find_program_address(
+				&[b"result-receipt", opening.as_ref()],
+				&program.program_id,
+			)
+			.0;
 			assert!(
 				program
 					.send(
@@ -736,7 +812,24 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 				.expect("close completed receipt and oracle account");
 			assert!(program.account(opening).is_err());
 			assert!(program.account(randomness).is_err());
+			assert!(
+				program.account(&result_receipt).is_ok(),
+				"result receipts outlive closeable opening accounts",
+			);
 		}
+		program
+			.send(
+				&[LootboxInstruction::CloseServiceVault as u8],
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new_readonly(mint, false),
+					AccountMeta::new(service_vault, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+				],
+			)
+			.expect("creator closes the exhausted service vault");
+		assert!(program.account(&service_vault).is_err());
 		program.stop().expect("stop Surfpool");
 	});
 }
@@ -759,7 +852,7 @@ fn missed_market_lock_retires_without_stranding_holder_claims() {
 		let opens_at = chain_timestamp(&program) + 60;
 		program
 			.send(
-				&create_template_data(queue, bump, opens_at),
+				&create_template_data(queue, bump, opens_at, false),
 				vec![
 					AccountMeta::new(payer, true),
 					AccountMeta::new(template, false),
@@ -829,7 +922,7 @@ fn missed_market_lock_retires_without_stranding_holder_claims() {
 		program
 			.send_with_signers(
 				program.instruction(
-					&template_request_data(opening_bump),
+					&template_request_data(opening_bump, payer),
 					template_request_accounts(&TemplateRequestContext {
 						owner: payer,
 						template,
@@ -848,6 +941,59 @@ fn missed_market_lock_retires_without_stranding_holder_claims() {
 		assert_eq!(
 			token_amount(&program.account(&owner_ata).expect("burned box")),
 			0,
+		);
+		let crank = Keypair::new();
+		program
+			.fund(&crank.pubkey(), 10_000_000)
+			.expect("crank fees");
+		program.advance_one_slot().expect("oracle delay");
+		fulfill(
+			&FulfillContext {
+				program: &program,
+				payer: &crank,
+				template,
+				opening,
+				randomness: randomness.pubkey(),
+				queue,
+				oracle,
+				cpi: &cpi,
+			},
+			9,
+		)
+		.expect("permissionless fulfillment without a service bounty");
+		let service_vault = Pubkey::find_program_address(
+			&[b"service-vault", template.as_ref()],
+			&program.program_id,
+		)
+		.0;
+		let (result_receipt, result_receipt_bump) = Pubkey::find_program_address(
+			&[b"result-receipt", opening.as_ref()],
+			&program.program_id,
+		);
+		let mut allocate = vec![0; AllocateTemplateOpenInstruction::SIZE];
+		AllocateTemplateOpenInstruction::initialize(&mut allocate)
+			.expect("allocation data")
+			.result_receipt_bump = result_receipt_bump;
+		program
+			.send(
+				&allocate,
+				vec![
+					AccountMeta::new(template, false),
+					AccountMeta::new(opening, false),
+					AccountMeta::new_readonly(bundle, false),
+					AccountMeta::new(service_vault, false),
+					AccountMeta::new(result_receipt, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+				],
+			)
+			.expect("allocate with receipts disabled");
+		assert!(
+			program.account(&service_vault).is_err(),
+			"disabled services reserve no vault balance",
+		);
+		assert!(
+			program.account(&result_receipt).is_err(),
+			"disabled receipts create no account and charge no receipt rent",
 		);
 		program.stop().expect("stop Surfpool");
 	});
@@ -875,7 +1021,7 @@ fn expired_fifo_head_can_be_forfeited_by_an_unrelated_signer() {
 		let opens_at = chain_timestamp(&program) + 60;
 		program
 			.send(
-				&create_template_data(queue, bump, opens_at),
+				&create_template_data(queue, bump, opens_at, true),
 				vec![
 					AccountMeta::new(payer, true),
 					AccountMeta::new(template, false),
@@ -911,6 +1057,15 @@ fn expired_fifo_head_can_be_forfeited_by_an_unrelated_signer() {
 			)
 			.expect("issue recipient boxes");
 		lock_treasury(&program, template, mint, 1);
+		let service_vault = Pubkey::find_program_address(
+			&[b"service-vault", template.as_ref()],
+			&program.program_id,
+		)
+		.0;
+		assert!(
+			program.account(&service_vault).is_ok(),
+			"enabled settlement services create their isolated vault",
+		);
 		program
 			.surfnet
 			.cheatcodes()
@@ -928,7 +1083,7 @@ fn expired_fifo_head_can_be_forfeited_by_an_unrelated_signer() {
 		program
 			.send_with_signers(
 				program.instruction(
-					&template_request_data(opening_bump),
+					&template_request_data(opening_bump, recipient.pubkey()),
 					template_request_accounts(&TemplateRequestContext {
 						owner: recipient.pubkey(),
 						template,
@@ -947,11 +1102,18 @@ fn expired_fifo_head_can_be_forfeited_by_an_unrelated_signer() {
 		program
 			.advance_slots(RANDOMNESS_TIMEOUT_SLOTS + 1)
 			.expect("expire opening");
+		let service_vault = Pubkey::find_program_address(
+			&[b"service-vault", template.as_ref()],
+			&program.program_id,
+		)
+		.0;
 		let forfeit_accounts = vec![
-			AccountMeta::new_readonly(payer, true),
+			AccountMeta::new(payer, true),
 			AccountMeta::new(template, false),
+			AccountMeta::new(service_vault, false),
 			AccountMeta::new(opening, false),
 			AccountMeta::new_readonly(randomness.pubkey(), false),
+			AccountMeta::new_readonly(Pubkey::default(), false),
 		];
 		program
 			.send(
@@ -1046,7 +1208,7 @@ fn retirement_recovers_inventory_only_after_all_claims_are_gone() {
 		let opens_at = chain_timestamp(&program) + 60;
 		program
 			.send(
-				&create_template_data(Pubkey::new_unique(), bump, opens_at),
+				&create_template_data(Pubkey::new_unique(), bump, opens_at, false),
 				vec![
 					AccountMeta::new(payer, true),
 					AccountMeta::new(template, false),
@@ -1117,6 +1279,15 @@ fn retirement_recovers_inventory_only_after_all_claims_are_gone() {
 			.send(&template_mint_data(8), mint_accounts.clone())
 			.expect("issue one box for every prize-bundle copy");
 		lock_treasury(&program, template, mint, 1);
+		let service_vault = Pubkey::find_program_address(
+			&[b"service-vault", template.as_ref()],
+			&program.program_id,
+		)
+		.0;
+		assert!(
+			program.account(&service_vault).is_err(),
+			"disabled services create no vault and reserve no rent",
+		);
 		let reclaim_accounts = vec![
 			AccountMeta::new(payer, true),
 			AccountMeta::new_readonly(template, false),

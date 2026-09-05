@@ -74,5 +74,30 @@ void main() {
       expect(plan.bundles.single.assets.length, 1);
       expect(() => plan.bundles.clear(), throwsUnsupportedError);
     });
+
+    test('creator service funding is exact and optional', () {
+      final bundles = [
+        PrizeBundle(
+          label: 'SOL',
+          quantity: BigInt.from(3),
+          assets: [PrizeAsset.sol(BigInt.one)],
+        ),
+      ];
+      expect(
+        TemplatePlan(
+          bundles: bundles,
+        ).requiredServiceBudget(BigInt.from(2000000)),
+        BigInt.zero,
+      );
+      final plan = TemplatePlan(
+        bundles: bundles,
+        settlementBountyLamports: BigInt.from(50000),
+        resultReceiptsEnabled: true,
+      );
+      expect(
+        plan.requiredServiceBudget(BigInt.from(2000000)),
+        BigInt.from(6150000),
+      );
+    });
   });
 }

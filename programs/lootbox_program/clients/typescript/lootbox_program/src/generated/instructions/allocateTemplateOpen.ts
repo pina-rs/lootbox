@@ -15,44 +15,57 @@ export const ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR = 18;
 
 export function getAllocateTemplateOpenDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR); }
 
-export type AllocateTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
-Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? ReadonlyAccount<TAccountBundle> : TAccountBundle, ...TRemainingAccounts]>;
+export type AllocateTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountServiceVault extends string | AccountMeta<string> = string, TAccountResultReceipt extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? ReadonlyAccount<TAccountBundle> : TAccountBundle, TAccountServiceVault extends string ? WritableAccount<TAccountServiceVault> : TAccountServiceVault, TAccountResultReceipt extends string ? WritableAccount<TAccountResultReceipt> : TAccountResultReceipt, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type AllocateTemplateOpenInstructionData = { discriminator: number;  };
+export type AllocateTemplateOpenInstructionData = { discriminator: number; resultReceiptBump: number;  };
 
-export type AllocateTemplateOpenInstructionDataArgs = {  };
+export type AllocateTemplateOpenInstructionDataArgs = { resultReceiptBump: number;  };
 
 export function getAllocateTemplateOpenInstructionDataEncoder(): FixedSizeEncoder<AllocateTemplateOpenInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()]]), (value) => ({ ...value, discriminator: 18 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['resultReceiptBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 18 }));
 }
 
 export function getAllocateTemplateOpenInstructionDataDecoder(): FixedSizeDecoder<AllocateTemplateOpenInstructionData> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR, getU8Decoder())]]);
+    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR, getU8Decoder())], ['resultReceiptBump', getU8Decoder()]]);
 }
 
 export function getAllocateTemplateOpenInstructionDataCodec(): FixedSizeCodec<AllocateTemplateOpenInstructionDataArgs, AllocateTemplateOpenInstructionData> {
     return combineCodec(getAllocateTemplateOpenInstructionDataEncoder(), getAllocateTemplateOpenInstructionDataDecoder());
 }
 
-export type AllocateTemplateOpenInput<TAccountTemplate extends string = string, TAccountOpening extends string = string, TAccountBundle extends string = string> =  {
+export type AllocateTemplateOpenInput<TAccountTemplate extends string = string, TAccountOpening extends string = string, TAccountBundle extends string = string, TAccountServiceVault extends string = string, TAccountResultReceipt extends string = string, TAccountSystemProgram extends string = string> =  {
   template: Address<TAccountTemplate>;
 opening: Address<TAccountOpening>;
 bundle: Address<TAccountBundle>;
+/** Creator-funded when permanent result receipts are enabled. */
+serviceVault: Address<TAccountServiceVault>;
+/** Created only when enabled in the locked treasury configuration. */
+resultReceipt: Address<TAccountResultReceipt>;
+systemProgram?: Address<TAccountSystemProgram>;
+resultReceiptBump: AllocateTemplateOpenInstructionDataArgs["resultReceiptBump"];
 }
 
-export function getAllocateTemplateOpenInstruction<TAccountTemplate extends string, TAccountOpening extends string, TAccountBundle extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: AllocateTemplateOpenInput<TAccountTemplate, TAccountOpening, TAccountBundle>, config?: { programAddress?: TProgramAddress } ): AllocateTemplateOpenInstruction<TProgramAddress, TAccountTemplate, TAccountOpening, TAccountBundle> {
+export function getAllocateTemplateOpenInstruction<TAccountTemplate extends string, TAccountOpening extends string, TAccountBundle extends string, TAccountServiceVault extends string, TAccountResultReceipt extends string, TAccountSystemProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: AllocateTemplateOpenInput<TAccountTemplate, TAccountOpening, TAccountBundle, TAccountServiceVault, TAccountResultReceipt, TAccountSystemProgram>, config?: { programAddress?: TProgramAddress } ): AllocateTemplateOpenInstruction<TProgramAddress, TAccountTemplate, TAccountOpening, TAccountBundle, TAccountServiceVault, TAccountResultReceipt, TAccountSystemProgram> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
  // Original accounts.
-const originalAccounts = { template: { value: input.template ?? null, isWritable: true }, opening: { value: input.opening ?? null, isWritable: true }, bundle: { value: input.bundle ?? null, isWritable: false } }
+const originalAccounts = { template: { value: input.template ?? null, isWritable: true }, opening: { value: input.opening ?? null, isWritable: true }, bundle: { value: input.bundle ?? null, isWritable: false }, serviceVault: { value: input.serviceVault ?? null, isWritable: true }, resultReceipt: { value: input.resultReceipt ?? null, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
+// Original args.
+const args = { ...input,  };
 
+
+// Resolve default values.
+if (!accounts.systemProgram.value) {
+accounts.systemProgram.value = '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+}
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("template", accounts.template), getAccountMeta("opening", accounts.opening), getAccountMeta("bundle", accounts.bundle)], data: getAllocateTemplateOpenInstructionDataEncoder().encode({}), programAddress } as AllocateTemplateOpenInstruction<TProgramAddress, TAccountTemplate, TAccountOpening, TAccountBundle>);
+return Object.freeze({ accounts: [getAccountMeta("template", accounts.template), getAccountMeta("opening", accounts.opening), getAccountMeta("bundle", accounts.bundle), getAccountMeta("serviceVault", accounts.serviceVault), getAccountMeta("resultReceipt", accounts.resultReceipt), getAccountMeta("systemProgram", accounts.systemProgram)], data: getAllocateTemplateOpenInstructionDataEncoder().encode(args as AllocateTemplateOpenInstructionDataArgs), programAddress } as AllocateTemplateOpenInstruction<TProgramAddress, TAccountTemplate, TAccountOpening, TAccountBundle, TAccountServiceVault, TAccountResultReceipt, TAccountSystemProgram>);
 }
 
 export type ParsedAllocateTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
@@ -60,12 +73,17 @@ accounts: {
 template: TAccountMetas[0];
 opening: TAccountMetas[1];
 bundle: TAccountMetas[2];
+/** Creator-funded when permanent result receipts are enabled. */
+serviceVault: TAccountMetas[3];
+/** Created only when enabled in the locked treasury configuration. */
+resultReceipt: TAccountMetas[4];
+systemProgram: TAccountMetas[5];
 };
 data: AllocateTemplateOpenInstructionData; };
 
 export function parseAllocateTemplateOpenInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(instruction: Instruction<TProgram> & InstructionWithAccounts<TAccountMetas> & InstructionWithData<ReadonlyUint8Array>): ParsedAllocateTemplateOpenInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
-  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 3 });
+  if (instruction.accounts.length < 6) {
+  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 6 });
 }
 let accountIndex = 0;
 const getNextAccount = () => {
@@ -73,5 +91,5 @@ const getNextAccount = () => {
   accountIndex += 1;
   return accountMeta;
 }
-  return { programAddress: instruction.programAddress, accounts: { template: getNextAccount(), opening: getNextAccount(), bundle: getNextAccount() }, data: getAllocateTemplateOpenInstructionDataDecoder().decode(instruction.data) };
+  return { programAddress: instruction.programAddress, accounts: { template: getNextAccount(), opening: getNextAccount(), bundle: getNextAccount(), serviceVault: getNextAccount(), resultReceipt: getNextAccount(), systemProgram: getNextAccount() }, data: getAllocateTemplateOpenInstructionDataDecoder().decode(instruction.data) };
 }

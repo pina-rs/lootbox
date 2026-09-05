@@ -9,6 +9,7 @@
 export * from './bundle';
 export * from './lootbox';
 export * from './opening';
+export * from './resultReceipt';
 export * from './template';
 export * from './templateOpening';
 export * from './vault';

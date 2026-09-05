@@ -6,8 +6,8 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
+import { fixZeroPodEncoderSize, getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { combineCodec, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlySignerAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
@@ -15,30 +15,40 @@ export const REQUEST_TEMPLATE_OPEN_DISCRIMINATOR = 16;
 
 export function getRequestTemplateOpenDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(REQUEST_TEMPLATE_OPEN_DISCRIMINATOR); }
 
-export type RequestTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountOwner extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountOwnerBoxAccount extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountRandomness extends string | AccountMeta<string> = string, TAccountRewardEscrow extends string | AccountMeta<string> = string, TAccountOracleQueue extends string | AccountMeta<string> = string, TAccountOracle extends string | AccountMeta<string> = string, TAccountRecentSlotHashes extends string | AccountMeta<string> = string, TAccountOracleProgram extends string | AccountMeta<string> = string, TAccountOracleProgramState extends string | AccountMeta<string> = string, TAccountOracleLutSigner extends string | AccountMeta<string> = string, TAccountOracleLut extends string | AccountMeta<string> = string, TAccountAssociatedTokenProgram extends string | AccountMeta<string> = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL", TAccountWrappedSolMint extends string | AccountMeta<string> = string, TAccountAddressLookupTableProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountBoxTokenProgram extends string | AccountMeta<string> = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
-Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountOwner extends string ? WritableSignerAccount<TAccountOwner> & AccountSignerMeta<TAccountOwner> : TAccountOwner, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? WritableAccount<TAccountBoxMint> : TAccountBoxMint, TAccountOwnerBoxAccount extends string ? WritableAccount<TAccountOwnerBoxAccount> : TAccountOwnerBoxAccount, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountRandomness extends string ? WritableSignerAccount<TAccountRandomness> & AccountSignerMeta<TAccountRandomness> : TAccountRandomness, TAccountRewardEscrow extends string ? WritableAccount<TAccountRewardEscrow> : TAccountRewardEscrow, TAccountOracleQueue extends string ? WritableAccount<TAccountOracleQueue> : TAccountOracleQueue, TAccountOracle extends string ? WritableAccount<TAccountOracle> : TAccountOracle, TAccountRecentSlotHashes extends string ? ReadonlyAccount<TAccountRecentSlotHashes> : TAccountRecentSlotHashes, TAccountOracleProgram extends string ? ReadonlyAccount<TAccountOracleProgram> : TAccountOracleProgram, TAccountOracleProgramState extends string ? ReadonlyAccount<TAccountOracleProgramState> : TAccountOracleProgramState, TAccountOracleLutSigner extends string ? ReadonlyAccount<TAccountOracleLutSigner> : TAccountOracleLutSigner, TAccountOracleLut extends string ? WritableAccount<TAccountOracleLut> : TAccountOracleLut, TAccountAssociatedTokenProgram extends string ? ReadonlyAccount<TAccountAssociatedTokenProgram> : TAccountAssociatedTokenProgram, TAccountWrappedSolMint extends string ? ReadonlyAccount<TAccountWrappedSolMint> : TAccountWrappedSolMint, TAccountAddressLookupTableProgram extends string ? ReadonlyAccount<TAccountAddressLookupTableProgram> : TAccountAddressLookupTableProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
+export type RequestTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountBoxAuthority extends string | AccountMeta<string> = string, TAccountPayer extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBoxAccount extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountRandomness extends string | AccountMeta<string> = string, TAccountRewardEscrow extends string | AccountMeta<string> = string, TAccountOracleQueue extends string | AccountMeta<string> = string, TAccountOracle extends string | AccountMeta<string> = string, TAccountRecentSlotHashes extends string | AccountMeta<string> = string, TAccountOracleProgram extends string | AccountMeta<string> = string, TAccountOracleProgramState extends string | AccountMeta<string> = string, TAccountOracleLutSigner extends string | AccountMeta<string> = string, TAccountOracleLut extends string | AccountMeta<string> = string, TAccountAssociatedTokenProgram extends string | AccountMeta<string> = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL", TAccountWrappedSolMint extends string | AccountMeta<string> = string, TAccountAddressLookupTableProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountBoxTokenProgram extends string | AccountMeta<string> = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountBoxAuthority extends string ? ReadonlySignerAccount<TAccountBoxAuthority> & AccountSignerMeta<TAccountBoxAuthority> : TAccountBoxAuthority, TAccountPayer extends string ? WritableSignerAccount<TAccountPayer> & AccountSignerMeta<TAccountPayer> : TAccountPayer, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? WritableAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBoxAccount extends string ? WritableAccount<TAccountBoxAccount> : TAccountBoxAccount, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountRandomness extends string ? WritableSignerAccount<TAccountRandomness> & AccountSignerMeta<TAccountRandomness> : TAccountRandomness, TAccountRewardEscrow extends string ? WritableAccount<TAccountRewardEscrow> : TAccountRewardEscrow, TAccountOracleQueue extends string ? WritableAccount<TAccountOracleQueue> : TAccountOracleQueue, TAccountOracle extends string ? WritableAccount<TAccountOracle> : TAccountOracle, TAccountRecentSlotHashes extends string ? ReadonlyAccount<TAccountRecentSlotHashes> : TAccountRecentSlotHashes, TAccountOracleProgram extends string ? ReadonlyAccount<TAccountOracleProgram> : TAccountOracleProgram, TAccountOracleProgramState extends string ? ReadonlyAccount<TAccountOracleProgramState> : TAccountOracleProgramState, TAccountOracleLutSigner extends string ? ReadonlyAccount<TAccountOracleLutSigner> : TAccountOracleLutSigner, TAccountOracleLut extends string ? WritableAccount<TAccountOracleLut> : TAccountOracleLut, TAccountAssociatedTokenProgram extends string ? ReadonlyAccount<TAccountAssociatedTokenProgram> : TAccountAssociatedTokenProgram, TAccountWrappedSolMint extends string ? ReadonlyAccount<TAccountWrappedSolMint> : TAccountWrappedSolMint, TAccountAddressLookupTableProgram extends string ? ReadonlyAccount<TAccountAddressLookupTableProgram> : TAccountAddressLookupTableProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type RequestTemplateOpenInstructionData = { discriminator: number; recentSlot: bigint; bump: number;  };
+export type RequestTemplateOpenInstructionData = { discriminator: number; recentSlot: bigint; beneficiary: Address; consumerProgram: Address; consumerContext: ReadonlyUint8Array; bump: number;  };
 
-export type RequestTemplateOpenInstructionDataArgs = { recentSlot: number | bigint; bump: number;  };
+export type RequestTemplateOpenInstructionDataArgs = { recentSlot: number | bigint; beneficiary: Address; consumerProgram: Address; consumerContext: ReadonlyUint8Array; bump: number;  };
 
 export function getRequestTemplateOpenInstructionDataEncoder(): FixedSizeEncoder<RequestTemplateOpenInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['recentSlot', getU64Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 16 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['recentSlot', getU64Encoder()], ['beneficiary', getAddressEncoder()], ['consumerProgram', getAddressEncoder()], ['consumerContext', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 16 }));
 }
 
 export function getRequestTemplateOpenInstructionDataDecoder(): FixedSizeDecoder<RequestTemplateOpenInstructionData> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(REQUEST_TEMPLATE_OPEN_DISCRIMINATOR, getU8Decoder())], ['recentSlot', getU64Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(REQUEST_TEMPLATE_OPEN_DISCRIMINATOR, getU8Decoder())], ['recentSlot', getU64Decoder()], ['beneficiary', getAddressDecoder()], ['consumerProgram', getAddressDecoder()], ['consumerContext', fixDecoderSize(getBytesDecoder(), 32)], ['bump', getU8Decoder()]]);
 }
 
 export function getRequestTemplateOpenInstructionDataCodec(): FixedSizeCodec<RequestTemplateOpenInstructionDataArgs, RequestTemplateOpenInstructionData> {
     return combineCodec(getRequestTemplateOpenInstructionDataEncoder(), getRequestTemplateOpenInstructionDataDecoder());
 }
 
-export type RequestTemplateOpenInput<TAccountOwner extends string = string, TAccountTemplate extends string = string, TAccountBoxMint extends string = string, TAccountOwnerBoxAccount extends string = string, TAccountOpening extends string = string, TAccountRandomness extends string = string, TAccountRewardEscrow extends string = string, TAccountOracleQueue extends string = string, TAccountOracle extends string = string, TAccountRecentSlotHashes extends string = string, TAccountOracleProgram extends string = string, TAccountOracleProgramState extends string = string, TAccountOracleLutSigner extends string = string, TAccountOracleLut extends string = string, TAccountAssociatedTokenProgram extends string = string, TAccountWrappedSolMint extends string = string, TAccountAddressLookupTableProgram extends string = string, TAccountSystemProgram extends string = string, TAccountBoxTokenProgram extends string = string, TAccountTokenProgram extends string = string> =  {
-  owner: TransactionSigner<TAccountOwner>;
+export type RequestTemplateOpenInput<TAccountBoxAuthority extends string = string, TAccountPayer extends string = string, TAccountTemplate extends string = string, TAccountBoxMint extends string = string, TAccountBoxAccount extends string = string, TAccountOpening extends string = string, TAccountRandomness extends string = string, TAccountRewardEscrow extends string = string, TAccountOracleQueue extends string = string, TAccountOracle extends string = string, TAccountRecentSlotHashes extends string = string, TAccountOracleProgram extends string = string, TAccountOracleProgramState extends string = string, TAccountOracleLutSigner extends string = string, TAccountOracleLut extends string = string, TAccountAssociatedTokenProgram extends string = string, TAccountWrappedSolMint extends string = string, TAccountAddressLookupTableProgram extends string = string, TAccountSystemProgram extends string = string, TAccountBoxTokenProgram extends string = string, TAccountTokenProgram extends string = string> =  {
+  /** Owns the box token account and authorizes burning exactly one box. */
+boxAuthority: TransactionSigner<TAccountBoxAuthority>;
+/**
+ * Pays for the opening and oracle initialization; may be a sponsor.
+ *
+ * The immutable authority intentionally precedes the mutable payer so the
+ * same signer may fill both roles after Solana promotes duplicate metas to
+ * writable. Parsing the mutable alias last preserves the cursor's safety
+ * checks while supporting the common self-paid opening flow.
+ */
+payer: TransactionSigner<TAccountPayer>;
 template: Address<TAccountTemplate>;
 boxMint: Address<TAccountBoxMint>;
-ownerBoxAccount: Address<TAccountOwnerBoxAccount>;
+boxAccount: Address<TAccountBoxAccount>;
 opening: Address<TAccountOpening>;
 randomness: TransactionSigner<TAccountRandomness>;
 rewardEscrow: Address<TAccountRewardEscrow>;
@@ -56,15 +66,18 @@ systemProgram?: Address<TAccountSystemProgram>;
 boxTokenProgram?: Address<TAccountBoxTokenProgram>;
 tokenProgram?: Address<TAccountTokenProgram>;
 recentSlot: RequestTemplateOpenInstructionDataArgs["recentSlot"];
+beneficiary: RequestTemplateOpenInstructionDataArgs["beneficiary"];
+consumerProgram: RequestTemplateOpenInstructionDataArgs["consumerProgram"];
+consumerContext: RequestTemplateOpenInstructionDataArgs["consumerContext"];
 bump: RequestTemplateOpenInstructionDataArgs["bump"];
 }
 
-export function getRequestTemplateOpenInstruction<TAccountOwner extends string, TAccountTemplate extends string, TAccountBoxMint extends string, TAccountOwnerBoxAccount extends string, TAccountOpening extends string, TAccountRandomness extends string, TAccountRewardEscrow extends string, TAccountOracleQueue extends string, TAccountOracle extends string, TAccountRecentSlotHashes extends string, TAccountOracleProgram extends string, TAccountOracleProgramState extends string, TAccountOracleLutSigner extends string, TAccountOracleLut extends string, TAccountAssociatedTokenProgram extends string, TAccountWrappedSolMint extends string, TAccountAddressLookupTableProgram extends string, TAccountSystemProgram extends string, TAccountBoxTokenProgram extends string, TAccountTokenProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: RequestTemplateOpenInput<TAccountOwner, TAccountTemplate, TAccountBoxMint, TAccountOwnerBoxAccount, TAccountOpening, TAccountRandomness, TAccountRewardEscrow, TAccountOracleQueue, TAccountOracle, TAccountRecentSlotHashes, TAccountOracleProgram, TAccountOracleProgramState, TAccountOracleLutSigner, TAccountOracleLut, TAccountAssociatedTokenProgram, TAccountWrappedSolMint, TAccountAddressLookupTableProgram, TAccountSystemProgram, TAccountBoxTokenProgram, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): RequestTemplateOpenInstruction<TProgramAddress, TAccountOwner, TAccountTemplate, TAccountBoxMint, TAccountOwnerBoxAccount, TAccountOpening, TAccountRandomness, TAccountRewardEscrow, TAccountOracleQueue, TAccountOracle, TAccountRecentSlotHashes, TAccountOracleProgram, TAccountOracleProgramState, TAccountOracleLutSigner, TAccountOracleLut, TAccountAssociatedTokenProgram, TAccountWrappedSolMint, TAccountAddressLookupTableProgram, TAccountSystemProgram, TAccountBoxTokenProgram, TAccountTokenProgram> {
+export function getRequestTemplateOpenInstruction<TAccountBoxAuthority extends string, TAccountPayer extends string, TAccountTemplate extends string, TAccountBoxMint extends string, TAccountBoxAccount extends string, TAccountOpening extends string, TAccountRandomness extends string, TAccountRewardEscrow extends string, TAccountOracleQueue extends string, TAccountOracle extends string, TAccountRecentSlotHashes extends string, TAccountOracleProgram extends string, TAccountOracleProgramState extends string, TAccountOracleLutSigner extends string, TAccountOracleLut extends string, TAccountAssociatedTokenProgram extends string, TAccountWrappedSolMint extends string, TAccountAddressLookupTableProgram extends string, TAccountSystemProgram extends string, TAccountBoxTokenProgram extends string, TAccountTokenProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: RequestTemplateOpenInput<TAccountBoxAuthority, TAccountPayer, TAccountTemplate, TAccountBoxMint, TAccountBoxAccount, TAccountOpening, TAccountRandomness, TAccountRewardEscrow, TAccountOracleQueue, TAccountOracle, TAccountRecentSlotHashes, TAccountOracleProgram, TAccountOracleProgramState, TAccountOracleLutSigner, TAccountOracleLut, TAccountAssociatedTokenProgram, TAccountWrappedSolMint, TAccountAddressLookupTableProgram, TAccountSystemProgram, TAccountBoxTokenProgram, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): RequestTemplateOpenInstruction<TProgramAddress, TAccountBoxAuthority, TAccountPayer, TAccountTemplate, TAccountBoxMint, TAccountBoxAccount, TAccountOpening, TAccountRandomness, TAccountRewardEscrow, TAccountOracleQueue, TAccountOracle, TAccountRecentSlotHashes, TAccountOracleProgram, TAccountOracleProgramState, TAccountOracleLutSigner, TAccountOracleLut, TAccountAssociatedTokenProgram, TAccountWrappedSolMint, TAccountAddressLookupTableProgram, TAccountSystemProgram, TAccountBoxTokenProgram, TAccountTokenProgram> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
  // Original accounts.
-const originalAccounts = { owner: { value: input.owner ?? null, isWritable: true }, template: { value: input.template ?? null, isWritable: true }, boxMint: { value: input.boxMint ?? null, isWritable: true }, ownerBoxAccount: { value: input.ownerBoxAccount ?? null, isWritable: true }, opening: { value: input.opening ?? null, isWritable: true }, randomness: { value: input.randomness ?? null, isWritable: true }, rewardEscrow: { value: input.rewardEscrow ?? null, isWritable: true }, oracleQueue: { value: input.oracleQueue ?? null, isWritable: true }, oracle: { value: input.oracle ?? null, isWritable: true }, recentSlotHashes: { value: input.recentSlotHashes ?? null, isWritable: false }, oracleProgram: { value: input.oracleProgram ?? null, isWritable: false }, oracleProgramState: { value: input.oracleProgramState ?? null, isWritable: false }, oracleLutSigner: { value: input.oracleLutSigner ?? null, isWritable: false }, oracleLut: { value: input.oracleLut ?? null, isWritable: true }, associatedTokenProgram: { value: input.associatedTokenProgram ?? null, isWritable: false }, wrappedSolMint: { value: input.wrappedSolMint ?? null, isWritable: false }, addressLookupTableProgram: { value: input.addressLookupTableProgram ?? null, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isWritable: false }, boxTokenProgram: { value: input.boxTokenProgram ?? null, isWritable: false }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
+const originalAccounts = { boxAuthority: { value: input.boxAuthority ?? null, isWritable: false }, payer: { value: input.payer ?? null, isWritable: true }, template: { value: input.template ?? null, isWritable: true }, boxMint: { value: input.boxMint ?? null, isWritable: true }, boxAccount: { value: input.boxAccount ?? null, isWritable: true }, opening: { value: input.opening ?? null, isWritable: true }, randomness: { value: input.randomness ?? null, isWritable: true }, rewardEscrow: { value: input.rewardEscrow ?? null, isWritable: true }, oracleQueue: { value: input.oracleQueue ?? null, isWritable: true }, oracle: { value: input.oracle ?? null, isWritable: true }, recentSlotHashes: { value: input.recentSlotHashes ?? null, isWritable: false }, oracleProgram: { value: input.oracleProgram ?? null, isWritable: false }, oracleProgramState: { value: input.oracleProgramState ?? null, isWritable: false }, oracleLutSigner: { value: input.oracleLutSigner ?? null, isWritable: false }, oracleLut: { value: input.oracleLut ?? null, isWritable: true }, associatedTokenProgram: { value: input.associatedTokenProgram ?? null, isWritable: false }, wrappedSolMint: { value: input.wrappedSolMint ?? null, isWritable: false }, addressLookupTableProgram: { value: input.addressLookupTableProgram ?? null, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isWritable: false }, boxTokenProgram: { value: input.boxTokenProgram ?? null, isWritable: false }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -87,37 +100,47 @@ accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as A
 }
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("owner", accounts.owner), getAccountMeta("template", accounts.template), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("ownerBoxAccount", accounts.ownerBoxAccount), getAccountMeta("opening", accounts.opening), getAccountMeta("randomness", accounts.randomness), getAccountMeta("rewardEscrow", accounts.rewardEscrow), getAccountMeta("oracleQueue", accounts.oracleQueue), getAccountMeta("oracle", accounts.oracle), getAccountMeta("recentSlotHashes", accounts.recentSlotHashes), getAccountMeta("oracleProgram", accounts.oracleProgram), getAccountMeta("oracleProgramState", accounts.oracleProgramState), getAccountMeta("oracleLutSigner", accounts.oracleLutSigner), getAccountMeta("oracleLut", accounts.oracleLut), getAccountMeta("associatedTokenProgram", accounts.associatedTokenProgram), getAccountMeta("wrappedSolMint", accounts.wrappedSolMint), getAccountMeta("addressLookupTableProgram", accounts.addressLookupTableProgram), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("boxTokenProgram", accounts.boxTokenProgram), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getRequestTemplateOpenInstructionDataEncoder().encode(args as RequestTemplateOpenInstructionDataArgs), programAddress } as RequestTemplateOpenInstruction<TProgramAddress, TAccountOwner, TAccountTemplate, TAccountBoxMint, TAccountOwnerBoxAccount, TAccountOpening, TAccountRandomness, TAccountRewardEscrow, TAccountOracleQueue, TAccountOracle, TAccountRecentSlotHashes, TAccountOracleProgram, TAccountOracleProgramState, TAccountOracleLutSigner, TAccountOracleLut, TAccountAssociatedTokenProgram, TAccountWrappedSolMint, TAccountAddressLookupTableProgram, TAccountSystemProgram, TAccountBoxTokenProgram, TAccountTokenProgram>);
+return Object.freeze({ accounts: [getAccountMeta("boxAuthority", accounts.boxAuthority), getAccountMeta("payer", accounts.payer), getAccountMeta("template", accounts.template), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("boxAccount", accounts.boxAccount), getAccountMeta("opening", accounts.opening), getAccountMeta("randomness", accounts.randomness), getAccountMeta("rewardEscrow", accounts.rewardEscrow), getAccountMeta("oracleQueue", accounts.oracleQueue), getAccountMeta("oracle", accounts.oracle), getAccountMeta("recentSlotHashes", accounts.recentSlotHashes), getAccountMeta("oracleProgram", accounts.oracleProgram), getAccountMeta("oracleProgramState", accounts.oracleProgramState), getAccountMeta("oracleLutSigner", accounts.oracleLutSigner), getAccountMeta("oracleLut", accounts.oracleLut), getAccountMeta("associatedTokenProgram", accounts.associatedTokenProgram), getAccountMeta("wrappedSolMint", accounts.wrappedSolMint), getAccountMeta("addressLookupTableProgram", accounts.addressLookupTableProgram), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("boxTokenProgram", accounts.boxTokenProgram), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getRequestTemplateOpenInstructionDataEncoder().encode(args as RequestTemplateOpenInstructionDataArgs), programAddress } as RequestTemplateOpenInstruction<TProgramAddress, TAccountBoxAuthority, TAccountPayer, TAccountTemplate, TAccountBoxMint, TAccountBoxAccount, TAccountOpening, TAccountRandomness, TAccountRewardEscrow, TAccountOracleQueue, TAccountOracle, TAccountRecentSlotHashes, TAccountOracleProgram, TAccountOracleProgramState, TAccountOracleLutSigner, TAccountOracleLut, TAccountAssociatedTokenProgram, TAccountWrappedSolMint, TAccountAddressLookupTableProgram, TAccountSystemProgram, TAccountBoxTokenProgram, TAccountTokenProgram>);
 }
 
 export type ParsedRequestTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
-owner: TAccountMetas[0];
-template: TAccountMetas[1];
-boxMint: TAccountMetas[2];
-ownerBoxAccount: TAccountMetas[3];
-opening: TAccountMetas[4];
-randomness: TAccountMetas[5];
-rewardEscrow: TAccountMetas[6];
-oracleQueue: TAccountMetas[7];
-oracle: TAccountMetas[8];
-recentSlotHashes: TAccountMetas[9];
-oracleProgram: TAccountMetas[10];
-oracleProgramState: TAccountMetas[11];
-oracleLutSigner: TAccountMetas[12];
-oracleLut: TAccountMetas[13];
-associatedTokenProgram: TAccountMetas[14];
-wrappedSolMint: TAccountMetas[15];
-addressLookupTableProgram: TAccountMetas[16];
-systemProgram: TAccountMetas[17];
-boxTokenProgram: TAccountMetas[18];
-tokenProgram: TAccountMetas[19];
+/** Owns the box token account and authorizes burning exactly one box. */
+boxAuthority: TAccountMetas[0];
+/**
+ * Pays for the opening and oracle initialization; may be a sponsor.
+ *
+ * The immutable authority intentionally precedes the mutable payer so the
+ * same signer may fill both roles after Solana promotes duplicate metas to
+ * writable. Parsing the mutable alias last preserves the cursor's safety
+ * checks while supporting the common self-paid opening flow.
+ */
+payer: TAccountMetas[1];
+template: TAccountMetas[2];
+boxMint: TAccountMetas[3];
+boxAccount: TAccountMetas[4];
+opening: TAccountMetas[5];
+randomness: TAccountMetas[6];
+rewardEscrow: TAccountMetas[7];
+oracleQueue: TAccountMetas[8];
+oracle: TAccountMetas[9];
+recentSlotHashes: TAccountMetas[10];
+oracleProgram: TAccountMetas[11];
+oracleProgramState: TAccountMetas[12];
+oracleLutSigner: TAccountMetas[13];
+oracleLut: TAccountMetas[14];
+associatedTokenProgram: TAccountMetas[15];
+wrappedSolMint: TAccountMetas[16];
+addressLookupTableProgram: TAccountMetas[17];
+systemProgram: TAccountMetas[18];
+boxTokenProgram: TAccountMetas[19];
+tokenProgram: TAccountMetas[20];
 };
 data: RequestTemplateOpenInstructionData; };
 
 export function parseRequestTemplateOpenInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(instruction: Instruction<TProgram> & InstructionWithAccounts<TAccountMetas> & InstructionWithData<ReadonlyUint8Array>): ParsedRequestTemplateOpenInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 20) {
-  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 20 });
+  if (instruction.accounts.length < 21) {
+  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 21 });
 }
 let accountIndex = 0;
 const getNextAccount = () => {
@@ -125,5 +148,5 @@ const getNextAccount = () => {
   accountIndex += 1;
   return accountMeta;
 }
-  return { programAddress: instruction.programAddress, accounts: { owner: getNextAccount(), template: getNextAccount(), boxMint: getNextAccount(), ownerBoxAccount: getNextAccount(), opening: getNextAccount(), randomness: getNextAccount(), rewardEscrow: getNextAccount(), oracleQueue: getNextAccount(), oracle: getNextAccount(), recentSlotHashes: getNextAccount(), oracleProgram: getNextAccount(), oracleProgramState: getNextAccount(), oracleLutSigner: getNextAccount(), oracleLut: getNextAccount(), associatedTokenProgram: getNextAccount(), wrappedSolMint: getNextAccount(), addressLookupTableProgram: getNextAccount(), systemProgram: getNextAccount(), boxTokenProgram: getNextAccount(), tokenProgram: getNextAccount() }, data: getRequestTemplateOpenInstructionDataDecoder().decode(instruction.data) };
+  return { programAddress: instruction.programAddress, accounts: { boxAuthority: getNextAccount(), payer: getNextAccount(), template: getNextAccount(), boxMint: getNextAccount(), boxAccount: getNextAccount(), opening: getNextAccount(), randomness: getNextAccount(), rewardEscrow: getNextAccount(), oracleQueue: getNextAccount(), oracle: getNextAccount(), recentSlotHashes: getNextAccount(), oracleProgram: getNextAccount(), oracleProgramState: getNextAccount(), oracleLutSigner: getNextAccount(), oracleLut: getNextAccount(), associatedTokenProgram: getNextAccount(), wrappedSolMint: getNextAccount(), addressLookupTableProgram: getNextAccount(), systemProgram: getNextAccount(), boxTokenProgram: getNextAccount(), tokenProgram: getNextAccount() }, data: getRequestTemplateOpenInstructionDataDecoder().decode(instruction.data) };
 }

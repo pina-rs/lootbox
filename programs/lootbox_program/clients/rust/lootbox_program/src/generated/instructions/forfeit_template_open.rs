@@ -15,21 +15,25 @@ pub const FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 36u8;
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ForfeitTemplateOpen {
-	/// Any signer may advance an expired FIFO head; the stored recipient and
+	/// Any signer may advance an expired FIFO head; the stored beneficiary and
 	/// their exclusive claim rights are never changed.
 	pub caller: solana_pubkey::Pubkey,
 	pub template: solana_pubkey::Pubkey,
+	pub service_vault: solana_pubkey::Pubkey,
 	pub opening: solana_pubkey::Pubkey,
 	pub randomness: solana_pubkey::Pubkey,
+	pub system_program: solana_pubkey::Pubkey,
 }
 
 impl ForfeitTemplateOpen {
-	pub fn new(caller: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey) -> Self {
+	pub fn new(caller: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, service_vault: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey) -> Self {
 		Self {
 			caller,
 			template,
+			service_vault,
 			opening,
 			randomness,
+			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
 		}
 	}
 
@@ -43,11 +47,13 @@ impl ForfeitTemplateOpen {
 		data: ForfeitTemplateOpenInstructionData,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.caller, true));
+		let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
+		accounts.push(solana_instruction::AccountMeta::new(self.caller, true));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.service_vault, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.randomness, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,

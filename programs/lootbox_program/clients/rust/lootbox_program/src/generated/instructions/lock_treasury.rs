@@ -20,16 +20,21 @@ pub struct LockTreasury {
 	pub box_mint: solana_pubkey::Pubkey,
 	/// The first unused bundle PDA proves that no funded tail was omitted.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Created and creator-funded only when receipts or crank bounties are enabled.
+	pub service_vault: solana_pubkey::Pubkey,
+	pub system_program: solana_pubkey::Pubkey,
 	pub box_token_program: solana_pubkey::Pubkey,
 }
 
 impl LockTreasury {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey) -> Self {
+	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, service_vault: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			template,
 			box_mint,
 			bundle,
+			service_vault,
+			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
 			box_token_program: solana_pubkey::pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
 		}
 	}
@@ -44,11 +49,13 @@ impl LockTreasury {
 		data: LockTreasuryInstructionData,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.authority, false));
+		let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
+		accounts.push(solana_instruction::AccountMeta::new(self.authority, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.box_mint, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.bundle, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.service_vault, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_token_program, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
@@ -83,4 +90,5 @@ impl LockTreasuryInstructionData {
 #[derive(pina::ZeroPod)]
 pub struct LockTreasuryInstructionWire {
 	pub discriminator: u8,
+	pub service_vault_bump: u8,
 }

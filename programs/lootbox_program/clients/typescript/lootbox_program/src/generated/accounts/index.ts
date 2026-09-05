@@ -9,6 +9,7 @@
 export * from './bundleState';
 export * from './lootboxState';
 export * from './openingState';
+export * from './resultReceiptState';
 export * from './templateOpeningState';
 export * from './templateState';
 export * from './vaultState';

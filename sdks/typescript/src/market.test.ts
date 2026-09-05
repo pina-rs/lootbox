@@ -1,4 +1,5 @@
 import type { TemplateState } from "@pina-rs/lootbox-generated";
+import { address } from "@solana/kit";
 import { describe, expect, it } from "vitest";
 import {
 	createRaydiumCpmmMarketManifest,
@@ -19,10 +20,10 @@ function inventory(...quantities: bigint[]): Uint8Array {
 
 function state(patch: Partial<TemplateState> = {}): TemplateState {
 	return {
-		authority: "11111111111111111111111111111111",
-		boxMint: "11111111111111111111111111111111",
-		oracleProgram: "11111111111111111111111111111111",
-		oracleQueue: "11111111111111111111111111111111",
+		authority: address("11111111111111111111111111111111"),
+		boxMint: address("11111111111111111111111111111111"),
+		oracleProgram: address("11111111111111111111111111111111"),
+		oracleQueue: address("11111111111111111111111111111111"),
 		id: 1n,
 		opensAt: 2_000n,
 		lockedAt: 0n,
@@ -32,13 +33,21 @@ function state(patch: Partial<TemplateState> = {}): TemplateState {
 		pendingOpenings: 0n,
 		nextRequest: 0n,
 		nextAllocation: 0n,
-		version: 2n,
+		revision: 2n,
+		manifestAccumulator: new Uint8Array(32),
+		manifestHash: new Uint8Array(32),
+		settlementBountyLamports: 0n,
+		resultReceiptRentLamports: 0n,
+		remainingResultReceipts: 0n,
+		remainingSettlementBounties: 0n,
 		remaining: inventory(2n, 1n),
 		name: new Uint8Array(32),
 		uri: new Uint8Array(200),
 		bundleCount: 2,
 		status: 1,
+		resultReceiptsEnabled: false,
 		bump: 1,
+		serviceVaultBump: 0,
 		...patch,
 	} as TemplateState;
 }

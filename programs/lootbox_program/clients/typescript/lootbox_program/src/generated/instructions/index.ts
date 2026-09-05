@@ -17,6 +17,7 @@ export * from './claimMetadataNftPrize';
 export * from './claimSolPrize';
 export * from './claimTokenPrize';
 export * from './closeOpening';
+export * from './closeServiceVault';
 export * from './closeTemplateOpening';
 export * from './createLootbox';
 export * from './createTemplate';

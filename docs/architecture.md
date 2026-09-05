@@ -2,7 +2,7 @@
 
 ## Design goals
 
-Lootbox v1 optimizes for a small auditable core:
+The original single-reward flow optimizes for a small auditable core:
 
 - one box token equals one future draw;
 - outcome odds become immutable before boxes exist;
@@ -11,7 +11,7 @@ Lootbox v1 optimizes for a small auditable core:
 - payouts can never depend on the authority remaining online;
 - every outstanding claim is funded at its worst possible value.
 
-The first version deliberately supports SOL payouts only. Arbitrary SPL tokens, NFTs, bundles, metadata standards, and pluggable payout adapters are deferred until the base accounting and randomness contract has production history.
+That compact flow deliberately supports SOL payouts only. Arbitrary SPL tokens, NFTs, bundles, metadata standards, and pluggable payout adapters are provided by treasury templates.
 
 ## Accounts
 
@@ -61,12 +61,12 @@ The program reads the actual SPL mint supply instead of inferring it solely from
 
 The oracle's 32-byte value is hashed with:
 
-- domain separator `pina-lootbox-outcome-v1`;
+- domain separator `pina-lootbox-outcome`;
 - lootbox address;
 - opening address;
 - a retry counter.
 
-The first eight bytes become a little-endian `u64`. Rejection sampling discards the small high-range remainder that would otherwise create modulo bias, then maps the result into the cumulative weight table. V1 caps the sum of weights at `u32::MAX`, so one sample rejects with probability below `2^-32`. After eight rejected hashes, a deterministic modulo fallback guarantees settlement; the probability of reaching that fallback—and therefore the statistical distance it can introduce—is below `2^-256` under the SHA-256 random-oracle assumption.
+The first eight bytes become a little-endian `u64`. Rejection sampling discards the small high-range remainder that would otherwise create modulo bias, then maps the result into the cumulative weight table. The protocol caps the sum of weights at `u32::MAX`, so one sample rejects with probability below `2^-32`. After eight rejected hashes, a deterministic modulo fallback guarantees settlement; the probability of reaching that fallback—and therefore the statistical distance it can introduce—is below `2^-256` under the SHA-256 random-oracle assumption.
 
 ## Trust and liveness
 
@@ -74,7 +74,7 @@ The lootbox authority controls configuration, minting within `max_supply`, depos
 
 The opening PDA—not the holder or lootbox authority—is each Switchboard randomness account's authority. Only the Lootbox program can initialize, commit, reveal, or close through that PDA. Switchboard is the external trust/liveness dependency: if no relayer settles within 300 slots, the recipient can claim the minimum configured reward. A holder gains nothing by withholding an unfavorable off-chain proof because timeout never pays more than the authentic outcome and never creates another draw; the recipient signature also prevents a third party from forcing that lower floor payout.
 
-## Scope after v1
+## Treasury evolution
 
 Likely follow-on work, intentionally outside this MVP:
 

@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:solana_kit_addresses/solana_kit_addresses.dart';
@@ -11,10 +12,9 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
 import '../instructions/instructions.dart';
 
+
 /// The address of the LootboxProgram program.
-const lootboxProgramProgramAddress = Address(
-  'Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op',
-);
+const lootboxProgramProgramAddress = Address('Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op');
 
 /// Known accounts for the LootboxProgram program.
 enum LootboxProgramAccount {
@@ -24,6 +24,7 @@ enum LootboxProgramAccount {
   templateState,
   bundleState,
   templateOpeningState,
+  resultReceiptState,
 }
 
 /// Known instructions for the LootboxProgram program.
@@ -66,10 +67,13 @@ enum LootboxProgramInstruction {
   reclaimCompressedNftPrize,
   forfeitTemplateOpen,
   lockTreasury,
+  closeServiceVault,
 }
 
 /// Identifies the type of a LootboxProgram instruction.
-LootboxProgramInstruction identifyLootboxProgramInstruction(Uint8List data) {
+LootboxProgramInstruction identifyLootboxProgramInstruction(
+  Uint8List data,
+) {
   if (containsBytes(data, getU8Encoder().encode(0), 0)) {
     return LootboxProgramInstruction.createLootbox;
   }
@@ -184,11 +188,17 @@ LootboxProgramInstruction identifyLootboxProgramInstruction(Uint8List data) {
   if (containsBytes(data, getU8Encoder().encode(37), 0)) {
     return LootboxProgramInstruction.lockTreasury;
   }
+  if (containsBytes(data, getU8Encoder().encode(38), 0)) {
+    return LootboxProgramInstruction.closeServiceVault;
+  }
 
-  throw SolanaError(SolanaErrorCode.programClientsFailedToIdentifyInstruction, {
-    'instructionData': data,
-    'programName': 'lootboxProgram',
-  });
+  throw SolanaError(
+    SolanaErrorCode.programClientsFailedToIdentifyInstruction,
+    {
+      'instructionData': data,
+      'programName': 'lootboxProgram',
+    },
+  );
 }
 
 /// A parsed instruction from the LootboxProgram program.
@@ -201,7 +211,7 @@ sealed class ParsedLootboxProgramInstruction {
 /// A parsed CreateLootbox instruction.
 final class ParsedCreateLootbox extends ParsedLootboxProgramInstruction {
   const ParsedCreateLootbox({required this.data})
-    : super(LootboxProgramInstruction.createLootbox);
+      : super(LootboxProgramInstruction.createLootbox);
 
   final CreateLootboxInstructionData data;
 }
@@ -209,7 +219,7 @@ final class ParsedCreateLootbox extends ParsedLootboxProgramInstruction {
 /// A parsed AddOutcome instruction.
 final class ParsedAddOutcome extends ParsedLootboxProgramInstruction {
   const ParsedAddOutcome({required this.data})
-    : super(LootboxProgramInstruction.addOutcome);
+      : super(LootboxProgramInstruction.addOutcome);
 
   final AddOutcomeInstructionData data;
 }
@@ -217,7 +227,7 @@ final class ParsedAddOutcome extends ParsedLootboxProgramInstruction {
 /// A parsed Deposit instruction.
 final class ParsedDeposit extends ParsedLootboxProgramInstruction {
   const ParsedDeposit({required this.data})
-    : super(LootboxProgramInstruction.deposit);
+      : super(LootboxProgramInstruction.deposit);
 
   final DepositInstructionData data;
 }
@@ -225,7 +235,7 @@ final class ParsedDeposit extends ParsedLootboxProgramInstruction {
 /// A parsed Seal instruction.
 final class ParsedSeal extends ParsedLootboxProgramInstruction {
   const ParsedSeal({required this.data})
-    : super(LootboxProgramInstruction.seal);
+      : super(LootboxProgramInstruction.seal);
 
   final SealInstructionData data;
 }
@@ -233,7 +243,7 @@ final class ParsedSeal extends ParsedLootboxProgramInstruction {
 /// A parsed MintBoxes instruction.
 final class ParsedMintBoxes extends ParsedLootboxProgramInstruction {
   const ParsedMintBoxes({required this.data})
-    : super(LootboxProgramInstruction.mintBoxes);
+      : super(LootboxProgramInstruction.mintBoxes);
 
   final MintBoxesInstructionData data;
 }
@@ -241,7 +251,7 @@ final class ParsedMintBoxes extends ParsedLootboxProgramInstruction {
 /// A parsed RequestOpen instruction.
 final class ParsedRequestOpen extends ParsedLootboxProgramInstruction {
   const ParsedRequestOpen({required this.data})
-    : super(LootboxProgramInstruction.requestOpen);
+      : super(LootboxProgramInstruction.requestOpen);
 
   final RequestOpenInstructionData data;
 }
@@ -249,7 +259,7 @@ final class ParsedRequestOpen extends ParsedLootboxProgramInstruction {
 /// A parsed SettleOpen instruction.
 final class ParsedSettleOpen extends ParsedLootboxProgramInstruction {
   const ParsedSettleOpen({required this.data})
-    : super(LootboxProgramInstruction.settleOpen);
+      : super(LootboxProgramInstruction.settleOpen);
 
   final SettleOpenInstructionData data;
 }
@@ -257,7 +267,7 @@ final class ParsedSettleOpen extends ParsedLootboxProgramInstruction {
 /// A parsed RefundOpen instruction.
 final class ParsedRefundOpen extends ParsedLootboxProgramInstruction {
   const ParsedRefundOpen({required this.data})
-    : super(LootboxProgramInstruction.refundOpen);
+      : super(LootboxProgramInstruction.refundOpen);
 
   final RefundOpenInstructionData data;
 }
@@ -265,7 +275,7 @@ final class ParsedRefundOpen extends ParsedLootboxProgramInstruction {
 /// A parsed CloseOpening instruction.
 final class ParsedCloseOpening extends ParsedLootboxProgramInstruction {
   const ParsedCloseOpening({required this.data})
-    : super(LootboxProgramInstruction.closeOpening);
+      : super(LootboxProgramInstruction.closeOpening);
 
   final CloseOpeningInstructionData data;
 }
@@ -273,7 +283,7 @@ final class ParsedCloseOpening extends ParsedLootboxProgramInstruction {
 /// A parsed WithdrawSurplus instruction.
 final class ParsedWithdrawSurplus extends ParsedLootboxProgramInstruction {
   const ParsedWithdrawSurplus({required this.data})
-    : super(LootboxProgramInstruction.withdrawSurplus);
+      : super(LootboxProgramInstruction.withdrawSurplus);
 
   final WithdrawSurplusInstructionData data;
 }
@@ -281,7 +291,7 @@ final class ParsedWithdrawSurplus extends ParsedLootboxProgramInstruction {
 /// A parsed CreateTemplate instruction.
 final class ParsedCreateTemplate extends ParsedLootboxProgramInstruction {
   const ParsedCreateTemplate({required this.data})
-    : super(LootboxProgramInstruction.createTemplate);
+      : super(LootboxProgramInstruction.createTemplate);
 
   final CreateTemplateInstructionData data;
 }
@@ -289,7 +299,7 @@ final class ParsedCreateTemplate extends ParsedLootboxProgramInstruction {
 /// A parsed AddBundle instruction.
 final class ParsedAddBundle extends ParsedLootboxProgramInstruction {
   const ParsedAddBundle({required this.data})
-    : super(LootboxProgramInstruction.addBundle);
+      : super(LootboxProgramInstruction.addBundle);
 
   final AddBundleInstructionData data;
 }
@@ -297,7 +307,7 @@ final class ParsedAddBundle extends ParsedLootboxProgramInstruction {
 /// A parsed FundSolPrize instruction.
 final class ParsedFundSolPrize extends ParsedLootboxProgramInstruction {
   const ParsedFundSolPrize({required this.data})
-    : super(LootboxProgramInstruction.fundSolPrize);
+      : super(LootboxProgramInstruction.fundSolPrize);
 
   final FundSolPrizeInstructionData data;
 }
@@ -305,7 +315,7 @@ final class ParsedFundSolPrize extends ParsedLootboxProgramInstruction {
 /// A parsed FundTokenPrize instruction.
 final class ParsedFundTokenPrize extends ParsedLootboxProgramInstruction {
   const ParsedFundTokenPrize({required this.data})
-    : super(LootboxProgramInstruction.fundTokenPrize);
+      : super(LootboxProgramInstruction.fundTokenPrize);
 
   final FundTokenPrizeInstructionData data;
 }
@@ -313,7 +323,7 @@ final class ParsedFundTokenPrize extends ParsedLootboxProgramInstruction {
 /// A parsed SealTemplate instruction.
 final class ParsedSealTemplate extends ParsedLootboxProgramInstruction {
   const ParsedSealTemplate({required this.data})
-    : super(LootboxProgramInstruction.sealTemplate);
+      : super(LootboxProgramInstruction.sealTemplate);
 
   final SealTemplateInstructionData data;
 }
@@ -321,7 +331,7 @@ final class ParsedSealTemplate extends ParsedLootboxProgramInstruction {
 /// A parsed MintTemplateBoxes instruction.
 final class ParsedMintTemplateBoxes extends ParsedLootboxProgramInstruction {
   const ParsedMintTemplateBoxes({required this.data})
-    : super(LootboxProgramInstruction.mintTemplateBoxes);
+      : super(LootboxProgramInstruction.mintTemplateBoxes);
 
   final MintTemplateBoxesInstructionData data;
 }
@@ -329,7 +339,7 @@ final class ParsedMintTemplateBoxes extends ParsedLootboxProgramInstruction {
 /// A parsed RequestTemplateOpen instruction.
 final class ParsedRequestTemplateOpen extends ParsedLootboxProgramInstruction {
   const ParsedRequestTemplateOpen({required this.data})
-    : super(LootboxProgramInstruction.requestTemplateOpen);
+      : super(LootboxProgramInstruction.requestTemplateOpen);
 
   final RequestTemplateOpenInstructionData data;
 }
@@ -337,7 +347,7 @@ final class ParsedRequestTemplateOpen extends ParsedLootboxProgramInstruction {
 /// A parsed FulfillTemplateOpen instruction.
 final class ParsedFulfillTemplateOpen extends ParsedLootboxProgramInstruction {
   const ParsedFulfillTemplateOpen({required this.data})
-    : super(LootboxProgramInstruction.fulfillTemplateOpen);
+      : super(LootboxProgramInstruction.fulfillTemplateOpen);
 
   final FulfillTemplateOpenInstructionData data;
 }
@@ -345,7 +355,7 @@ final class ParsedFulfillTemplateOpen extends ParsedLootboxProgramInstruction {
 /// A parsed AllocateTemplateOpen instruction.
 final class ParsedAllocateTemplateOpen extends ParsedLootboxProgramInstruction {
   const ParsedAllocateTemplateOpen({required this.data})
-    : super(LootboxProgramInstruction.allocateTemplateOpen);
+      : super(LootboxProgramInstruction.allocateTemplateOpen);
 
   final AllocateTemplateOpenInstructionData data;
 }
@@ -353,7 +363,7 @@ final class ParsedAllocateTemplateOpen extends ParsedLootboxProgramInstruction {
 /// A parsed ClaimSolPrize instruction.
 final class ParsedClaimSolPrize extends ParsedLootboxProgramInstruction {
   const ParsedClaimSolPrize({required this.data})
-    : super(LootboxProgramInstruction.claimSolPrize);
+      : super(LootboxProgramInstruction.claimSolPrize);
 
   final ClaimSolPrizeInstructionData data;
 }
@@ -361,7 +371,7 @@ final class ParsedClaimSolPrize extends ParsedLootboxProgramInstruction {
 /// A parsed ClaimTokenPrize instruction.
 final class ParsedClaimTokenPrize extends ParsedLootboxProgramInstruction {
   const ParsedClaimTokenPrize({required this.data})
-    : super(LootboxProgramInstruction.claimTokenPrize);
+      : super(LootboxProgramInstruction.claimTokenPrize);
 
   final ClaimTokenPrizeInstructionData data;
 }
@@ -369,7 +379,7 @@ final class ParsedClaimTokenPrize extends ParsedLootboxProgramInstruction {
 /// A parsed RetireTemplate instruction.
 final class ParsedRetireTemplate extends ParsedLootboxProgramInstruction {
   const ParsedRetireTemplate({required this.data})
-    : super(LootboxProgramInstruction.retireTemplate);
+      : super(LootboxProgramInstruction.retireTemplate);
 
   final RetireTemplateInstructionData data;
 }
@@ -377,7 +387,7 @@ final class ParsedRetireTemplate extends ParsedLootboxProgramInstruction {
 /// A parsed ReclaimSolPrize instruction.
 final class ParsedReclaimSolPrize extends ParsedLootboxProgramInstruction {
   const ParsedReclaimSolPrize({required this.data})
-    : super(LootboxProgramInstruction.reclaimSolPrize);
+      : super(LootboxProgramInstruction.reclaimSolPrize);
 
   final ReclaimSolPrizeInstructionData data;
 }
@@ -385,7 +395,7 @@ final class ParsedReclaimSolPrize extends ParsedLootboxProgramInstruction {
 /// A parsed ReclaimTokenPrize instruction.
 final class ParsedReclaimTokenPrize extends ParsedLootboxProgramInstruction {
   const ParsedReclaimTokenPrize({required this.data})
-    : super(LootboxProgramInstruction.reclaimTokenPrize);
+      : super(LootboxProgramInstruction.reclaimTokenPrize);
 
   final ReclaimTokenPrizeInstructionData data;
 }
@@ -393,7 +403,7 @@ final class ParsedReclaimTokenPrize extends ParsedLootboxProgramInstruction {
 /// A parsed CloseTemplateOpening instruction.
 final class ParsedCloseTemplateOpening extends ParsedLootboxProgramInstruction {
   const ParsedCloseTemplateOpening({required this.data})
-    : super(LootboxProgramInstruction.closeTemplateOpening);
+      : super(LootboxProgramInstruction.closeTemplateOpening);
 
   final CloseTemplateOpeningInstructionData data;
 }
@@ -401,7 +411,7 @@ final class ParsedCloseTemplateOpening extends ParsedLootboxProgramInstruction {
 /// A parsed ActivateBundle instruction.
 final class ParsedActivateBundle extends ParsedLootboxProgramInstruction {
   const ParsedActivateBundle({required this.data})
-    : super(LootboxProgramInstruction.activateBundle);
+      : super(LootboxProgramInstruction.activateBundle);
 
   final ActivateBundleInstructionData data;
 }
@@ -409,7 +419,7 @@ final class ParsedActivateBundle extends ParsedLootboxProgramInstruction {
 /// A parsed CancelBundle instruction.
 final class ParsedCancelBundle extends ParsedLootboxProgramInstruction {
   const ParsedCancelBundle({required this.data})
-    : super(LootboxProgramInstruction.cancelBundle);
+      : super(LootboxProgramInstruction.cancelBundle);
 
   final CancelBundleInstructionData data;
 }
@@ -417,25 +427,23 @@ final class ParsedCancelBundle extends ParsedLootboxProgramInstruction {
 /// A parsed FundMetadataNftPrize instruction.
 final class ParsedFundMetadataNftPrize extends ParsedLootboxProgramInstruction {
   const ParsedFundMetadataNftPrize({required this.data})
-    : super(LootboxProgramInstruction.fundMetadataNftPrize);
+      : super(LootboxProgramInstruction.fundMetadataNftPrize);
 
   final FundMetadataNftPrizeInstructionData data;
 }
 
 /// A parsed ClaimMetadataNftPrize instruction.
-final class ParsedClaimMetadataNftPrize
-    extends ParsedLootboxProgramInstruction {
+final class ParsedClaimMetadataNftPrize extends ParsedLootboxProgramInstruction {
   const ParsedClaimMetadataNftPrize({required this.data})
-    : super(LootboxProgramInstruction.claimMetadataNftPrize);
+      : super(LootboxProgramInstruction.claimMetadataNftPrize);
 
   final ClaimMetadataNftPrizeInstructionData data;
 }
 
 /// A parsed ReclaimMetadataNftPrize instruction.
-final class ParsedReclaimMetadataNftPrize
-    extends ParsedLootboxProgramInstruction {
+final class ParsedReclaimMetadataNftPrize extends ParsedLootboxProgramInstruction {
   const ParsedReclaimMetadataNftPrize({required this.data})
-    : super(LootboxProgramInstruction.reclaimMetadataNftPrize);
+      : super(LootboxProgramInstruction.reclaimMetadataNftPrize);
 
   final ReclaimMetadataNftPrizeInstructionData data;
 }
@@ -443,7 +451,7 @@ final class ParsedReclaimMetadataNftPrize
 /// A parsed FundCoreAssetPrize instruction.
 final class ParsedFundCoreAssetPrize extends ParsedLootboxProgramInstruction {
   const ParsedFundCoreAssetPrize({required this.data})
-    : super(LootboxProgramInstruction.fundCoreAssetPrize);
+      : super(LootboxProgramInstruction.fundCoreAssetPrize);
 
   final FundCoreAssetPrizeInstructionData data;
 }
@@ -451,43 +459,39 @@ final class ParsedFundCoreAssetPrize extends ParsedLootboxProgramInstruction {
 /// A parsed ClaimCoreAssetPrize instruction.
 final class ParsedClaimCoreAssetPrize extends ParsedLootboxProgramInstruction {
   const ParsedClaimCoreAssetPrize({required this.data})
-    : super(LootboxProgramInstruction.claimCoreAssetPrize);
+      : super(LootboxProgramInstruction.claimCoreAssetPrize);
 
   final ClaimCoreAssetPrizeInstructionData data;
 }
 
 /// A parsed ReclaimCoreAssetPrize instruction.
-final class ParsedReclaimCoreAssetPrize
-    extends ParsedLootboxProgramInstruction {
+final class ParsedReclaimCoreAssetPrize extends ParsedLootboxProgramInstruction {
   const ParsedReclaimCoreAssetPrize({required this.data})
-    : super(LootboxProgramInstruction.reclaimCoreAssetPrize);
+      : super(LootboxProgramInstruction.reclaimCoreAssetPrize);
 
   final ReclaimCoreAssetPrizeInstructionData data;
 }
 
 /// A parsed FundCompressedNftPrize instruction.
-final class ParsedFundCompressedNftPrize
-    extends ParsedLootboxProgramInstruction {
+final class ParsedFundCompressedNftPrize extends ParsedLootboxProgramInstruction {
   const ParsedFundCompressedNftPrize({required this.data})
-    : super(LootboxProgramInstruction.fundCompressedNftPrize);
+      : super(LootboxProgramInstruction.fundCompressedNftPrize);
 
   final FundCompressedNftPrizeInstructionData data;
 }
 
 /// A parsed ClaimCompressedNftPrize instruction.
-final class ParsedClaimCompressedNftPrize
-    extends ParsedLootboxProgramInstruction {
+final class ParsedClaimCompressedNftPrize extends ParsedLootboxProgramInstruction {
   const ParsedClaimCompressedNftPrize({required this.data})
-    : super(LootboxProgramInstruction.claimCompressedNftPrize);
+      : super(LootboxProgramInstruction.claimCompressedNftPrize);
 
   final ClaimCompressedNftPrizeInstructionData data;
 }
 
 /// A parsed ReclaimCompressedNftPrize instruction.
-final class ParsedReclaimCompressedNftPrize
-    extends ParsedLootboxProgramInstruction {
+final class ParsedReclaimCompressedNftPrize extends ParsedLootboxProgramInstruction {
   const ParsedReclaimCompressedNftPrize({required this.data})
-    : super(LootboxProgramInstruction.reclaimCompressedNftPrize);
+      : super(LootboxProgramInstruction.reclaimCompressedNftPrize);
 
   final ReclaimCompressedNftPrizeInstructionData data;
 }
@@ -495,7 +499,7 @@ final class ParsedReclaimCompressedNftPrize
 /// A parsed ForfeitTemplateOpen instruction.
 final class ParsedForfeitTemplateOpen extends ParsedLootboxProgramInstruction {
   const ParsedForfeitTemplateOpen({required this.data})
-    : super(LootboxProgramInstruction.forfeitTemplateOpen);
+      : super(LootboxProgramInstruction.forfeitTemplateOpen);
 
   final ForfeitTemplateOpenInstructionData data;
 }
@@ -503,9 +507,17 @@ final class ParsedForfeitTemplateOpen extends ParsedLootboxProgramInstruction {
 /// A parsed LockTreasury instruction.
 final class ParsedLockTreasury extends ParsedLootboxProgramInstruction {
   const ParsedLockTreasury({required this.data})
-    : super(LootboxProgramInstruction.lockTreasury);
+      : super(LootboxProgramInstruction.lockTreasury);
 
   final LockTreasuryInstructionData data;
+}
+
+/// A parsed CloseServiceVault instruction.
+final class ParsedCloseServiceVault extends ParsedLootboxProgramInstruction {
+  const ParsedCloseServiceVault({required this.data})
+      : super(LootboxProgramInstruction.closeServiceVault);
+
+  final CloseServiceVaultInstructionData data;
 }
 
 /// Parses a LootboxProgram instruction.
@@ -569,10 +581,9 @@ ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
     LootboxProgramInstruction.fulfillTemplateOpen => ParsedFulfillTemplateOpen(
       data: parseFulfillTemplateOpenInstruction(instruction),
     ),
-    LootboxProgramInstruction.allocateTemplateOpen =>
-      ParsedAllocateTemplateOpen(
-        data: parseAllocateTemplateOpenInstruction(instruction),
-      ),
+    LootboxProgramInstruction.allocateTemplateOpen => ParsedAllocateTemplateOpen(
+      data: parseAllocateTemplateOpenInstruction(instruction),
+    ),
     LootboxProgramInstruction.claimSolPrize => ParsedClaimSolPrize(
       data: parseClaimSolPrizeInstruction(instruction),
     ),
@@ -588,55 +599,50 @@ ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
     LootboxProgramInstruction.reclaimTokenPrize => ParsedReclaimTokenPrize(
       data: parseReclaimTokenPrizeInstruction(instruction),
     ),
-    LootboxProgramInstruction.closeTemplateOpening =>
-      ParsedCloseTemplateOpening(
-        data: parseCloseTemplateOpeningInstruction(instruction),
-      ),
+    LootboxProgramInstruction.closeTemplateOpening => ParsedCloseTemplateOpening(
+      data: parseCloseTemplateOpeningInstruction(instruction),
+    ),
     LootboxProgramInstruction.activateBundle => ParsedActivateBundle(
       data: parseActivateBundleInstruction(instruction),
     ),
     LootboxProgramInstruction.cancelBundle => ParsedCancelBundle(
       data: parseCancelBundleInstruction(instruction),
     ),
-    LootboxProgramInstruction.fundMetadataNftPrize =>
-      ParsedFundMetadataNftPrize(
-        data: parseFundMetadataNftPrizeInstruction(instruction),
-      ),
-    LootboxProgramInstruction.claimMetadataNftPrize =>
-      ParsedClaimMetadataNftPrize(
-        data: parseClaimMetadataNftPrizeInstruction(instruction),
-      ),
-    LootboxProgramInstruction.reclaimMetadataNftPrize =>
-      ParsedReclaimMetadataNftPrize(
-        data: parseReclaimMetadataNftPrizeInstruction(instruction),
-      ),
+    LootboxProgramInstruction.fundMetadataNftPrize => ParsedFundMetadataNftPrize(
+      data: parseFundMetadataNftPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.claimMetadataNftPrize => ParsedClaimMetadataNftPrize(
+      data: parseClaimMetadataNftPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.reclaimMetadataNftPrize => ParsedReclaimMetadataNftPrize(
+      data: parseReclaimMetadataNftPrizeInstruction(instruction),
+    ),
     LootboxProgramInstruction.fundCoreAssetPrize => ParsedFundCoreAssetPrize(
       data: parseFundCoreAssetPrizeInstruction(instruction),
     ),
     LootboxProgramInstruction.claimCoreAssetPrize => ParsedClaimCoreAssetPrize(
       data: parseClaimCoreAssetPrizeInstruction(instruction),
     ),
-    LootboxProgramInstruction.reclaimCoreAssetPrize =>
-      ParsedReclaimCoreAssetPrize(
-        data: parseReclaimCoreAssetPrizeInstruction(instruction),
-      ),
-    LootboxProgramInstruction.fundCompressedNftPrize =>
-      ParsedFundCompressedNftPrize(
-        data: parseFundCompressedNftPrizeInstruction(instruction),
-      ),
-    LootboxProgramInstruction.claimCompressedNftPrize =>
-      ParsedClaimCompressedNftPrize(
-        data: parseClaimCompressedNftPrizeInstruction(instruction),
-      ),
-    LootboxProgramInstruction.reclaimCompressedNftPrize =>
-      ParsedReclaimCompressedNftPrize(
-        data: parseReclaimCompressedNftPrizeInstruction(instruction),
-      ),
+    LootboxProgramInstruction.reclaimCoreAssetPrize => ParsedReclaimCoreAssetPrize(
+      data: parseReclaimCoreAssetPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.fundCompressedNftPrize => ParsedFundCompressedNftPrize(
+      data: parseFundCompressedNftPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.claimCompressedNftPrize => ParsedClaimCompressedNftPrize(
+      data: parseClaimCompressedNftPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.reclaimCompressedNftPrize => ParsedReclaimCompressedNftPrize(
+      data: parseReclaimCompressedNftPrizeInstruction(instruction),
+    ),
     LootboxProgramInstruction.forfeitTemplateOpen => ParsedForfeitTemplateOpen(
       data: parseForfeitTemplateOpenInstruction(instruction),
     ),
     LootboxProgramInstruction.lockTreasury => ParsedLockTreasury(
       data: parseLockTreasuryInstruction(instruction),
+    ),
+    LootboxProgramInstruction.closeServiceVault => ParsedCloseServiceVault(
+      data: parseCloseServiceVaultInstruction(instruction),
     ),
   };
 }

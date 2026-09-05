@@ -1,7 +1,16 @@
 {
 	"name": "@pina-rs/lootbox",
-	"version": "0.1.0",
-	"private": true,
+	"version": "0.0.1-alpha.0",
+	"description": "Solana transaction SDK for provably backed Pina reward packs",
+	"license": "Apache-2.0",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/pina-rs/lootbox.git"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"files": ["src"],
 	"type": "module",
 	"exports": {
 		".": "./src/index.ts"

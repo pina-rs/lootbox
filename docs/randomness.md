@@ -2,7 +2,7 @@
 
 ## Why an oracle
 
-Solana programs are deterministic, so block time, recent hashes, signatures, and account addresses are not safe entropy. Lootbox v1 consumes Switchboard On-Demand's commit/reveal randomness instead of inventing a protocol-specific oracle.
+Solana programs are deterministic, so block time, recent hashes, signatures, and account addresses are not safe entropy. Lootbox single-reward protocol consumes Switchboard On-Demand's commit/reveal randomness instead of inventing a protocol-specific oracle.
 
 Switchboard's official guide identifies the core failure mode: if value is committed only after reveal, a user can selectively continue favorable draws. Lootbox binds the box burn to a fresh commitment and makes reveal inseparable from settlement. See the [Switchboard randomness tutorial](https://docs.switchboard.xyz/docs-by-chain/solana-svm/randomness/randomness-tutorial).
 

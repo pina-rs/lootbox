@@ -194,7 +194,7 @@ export function AssetPicker({ owner, onClose, onPick }: Props) {
 									: <ShieldAlert size={14} />}
 								{source.source === "live"
 									? `${
-										tab === "tokens" ? "Jupiter Tokens V2" : "Metaplex DAS"
+										tab === "tokens" ? "Jupiter Tokens" : "Metaplex DAS"
 									} · live data`
 									: source.message ??
 										(loading

@@ -18,14 +18,22 @@ pub struct AllocateTemplateOpen {
 	pub template: solana_pubkey::Pubkey,
 	pub opening: solana_pubkey::Pubkey,
 	pub bundle: solana_pubkey::Pubkey,
+	/// Creator-funded when permanent result receipts are enabled.
+	pub service_vault: solana_pubkey::Pubkey,
+	/// Created only when enabled in the locked treasury configuration.
+	pub result_receipt: solana_pubkey::Pubkey,
+	pub system_program: solana_pubkey::Pubkey,
 }
 
 impl AllocateTemplateOpen {
-	pub fn new(template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey) -> Self {
+	pub fn new(template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, service_vault: solana_pubkey::Pubkey, result_receipt: solana_pubkey::Pubkey) -> Self {
 		Self {
 			template,
 			opening,
 			bundle,
+			service_vault,
+			result_receipt,
+			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
 		}
 	}
 
@@ -39,10 +47,13 @@ impl AllocateTemplateOpen {
 		data: AllocateTemplateOpenInstructionData,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
+		let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.bundle, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.service_vault, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.result_receipt, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -76,4 +87,5 @@ impl AllocateTemplateOpenInstructionData {
 #[derive(pina::ZeroPod)]
 pub struct AllocateTemplateOpenInstructionWire {
 	pub discriminator: u8,
+	pub result_receipt_bump: u8,
 }

@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,6 +12,7 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
+
 @immutable
 class ClaimCompressedNftPrizeInstructionData {
   const ClaimCompressedNftPrizeInstructionData({
@@ -20,7 +22,8 @@ class ClaimCompressedNftPrizeInstructionData {
     required this.creatorHash,
     required this.nonce,
     required this.index,
-  }) : discriminator = 34;
+  }) :
+      discriminator = 34;
 
   final int discriminator;
   final int assetIndex;
@@ -31,17 +34,13 @@ class ClaimCompressedNftPrizeInstructionData {
   final int index;
 }
 
-Encoder<ClaimCompressedNftPrizeInstructionData>
-getClaimCompressedNftPrizeInstructionDataEncoder() {
+Encoder<ClaimCompressedNftPrizeInstructionData> getClaimCompressedNftPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
     ('assetIndex', getU8Encoder()),
     ('root', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     ('dataHash', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
-    (
-      'creatorHash',
-      fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false),
-    ),
+    ('creatorHash', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     ('nonce', getU64Encoder()),
     ('index', getU32Encoder()),
   ]);
@@ -60,8 +59,7 @@ getClaimCompressedNftPrizeInstructionDataEncoder() {
   );
 }
 
-Decoder<ClaimCompressedNftPrizeInstructionData>
-getClaimCompressedNftPrizeInstructionDataDecoder() {
+Decoder<ClaimCompressedNftPrizeInstructionData> getClaimCompressedNftPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
     ('assetIndex', getU8Decoder()),
@@ -73,18 +71,20 @@ getClaimCompressedNftPrizeInstructionDataDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'claimCompressedNftPrize instruction decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'claimCompressedNftPrize instruction decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
-  (ClaimCompressedNftPrizeInstructionData, int) readTopLevel(
-    Uint8List bytes,
-    int offset,
-  ) {
-    getConstantDecoder(getU8Encoder().encode(34)).read(bytes, offset + 0);
+  (ClaimCompressedNftPrizeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
+    getConstantDecoder(
+      getU8Encoder().encode(34),
+    ).read(bytes, offset + 0);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
@@ -92,12 +92,12 @@ getClaimCompressedNftPrizeInstructionDataDecoder() {
 
     return (
       ClaimCompressedNftPrizeInstructionData(
-        assetIndex: map['assetIndex']! as int,
-        root: map['root']! as Uint8List,
-        dataHash: map['dataHash']! as Uint8List,
-        creatorHash: map['creatorHash']! as Uint8List,
-        nonce: map['nonce']! as BigInt,
-        index: map['index']! as int,
+      assetIndex: map['assetIndex']! as int,
+      root: map['root']! as Uint8List,
+      dataHash: map['dataHash']! as Uint8List,
+      creatorHash: map['creatorHash']! as Uint8List,
+      nonce: map['nonce']! as BigInt,
+      index: map['index']! as int,
       ),
       newOffset,
     );
@@ -123,15 +123,8 @@ getClaimCompressedNftPrizeInstructionDataDecoder() {
   };
 }
 
-Codec<
-  ClaimCompressedNftPrizeInstructionData,
-  ClaimCompressedNftPrizeInstructionData
->
-getClaimCompressedNftPrizeInstructionDataCodec() {
-  return combineCodec(
-    getClaimCompressedNftPrizeInstructionDataEncoder(),
-    getClaimCompressedNftPrizeInstructionDataDecoder(),
-  );
+Codec<ClaimCompressedNftPrizeInstructionData, ClaimCompressedNftPrizeInstructionData> getClaimCompressedNftPrizeInstructionDataCodec() {
+  return combineCodec(getClaimCompressedNftPrizeInstructionDataEncoder(), getClaimCompressedNftPrizeInstructionDataDecoder());
 }
 
 /// Creates a [ClaimCompressedNftPrize] instruction.
@@ -156,40 +149,34 @@ Instruction getClaimCompressedNftPrizeInstruction({
   required int index,
 }) {
   final instructionData = ClaimCompressedNftPrizeInstructionData(
-    assetIndex: assetIndex,
-    root: root,
-    dataHash: dataHash,
-    creatorHash: creatorHash,
-    nonce: nonce,
-    index: index,
+      assetIndex: assetIndex,
+      root: root,
+      dataHash: dataHash,
+      creatorHash: creatorHash,
+      nonce: nonce,
+      index: index,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: template, role: AccountRole.readonly),
-      AccountMeta(address: opening, role: AccountRole.writable),
-      AccountMeta(address: bundle, role: AccountRole.writable),
-      AccountMeta(address: recipient, role: AccountRole.readonly),
-      AccountMeta(address: treeConfig, role: AccountRole.readonly),
-      AccountMeta(address: merkleTree, role: AccountRole.writable),
-      AccountMeta(address: bubblegumProgram, role: AccountRole.readonly),
-      AccountMeta(address: logWrapper, role: AccountRole.readonly),
-      AccountMeta(address: compressionProgram, role: AccountRole.readonly),
-      AccountMeta(address: systemProgram, role: AccountRole.readonly),
-      AccountMeta(address: proofAccounts, role: AccountRole.readonly),
+    AccountMeta(address: template, role: AccountRole.readonly),
+    AccountMeta(address: opening, role: AccountRole.writable),
+    AccountMeta(address: bundle, role: AccountRole.writable),
+    AccountMeta(address: recipient, role: AccountRole.readonly),
+    AccountMeta(address: treeConfig, role: AccountRole.readonly),
+    AccountMeta(address: merkleTree, role: AccountRole.writable),
+    AccountMeta(address: bubblegumProgram, role: AccountRole.readonly),
+    AccountMeta(address: logWrapper, role: AccountRole.readonly),
+    AccountMeta(address: compressionProgram, role: AccountRole.readonly),
+    AccountMeta(address: systemProgram, role: AccountRole.readonly),
+    AccountMeta(address: proofAccounts, role: AccountRole.readonly),
     ],
-    data: getClaimCompressedNftPrizeInstructionDataEncoder().encode(
-      instructionData,
-    ),
+    data: getClaimCompressedNftPrizeInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [ClaimCompressedNftPrize] instruction from raw instruction data.
-ClaimCompressedNftPrizeInstructionData parseClaimCompressedNftPrizeInstruction(
-  Instruction instruction,
-) {
-  return getClaimCompressedNftPrizeInstructionDataDecoder().decode(
-    instruction.data!,
-  );
+ClaimCompressedNftPrizeInstructionData parseClaimCompressedNftPrizeInstruction(Instruction instruction) {
+  return getClaimCompressedNftPrizeInstructionDataDecoder().decode(instruction.data!);
 }

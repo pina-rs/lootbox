@@ -25,7 +25,7 @@ pub struct BundleState {
 	pub claimed: [u8; 32],
 	pub kinds: [u8; 4],
 	pub decimals: [u8; 4],
-	pub activated_version: u64,
+	pub activated_revision: u64,
 	pub index: u32,
 	pub asset_count: u8,
 	pub funded_assets: u8,

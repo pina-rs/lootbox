@@ -245,7 +245,7 @@ fn invoke_metadata_transfer(
 	optional_accounts: &[AccountView],
 	signers: &[Signer<'_, '_>],
 ) -> ProgramResult {
-	// Token Metadata TransferV1 ABI pinned to upstream commit
+	// Token Metadata transfer ABI pinned to upstream commit
 	// 6f5dbcbfcb658ce1c371ea517b46583c0d23a90f: discriminator [49, 0],
 	// amount 1, no authorization data, and the 17-account order below.
 	if optional_accounts.len() != 5 {
@@ -344,6 +344,15 @@ fn validate_metadata_accounts(
 	if optional_accounts.len() != 5 {
 		return Err(ProgramError::NotEnoughAccountKeys);
 	}
+	// Admission policy: programmable token records and mutable authorization
+	// rules can change after funding and strand a prize. Until those semantics
+	// have dedicated compatibility tests, accept only standard Metadata NFTs.
+	if optional_accounts[1..]
+		.iter()
+		.any(|account| account.address() != &MPL_TOKEN_METADATA_ID)
+	{
+		return Err(lootbox_error(LootboxError::InvalidPrize));
+	}
 	accounts
 		.token_metadata_program
 		.assert_program(&MPL_TOKEN_METADATA_ID)?;
@@ -416,7 +425,7 @@ fn invoke_core_transfer(
 	plugin_accounts: &[AccountView],
 	signers: &[Signer<'_, '_>],
 ) -> ProgramResult {
-	// Core TransferV1 ABI pinned to upstream commit
+	// Core transfer ABI pinned to upstream commit
 	// 83131e07872b9e98dcdb6dde8ec53931813c0d20: discriminator [14], no
 	// compression proof, and the seven fixed accounts followed by adapters.
 	let mut metas = Vec::with_capacity(7 + plugin_accounts.len());
@@ -457,12 +466,21 @@ fn invoke_core_transfer(
 
 fn validate_core_accounts(
 	asset: &AccountView,
+	collection: &AccountView,
+	plugin_accounts: &[AccountView],
 	core_program: &AccountView,
 	system_program: &AccountView,
 	log_wrapper: &AccountView,
 ) -> ProgramResult {
 	core_program.assert_program(&MPL_CORE_ID)?;
 	asset.assert_owner(&MPL_CORE_ID)?;
+	// Collections and plugins can add transfer delegates or external adapters
+	// after escrow. Plain, uncollected Core assets have no such mutable
+	// dependency and are the only admitted Core shape for now.
+	collection.assert_address(&MPL_CORE_ID)?;
+	if !plugin_accounts.is_empty() {
+		return Err(lootbox_error(LootboxError::InvalidPrize));
+	}
 	system_program.assert_address(&system::ID)?;
 	log_wrapper.assert_address(&SPL_NOOP_ID)?;
 
@@ -658,7 +676,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMetadataNftPrizeAccounts<'a> {
 			&token::ID,
 		)?);
 		drop(self.destination.as_associated_token_account_checked(
-			&opening.recipient,
+			&opening.beneficiary,
 			self.mint.address(),
 			&token::ID,
 		)?);
@@ -785,6 +803,8 @@ impl<'a> ProcessAccountInfos<'a> for FundCoreAssetPrizeAccounts<'a> {
 		assert_bundle(self.bundle, self.template.address())?;
 		validate_core_accounts(
 			self.asset,
+			self.collection,
+			self.plugin_accounts,
 			self.core_program,
 			self.system_program,
 			self.log_wrapper,
@@ -823,6 +843,8 @@ impl<'a> ProcessAccountInfos<'a> for ClaimCoreAssetPrizeAccounts<'a> {
 		assert_bundle(self.bundle, self.template.address())?;
 		validate_core_accounts(
 			self.asset,
+			self.collection,
+			self.plugin_accounts,
 			self.core_program,
 			self.system_program,
 			self.log_wrapper,
@@ -878,6 +900,8 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCoreAssetPrizeAccounts<'a> {
 		assert_bundle(self.bundle, self.template.address())?;
 		validate_core_accounts(
 			self.asset,
+			self.collection,
+			self.plugin_accounts,
 			self.core_program,
 			self.system_program,
 			self.log_wrapper,

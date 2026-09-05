@@ -6,8 +6,8 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixZeroPodEncoderSize, getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
-import { combineCodec, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getI64Decoder, getI64Encoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
+import { fixZeroPodEncoderSize, getZeroPodBooleanDecoder, getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { combineCodec, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBooleanDecoder, getBooleanEncoder, getBytesDecoder, getBytesEncoder, getI64Decoder, getI64Encoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
@@ -18,16 +18,16 @@ export function getCreateTemplateDiscriminatorBytes(): ReadonlyUint8Array { retu
 export type CreateTemplateInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountBoxTokenProgram extends string | AccountMeta<string> = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, ...TRemainingAccounts]>;
 
-export type CreateTemplateInstructionData = { discriminator: number; id: bigint; opensAt: bigint; oracleProgram: Address; oracleQueue: Address; name: ReadonlyUint8Array; uri: ReadonlyUint8Array; bump: number;  };
+export type CreateTemplateInstructionData = { discriminator: number; id: bigint; opensAt: bigint; oracleProgram: Address; oracleQueue: Address; name: ReadonlyUint8Array; uri: ReadonlyUint8Array; settlementBountyLamports: bigint; resultReceiptsEnabled: boolean; bump: number;  };
 
-export type CreateTemplateInstructionDataArgs = { id: number | bigint; opensAt: number | bigint; oracleProgram: Address; oracleQueue: Address; name: ReadonlyUint8Array; uri: ReadonlyUint8Array; bump: number;  };
+export type CreateTemplateInstructionDataArgs = { id: number | bigint; opensAt: number | bigint; oracleProgram: Address; oracleQueue: Address; name: ReadonlyUint8Array; uri: ReadonlyUint8Array; settlementBountyLamports: number | bigint; resultReceiptsEnabled: boolean; bump: number;  };
 
 export function getCreateTemplateInstructionDataEncoder(): FixedSizeEncoder<CreateTemplateInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['id', getU64Encoder()], ['opensAt', getI64Encoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['name', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['uri', fixZeroPodEncoderSize(getBytesEncoder(), 200)], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 10 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['id', getU64Encoder()], ['opensAt', getI64Encoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['name', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['uri', fixZeroPodEncoderSize(getBytesEncoder(), 200)], ['settlementBountyLamports', getU64Encoder()], ['resultReceiptsEnabled', getBooleanEncoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 10 }));
 }
 
 export function getCreateTemplateInstructionDataDecoder(): FixedSizeDecoder<CreateTemplateInstructionData> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(CREATE_TEMPLATE_DISCRIMINATOR, getU8Decoder())], ['id', getU64Decoder()], ['opensAt', getI64Decoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['name', fixDecoderSize(getBytesDecoder(), 32)], ['uri', fixDecoderSize(getBytesDecoder(), 200)], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(CREATE_TEMPLATE_DISCRIMINATOR, getU8Decoder())], ['id', getU64Decoder()], ['opensAt', getI64Decoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['name', fixDecoderSize(getBytesDecoder(), 32)], ['uri', fixDecoderSize(getBytesDecoder(), 200)], ['settlementBountyLamports', getU64Decoder()], ['resultReceiptsEnabled', getZeroPodBooleanDecoder()], ['bump', getU8Decoder()]]);
 }
 
 export function getCreateTemplateInstructionDataCodec(): FixedSizeCodec<CreateTemplateInstructionDataArgs, CreateTemplateInstructionData> {
@@ -46,6 +46,8 @@ oracleProgram: CreateTemplateInstructionDataArgs["oracleProgram"];
 oracleQueue: CreateTemplateInstructionDataArgs["oracleQueue"];
 name: CreateTemplateInstructionDataArgs["name"];
 uri: CreateTemplateInstructionDataArgs["uri"];
+settlementBountyLamports: CreateTemplateInstructionDataArgs["settlementBountyLamports"];
+resultReceiptsEnabled: CreateTemplateInstructionDataArgs["resultReceiptsEnabled"];
 bump: CreateTemplateInstructionDataArgs["bump"];
 }
 

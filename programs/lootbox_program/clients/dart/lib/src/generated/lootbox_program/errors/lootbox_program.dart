@@ -15,8 +15,8 @@ const int lootboxProgramErrorInvalidState = 0x1; // 1
 /// Message: "The configured outcome does not exist or is out of range."
 const int lootboxProgramErrorInvalidOutcome = 0x2; // 2
 
-/// An outcome weight must be non-zero and keep total weight within the v1 bound.
-/// Message: "An outcome weight must be non-zero and keep total weight within the v1 bound."
+/// An outcome weight must be non-zero and keep total weight within the bound.
+/// Message: "An outcome weight must be non-zero and keep total weight within the bound."
 const int lootboxProgramErrorInvalidWeight = 0x3; // 3
 
 /// The lootbox cannot be sealed until at least one outcome exists.
@@ -95,52 +95,41 @@ const int lootboxProgramErrorSupplyMismatch = 0x15; // 21
 /// Message: "A market treasury must be locked before its earliest reveal date."
 const int lootboxProgramErrorRevealDatePassed = 0x16; // 22
 
+/// The optional service vault or result receipt is invalid.
+/// Message: "The optional service vault or result receipt is invalid."
+const int lootboxProgramErrorInvalidServiceAccount = 0x17; // 23
+
+/// The creator-funded receipt or settlement budget is exhausted.
+/// Message: "The creator-funded receipt or settlement budget is exhausted."
+const int lootboxProgramErrorServiceBudgetExhausted = 0x18; // 24
+
 /// Map of error codes to human-readable messages.
 const Map<int, String> _lootboxProgramErrorMessages = {
-  lootboxProgramErrorUnauthorized:
-      'The signer is not authorized to perform this action.',
-  lootboxProgramErrorInvalidState:
-      'The account or lootbox is not in the required state.',
-  lootboxProgramErrorInvalidOutcome:
-      'The configured outcome does not exist or is out of range.',
-  lootboxProgramErrorInvalidWeight: 'An outcome weight must be non-zero and keep total weight within the v1 bound.',
-  lootboxProgramErrorIncompleteConfiguration:
-      'The lootbox cannot be sealed until at least one outcome exists.',
-  lootboxProgramErrorInsolvent:
-      'The vault cannot cover the worst-case outstanding liability.',
-  lootboxProgramErrorInvalidMint:
-      'The box mint or token account does not match the lootbox.',
-  lootboxProgramErrorInvalidRandomness: 'The randomness account, owner, queue, authority, or commitment is invalid.',
-  lootboxProgramErrorRandomnessNotReady:
-      'The committed randomness is not ready for the requested transition.',
-  lootboxProgramErrorRandomnessExpired:
-      'The randomness is already revealed and cannot take this path.',
-  lootboxProgramErrorOpeningNotExpired:
-      'The pending opening has not reached its refund timeout.',
-  lootboxProgramErrorOpeningAlreadyFinalized:
-      'The opening receipt has already been settled or refunded.',
-  lootboxProgramErrorInvalidRecipient:
-      'The supplied recipient does not match the receipt-bound recipient.',
-  lootboxProgramErrorSupplyExceeded:
-      'Minting would exceed the configured maximum supply.',
-  lootboxProgramErrorClaimLocked:
-      'The template\'s earliest opening timestamp has not arrived.',
-  lootboxProgramErrorAllocationOutOfOrder:
-      'An earlier opening must be allocated first.',
-  lootboxProgramErrorPrizeExhausted:
-      'At least one advertised prize has been exhausted.',
-  lootboxProgramErrorInvalidPrize:
-      'The asset, quantity, or escrow does not match the immutable prize.',
-  lootboxProgramErrorPrizeAlreadyClaimed:
-      'This asset has already been delivered for this opening.',
-  lootboxProgramErrorTreasuryLocked:
-      'The treasury is permanently locked and cannot accept more bundles.',
-  lootboxProgramErrorTreasuryUnlocked:
-      'The treasury must be locked before any box can be opened.',
-  lootboxProgramErrorSupplyMismatch:
-      'Fixed box supply does not exactly match the funded bundle inventory.',
-  lootboxProgramErrorRevealDatePassed:
-      'A market treasury must be locked before its earliest reveal date.',
+    lootboxProgramErrorUnauthorized: 'The signer is not authorized to perform this action.',
+    lootboxProgramErrorInvalidState: 'The account or lootbox is not in the required state.',
+    lootboxProgramErrorInvalidOutcome: 'The configured outcome does not exist or is out of range.',
+    lootboxProgramErrorInvalidWeight: 'An outcome weight must be non-zero and keep total weight within the bound.',
+    lootboxProgramErrorIncompleteConfiguration: 'The lootbox cannot be sealed until at least one outcome exists.',
+    lootboxProgramErrorInsolvent: 'The vault cannot cover the worst-case outstanding liability.',
+    lootboxProgramErrorInvalidMint: 'The box mint or token account does not match the lootbox.',
+    lootboxProgramErrorInvalidRandomness: 'The randomness account, owner, queue, authority, or commitment is invalid.',
+    lootboxProgramErrorRandomnessNotReady: 'The committed randomness is not ready for the requested transition.',
+    lootboxProgramErrorRandomnessExpired: 'The randomness is already revealed and cannot take this path.',
+    lootboxProgramErrorOpeningNotExpired: 'The pending opening has not reached its refund timeout.',
+    lootboxProgramErrorOpeningAlreadyFinalized: 'The opening receipt has already been settled or refunded.',
+    lootboxProgramErrorInvalidRecipient: 'The supplied recipient does not match the receipt-bound recipient.',
+    lootboxProgramErrorSupplyExceeded: 'Minting would exceed the configured maximum supply.',
+    lootboxProgramErrorClaimLocked: 'The template\'s earliest opening timestamp has not arrived.',
+    lootboxProgramErrorAllocationOutOfOrder: 'An earlier opening must be allocated first.',
+    lootboxProgramErrorPrizeExhausted: 'At least one advertised prize has been exhausted.',
+    lootboxProgramErrorInvalidPrize: 'The asset, quantity, or escrow does not match the immutable prize.',
+    lootboxProgramErrorPrizeAlreadyClaimed: 'This asset has already been delivered for this opening.',
+    lootboxProgramErrorTreasuryLocked: 'The treasury is permanently locked and cannot accept more bundles.',
+    lootboxProgramErrorTreasuryUnlocked: 'The treasury must be locked before any box can be opened.',
+    lootboxProgramErrorSupplyMismatch: 'Fixed box supply does not exactly match the funded bundle inventory.',
+    lootboxProgramErrorRevealDatePassed: 'A market treasury must be locked before its earliest reveal date.',
+    lootboxProgramErrorInvalidServiceAccount: 'The optional service vault or result receipt is invalid.',
+    lootboxProgramErrorServiceBudgetExhausted: 'The creator-funded receipt or settlement budget is exhausted.',
 };
 
 /// Get the error message for a LootboxProgram program error code.

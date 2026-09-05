@@ -15,10 +15,18 @@ pub const REQUEST_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 16u8;
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct RequestTemplateOpen {
-	pub owner: solana_pubkey::Pubkey,
+	/// Owns the box token account and authorizes burning exactly one box.
+	pub box_authority: solana_pubkey::Pubkey,
+	/// Pays for the opening and oracle initialization; may be a sponsor.
+	///
+	/// The immutable authority intentionally precedes the mutable payer so the
+	/// same signer may fill both roles after Solana promotes duplicate metas to
+	/// writable. Parsing the mutable alias last preserves the cursor's safety
+	/// checks while supporting the common self-paid opening flow.
+	pub payer: solana_pubkey::Pubkey,
 	pub template: solana_pubkey::Pubkey,
 	pub box_mint: solana_pubkey::Pubkey,
-	pub owner_box_account: solana_pubkey::Pubkey,
+	pub box_account: solana_pubkey::Pubkey,
 	pub opening: solana_pubkey::Pubkey,
 	pub randomness: solana_pubkey::Pubkey,
 	pub reward_escrow: solana_pubkey::Pubkey,
@@ -38,12 +46,13 @@ pub struct RequestTemplateOpen {
 }
 
 impl RequestTemplateOpen {
-	pub fn new(owner: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, owner_box_account: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, oracle_lut_signer: solana_pubkey::Pubkey, oracle_lut: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey, address_lookup_table_program: solana_pubkey::Pubkey) -> Self {
+	pub fn new(box_authority: solana_pubkey::Pubkey, payer: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, box_account: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, oracle_lut_signer: solana_pubkey::Pubkey, oracle_lut: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey, address_lookup_table_program: solana_pubkey::Pubkey) -> Self {
 		Self {
-			owner,
+			box_authority,
+			payer,
 			template,
 			box_mint,
-			owner_box_account,
+			box_account,
 			opening,
 			randomness,
 			reward_escrow,
@@ -73,11 +82,12 @@ impl RequestTemplateOpen {
 		data: RequestTemplateOpenInstructionData,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(20 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new(self.owner, true));
+		let mut accounts = Vec::with_capacity(21 + remaining_accounts.len());
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_authority, true));
+		accounts.push(solana_instruction::AccountMeta::new(self.payer, true));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.box_mint, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.owner_box_account, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.box_account, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.randomness, true));
 		accounts.push(solana_instruction::AccountMeta::new(self.reward_escrow, false));
@@ -128,5 +138,8 @@ impl RequestTemplateOpenInstructionData {
 pub struct RequestTemplateOpenInstructionWire {
 	pub discriminator: u8,
 	pub recent_slot: u64,
+	pub beneficiary: solana_pubkey::Pubkey,
+	pub consumer_program: solana_pubkey::Pubkey,
+	pub consumer_context: [u8; 32],
 	pub bump: u8,
 }

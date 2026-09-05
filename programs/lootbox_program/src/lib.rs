@@ -52,9 +52,9 @@ pub const MAX_TOTAL_WEIGHT: u64 = u32::MAX as u64;
 
 const CLOCK_SYSVAR_ID: Address = address!("SysvarC1ock11111111111111111111111111111111");
 const SLOT_HASHES_SYSVAR_ID: Address = address!("SysvarS1otHashes111111111111111111111111111");
-const LOOTBOX_SEED_PREFIX: &[u8] = b"lootbox";
-const VAULT_SEED_PREFIX: &[u8] = b"vault";
-const OPENING_SEED_PREFIX: &[u8] = b"opening";
+const SEED_LOOTBOX: &[u8] = b"lootbox";
+const SEED_VAULT: &[u8] = b"vault";
+const SEED_OPENING: &[u8] = b"opening";
 const RANDOMNESS_DISCRIMINATOR: [u8; 8] = [10, 66, 229, 135, 220, 239, 217, 114];
 const RANDOMNESS_ACCOUNT_SIZE: usize = 408;
 const RANDOMNESS_INIT_DISCRIMINATOR: [u8; 8] = [9, 9, 204, 33, 50, 116, 113, 15];
@@ -174,7 +174,7 @@ pub enum LootboxAccountType {
 
 /// Immutable definition and live accounting for one lootbox mint.
 #[account(discriminator = LootboxAccountType)]
-#[pda(seeds = [LOOTBOX_SEED_PREFIX, authority: Address, id: u64], bump = bump)]
+#[pda(seeds = [SEED_LOOTBOX, authority: Address, id: u64], bump = bump)]
 pub struct LootboxState {
 	pub authority: Address,
 	pub box_mint: Address,
@@ -200,7 +200,7 @@ pub struct LootboxState {
 
 /// Program-owned SOL vault for one lootbox definition.
 #[account(discriminator = LootboxAccountType)]
-#[pda(seeds = [VAULT_SEED_PREFIX, lootbox: Address], bump = bump)]
+#[pda(seeds = [SEED_VAULT, lootbox: Address], bump = bump)]
 pub struct VaultState {
 	pub lootbox: Address,
 	pub rent_reserve: u64,
@@ -210,7 +210,7 @@ pub struct VaultState {
 /// Receipt binding a burned box to one unrevealed randomness commitment.
 #[account(discriminator = LootboxAccountType)]
 #[pda(
-	seeds = [OPENING_SEED_PREFIX, lootbox: Address, randomness: Address],
+	seeds = [SEED_OPENING, lootbox: Address, randomness: Address],
 	bump = bump
 )]
 pub struct OpeningState {

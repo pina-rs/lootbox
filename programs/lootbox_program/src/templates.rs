@@ -19,9 +19,9 @@ pub use collections::*;
 mod close;
 pub use close::*;
 
-const TEMPLATE_SEED: &[u8] = b"template";
-const BUNDLE_SEED: &[u8] = b"bundle";
-const TEMPLATE_OPENING_SEED: &[u8] = b"template-opening";
+const SEED_TEMPLATE: &[u8] = b"template";
+const SEED_BUNDLE: &[u8] = b"bundle";
+const SEED_TEMPLATE_OPENING: &[u8] = b"template-opening";
 /// Maximum assets delivered by one winning bundle.
 pub const MAX_PRIZE_ASSETS: usize = 4;
 /// A native SOL prize, denominated in lamports.
@@ -47,7 +47,7 @@ const BUNDLE_ACTIVE: u8 = 1;
 
 /// Immutable template terms and the live finite inventory.
 #[account(discriminator = LootboxAccountType)]
-#[pda(seeds = [TEMPLATE_SEED, authority: Address, id: u64], bump = bump)]
+#[pda(seeds = [SEED_TEMPLATE, authority: Address, id: u64], bump = bump)]
 pub struct TemplateState {
 	pub authority: Address,
 	pub box_mint: Address,
@@ -82,7 +82,7 @@ pub struct TemplateState {
 
 /// A complete prize outcome and its escrow authority, shared across all boxes.
 #[account(discriminator = LootboxAccountType)]
-#[pda(seeds = [BUNDLE_SEED, template: Address, index: u32], bump = bump)]
+#[pda(seeds = [SEED_BUNDLE, template: Address, index: u32], bump = bump)]
 pub struct BundleState {
 	pub template: Address,
 	pub quantity: u64,
@@ -107,7 +107,7 @@ pub struct BundleState {
 
 /// A burned box, its verified entropy, and independently claimable winning assets.
 #[account(discriminator = LootboxAccountType)]
-#[pda(seeds = [TEMPLATE_OPENING_SEED, template: Address, randomness: Address], bump = bump)]
+#[pda(seeds = [SEED_TEMPLATE_OPENING, template: Address, randomness: Address], bump = bump)]
 pub struct TemplateOpeningState {
 	pub template: Address,
 	pub recipient: Address,

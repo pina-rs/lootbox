@@ -1,3 +1,4 @@
+publish_to: none
 name: lootbox_program_generated
 description: Generated Codama client for the Pina lootbox program.
 version: 0.0.1-alpha.0

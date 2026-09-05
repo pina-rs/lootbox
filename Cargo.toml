@@ -20,6 +20,7 @@ repository = "https://github.com/pina-rs/lootbox"
 rust-version = "1.89.0"
 
 [workspace.dependencies]
+lootbox-program-client = { path = "programs/lootbox_program/clients/rust/lootbox_program" }
 num-derive = { default-features = false, version = "0.5" }
 num-traits = { default-features = false, version = "0.2" }
 pina = { default-features = false, version = "0.12.0" }

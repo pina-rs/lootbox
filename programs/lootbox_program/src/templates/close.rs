@@ -81,38 +81,23 @@ impl<'a> ProcessAccountInfos<'a> for CloseTemplateOpeningAccounts<'a> {
 		drop(opening);
 		drop(state);
 
-		let close_accounts = [
-			InstructionAccount::writable(self.randomness.address()),
-			InstructionAccount::writable(self.reward_escrow.address()),
-			InstructionAccount::writable_signer(self.opening.address()),
-			InstructionAccount::readonly(self.oracle_program_state.address()),
-			InstructionAccount::readonly(self.system_program.address()),
-			InstructionAccount::readonly(self.token_program.address()),
-			InstructionAccount::readonly(self.wrapped_sol_mint.address()),
-			InstructionAccount::writable(self.oracle_lut.address()),
-			InstructionAccount::readonly(self.oracle_lut_signer.address()),
-			InstructionAccount::readonly(self.address_lookup_table_program.address()),
-		];
-		let close_account_views: [&AccountView; 10] = [
-			self.randomness,
-			self.reward_escrow,
-			self.opening,
-			self.oracle_program_state,
-			self.system_program,
-			self.token_program,
-			self.wrapped_sol_mint,
-			self.oracle_lut,
-			self.oracle_lut_signer,
-			self.address_lookup_table_program,
-		];
-		let close_instruction = InstructionView {
-			program_id: self.oracle_program.address(),
-			accounts: &close_accounts,
-			data: &RANDOMNESS_CLOSE_DISCRIMINATOR,
-		};
 		let opening_signer = opening_seeds_with_bump.to_signer();
 		let signers = [opening_signer.as_signer()];
-		pinocchio::cpi::invoke_signed::<10, _>(&close_instruction, &close_account_views, &signers)?;
+
+		RandomnessClose {
+			program_id: self.oracle_program.address(),
+			randomness: self.randomness,
+			reward_escrow: self.reward_escrow,
+			authority: self.opening,
+			program_state: self.oracle_program_state,
+			system_program: self.system_program,
+			token_program: self.token_program,
+			wrapped_sol_mint: self.wrapped_sol_mint,
+			lut: self.oracle_lut,
+			lut_signer: self.oracle_lut_signer,
+			address_lookup_table_program: self.address_lookup_table_program,
+		}
+		.invoke_signed(&signers)?;
 
 		self.opening.close_account_zeroed(self.rent_refund)
 	}

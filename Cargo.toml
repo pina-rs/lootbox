@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
 	"crates/lootbox-cli",
+	"crates/switchboard_randomness_cpi",
 	"programs/lootbox_program",
 	"programs/lootbox_program/clients/rust/lootbox_program",
 	"sdks/rust",
@@ -24,13 +25,16 @@ lootbox-program-client = { path = "programs/lootbox_program/clients/rust/lootbox
 num-derive = { default-features = false, version = "0.5" }
 num-traits = { default-features = false, version = "0.2" }
 pina = { default-features = false, version = "0.12.0" }
+pinocchio = { version = "^0.11", features = ["cpi"] }
 proptest = { default-features = false, version = "1", features = ["std"] }
 solana-account-info = { default-features = false, version = "3" }
+solana-address = { features = ["decode"], version = "2" }
 solana-cpi = { default-features = false, version = "3" }
 solana-instruction = { default-features = false, version = "3.4" }
 solana-program-error = { default-features = false, version = "3.0" }
 solana-pubkey = { default-features = false, version = "4", features = ["bytemuck"] }
 solana-sha256-hasher = { default-features = false, version = "3.1.0" }
+switchboard_randomness_cpi = { path = "crates/switchboard_randomness_cpi", version = "0.0.1-alpha.0" }
 thiserror = { default-features = false, version = "2" }
 
 [workspace.metadata.bin]

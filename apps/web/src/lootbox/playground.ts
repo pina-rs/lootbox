@@ -7,6 +7,7 @@ import {
 	getTemplateOpeningStateDecoder,
 	LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
 	LootboxClient,
+	MAX_TEMPLATE_BUNDLES,
 	type OracleAccounts,
 	type PrizeAsset,
 	type PrizeBundleInput,
@@ -21,7 +22,6 @@ import {
 const CONTROL = "http://127.0.0.1:8898";
 const ORACLE = "Aio4gaXjXzJNVLtzwtNVmSqGKpANtXhybbkhtAC94ji2";
 const U64_MAX = (1n << 64n) - 1n;
-const MAX_BUNDLES = 256;
 const MAX_ASSETS = 4;
 
 export type AssetSource = "native" | "sandbox" | "jupiter" | "das" | "manual";
@@ -421,8 +421,8 @@ export function creatorErrors(input: CreatorInput): Record<string, string> {
 	check("settlementBountySol", () => {
 		parseUnits(input.settlementBountySol, 9);
 	});
-	if (input.rows.length < 1 || input.rows.length > MAX_BUNDLES) {
-		errors.bundles = `Use one to ${MAX_BUNDLES} bundles`;
+	if (input.rows.length < 1 || input.rows.length > MAX_TEMPLATE_BUNDLES) {
+		errors.bundles = `Use one to ${MAX_TEMPLATE_BUNDLES} bundles`;
 	}
 	let totalCopies = 0n;
 	let totalSol = 0n;

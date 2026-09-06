@@ -8,7 +8,7 @@
 	clippy::too_many_arguments
 )]
 
-use pina::zeropod;
+use pina::pinapod;
 
 pub const MINT_BOXES_DISCRIMINATOR: u8 = 4u8;
 

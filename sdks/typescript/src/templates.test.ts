@@ -58,7 +58,7 @@ describe("finite template plans", () => {
 					assets: [{ kind: "nft", mint: nft }],
 				}],
 			})
-		).toThrow("unique NFT");
+		).toThrow("unique asset");
 		expect(() =>
 			createTemplatePlan({
 				name: "Invalid",
@@ -94,6 +94,29 @@ describe("finite template plans", () => {
 		).toThrow("uncollected Core");
 	});
 
+	it("counts quote collateral while allowing a multi-copy badge authority", () => {
+		const plan = createTemplatePlan({
+			name: "Launch box",
+			bundles: [{
+				label: "Ten launches",
+				quantity: 10n,
+				assets: [
+					{ kind: "quoteSol", lamports: 100_000_000n },
+					{ kind: "mintBadge", mint: nft },
+				],
+			}],
+		});
+		expect(plan.treasury).toEqual([{
+			asset: null,
+			amount: 1_000_000_000n,
+			kind: "quoteSol",
+		}, {
+			asset: nft,
+			amount: 10n,
+			kind: "mintBadge",
+		}]);
+	});
+
 	it("bounds metadata by UTF-8 bytes and rejects hidden control text", () => {
 		expect(decodeTemplateText(encodeTemplateText("🎁", 32))).toBe("🎁");
 		expect(() => encodeTemplateText("🎁".repeat(9), 32)).toThrow("UTF-8");
@@ -101,8 +124,7 @@ describe("finite template plans", () => {
 	});
 
 	it("shows an exhausted prize at zero percent", () => {
-		const remaining = new Uint8Array(2048);
-		new DataView(remaining.buffer).setBigUint64(0, 9n, true);
+		const remaining = [9n, 0n];
 		expect(
 			templateInventory({ remaining, bundleCount: 2 }).map((
 				outcome,
@@ -110,33 +132,32 @@ describe("finite template plans", () => {
 		).toEqual([100, 0]);
 	});
 
-	it("supports all 256 append slots and snapshots an earlier prefix", () => {
-		const bundles = Array.from({ length: 256 }, (_, index) => ({
+	it("supports all 1,024 append slots and snapshots an earlier prefix", () => {
+		const bundles = Array.from({ length: 1_024 }, (_, index) => ({
 			label: `Bundle ${index}`,
 			quantity: 1n,
 			assets: [{ kind: "sol" as const, lamports: 1n }],
 		}));
 		const plan = createTemplatePlan({ name: "Large manifest", bundles });
-		expect(plan.totalBundles).toBe(256n);
-		const remaining = new Uint8Array(2048);
-		const view = new DataView(remaining.buffer);
-		for (let index = 0; index < 256; index++) {
-			view.setBigUint64(index * 8, 1n, true);
-		}
-		expect(templateInventory({ remaining, bundleCount: 256 }, 9)).toHaveLength(
-			9,
-		);
-		expect(templateInventory({ remaining, bundleCount: 256 })).toHaveLength(
-			256,
+		expect(plan.totalBundles).toBe(1_024n);
+		const remaining = Array<bigint>(1_024).fill(1n);
+		expect(templateInventory({ remaining, bundleCount: 1_024 }, 9))
+			.toHaveLength(
+				9,
+			);
+		expect(templateInventory({ remaining, bundleCount: 1_024 })).toHaveLength(
+			1_024,
 		);
 	});
 
 	it("rejects an append before any partial bundle can exceed the slot cap", () => {
-		expect(remainingTemplateBundleCapacity(0)).toBe(256);
-		expect(remainingTemplateBundleCapacity(255)).toBe(1);
-		expect(remainingTemplateBundleCapacity(256)).toBe(0);
+		expect(remainingTemplateBundleCapacity(0)).toBe(1_024);
+		expect(remainingTemplateBundleCapacity(1_023)).toBe(1);
+		expect(remainingTemplateBundleCapacity(1_024)).toBe(0);
 		expect(() => remainingTemplateBundleCapacity(-1)).toThrow("bundle count");
-		expect(() => remainingTemplateBundleCapacity(257)).toThrow("bundle count");
+		expect(() => remainingTemplateBundleCapacity(1_025)).toThrow(
+			"bundle count",
+		);
 	});
 
 	it("funds optional services exactly at lock", () => {

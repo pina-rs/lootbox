@@ -582,7 +582,7 @@ impl<'a> ProcessAccountInfos<'a> for FundMetadataNftPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = FundMetadataNftPrizeInstruction::try_from_bytes(data)?;
 		self.authority.assert_signer()?.assert_writable()?;
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let state = as_template(self.template)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
@@ -644,7 +644,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMetadataNftPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ClaimMetadataNftPrizeInstruction::try_from_bytes(data)?;
 		self.payer.assert_signer()?.assert_writable()?;
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let state = as_template(self.template)?;
 		assert_template(self.template.address(), &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		validate_metadata_accounts(
@@ -720,7 +720,8 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMetadataNftPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ReclaimMetadataNftPrizeInstruction::try_from_bytes(data)?;
 		self.authority.assert_signer()?.assert_writable()?;
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let template_data = self.template.try_borrow()?;
+		let state = TemplateState::try_from_bytes(&template_data)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
@@ -760,13 +761,26 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMetadataNftPrizeAccounts<'a> {
 			self.mint.address(),
 			&token::ID,
 		)?);
-		if reclaim_amount(&state, &mut bundle, supply, args.asset_index)? != 1 {
+		let bundle_index =
+			usize::try_from(bundle.index.get()).map_err(|_| ProgramError::InvalidAccountData)?;
+		let active_remaining = if bundle.status == BUNDLE_ACTIVE {
+			Some(remaining_at(&state, bundle_index)?)
+		} else {
+			None
+		};
+		if reclaim_amount(
+			&state,
+			&mut bundle,
+			supply,
+			args.asset_index,
+			active_remaining,
+		)? != 1
+		{
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
-		drop(state);
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
 
@@ -796,7 +810,7 @@ impl<'a> ProcessAccountInfos<'a> for FundCoreAssetPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = FundCoreAssetPrizeInstruction::try_from_bytes(data)?;
 		self.authority.assert_signer()?.assert_writable()?;
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let state = as_template(self.template)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
@@ -838,7 +852,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimCoreAssetPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ClaimCoreAssetPrizeInstruction::try_from_bytes(data)?;
 		self.payer.assert_signer()?.assert_writable()?;
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let state = as_template(self.template)?;
 		assert_template(self.template.address(), &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		validate_core_accounts(
@@ -894,7 +908,8 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCoreAssetPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ReclaimCoreAssetPrizeInstruction::try_from_bytes(data)?;
 		self.authority.assert_signer()?.assert_writable()?;
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let template_data = self.template.try_borrow()?;
+		let state = TemplateState::try_from_bytes(&template_data)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
@@ -919,13 +934,26 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCoreAssetPrizeAccounts<'a> {
 		{
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
-		if reclaim_amount(&state, &mut bundle, supply, args.asset_index)? != 1 {
+		let bundle_index =
+			usize::try_from(bundle.index.get()).map_err(|_| ProgramError::InvalidAccountData)?;
+		let active_remaining = if bundle.status == BUNDLE_ACTIVE {
+			Some(remaining_at(&state, bundle_index)?)
+		} else {
+			None
+		};
+		if reclaim_amount(
+			&state,
+			&mut bundle,
+			supply,
+			args.asset_index,
+			active_remaining,
+		)? != 1
+		{
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
-		drop(state);
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
 
@@ -950,7 +978,7 @@ impl<'a> ProcessAccountInfos<'a> for FundCompressedNftPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = FundCompressedNftPrizeInstruction::try_from_bytes(data)?;
 		self.authority.assert_signer()?;
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let state = as_template(self.template)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
@@ -993,7 +1021,7 @@ impl<'a> ProcessAccountInfos<'a> for FundCompressedNftPrizeAccounts<'a> {
 impl<'a> ProcessAccountInfos<'a> for ClaimCompressedNftPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ClaimCompressedNftPrizeInstruction::try_from_bytes(data)?;
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let state = as_template(self.template)?;
 		assert_template(self.template.address(), &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		let asset = compressed_asset_id(self.merkle_tree.address(), args.nonce.get())?;
@@ -1051,7 +1079,8 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCompressedNftPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ReclaimCompressedNftPrizeInstruction::try_from_bytes(data)?;
 		self.authority.assert_signer()?;
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let template_data = self.template.try_borrow()?;
+		let state = TemplateState::try_from_bytes(&template_data)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
@@ -1069,13 +1098,26 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCompressedNftPrizeAccounts<'a> {
 		{
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
-		if reclaim_amount(&state, &mut bundle, supply, args.asset_index)? != 1 {
+		let bundle_index =
+			usize::try_from(bundle.index.get()).map_err(|_| ProgramError::InvalidAccountData)?;
+		let active_remaining = if bundle.status == BUNDLE_ACTIVE {
+			Some(remaining_at(&state, bundle_index)?)
+		} else {
+			None
+		};
+		if reclaim_amount(
+			&state,
+			&mut bundle,
+			supply,
+			args.asset_index,
+			active_remaining,
+		)? != 1
+		{
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
-		drop(state);
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
 		let context = CompressedTransfer {

@@ -2334,12 +2334,13 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
 name = "pina"
-version = "0.12.2"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b89c7716be939c3e48c619a496793b2e7946f221bb520df03917489073ba6b05"
+checksum = "50fc7beb5f2745c5a4f9dce677af0dfef7ccce48abc10cad87951e4e485c7db4"
 dependencies = [
  "pastey",
  "pina_macros",
+ "pinapod",
  "pinocchio",
  "pinocchio-associated-token-account",
  "pinocchio-system",
@@ -2347,20 +2348,41 @@ dependencies = [
  "pinocchio-token-2022",
  "solana-address 2.6.1",
  "solana-program-log",
- "zeropod",
 ]
 
 [[package]]
 name = "pina_macros"
-version = "0.12.2"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0d135c9bd4dd99ebe8be3296fcf5452d778ba8548bfdb3ed8b7e677d29f1c23"
+checksum = "2302941fbec0721fd9a7907fa8081d9e45704d51604b34c352494c7b1977d25f"
 dependencies = [
  "darling 0.24.1",
  "heck",
  "proc-macro2",
  "quote",
  "syn 3.0.4",
+]
+
+[[package]]
+name = "pinapod"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72175fa13b1fceeed06738c5688f1b30f29e6409de5cf7bec708dcd6ce8c4e47"
+dependencies = [
+ "pinapod-derive",
+ "solana-address 2.6.1",
+ "solana-program-error",
+]
+
+[[package]]
+name = "pinapod-derive"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26158eeaa46a9b825024d64c99ab06601b1e392fdba785f26bf6bee134156c44"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
 ]
 
 [[package]]
@@ -6086,28 +6108,6 @@ name = "zeroize_derive"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c50655cbb0fe3fc43170059e702f1ce5e19b84cec58dc87b037a09935c2f328"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
-]
-
-[[package]]
-name = "zeropod"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af6c4fe8dc57179de72db5185c9c618a3350a9122a76ec3e13ccd493bca38931"
-dependencies = [
- "solana-address 2.6.1",
- "solana-program-error",
- "zeropod-derive",
-]
-
-[[package]]
-name = "zeropod-derive"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "babb94e405e4914176ad9fd74e34c640ea0fcd314bfcb2bb6690a5300e724257"
 dependencies = [
  "proc-macro2",
  "quote",

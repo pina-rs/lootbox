@@ -60,6 +60,37 @@ void main() {
       );
     });
 
+    test('counts quote collateral and allows multi-copy badge authority', () {
+      final plan = TemplatePlan(
+        bundles: [
+          PrizeBundle(
+            label: 'Launch',
+            quantity: BigInt.from(10),
+            assets: [
+              PrizeAsset.quoteSol(BigInt.from(100)),
+              PrizeAsset.mintBadge(nft),
+            ],
+          ),
+        ],
+      );
+      expect(plan.treasury[null], BigInt.from(1000));
+      expect(plan.treasury[nft], BigInt.from(10));
+    });
+
+    test('rejects more than the compact inventory capacity', () {
+      final bundle = PrizeBundle(
+        label: 'SOL',
+        quantity: BigInt.one,
+        assets: [PrizeAsset.sol(BigInt.one)],
+      );
+      expect(
+        () => TemplatePlan(
+          bundles: List.filled(maxTemplateBundles + 1, bundle),
+        ),
+        throwsRangeError,
+      );
+    });
+
     test('takes an immutable snapshot of bundle lists', () {
       final assets = [PrizeAsset.sol(BigInt.one)];
       final bundle = PrizeBundle(

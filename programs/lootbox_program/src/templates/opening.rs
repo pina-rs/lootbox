@@ -86,7 +86,7 @@ pub struct ForfeitTemplateOpenAccounts<'a> {
 	pub system_program: &'a AccountView,
 }
 
-fn assert_openable(state: &TemplateStateZc) -> ProgramResult {
+fn assert_openable(state: &TemplateStateHeader) -> ProgramResult {
 	if state.status == TEMPLATE_DRAFT {
 		return Err(lootbox_error(LootboxError::InvalidState));
 	}
@@ -114,7 +114,7 @@ fn validate_request_binding(
 }
 
 fn record_forfeit(
-	state: &mut TemplateStateZc,
+	state: &mut TemplateStateHeader,
 	opening: &mut TemplateOpeningStateZc,
 ) -> ProgramResult {
 	if opening.status != OPENING_PENDING {
@@ -142,7 +142,7 @@ fn record_forfeit(
 
 fn pay_settlement_bounty(
 	template: &Address,
-	state: &mut TemplateStateZc,
+	state: &mut TemplateStateHeader,
 	service_vault: &mut AccountView,
 	recipient: &mut AccountView,
 	system_program: &AccountView,
@@ -225,7 +225,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		self.wrapped_sol_mint.assert_address(&WRAPPED_SOL_MINT_ID)?;
 		self.address_lookup_table_program
 			.assert_address(&ADDRESS_LOOKUP_TABLE_PROGRAM_ID)?;
-		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
+		let mut state = as_template_mut(self.template)?;
 		assert_template(&template_address, &state)?;
 		self.oracle_queue.assert_address(&state.oracle_queue)?;
 		self.oracle_program.assert_program(&state.oracle_program)?;
@@ -403,7 +403,7 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 		self.system_program.assert_address(&system::ID)?;
 		self.token_program.assert_address(&token::ID)?;
 		self.wrapped_sol_mint.assert_address(&WRAPPED_SOL_MINT_ID)?;
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_service_vault(self.service_vault, &template_address, &state)?;
 		self.oracle_queue.assert_address(&state.oracle_queue)?;
@@ -464,7 +464,7 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 		}
 		.invoke_signed(&signers)?;
 
-		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
+		let mut state = as_template_mut(self.template)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 
@@ -501,7 +501,7 @@ impl<'a> ProcessAccountInfos<'a> for ForfeitTemplateOpenAccounts<'a> {
 		self.caller.assert_signer()?.assert_writable()?;
 		self.service_vault.assert_writable()?;
 		self.system_program.assert_address(&system::ID)?;
-		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
+		let mut state = as_template_mut(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_service_vault(self.service_vault, &template_address, &state)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
@@ -544,19 +544,19 @@ mod tests {
 
 	#[test]
 	fn retirement_preserves_opening_rights_but_drafts_do_not() {
-		let mut bytes = [0; TemplateState::SIZE];
-		let state = TemplateState::initialize(&mut bytes).expect("template");
+		let mut bytes = [0; TemplateState::HEADER_SIZE];
+		let mut state = TemplateState::initialize(&mut bytes).expect("template");
 
-		assert!(assert_openable(state).is_err());
+		assert!(assert_openable(&state).is_err());
 		state.status = TEMPLATE_LIVE;
-		assert!(assert_openable(state).is_err());
+		assert!(assert_openable(&state).is_err());
 		state.status = TEMPLATE_RETIRED;
-		assert_eq!(assert_openable(state), Ok(()));
+		assert_eq!(assert_openable(&state), Ok(()));
 		state.status = TEMPLATE_LIVE;
 		state.locked_at.set(1);
-		assert_eq!(assert_openable(state), Ok(()));
+		assert_eq!(assert_openable(&state), Ok(()));
 		state.status = TEMPLATE_RETIRED;
-		assert_eq!(assert_openable(state), Ok(()));
+		assert_eq!(assert_openable(&state), Ok(()));
 	}
 
 	#[test]
@@ -575,8 +575,8 @@ mod tests {
 
 	#[test]
 	fn timeout_forfeits_only_the_fifo_head_without_consuming_inventory() {
-		let mut template_bytes = [0; TemplateState::SIZE];
-		let state = TemplateState::initialize(&mut template_bytes).expect("template");
+		let mut template_bytes = [0; TemplateState::HEADER_SIZE];
+		let mut state = TemplateState::initialize(&mut template_bytes).expect("template");
 		state.remaining_bundles.set(3);
 		state.pending_openings.set(2);
 		state.next_allocation.set(7);
@@ -584,14 +584,14 @@ mod tests {
 		let opening = TemplateOpeningState::initialize(&mut opening_bytes).expect("opening");
 		opening.status = OPENING_PENDING;
 		opening.sequence.set(8);
-		assert!(record_forfeit(state, opening).is_err());
+		assert!(record_forfeit(&mut state, opening).is_err());
 		assert_eq!(state.pending_openings.get(), 2);
 		opening.sequence.set(7);
-		assert_eq!(record_forfeit(state, opening), Ok(()));
+		assert_eq!(record_forfeit(&mut state, opening), Ok(()));
 		assert_eq!(opening.status, 4);
 		assert_eq!(state.pending_openings.get(), 1);
 		assert_eq!(state.next_allocation.get(), 8);
 		assert_eq!(state.remaining_bundles.get(), 3);
-		assert!(record_forfeit(state, opening).is_err());
+		assert!(record_forfeit(&mut state, opening).is_err());
 	}
 }

@@ -44,7 +44,7 @@ declare_id!("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
 /// Maximum number of weighted outcomes in the single-reward model.
 pub const MAX_OUTCOMES: usize = 8;
 /// Maximum append-only prize bundles in an editable template treasury.
-pub const MAX_TEMPLATE_BUNDLES: usize = 256;
+pub const MAX_TEMPLATE_BUNDLES: usize = 1_024;
 /// Number of slots after which an unfulfilled opening receives its reward floor.
 pub const RANDOMNESS_TIMEOUT_SLOTS: u64 = 300;
 
@@ -163,6 +163,11 @@ pub enum LootboxInstruction {
 	ForfeitTemplateOpen = 36,
 	LockTreasury = 37,
 	CloseServiceVault = 38,
+	FundQuoteSolPrize = 39,
+	FundQuoteTokenPrize = 40,
+	FundMintPrize = 41,
+	ClaimMintPrize = 42,
+	ReclaimMintPrize = 43,
 }
 
 #[discriminator]
@@ -1511,6 +1516,21 @@ pub fn process_instruction(
 		}
 		LootboxInstruction::CloseServiceVault => {
 			CloseServiceVaultAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::FundQuoteSolPrize => {
+			FundQuoteSolPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::FundQuoteTokenPrize => {
+			FundQuoteTokenPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::FundMintPrize => {
+			FundMintPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ClaimMintPrize => {
+			ClaimMintPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ReclaimMintPrize => {
+			ReclaimMintPrizeAccounts::try_from((program_id, accounts))?.process(data)
 		}
 	}
 }

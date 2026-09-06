@@ -68,6 +68,11 @@ enum LootboxProgramInstruction {
   forfeitTemplateOpen,
   lockTreasury,
   closeServiceVault,
+  fundQuoteSolPrize,
+  fundQuoteTokenPrize,
+  fundMintPrize,
+  claimMintPrize,
+  reclaimMintPrize,
 }
 
 /// Identifies the type of a LootboxProgram instruction.
@@ -190,6 +195,21 @@ LootboxProgramInstruction identifyLootboxProgramInstruction(
   }
   if (containsBytes(data, getU8Encoder().encode(38), 0)) {
     return LootboxProgramInstruction.closeServiceVault;
+  }
+  if (containsBytes(data, getU8Encoder().encode(39), 0)) {
+    return LootboxProgramInstruction.fundQuoteSolPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(40), 0)) {
+    return LootboxProgramInstruction.fundQuoteTokenPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(41), 0)) {
+    return LootboxProgramInstruction.fundMintPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(42), 0)) {
+    return LootboxProgramInstruction.claimMintPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(43), 0)) {
+    return LootboxProgramInstruction.reclaimMintPrize;
   }
 
   throw SolanaError(
@@ -520,6 +540,46 @@ final class ParsedCloseServiceVault extends ParsedLootboxProgramInstruction {
   final CloseServiceVaultInstructionData data;
 }
 
+/// A parsed FundQuoteSolPrize instruction.
+final class ParsedFundQuoteSolPrize extends ParsedLootboxProgramInstruction {
+  const ParsedFundQuoteSolPrize({required this.data})
+      : super(LootboxProgramInstruction.fundQuoteSolPrize);
+
+  final FundQuoteSolPrizeInstructionData data;
+}
+
+/// A parsed FundQuoteTokenPrize instruction.
+final class ParsedFundQuoteTokenPrize extends ParsedLootboxProgramInstruction {
+  const ParsedFundQuoteTokenPrize({required this.data})
+      : super(LootboxProgramInstruction.fundQuoteTokenPrize);
+
+  final FundQuoteTokenPrizeInstructionData data;
+}
+
+/// A parsed FundMintPrize instruction.
+final class ParsedFundMintPrize extends ParsedLootboxProgramInstruction {
+  const ParsedFundMintPrize({required this.data})
+      : super(LootboxProgramInstruction.fundMintPrize);
+
+  final FundMintPrizeInstructionData data;
+}
+
+/// A parsed ClaimMintPrize instruction.
+final class ParsedClaimMintPrize extends ParsedLootboxProgramInstruction {
+  const ParsedClaimMintPrize({required this.data})
+      : super(LootboxProgramInstruction.claimMintPrize);
+
+  final ClaimMintPrizeInstructionData data;
+}
+
+/// A parsed ReclaimMintPrize instruction.
+final class ParsedReclaimMintPrize extends ParsedLootboxProgramInstruction {
+  const ParsedReclaimMintPrize({required this.data})
+      : super(LootboxProgramInstruction.reclaimMintPrize);
+
+  final ReclaimMintPrizeInstructionData data;
+}
+
 /// Parses a LootboxProgram instruction.
 ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
   Instruction instruction,
@@ -643,6 +703,21 @@ ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
     ),
     LootboxProgramInstruction.closeServiceVault => ParsedCloseServiceVault(
       data: parseCloseServiceVaultInstruction(instruction),
+    ),
+    LootboxProgramInstruction.fundQuoteSolPrize => ParsedFundQuoteSolPrize(
+      data: parseFundQuoteSolPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.fundQuoteTokenPrize => ParsedFundQuoteTokenPrize(
+      data: parseFundQuoteTokenPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.fundMintPrize => ParsedFundMintPrize(
+      data: parseFundMintPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.claimMintPrize => ParsedClaimMintPrize(
+      data: parseClaimMintPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.reclaimMintPrize => ParsedReclaimMintPrize(
+      data: parseReclaimMintPrizeInstruction(instruction),
     ),
   };
 }

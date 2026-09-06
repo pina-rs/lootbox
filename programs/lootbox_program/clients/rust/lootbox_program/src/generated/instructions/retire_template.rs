@@ -8,7 +8,7 @@
 	clippy::too_many_arguments
 )]
 
-use pina::zeropod;
+use pina::pinapod;
 
 pub const RETIRE_TEMPLATE_DISCRIMINATOR: u8 = 21u8;
 

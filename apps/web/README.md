@@ -36,7 +36,7 @@ The browser never receives either credential. Without a Jupiter key, the token p
 
 1. Open **Workshop**. The default manifest contains eight 0.1 SOL tickets, four 100-token tickets, and one bundle with 1 SOL plus two one-of-one test NFTs. Its initial odds are 61.54%, 30.77%, and 7.69%.
 2. Set the name, optional permanent metadata URI, and future reveal date. The date control separates calendar, time, and browser timezone, shows the pre-reveal trading window, and includes 24-hour, three-day, and next-Friday shortcuts.
-3. Compose one to 256 prize bundles. A bundle has one to four assets and a copy count; every copy is one equal ticket. There are no weights. Bundles containing a unique NFT have exactly one copy.
+3. Compose one to 1,024 prize bundles. A bundle has one to four assets and a copy count; every copy is one equal ticket. There are no weights. Bundles containing a unique NFT have exactly one copy. The treasury account grows by eight bytes when each bundle activates, so an early draft pays only for its live prefix instead of the full limit.
 4. Use **Add asset to bundle** to search Jupiter Tokens, inspect the creator wallet through Metaplex DAS, choose native/local fixtures, or enter an address manually. Source, verification, asset standard, and exact ID remain visible.
 5. Choose **Fund & publish treasury**. Each bundle is staged, fully funded, and activated in sequence. Activation alone changes odds/revision/capacity. Multiple creator-signed transactions are expected.
 6. If funding is interrupted, reload and **Resume funding**. Confirmed steps are read from chain. **Reclaim staged draft** returns assets in only the unpublished tail and closes it; already active history stays immutable.

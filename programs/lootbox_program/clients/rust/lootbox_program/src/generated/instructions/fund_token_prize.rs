@@ -8,7 +8,7 @@
 	clippy::too_many_arguments
 )]
 
-use pina::zeropod;
+use pina::pinapod;
 
 pub const FUND_TOKEN_PRIZE_DISCRIMINATOR: u8 = 13u8;
 

@@ -8,7 +8,7 @@
 	clippy::too_many_arguments
 )]
 
-use pina::zeropod;
+use pina::pinapod;
 
 pub const ACTIVATE_BUNDLE_DISCRIMINATOR: u8 = 25u8;
 
@@ -18,6 +18,7 @@ pub struct ActivateBundle {
 	pub authority: solana_pubkey::Pubkey,
 	pub template: solana_pubkey::Pubkey,
 	pub bundle: solana_pubkey::Pubkey,
+	pub system_program: solana_pubkey::Pubkey,
 }
 
 impl ActivateBundle {
@@ -26,6 +27,7 @@ impl ActivateBundle {
 			authority,
 			template,
 			bundle,
+			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
 		}
 	}
 
@@ -39,10 +41,11 @@ impl ActivateBundle {
 		data: ActivateBundleInstructionData,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.authority, false));
+		let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
+		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,

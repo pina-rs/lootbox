@@ -8,7 +8,7 @@
 	clippy::too_many_arguments
 )]
 
-use pina::zeropod;
+use pina::pinapod;
 
 pub const RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR: u8 = 32u8;
 

@@ -2,11 +2,15 @@ import 'package:solana_kit_addresses/solana_kit_addresses.dart';
 
 final BigInt _u64Max = (BigInt.one << 64) - BigInt.one;
 final BigInt _ticketMax = BigInt.from(0xffffffff);
+const int maxTemplateBundles = 1024;
 
 enum PrizeKind {
   sol,
+  quoteSol,
   classicToken,
   token2022,
+  quoteToken,
+  mintBadge,
   legacyNft,
   metadataNft,
   coreAsset,
@@ -21,6 +25,11 @@ final class PrizeAsset {
       identifier = null,
       amount = lamports;
 
+  const PrizeAsset.quoteSol(BigInt lamports)
+    : kind = PrizeKind.quoteSol,
+      identifier = null,
+      amount = lamports;
+
   const PrizeAsset.classicToken(Address mint, BigInt baseUnits)
     : kind = PrizeKind.classicToken,
       identifier = mint,
@@ -30,6 +39,16 @@ final class PrizeAsset {
     : kind = PrizeKind.token2022,
       identifier = mint,
       amount = baseUnits;
+
+  const PrizeAsset.quoteToken(Address mint, BigInt baseUnits)
+    : kind = PrizeKind.quoteToken,
+      identifier = mint,
+      amount = baseUnits;
+
+  PrizeAsset.mintBadge(Address mint)
+    : kind = PrizeKind.mintBadge,
+      identifier = mint,
+      amount = BigInt.one;
 
   PrizeAsset.legacyNft(Address mint)
     : kind = PrizeKind.legacyNft,
@@ -56,12 +75,19 @@ final class PrizeAsset {
   final BigInt amount;
 
   bool get isUnique => switch (kind) {
-    PrizeKind.sol || PrizeKind.classicToken || PrizeKind.token2022 => false,
+    PrizeKind.sol ||
+    PrizeKind.quoteSol ||
+    PrizeKind.classicToken ||
+    PrizeKind.token2022 ||
+    PrizeKind.quoteToken => false,
+    PrizeKind.mintBadge ||
     PrizeKind.legacyNft ||
     PrizeKind.metadataNft ||
     PrizeKind.coreAsset ||
     PrizeKind.compressedNft => true,
   };
+
+  bool get requiresSingleCopy => isUnique && kind != PrizeKind.mintBadge;
 }
 
 /// All assets in a bundle are delivered together. Each copy is one ticket.
@@ -88,8 +114,10 @@ final class TemplatePlan {
       settlementBountyLamports ?? BigInt.zero,
       'settlement bounty',
     );
-    if (bundles.isEmpty || bundles.length > 256) {
-      throw RangeError('a template needs between one and 256 bundles');
+    if (bundles.isEmpty || bundles.length > maxTemplateBundles) {
+      throw RangeError(
+        'a template needs between one and $maxTemplateBundles bundles',
+      );
     }
     var totalBundles = BigInt.zero;
     final treasury = <Address?, BigInt>{};
@@ -121,7 +149,7 @@ final class TemplatePlan {
           );
         }
         if (asset.isUnique &&
-            (bundle.quantity != BigInt.one ||
+            (asset.requiresSingleCopy && bundle.quantity != BigInt.one ||
                 !uniqueAssets.add(asset.identifier!))) {
           throw RangeError('each unique asset can fund only one bundle');
         }

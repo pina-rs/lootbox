@@ -9,13 +9,8 @@ import {
 	serializeMarketManifest,
 } from "./market.js";
 
-function inventory(...quantities: bigint[]): Uint8Array {
-	const bytes = new Uint8Array(256 * 8);
-	const view = new DataView(bytes.buffer);
-	quantities.forEach((quantity, index) =>
-		view.setBigUint64(index * 8, quantity, true)
-	);
-	return bytes;
+function inventory(...quantities: bigint[]): bigint[] {
+	return quantities;
 }
 
 function state(patch: Partial<TemplateState> = {}): TemplateState {

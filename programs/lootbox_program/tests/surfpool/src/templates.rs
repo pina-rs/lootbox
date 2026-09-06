@@ -134,9 +134,10 @@ fn activate_bundle(program: &Harness, template: Pubkey, bundle: Pubkey) {
 		.send(
 			&[LootboxInstruction::ActivateBundle as u8],
 			vec![
-				AccountMeta::new_readonly(program.payer(), true),
+				AccountMeta::new(program.payer(), true),
 				AccountMeta::new(template, false),
 				AccountMeta::new(bundle, false),
+				AccountMeta::new_readonly(Pubkey::default(), false),
 			],
 		)
 		.expect("activate fully funded bundle");
@@ -160,6 +161,46 @@ fn fund_sol(
 			AccountMeta::new(template, false),
 			AccountMeta::new(bundle, false),
 			AccountMeta::new_readonly(Pubkey::default(), false),
+		],
+	)
+}
+
+fn fund_quote_sol(
+	program: &Harness,
+	template: Pubkey,
+	bundle: Pubkey,
+	amount: u64,
+) -> Result<(), String> {
+	let mut bytes = vec![0; FundQuoteSolPrizeInstruction::SIZE];
+	FundQuoteSolPrizeInstruction::initialize(&mut bytes)
+		.expect("fund quote data")
+		.lamports_per_win
+		.set(amount);
+	program.send(
+		&bytes,
+		vec![
+			AccountMeta::new(program.payer(), true),
+			AccountMeta::new(template, false),
+			AccountMeta::new(bundle, false),
+			AccountMeta::new_readonly(Pubkey::default(), false),
+		],
+	)
+}
+
+fn fund_mint_badge(
+	program: &Harness,
+	template: Pubkey,
+	bundle: Pubkey,
+	mint: Pubkey,
+) -> Result<(), String> {
+	program.send(
+		&[LootboxInstruction::FundMintPrize as u8],
+		vec![
+			AccountMeta::new_readonly(program.payer(), true),
+			AccountMeta::new(template, false),
+			AccountMeta::new(bundle, false),
+			AccountMeta::new(mint, false),
+			AccountMeta::new_readonly(token_program_id(), false),
 		],
 	)
 }
@@ -222,6 +263,52 @@ fn fund_token(
 			],
 		)
 		.expect("escrow complete prize inventory");
+	mint
+}
+
+fn fund_quote_token(
+	program: &Harness,
+	template: Pubkey,
+	bundle: Pubkey,
+	amount: u64,
+	quantity: u64,
+) -> Pubkey {
+	let payer = program.payer();
+	let mint = provision_mint(program, &payer, &payer).expect("quote mint");
+	let source = provision_ata(program, &payer, &payer, &mint).expect("quote source");
+	let escrow = provision_ata(program, &payer, &bundle, &mint).expect("quote escrow");
+	let mut mint_data = vec![7];
+	mint_data.extend_from_slice(&(amount * quantity).to_le_bytes());
+	program
+		.send_instruction(Instruction::new_with_bytes(
+			token_program_id(),
+			&mint_data,
+			vec![
+				AccountMeta::new(mint, false),
+				AccountMeta::new(source, false),
+				AccountMeta::new_readonly(payer, true),
+			],
+		))
+		.expect("mint quote collateral");
+	let mut data = vec![0; FundQuoteTokenPrizeInstruction::SIZE];
+	FundQuoteTokenPrizeInstruction::initialize(&mut data)
+		.expect("fund token quote data")
+		.amount_per_win
+		.set(amount);
+	program
+		.send(
+			&data,
+			vec![
+				AccountMeta::new_readonly(payer, true),
+				AccountMeta::new(template, false),
+				AccountMeta::new(bundle, false),
+				AccountMeta::new_readonly(mint, false),
+				AccountMeta::new(source, false),
+				AccountMeta::new(escrow, false),
+				AccountMeta::new_readonly(token_program_id(), false),
+			],
+		)
+		.expect("escrow token quote inventory");
 	mint
 }
 
@@ -477,6 +564,12 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 				],
 			)
 			.expect("create template");
+		let template_account = program.account(&template).expect("template account");
+		assert_eq!(template_account.data.len(), TemplateState::HEADER_SIZE);
+		assert_eq!(
+			template_account.lamports,
+			rent_minimum(TemplateState::HEADER_SIZE as u64)
+		);
 		let first_bundle = add_bundle(&program, template, 0, 3, 1);
 		let seal_accounts = vec![
 			AccountMeta::new_readonly(payer, true),
@@ -493,9 +586,17 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		);
 		fund_sol(&program, template, first_bundle, 100_000).expect("SOL inventory");
 		activate_bundle(&program, template, first_bundle);
+		let template_account = program.account(&template).expect("grown template");
+		assert_eq!(template_account.data.len(), TemplateState::HEADER_SIZE + 8);
+		assert_eq!(
+			template_account.lamports,
+			rent_minimum((TemplateState::HEADER_SIZE + 8) as u64)
+		);
 		let second_bundle = add_bundle(&program, template, 1, 2, 1);
 		let reward_mint = fund_token(&program, template, second_bundle, false, 2);
 		activate_bundle(&program, template, second_bundle);
+		let template_account = program.account(&template).expect("grown template");
+		assert_eq!(template_account.data.len(), TemplateState::HEADER_SIZE + 16);
 		let third_bundle = add_bundle(&program, template, 2, 1, 3);
 		fund_sol(&program, template, third_bundle, 1_000_000).expect("jackpot SOL");
 		assert!(
@@ -505,6 +606,12 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		let nft_a = fund_token(&program, template, third_bundle, true, 1);
 		let nft_b = fund_token(&program, template, third_bundle, true, 1);
 		activate_bundle(&program, template, third_bundle);
+		let template_account = program.account(&template).expect("grown template");
+		assert_eq!(template_account.data.len(), TemplateState::HEADER_SIZE + 24);
+		assert_eq!(
+			template_account.lamports,
+			rent_minimum((TemplateState::HEADER_SIZE + 24) as u64)
+		);
 		let bundles = [first_bundle, second_bundle, third_bundle];
 		program
 			.send(&[LootboxInstruction::SealTemplate as u8], seal_accounts)
@@ -848,6 +955,324 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 
 #[test]
 #[ignore = "run with `devenv shell -- test:surfpool`"]
+fn quote_intent_is_atomic_and_badge_mint_is_capped() {
+	pina_test::run(async {
+		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
+			.await
+			.expect("Surfpool");
+		let (queue, oracle, cpi) = oracle_fixture(&mut program);
+		let payer = program.payer();
+		let recipient = Keypair::new();
+		program
+			.fund(&recipient.pubkey(), 100_000_000)
+			.expect("recipient fee funds");
+		let (template, bump) = Pubkey::find_program_address(
+			&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
+			&program.program_id,
+		);
+		let box_mint = mint_with_metadata(&program, &template);
+		let creator_box_ata = box_ata(&program, &payer, &box_mint);
+		let recipient_box_ata = box_ata(&program, &recipient.pubkey(), &box_mint);
+		let opens_at = chain_timestamp(&program) + 60;
+		program
+			.send(
+				&create_template_data(queue, bump, opens_at, false),
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new_readonly(box_mint, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("template");
+		let bundle = add_bundle(&program, template, 0, 2, 3);
+		fund_quote_sol(&program, template, bundle, 50_000).expect("quote collateral");
+		let quote_mint = fund_quote_token(&program, template, bundle, 25, 2);
+
+		let bad_mint = provision_mint(&program, &payer, &payer).expect("bad mint");
+		let bad_ata = provision_ata(&program, &payer, &payer, &bad_mint).expect("bad ATA");
+		let mut mint_one = vec![7];
+		mint_one.extend_from_slice(&1u64.to_le_bytes());
+		program
+			.send_instruction(Instruction::new_with_bytes(
+				token_program_id(),
+				&mint_one,
+				vec![
+					AccountMeta::new(bad_mint, false),
+					AccountMeta::new(bad_ata, false),
+					AccountMeta::new_readonly(payer, true),
+				],
+			))
+			.expect("make invalid pre-minted badge");
+		assert!(
+			fund_mint_badge(&program, template, bundle, bad_mint).is_err(),
+			"badge funding rejects pre-existing supply"
+		);
+
+		let badge_mint = provision_mint(&program, &payer, &payer).expect("badge mint");
+		fund_mint_badge(&program, template, bundle, badge_mint).expect("badge authority escrow");
+		let badge = program.account(&badge_mint).expect("funded badge mint");
+		assert_eq!(&badge.data[..4], &[1, 0, 0, 0]);
+		assert_eq!(&badge.data[4..36], bundle.as_ref());
+		assert_eq!(stored_u64(&badge.data, 36), 0);
+
+		activate_bundle(&program, template, bundle);
+		program
+			.send(
+				&[LootboxInstruction::SealTemplate as u8],
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+				],
+			)
+			.expect("seal");
+		program
+			.send(
+				&template_mint_data(2),
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new(box_mint, false),
+					AccountMeta::new(creator_box_ata, false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("mint exact boxes");
+		lock_treasury(&program, template, box_mint, 1);
+		program
+			.send_instruction(
+				token_ix::transfer_checked(
+					&token_2022(),
+					&creator_box_ata,
+					&box_mint,
+					&recipient_box_ata,
+					&payer,
+					&[],
+					2,
+					0,
+				)
+				.expect("box transfer"),
+			)
+			.expect("deliver boxes");
+		program
+			.surfnet
+			.cheatcodes()
+			.time_travel_to_timestamp(u64::try_from(opens_at + 1).expect("time") * 1000)
+			.expect("unlock");
+
+		let mut openings = Vec::new();
+		for _ in 0..2 {
+			let randomness = Keypair::new();
+			let (opening, opening_bump) = Pubkey::find_program_address(
+				&[
+					b"template-opening",
+					template.as_ref(),
+					randomness.pubkey().as_ref(),
+				],
+				&program.program_id,
+			);
+			program
+				.send_with_signers(
+					program.instruction(
+						&template_request_data(opening_bump, recipient.pubkey()),
+						template_request_accounts(&TemplateRequestContext {
+							owner: recipient.pubkey(),
+							template,
+							mint: box_mint,
+							ata: recipient_box_ata,
+							opening,
+							randomness: randomness.pubkey(),
+							queue,
+							oracle,
+							cpi: &cpi,
+						}),
+					),
+					&[&recipient, &randomness],
+				)
+				.expect("commit opening");
+			openings.push((opening, randomness.pubkey()));
+		}
+		program.advance_one_slot().expect("oracle delay");
+		for (opening, randomness) in &openings {
+			fulfill(
+				&FulfillContext {
+					program: &program,
+					payer: &recipient,
+					template,
+					opening: *opening,
+					randomness: *randomness,
+					queue,
+					oracle,
+					cpi: &cpi,
+				},
+				7,
+			)
+			.expect("fulfill");
+		}
+
+		let badge_ata =
+			provision_ata(&program, &payer, &recipient.pubkey(), &badge_mint).expect("badge ATA");
+		let quote_ata =
+			provision_ata(&program, &payer, &recipient.pubkey(), &quote_mint).expect("quote ATA");
+		let quote_balance_before = program.balance(&recipient.pubkey()).expect("quote balance");
+		for (index, (opening, _)) in openings.iter().enumerate() {
+			let service_vault = Pubkey::find_program_address(
+				&[b"service-vault", template.as_ref()],
+				&program.program_id,
+			)
+			.0;
+			let (result_receipt, result_receipt_bump) = Pubkey::find_program_address(
+				&[b"result-receipt", opening.as_ref()],
+				&program.program_id,
+			);
+			let mut allocate = vec![0; AllocateTemplateOpenInstruction::SIZE];
+			AllocateTemplateOpenInstruction::initialize(&mut allocate)
+				.expect("allocation data")
+				.result_receipt_bump = result_receipt_bump;
+			program
+				.send(
+					&allocate,
+					vec![
+						AccountMeta::new(template, false),
+						AccountMeta::new(*opening, false),
+						AccountMeta::new_readonly(bundle, false),
+						AccountMeta::new(service_vault, false),
+						AccountMeta::new(result_receipt, false),
+						AccountMeta::new_readonly(Pubkey::default(), false),
+					],
+				)
+				.expect("allocate only bundle");
+
+			let quote_claim = program.instruction(
+				&[LootboxInstruction::ClaimSolPrize as u8, 0],
+				vec![
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new(*opening, false),
+					AccountMeta::new(bundle, false),
+					AccountMeta::new(recipient.pubkey(), false),
+				],
+			);
+			if index == 0 {
+				let mut failing_route_data = 2u32.to_le_bytes().to_vec();
+				failing_route_data.extend_from_slice(&u64::MAX.to_le_bytes());
+				let failing_route = Instruction::new_with_bytes(
+					Pubkey::default(),
+					&failing_route_data,
+					vec![
+						AccountMeta::new(recipient.pubkey(), true),
+						AccountMeta::new(payer, false),
+					],
+				);
+				assert!(
+					program
+						.send_instructions_with_signers(
+							&[quote_claim.clone(), failing_route],
+							&[&recipient],
+						)
+						.is_err(),
+					"failed winner route rolls back quote release"
+				);
+				assert_eq!(
+					program
+						.balance(&recipient.pubkey())
+						.expect("rolled back quote"),
+					quote_balance_before
+				);
+			}
+			program
+				.send_instruction(quote_claim)
+				.expect("permissionless quote release");
+
+			let mut token_quote_data = vec![0; ClaimTokenPrizeInstruction::SIZE];
+			ClaimTokenPrizeInstruction::initialize(&mut token_quote_data)
+				.expect("claim token quote")
+				.asset_index = 1;
+			program
+				.send(
+					&token_quote_data,
+					vec![
+						AccountMeta::new_readonly(template, false),
+						AccountMeta::new(*opening, false),
+						AccountMeta::new(bundle, false),
+						AccountMeta::new_readonly(recipient.pubkey(), false),
+						AccountMeta::new_readonly(quote_mint, false),
+						AccountMeta::new(ata_of(&bundle, &quote_mint), false),
+						AccountMeta::new(quote_ata, false),
+						AccountMeta::new_readonly(token_program_id(), false),
+					],
+				)
+				.expect("permissionless token quote release");
+
+			let mint_claim = program.instruction(
+				&[LootboxInstruction::ClaimMintPrize as u8, 2],
+				vec![
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new(*opening, false),
+					AccountMeta::new(bundle, false),
+					AccountMeta::new_readonly(recipient.pubkey(), false),
+					AccountMeta::new(badge_mint, false),
+					AccountMeta::new(badge_ata, false),
+					AccountMeta::new_readonly(token_program_id(), false),
+				],
+			);
+			if index == 0 {
+				let redirect = program.instruction(
+					&[LootboxInstruction::ClaimMintPrize as u8, 2],
+					vec![
+						AccountMeta::new_readonly(template, false),
+						AccountMeta::new(*opening, false),
+						AccountMeta::new(bundle, false),
+						AccountMeta::new_readonly(payer, false),
+						AccountMeta::new(badge_mint, false),
+						AccountMeta::new(badge_ata, false),
+						AccountMeta::new_readonly(token_program_id(), false),
+					],
+				);
+				assert!(
+					program.send_instruction(redirect).is_err(),
+					"relayer cannot redirect a minted badge"
+				);
+			}
+			program
+				.send_instruction(mint_claim.clone())
+				.expect("mint badge to bound recipient");
+			program.advance_one_slot().expect("new blockhash");
+			assert!(
+				program.send_instruction(mint_claim).is_err(),
+				"same badge win cannot mint twice"
+			);
+
+			let badge = program.account(&badge_mint).expect("badge mint state");
+			assert_eq!(stored_u64(&badge.data, 36), (index + 1) as u64);
+			if index == 0 {
+				assert_eq!(&badge.data[..4], &[1, 0, 0, 0]);
+				assert_eq!(&badge.data[4..36], bundle.as_ref());
+			} else {
+				assert_eq!(&badge.data[..4], &[0, 0, 0, 0]);
+			}
+		}
+		assert_eq!(
+			program
+				.balance(&recipient.pubkey())
+				.expect("quote delivered")
+				- quote_balance_before,
+			100_000
+		);
+		assert_eq!(
+			token_amount(&program.account(&badge_ata).expect("badge balance")),
+			2
+		);
+		assert_eq!(
+			token_amount(&program.account(&quote_ata).expect("quote balance")),
+			50
+		);
+		program.stop().expect("stop Surfpool");
+	});
+}
+
+#[test]
+#[ignore = "run with `devenv shell -- test:surfpool`"]
 fn missed_market_lock_retires_without_stranding_holder_claims() {
 	pina_test::run(async {
 		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
@@ -874,8 +1299,10 @@ fn missed_market_lock_retires_without_stranding_holder_claims() {
 				],
 			)
 			.expect("create template");
-		let bundle = add_bundle(&program, template, 0, 2, 1);
+		let bundle = add_bundle(&program, template, 0, 2, 2);
 		fund_sol(&program, template, bundle, 100_000).expect("fund prizes");
+		let badge_mint = provision_mint(&program, &payer, &payer).expect("badge mint");
+		fund_mint_badge(&program, template, bundle, badge_mint).expect("badge authority escrow");
 		activate_bundle(&program, template, bundle);
 		let admin_accounts = vec![
 			AccountMeta::new_readonly(payer, true),
@@ -999,6 +1426,45 @@ fn missed_market_lock_retires_without_stranding_holder_claims() {
 				],
 			)
 			.expect("allocate with receipts disabled");
+		let badge_ata = provision_ata(&program, &payer, &payer, &badge_mint).expect("badge ATA");
+		program
+			.send(
+				&[LootboxInstruction::ReclaimMintPrize as u8, 1],
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new_readonly(mint, false),
+					AccountMeta::new(bundle, false),
+					AccountMeta::new(badge_mint, false),
+					AccountMeta::new_readonly(token_program_id(), false),
+				],
+			)
+			.expect("recover unused badge capacity");
+		let badge = program.account(&badge_mint).expect("reclaimed badge mint");
+		assert_eq!(&badge.data[..4], &[1, 0, 0, 0]);
+		assert_eq!(&badge.data[4..36], bundle.as_ref());
+		assert_eq!(stored_u64(&badge.data, 36), 0);
+		program
+			.send(
+				&[LootboxInstruction::ClaimMintPrize as u8, 1],
+				vec![
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new(opening, false),
+					AccountMeta::new(bundle, false),
+					AccountMeta::new_readonly(payer, false),
+					AccountMeta::new(badge_mint, false),
+					AccountMeta::new(badge_ata, false),
+					AccountMeta::new_readonly(token_program_id(), false),
+				],
+			)
+			.expect("allocated badge remains claimable after recovery");
+		let badge = program.account(&badge_mint).expect("claimed badge mint");
+		assert_eq!(&badge.data[..4], &[0, 0, 0, 0]);
+		assert_eq!(stored_u64(&badge.data, 36), 1);
+		assert_eq!(
+			token_amount(&program.account(&badge_ata).expect("badge balance")),
+			1,
+		);
 		assert!(
 			program.account(&service_vault).is_err(),
 			"disabled services reserve no vault balance",
@@ -1248,9 +1714,10 @@ fn retirement_recovers_inventory_only_after_all_claims_are_gone() {
 				.send(
 					&[LootboxInstruction::ActivateBundle as u8],
 					vec![
-						AccountMeta::new_readonly(payer, true),
+						AccountMeta::new(payer, true),
 						AccountMeta::new(template, false),
 						AccountMeta::new(cancelled, false),
+						AccountMeta::new_readonly(Pubkey::default(), false),
 					],
 				)
 				.is_err(),
@@ -1267,6 +1734,45 @@ fn retirement_recovers_inventory_only_after_all_claims_are_gone() {
 			)
 			.expect("cancel staged bundle");
 		assert!(program.account(&cancelled).is_err());
+
+		let cancelled_badge = add_bundle(&program, template, 0, 2, 1);
+		let cancelled_badge_mint =
+			provision_mint(&program, &payer, &payer).expect("cancelled badge mint");
+		fund_mint_badge(&program, template, cancelled_badge, cancelled_badge_mint)
+			.expect("escrow staged badge authority");
+		program
+			.send(
+				&[LootboxInstruction::ReclaimMintPrize as u8, 0],
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new_readonly(mint, false),
+					AccountMeta::new(cancelled_badge, false),
+					AccountMeta::new(cancelled_badge_mint, false),
+					AccountMeta::new_readonly(token_program_id(), false),
+				],
+			)
+			.expect("retire staged badge authority");
+		assert_eq!(
+			&program
+				.account(&cancelled_badge_mint)
+				.expect("cancelled badge")
+				.data[..4],
+			&[0; 4],
+			"badge authority is revoked instead of returned",
+		);
+		program
+			.send(
+				&[LootboxInstruction::CancelBundle as u8],
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new(cancelled_badge, false),
+				],
+			)
+			.expect("cancel staged badge bundle");
+		assert!(program.account(&cancelled_badge).is_err());
+
 		let bundle = add_bundle(&program, template, 0, 8, 1);
 		fund_sol(&program, template, bundle, 100_000).expect("fund eight prizes");
 		activate_bundle(&program, template, bundle);

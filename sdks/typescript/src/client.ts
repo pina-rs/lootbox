@@ -4,6 +4,7 @@ import * as token from "@solana-program/token-2022";
 import {
 	type AccountMeta,
 	AccountRole,
+	type AccountSignerMeta,
 	type Address,
 	address,
 	appendTransactionMessageInstructions,
@@ -192,7 +193,7 @@ export function bundleAssets(
 	if (
 		bundle.assetCount < 1 || bundle.assetCount > 4 ||
 		Array.from(bundle.kinds.slice(0, bundle.assetCount)).some((kind) =>
-			kind > 6
+			kind > 9
 		)
 	) throw new Error("invalid prize asset kind or count");
 	return Array.from({ length: bundle.assetCount }, (_, index) => ({
@@ -205,6 +206,9 @@ export function bundleAssets(
 			"metadataNft",
 			"core",
 			"compressedNft",
+			"quoteSol",
+			"quoteToken",
+			"mintBadge",
 		] as const)[bundle.kinds[index] ?? -1],
 		mint: getAddressDecoder().decode(
 			bundle.mints.slice(index * 32, (index + 1) * 32),
@@ -236,13 +240,19 @@ function expectedStoredKind(asset: PrizeAsset) {
 	if (asset.kind === "token") {
 		return asset.tokenProgram === BOX_TOKEN_PROGRAM ? "token2022" : "token";
 	}
+	if (asset.kind === "quoteSol") return "quoteSol";
+	if (asset.kind === "quoteToken") return "quoteToken";
+	if (asset.kind === "mintBadge") return "mintBadge";
 	if (asset.kind === "nft") return asset.metadata ? "metadataNft" : "nft";
 	return asset.kind;
 }
 
 function prizeIdentifier(asset: PrizeAsset): Address {
-	if (asset.kind === "sol") return SYSTEM_PROGRAM;
-	if (asset.kind === "token" || asset.kind === "nft") return asset.mint;
+	if (asset.kind === "sol" || asset.kind === "quoteSol") return SYSTEM_PROGRAM;
+	if (
+		asset.kind === "token" || asset.kind === "quoteToken" ||
+		asset.kind === "mintBadge" || asset.kind === "nft"
+	) return asset.mint;
 	return asset.asset;
 }
 
@@ -256,15 +266,106 @@ export function assertFundedPrizeMatches(
 	asset: PrizeAsset,
 ): void {
 	const existing = bundleAssets(bundle)[assetIndex];
-	const amount = asset.kind === "sol"
+	const amount = asset.kind === "sol" || asset.kind === "quoteSol"
 		? asset.lamports
-		: asset.kind === "token"
+		: asset.kind === "token" || asset.kind === "quoteToken"
 		? asset.amount
 		: 1n;
 	if (
 		!existing || existing.kind !== expectedStoredKind(asset) ||
 		existing.amount !== amount || existing.mint !== prizeIdentifier(asset)
 	) throw new Error("saved prize differs from already funded asset");
+}
+
+type WinnerRoutedQuoteBase = Readonly<{
+	template: Address;
+	opening: Address;
+	bundle: Address;
+	assetIndex: number;
+	winner: TransactionSigner;
+	route: readonly Instruction[];
+}>;
+
+function winnerSignedRoute(
+	input: WinnerRoutedQuoteBase,
+): readonly Instruction[] {
+	if (input.route.length === 0) {
+		throw new RangeError(
+			"a winner-routed quote needs at least one route instruction",
+		);
+	}
+	let winnerSigns = false;
+	const route = input.route.map((instruction) => {
+		if (!instruction.accounts) return instruction;
+		const accounts = instruction.accounts.map((account) => {
+			if (
+				account.address !== input.winner.address ||
+				(account.role !== AccountRole.READONLY_SIGNER &&
+					account.role !== AccountRole.WRITABLE_SIGNER)
+			) return account;
+			winnerSigns = true;
+			return Object.freeze(
+				{
+					address: account.address,
+					role: account.role,
+					signer: input.winner,
+				} satisfies AccountSignerMeta,
+			);
+		});
+		return Object.freeze({ ...instruction, accounts: Object.freeze(accounts) });
+	});
+	if (!winnerSigns) {
+		throw new Error("the bound winner must sign the appended quote route");
+	}
+	return Object.freeze(route);
+}
+
+/** Compose atomic quote release plus winner-selected route instructions.
+ * The caller signs and submits the returned instruction list as one transaction.
+ * Any route failure rolls the quote release back with the transaction.
+ */
+export function composeWinnerRoutedSolQuoteClaim(
+	input: WinnerRoutedQuoteBase,
+): readonly Instruction[] {
+	const route = winnerSignedRoute(input);
+	return Object.freeze([
+		generated.getClaimSolPrizeInstruction({
+			template: input.template,
+			opening: input.opening,
+			bundle: input.bundle,
+			recipient: input.winner.address,
+			assetIndex: input.assetIndex,
+		}),
+		...route,
+	]);
+}
+
+/** Token-quote counterpart to {@link composeWinnerRoutedSolQuoteClaim}. */
+export function composeWinnerRoutedTokenQuoteClaim(
+	input:
+		& WinnerRoutedQuoteBase
+		& Readonly<{
+			mint: Address;
+			escrow: Address;
+			destination: Address;
+			tokenProgram: Address;
+		}>,
+): readonly Instruction[] {
+	const route = winnerSignedRoute(input);
+	return Object.freeze([
+		generated.getClaimTokenPrizeInstruction({
+			template: input.template,
+			opening: input.opening,
+			bundle: input.bundle,
+			recipient: input.winner.address,
+			assetIndex: input.assetIndex,
+			mint: input.mint,
+			escrow: input.escrow,
+			destination: input.destination,
+			tokenProgram: input.tokenProgram,
+		}),
+		...route,
+	]);
 }
 
 /** Mirrors the program's domain-separated, bounded rejection sampler. */
@@ -507,6 +608,17 @@ export class LootboxClient {
 		const response = await this.rpc.getTokenSupply(mint, { commitment }).send();
 		return BigInt(response.value.amount);
 	}
+	private async tokenProgramForMint(mint: Address): Promise<Address> {
+		const account = await this.rpc.getAccountInfo(mint, {
+			encoding: "base64",
+			commitment,
+		}).send();
+		if (
+			account.value?.owner !== CLASSIC_TOKEN_PROGRAM &&
+			account.value?.owner !== BOX_TOKEN_PROGRAM
+		) throw new Error("quote or badge mint has an unsupported token program");
+		return account.value.owner;
+	}
 
 	private async fundAsset(
 		asset: PrizeAsset,
@@ -522,6 +634,39 @@ export class LootboxClient {
 				bundle,
 				lamportsPerWin: asset.lamports,
 			})], `Escrow SOL · bundle ${bundleNumber}`);
+		}
+		if (asset.kind === "quoteSol") {
+			return this.send([generated.getFundQuoteSolPrizeInstruction({
+				authority,
+				template,
+				bundle,
+				lamportsPerWin: asset.lamports,
+			})], `Escrow winner-routed SOL quote · bundle ${bundleNumber}`);
+		}
+		if (asset.kind === "quoteToken") {
+			const tokenProgram = asset.tokenProgram ?? CLASSIC_TOKEN_PROGRAM;
+			return this.send([
+				await this.createAta(bundle, asset.mint, tokenProgram),
+				generated.getFundQuoteTokenPrizeInstruction({
+					authority,
+					template,
+					bundle,
+					mint: asset.mint,
+					source: await this.ata(authority, asset.mint, tokenProgram),
+					escrow: await this.ata(bundle, asset.mint, tokenProgram),
+					tokenProgram,
+					amountPerWin: asset.amount,
+				}),
+			], `Escrow winner-routed token quote · bundle ${bundleNumber}`);
+		}
+		if (asset.kind === "mintBadge") {
+			return this.send([generated.getFundMintPrizeInstruction({
+				authority,
+				template,
+				bundle,
+				mint: asset.mint,
+				tokenProgram: asset.tokenProgram ?? CLASSIC_TOKEN_PROGRAM,
+			})], `Escrow badge mint authority · bundle ${bundleNumber}`);
 		}
 		if (asset.kind === "token" || (asset.kind === "nft" && !asset.metadata)) {
 			const tokenProgram = asset.kind === "token"
@@ -775,7 +920,7 @@ export class LootboxClient {
 			}
 			if (funded.data.status === 0) {
 				await this.send([generated.getActivateBundleInstruction({
-					authority,
+					authority: this.payer,
 					template,
 					bundle,
 				})], `Activate prize bundle ${index + 1}`);
@@ -1012,7 +1157,7 @@ export class LootboxClient {
 			}
 			if (draft.data.status === 0) {
 				await this.send([generated.getActivateBundleInstruction({
-					authority: this.payer.address,
+					authority: this.payer,
 					template: current.address,
 					bundle,
 				})], `Publish treasury addition ${index + 1}`);
@@ -1072,14 +1217,27 @@ export class LootboxClient {
 				assetIndex: asset.index,
 			};
 			let instructions: readonly Instruction[];
-			if (asset.kind === "sol") {
+			if (asset.kind === "sol" || asset.kind === "quoteSol") {
 				instructions = [generated.getReclaimSolPrizeInstruction({
 					authority: this.payer.address,
 					...input,
 				})];
-			} else if (["token", "token2022", "nft"].includes(asset.kind ?? "")) {
+			} else if (asset.kind === "mintBadge") {
+				instructions = [generated.getReclaimMintPrizeInstruction({
+					authority: this.payer.address,
+					...input,
+					mint: asset.mint,
+					tokenProgram: await this.tokenProgramForMint(asset.mint),
+				})];
+			} else if (
+				["token", "token2022", "nft", "quoteToken"].includes(
+					asset.kind ?? "",
+				)
+			) {
 				const tokenProgram = asset.kind === "token2022"
 					? BOX_TOKEN_PROGRAM
+					: asset.kind === "quoteToken"
+					? await this.tokenProgramForMint(asset.mint)
 					: CLASSIC_TOKEN_PROGRAM;
 				const destination = await this.ata(
 					this.payer.address,
@@ -1216,6 +1374,53 @@ export class LootboxClient {
 			bundle,
 		})], "Cancel staged bundle & recover rent");
 		return this.template(current.address);
+	}
+	/** Create an empty classic badge mint. Funding transfers its mint authority
+	 * to the bundle PDA; pass that address when resuming a funded draft.
+	 */
+	async createBadgeMint(
+		mint: TransactionSigner,
+		fundedBundle?: Address,
+	): Promise<Address> {
+		const existing = await this.rpc.getAccountInfo(mint.address, {
+			encoding: "base64",
+			commitment,
+		}).send();
+		if (existing.value) {
+			if (existing.value.owner !== CLASSIC_TOKEN_PROGRAM) {
+				throw new Error("badge mint has unexpected owner");
+			}
+			const data = token.getMintDecoder().decode(
+				getBase64Encoder().encode(existing.value.data[0]),
+			);
+			const mintAuthority = data.mintAuthority;
+			const authorityMatches = mintAuthority.__option === "Some" &&
+				(mintAuthority.value === this.payer.address ||
+					mintAuthority.value === fundedBundle);
+			const unfundedSupplyMatches = mintAuthority.__option === "Some" &&
+				(mintAuthority.value !== this.payer.address || data.supply === 0n);
+			if (
+				data.decimals !== 0 || !authorityMatches || !unfundedSupplyMatches ||
+				data.freezeAuthority.__option !== "None"
+			) throw new Error("badge mint differs from saved draft");
+			return mint.address;
+		}
+		await this.send([
+			getCreateAccountInstruction({
+				payer: this.payer,
+				newAccount: mint,
+				lamports: await this.rpc.getMinimumBalanceForRentExemption(82n).send(),
+				space: 82n,
+				programAddress: CLASSIC_TOKEN_PROGRAM,
+			}),
+			token.getInitializeMint2Instruction({
+				mint: mint.address,
+				decimals: 0,
+				mintAuthority: this.payer.address,
+				freezeAuthority: null,
+			}, { programAddress: CLASSIC_TOKEN_PROGRAM }),
+		], "Create empty badge mint");
+		return mint.address;
 	}
 	/** Create a fixed-supply classic token, including a basic one-of-one NFT.
 	 * Existing mints are validated so a saved creation workflow can resume.
@@ -1507,11 +1712,32 @@ export class LootboxClient {
 					assetIndex: asset.index,
 				};
 				let instructions: readonly Instruction[];
-				if (asset.kind === "sol") {
+				if (asset.kind === "sol" || asset.kind === "quoteSol") {
 					instructions = [generated.getClaimSolPrizeInstruction(input)];
-				} else if (["token", "token2022", "nft"].includes(asset.kind ?? "")) {
+				} else if (asset.kind === "mintBadge") {
+					const tokenProgram = await this.tokenProgramForMint(asset.mint);
+					instructions = [
+						await this.createAta(input.recipient, asset.mint, tokenProgram),
+						generated.getClaimMintPrizeInstruction({
+							...input,
+							mint: asset.mint,
+							destination: await this.ata(
+								input.recipient,
+								asset.mint,
+								tokenProgram,
+							),
+							tokenProgram,
+						}),
+					];
+				} else if (
+					["token", "token2022", "nft", "quoteToken"].includes(
+						asset.kind ?? "",
+					)
+				) {
 					const tokenProgram = asset.kind === "token2022"
 						? BOX_TOKEN_PROGRAM
+						: asset.kind === "quoteToken"
+						? await this.tokenProgramForMint(asset.mint)
 						: CLASSIC_TOKEN_PROGRAM;
 					instructions = [
 						await this.createAta(input.recipient, asset.mint, tokenProgram),

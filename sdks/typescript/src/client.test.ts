@@ -1,6 +1,7 @@
 import {
 	AccountRole,
 	address,
+	createNoopSigner,
 	getAddressDecoder,
 	getAddressEncoder,
 	type Instruction,
@@ -9,6 +10,8 @@ import { describe, expect, it } from "vitest";
 import {
 	assertFundedPrizeMatches,
 	bundleAssets,
+	composeWinnerRoutedSolQuoteClaim,
+	composeWinnerRoutedTokenQuoteClaim,
 	partitionPrizeDeliveryInstructions,
 	readU64,
 } from "./client.js";
@@ -77,16 +80,73 @@ describe("chain prize decoding", () => {
 		]);
 		expect(assets[2]?.mint).toBe(mint);
 	});
-	it("rejects unknown prize tags instead of silently treating them as tokens", () => {
+	it("decodes dynamic kinds and rejects unknown prize tags", () => {
+		const dynamic = bundleAssets({
+			assetCount: 3,
+			kinds: new Uint8Array([7, 8, 9]),
+			mints: new Uint8Array(128),
+			amounts: new Uint8Array(32),
+			decimals: new Uint8Array(4),
+		});
+		expect(dynamic.map((asset) => asset.kind)).toEqual([
+			"quoteSol",
+			"quoteToken",
+			"mintBadge",
+		]);
 		expect(() =>
 			bundleAssets({
 				assetCount: 1,
-				kinds: new Uint8Array([7]),
+				kinds: new Uint8Array([10]),
 				mints: new Uint8Array(128),
 				amounts: new Uint8Array(32),
 				decimals: new Uint8Array(4),
 			})
 		).toThrow(/invalid prize/);
+	});
+	it("requires the bound winner to sign an appended quote route", () => {
+		const program = address(
+			"Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op",
+		);
+		const winner = createNoopSigner(program);
+		const base = {
+			template: program,
+			opening: program,
+			bundle: program,
+			assetIndex: 0,
+			winner,
+		};
+		expect(() =>
+			composeWinnerRoutedSolQuoteClaim({
+				...base,
+				route: [{ programAddress: program, data: new Uint8Array() }],
+			})
+		).toThrow(/winner must sign/);
+		const composed = composeWinnerRoutedSolQuoteClaim({
+			...base,
+			route: [{
+				programAddress: program,
+				data: new Uint8Array(),
+				accounts: [{
+					address: winner.address,
+					role: AccountRole.READONLY_SIGNER,
+				}],
+			}],
+		});
+		expect(composed).toHaveLength(2);
+		expect(composed[1]?.accounts?.[0]).toMatchObject({
+			address: winner.address,
+			signer: winner,
+		});
+		const tokenComposed = composeWinnerRoutedTokenQuoteClaim({
+			...base,
+			mint: program,
+			escrow: program,
+			destination: program,
+			tokenProgram: program,
+			route: composed.slice(1),
+		});
+		expect(tokenComposed).toHaveLength(2);
+		expect(tokenComposed[0]?.programAddress).toBe(program);
 	});
 	it("preserves all 64 amount bits", () => {
 		const bytes = new Uint8Array(8).fill(255);

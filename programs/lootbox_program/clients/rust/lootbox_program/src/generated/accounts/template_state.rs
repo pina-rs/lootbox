@@ -8,9 +8,10 @@
 	clippy::too_many_arguments
 )]
 
-use pina::zeropod;
+use pina::pinapod;
 
 #[derive(pina::ZeroPod)]
+#[pinapod(compact)]
 pub struct TemplateState {
 /// Immutable template terms and the live finite inventory.
 	pub discriminator: u8,
@@ -44,8 +45,6 @@ pub struct TemplateState {
 	pub remaining_result_receipts: u64,
 	/// Settlement or forfeiture cranks still covered by the service vault.
 	pub remaining_settlement_bounties: u64,
-	/// Undrawn inventory per append-only bundle, encoded as little-endian u64s.
-	pub remaining: [u8; 2048],
 	/// Null-padded UTF-8 display name; never used for authorization.
 	pub name: [u8; 32],
 	/// Null-padded UTF-8 metadata URI; terms on chain remain authoritative.
@@ -59,33 +58,30 @@ pub struct TemplateState {
 	pub bump: u8,
 	/// Canonical service vault bump, fixed when the treasury is locked.
 	pub service_vault_bump: u8,
+	/// Undrawn inventory per append-only bundle. Only activated slots occupy
+	/// account bytes; slots are never removed because openings snapshot indices.
+	/// Pina compact capacity: 1024.
+	pub remaining: pina::Vec<u64, 1024>,
 }
 
 pub const TEMPLATE_STATE_DISCRIMINATOR: u8 = 4u8;
 
 impl TemplateState {
-	pub const LEN: usize = <Self as pina::ZeroPodFixed>::SIZE;
+	pub const HEADER_SIZE: usize = <Self as pina::ZeroPodCompact>::HEADER_SIZE;
 
-	/// Initialize zero-valid account storage.
-	///
-	/// Every non-discriminator field must accept an all-zero
-	/// representation. Otherwise this method returns `InvalidAccountData`.
-	pub fn initialize(data: &mut [u8]) -> Result<&mut TemplateStateZc, solana_program_error::ProgramError> {
-		if data.len() != Self::LEN {
+	pub fn initialize(data: &mut [u8]) -> Result<TemplateStateMut<'_>, solana_program_error::ProgramError> {
+		if data.len() < Self::HEADER_SIZE {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
 		data.fill(0);
-		let account = <Self as pina::ZeroPodFixed>::from_bytes_mut(data)
+		let mut account = TemplateStateMut::new(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		account.discriminator = TEMPLATE_STATE_DISCRIMINATOR;
 		Ok(account)
 	}
 
-	pub fn from_bytes(data: &[u8]) -> Result<&TemplateStateZc, solana_program_error::ProgramError> {
-		if data.len() != Self::LEN {
-			return Err(solana_program_error::ProgramError::InvalidAccountData);
-		}
-		let account = <Self as pina::ZeroPodFixed>::from_bytes(data)
+	pub fn from_bytes(data: &[u8]) -> Result<TemplateStateRef<'_>, solana_program_error::ProgramError> {
+		let account = TemplateStateRef::new(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != TEMPLATE_STATE_DISCRIMINATOR {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
@@ -93,11 +89,8 @@ impl TemplateState {
 		Ok(account)
 	}
 
-	pub fn from_bytes_mut(data: &mut [u8]) -> Result<&mut TemplateStateZc, solana_program_error::ProgramError> {
-		if data.len() != Self::LEN {
-			return Err(solana_program_error::ProgramError::InvalidAccountData);
-		}
-		let account = <Self as pina::ZeroPodFixed>::from_bytes_mut(data)
+	pub fn from_bytes_mut(data: &mut [u8]) -> Result<TemplateStateMut<'_>, solana_program_error::ProgramError> {
+		let account = TemplateStateMut::new(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != TEMPLATE_STATE_DISCRIMINATOR {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);

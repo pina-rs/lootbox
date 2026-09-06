@@ -36,7 +36,6 @@ class TemplateState {
     required this.resultReceiptRentLamports,
     required this.remainingResultReceipts,
     required this.remainingSettlementBounties,
-    required this.remaining,
     required this.name,
     required this.uri,
     required this.bundleCount,
@@ -44,6 +43,7 @@ class TemplateState {
     required this.resultReceiptsEnabled,
     required this.bump,
     required this.serviceVaultBump,
+    required this.remaining,
   }) :
       discriminator = 4;
 
@@ -68,7 +68,6 @@ class TemplateState {
   final BigInt resultReceiptRentLamports;
   final BigInt remainingResultReceipts;
   final BigInt remainingSettlementBounties;
-  final Uint8List remaining;
   final Uint8List name;
   final Uint8List uri;
   final int bundleCount;
@@ -76,6 +75,7 @@ class TemplateState {
   final bool resultReceiptsEnabled;
   final int bump;
   final int serviceVaultBump;
+  final List<BigInt> remaining;
 
   @override
   bool operator ==(Object other) =>
@@ -103,20 +103,20 @@ class TemplateState {
           resultReceiptRentLamports == other.resultReceiptRentLamports &&
           remainingResultReceipts == other.remainingResultReceipts &&
           remainingSettlementBounties == other.remainingSettlementBounties &&
-          remaining == other.remaining &&
           name == other.name &&
           uri == other.uri &&
           bundleCount == other.bundleCount &&
           status == other.status &&
           resultReceiptsEnabled == other.resultReceiptsEnabled &&
           bump == other.bump &&
-          serviceVaultBump == other.serviceVaultBump;
+          serviceVaultBump == other.serviceVaultBump &&
+          remaining == other.remaining;
 
   @override
-  int get hashCode => Object.hashAll([discriminator, authority, boxMint, oracleProgram, oracleQueue, id, opensAt, lockedAt, totalBundles, totalMinted, remainingBundles, pendingOpenings, nextRequest, nextAllocation, revision, manifestAccumulator, manifestHash, settlementBountyLamports, resultReceiptRentLamports, remainingResultReceipts, remainingSettlementBounties, remaining, name, uri, bundleCount, status, resultReceiptsEnabled, bump, serviceVaultBump]);
+  int get hashCode => Object.hashAll([discriminator, authority, boxMint, oracleProgram, oracleQueue, id, opensAt, lockedAt, totalBundles, totalMinted, remainingBundles, pendingOpenings, nextRequest, nextAllocation, revision, manifestAccumulator, manifestHash, settlementBountyLamports, resultReceiptRentLamports, remainingResultReceipts, remainingSettlementBounties, name, uri, bundleCount, status, resultReceiptsEnabled, bump, serviceVaultBump, remaining]);
 
   @override
-  String toString() => 'TemplateState(discriminator: $discriminator, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, opensAt: $opensAt, lockedAt: $lockedAt, totalBundles: $totalBundles, totalMinted: $totalMinted, remainingBundles: $remainingBundles, pendingOpenings: $pendingOpenings, nextRequest: $nextRequest, nextAllocation: $nextAllocation, revision: $revision, manifestAccumulator: $manifestAccumulator, manifestHash: $manifestHash, settlementBountyLamports: $settlementBountyLamports, resultReceiptRentLamports: $resultReceiptRentLamports, remainingResultReceipts: $remainingResultReceipts, remainingSettlementBounties: $remainingSettlementBounties, remaining: $remaining, name: $name, uri: $uri, bundleCount: $bundleCount, status: $status, resultReceiptsEnabled: $resultReceiptsEnabled, bump: $bump, serviceVaultBump: $serviceVaultBump)';
+  String toString() => 'TemplateState(discriminator: $discriminator, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, opensAt: $opensAt, lockedAt: $lockedAt, totalBundles: $totalBundles, totalMinted: $totalMinted, remainingBundles: $remainingBundles, pendingOpenings: $pendingOpenings, nextRequest: $nextRequest, nextAllocation: $nextAllocation, revision: $revision, manifestAccumulator: $manifestAccumulator, manifestHash: $manifestHash, settlementBountyLamports: $settlementBountyLamports, resultReceiptRentLamports: $resultReceiptRentLamports, remainingResultReceipts: $remainingResultReceipts, remainingSettlementBounties: $remainingSettlementBounties, name: $name, uri: $uri, bundleCount: $bundleCount, status: $status, resultReceiptsEnabled: $resultReceiptsEnabled, bump: $bump, serviceVaultBump: $serviceVaultBump, remaining: $remaining)';
 }
 
 
@@ -143,7 +143,6 @@ Encoder<TemplateState> getTemplateStateEncoder() {
     ('resultReceiptRentLamports', getU64Encoder()),
     ('remainingResultReceipts', getU64Encoder()),
     ('remainingSettlementBounties', getU64Encoder()),
-    ('remaining', fixEncoderSize(getBytesEncoder(), 2048, allowTruncation: false)),
     ('name', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     ('uri', fixEncoderSize(getBytesEncoder(), 200, allowTruncation: false)),
     ('bundleCount', getU32Encoder()),
@@ -151,6 +150,7 @@ Encoder<TemplateState> getTemplateStateEncoder() {
     ('resultReceiptsEnabled', getBooleanEncoder()),
     ('bump', getU8Encoder()),
     ('serviceVaultBump', getU8Encoder()),
+    ('remaining', getArrayEncoder<BigInt>(transformEncoder(getU64Encoder(), (BigInt value) => value), size: PrefixedArraySize(getU16Encoder()))),
   ]);
 
   return transformEncoder(
@@ -177,7 +177,6 @@ Encoder<TemplateState> getTemplateStateEncoder() {
       'resultReceiptRentLamports': value.resultReceiptRentLamports,
       'remainingResultReceipts': value.remainingResultReceipts,
       'remainingSettlementBounties': value.remainingSettlementBounties,
-      'remaining': value.remaining,
       'name': value.name,
       'uri': value.uri,
       'bundleCount': value.bundleCount,
@@ -185,6 +184,7 @@ Encoder<TemplateState> getTemplateStateEncoder() {
       'resultReceiptsEnabled': value.resultReceiptsEnabled,
       'bump': value.bump,
       'serviceVaultBump': value.serviceVaultBump,
+      'remaining': value.remaining,
     },
   );
 }
@@ -212,7 +212,6 @@ Decoder<TemplateState> getTemplateStateDecoder() {
     ('resultReceiptRentLamports', getU64Decoder()),
     ('remainingResultReceipts', getU64Decoder()),
     ('remainingSettlementBounties', getU64Decoder()),
-    ('remaining', fixDecoderSize(getBytesDecoder(), 2048)),
     ('name', fixDecoderSize(getBytesDecoder(), 32)),
     ('uri', fixDecoderSize(getBytesDecoder(), 200)),
     ('bundleCount', getU32Decoder()),
@@ -220,6 +219,7 @@ Decoder<TemplateState> getTemplateStateDecoder() {
     ('resultReceiptsEnabled', getBooleanDecoder()),
     ('bump', getU8Decoder()),
     ('serviceVaultBump', getU8Decoder()),
+    ('remaining', getArrayDecoder(getU64Decoder(), size: PrefixedArraySize(getU16Decoder()))),
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
@@ -261,7 +261,6 @@ Decoder<TemplateState> getTemplateStateDecoder() {
       resultReceiptRentLamports: map['resultReceiptRentLamports']! as BigInt,
       remainingResultReceipts: map['remainingResultReceipts']! as BigInt,
       remainingSettlementBounties: map['remainingSettlementBounties']! as BigInt,
-      remaining: map['remaining']! as Uint8List,
       name: map['name']! as Uint8List,
       uri: map['uri']! as Uint8List,
       bundleCount: map['bundleCount']! as int,
@@ -269,6 +268,7 @@ Decoder<TemplateState> getTemplateStateDecoder() {
       resultReceiptsEnabled: map['resultReceiptsEnabled']! as bool,
       bump: map['bump']! as int,
       serviceVaultBump: map['serviceVaultBump']! as int,
+      remaining: map['remaining']! as List<BigInt>,
       ),
       newOffset,
     );

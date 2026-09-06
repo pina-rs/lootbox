@@ -8,7 +8,7 @@
 	clippy::too_many_arguments
 )]
 
-use pina::zeropod;
+use pina::pinapod;
 
 pub const REQUEST_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 16u8;
 

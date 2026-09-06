@@ -8,7 +8,7 @@
 	clippy::too_many_arguments
 )]
 
-use pina::zeropod;
+use pina::pinapod;
 
 pub const LOCK_TREASURY_DISCRIMINATOR: u8 = 37u8;
 

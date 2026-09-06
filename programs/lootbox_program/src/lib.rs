@@ -44,7 +44,7 @@ declare_id!("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
 /// Maximum number of weighted outcomes in the single-reward model.
 pub const MAX_OUTCOMES: usize = 8;
 /// Maximum append-only prize bundles in an editable template treasury.
-pub const MAX_TEMPLATE_BUNDLES: usize = 256;
+pub const MAX_TEMPLATE_BUNDLES: usize = 1_024;
 /// Number of slots after which an unfulfilled opening receives its reward floor.
 pub const RANDOMNESS_TIMEOUT_SLOTS: u64 = 300;
 

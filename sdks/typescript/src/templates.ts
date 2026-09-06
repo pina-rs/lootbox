@@ -7,7 +7,7 @@ import {
 } from "@solana/kit";
 
 const U64_MAX = (1n << 64n) - 1n;
-export const MAX_TEMPLATE_BUNDLES = 256;
+export const MAX_TEMPLATE_BUNDLES = 1_024;
 const MAX_TOTAL_TICKETS = 0xffff_ffffn;
 const ZERO_ADDRESS = address("11111111111111111111111111111111");
 const WRAPPED_SOL = address("So11111111111111111111111111111111111111112");
@@ -332,21 +332,15 @@ export function templateInventory(
 	eligibleBundleCount = state.bundleCount,
 ): readonly InventoryOutcome[] {
 	if (
-		state.remaining.length !== MAX_TEMPLATE_BUNDLES * 8 ||
+		state.remaining.length !== state.bundleCount ||
 		!Number.isInteger(state.bundleCount) || state.bundleCount < 0 ||
 		state.bundleCount > MAX_TEMPLATE_BUNDLES ||
 		!Number.isInteger(eligibleBundleCount) ||
 		eligibleBundleCount < 0 || eligibleBundleCount > state.bundleCount
 	) throw new RangeError("invalid on-chain inventory table");
-	const remaining = Uint8Array.from(state.remaining);
-	const view = new DataView(
-		remaining.buffer,
-		remaining.byteOffset,
-		remaining.byteLength,
-	);
 	const outcomes = Array.from({ length: eligibleBundleCount }, (_, index) => ({
 		index,
-		remaining: view.getBigUint64(index * 8, true),
+		remaining: state.remaining[index] ?? 0n,
 	}));
 	const total = outcomes.reduce((sum, outcome) => sum + outcome.remaining, 0n);
 	return Object.freeze(outcomes.map((outcome) =>

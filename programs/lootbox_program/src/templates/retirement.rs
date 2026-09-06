@@ -43,7 +43,7 @@ pub struct ReclaimTokenPrizeAccounts<'a> {
 	pub token_program: &'a AccountView,
 }
 
-fn validate_retirement(state: &TemplateStateZc, now: i64) -> ProgramResult {
+fn validate_retirement(state: &TemplateStateHeader, now: i64) -> ProgramResult {
 	if state.status != TEMPLATE_LIVE {
 		return Err(lootbox_error(LootboxError::InvalidState));
 	}
@@ -62,7 +62,7 @@ impl<'a> ProcessAccountInfos<'a> for RetireTemplateAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = RetireTemplateInstruction::try_from_bytes(data)?;
 		let address = *self.template.address();
-		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
+		let mut state = as_template_mut(self.template)?;
 		assert_template(&address, &state)?;
 		assert_template_authority(self.authority, &state)?;
 		validate_retirement(&state, sysvars::clock::Clock::get()?.unix_timestamp)?;
@@ -81,10 +81,11 @@ impl<'a> ProcessAccountInfos<'a> for RetireTemplateAccounts<'a> {
 }
 
 pub(super) fn reclaim_amount(
-	state: &TemplateStateZc,
+	state: &TemplateStateHeader,
 	bundle: &mut BundleStateZc,
 	supply: u64,
 	asset_index: u8,
+	active_remaining: Option<u64>,
 ) -> Result<u64, ProgramError> {
 	// Allocated but not yet claimed prizes are deliberately excluded from this
 	// recovery: only inventory still in the draw pool belongs to the creator.
@@ -107,9 +108,7 @@ pub(super) fn reclaim_amount(
 			{
 				return Err(lootbox_error(LootboxError::InvalidState));
 			}
-			let bundle_index = usize::try_from(bundle.index.get())
-				.map_err(|_| ProgramError::InvalidAccountData)?;
-			read_slot(&state.remaining, bundle_index)?
+			active_remaining.ok_or(ProgramError::InvalidAccountData)?
 		}
 		_ => return Err(lootbox_error(LootboxError::InvalidState)),
 	};
@@ -132,7 +131,8 @@ pub(super) fn reclaim_amount(
 impl<'a> ProcessAccountInfos<'a> for ReclaimSolPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ReclaimSolPrizeInstruction::try_from_bytes(data)?;
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let template_data = self.template.try_borrow()?;
+		let state = TemplateState::try_from_bytes(&template_data)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
@@ -148,7 +148,20 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimSolPrizeAccounts<'a> {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 
-		let amount = reclaim_amount(&state, &mut bundle, supply, args.asset_index)?;
+		let bundle_index =
+			usize::try_from(bundle.index.get()).map_err(|_| ProgramError::InvalidAccountData)?;
+		let active_remaining = if bundle.status == BUNDLE_ACTIVE {
+			Some(remaining_at(&state, bundle_index)?)
+		} else {
+			None
+		};
+		let amount = reclaim_amount(
+			&state,
+			&mut bundle,
+			supply,
+			args.asset_index,
+			active_remaining,
+		)?;
 		let owed = bundle
 			.quantity
 			.get()
@@ -175,7 +188,8 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ReclaimTokenPrizeInstruction::try_from_bytes(data)?;
 		let bundle_address = *self.bundle.address();
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let template_data = self.template.try_borrow()?;
+		let state = TemplateState::try_from_bytes(&template_data)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
@@ -213,7 +227,20 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 			self.mint.address(),
 			&token_program,
 		)?);
-		let amount = reclaim_amount(&state, &mut bundle, supply, args.asset_index)?;
+		let bundle_index =
+			usize::try_from(bundle.index.get()).map_err(|_| ProgramError::InvalidAccountData)?;
+		let active_remaining = if bundle.status == BUNDLE_ACTIVE {
+			Some(remaining_at(&state, bundle_index)?)
+		} else {
+			None
+		};
+		let amount = reclaim_amount(
+			&state,
+			&mut bundle,
+			supply,
+			args.asset_index,
+			active_remaining,
+		)?;
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		let decimals = bundle.decimals[index];
@@ -252,40 +279,39 @@ mod tests {
 
 	#[test]
 	fn issued_unlocked_treasury_can_only_recover_after_its_deadline() {
-		let mut bytes = [0; TemplateState::SIZE];
-		let state = TemplateState::initialize(&mut bytes).expect("template");
+		let mut bytes = [0; TemplateState::HEADER_SIZE];
+		let mut state = TemplateState::initialize(&mut bytes).expect("template");
 		state.status = TEMPLATE_LIVE;
 		state.total_minted.set(1);
 		state.opens_at.set(1_001);
 
-		assert!(validate_retirement(state, 1_000).is_err());
-		assert_eq!(validate_retirement(state, 1_001), Ok(()));
+		assert!(validate_retirement(&state, 1_000).is_err());
+		assert_eq!(validate_retirement(&state, 1_001), Ok(()));
 		state.locked_at.set(999);
-		assert_eq!(validate_retirement(state, 1_000), Ok(()));
+		assert_eq!(validate_retirement(&state, 1_000), Ok(()));
 	}
 
 	#[test]
 	fn retirement_preserves_allocated_but_unclaimed_prizes() {
-		let mut bytes = [0; TemplateState::SIZE];
-		let state = TemplateState::initialize(&mut bytes).expect("template");
+		let mut bytes = [0; TemplateState::HEADER_SIZE];
+		let mut state = TemplateState::initialize(&mut bytes).expect("template");
 		state.status = TEMPLATE_RETIRED;
-		write_slot(&mut state.remaining, 0, 3).expect("three undrawn");
 		let mut bundle_bytes = [0; BundleState::SIZE];
 		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
 		bundle.quantity.set(5);
 		bundle.funded_assets = 1;
 		bundle.status = BUNDLE_ACTIVE;
 		write_slot(&mut bundle.amounts, 0, 100).expect("amount");
-		assert!(reclaim_amount(state, bundle, 1, 0).is_err());
+		assert!(reclaim_amount(&state, bundle, 1, 0, Some(3)).is_err());
 		state.pending_openings.set(1);
-		assert!(reclaim_amount(state, bundle, 0, 0).is_err());
+		assert!(reclaim_amount(&state, bundle, 0, 0, Some(3)).is_err());
 		state.pending_openings.set(0);
-		assert_eq!(reclaim_amount(state, bundle, 0, 0), Ok(300));
+		assert_eq!(reclaim_amount(&state, bundle, 0, 0, Some(3)), Ok(300));
 		assert_eq!(read_slot(&bundle.claimed, 0), Ok(3));
 		assert_eq!(
 			bundle.quantity.get() - read_slot(&bundle.claimed, 0).expect("released"),
 			2
 		);
-		assert!(reclaim_amount(state, bundle, 0, 0).is_err());
+		assert!(reclaim_amount(&state, bundle, 0, 0, Some(3)).is_err());
 	}
 }

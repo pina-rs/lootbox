@@ -775,7 +775,7 @@ export class LootboxClient {
 			}
 			if (funded.data.status === 0) {
 				await this.send([generated.getActivateBundleInstruction({
-					authority,
+					authority: this.payer,
 					template,
 					bundle,
 				})], `Activate prize bundle ${index + 1}`);
@@ -1012,7 +1012,7 @@ export class LootboxClient {
 			}
 			if (draft.data.status === 0) {
 				await this.send([generated.getActivateBundleInstruction({
-					authority: this.payer.address,
+					authority: this.payer,
 					template: current.address,
 					bundle,
 				})], `Publish treasury addition ${index + 1}`);

@@ -50,7 +50,7 @@ impl<'a> ProcessAccountInfos<'a> for CloseTemplateOpeningAccounts<'a> {
 		self.wrapped_sol_mint.assert_address(&WRAPPED_SOL_MINT_ID)?;
 		self.address_lookup_table_program
 			.assert_address(&ADDRESS_LOOKUP_TABLE_PROGRAM_ID)?;
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		self.oracle_program.assert_program(&state.oracle_program)?;
 		let opening = self.opening.as_account::<TemplateOpeningState>(&ID)?;
@@ -110,7 +110,7 @@ impl<'a> ProcessAccountInfos<'a> for CloseServiceVaultAccounts<'a> {
 		self.authority.assert_signer()?.assert_writable()?;
 		self.service_vault.assert_writable()?;
 		self.system_program.assert_address(&system::ID)?;
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
 		if !has_service_vault(&state) {

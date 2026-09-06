@@ -134,9 +134,10 @@ fn activate_bundle(program: &Harness, template: Pubkey, bundle: Pubkey) {
 		.send(
 			&[LootboxInstruction::ActivateBundle as u8],
 			vec![
-				AccountMeta::new_readonly(program.payer(), true),
+				AccountMeta::new(program.payer(), true),
 				AccountMeta::new(template, false),
 				AccountMeta::new(bundle, false),
+				AccountMeta::new_readonly(Pubkey::default(), false),
 			],
 		)
 		.expect("activate fully funded bundle");
@@ -477,6 +478,12 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 				],
 			)
 			.expect("create template");
+		let template_account = program.account(&template).expect("template account");
+		assert_eq!(template_account.data.len(), TemplateState::HEADER_SIZE);
+		assert_eq!(
+			template_account.lamports,
+			rent_minimum(TemplateState::HEADER_SIZE as u64)
+		);
 		let first_bundle = add_bundle(&program, template, 0, 3, 1);
 		let seal_accounts = vec![
 			AccountMeta::new_readonly(payer, true),
@@ -493,9 +500,17 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		);
 		fund_sol(&program, template, first_bundle, 100_000).expect("SOL inventory");
 		activate_bundle(&program, template, first_bundle);
+		let template_account = program.account(&template).expect("grown template");
+		assert_eq!(template_account.data.len(), TemplateState::HEADER_SIZE + 8);
+		assert_eq!(
+			template_account.lamports,
+			rent_minimum((TemplateState::HEADER_SIZE + 8) as u64)
+		);
 		let second_bundle = add_bundle(&program, template, 1, 2, 1);
 		let reward_mint = fund_token(&program, template, second_bundle, false, 2);
 		activate_bundle(&program, template, second_bundle);
+		let template_account = program.account(&template).expect("grown template");
+		assert_eq!(template_account.data.len(), TemplateState::HEADER_SIZE + 16);
 		let third_bundle = add_bundle(&program, template, 2, 1, 3);
 		fund_sol(&program, template, third_bundle, 1_000_000).expect("jackpot SOL");
 		assert!(
@@ -505,6 +520,12 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		let nft_a = fund_token(&program, template, third_bundle, true, 1);
 		let nft_b = fund_token(&program, template, third_bundle, true, 1);
 		activate_bundle(&program, template, third_bundle);
+		let template_account = program.account(&template).expect("grown template");
+		assert_eq!(template_account.data.len(), TemplateState::HEADER_SIZE + 24);
+		assert_eq!(
+			template_account.lamports,
+			rent_minimum((TemplateState::HEADER_SIZE + 24) as u64)
+		);
 		let bundles = [first_bundle, second_bundle, third_bundle];
 		program
 			.send(&[LootboxInstruction::SealTemplate as u8], seal_accounts)
@@ -1248,9 +1269,10 @@ fn retirement_recovers_inventory_only_after_all_claims_are_gone() {
 				.send(
 					&[LootboxInstruction::ActivateBundle as u8],
 					vec![
-						AccountMeta::new_readonly(payer, true),
+						AccountMeta::new(payer, true),
 						AccountMeta::new(template, false),
 						AccountMeta::new(cancelled, false),
+						AccountMeta::new_readonly(Pubkey::default(), false),
 					],
 				)
 				.is_err(),

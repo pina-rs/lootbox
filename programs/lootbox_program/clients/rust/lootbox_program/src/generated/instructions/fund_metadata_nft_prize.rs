@@ -8,7 +8,7 @@
 	clippy::too_many_arguments
 )]
 
-use pina::zeropod;
+use pina::pinapod;
 
 pub const FUND_METADATA_NFT_PRIZE_DISCRIMINATOR: u8 = 27u8;
 

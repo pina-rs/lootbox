@@ -8,7 +8,7 @@
 	clippy::too_many_arguments
 )]
 
-use pina::zeropod;
+use pina::pinapod;
 
 pub const CLOSE_TEMPLATE_OPENING_DISCRIMINATOR: u8 = 24u8;
 

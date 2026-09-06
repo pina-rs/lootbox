@@ -2,6 +2,7 @@ import 'package:solana_kit_addresses/solana_kit_addresses.dart';
 
 final BigInt _u64Max = (BigInt.one << 64) - BigInt.one;
 final BigInt _ticketMax = BigInt.from(0xffffffff);
+const int maxTemplateBundles = 1024;
 
 enum PrizeKind {
   sol,
@@ -88,8 +89,10 @@ final class TemplatePlan {
       settlementBountyLamports ?? BigInt.zero,
       'settlement bounty',
     );
-    if (bundles.isEmpty || bundles.length > 256) {
-      throw RangeError('a template needs between one and 256 bundles');
+	if (bundles.isEmpty || bundles.length > maxTemplateBundles) {
+		throw RangeError(
+			'a template needs between one and $maxTemplateBundles bundles',
+		);
     }
     var totalBundles = BigInt.zero;
     final treasury = <Address?, BigInt>{};

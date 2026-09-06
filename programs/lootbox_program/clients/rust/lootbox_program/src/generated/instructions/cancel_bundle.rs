@@ -8,7 +8,7 @@
 	clippy::too_many_arguments
 )]
 
-use pina::zeropod;
+use pina::pinapod;
 
 pub const CANCEL_BUNDLE_DISCRIMINATOR: u8 = 26u8;
 

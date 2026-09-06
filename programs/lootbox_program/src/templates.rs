@@ -51,7 +51,7 @@ const BUNDLE_FUNDING: u8 = 0;
 const BUNDLE_ACTIVE: u8 = 1;
 
 /// Immutable template terms and the live finite inventory.
-#[account(discriminator = LootboxAccountType)]
+#[account(discriminator = LootboxAccountType, compact)]
 #[pda(seeds = [SEED_TEMPLATE, authority: Address, id: u64], bump = bump)]
 pub struct TemplateState {
 	pub authority: Address,
@@ -84,8 +84,6 @@ pub struct TemplateState {
 	pub remaining_result_receipts: u64,
 	/// Settlement or forfeiture cranks still covered by the service vault.
 	pub remaining_settlement_bounties: u64,
-	/// Undrawn inventory per append-only bundle, encoded as little-endian u64s.
-	pub remaining: [u8; 2048],
 	/// Null-padded UTF-8 display name; never used for authorization.
 	pub name: [u8; 32],
 	/// Null-padded UTF-8 metadata URI; terms on chain remain authoritative.
@@ -99,6 +97,9 @@ pub struct TemplateState {
 	pub bump: u8,
 	/// Canonical service vault bump, fixed when the treasury is locked.
 	pub service_vault_bump: u8,
+	/// Undrawn inventory per append-only bundle. Only activated slots occupy
+	/// account bytes; slots are never removed because openings snapshot indices.
+	pub remaining: Vec<u64, 1024>,
 }
 
 /// A complete prize outcome and its escrow authority, shared across all boxes.
@@ -181,8 +182,10 @@ mod layout_tests {
 	use super::*;
 
 	#[test]
-	fn template_layout_reserves_all_256_inventory_slots() {
-		assert_eq!(TemplateState::SIZE, size_of::<TemplateStateZc>());
+	fn template_layout_charges_only_for_the_activated_prefix() {
+		assert_eq!(TemplateState::HEADER_SIZE, 547);
+		assert_eq!(TemplateState::MAX_SIZE, 8_739);
+		assert_eq!(size_of::<TemplateStateHeader>(), 547);
 		assert_eq!(BundleState::SIZE, size_of::<BundleStateZc>());
 		assert_eq!(
 			TemplateOpeningState::SIZE,
@@ -191,12 +194,12 @@ mod layout_tests {
 		assert_eq!(ResultReceiptState::SIZE, size_of::<ResultReceiptStateZc>());
 		assert_eq!(
 			(
-				TemplateState::SIZE,
+				TemplateState::HEADER_SIZE,
 				BundleState::SIZE,
 				TemplateOpeningState::SIZE,
 				ResultReceiptState::SIZE,
 			),
-			(2_593, 266, 292, 270),
+			(547, 266, 292, 270),
 		);
 	}
 
@@ -212,16 +215,69 @@ mod layout_tests {
 		bundle.amounts[..8].copy_from_slice(&43u64.to_le_bytes());
 		assert_ne!(first, next_manifest_accumulator(&[0; 32], bundle));
 
-		let mut template_bytes = [0; TemplateState::SIZE];
-		let template = TemplateState::initialize(&mut template_bytes).expect("template");
+		let mut template_bytes = [0; TemplateState::HEADER_SIZE];
+		let mut template = TemplateState::initialize(&mut template_bytes).expect("template");
 		template.total_bundles.set(7);
 		template.bundle_count.set(1);
 		template.manifest_accumulator = first;
 		let address = Address::new_from_array([9; 32]);
-		let without_receipts = locked_manifest_hash(&address, template);
+		let without_receipts = locked_manifest_hash(&address, &template);
 		template.result_receipts_enabled.set(true);
-		assert_ne!(without_receipts, locked_manifest_hash(&address, template));
+		assert_ne!(without_receipts, locked_manifest_hash(&address, &template));
 	}
+}
+
+fn template_size(bundle_count: usize) -> Result<usize, ProgramError> {
+	if bundle_count > MAX_TEMPLATE_BUNDLES {
+		return Err(lootbox_error(LootboxError::InvalidPrize));
+	}
+
+	TemplateState::HEADER_SIZE
+		.checked_add(
+			bundle_count
+				.checked_mul(size_of::<PodU64>())
+				.ok_or(ProgramError::ArithmeticOverflow)?,
+		)
+		.ok_or(ProgramError::ArithmeticOverflow)
+}
+
+/// Appends one compact tail element without a heap allocation.
+///
+/// Pinapod stores this sole tail field's `u16` element count at the end of the
+/// generated header. The account has already grown and its prior compact
+/// prefix has already been validated when this helper runs.
+fn append_remaining_slot(data: &mut [u8], index: usize, quantity: u64) -> Result<(), ProgramError> {
+	let new_count = index
+		.checked_add(1)
+		.ok_or(ProgramError::ArithmeticOverflow)?;
+	if data.len() != template_size(new_count)? {
+		return Err(ProgramError::InvalidAccountData);
+	}
+
+	let element_offset = TemplateState::HEADER_SIZE
+		.checked_add(
+			index
+				.checked_mul(size_of::<PodU64>())
+				.ok_or(ProgramError::ArithmeticOverflow)?,
+		)
+		.ok_or(ProgramError::ArithmeticOverflow)?;
+	data[element_offset..element_offset + size_of::<PodU64>()]
+		.copy_from_slice(&quantity.to_le_bytes());
+
+	let length_offset = TemplateState::HEADER_SIZE
+		.checked_sub(size_of::<u16>())
+		.ok_or(ProgramError::InvalidAccountData)?;
+	let encoded_count = u16::try_from(new_count)
+		.map_err(|_| ProgramError::InvalidAccountData)?
+		.to_le_bytes();
+	data[length_offset..TemplateState::HEADER_SIZE].copy_from_slice(&encoded_count);
+
+	let state = TemplateState::try_from_bytes(data)?;
+	if state.remaining().len() != new_count || state.remaining()[index].get() != quantity {
+		return Err(ProgramError::InvalidAccountData);
+	}
+
+	Ok(())
 }
 
 #[instruction(discriminator = LootboxInstruction::CreateTemplate)]
@@ -340,9 +396,10 @@ pub struct MintTemplateBoxesAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct ActivateBundleAccounts<'a> {
-	pub authority: &'a AccountView,
+	pub authority: &'a mut AccountView,
 	pub template: &'a mut AccountView,
 	pub bundle: &'a mut AccountView,
+	pub system_program: &'a AccountView,
 }
 
 #[derive(Accounts, Debug)]
@@ -352,7 +409,31 @@ pub struct CancelBundleAccounts<'a> {
 	pub bundle: &'a mut AccountView,
 }
 
-fn assert_template(address: &Address, state: &TemplateStateZc) -> ProgramResult {
+fn as_template(account: &AccountView) -> Result<Ref<'_, TemplateStateHeader>, ProgramError> {
+	account.assert_owner(&ID)?;
+
+	Ref::try_map(account.try_borrow()?, |data| {
+		TemplateState::validate_account_data(data)?;
+		<TemplateState as ZeroPodCompact>::header(data)
+			.map_err(|_| ProgramError::InvalidAccountData)
+	})
+	.map_err(|(_data, error)| error)
+}
+
+fn as_template_mut(
+	account: &mut AccountView,
+) -> Result<RefMut<'_, TemplateStateHeader>, ProgramError> {
+	account.assert_owner(&ID)?;
+
+	RefMut::try_map(account.try_borrow_mut()?, |data| {
+		TemplateState::validate_account_data(data)?;
+		<TemplateState as ZeroPodCompact>::header_mut(data)
+			.map_err(|_| ProgramError::InvalidAccountData)
+	})
+	.map_err(|(_data, error)| error)
+}
+
+fn assert_template(address: &Address, state: &TemplateStateHeader) -> ProgramResult {
 	let seeds = TemplateState::seeds(&state.authority, state.id.get()).with_bump(state.bump);
 
 	if *address != create_program_address(&seeds.as_slices(), &ID)? {
@@ -375,14 +456,14 @@ fn assert_bundle(account: &AccountView, template: &Address) -> ProgramResult {
 	Ok(())
 }
 
-fn has_service_vault(state: &TemplateStateZc) -> bool {
+fn has_service_vault(state: &TemplateStateHeader) -> bool {
 	state.result_receipts_enabled.get() || state.settlement_bounty_lamports.get() != 0
 }
 
 fn assert_service_vault(
 	account: &AccountView,
 	template: &Address,
-	state: &TemplateStateZc,
+	state: &TemplateStateHeader,
 ) -> ProgramResult {
 	if !has_service_vault(state) {
 		return Ok(());
@@ -398,7 +479,7 @@ fn assert_service_vault(
 	Ok(())
 }
 
-fn required_service_balance(state: &TemplateStateZc) -> Result<u64, ProgramError> {
+fn required_service_balance(state: &TemplateStateHeader) -> Result<u64, ProgramError> {
 	let receipts = state
 		.result_receipt_rent_lamports
 		.get()
@@ -415,12 +496,15 @@ fn required_service_balance(state: &TemplateStateZc) -> Result<u64, ProgramError
 		.ok_or(ProgramError::ArithmeticOverflow)
 }
 
-fn assert_template_authority(authority: &AccountView, state: &TemplateStateZc) -> ProgramResult {
+fn assert_template_authority(
+	authority: &AccountView,
+	state: &TemplateStateHeader,
+) -> ProgramResult {
 	authority.assert_signer()?;
 	assert_authority_address(authority, &state.authority)
 }
 
-fn assert_treasury_unlocked(state: &TemplateStateZc) -> ProgramResult {
+fn assert_treasury_unlocked(state: &TemplateStateHeader) -> ProgramResult {
 	if state.locked_at.get() != 0 {
 		return Err(lootbox_error(LootboxError::TreasuryLocked));
 	}
@@ -428,7 +512,7 @@ fn assert_treasury_unlocked(state: &TemplateStateZc) -> ProgramResult {
 	Ok(())
 }
 
-fn assert_treasury_editable(state: &TemplateStateZc) -> ProgramResult {
+fn assert_treasury_editable(state: &TemplateStateHeader) -> ProgramResult {
 	assert_treasury_unlocked(state)?;
 
 	if state.status == TEMPLATE_RETIRED {
@@ -492,7 +576,7 @@ fn next_manifest_accumulator(previous: &[u8; 32], bundle: &BundleStateZc) -> [u8
 	result
 }
 
-fn locked_manifest_hash(template: &Address, state: &TemplateStateZc) -> [u8; 32] {
+fn locked_manifest_hash(template: &Address, state: &TemplateStateHeader) -> [u8; 32] {
 	let id = state.id.get().to_le_bytes();
 	let opens_at = state.opens_at.get().to_le_bytes();
 	let total_bundles = state.total_bundles.get().to_le_bytes();
@@ -528,17 +612,56 @@ fn mint_at(bundle: &BundleStateZc, index: usize) -> Result<Address, ProgramError
 	parse_address(&bundle.mints, index * 32)
 }
 
-fn available_in_prefix(state: &TemplateStateZc, count: u32) -> Result<u64, ProgramError> {
+fn available_in_prefix(state: &TemplateStateRef<'_>, count: u32) -> Result<u64, ProgramError> {
 	let count = usize::try_from(count).map_err(|_| ProgramError::InvalidAccountData)?;
 	if count > MAX_TEMPLATE_BUNDLES {
 		return Err(ProgramError::InvalidAccountData);
 	}
 
-	(0..count).try_fold(0u64, |total, index| {
+	let remaining = state.remaining();
+	if count > remaining.len() {
+		return Err(ProgramError::InvalidAccountData);
+	}
+
+	remaining[..count].iter().try_fold(0u64, |total, value| {
 		total
-			.checked_add(read_slot(&state.remaining, index)?)
+			.checked_add(value.get())
 			.ok_or(ProgramError::ArithmeticOverflow)
 	})
+}
+
+fn remaining_at(state: &TemplateStateRef<'_>, index: usize) -> Result<u64, ProgramError> {
+	state
+		.remaining()
+		.get(index)
+		.map(PodU64::get)
+		.ok_or(ProgramError::InvalidAccountData)
+}
+
+fn write_template_remaining(account: &mut AccountView, index: usize, value: u64) -> ProgramResult {
+	account.assert_owner(&ID)?.assert_writable()?;
+	let mut data = account.try_borrow_mut()?;
+	let remaining_len = TemplateState::try_from_bytes(&data)?.remaining().len();
+
+	if index >= remaining_len {
+		return Err(ProgramError::InvalidAccountData);
+	}
+
+	let start = TemplateState::HEADER_SIZE
+		.checked_add(
+			index
+				.checked_mul(size_of::<PodU64>())
+				.ok_or(ProgramError::ArithmeticOverflow)?,
+		)
+		.ok_or(ProgramError::ArithmeticOverflow)?;
+	let end = start
+		.checked_add(size_of::<PodU64>())
+		.ok_or(ProgramError::ArithmeticOverflow)?;
+	data.get_mut(start..end)
+		.ok_or(ProgramError::InvalidAccountData)?
+		.copy_from_slice(&value.to_le_bytes());
+
+	Ok(())
 }
 
 fn assert_template_mint(
@@ -695,15 +818,17 @@ impl<'a> ProcessAccountInfos<'a> for CreateTemplateAccounts<'a> {
 		}
 		assert_metadata(self.box_mint, &args.name, &args.uri)?;
 
-		CreateProgramAccountWithBump {
+		CreateCompactProgramAccountWithBump {
 			account: self.template,
 			payer: self.authority,
 			owner: &ID,
 			seeds: &seeds.as_slices(),
 			bump: args.bump,
+			space: TemplateState::HEADER_SIZE,
 		}
 		.invoke::<TemplateState>()?;
-		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
+		let mut account_data = self.template.try_borrow_mut()?;
+		let mut state = TemplateState::try_from_bytes_mut(&mut account_data)?;
 		state.authority = *self.authority.address();
 		state.box_mint = *self.box_mint.address();
 		state.oracle_program = args.oracle_program;
@@ -720,6 +845,9 @@ impl<'a> ProcessAccountInfos<'a> for CreateTemplateAccounts<'a> {
 			.set(args.result_receipts_enabled.get());
 		state.status = TEMPLATE_DRAFT;
 		state.bump = args.bump;
+		state
+			.commit()
+			.map_err(|_| ProgramError::InvalidAccountData)?;
 
 		Ok(())
 	}
@@ -729,7 +857,7 @@ impl<'a> ProcessAccountInfos<'a> for AddBundleAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = AddBundleInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
@@ -814,7 +942,7 @@ impl<'a> ProcessAccountInfos<'a> for FundSolPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = FundSolPrizeInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
@@ -848,7 +976,7 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 		let args = FundTokenPrizeInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
 		let bundle_address = *self.bundle.address();
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
@@ -943,7 +1071,7 @@ impl<'a> ProcessAccountInfos<'a> for SealTemplateAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = SealTemplateInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
-		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
+		let mut state = as_template_mut(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
 		if state.status != TEMPLATE_DRAFT {
@@ -960,7 +1088,7 @@ impl<'a> ProcessAccountInfos<'a> for SealTemplateAccounts<'a> {
 	}
 }
 
-fn validate_market_lock(state: &TemplateStateZc, supply: u64, now: i64) -> ProgramResult {
+fn validate_market_lock(state: &TemplateStateHeader, supply: u64, now: i64) -> ProgramResult {
 	if state.status != TEMPLATE_LIVE || state.locked_at.get() != 0 {
 		return Err(lootbox_error(LootboxError::InvalidState));
 	}
@@ -985,7 +1113,7 @@ fn validate_market_lock(state: &TemplateStateZc, supply: u64, now: i64) -> Progr
 	Ok(())
 }
 
-fn service_budget(state: &TemplateStateZc) -> Result<(u64, u64), ProgramError> {
+fn service_budget(state: &TemplateStateHeader) -> Result<(u64, u64), ProgramError> {
 	let rent = Rent::get()?;
 	let receipt_rent = if state.result_receipts_enabled.get() {
 		rent.try_minimum_balance(ResultReceiptState::SIZE)?
@@ -1022,7 +1150,7 @@ impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 		self.authority.assert_writable()?;
 		self.system_program.assert_address(&system::ID)?;
 		self.box_token_program.assert_address(&token_2022::ID)?;
-		let state = self.template.as_account_mut::<TemplateState>(&ID)?;
+		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
 		let supply =
@@ -1080,7 +1208,7 @@ impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 		)
 		.invoke_signed(&[signer.as_signer()])?;
 
-		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
+		let mut state = as_template_mut(self.template)?;
 		state.locked_at.set(now);
 		state.manifest_hash = manifest_hash;
 		state.service_vault_bump = args.service_vault_bump;
@@ -1101,7 +1229,7 @@ impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 }
 
 fn validate_issuance(
-	state: &TemplateStateZc,
+	state: &TemplateStateHeader,
 	supply: u64,
 	amount: u64,
 ) -> Result<u64, ProgramError> {
@@ -1129,12 +1257,15 @@ impl<'a> ProcessAccountInfos<'a> for ActivateBundleAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = ActivateBundleInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
-		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
+		self.authority.assert_signer()?.assert_writable()?;
+		self.system_program.assert_address(&system::ID)?;
+		let template_data = self.template.try_borrow()?;
+		let state = TemplateState::try_from_bytes(&template_data)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, &template_address)?;
-		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+		let bundle = self.bundle.as_account::<BundleState>(&ID)?;
 
 		if bundle.status != BUNDLE_FUNDING
 			|| bundle.funded_assets != bundle.asset_count
@@ -1146,38 +1277,61 @@ impl<'a> ProcessAccountInfos<'a> for ActivateBundleAccounts<'a> {
 
 		let index =
 			usize::try_from(bundle.index.get()).map_err(|_| ProgramError::InvalidAccountData)?;
-		write_slot(&mut state.remaining, index, bundle.quantity.get())?;
+		if state.remaining().len() != index {
+			return Err(ProgramError::InvalidAccountData);
+		}
+		let quantity = bundle.quantity.get();
 		let remaining_bundles = state
 			.remaining_bundles
 			.get()
-			.checked_add(bundle.quantity.get())
+			.checked_add(quantity)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
 		let total_bundles = state
 			.total_bundles
 			.get()
-			.checked_add(bundle.quantity.get())
+			.checked_add(quantity)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
 		if total_bundles > MAX_TOTAL_WEIGHT {
 			return Err(lootbox_error(LootboxError::SupplyExceeded));
 		}
-		state.remaining_bundles.set(remaining_bundles);
-		state.total_bundles.set(total_bundles);
 		let revision = state
 			.revision
 			.get()
 			.checked_add(1)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
-		state.revision.set(revision);
 		let bundle_count = state
 			.bundle_count
 			.get()
 			.checked_add(1)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
-		state.bundle_count.set(bundle_count);
+		let manifest_accumulator =
+			next_manifest_accumulator(&state.manifest_accumulator, &bundle);
+		drop(bundle);
+		drop(template_data);
+
+		let target_size = template_size(index + 1)?;
+		ReallocCompactAccount {
+			account: self.template,
+			payer: self.authority,
+			new_size: target_size,
+			program_id: &ID,
+		}
+		.invoke::<TemplateState>()?;
+
+		{
+			let mut template_data = self.template.try_borrow_mut()?;
+			let mut state = TemplateState::try_from_bytes_mut(&mut template_data)?;
+			state.remaining_bundles.set(remaining_bundles);
+			state.total_bundles.set(total_bundles);
+			state.revision.set(revision);
+			state.bundle_count.set(bundle_count);
+			state.manifest_accumulator = manifest_accumulator;
+			append_remaining_slot(&mut template_data, index, quantity)?;
+		}
+
+		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		bundle.activated_revision.set(revision);
 		bundle.status = BUNDLE_ACTIVE;
-		state.manifest_accumulator =
-			next_manifest_accumulator(&state.manifest_accumulator, &bundle);
 
 		Ok(())
 	}
@@ -1186,7 +1340,7 @@ impl<'a> ProcessAccountInfos<'a> for ActivateBundleAccounts<'a> {
 impl<'a> ProcessAccountInfos<'a> for CancelBundleAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = CancelBundleInstruction::try_from_bytes(data)?;
-		let state = self.template.as_account::<TemplateState>(&ID)?;
+		let state = as_template(self.template)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
 		// Cancellation only closes an unfunded or fully reclaimed staging account.
@@ -1217,7 +1371,7 @@ impl<'a> ProcessAccountInfos<'a> for MintTemplateBoxesAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = MintTemplateBoxesInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
-		let mut state = self.template.as_account_mut::<TemplateState>(&ID)?;
+		let mut state = as_template_mut(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
@@ -1260,8 +1414,8 @@ mod market_lock_tests {
 
 	#[test]
 	fn market_lock_requires_exact_pristine_supply_before_reveal() {
-		let mut bytes = [0; TemplateState::SIZE];
-		let state = TemplateState::initialize(&mut bytes).expect("template");
+		let mut bytes = [0; TemplateState::HEADER_SIZE];
+		let mut state = TemplateState::initialize(&mut bytes).expect("template");
 		state.status = TEMPLATE_LIVE;
 		state.bundle_count.set(2);
 		state.total_bundles.set(7);
@@ -1269,29 +1423,29 @@ mod market_lock_tests {
 		state.remaining_bundles.set(7);
 		state.opens_at.set(1_001);
 
-		assert_eq!(validate_market_lock(state, 7, 1_000), Ok(()));
+		assert_eq!(validate_market_lock(&state, 7, 1_000), Ok(()));
 
 		state.total_minted.set(6);
-		assert!(validate_market_lock(state, 6, 1_000).is_err());
+		assert!(validate_market_lock(&state, 6, 1_000).is_err());
 		state.total_minted.set(7);
 		state.remaining_bundles.set(6);
-		assert!(validate_market_lock(state, 7, 1_000).is_err());
+		assert!(validate_market_lock(&state, 7, 1_000).is_err());
 		state.remaining_bundles.set(7);
-		assert!(validate_market_lock(state, 7, 1_001).is_err());
+		assert!(validate_market_lock(&state, 7, 1_001).is_err());
 		state.locked_at.set(999);
-		assert!(validate_market_lock(state, 7, 1_000).is_err());
+		assert!(validate_market_lock(&state, 7, 1_000).is_err());
 	}
 
 	#[test]
 	fn recovery_retirement_only_allows_staging_cleanup() {
-		let mut bytes = [0; TemplateState::SIZE];
-		let state = TemplateState::initialize(&mut bytes).expect("template");
+		let mut bytes = [0; TemplateState::HEADER_SIZE];
+		let mut state = TemplateState::initialize(&mut bytes).expect("template");
 		state.status = TEMPLATE_RETIRED;
 
-		assert_eq!(assert_treasury_unlocked(state), Ok(()));
-		assert!(assert_treasury_editable(state).is_err());
+		assert_eq!(assert_treasury_unlocked(&state), Ok(()));
+		assert!(assert_treasury_editable(&state).is_err());
 
 		state.locked_at.set(1);
-		assert!(assert_treasury_unlocked(state).is_err());
+		assert!(assert_treasury_unlocked(&state).is_err());
 	}
 }

@@ -43,6 +43,12 @@ pub const PRIZE_METADATA_NFT: u8 = 4;
 pub const PRIZE_CORE_ASSET: u8 = 5;
 /// A Bubblegum compressed NFT.
 pub const PRIZE_COMPRESSED_NFT: u8 = 6;
+/// Native SOL released to the winner for winner-routed execution.
+pub const PRIZE_QUOTE_SOL: u8 = 7;
+/// A classic or safe Token-2022 quote released for winner-routed execution.
+pub const PRIZE_QUOTE_TOKEN: u8 = 8;
+/// A zero-decimal badge whose mint authority is held by the bundle PDA.
+pub const PRIZE_MINT_BADGE: u8 = 9;
 
 const TEMPLATE_DRAFT: u8 = 0;
 const TEMPLATE_LIVE: u8 = 1;
@@ -311,6 +317,19 @@ pub struct FundTokenPrizeInstruction {
 	pub is_nft: bool,
 }
 
+#[instruction(discriminator = LootboxInstruction::FundQuoteSolPrize)]
+pub struct FundQuoteSolPrizeInstruction {
+	pub lamports_per_win: u64,
+}
+
+#[instruction(discriminator = LootboxInstruction::FundQuoteTokenPrize)]
+pub struct FundQuoteTokenPrizeInstruction {
+	pub amount_per_win: u64,
+}
+
+#[instruction(discriminator = LootboxInstruction::FundMintPrize)]
+pub struct FundMintPrizeInstruction {}
+
 #[instruction(discriminator = LootboxInstruction::SealTemplate)]
 pub struct SealTemplateInstruction {}
 
@@ -363,6 +382,34 @@ pub struct FundTokenPrizeAccounts<'a> {
 	pub mint: &'a AccountView,
 	pub source: &'a mut AccountView,
 	pub escrow: &'a mut AccountView,
+	pub token_program: &'a AccountView,
+}
+
+#[derive(Accounts, Debug)]
+pub struct FundQuoteSolPrizeAccounts<'a> {
+	pub authority: &'a mut AccountView,
+	pub template: &'a mut AccountView,
+	pub bundle: &'a mut AccountView,
+	pub system_program: &'a AccountView,
+}
+
+#[derive(Accounts, Debug)]
+pub struct FundQuoteTokenPrizeAccounts<'a> {
+	pub authority: &'a AccountView,
+	pub template: &'a mut AccountView,
+	pub bundle: &'a mut AccountView,
+	pub mint: &'a AccountView,
+	pub source: &'a mut AccountView,
+	pub escrow: &'a mut AccountView,
+	pub token_program: &'a AccountView,
+}
+
+#[derive(Accounts, Debug)]
+pub struct FundMintPrizeAccounts<'a> {
+	pub authority: &'a AccountView,
+	pub template: &'a mut AccountView,
+	pub bundle: &'a mut AccountView,
+	pub mint: &'a mut AccountView,
 	pub token_program: &'a AccountView,
 }
 
@@ -971,6 +1018,39 @@ impl<'a> ProcessAccountInfos<'a> for FundSolPrizeAccounts<'a> {
 	}
 }
 
+impl<'a> ProcessAccountInfos<'a> for FundQuoteSolPrizeAccounts<'a> {
+	fn process(self, data: &[u8]) -> ProgramResult {
+		let args = FundQuoteSolPrizeInstruction::try_from_bytes(data)?;
+		let template_address = *self.template.address();
+		let state = as_template(self.template)?;
+		assert_template(&template_address, &state)?;
+		assert_template_authority(self.authority, &state)?;
+		assert_treasury_editable(&state)?;
+		assert_bundle(self.bundle, &template_address)?;
+		self.system_program.assert_address(&system::ID)?;
+		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+		if bundle.status != BUNDLE_FUNDING {
+			return Err(lootbox_error(LootboxError::InvalidState));
+		}
+		let deposit = record_prize(
+			&mut bundle,
+			&Address::default(),
+			args.lamports_per_win.get(),
+			PRIZE_QUOTE_SOL,
+			9,
+		)?;
+		drop(bundle);
+		drop(state);
+
+		system::instructions::Transfer {
+			from: self.authority,
+			to: self.bundle,
+			lamports: deposit,
+		}
+		.invoke()
+	}
+}
+
 impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = FundTokenPrizeInstruction::try_from_bytes(data)?;
@@ -1061,6 +1141,142 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 				self.authority,
 				deposit,
 				decimals,
+			)
+			.invoke()
+		}
+	}
+}
+
+impl<'a> ProcessAccountInfos<'a> for FundQuoteTokenPrizeAccounts<'a> {
+	fn process(self, data: &[u8]) -> ProgramResult {
+		let args = FundQuoteTokenPrizeInstruction::try_from_bytes(data)?;
+		let template_address = *self.template.address();
+		let bundle_address = *self.bundle.address();
+		let state = as_template(self.template)?;
+		assert_template(&template_address, &state)?;
+		assert_template_authority(self.authority, &state)?;
+		assert_treasury_editable(&state)?;
+		assert_bundle(self.bundle, &template_address)?;
+		let token_program = *self.token_program.address();
+		if token_program != token::ID && token_program != token_2022::ID {
+			return Err(ProgramError::IncorrectProgramId);
+		}
+		let mint = self
+			.mint
+			.as_token_mint_for_program(&token_program)?
+			.assert_extensions_allowed(&[
+				token_2022::state::ExtensionType::MetadataPointer,
+				token_2022::state::ExtensionType::TokenMetadata,
+			])?;
+		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+		if bundle.status != BUNDLE_FUNDING {
+			return Err(lootbox_error(LootboxError::InvalidState));
+		}
+		if mint.freeze_authority().is_some() || self.mint.address() == &WRAPPED_SOL_MINT_ID {
+			return Err(lootbox_error(LootboxError::InvalidPrize));
+		}
+
+		let decimals = mint.decimals();
+		drop(mint);
+		let escrow = self.escrow.as_associated_token_account_checked(
+			&bundle_address,
+			self.mint.address(),
+			&token_program,
+		)?;
+		if escrow.delegate().is_some() || escrow.close_authority().is_some() || escrow.is_frozen() {
+			return Err(lootbox_error(LootboxError::InvalidPrize));
+		}
+		drop(escrow);
+		let deposit = record_prize(
+			&mut bundle,
+			self.mint.address(),
+			args.amount_per_win.get(),
+			PRIZE_QUOTE_TOKEN,
+			decimals,
+		)?;
+		drop(bundle);
+		drop(state);
+
+		if token_program == token_2022::ID {
+			self.token_program.assert_address(&token_2022::ID)?;
+			token_2022::instructions::TransferChecked::new(
+				self.source,
+				self.mint,
+				self.escrow,
+				self.authority,
+				deposit,
+				decimals,
+			)
+			.invoke()
+		} else {
+			self.token_program.assert_address(&token::ID)?;
+			token::instructions::TransferChecked::new(
+				self.source,
+				self.mint,
+				self.escrow,
+				self.authority,
+				deposit,
+				decimals,
+			)
+			.invoke()
+		}
+	}
+}
+
+impl<'a> ProcessAccountInfos<'a> for FundMintPrizeAccounts<'a> {
+	fn process(self, data: &[u8]) -> ProgramResult {
+		let _ = FundMintPrizeInstruction::try_from_bytes(data)?;
+		let template_address = *self.template.address();
+		let bundle_address = *self.bundle.address();
+		let state = as_template(self.template)?;
+		assert_template(&template_address, &state)?;
+		assert_template_authority(self.authority, &state)?;
+		assert_treasury_editable(&state)?;
+		assert_bundle(self.bundle, &template_address)?;
+		let token_program = *self.token_program.address();
+		if token_program != token::ID && token_program != token_2022::ID {
+			return Err(ProgramError::IncorrectProgramId);
+		}
+		let mint = self
+			.mint
+			.as_token_mint_for_program(&token_program)?
+			.assert_extensions_allowed(&[
+				token_2022::state::ExtensionType::MetadataPointer,
+				token_2022::state::ExtensionType::TokenMetadata,
+			])?;
+		if mint.supply() != 0
+			|| mint.decimals() != 0
+			|| mint.mint_authority() != Some(self.authority.address())
+			|| mint.freeze_authority().is_some()
+		{
+			return Err(lootbox_error(LootboxError::InvalidPrize));
+		}
+		drop(mint);
+
+		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+		if bundle.status != BUNDLE_FUNDING {
+			return Err(lootbox_error(LootboxError::InvalidState));
+		}
+		let _ = record_prize(&mut bundle, self.mint.address(), 1, PRIZE_MINT_BADGE, 0)?;
+		drop(bundle);
+		drop(state);
+
+		if token_program == token_2022::ID {
+			self.token_program.assert_address(&token_2022::ID)?;
+			token_2022::instructions::SetAuthority::new(
+				self.mint,
+				self.authority,
+				token_2022::instructions::AuthorityType::MintTokens,
+				Some(&bundle_address),
+			)
+			.invoke()
+		} else {
+			self.token_program.assert_address(&token::ID)?;
+			token::instructions::SetAuthority::new(
+				self.mint,
+				self.authority,
+				token::instructions::AuthorityType::MintTokens,
+				Some(&bundle_address),
 			)
 			.invoke()
 		}

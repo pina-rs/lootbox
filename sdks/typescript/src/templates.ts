@@ -25,6 +25,7 @@ export type CompressedNftProof = Readonly<{
 
 export type PrizeAsset =
 	| Readonly<{ kind: "sol"; lamports: bigint }>
+	| Readonly<{ kind: "quoteSol"; lamports: bigint }>
 	| Readonly<{
 		kind: "token";
 		mint: Address;
@@ -33,6 +34,22 @@ export type PrizeAsset =
 		symbol?: string;
 		decimals?: number;
 		icon?: string;
+	}>
+	| Readonly<{
+		kind: "quoteToken";
+		mint: Address;
+		amount: bigint;
+		tokenProgram?: Address;
+		symbol?: string;
+		decimals?: number;
+		icon?: string;
+	}>
+	| Readonly<{
+		kind: "mintBadge";
+		mint: Address;
+		tokenProgram?: Address;
+		name?: string;
+		image?: string;
 	}>
 	| Readonly<{
 		kind: "nft";
@@ -126,16 +143,23 @@ function u64(value: bigint, field: string): bigint {
 }
 
 function assetAddress(asset: PrizeAsset): Address | null {
-	if (asset.kind === "sol") return null;
-	if (asset.kind === "token" || asset.kind === "nft") {
+	if (asset.kind === "sol" || asset.kind === "quoteSol") return null;
+	if (
+		asset.kind === "token" || asset.kind === "quoteToken" ||
+		asset.kind === "mintBadge" || asset.kind === "nft"
+	) {
 		return address(asset.mint);
 	}
 	return address(asset.asset);
 }
 
 function assetAmount(asset: PrizeAsset): bigint {
-	if (asset.kind === "sol") return asset.lamports;
-	if (asset.kind === "token") return asset.amount;
+	if (asset.kind === "sol" || asset.kind === "quoteSol") {
+		return asset.lamports;
+	}
+	if (asset.kind === "token" || asset.kind === "quoteToken") {
+		return asset.amount;
+	}
 	return 1n;
 }
 
@@ -262,10 +286,20 @@ export function createTemplatePlan(
 					"assets must be positive and distinct within a bundle; use native SOL, not wrapped SOL",
 				);
 			}
-			if (asset.kind !== "sol" && asset.kind !== "token") {
-				if (quantity !== 1n || uniqueAssets.has(identifier as Address)) {
+			const exclusive = ![
+				"sol",
+				"quoteSol",
+				"token",
+				"quoteToken",
+			].includes(asset.kind);
+			const singleCopy = exclusive && asset.kind !== "mintBadge";
+			if (exclusive) {
+				if (
+					(singleCopy && quantity !== 1n) ||
+					uniqueAssets.has(identifier as Address)
+				) {
 					throw new RangeError(
-						"each unique NFT or Core asset can fund only one single-copy bundle",
+						"each unique asset can fund only one bundle; non-mint assets require one copy",
 					);
 				}
 				uniqueAssets.add(identifier as Address);

@@ -8,6 +8,12 @@ fn instruction_discriminators_are_stable() {
 	assert_eq!(LootboxInstruction::RequestOpen as u8, 5);
 	assert_eq!(LootboxInstruction::WithdrawSurplus as u8, 9);
 	assert_eq!(LootboxInstruction::LockTreasury as u8, 37);
+	assert_eq!(LootboxInstruction::CloseServiceVault as u8, 38);
+	assert_eq!(LootboxInstruction::FundQuoteSolPrize as u8, 39);
+	assert_eq!(LootboxInstruction::FundQuoteTokenPrize as u8, 40);
+	assert_eq!(LootboxInstruction::FundMintPrize as u8, 41);
+	assert_eq!(LootboxInstruction::ClaimMintPrize as u8, 42);
+	assert_eq!(LootboxInstruction::ReclaimMintPrize as u8, 43);
 }
 
 #[test]

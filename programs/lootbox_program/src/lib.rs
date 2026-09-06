@@ -163,6 +163,11 @@ pub enum LootboxInstruction {
 	ForfeitTemplateOpen = 36,
 	LockTreasury = 37,
 	CloseServiceVault = 38,
+	FundQuoteSolPrize = 39,
+	FundQuoteTokenPrize = 40,
+	FundMintPrize = 41,
+	ClaimMintPrize = 42,
+	ReclaimMintPrize = 43,
 }
 
 #[discriminator]
@@ -1511,6 +1516,21 @@ pub fn process_instruction(
 		}
 		LootboxInstruction::CloseServiceVault => {
 			CloseServiceVaultAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::FundQuoteSolPrize => {
+			FundQuoteSolPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::FundQuoteTokenPrize => {
+			FundQuoteTokenPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::FundMintPrize => {
+			FundMintPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ClaimMintPrize => {
+			ClaimMintPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ReclaimMintPrize => {
+			ReclaimMintPrizeAccounts::try_from((program_id, accounts))?.process(data)
 		}
 	}
 }

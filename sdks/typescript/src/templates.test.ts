@@ -58,7 +58,7 @@ describe("finite template plans", () => {
 					assets: [{ kind: "nft", mint: nft }],
 				}],
 			})
-		).toThrow("unique NFT");
+		).toThrow("unique asset");
 		expect(() =>
 			createTemplatePlan({
 				name: "Invalid",
@@ -92,6 +92,29 @@ describe("finite template plans", () => {
 				}],
 			})
 		).toThrow("uncollected Core");
+	});
+
+	it("counts quote collateral while allowing a multi-copy badge authority", () => {
+		const plan = createTemplatePlan({
+			name: "Launch box",
+			bundles: [{
+				label: "Ten launches",
+				quantity: 10n,
+				assets: [
+					{ kind: "quoteSol", lamports: 100_000_000n },
+					{ kind: "mintBadge", mint: nft },
+				],
+			}],
+		});
+		expect(plan.treasury).toEqual([{
+			asset: null,
+			amount: 1_000_000_000n,
+			kind: "quoteSol",
+		}, {
+			asset: nft,
+			amount: 10n,
+			kind: "mintBadge",
+		}]);
 	});
 
 	it("bounds metadata by UTF-8 bytes and rejects hidden control text", () => {

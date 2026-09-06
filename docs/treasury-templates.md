@@ -46,7 +46,7 @@ Funding --reclaim every funded asset--> Cancelled and closed
 
 ## Capacity and snapshots
 
-The append-only inventory uses Pina's compact-account layout. A new treasury starts with a 449-byte fixed header. Each successful bundle activation grows it by exactly one eight-byte `u64` remaining-copy slot, up to 1,024 bundles and an 8,641-byte maximum. The activating authority funds only the incremental rent. Slots remain allocated after depletion because opening receipts snapshot stable bundle indices; compactness changes rent growth, not draw semantics.
+The append-only inventory uses Pina's compact-account layout. A new treasury starts with a 547-byte fixed header. Each successful bundle activation grows it by exactly one eight-byte `u64` remaining-copy slot, up to 1,024 bundles and an 8,739-byte maximum. The activating authority funds only the incremental rent. Slots remain allocated after depletion because opening receipts snapshot stable bundle indices; compactness changes rent growth, not draw semantics.
 
 Before lock, the client and program enforce both issuance bounds:
 
@@ -106,17 +106,21 @@ If the FIFO head remains unrevealed for 300 slots, any signer may forfeit it. Fo
 
 ## Supported prize adapters
 
-| Prize              | On-chain policy                                                                                                                                                                                                                                                      |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Native SOL         | Lamports are held by the bundle PDA and transferred directly. Wrapped SOL is rejected as a token prize.                                                                                                                                                              |
-| Classic SPL token  | Canonical mint and ATA checks, checked transfer, positive base-unit amount, and no freeze authority.                                                                                                                                                                 |
-| Token-2022 token   | Only the explicitly allowlisted Metadata Pointer and Token Metadata extensions are accepted; fee, hook, delegate, pause, and other behavior-changing extensions fail closed.                                                                                         |
-| Legacy NFT         | Supply one, zero decimals, revoked mint authority, no freeze authority, and a one-copy bundle.                                                                                                                                                                       |
-| Token Metadata NFT | Transfer adapter with supply/decimal and metadata PDA validation. Mint/freeze authority must be revoked or held by the canonical Master Edition PDA. Programmable token records and authorization rules are rejected until their mutability is compatibility-tested. |
-| Metaplex Core      | Only plain, uncollected Core assets with no plugins or external adapters are admitted, preventing a third-party mutable transfer policy from stranding escrow.                                                                                                       |
-| Compressed NFT     | Bubblegum transfer adapter bound to the asset ID, tree, leaf index, hashes, nonce, and fresh Merkle proof accounts.                                                                                                                                                  |
+| Prize               | On-chain policy                                                                                                                                                                                                                                                      |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Native SOL          | Lamports are held by the bundle PDA and transferred directly. Wrapped SOL is rejected as a token prize.                                                                                                                                                              |
+| Winner-routed quote | SOL or a pinned token is fully escrowed per win. A bound winner may atomically append a self-signed curve/DEX route; route failure rolls back delivery, and direct quote delivery remains the fallback.                                                              |
+| Classic SPL token   | Canonical mint and ATA checks, checked transfer, positive base-unit amount, and no freeze authority.                                                                                                                                                                 |
+| Token-2022 token    | Only the explicitly allowlisted Metadata Pointer and Token Metadata extensions are accepted; fee, hook, delegate, pause, and other behavior-changing extensions fail closed.                                                                                         |
+| Mint-on-claim badge | An empty zero-decimal mint irrevocably transfers mint authority to the bundle. Claims mint one unit, supply must equal the prior claim count, and final delivery revokes authority.                                                                                   |
+| Legacy NFT          | Supply one, zero decimals, revoked mint authority, no freeze authority, and a one-copy bundle.                                                                                                                                                                       |
+| Token Metadata NFT  | Transfer adapter with supply/decimal and metadata PDA validation. Mint/freeze authority must be revoked or held by the canonical Master Edition PDA. Programmable token records and authorization rules are rejected until their mutability is compatibility-tested. |
+| Metaplex Core       | Only plain, uncollected Core assets with no plugins or external adapters are admitted, preventing a third-party mutable transfer policy from stranding escrow.                                                                                                       |
+| Compressed NFT      | Bubblegum transfer adapter bound to the asset ID, tree, leaf index, hashes, nonce, and fresh Merkle proof accounts.                                                                                                                                                  |
 
 Collection and compressed transfers require fresh account resolution at funding, claim, and reclaim time. The typed SDK prevents silently routing those assets through the generic token path.
+
+See [Dynamic prize delivery](dynamic-prizes.md) for quote composition, badge collateral, explicit invariants, and the fixed-adapter and NFT-factory design gates.
 
 ## Payers and authority
 
@@ -129,13 +133,13 @@ Collection and compressed transfers require fresh account resolution at funding,
 
 The generated interface currently exposes these treasury instructions:
 
-| Phase      | Instructions                                                                                                                                                         |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Template   | `createTemplate`, `sealTemplate`, `lockTreasury`, `retireTemplate`                                                                                                   |
-| Stage      | `addBundle`, `fundSolPrize`, `fundTokenPrize`, `fundMetadataNftPrize`, `fundCoreAssetPrize`, `fundCompressedNftPrize`, `activateBundle`, `cancelBundle`              |
-| Issue/open | `mintTemplateBoxes`, `requestTemplateOpen`, `fulfillTemplateOpen`, `allocateTemplateOpen`, `forfeitTemplateOpen`                                                     |
-| Deliver    | `claimSolPrize`, `claimTokenPrize`, `claimMetadataNftPrize`, `claimCoreAssetPrize`, `claimCompressedNftPrize`                                                        |
-| Recover    | `reclaimSolPrize`, `reclaimTokenPrize`, `reclaimMetadataNftPrize`, `reclaimCoreAssetPrize`, `reclaimCompressedNftPrize`, `closeTemplateOpening`, `closeServiceVault` |
+| Phase      | Instructions                                                                                                                                                                                                         |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Template   | `createTemplate`, `sealTemplate`, `lockTreasury`, `retireTemplate`                                                                                                                                                   |
+| Stage      | `addBundle`, `fundSolPrize`, `fundTokenPrize`, `fundQuoteSolPrize`, `fundQuoteTokenPrize`, `fundMintPrize`, `fundMetadataNftPrize`, `fundCoreAssetPrize`, `fundCompressedNftPrize`, `activateBundle`, `cancelBundle` |
+| Issue/open | `mintTemplateBoxes`, `requestTemplateOpen`, `fulfillTemplateOpen`, `allocateTemplateOpen`, `forfeitTemplateOpen`                                                                                                     |
+| Deliver    | `claimSolPrize`, `claimTokenPrize`, `claimMintPrize`, `claimMetadataNftPrize`, `claimCoreAssetPrize`, `claimCompressedNftPrize`                                                                                      |
+| Recover    | `reclaimSolPrize`, `reclaimTokenPrize`, `reclaimMintPrize`, `reclaimMetadataNftPrize`, `reclaimCoreAssetPrize`, `reclaimCompressedNftPrize`, `closeTemplateOpening`, `closeServiceVault`                             |
 
 The TypeScript planner calculates exact inventory and collateral before building transactions:
 
@@ -171,7 +175,7 @@ console.log(plan.bundles[1]?.odds); // { numerator: 1n, denominator: 100n }
 console.log(plan.treasury); // exact deposits grouped by asset identifier
 ```
 
-Replace the placeholder with a valid address before running the example. Rust exposes `TemplatePlan::new(&bundles)` with `PrizeAsset::{Sol, ClassicToken, Token2022, LegacyNft, MetadataNft, CoreAsset, CompressedNft}`. Dart exposes `TemplatePlan`, `PrizeBundle`, and matching `PrizeAsset` constructors. All planners validate the 1,024-bundle limit, one-to-four asset limit, `u64` collateral math, `u32` ticket limit, and unique-asset ownership.
+Replace the placeholder with a valid address before running the example. Rust exposes `TemplatePlan::new(&bundles)` with `PrizeAsset::{Sol, QuoteSol, ClassicToken, Token2022, QuoteToken, MintBadge, LegacyNft, MetadataNft, CoreAsset, CompressedNft}`. Dart exposes `TemplatePlan`, `PrizeBundle`, and matching `PrizeAsset` constructors. All planners validate the 1,024-bundle limit, one-to-four asset limit, `u64` collateral math, `u32` ticket limit, and unique-asset ownership.
 
 `LootboxClient` provides resumable `createTemplate` and `appendBundles`, `publishTemplate`, `cancelFundingBundle`, exact `lockTreasury`, transfer/open/fulfill/allocate/claim orchestration, timeout forfeiture, receipt closure, and read APIs. Prize delivery keeps each asset's setup and claim atomic, partitions mixed bundles into transaction-size/account-bounded batches, and refetches the claim mask after every confirmed batch. Market helpers validate lock readiness, compute explicit remaining-inventory EV, quote integer-only constant-product trades, and export a checked Raydium CPMM deployment manifest. Pool creation itself stays in a production wallet/network adapter. The client uses processed commitment only for the local single-node sandbox; production applications must choose appropriate finality, transaction simulation, wallet, and oracle transport policies.
 

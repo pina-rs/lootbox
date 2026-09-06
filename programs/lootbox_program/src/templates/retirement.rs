@@ -17,6 +17,11 @@ pub struct ReclaimTokenPrizeInstruction {
 	pub asset_index: u8,
 }
 
+#[instruction(discriminator = LootboxInstruction::ReclaimMintPrize)]
+pub struct ReclaimMintPrizeInstruction {
+	pub asset_index: u8,
+}
+
 #[derive(Accounts, Debug)]
 pub struct RetireTemplateAccounts<'a> {
 	pub authority: &'a AccountView,
@@ -40,6 +45,16 @@ pub struct ReclaimTokenPrizeAccounts<'a> {
 	pub mint: &'a AccountView,
 	pub escrow: &'a mut AccountView,
 	pub destination: &'a mut AccountView,
+	pub token_program: &'a AccountView,
+}
+
+#[derive(Accounts, Debug)]
+pub struct ReclaimMintPrizeAccounts<'a> {
+	pub authority: &'a AccountView,
+	pub template: &'a AccountView,
+	pub box_mint: &'a AccountView,
+	pub bundle: &'a mut AccountView,
+	pub mint: &'a mut AccountView,
 	pub token_program: &'a AccountView,
 }
 
@@ -144,7 +159,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimSolPrizeAccounts<'a> {
 		)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
-		if bundle.kinds.get(index) != Some(&PRIZE_SOL) {
+		if !matches!(bundle.kinds.get(index), Some(&PRIZE_SOL | &PRIZE_QUOTE_SOL)) {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 
@@ -205,15 +220,14 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 		)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
-		let expected_kind = if token_program == token_2022::ID {
-			PRIZE_TOKEN_2022
-		} else {
-			bundle.kinds.get(index).copied().unwrap_or(u8::MAX)
+		let kind = bundle.kinds.get(index).copied().unwrap_or(u8::MAX);
+		let valid_kind = match kind {
+			PRIZE_TOKEN_2022 => token_program == token_2022::ID,
+			PRIZE_TOKEN | PRIZE_NFT => token_program == token::ID,
+			PRIZE_QUOTE_TOKEN => true,
+			_ => false,
 		};
-		if !matches!(expected_kind, PRIZE_TOKEN | PRIZE_NFT | PRIZE_TOKEN_2022)
-			|| bundle.kinds.get(index) != Some(&expected_kind)
-			|| mint_at(&bundle, index)? != *self.mint.address()
-		{
+		if !valid_kind || mint_at(&bundle, index)? != *self.mint.address() {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 
@@ -269,6 +283,93 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 				decimals,
 			)
 			.invoke_signed(&[signer.as_signer()])
+		}
+	}
+}
+
+impl<'a> ProcessAccountInfos<'a> for ReclaimMintPrizeAccounts<'a> {
+	fn process(self, data: &[u8]) -> ProgramResult {
+		let args = ReclaimMintPrizeInstruction::try_from_bytes(data)?;
+		let bundle_address = *self.bundle.address();
+		let template_data = self.template.try_borrow()?;
+		let state = TemplateState::try_from_bytes(&template_data)?;
+		assert_template(self.template.address(), &state)?;
+		assert_template_authority(self.authority, &state)?;
+		assert_bundle(self.bundle, self.template.address())?;
+		let token_program = *self.token_program.address();
+		if token_program != token::ID && token_program != token_2022::ID {
+			return Err(ProgramError::IncorrectProgramId);
+		}
+		let supply = assert_template_mint(
+			self.box_mint,
+			self.template.address(),
+			&state.box_mint,
+			state.locked_at.get() != 0,
+		)?;
+
+		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+		let index = usize::from(args.asset_index);
+		if bundle.kinds.get(index) != Some(&PRIZE_MINT_BADGE)
+			|| mint_at(&bundle, index)? != *self.mint.address()
+			|| read_slot(&bundle.amounts, index)? != 1
+		{
+			return Err(lootbox_error(LootboxError::InvalidPrize));
+		}
+		let claimed = read_slot(&bundle.claimed, index)?;
+		let mint = self
+			.mint
+			.as_token_mint_for_program(&token_program)?
+			.assert_extensions_allowed(&[
+				token_2022::state::ExtensionType::MetadataPointer,
+				token_2022::state::ExtensionType::TokenMetadata,
+			])?;
+		if mint.supply() != claimed
+			|| mint.decimals() != 0
+			|| mint.mint_authority() != Some(&bundle_address)
+			|| mint.freeze_authority().is_some()
+		{
+			return Err(lootbox_error(LootboxError::InvalidPrize));
+		}
+		drop(mint);
+
+		let bundle_index =
+			usize::try_from(bundle.index.get()).map_err(|_| ProgramError::InvalidAccountData)?;
+		let active_remaining = if bundle.status == BUNDLE_ACTIVE {
+			Some(remaining_at(&state, bundle_index)?)
+		} else {
+			None
+		};
+		let _ = reclaim_amount(
+			&state,
+			&mut bundle,
+			supply,
+			args.asset_index,
+			active_remaining,
+		)?;
+		let template = bundle.template;
+		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
+		drop(bundle);
+		let signer = seeds.to_signer();
+		let signers = [signer.as_signer()];
+
+		if token_program == token_2022::ID {
+			self.token_program.assert_address(&token_2022::ID)?;
+			token_2022::instructions::SetAuthority::new(
+				self.mint,
+				self.bundle,
+				token_2022::instructions::AuthorityType::MintTokens,
+				None,
+			)
+			.invoke_signed(&signers)
+		} else {
+			self.token_program.assert_address(&token::ID)?;
+			token::instructions::SetAuthority::new(
+				self.mint,
+				self.bundle,
+				token::instructions::AuthorityType::MintTokens,
+				None,
+			)
+			.invoke_signed(&signers)
 		}
 	}
 }

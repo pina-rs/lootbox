@@ -15,8 +15,11 @@ const WRAPPED_SOL_MINT: [u8; 32] = [
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PrizeAsset {
 	Sol { lamports: u64 },
+	QuoteSol { lamports: u64 },
 	ClassicToken { mint: [u8; 32], amount: u64 },
 	Token2022 { mint: [u8; 32], amount: u64 },
+	QuoteToken { mint: [u8; 32], amount: u64 },
+	MintBadge { mint: [u8; 32] },
 	LegacyNft { mint: [u8; 32] },
 	MetadataNft { mint: [u8; 32] },
 	CoreAsset { asset: [u8; 32] },
@@ -28,9 +31,11 @@ impl PrizeAsset {
 	#[must_use]
 	pub const fn identifier(self) -> Option<[u8; 32]> {
 		match self {
-			Self::Sol { .. } => None,
+			Self::Sol { .. } | Self::QuoteSol { .. } => None,
 			Self::ClassicToken { mint, .. }
 			| Self::Token2022 { mint, .. }
+			| Self::QuoteToken { mint, .. }
+			| Self::MintBadge { mint }
 			| Self::LegacyNft { mint }
 			| Self::MetadataNft { mint } => Some(mint),
 			Self::CoreAsset { asset } | Self::CompressedNft { asset } => Some(asset),
@@ -41,9 +46,12 @@ impl PrizeAsset {
 	#[must_use]
 	pub const fn amount(self) -> u64 {
 		match self {
-			Self::Sol { lamports } => lamports,
-			Self::ClassicToken { amount, .. } | Self::Token2022 { amount, .. } => amount,
-			Self::LegacyNft { .. }
+			Self::Sol { lamports } | Self::QuoteSol { lamports } => lamports,
+			Self::ClassicToken { amount, .. }
+			| Self::Token2022 { amount, .. }
+			| Self::QuoteToken { amount, .. } => amount,
+			Self::MintBadge { .. }
+			| Self::LegacyNft { .. }
 			| Self::MetadataNft { .. }
 			| Self::CoreAsset { .. }
 			| Self::CompressedNft { .. } => 1,
@@ -54,11 +62,17 @@ impl PrizeAsset {
 	pub const fn is_unique(self) -> bool {
 		matches!(
 			self,
-			Self::LegacyNft { .. }
+			Self::MintBadge { .. }
+				| Self::LegacyNft { .. }
 				| Self::MetadataNft { .. }
 				| Self::CoreAsset { .. }
 				| Self::CompressedNft { .. }
 		)
+	}
+
+	#[must_use]
+	pub const fn requires_single_copy(self) -> bool {
+		self.is_unique() && !matches!(self, Self::MintBadge { .. })
 	}
 }
 
@@ -255,7 +269,7 @@ fn validate_bundle(bundle: &PrizeBundle<'_>) -> Result<(), TemplatePlanError> {
 		{
 			return Err(TemplatePlanError::InvalidAsset);
 		}
-		if asset.is_unique() && bundle.quantity != 1 {
+		if asset.requires_single_copy() && bundle.quantity != 1 {
 			return Err(TemplatePlanError::DuplicateUniqueAsset);
 		}
 		if bundle.assets[..index]
@@ -359,5 +373,20 @@ mod tests {
 		);
 		assert_eq!(plan.services().settlement_bounty_lamports, 50_000);
 		assert!(plan.services().result_receipts_enabled);
+	}
+
+	#[test]
+	fn quote_and_badge_prizes_preserve_collateral_and_caps() {
+		let assets = [
+			PrizeAsset::QuoteSol { lamports: 100 },
+			PrizeAsset::MintBadge { mint: [8; 32] },
+		];
+		let bundles = [PrizeBundle {
+			quantity: 10,
+			assets: &assets,
+		}];
+		let plan = TemplatePlan::new(&bundles).expect("dynamic prize plan");
+		assert_eq!(plan.required_collateral(None), Ok(1_000));
+		assert_eq!(plan.required_collateral(Some([8; 32])), Ok(10));
 	}
 }

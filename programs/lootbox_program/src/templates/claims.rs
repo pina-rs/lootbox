@@ -17,6 +17,11 @@ pub struct ClaimTokenPrizeInstruction {
 	pub asset_index: u8,
 }
 
+#[instruction(discriminator = LootboxInstruction::ClaimMintPrize)]
+pub struct ClaimMintPrizeInstruction {
+	pub asset_index: u8,
+}
+
 #[derive(Accounts, Debug)]
 pub struct AllocateTemplateOpenAccounts<'a> {
 	pub template: &'a mut AccountView,
@@ -45,6 +50,17 @@ pub struct ClaimTokenPrizeAccounts<'a> {
 	pub recipient: &'a AccountView,
 	pub mint: &'a AccountView,
 	pub escrow: &'a mut AccountView,
+	pub destination: &'a mut AccountView,
+	pub token_program: &'a AccountView,
+}
+
+#[derive(Accounts, Debug)]
+pub struct ClaimMintPrizeAccounts<'a> {
+	pub template: &'a AccountView,
+	pub opening: &'a mut AccountView,
+	pub bundle: &'a mut AccountView,
+	pub recipient: &'a AccountView,
+	pub mint: &'a mut AccountView,
 	pub destination: &'a mut AccountView,
 	pub token_program: &'a AccountView,
 }
@@ -324,7 +340,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimSolPrizeAccounts<'a> {
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&address, &opening, self.template.address())?;
 		let index = usize::from(args.asset_index);
-		if bundle.kinds.get(index) != Some(&PRIZE_SOL) {
+		if !matches!(bundle.kinds.get(index), Some(&PRIZE_SOL | &PRIZE_QUOTE_SOL)) {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 
@@ -373,15 +389,14 @@ impl<'a> ProcessAccountInfos<'a> for ClaimTokenPrizeAccounts<'a> {
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&address, &opening, self.template.address())?;
 		let index = usize::from(args.asset_index);
-		let expected_kind = if token_program == token_2022::ID {
-			PRIZE_TOKEN_2022
-		} else {
-			bundle.kinds.get(index).copied().unwrap_or(u8::MAX)
+		let kind = bundle.kinds.get(index).copied().unwrap_or(u8::MAX);
+		let valid_kind = match kind {
+			PRIZE_TOKEN_2022 => token_program == token_2022::ID,
+			PRIZE_TOKEN | PRIZE_NFT => token_program == token::ID,
+			PRIZE_QUOTE_TOKEN => true,
+			_ => false,
 		};
-		if !matches!(expected_kind, PRIZE_TOKEN | PRIZE_NFT | PRIZE_TOKEN_2022)
-			|| bundle.kinds.get(index) != Some(&expected_kind)
-			|| mint_at(&bundle, index)? != *self.mint.address()
-		{
+		if !valid_kind || mint_at(&bundle, index)? != *self.mint.address() {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 
@@ -431,6 +446,101 @@ impl<'a> ProcessAccountInfos<'a> for ClaimTokenPrizeAccounts<'a> {
 			)
 			.invoke_signed(&[signer.as_signer()])
 		}
+	}
+}
+
+impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
+	fn process(self, data: &[u8]) -> ProgramResult {
+		let args = ClaimMintPrizeInstruction::try_from_bytes(data)?;
+		let address = *self.opening.address();
+		let bundle_address = *self.bundle.address();
+		let state = as_template(self.template)?;
+		assert_template(self.template.address(), &state)?;
+		assert_bundle(self.bundle, self.template.address())?;
+		let token_program = *self.token_program.address();
+		if token_program != token::ID && token_program != token_2022::ID {
+			return Err(ProgramError::IncorrectProgramId);
+		}
+
+		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
+		assert_template_opening(&address, &opening, self.template.address())?;
+		let index = usize::from(args.asset_index);
+		if bundle.kinds.get(index) != Some(&PRIZE_MINT_BADGE)
+			|| mint_at(&bundle, index)? != *self.mint.address()
+			|| read_slot(&bundle.amounts, index)? != 1
+		{
+			return Err(lootbox_error(LootboxError::InvalidPrize));
+		}
+
+		let minted = read_slot(&bundle.claimed, index)?;
+		let mint = self
+			.mint
+			.as_token_mint_for_program(&token_program)?
+			.assert_extensions_allowed(&[
+				token_2022::state::ExtensionType::MetadataPointer,
+				token_2022::state::ExtensionType::TokenMetadata,
+			])?;
+		if mint.supply() != minted
+			|| mint.decimals() != 0
+			|| mint.mint_authority() != Some(&bundle_address)
+			|| mint.freeze_authority().is_some()
+		{
+			return Err(lootbox_error(LootboxError::InvalidPrize));
+		}
+		drop(mint);
+		drop(self.destination.as_associated_token_account_checked(
+			&opening.beneficiary,
+			self.mint.address(),
+			&token_program,
+		)?);
+
+		let amount = record_claim(
+			&mut opening,
+			&mut bundle,
+			self.recipient.address(),
+			args.asset_index,
+		)?;
+		if amount != 1 {
+			return Err(lootbox_error(LootboxError::InvalidPrize));
+		}
+		let is_final = read_slot(&bundle.claimed, index)? == bundle.quantity.get();
+		let template = bundle.template;
+		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
+		drop(bundle);
+		drop(opening);
+		let signer = seeds.to_signer();
+		let signers = [signer.as_signer()];
+
+		if token_program == token_2022::ID {
+			self.token_program.assert_address(&token_2022::ID)?;
+			token_2022::instructions::MintTo::new(self.mint, self.destination, self.bundle, 1)
+				.invoke_signed(&signers)?;
+			if is_final {
+				token_2022::instructions::SetAuthority::new(
+					self.mint,
+					self.bundle,
+					token_2022::instructions::AuthorityType::MintTokens,
+					None,
+				)
+				.invoke_signed(&signers)?;
+			}
+		} else {
+			self.token_program.assert_address(&token::ID)?;
+			token::instructions::MintTo::new(self.mint, self.destination, self.bundle, 1)
+				.invoke_signed(&signers)?;
+			if is_final {
+				token::instructions::SetAuthority::new(
+					self.mint,
+					self.bundle,
+					token::instructions::AuthorityType::MintTokens,
+					None,
+				)
+				.invoke_signed(&signers)?;
+			}
+		}
+
+		Ok(())
 	}
 }
 
@@ -546,6 +656,39 @@ mod tests {
 		assert_eq!(record_claim(opening, bundle, &Address::default(), 1), Ok(1));
 		assert_eq!(opening.status, 3);
 		assert!(record_claim(opening, bundle, &Address::default(), 1).is_err());
+	}
+
+	#[test]
+	fn mint_prize_accounting_never_exceeds_the_bundle_quantity() {
+		let recipient = Address::new_from_array([7; 32]);
+		let mut bundle_bytes = [0; BundleState::SIZE];
+		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
+		bundle.quantity.set(2);
+		bundle.asset_count = 1;
+		bundle.kinds[0] = PRIZE_MINT_BADGE;
+		write_slot(&mut bundle.amounts, 0, 1).expect("one badge per win");
+
+		for _ in 0..2 {
+			let mut receipt = [0; TemplateOpeningState::SIZE];
+			let opening = TemplateOpeningState::initialize(&mut receipt).expect("opening");
+			opening.template = bundle.template;
+			opening.beneficiary = recipient;
+			opening.selected_bundle.set(bundle.index.get());
+			opening.status = 2;
+			assert_eq!(record_claim(opening, bundle, &recipient, 0), Ok(1));
+		}
+
+		let mut receipt = [0; TemplateOpeningState::SIZE];
+		let opening = TemplateOpeningState::initialize(&mut receipt).expect("opening");
+		opening.template = bundle.template;
+		opening.beneficiary = recipient;
+		opening.selected_bundle.set(bundle.index.get());
+		opening.status = 2;
+		assert_eq!(
+			record_claim(opening, bundle, &recipient, 0),
+			Err(lootbox_error(LootboxError::InvalidState))
+		);
+		assert_eq!(read_slot(&bundle.claimed, 0), Ok(2));
 	}
 
 	#[test]

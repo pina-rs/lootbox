@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const FUND_MINT_PRIZE_DISCRIMINATOR = 40;
+export const FUND_MINT_PRIZE_DISCRIMINATOR = 41;
 
 export function getFundMintPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(FUND_MINT_PRIZE_DISCRIMINATOR); }
 
@@ -23,7 +23,7 @@ export type FundMintPrizeInstructionData = { discriminator: number;  };
 export type FundMintPrizeInstructionDataArgs = {  };
 
 export function getFundMintPrizeInstructionDataEncoder(): FixedSizeEncoder<FundMintPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()]]), (value) => ({ ...value, discriminator: 40 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()]]), (value) => ({ ...value, discriminator: 41 }));
 }
 
 export function getFundMintPrizeInstructionDataDecoder(): FixedSizeDecoder<FundMintPrizeInstructionData> {

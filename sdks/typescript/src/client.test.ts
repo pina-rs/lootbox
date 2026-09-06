@@ -11,6 +11,7 @@ import {
 	assertFundedPrizeMatches,
 	bundleAssets,
 	composeWinnerRoutedSolQuoteClaim,
+	composeWinnerRoutedTokenQuoteClaim,
 	partitionPrizeDeliveryInstructions,
 	readU64,
 } from "./client.js";
@@ -136,6 +137,16 @@ describe("chain prize decoding", () => {
 			address: winner.address,
 			signer: winner,
 		});
+		const tokenComposed = composeWinnerRoutedTokenQuoteClaim({
+			...base,
+			mint: program,
+			escrow: program,
+			destination: program,
+			tokenProgram: program,
+			route: composed.slice(1),
+		});
+		expect(tokenComposed).toHaveLength(2);
+		expect(tokenComposed[0]?.programAddress).toBe(program);
 	});
 	it("preserves all 64 amount bits", () => {
 		const bytes = new Uint8Array(8).fill(255);

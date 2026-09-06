@@ -10,7 +10,7 @@
 
 use pina::pinapod;
 
-pub const RECLAIM_MINT_PRIZE_DISCRIMINATOR: u8 = 42u8;
+pub const RECLAIM_MINT_PRIZE_DISCRIMINATOR: u8 = 43u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]

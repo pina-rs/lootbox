@@ -1520,8 +1520,7 @@ impl<'a> ProcessAccountInfos<'a> for ActivateBundleAccounts<'a> {
 			.get()
 			.checked_add(1)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
-		let manifest_accumulator =
-			next_manifest_accumulator(&state.manifest_accumulator, &bundle);
+		let manifest_accumulator = next_manifest_accumulator(&state.manifest_accumulator, &bundle);
 		drop(bundle);
 		drop(template_data);
 

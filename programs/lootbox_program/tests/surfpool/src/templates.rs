@@ -976,7 +976,7 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 		let opens_at = chain_timestamp(&program) + 60;
 		program
 			.send(
-				&create_template_data(queue, bump, opens_at),
+				&create_template_data(queue, bump, opens_at, false),
 				vec![
 					AccountMeta::new(payer, true),
 					AccountMeta::new(template, false),
@@ -1075,7 +1075,7 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 			program
 				.send_with_signers(
 					program.instruction(
-						&template_request_data(opening_bump),
+						&template_request_data(opening_bump, recipient.pubkey()),
 						template_request_accounts(&TemplateRequestContext {
 							owner: recipient.pubkey(),
 							template,
@@ -1117,13 +1117,29 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 			provision_ata(&program, &payer, &recipient.pubkey(), &quote_mint).expect("quote ATA");
 		let quote_balance_before = program.balance(&recipient.pubkey()).expect("quote balance");
 		for (index, (opening, _)) in openings.iter().enumerate() {
+			let service_vault = Pubkey::find_program_address(
+				&[b"service-vault", template.as_ref()],
+				&program.program_id,
+			)
+			.0;
+			let (result_receipt, result_receipt_bump) = Pubkey::find_program_address(
+				&[b"result-receipt", opening.as_ref()],
+				&program.program_id,
+			);
+			let mut allocate = vec![0; AllocateTemplateOpenInstruction::SIZE];
+			AllocateTemplateOpenInstruction::initialize(&mut allocate)
+				.expect("allocation data")
+				.result_receipt_bump = result_receipt_bump;
 			program
 				.send(
-					&[LootboxInstruction::AllocateTemplateOpen as u8],
+					&allocate,
 					vec![
 						AccountMeta::new(template, false),
 						AccountMeta::new(*opening, false),
 						AccountMeta::new_readonly(bundle, false),
+						AccountMeta::new(service_vault, false),
+						AccountMeta::new(result_receipt, false),
+						AccountMeta::new_readonly(Pubkey::default(), false),
 					],
 				)
 				.expect("allocate only bundle");

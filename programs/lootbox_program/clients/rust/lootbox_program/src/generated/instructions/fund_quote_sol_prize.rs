@@ -10,7 +10,7 @@
 
 use pina::pinapod;
 
-pub const FUND_QUOTE_SOL_PRIZE_DISCRIMINATOR: u8 = 38u8;
+pub const FUND_QUOTE_SOL_PRIZE_DISCRIMINATOR: u8 = 39u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]

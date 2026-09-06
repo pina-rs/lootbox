@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const CLAIM_MINT_PRIZE_DISCRIMINATOR = 41;
+export const CLAIM_MINT_PRIZE_DISCRIMINATOR = 42;
 
 export function getClaimMintPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLAIM_MINT_PRIZE_DISCRIMINATOR); }
 
@@ -23,7 +23,7 @@ export type ClaimMintPrizeInstructionData = { discriminator: number; assetIndex:
 export type ClaimMintPrizeInstructionDataArgs = { assetIndex: number;  };
 
 export function getClaimMintPrizeInstructionDataEncoder(): FixedSizeEncoder<ClaimMintPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 41 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 42 }));
 }
 
 export function getClaimMintPrizeInstructionDataDecoder(): FixedSizeDecoder<ClaimMintPrizeInstructionData> {

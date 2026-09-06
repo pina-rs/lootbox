@@ -2,6 +2,9 @@
 
 #![no_std]
 
+#[cfg(test)]
+extern crate std;
+
 pub use lootbox_program_client as generated;
 
 mod templates;

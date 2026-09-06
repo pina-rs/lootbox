@@ -10,7 +10,7 @@
 
 use pina::pinapod;
 
-pub const FUND_MINT_PRIZE_DISCRIMINATOR: u8 = 40u8;
+pub const FUND_MINT_PRIZE_DISCRIMINATOR: u8 = 41u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]

@@ -97,6 +97,7 @@ Instruction getActivateBundleInstruction({
   required Address authority,
   required Address template,
   required Address bundle,
+  required Address systemProgram,
 
 }) {
   final instructionData = ActivateBundleInstructionData(
@@ -106,9 +107,10 @@ Instruction getActivateBundleInstruction({
   return Instruction(
     programAddress: programAddress,
     accounts: [
-    AccountMeta(address: authority, role: AccountRole.readonly),
+    AccountMeta(address: authority, role: AccountRole.writableSigner),
     AccountMeta(address: template, role: AccountRole.writable),
     AccountMeta(address: bundle, role: AccountRole.writable),
+    AccountMeta(address: systemProgram, role: AccountRole.readonly),
     ],
     data: getActivateBundleInstructionDataEncoder().encode(instructionData),
   );

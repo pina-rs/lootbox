@@ -15,7 +15,7 @@ default = []
 bpf-entrypoint = []
 
 [dependencies]
-pina = { workspace = true, features = ["account-resize", "compact", "logs", "token"] }
+pina = { workspace = true, features = ["account-resize", "logs", "token"] }
 solana-sha256-hasher = { workspace = true, features = ["sha2"] }
 switchboard_randomness_cpi = { workspace = true }
 

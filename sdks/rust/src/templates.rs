@@ -389,4 +389,18 @@ mod tests {
 		assert_eq!(plan.required_collateral(None), Ok(1_000));
 		assert_eq!(plan.required_collateral(Some([8; 32])), Ok(10));
 	}
+
+	#[test]
+	fn rejects_more_than_the_compact_inventory_capacity() {
+		let assets = [PrizeAsset::Sol { lamports: 1 }];
+		let bundle = PrizeBundle {
+			quantity: 1,
+			assets: &assets,
+		};
+		let bundles = std::vec![bundle; MAX_TEMPLATE_BUNDLES + 1];
+		assert_eq!(
+			TemplatePlan::new(&bundles),
+			Err(TemplatePlanError::InvalidBundleCount)
+		);
+	}
 }

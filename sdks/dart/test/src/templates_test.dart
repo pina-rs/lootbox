@@ -77,6 +77,20 @@ void main() {
       expect(plan.treasury[nft], BigInt.from(10));
     });
 
+    test('rejects more than the compact inventory capacity', () {
+      final bundle = PrizeBundle(
+        label: 'SOL',
+        quantity: BigInt.one,
+        assets: [PrizeAsset.sol(BigInt.one)],
+      );
+      expect(
+        () => TemplatePlan(
+          bundles: List.filled(maxTemplateBundles + 1, bundle),
+        ),
+        throwsRangeError,
+      );
+    });
+
     test('takes an immutable snapshot of bundle lists', () {
       final assets = [PrizeAsset.sol(BigInt.one)];
       final bundle = PrizeBundle(

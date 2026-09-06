@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const FUND_QUOTE_SOL_PRIZE_DISCRIMINATOR = 38;
+export const FUND_QUOTE_SOL_PRIZE_DISCRIMINATOR = 39;
 
 export function getFundQuoteSolPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(FUND_QUOTE_SOL_PRIZE_DISCRIMINATOR); }
 
@@ -23,7 +23,7 @@ export type FundQuoteSolPrizeInstructionData = { discriminator: number; lamports
 export type FundQuoteSolPrizeInstructionDataArgs = { lamportsPerWin: number | bigint;  };
 
 export function getFundQuoteSolPrizeInstructionDataEncoder(): FixedSizeEncoder<FundQuoteSolPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['lamportsPerWin', getU64Encoder()]]), (value) => ({ ...value, discriminator: 38 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['lamportsPerWin', getU64Encoder()]]), (value) => ({ ...value, discriminator: 39 }));
 }
 
 export function getFundQuoteSolPrizeInstructionDataDecoder(): FixedSizeDecoder<FundQuoteSolPrizeInstructionData> {

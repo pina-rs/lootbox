@@ -315,7 +315,6 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMintPrizeAccounts<'a> {
 		{
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
-		let claimed = read_slot(&bundle.claimed, index)?;
 		let mint = self
 			.mint
 			.as_token_mint_for_program(&token_program)?
@@ -323,8 +322,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMintPrizeAccounts<'a> {
 				token_2022::state::ExtensionType::MetadataPointer,
 				token_2022::state::ExtensionType::TokenMetadata,
 			])?;
-		if mint.supply() != claimed
-			|| mint.decimals() != 0
+		if mint.decimals() != 0
 			|| mint.mint_authority() != Some(&bundle_address)
 			|| mint.freeze_authority().is_some()
 		{
@@ -346,6 +344,11 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMintPrizeAccounts<'a> {
 			args.asset_index,
 			active_remaining,
 		)?;
+		if read_slot(&bundle.claimed, index)? != bundle.quantity.get() {
+			// Allocated copies remain claimable after retirement. Their claims mint
+			// the final badges and revoke this authority once every copy is released.
+			return Ok(());
+		}
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);

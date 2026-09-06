@@ -1299,8 +1299,10 @@ fn missed_market_lock_retires_without_stranding_holder_claims() {
 				],
 			)
 			.expect("create template");
-		let bundle = add_bundle(&program, template, 0, 2, 1);
+		let bundle = add_bundle(&program, template, 0, 2, 2);
 		fund_sol(&program, template, bundle, 100_000).expect("fund prizes");
+		let badge_mint = provision_mint(&program, &payer, &payer).expect("badge mint");
+		fund_mint_badge(&program, template, bundle, badge_mint).expect("badge authority escrow");
 		activate_bundle(&program, template, bundle);
 		let admin_accounts = vec![
 			AccountMeta::new_readonly(payer, true),
@@ -1424,6 +1426,45 @@ fn missed_market_lock_retires_without_stranding_holder_claims() {
 				],
 			)
 			.expect("allocate with receipts disabled");
+		let badge_ata = provision_ata(&program, &payer, &payer, &badge_mint).expect("badge ATA");
+		program
+			.send(
+				&[LootboxInstruction::ReclaimMintPrize as u8, 1],
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new_readonly(mint, false),
+					AccountMeta::new(bundle, false),
+					AccountMeta::new(badge_mint, false),
+					AccountMeta::new_readonly(token_program_id(), false),
+				],
+			)
+			.expect("recover unused badge capacity");
+		let badge = program.account(&badge_mint).expect("reclaimed badge mint");
+		assert_eq!(&badge.data[..4], &[1, 0, 0, 0]);
+		assert_eq!(&badge.data[4..36], bundle.as_ref());
+		assert_eq!(stored_u64(&badge.data, 36), 0);
+		program
+			.send(
+				&[LootboxInstruction::ClaimMintPrize as u8, 1],
+				vec![
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new(opening, false),
+					AccountMeta::new(bundle, false),
+					AccountMeta::new_readonly(payer, false),
+					AccountMeta::new(badge_mint, false),
+					AccountMeta::new(badge_ata, false),
+					AccountMeta::new_readonly(token_program_id(), false),
+				],
+			)
+			.expect("allocated badge remains claimable after recovery");
+		let badge = program.account(&badge_mint).expect("claimed badge mint");
+		assert_eq!(&badge.data[..4], &[0, 0, 0, 0]);
+		assert_eq!(stored_u64(&badge.data, 36), 1);
+		assert_eq!(
+			token_amount(&program.account(&badge_ata).expect("badge balance")),
+			1,
+		);
 		assert!(
 			program.account(&service_vault).is_err(),
 			"disabled services reserve no vault balance",

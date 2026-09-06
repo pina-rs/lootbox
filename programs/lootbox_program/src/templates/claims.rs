@@ -473,7 +473,6 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 
-		let minted = read_slot(&bundle.claimed, index)?;
 		let mint = self
 			.mint
 			.as_token_mint_for_program(&token_program)?
@@ -481,8 +480,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
 				token_2022::state::ExtensionType::MetadataPointer,
 				token_2022::state::ExtensionType::TokenMetadata,
 			])?;
-		if mint.supply() != minted
-			|| mint.decimals() != 0
+		if mint.decimals() != 0
 			|| mint.mint_authority() != Some(&bundle_address)
 			|| mint.freeze_authority().is_some()
 		{

@@ -52,11 +52,11 @@ Each successful `claimMintPrize`:
 
 1. verifies the opening's bound beneficiary and canonical destination ATA;
 2. verifies the stored mint, token program, extension allowlist, zero decimals, no freeze authority, and bundle PDA mint authority;
-3. checks that current supply equals the manifest's prior claim count;
+3. verifies that the bundle PDA still holds mint authority;
 4. records exactly one claim and mints exactly one badge; and
 5. revokes mint authority when the final allowed copy is minted.
 
-The existing allocation accounting makes the cap equal to `quantity`. Supply is checked against the claim counter before every mint, so out-of-band supply changes fail closed. Duplicate claims and claims beyond quantity fail.
+The existing allocation accounting makes the cap equal to `quantity`. Funding requires zero supply and transfers the sole mint authority to the bundle PDA; afterward, only a valid claim can increment the release counter and mint one unit. Duplicate claims and claims beyond quantity fail. Current supply is deliberately not used as a claim counter because a winner may burn a delivered badge without affecting later winners.
 
 If a staged bundle is cancelled or an eligible retired bundle is reclaimed, `reclaimMintPrize` permanently revokes the PDA's mint authority. It never returns authority to the creator. This can leave unminted capacity intentionally unusable, which is safer than restoring an advertised cap to mutable creator control.
 

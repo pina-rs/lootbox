@@ -1376,9 +1376,12 @@ export class LootboxClient {
 		return this.template(current.address);
 	}
 	/** Create an empty classic badge mint. Funding transfers its mint authority
-	 * to the bundle PDA; the authority is never returned to the creator.
+	 * to the bundle PDA; pass that address when resuming a funded draft.
 	 */
-	async createBadgeMint(mint: TransactionSigner): Promise<Address> {
+	async createBadgeMint(
+		mint: TransactionSigner,
+		fundedBundle?: Address,
+	): Promise<Address> {
 		const existing = await this.rpc.getAccountInfo(mint.address, {
 			encoding: "base64",
 			commitment,
@@ -1390,10 +1393,14 @@ export class LootboxClient {
 			const data = token.getMintDecoder().decode(
 				getBase64Encoder().encode(existing.value.data[0]),
 			);
+			const mintAuthority = data.mintAuthority;
+			const authorityMatches = mintAuthority.__option === "Some" &&
+				(mintAuthority.value === this.payer.address ||
+					mintAuthority.value === fundedBundle);
+			const unfundedSupplyMatches = mintAuthority.__option === "Some" &&
+				(mintAuthority.value !== this.payer.address || data.supply === 0n);
 			if (
-				data.supply !== 0n || data.decimals !== 0 ||
-				data.mintAuthority.__option !== "Some" ||
-				data.mintAuthority.value !== this.payer.address ||
+				data.decimals !== 0 || !authorityMatches || !unfundedSupplyMatches ||
 				data.freezeAuthority.__option !== "None"
 			) throw new Error("badge mint differs from saved draft");
 			return mint.address;

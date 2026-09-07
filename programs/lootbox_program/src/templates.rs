@@ -247,6 +247,26 @@ fn template_size(bundle_count: usize) -> Result<usize, ProgramError> {
 		.ok_or(ProgramError::ArithmeticOverflow)
 }
 
+#[cfg(kani)]
+mod proofs {
+	use super::*;
+
+	#[kani::proof]
+	fn compact_template_size_matches_the_activated_prefix() {
+		let bundle_count = kani::any::<u32>() as usize;
+		let result = template_size(bundle_count);
+
+		if bundle_count <= MAX_TEMPLATE_BUNDLES {
+			let expected = TemplateState::HEADER_SIZE + bundle_count * size_of::<PodU64>();
+
+			assert_eq!(result, Ok(expected));
+			assert!(expected <= TemplateState::MAX_SIZE);
+		} else {
+			assert!(result.is_err());
+		}
+	}
+}
+
 /// Appends one compact tail element without a heap allocation.
 ///
 /// Pinapod stores this sole tail field's `u16` element count at the end of the

@@ -1,6 +1,11 @@
 { pkgs, inputs, ... }:
 let
   custom = inputs.ifiokjr-nixpkgs.packages.${pkgs.stdenv.hostPlatform.system};
+  kani = custom.kani.overrideAttrs (_: {
+    # kani-compiler loads the driver from Kani's pinned rustup toolchain at
+    # runtime, so it is intentionally absent while the bundle is packaged.
+    autoPatchelfIgnoreMissingDeps = [ "librustc_driver-*.so" ];
+  });
 in
 {
   packages = with pkgs; [
@@ -9,7 +14,7 @@ in
     cargo-llvm-cov
     cargo-run-bin
     custom.agave
-    custom.kani
+    kani
     custom.monochange
     custom.sbpf-linker
     custom.surfpool
@@ -34,7 +39,7 @@ in
     "cargo-kani".exec = ''
       set -euo pipefail
 
-      kani_bundle="${custom.kani}"
+      kani_bundle="${kani}"
       kani_toolchain="$(tr -d '\n' < "$kani_bundle/rust-toolchain-version")"
       if ! rustup run "$kani_toolchain" rustc --version >/dev/null 2>&1; then
         rustup toolchain install "$kani_toolchain"
@@ -59,16 +64,17 @@ in
         loader_path_name="DYLD_FALLBACK_LIBRARY_PATH"
       fi
       loader_path="''${!loader_path_name:-}"
+      filtered_loader_path=""
       if [ -n "$loader_path" ]; then
-        filtered_loader_path=""
         while IFS= read -r path; do
           if [[ "$path" = */toolchains/*/lib ]]; then
             continue
           fi
           filtered_loader_path="''${filtered_loader_path:+$filtered_loader_path:}$path"
         done < <(printf '%s' "$loader_path" | tr ':' '\n')
-        export "$loader_path_name=$filtered_loader_path"
       fi
+      filtered_loader_path="$toolchain_root/lib''${filtered_loader_path:+:$filtered_loader_path}"
+      export "$loader_path_name=$filtered_loader_path"
 
       export PATH="$toolchain_root/bin:$kani_runtime/bin:$PATH"
       export RUSTUP_TOOLCHAIN="$kani_toolchain"

@@ -54,6 +54,24 @@ in
         trap - EXIT
       fi
 
+      loader_path_name="LD_LIBRARY_PATH"
+      if [ "$(uname -s)" = "Darwin" ]; then
+        loader_path_name="DYLD_FALLBACK_LIBRARY_PATH"
+      fi
+      loader_path="''${!loader_path_name:-}"
+      if [ -n "$loader_path" ]; then
+        filtered_loader_path=""
+        while IFS= read -r path; do
+          if [[ "$path" = */toolchains/*/lib ]]; then
+            continue
+          fi
+          filtered_loader_path="''${filtered_loader_path:+$filtered_loader_path:}$path"
+        done < <(printf '%s' "$loader_path" | tr ':' '\n')
+        export "$loader_path_name=$filtered_loader_path"
+      fi
+
+      export PATH="$toolchain_root/bin:$kani_runtime/bin:$PATH"
+      export RUSTUP_TOOLCHAIN="$kani_toolchain"
       # Kani injects an unstable compiler feature into every crate. Cap the
       # workspace's unstable-features lint only for this verifier invocation.
       export RUSTFLAGS="''${RUSTFLAGS:+$RUSTFLAGS }--cap-lints=allow"

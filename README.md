@@ -82,6 +82,7 @@ Or work in smaller loops:
 build:program
 generate:clients
 test:unit
+test:kani
 test:surfpool
 test:web
 lint:all

@@ -9,6 +9,7 @@ in
     cargo-llvm-cov
     cargo-run-bin
     custom.agave
+    custom.kani
     custom.monochange
     custom.sbpf-linker
     custom.surfpool
@@ -30,6 +31,38 @@ in
   };
 
   scripts = {
+    "cargo-kani".exec = ''
+      set -euo pipefail
+
+      kani_bundle="${custom.kani}"
+      kani_toolchain="$(tr -d '\n' < "$kani_bundle/rust-toolchain-version")"
+      if ! rustup run "$kani_toolchain" rustc --version >/dev/null 2>&1; then
+        rustup toolchain install "$kani_toolchain"
+      fi
+
+      toolchain_cargo="$(rustup which --toolchain "$kani_toolchain" cargo)"
+      toolchain_root="$(dirname "$(dirname "$toolchain_cargo")")"
+      kani_runtime="$PWD/.devenv/$(basename "$kani_bundle")-$kani_toolchain"
+      if [ ! -x "$kani_runtime/bin/kani-driver" ]; then
+        mkdir -p "$PWD/.devenv"
+        kani_runtime_tmp="$(mktemp -d "$PWD/.devenv/kani-runtime.XXXXXX")"
+        trap 'rm -rf -- "$kani_runtime_tmp"' EXIT
+        cp -R "$kani_bundle/." "$kani_runtime_tmp/"
+        chmod -R u+w "$kani_runtime_tmp"
+        ln -s "$toolchain_root" "$kani_runtime_tmp/toolchain"
+        mv "$kani_runtime_tmp" "$kani_runtime"
+        trap - EXIT
+      fi
+
+      # Kani injects an unstable compiler feature into every crate. Cap the
+      # workspace's unstable-features lint only for this verifier invocation.
+      export RUSTFLAGS="''${RUSTFLAGS:+$RUSTFLAGS }--cap-lints=allow"
+      exec "$kani_runtime/bin/kani-driver" "$@"
+    '';
+    kani.exec = ''
+      set -euo pipefail
+      cargo-kani "$@"
+    '';
     pina.exec = ''
       set -euo pipefail
 
@@ -89,6 +122,10 @@ in
       cargo llvm-cov test -p lootbox-cli --all-features --locked \
         --fail-under-lines 96 \
         --ignore-filename-regex 'lootbox-cli/src/main\.rs$'
+    '';
+    "test:kani".exec = ''
+      set -euo pipefail
+      cargo kani --package lootbox_program --lib --jobs --output-format terse
     '';
     "test:surfpool".exec = ''
       set -euo pipefail
@@ -178,6 +215,7 @@ in
       lint:all
       security:audit
       test:unit
+      test:kani
       test:coverage
       test:surfpool
       pnpm --dir apps/web build

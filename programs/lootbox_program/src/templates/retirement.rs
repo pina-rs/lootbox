@@ -143,6 +143,45 @@ pub(super) fn reclaim_amount(
 	Ok(amount)
 }
 
+#[cfg(kani)]
+mod proofs {
+	use super::*;
+
+	#[kani::proof]
+	fn retirement_reclaims_only_undrawn_inventory() {
+		let quantity = kani::any::<u64>();
+		let claimed = kani::any::<u64>();
+		let active_remaining = kani::any::<u64>();
+
+		kani::assume(claimed <= quantity);
+		kani::assume(active_remaining <= quantity - claimed);
+
+		let mut template_bytes = [0; TemplateState::HEADER_SIZE];
+		let mut state = TemplateState::initialize(&mut template_bytes).expect("template");
+		state.status = TEMPLATE_RETIRED;
+
+		let mut bundle_bytes = [0; BundleState::SIZE];
+		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
+		bundle.quantity.set(quantity);
+		bundle.funded_assets = 1;
+		bundle.status = BUNDLE_ACTIVE;
+		write_slot(&mut bundle.claimed, 0, claimed).expect("claimed slot");
+		write_slot(&mut bundle.amounts, 0, 1).expect("amount slot");
+
+		let reclaimed = reclaim_amount(&state, bundle, 0, 0, Some(active_remaining))
+			.expect("valid retirement recovery");
+		let released = claimed + active_remaining;
+
+		assert_eq!(reclaimed, active_remaining);
+		assert_eq!(read_slot(&bundle.claimed, 0), Ok(released));
+		assert_eq!(bundle.reclaimed_mask, 1);
+		assert_eq!(quantity - released, quantity - claimed - active_remaining);
+
+		assert!(reclaim_amount(&state, bundle, 0, 0, Some(active_remaining)).is_err());
+		assert_eq!(read_slot(&bundle.claimed, 0), Ok(released));
+	}
+}
+
 impl<'a> ProcessAccountInfos<'a> for ReclaimSolPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ReclaimSolPrizeInstruction::try_from_bytes(data)?;

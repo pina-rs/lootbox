@@ -329,6 +329,111 @@ pub(super) fn record_claim(
 	read_slot(&bundle.amounts, index)
 }
 
+#[cfg(kani)]
+mod proofs {
+	use super::*;
+
+	#[kani::proof]
+	fn allocation_consumes_exactly_one_pending_inventory_unit() {
+		let remaining = kani::any::<u64>();
+		let pending = kani::any::<u64>();
+		let next_allocation = kani::any::<u64>();
+		let selected_bundle = kani::any::<u32>();
+
+		kani::assume(remaining > 0);
+		kani::assume(pending > 0);
+		kani::assume(next_allocation < u64::MAX);
+
+		let mut template_bytes = [0; TemplateState::HEADER_SIZE];
+		let mut state = TemplateState::initialize(&mut template_bytes).expect("template");
+		state.bundle_count.set(MAX_TEMPLATE_BUNDLES as u32);
+		state.remaining_bundles.set(remaining);
+		state.pending_openings.set(pending);
+		state.next_allocation.set(next_allocation);
+		state.revision.set(1);
+
+		let mut opening_bytes = [0; TemplateOpeningState::SIZE];
+		let opening = TemplateOpeningState::initialize(&mut opening_bytes).expect("opening");
+		opening.status = 1;
+		opening.sequence.set(next_allocation);
+		opening.eligible_bundle_count.set(1);
+		opening.treasury_revision.set(1);
+
+		let after =
+			allocate(&mut state, opening, selected_bundle, remaining).expect("valid allocation");
+
+		assert_eq!(after, remaining - 1);
+		assert_eq!(state.remaining_bundles.get(), remaining - 1);
+		assert_eq!(state.pending_openings.get(), pending - 1);
+		assert_eq!(state.next_allocation.get(), next_allocation + 1);
+		assert_eq!(opening.selected_bundle.get(), selected_bundle);
+		assert_eq!(opening.status, 2);
+	}
+
+	#[kani::proof]
+	fn claim_is_recipient_bound_and_never_exceeds_quantity() {
+		let quantity = kani::any::<u64>();
+		let already_claimed = kani::any::<u64>();
+		let amount = kani::any::<u64>();
+
+		kani::assume(quantity > 0);
+		kani::assume(already_claimed < quantity);
+
+		let recipient = Address::new_from_array([7; 32]);
+		let thief = Address::new_from_array([8; 32]);
+		let mut bundle_bytes = [0; BundleState::SIZE];
+		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
+		bundle.quantity.set(quantity);
+		bundle.asset_count = 1;
+		write_slot(&mut bundle.claimed, 0, already_claimed).expect("claimed slot");
+		write_slot(&mut bundle.amounts, 0, amount).expect("amount slot");
+
+		let mut opening_bytes = [0; TemplateOpeningState::SIZE];
+		let opening = TemplateOpeningState::initialize(&mut opening_bytes).expect("opening");
+		opening.template = bundle.template;
+		opening.beneficiary = recipient;
+		opening.selected_bundle.set(bundle.index.get());
+		opening.status = 2;
+
+		assert!(record_claim(opening, bundle, &thief, 0).is_err());
+		assert_eq!(read_slot(&bundle.claimed, 0), Ok(already_claimed));
+		assert_eq!(opening.claimed_mask, 0);
+
+		let paid = record_claim(opening, bundle, &recipient, 0).expect("valid claim");
+
+		assert_eq!(paid, amount);
+		assert_eq!(opening.claimed_mask, 1);
+		assert_eq!(read_slot(&bundle.claimed, 0), Ok(already_claimed + 1));
+		assert!(already_claimed + 1 <= quantity);
+		assert_eq!(opening.status, 3);
+
+		assert!(record_claim(opening, bundle, &recipient, 0).is_err());
+		assert_eq!(read_slot(&bundle.claimed, 0), Ok(already_claimed + 1));
+	}
+
+	#[kani::proof]
+	fn exhausted_mint_capacity_cannot_be_claimed_again() {
+		let quantity = kani::any::<u64>();
+		let recipient = Address::new_from_array([7; 32]);
+		let mut bundle_bytes = [0; BundleState::SIZE];
+		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
+		bundle.quantity.set(quantity);
+		bundle.asset_count = 1;
+		write_slot(&mut bundle.claimed, 0, quantity).expect("claimed slot");
+
+		let mut opening_bytes = [0; TemplateOpeningState::SIZE];
+		let opening = TemplateOpeningState::initialize(&mut opening_bytes).expect("opening");
+		opening.template = bundle.template;
+		opening.beneficiary = recipient;
+		opening.selected_bundle.set(bundle.index.get());
+		opening.status = 2;
+
+		assert!(record_claim(opening, bundle, &recipient, 0).is_err());
+		assert_eq!(read_slot(&bundle.claimed, 0), Ok(quantity));
+		assert_eq!(opening.claimed_mask, 0);
+	}
+}
+
 impl<'a> ProcessAccountInfos<'a> for ClaimSolPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ClaimSolPrizeInstruction::try_from_bytes(data)?;

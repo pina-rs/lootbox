@@ -64,4 +64,4 @@ default = []
 bpf-entrypoint = []
 
 [dependencies]
-pina = { version = "0.14.0", git = "https://github.com/pina-rs/pina", rev = "4999d0f797be71a8aa22ce470f31920d644866ee", default-features = false, features = ["derive"] }
+pina = { version = "0.15.0", default-features = false, features = ["derive"] }

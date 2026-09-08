@@ -12,10 +12,10 @@ in
     cargo-audit
     cargo-deny
     cargo-llvm-cov
-    cargo-run-bin
     custom.agave
     kani
     custom.monochange
+    custom.pina
     custom.sbpf-linker
     custom.surfpool
     dart
@@ -87,18 +87,8 @@ in
       set -euo pipefail
       cargo-kani "$@"
     '';
-    pina.exec = ''
-      set -euo pipefail
-
-      if [ -n "''${PINA_BIN:-}" ]; then
-        exec "$PINA_BIN" "$@"
-      fi
-
-      cargo bin pina_cli "$@"
-    '';
     "install:all".exec = ''
       set -euo pipefail
-      cargo bin --install
       pnpm install
       (cd sdks/dart && dart pub get)
       pnpm --dir apps/web exec playwright install chromium

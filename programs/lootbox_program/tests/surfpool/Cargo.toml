@@ -59,7 +59,7 @@ wildcard_dependencies = "deny"
 wildcard_imports = "allow"
 
 [dependencies]
-pina_test = { version = "0.14.0", git = "https://github.com/pina-rs/pina", rev = "4999d0f797be71a8aa22ce470f31920d644866ee" }
+pina_test = "0.15.0"
 program_under_test = { package = "lootbox_program", path = "../..", version = "0.0.1-alpha.0" }
 solana-commitment-config = "=3.1.1"
 solana-message = "=4.4.1"

@@ -225,7 +225,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		self.wrapped_sol_mint.assert_address(&WRAPPED_SOL_MINT_ID)?;
 		self.address_lookup_table_program
 			.assert_address(&ADDRESS_LOOKUP_TABLE_PROGRAM_ID)?;
-		let mut state = as_template_mut(self.template)?;
+		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		self.oracle_queue.assert_address(&state.oracle_queue)?;
 		self.oracle_program.assert_program(&state.oracle_program)?;
@@ -292,13 +292,15 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		let sequence = state.next_request.get();
 		let treasury_revision = state.revision.get();
 		let eligible_bundle_count = state.bundle_count.get();
-		state.next_request.set(
-			sequence
-				.checked_add(1)
-				.ok_or(ProgramError::ArithmeticOverflow)?,
-		);
-		state.pending_openings.set(pending);
-		drop(state);
+		let next_request = sequence
+			.checked_add(1)
+			.ok_or(ProgramError::ArithmeticOverflow)?;
+		update_template(
+			self.template,
+			&TemplateStatePatch::new()
+				.next_request(next_request)
+				.pending_openings(pending),
+		)?;
 
 		CreateProgramAccountWithBump {
 			account: self.opening,
@@ -439,7 +441,6 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 			return Err(lootbox_error(LootboxError::RandomnessExpired));
 		}
 		drop(opening);
-		drop(state);
 
 		let opening_signer = opening_seeds_with_bump.to_signer();
 		let signers = [opening_signer.as_signer()];
@@ -464,7 +465,7 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 		}
 		.invoke_signed(&signers)?;
 
-		let mut state = as_template_mut(self.template)?;
+		let mut state = as_template(self.template)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 
@@ -488,6 +489,11 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 			self.payer,
 			self.system_program,
 		)?;
+		update_template(
+			self.template,
+			&TemplateStatePatch::new()
+				.remaining_settlement_bounties(state.remaining_settlement_bounties.get()),
+		)?;
 
 		Ok(())
 	}
@@ -501,7 +507,7 @@ impl<'a> ProcessAccountInfos<'a> for ForfeitTemplateOpenAccounts<'a> {
 		self.caller.assert_signer()?.assert_writable()?;
 		self.service_vault.assert_writable()?;
 		self.system_program.assert_address(&system::ID)?;
-		let mut state = as_template_mut(self.template)?;
+		let mut state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_service_vault(self.service_vault, &template_address, &state)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
@@ -534,6 +540,13 @@ impl<'a> ProcessAccountInfos<'a> for ForfeitTemplateOpenAccounts<'a> {
 			self.service_vault,
 			self.caller,
 			self.system_program,
+		)?;
+		update_template(
+			self.template,
+			&TemplateStatePatch::new()
+				.pending_openings(state.pending_openings.get())
+				.next_allocation(state.next_allocation.get())
+				.remaining_settlement_bounties(state.remaining_settlement_bounties.get()),
 		)
 	}
 }
@@ -544,8 +557,7 @@ mod tests {
 
 	#[test]
 	fn retirement_preserves_opening_rights_but_drafts_do_not() {
-		let mut bytes = [0; TemplateState::HEADER_SIZE];
-		let mut state = TemplateState::initialize(&mut bytes).expect("template");
+		let mut state = initialized_template_header(&TemplateStatePatch::new());
 
 		assert!(assert_openable(&state).is_err());
 		state.status = TEMPLATE_LIVE;
@@ -575,13 +587,15 @@ mod tests {
 
 	#[test]
 	fn timeout_forfeits_only_the_fifo_head_without_consuming_inventory() {
-		let mut template_bytes = [0; TemplateState::HEADER_SIZE];
-		let mut state = TemplateState::initialize(&mut template_bytes).expect("template");
-		state.remaining_bundles.set(3);
-		state.pending_openings.set(2);
-		state.next_allocation.set(7);
+		let mut state = initialized_template_header(
+			&TemplateStatePatch::new()
+				.remaining_bundles(3)
+				.pending_openings(2)
+				.next_allocation(7),
+		);
 		let mut opening_bytes = [0; TemplateOpeningState::SIZE];
-		let opening = TemplateOpeningState::initialize(&mut opening_bytes).expect("opening");
+		let opening =
+			TemplateOpeningState::initialize(&mut opening_bytes, |_| Ok(())).expect("opening");
 		opening.status = OPENING_PENDING;
 		opening.sequence.set(8);
 		assert!(record_forfeit(&mut state, opening).is_err());

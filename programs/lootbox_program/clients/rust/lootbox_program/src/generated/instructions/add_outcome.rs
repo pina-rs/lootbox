@@ -8,8 +8,6 @@
 	clippy::too_many_arguments
 )]
 
-use pina::pinapod;
-
 pub const ADD_OUTCOME_DISCRIMINATOR: u8 = 1u8;
 
 /// Accounts.
@@ -56,21 +54,20 @@ pub struct AddOutcomeInstructionData {
 
 impl AddOutcomeInstructionData {
 	pub fn new(configure: impl FnOnce(&mut AddOutcomeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; <AddOutcomeInstructionWire as pina::ZeroPodFixed>::SIZE];
-		{
-			let data = <AddOutcomeInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		let mut bytes = vec![0u8; core::mem::size_of::<AddOutcomeInstructionWireZc>()];
+		<AddOutcomeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = ADD_OUTCOME_DISCRIMINATOR;
-		}
-		<AddOutcomeInstructionWire as pina::ZeroPodFixed>::validate(&bytes)
+			Ok(())
+		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }
 
 #[doc(hidden)]
-#[derive(pina::ZeroPod)]
+#[derive(pina::PinaPod)]
+#[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct AddOutcomeInstructionWire {
 	pub discriminator: u8,
 	pub weight: u64,

@@ -32,8 +32,10 @@ function normalizeDirectory(directory) {
 export function normalizeRustManifest(source) {
 	let manifest = source
 		.replace(/version = "[^"]+"/, "version.workspace = true")
-		.replace(/edition = "[^"]+"/, "edition.workspace = true")
-		.replace("publish = false\n", "");
+		.replace(/edition = "[^"]+"/, "edition.workspace = true");
+	if (!/^publish = false$/m.test(manifest)) {
+		manifest = manifest.replace("[package]\n", "[package]\npublish = false\n");
+	}
 	if (!manifest.includes('description = "Generated interface')) {
 		manifest = manifest.replace(
 			"[dependencies]",
@@ -45,12 +47,14 @@ export function normalizeRustManifest(source) {
 
 export function normalizeDartManifest(source, version) {
 	let manifest = source
-		.replace(/^publish_to: none\n/m, "")
 		.replace(/^version: .*$/m, `version: ${version}`)
 		.replace(
 			/^description: .*$/m,
 			"description: Generated Codama client for the Pina lootbox program.",
 		);
+	if (!/^publish_to: none$/m.test(manifest)) {
+		manifest = `publish_to: none\n${manifest}`;
+	}
 	if (!/^repository:/m.test(manifest)) {
 		manifest = manifest.replace(
 			/^(version: .*\n)/m,
@@ -139,7 +143,7 @@ if (
 	);
 	const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 	manifest.version = version;
-	delete manifest.private;
+	manifest.private = true;
 	manifest.description =
 		"Generated TypeScript interface for the Pina Lootbox program";
 	manifest.license = "Apache-2.0";
@@ -151,5 +155,10 @@ if (
 	manifest.files = ["src"];
 	manifest.dependencies["@solana/program-client-core"] = "^7.0.0";
 	manifest.peerDependencies["@solana/kit"] = "^7.0.0";
-	writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+	const sortedManifest = Object.fromEntries(
+		Object.entries(manifest).sort(([left], [right]) =>
+			left.localeCompare(right)
+		),
+	);
+	writeFileSync(manifestPath, `${JSON.stringify(sortedManifest, null, 2)}\n`);
 }

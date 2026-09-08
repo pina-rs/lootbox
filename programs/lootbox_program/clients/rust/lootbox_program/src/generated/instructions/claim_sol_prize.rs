@@ -8,8 +8,6 @@
 	clippy::too_many_arguments
 )]
 
-use pina::pinapod;
-
 pub const CLAIM_SOL_PRIZE_DISCRIMINATOR: u8 = 19u8;
 
 /// Accounts.
@@ -62,21 +60,20 @@ pub struct ClaimSolPrizeInstructionData {
 
 impl ClaimSolPrizeInstructionData {
 	pub fn new(configure: impl FnOnce(&mut ClaimSolPrizeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; <ClaimSolPrizeInstructionWire as pina::ZeroPodFixed>::SIZE];
-		{
-			let data = <ClaimSolPrizeInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		let mut bytes = vec![0u8; core::mem::size_of::<ClaimSolPrizeInstructionWireZc>()];
+		<ClaimSolPrizeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = CLAIM_SOL_PRIZE_DISCRIMINATOR;
-		}
-		<ClaimSolPrizeInstructionWire as pina::ZeroPodFixed>::validate(&bytes)
+			Ok(())
+		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }
 
 #[doc(hidden)]
-#[derive(pina::ZeroPod)]
+#[derive(pina::PinaPod)]
+#[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct ClaimSolPrizeInstructionWire {
 	pub discriminator: u8,
 	pub asset_index: u8,

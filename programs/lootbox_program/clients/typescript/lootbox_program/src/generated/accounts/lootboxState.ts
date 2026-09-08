@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixZeroPodEncoderSize, getZeroPodBooleanDecoder, getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { fixPinaPodEncoderSize, getPinaPodBooleanDecoder, getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBooleanDecoder, getBooleanEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findLootboxPda, type LootboxSeeds } from '../pdas';
 
@@ -29,12 +29,12 @@ outcomeLamports: ReadonlyUint8Array; outcomeCount: number; sealed: boolean; bump
 
 /** Gets the encoder for {@link LootboxStateArgs} account data. */
 export function getLootboxStateEncoder(): FixedSizeEncoder<LootboxStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['authority', getAddressEncoder()], ['boxMint', getAddressEncoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['id', getU64Encoder()], ['maxSupply', getU64Encoder()], ['totalMinted', getU64Encoder()], ['pendingOpenings', getU64Encoder()], ['opened', getU64Encoder()], ['refunded', getU64Encoder()], ['totalWeight', getU64Encoder()], ['maxRewardLamports', getU64Encoder()], ['outcomeWeights', fixZeroPodEncoderSize(getBytesEncoder(), 64)], ['outcomeLamports', fixZeroPodEncoderSize(getBytesEncoder(), 64)], ['outcomeCount', getU8Encoder()], ['sealed', getBooleanEncoder()], ['bump', getU8Encoder()], ['vaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 1 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['authority', getAddressEncoder()], ['boxMint', getAddressEncoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['id', getU64Encoder()], ['maxSupply', getU64Encoder()], ['totalMinted', getU64Encoder()], ['pendingOpenings', getU64Encoder()], ['opened', getU64Encoder()], ['refunded', getU64Encoder()], ['totalWeight', getU64Encoder()], ['maxRewardLamports', getU64Encoder()], ['outcomeWeights', fixPinaPodEncoderSize(getBytesEncoder(), 64)], ['outcomeLamports', fixPinaPodEncoderSize(getBytesEncoder(), 64)], ['outcomeCount', getU8Encoder()], ['sealed', getBooleanEncoder()], ['bump', getU8Encoder()], ['vaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 1 }));
 }
 
 /** Gets the decoder for {@link LootboxState} account data. */
 export function getLootboxStateDecoder(): FixedSizeDecoder<LootboxState> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(LOOTBOX_STATE_DISCRIMINATOR, getU8Decoder())], ['authority', getAddressDecoder()], ['boxMint', getAddressDecoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['id', getU64Decoder()], ['maxSupply', getU64Decoder()], ['totalMinted', getU64Decoder()], ['pendingOpenings', getU64Decoder()], ['opened', getU64Decoder()], ['refunded', getU64Decoder()], ['totalWeight', getU64Decoder()], ['maxRewardLamports', getU64Decoder()], ['outcomeWeights', fixDecoderSize(getBytesDecoder(), 64)], ['outcomeLamports', fixDecoderSize(getBytesDecoder(), 64)], ['outcomeCount', getU8Decoder()], ['sealed', getZeroPodBooleanDecoder()], ['bump', getU8Decoder()], ['vaultBump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(LOOTBOX_STATE_DISCRIMINATOR, getU8Decoder())], ['authority', getAddressDecoder()], ['boxMint', getAddressDecoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['id', getU64Decoder()], ['maxSupply', getU64Decoder()], ['totalMinted', getU64Decoder()], ['pendingOpenings', getU64Decoder()], ['opened', getU64Decoder()], ['refunded', getU64Decoder()], ['totalWeight', getU64Decoder()], ['maxRewardLamports', getU64Decoder()], ['outcomeWeights', fixDecoderSize(getBytesDecoder(), 64)], ['outcomeLamports', fixDecoderSize(getBytesDecoder(), 64)], ['outcomeCount', getU8Decoder()], ['sealed', getPinaPodBooleanDecoder()], ['bump', getU8Decoder()], ['vaultBump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link LootboxState} account data. */

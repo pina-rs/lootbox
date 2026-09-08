@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixZeroPodEncoderSize, getZeroPodBooleanDecoder, getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { fixPinaPodEncoderSize, getPinaPodBoundedArrayDecoder, getPinaPodBoundedArrayEncoder, getPinaPodBoundedCountDecoder, getPinaPodBooleanDecoder, getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getArrayDecoder, getArrayEncoder, getBooleanDecoder, getBooleanEncoder, getBytesDecoder, getBytesEncoder, getI64Decoder, getI64Encoder, getStructDecoder, getStructEncoder, getU16Decoder, getU16Encoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type Codec, type Decoder, type EncodedAccount, type Encoder, type FetchAccountConfig, type FetchAccountsConfig, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findTemplatePda, type TemplateSeeds } from '../pdas';
 
@@ -53,7 +53,6 @@ serviceVaultBump: number;
 /**
  * Undrawn inventory per append-only bundle. Only activated slots occupy
  * account bytes; slots are never removed because openings snapshot indices.
- * Pina compact capacity: 1024.
  */
 remaining: Array<bigint>;  };
 
@@ -95,18 +94,17 @@ serviceVaultBump: number;
 /**
  * Undrawn inventory per append-only bundle. Only activated slots occupy
  * account bytes; slots are never removed because openings snapshot indices.
- * Pina compact capacity: 1024.
  */
 remaining: Array<number | bigint>;  };
 
 /** Gets the encoder for {@link TemplateStateArgs} account data. */
 export function getTemplateStateEncoder(): Encoder<TemplateStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['authority', getAddressEncoder()], ['boxMint', getAddressEncoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['id', getU64Encoder()], ['opensAt', getI64Encoder()], ['lockedAt', getI64Encoder()], ['totalBundles', getU64Encoder()], ['totalMinted', getU64Encoder()], ['remainingBundles', getU64Encoder()], ['pendingOpenings', getU64Encoder()], ['nextRequest', getU64Encoder()], ['nextAllocation', getU64Encoder()], ['revision', getU64Encoder()], ['manifestAccumulator', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['manifestHash', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['settlementBountyLamports', getU64Encoder()], ['resultReceiptRentLamports', getU64Encoder()], ['remainingResultReceipts', getU64Encoder()], ['remainingSettlementBounties', getU64Encoder()], ['name', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['uri', fixZeroPodEncoderSize(getBytesEncoder(), 200)], ['bundleCount', getU32Encoder()], ['status', getU8Encoder()], ['resultReceiptsEnabled', getBooleanEncoder()], ['bump', getU8Encoder()], ['serviceVaultBump', getU8Encoder()], ['remaining', getArrayEncoder(getU64Encoder(), { size: getU16Encoder() })]]), (value) => ({ ...value, discriminator: 4 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['authority', getAddressEncoder()], ['boxMint', getAddressEncoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['id', getU64Encoder()], ['opensAt', getI64Encoder()], ['lockedAt', getI64Encoder()], ['totalBundles', getU64Encoder()], ['totalMinted', getU64Encoder()], ['remainingBundles', getU64Encoder()], ['pendingOpenings', getU64Encoder()], ['nextRequest', getU64Encoder()], ['nextAllocation', getU64Encoder()], ['revision', getU64Encoder()], ['manifestAccumulator', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['manifestHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['settlementBountyLamports', getU64Encoder()], ['resultReceiptRentLamports', getU64Encoder()], ['remainingResultReceipts', getU64Encoder()], ['remainingSettlementBounties', getU64Encoder()], ['name', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['uri', fixPinaPodEncoderSize(getBytesEncoder(), 200)], ['bundleCount', getU32Encoder()], ['status', getU8Encoder()], ['resultReceiptsEnabled', getBooleanEncoder()], ['bump', getU8Encoder()], ['serviceVaultBump', getU8Encoder()], ['remaining', getPinaPodBoundedArrayEncoder(getArrayEncoder(getU64Encoder(), { size: getU16Encoder() }), 1024)]]), (value) => ({ ...value, discriminator: 4 }));
 }
 
 /** Gets the decoder for {@link TemplateState} account data. */
 export function getTemplateStateDecoder(): Decoder<TemplateState> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(TEMPLATE_STATE_DISCRIMINATOR, getU8Decoder())], ['authority', getAddressDecoder()], ['boxMint', getAddressDecoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['id', getU64Decoder()], ['opensAt', getI64Decoder()], ['lockedAt', getI64Decoder()], ['totalBundles', getU64Decoder()], ['totalMinted', getU64Decoder()], ['remainingBundles', getU64Decoder()], ['pendingOpenings', getU64Decoder()], ['nextRequest', getU64Decoder()], ['nextAllocation', getU64Decoder()], ['revision', getU64Decoder()], ['manifestAccumulator', fixDecoderSize(getBytesDecoder(), 32)], ['manifestHash', fixDecoderSize(getBytesDecoder(), 32)], ['settlementBountyLamports', getU64Decoder()], ['resultReceiptRentLamports', getU64Decoder()], ['remainingResultReceipts', getU64Decoder()], ['remainingSettlementBounties', getU64Decoder()], ['name', fixDecoderSize(getBytesDecoder(), 32)], ['uri', fixDecoderSize(getBytesDecoder(), 200)], ['bundleCount', getU32Decoder()], ['status', getU8Decoder()], ['resultReceiptsEnabled', getZeroPodBooleanDecoder()], ['bump', getU8Decoder()], ['serviceVaultBump', getU8Decoder()], ['remaining', getArrayDecoder(getU64Decoder(), { size: getU16Decoder() })]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(TEMPLATE_STATE_DISCRIMINATOR, getU8Decoder())], ['authority', getAddressDecoder()], ['boxMint', getAddressDecoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['id', getU64Decoder()], ['opensAt', getI64Decoder()], ['lockedAt', getI64Decoder()], ['totalBundles', getU64Decoder()], ['totalMinted', getU64Decoder()], ['remainingBundles', getU64Decoder()], ['pendingOpenings', getU64Decoder()], ['nextRequest', getU64Decoder()], ['nextAllocation', getU64Decoder()], ['revision', getU64Decoder()], ['manifestAccumulator', fixDecoderSize(getBytesDecoder(), 32)], ['manifestHash', fixDecoderSize(getBytesDecoder(), 32)], ['settlementBountyLamports', getU64Decoder()], ['resultReceiptRentLamports', getU64Decoder()], ['remainingResultReceipts', getU64Decoder()], ['remainingSettlementBounties', getU64Decoder()], ['name', fixDecoderSize(getBytesDecoder(), 32)], ['uri', fixDecoderSize(getBytesDecoder(), 200)], ['bundleCount', getU32Decoder()], ['status', getU8Decoder()], ['resultReceiptsEnabled', getPinaPodBooleanDecoder()], ['bump', getU8Decoder()], ['serviceVaultBump', getU8Decoder()], ['remaining', getPinaPodBoundedArrayDecoder(getArrayDecoder(getU64Decoder(), { size: getU16Decoder() }), getPinaPodBoundedCountDecoder(getU16Decoder() , 1024), 1024)]]);
 }
 
 /** Gets the codec for {@link TemplateState} account data. */

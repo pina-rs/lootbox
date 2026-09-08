@@ -212,7 +212,7 @@ mod layout_tests {
 	#[test]
 	fn manifest_commits_to_bundle_and_service_terms() {
 		let mut bundle_bytes = [0; BundleState::SIZE];
-		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
+		let bundle = BundleState::initialize(&mut bundle_bytes, |_| Ok(())).expect("bundle");
 		bundle.index.set(3);
 		bundle.quantity.set(7);
 		bundle.asset_count = 1;
@@ -221,11 +221,12 @@ mod layout_tests {
 		bundle.amounts[..8].copy_from_slice(&43u64.to_le_bytes());
 		assert_ne!(first, next_manifest_accumulator(&[0; 32], bundle));
 
-		let mut template_bytes = [0; TemplateState::HEADER_SIZE];
-		let mut template = TemplateState::initialize(&mut template_bytes).expect("template");
-		template.total_bundles.set(7);
-		template.bundle_count.set(1);
-		template.manifest_accumulator = first;
+		let mut template = initialized_template_header(
+			&TemplateStatePatch::new()
+				.total_bundles(7)
+				.bundle_count(1)
+				.manifest_accumulator(first),
+		);
 		let address = Address::new_from_array([9; 32]);
 		let without_receipts = locked_manifest_hash(&address, &template);
 		template.result_receipts_enabled.set(true);
@@ -247,6 +248,15 @@ fn template_size(bundle_count: usize) -> Result<usize, ProgramError> {
 		.ok_or(ProgramError::ArithmeticOverflow)
 }
 
+#[cfg(test)]
+fn initialized_template_header(patch: &TemplateStatePatch<'_>) -> TemplateStateHeader {
+	let mut bytes = [0; TemplateState::MIN_SIZE];
+	TemplateState::initialize(&mut bytes, patch).expect("template");
+	let state = TemplateState::try_from_bytes(&bytes).expect("template");
+
+	*state
+}
+
 #[cfg(kani)]
 mod proofs {
 	use super::*;
@@ -265,45 +275,6 @@ mod proofs {
 			assert!(result.is_err());
 		}
 	}
-}
-
-/// Appends one compact tail element without a heap allocation.
-///
-/// Pinapod stores this sole tail field's `u16` element count at the end of the
-/// generated header. The account has already grown and its prior compact
-/// prefix has already been validated when this helper runs.
-fn append_remaining_slot(data: &mut [u8], index: usize, quantity: u64) -> Result<(), ProgramError> {
-	let new_count = index
-		.checked_add(1)
-		.ok_or(ProgramError::ArithmeticOverflow)?;
-	if data.len() != template_size(new_count)? {
-		return Err(ProgramError::InvalidAccountData);
-	}
-
-	let element_offset = TemplateState::HEADER_SIZE
-		.checked_add(
-			index
-				.checked_mul(size_of::<PodU64>())
-				.ok_or(ProgramError::ArithmeticOverflow)?,
-		)
-		.ok_or(ProgramError::ArithmeticOverflow)?;
-	data[element_offset..element_offset + size_of::<PodU64>()]
-		.copy_from_slice(&quantity.to_le_bytes());
-
-	let length_offset = TemplateState::HEADER_SIZE
-		.checked_sub(size_of::<u16>())
-		.ok_or(ProgramError::InvalidAccountData)?;
-	let encoded_count = u16::try_from(new_count)
-		.map_err(|_| ProgramError::InvalidAccountData)?
-		.to_le_bytes();
-	data[length_offset..TemplateState::HEADER_SIZE].copy_from_slice(&encoded_count);
-
-	let state = TemplateState::try_from_bytes(data)?;
-	if state.remaining().len() != new_count || state.remaining()[index].get() != quantity {
-		return Err(ProgramError::InvalidAccountData);
-	}
-
-	Ok(())
 }
 
 #[instruction(discriminator = LootboxInstruction::CreateTemplate)]
@@ -476,28 +447,20 @@ pub struct CancelBundleAccounts<'a> {
 	pub bundle: &'a mut AccountView,
 }
 
-fn as_template(account: &AccountView) -> Result<Ref<'_, TemplateStateHeader>, ProgramError> {
+fn as_template(account: &AccountView) -> Result<TemplateStateHeader, ProgramError> {
 	account.assert_owner(&ID)?;
+	let data = account.try_borrow()?;
+	let state = TemplateState::try_from_bytes(&data)?;
 
-	Ref::try_map(account.try_borrow()?, |data| {
-		TemplateState::validate_account_data(data)?;
-		<TemplateState as ZeroPodCompact>::header(data)
-			.map_err(|_| ProgramError::InvalidAccountData)
-	})
-	.map_err(|(_data, error)| error)
+	Ok(*state)
 }
 
-fn as_template_mut(
-	account: &mut AccountView,
-) -> Result<RefMut<'_, TemplateStateHeader>, ProgramError> {
-	account.assert_owner(&ID)?;
+fn update_template(account: &mut AccountView, patch: &TemplateStatePatch<'_>) -> ProgramResult {
+	account.assert_owner(&ID)?.assert_writable()?;
+	let mut data = account.try_borrow_mut()?;
+	TemplateState::update(&mut data, patch)?;
 
-	RefMut::try_map(account.try_borrow_mut()?, |data| {
-		TemplateState::validate_account_data(data)?;
-		<TemplateState as ZeroPodCompact>::header_mut(data)
-			.map_err(|_| ProgramError::InvalidAccountData)
-	})
-	.map_err(|(_data, error)| error)
+	Ok(())
 }
 
 fn assert_template(address: &Address, state: &TemplateStateHeader) -> ProgramResult {
@@ -705,32 +668,6 @@ fn remaining_at(state: &TemplateStateRef<'_>, index: usize) -> Result<u64, Progr
 		.ok_or(ProgramError::InvalidAccountData)
 }
 
-fn write_template_remaining(account: &mut AccountView, index: usize, value: u64) -> ProgramResult {
-	account.assert_owner(&ID)?.assert_writable()?;
-	let mut data = account.try_borrow_mut()?;
-	let remaining_len = TemplateState::try_from_bytes(&data)?.remaining().len();
-
-	if index >= remaining_len {
-		return Err(ProgramError::InvalidAccountData);
-	}
-
-	let start = TemplateState::HEADER_SIZE
-		.checked_add(
-			index
-				.checked_mul(size_of::<PodU64>())
-				.ok_or(ProgramError::ArithmeticOverflow)?,
-		)
-		.ok_or(ProgramError::ArithmeticOverflow)?;
-	let end = start
-		.checked_add(size_of::<PodU64>())
-		.ok_or(ProgramError::ArithmeticOverflow)?;
-	data.get_mut(start..end)
-		.ok_or(ProgramError::InvalidAccountData)?
-		.copy_from_slice(&value.to_le_bytes());
-
-	Ok(())
-}
-
 fn assert_template_mint(
 	mint: &AccountView,
 	template: &Address,
@@ -891,30 +828,22 @@ impl<'a> ProcessAccountInfos<'a> for CreateTemplateAccounts<'a> {
 			owner: &ID,
 			seeds: &seeds.as_slices(),
 			bump: args.bump,
-			space: TemplateState::HEADER_SIZE,
+			patch: TemplateStatePatch::new()
+				.authority(*self.authority.address())
+				.box_mint(*self.box_mint.address())
+				.oracle_program(args.oracle_program)
+				.oracle_queue(args.oracle_queue)
+				.id(args.id.get())
+				.opens_at(args.opens_at.get())
+				.name(args.name)
+				.uri(args.uri)
+				.settlement_bounty_lamports(args.settlement_bounty_lamports.get())
+				.result_receipts_enabled(args.result_receipts_enabled.get())
+				.status(TEMPLATE_DRAFT)
+				.bump(args.bump),
+			space: TemplateState::MIN_SIZE,
 		}
 		.invoke::<TemplateState>()?;
-		let mut account_data = self.template.try_borrow_mut()?;
-		let mut state = TemplateState::try_from_bytes_mut(&mut account_data)?;
-		state.authority = *self.authority.address();
-		state.box_mint = *self.box_mint.address();
-		state.oracle_program = args.oracle_program;
-		state.oracle_queue = args.oracle_queue;
-		state.id.set(args.id.get());
-		state.opens_at.set(args.opens_at.get());
-		state.name = args.name;
-		state.uri = args.uri;
-		state
-			.settlement_bounty_lamports
-			.set(args.settlement_bounty_lamports.get());
-		state
-			.result_receipts_enabled
-			.set(args.result_receipts_enabled.get());
-		state.status = TEMPLATE_DRAFT;
-		state.bump = args.bump;
-		state
-			.commit()
-			.map_err(|_| ProgramError::InvalidAccountData)?;
 
 		Ok(())
 	}
@@ -947,8 +876,6 @@ impl<'a> ProcessAccountInfos<'a> for AddBundleAccounts<'a> {
 		if self.bundle.assert_canonical_bump(&seeds.as_slices(), &ID)? != args.bump {
 			return Err(ProgramError::InvalidSeeds);
 		}
-
-		drop(state);
 
 		CreateProgramAccountWithBump {
 			account: self.bundle,
@@ -1027,7 +954,6 @@ impl<'a> ProcessAccountInfos<'a> for FundSolPrizeAccounts<'a> {
 			9,
 		)?;
 		drop(bundle);
-		drop(state);
 
 		system::instructions::Transfer {
 			from: self.authority,
@@ -1060,7 +986,6 @@ impl<'a> ProcessAccountInfos<'a> for FundQuoteSolPrizeAccounts<'a> {
 			9,
 		)?;
 		drop(bundle);
-		drop(state);
 
 		system::instructions::Transfer {
 			from: self.authority,
@@ -1139,7 +1064,6 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 			decimals,
 		)?;
 		drop(bundle);
-		drop(state);
 
 		if token_program == token_2022::ID {
 			self.token_program.assert_address(&token_2022::ID)?;
@@ -1215,7 +1139,6 @@ impl<'a> ProcessAccountInfos<'a> for FundQuoteTokenPrizeAccounts<'a> {
 			decimals,
 		)?;
 		drop(bundle);
-		drop(state);
 
 		if token_program == token_2022::ID {
 			self.token_program.assert_address(&token_2022::ID)?;
@@ -1279,7 +1202,6 @@ impl<'a> ProcessAccountInfos<'a> for FundMintPrizeAccounts<'a> {
 		}
 		let _ = record_prize(&mut bundle, self.mint.address(), 1, PRIZE_MINT_BADGE, 0)?;
 		drop(bundle);
-		drop(state);
 
 		if token_program == token_2022::ID {
 			self.token_program.assert_address(&token_2022::ID)?;
@@ -1307,7 +1229,7 @@ impl<'a> ProcessAccountInfos<'a> for SealTemplateAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = SealTemplateInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
-		let mut state = as_template_mut(self.template)?;
+		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
 		if state.status != TEMPLATE_DRAFT {
@@ -1318,7 +1240,10 @@ impl<'a> ProcessAccountInfos<'a> for SealTemplateAccounts<'a> {
 			return Err(lootbox_error(LootboxError::IncompleteConfiguration));
 		}
 
-		state.status = TEMPLATE_LIVE;
+		update_template(
+			self.template,
+			&TemplateStatePatch::new().status(TEMPLATE_LIVE),
+		)?;
 
 		Ok(())
 	}
@@ -1415,7 +1340,6 @@ impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 		let authority = state.authority;
 		let id = state.id.get();
 		let bump = state.bump;
-		drop(state);
 
 		if service_budget != 0 {
 			let service_vault_bump = [args.service_vault_bump];
@@ -1444,21 +1368,20 @@ impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 		)
 		.invoke_signed(&[signer.as_signer()])?;
 
-		let mut state = as_template_mut(self.template)?;
-		state.locked_at.set(now);
-		state.manifest_hash = manifest_hash;
-		state.service_vault_bump = args.service_vault_bump;
-		state.result_receipt_rent_lamports.set(receipt_rent);
-		state
-			.remaining_result_receipts
-			.set(if receipts_enabled { total_bundles } else { 0 });
-		state
-			.remaining_settlement_bounties
-			.set(if settlement_bounty == 0 {
-				0
-			} else {
-				total_bundles
-			});
+		update_template(
+			self.template,
+			&TemplateStatePatch::new()
+				.locked_at(now)
+				.manifest_hash(manifest_hash)
+				.service_vault_bump(args.service_vault_bump)
+				.result_receipt_rent_lamports(receipt_rent)
+				.remaining_result_receipts(if receipts_enabled { total_bundles } else { 0 })
+				.remaining_settlement_bounties(if settlement_bounty == 0 {
+					0
+				} else {
+					total_bundles
+				}),
+		)?;
 
 		Ok(())
 	}
@@ -1541,27 +1464,27 @@ impl<'a> ProcessAccountInfos<'a> for ActivateBundleAccounts<'a> {
 			.checked_add(1)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
 		let manifest_accumulator = next_manifest_accumulator(&state.manifest_accumulator, &bundle);
+		let mut remaining = alloc::vec::Vec::with_capacity(index + 1);
+		remaining.extend_from_slice(state.remaining());
+		remaining.push(PodU64::from(quantity));
 		drop(bundle);
 		drop(template_data);
 
-		let target_size = template_size(index + 1)?;
-		ReallocCompactAccount {
+		let encoded_size = UpdateResizableAccount {
 			account: self.template,
-			payer: self.authority,
-			new_size: target_size,
+			rent_account: self.authority,
 			program_id: &ID,
+			patch: TemplateStatePatch::new()
+				.remaining_bundles(remaining_bundles)
+				.total_bundles(total_bundles)
+				.revision(revision)
+				.bundle_count(bundle_count)
+				.manifest_accumulator(manifest_accumulator)
+				.replace_remaining(&remaining),
 		}
 		.invoke::<TemplateState>()?;
-
-		{
-			let mut template_data = self.template.try_borrow_mut()?;
-			let mut state = TemplateState::try_from_bytes_mut(&mut template_data)?;
-			state.remaining_bundles.set(remaining_bundles);
-			state.total_bundles.set(total_bundles);
-			state.revision.set(revision);
-			state.bundle_count.set(bundle_count);
-			state.manifest_accumulator = manifest_accumulator;
-			append_remaining_slot(&mut template_data, index, quantity)?;
+		if encoded_size != template_size(index + 1)? {
+			return Err(ProgramError::InvalidAccountData);
 		}
 
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
@@ -1596,7 +1519,6 @@ impl<'a> ProcessAccountInfos<'a> for CancelBundleAccounts<'a> {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
 		drop(bundle);
-		drop(state);
 
 		self.bundle.close_account_zeroed(self.authority)
 	}
@@ -1606,7 +1528,7 @@ impl<'a> ProcessAccountInfos<'a> for MintTemplateBoxesAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = MintTemplateBoxesInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
-		let mut state = as_template_mut(self.template)?;
+		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
@@ -1627,10 +1549,12 @@ impl<'a> ProcessAccountInfos<'a> for MintTemplateBoxesAccounts<'a> {
 				)?,
 		);
 		let minted = validate_issuance(&state, supply, args.amount.get())?;
-		state.total_minted.set(minted);
 		let authority = state.authority;
 		let seeds = TemplateState::seeds(&authority, state.id.get()).with_bump(state.bump);
-		drop(state);
+		update_template(
+			self.template,
+			&TemplateStatePatch::new().total_minted(minted),
+		)?;
 		let signer = seeds.to_signer();
 
 		token_2022::instructions::MintTo::new(
@@ -1649,8 +1573,7 @@ mod market_lock_tests {
 
 	#[test]
 	fn market_lock_requires_exact_pristine_supply_before_reveal() {
-		let mut bytes = [0; TemplateState::HEADER_SIZE];
-		let mut state = TemplateState::initialize(&mut bytes).expect("template");
+		let mut state = initialized_template_header(&TemplateStatePatch::new());
 		state.status = TEMPLATE_LIVE;
 		state.bundle_count.set(2);
 		state.total_bundles.set(7);
@@ -1673,8 +1596,7 @@ mod market_lock_tests {
 
 	#[test]
 	fn recovery_retirement_only_allows_staging_cleanup() {
-		let mut bytes = [0; TemplateState::HEADER_SIZE];
-		let mut state = TemplateState::initialize(&mut bytes).expect("template");
+		let mut state = initialized_template_header(&TemplateStatePatch::new());
 		state.status = TEMPLATE_RETIRED;
 
 		assert_eq!(assert_treasury_unlocked(&state), Ok(()));

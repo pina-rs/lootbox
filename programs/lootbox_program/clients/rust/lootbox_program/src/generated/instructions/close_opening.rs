@@ -8,8 +8,6 @@
 	clippy::too_many_arguments
 )]
 
-use pina::pinapod;
-
 pub const CLOSE_OPENING_DISCRIMINATOR: u8 = 8u8;
 
 /// Accounts.
@@ -89,21 +87,20 @@ pub struct CloseOpeningInstructionData {
 
 impl CloseOpeningInstructionData {
 	pub fn new(configure: impl FnOnce(&mut CloseOpeningInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; <CloseOpeningInstructionWire as pina::ZeroPodFixed>::SIZE];
-		{
-			let data = <CloseOpeningInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		let mut bytes = vec![0u8; core::mem::size_of::<CloseOpeningInstructionWireZc>()];
+		<CloseOpeningInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = CLOSE_OPENING_DISCRIMINATOR;
-		}
-		<CloseOpeningInstructionWire as pina::ZeroPodFixed>::validate(&bytes)
+			Ok(())
+		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }
 
 #[doc(hidden)]
-#[derive(pina::ZeroPod)]
+#[derive(pina::PinaPod)]
+#[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct CloseOpeningInstructionWire {
 	pub discriminator: u8,
 }

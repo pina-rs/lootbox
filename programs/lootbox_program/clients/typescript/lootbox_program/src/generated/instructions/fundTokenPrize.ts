@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getZeroPodBooleanDecoder, getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { getPinaPodBooleanDecoder, getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { combineCodec, getBooleanDecoder, getBooleanEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -27,7 +27,7 @@ export function getFundTokenPrizeInstructionDataEncoder(): FixedSizeEncoder<Fund
 }
 
 export function getFundTokenPrizeInstructionDataDecoder(): FixedSizeDecoder<FundTokenPrizeInstructionData> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(FUND_TOKEN_PRIZE_DISCRIMINATOR, getU8Decoder())], ['amountPerWin', getU64Decoder()], ['isNft', getZeroPodBooleanDecoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(FUND_TOKEN_PRIZE_DISCRIMINATOR, getU8Decoder())], ['amountPerWin', getU64Decoder()], ['isNft', getPinaPodBooleanDecoder()]]);
 }
 
 export function getFundTokenPrizeInstructionDataCodec(): FixedSizeCodec<FundTokenPrizeInstructionDataArgs, FundTokenPrizeInstructionData> {

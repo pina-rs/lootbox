@@ -2,6 +2,7 @@
 // ignore_for_file: type=lint
 
 
+import '../pina_pod_codecs.dart';
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -219,7 +220,7 @@ Decoder<TemplateState> getTemplateStateDecoder() {
     ('resultReceiptsEnabled', getBooleanDecoder()),
     ('bump', getU8Decoder()),
     ('serviceVaultBump', getU8Decoder()),
-    ('remaining', getArrayDecoder(getU64Decoder(), size: PrefixedArraySize(getU16Decoder()))),
+    ('remaining', getPinaPodBoundedArrayDecoder(getArrayDecoder(getU64Decoder(), size: PrefixedArraySize(getU16Decoder())), getPinaPodBoundedCountDecoder(getU16Decoder(), 1024), 1024)),
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {

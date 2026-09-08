@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -27,7 +27,7 @@ export function getAddBundleInstructionDataEncoder(): FixedSizeEncoder<AddBundle
 }
 
 export function getAddBundleInstructionDataDecoder(): FixedSizeDecoder<AddBundleInstructionData> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(ADD_BUNDLE_DISCRIMINATOR, getU8Decoder())], ['quantity', getU64Decoder()], ['assetCount', getU8Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(ADD_BUNDLE_DISCRIMINATOR, getU8Decoder())], ['quantity', getU64Decoder()], ['assetCount', getU8Decoder()], ['bump', getU8Decoder()]]);
 }
 
 export function getAddBundleInstructionDataCodec(): FixedSizeCodec<AddBundleInstructionDataArgs, AddBundleInstructionData> {

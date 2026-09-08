@@ -79,7 +79,6 @@ impl<'a> ProcessAccountInfos<'a> for CloseTemplateOpeningAccounts<'a> {
 			return Err(lootbox_error(LootboxError::InvalidRandomness));
 		}
 		drop(opening);
-		drop(state);
 
 		let opening_signer = opening_seeds_with_bump.to_signer();
 		let signers = [opening_signer.as_signer()];
@@ -129,7 +128,6 @@ impl<'a> ProcessAccountInfos<'a> for CloseServiceVaultAccounts<'a> {
 		}
 
 		let service_vault_bump = state.service_vault_bump;
-		drop(state);
 		let balance = self.service_vault.lamports();
 		if balance == 0 {
 			return Ok(());

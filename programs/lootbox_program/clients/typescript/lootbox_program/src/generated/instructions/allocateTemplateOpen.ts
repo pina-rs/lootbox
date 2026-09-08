@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -27,7 +27,7 @@ export function getAllocateTemplateOpenInstructionDataEncoder(): FixedSizeEncode
 }
 
 export function getAllocateTemplateOpenInstructionDataDecoder(): FixedSizeDecoder<AllocateTemplateOpenInstructionData> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR, getU8Decoder())], ['resultReceiptBump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR, getU8Decoder())], ['resultReceiptBump', getU8Decoder()]]);
 }
 
 export function getAllocateTemplateOpenInstructionDataCodec(): FixedSizeCodec<AllocateTemplateOpenInstructionDataArgs, AllocateTemplateOpenInstructionData> {

@@ -8,8 +8,6 @@
 	clippy::too_many_arguments
 )]
 
-use pina::pinapod;
-
 pub const ADD_BUNDLE_DISCRIMINATOR: u8 = 11u8;
 
 /// Accounts.
@@ -62,21 +60,20 @@ pub struct AddBundleInstructionData {
 
 impl AddBundleInstructionData {
 	pub fn new(configure: impl FnOnce(&mut AddBundleInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; <AddBundleInstructionWire as pina::ZeroPodFixed>::SIZE];
-		{
-			let data = <AddBundleInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		let mut bytes = vec![0u8; core::mem::size_of::<AddBundleInstructionWireZc>()];
+		<AddBundleInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = ADD_BUNDLE_DISCRIMINATOR;
-		}
-		<AddBundleInstructionWire as pina::ZeroPodFixed>::validate(&bytes)
+			Ok(())
+		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }
 
 #[doc(hidden)]
-#[derive(pina::ZeroPod)]
+#[derive(pina::PinaPod)]
+#[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct AddBundleInstructionWire {
 	pub discriminator: u8,
 	pub quantity: u64,

@@ -28,7 +28,8 @@ fn parse_instruction_rejects_wrong_program_id() {
 #[test]
 fn add_outcome_instruction_roundtrips() {
 	let mut data = [0u8; AddOutcomeInstruction::SIZE];
-	let args = AddOutcomeInstruction::initialize(&mut data).expect("instruction storage");
+	let args =
+		AddOutcomeInstruction::initialize(&mut data, |_| Ok(())).expect("instruction storage");
 	args.weight.set(25);
 	args.reward_lamports.set(1_000_000);
 

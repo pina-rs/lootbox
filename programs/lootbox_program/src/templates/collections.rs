@@ -616,7 +616,6 @@ impl<'a> ProcessAccountInfos<'a> for FundMetadataNftPrizeAccounts<'a> {
 		}
 		record_prize(&mut bundle, self.mint.address(), 1, PRIZE_METADATA_NFT, 0)?;
 		drop(bundle);
-		drop(state);
 
 		invoke_metadata_transfer(
 			&MetadataTransfer {
@@ -690,7 +689,6 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMetadataNftPrizeAccounts<'a> {
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
 		drop(opening);
-		drop(state);
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
 
@@ -769,7 +767,8 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMetadataNftPrizeAccounts<'a> {
 			None
 		};
 		if reclaim_amount(
-			&state,
+			state.status,
+			state.pending_openings.get(),
 			&mut bundle,
 			supply,
 			args.asset_index,
@@ -829,7 +828,6 @@ impl<'a> ProcessAccountInfos<'a> for FundCoreAssetPrizeAccounts<'a> {
 		}
 		record_prize(&mut bundle, self.asset.address(), 1, PRIZE_CORE_ASSET, 0)?;
 		drop(bundle);
-		drop(state);
 
 		invoke_core_transfer(
 			&CoreTransfer {
@@ -883,7 +881,6 @@ impl<'a> ProcessAccountInfos<'a> for ClaimCoreAssetPrizeAccounts<'a> {
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
 		drop(opening);
-		drop(state);
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
 
@@ -942,7 +939,8 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCoreAssetPrizeAccounts<'a> {
 			None
 		};
 		if reclaim_amount(
-			&state,
+			state.status,
+			state.pending_openings.get(),
 			&mut bundle,
 			supply,
 			args.asset_index,
@@ -990,7 +988,6 @@ impl<'a> ProcessAccountInfos<'a> for FundCompressedNftPrizeAccounts<'a> {
 		}
 		record_prize(&mut bundle, &asset, 1, PRIZE_COMPRESSED_NFT, 0)?;
 		drop(bundle);
-		drop(state);
 		let context = CompressedTransfer {
 			tree_config: self.tree_config,
 			owner: self.authority,
@@ -1045,7 +1042,6 @@ impl<'a> ProcessAccountInfos<'a> for ClaimCompressedNftPrizeAccounts<'a> {
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
 		drop(opening);
-		drop(state);
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
 		let context = CompressedTransfer {
@@ -1106,7 +1102,8 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCompressedNftPrizeAccounts<'a> {
 			None
 		};
 		if reclaim_amount(
-			&state,
+			state.status,
+			state.pending_openings.get(),
 			&mut bundle,
 			supply,
 			args.asset_index,

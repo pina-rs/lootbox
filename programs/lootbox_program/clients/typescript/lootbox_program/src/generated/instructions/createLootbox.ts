@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { combineCodec, getAddressDecoder, getAddressEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { findVaultPda } from '../pdas';
@@ -28,7 +28,7 @@ export function getCreateLootboxInstructionDataEncoder(): FixedSizeEncoder<Creat
 }
 
 export function getCreateLootboxInstructionDataDecoder(): FixedSizeDecoder<CreateLootboxInstructionData> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(CREATE_LOOTBOX_DISCRIMINATOR, getU8Decoder())], ['id', getU64Decoder()], ['maxSupply', getU64Decoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['bump', getU8Decoder()], ['vaultBump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(CREATE_LOOTBOX_DISCRIMINATOR, getU8Decoder())], ['id', getU64Decoder()], ['maxSupply', getU64Decoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['bump', getU8Decoder()], ['vaultBump', getU8Decoder()]]);
 }
 
 export function getCreateLootboxInstructionDataCodec(): FixedSizeCodec<CreateLootboxInstructionDataArgs, CreateLootboxInstructionData> {

@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixZeroPodEncoderSize, getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlySignerAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -23,11 +23,11 @@ export type FundCompressedNftPrizeInstructionData = { discriminator: number; roo
 export type FundCompressedNftPrizeInstructionDataArgs = { root: ReadonlyUint8Array; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: number | bigint; index: number;  };
 
 export function getFundCompressedNftPrizeInstructionDataEncoder(): FixedSizeEncoder<FundCompressedNftPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['root', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['dataHash', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()]]), (value) => ({ ...value, discriminator: 33 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['root', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()]]), (value) => ({ ...value, discriminator: 33 }));
 }
 
 export function getFundCompressedNftPrizeInstructionDataDecoder(): FixedSizeDecoder<FundCompressedNftPrizeInstructionData> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(FUND_COMPRESSED_NFT_PRIZE_DISCRIMINATOR, getU8Decoder())], ['root', fixDecoderSize(getBytesDecoder(), 32)], ['dataHash', fixDecoderSize(getBytesDecoder(), 32)], ['creatorHash', fixDecoderSize(getBytesDecoder(), 32)], ['nonce', getU64Decoder()], ['index', getU32Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(FUND_COMPRESSED_NFT_PRIZE_DISCRIMINATOR, getU8Decoder())], ['root', fixDecoderSize(getBytesDecoder(), 32)], ['dataHash', fixDecoderSize(getBytesDecoder(), 32)], ['creatorHash', fixDecoderSize(getBytesDecoder(), 32)], ['nonce', getU64Decoder()], ['index', getU32Decoder()]]);
 }
 
 export function getFundCompressedNftPrizeInstructionDataCodec(): FixedSizeCodec<FundCompressedNftPrizeInstructionDataArgs, FundCompressedNftPrizeInstructionData> {

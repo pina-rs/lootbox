@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixZeroPodEncoderSize, getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findResultReceiptPda, type ResultReceiptSeeds } from '../pdas';
 
@@ -25,12 +25,12 @@ export type ResultReceiptStateArgs = { template: Address; opening: Address; boxA
 
 /** Gets the encoder for {@link ResultReceiptStateArgs} account data. */
 export function getResultReceiptStateEncoder(): FixedSizeEncoder<ResultReceiptStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['template', getAddressEncoder()], ['opening', getAddressEncoder()], ['boxAuthority', getAddressEncoder()], ['beneficiary', getAddressEncoder()], ['consumerProgram', getAddressEncoder()], ['consumerContext', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['manifestHash', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['randomness', getAddressEncoder()], ['sequence', getU64Encoder()], ['selectedBundle', getU32Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 7 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['template', getAddressEncoder()], ['opening', getAddressEncoder()], ['boxAuthority', getAddressEncoder()], ['beneficiary', getAddressEncoder()], ['consumerProgram', getAddressEncoder()], ['consumerContext', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['manifestHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['randomness', getAddressEncoder()], ['sequence', getU64Encoder()], ['selectedBundle', getU32Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 7 }));
 }
 
 /** Gets the decoder for {@link ResultReceiptState} account data. */
 export function getResultReceiptStateDecoder(): FixedSizeDecoder<ResultReceiptState> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(RESULT_RECEIPT_STATE_DISCRIMINATOR, getU8Decoder())], ['template', getAddressDecoder()], ['opening', getAddressDecoder()], ['boxAuthority', getAddressDecoder()], ['beneficiary', getAddressDecoder()], ['consumerProgram', getAddressDecoder()], ['consumerContext', fixDecoderSize(getBytesDecoder(), 32)], ['manifestHash', fixDecoderSize(getBytesDecoder(), 32)], ['randomness', getAddressDecoder()], ['sequence', getU64Decoder()], ['selectedBundle', getU32Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(RESULT_RECEIPT_STATE_DISCRIMINATOR, getU8Decoder())], ['template', getAddressDecoder()], ['opening', getAddressDecoder()], ['boxAuthority', getAddressDecoder()], ['beneficiary', getAddressDecoder()], ['consumerProgram', getAddressDecoder()], ['consumerContext', fixDecoderSize(getBytesDecoder(), 32)], ['manifestHash', fixDecoderSize(getBytesDecoder(), 32)], ['randomness', getAddressDecoder()], ['sequence', getU64Decoder()], ['selectedBundle', getU32Decoder()], ['bump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link ResultReceiptState} account data. */

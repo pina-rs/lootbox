@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixZeroPodEncoderSize, getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { combineCodec, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlySignerAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -23,11 +23,11 @@ export type RequestTemplateOpenInstructionData = { discriminator: number; recent
 export type RequestTemplateOpenInstructionDataArgs = { recentSlot: number | bigint; beneficiary: Address; consumerProgram: Address; consumerContext: ReadonlyUint8Array; bump: number;  };
 
 export function getRequestTemplateOpenInstructionDataEncoder(): FixedSizeEncoder<RequestTemplateOpenInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['recentSlot', getU64Encoder()], ['beneficiary', getAddressEncoder()], ['consumerProgram', getAddressEncoder()], ['consumerContext', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 16 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['recentSlot', getU64Encoder()], ['beneficiary', getAddressEncoder()], ['consumerProgram', getAddressEncoder()], ['consumerContext', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 16 }));
 }
 
 export function getRequestTemplateOpenInstructionDataDecoder(): FixedSizeDecoder<RequestTemplateOpenInstructionData> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(REQUEST_TEMPLATE_OPEN_DISCRIMINATOR, getU8Decoder())], ['recentSlot', getU64Decoder()], ['beneficiary', getAddressDecoder()], ['consumerProgram', getAddressDecoder()], ['consumerContext', fixDecoderSize(getBytesDecoder(), 32)], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(REQUEST_TEMPLATE_OPEN_DISCRIMINATOR, getU8Decoder())], ['recentSlot', getU64Decoder()], ['beneficiary', getAddressDecoder()], ['consumerProgram', getAddressDecoder()], ['consumerContext', fixDecoderSize(getBytesDecoder(), 32)], ['bump', getU8Decoder()]]);
 }
 
 export function getRequestTemplateOpenInstructionDataCodec(): FixedSizeCodec<RequestTemplateOpenInstructionDataArgs, RequestTemplateOpenInstructionData> {

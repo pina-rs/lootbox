@@ -350,7 +350,7 @@ fn create_lootbox_data(
 	vault_bump: u8,
 ) -> Vec<u8> {
 	let mut data = vec![0u8; CreateLootboxInstruction::SIZE];
-	let args = CreateLootboxInstruction::initialize(&mut data).expect("create data");
+	let args = CreateLootboxInstruction::initialize(&mut data, |_| Ok(())).expect("create data");
 	args.id.set(id);
 	args.max_supply.set(max_supply);
 	args.oracle_program = SWITCHBOARD_DEVNET_ID;
@@ -362,7 +362,7 @@ fn create_lootbox_data(
 
 fn add_outcome_data(weight: u64, reward_lamports: u64) -> Vec<u8> {
 	let mut data = vec![0u8; AddOutcomeInstruction::SIZE];
-	let args = AddOutcomeInstruction::initialize(&mut data).expect("outcome data");
+	let args = AddOutcomeInstruction::initialize(&mut data, |_| Ok(())).expect("outcome data");
 	args.weight.set(weight);
 	args.reward_lamports.set(reward_lamports);
 	data
@@ -370,7 +370,7 @@ fn add_outcome_data(weight: u64, reward_lamports: u64) -> Vec<u8> {
 
 fn deposit_data(lamports: u64) -> Vec<u8> {
 	let mut data = vec![0u8; DepositInstruction::SIZE];
-	DepositInstruction::initialize(&mut data)
+	DepositInstruction::initialize(&mut data, |_| Ok(()))
 		.expect("deposit data")
 		.lamports
 		.set(lamports);
@@ -379,7 +379,7 @@ fn deposit_data(lamports: u64) -> Vec<u8> {
 
 fn mint_data(amount: u64) -> Vec<u8> {
 	let mut data = vec![0u8; MintBoxesInstruction::SIZE];
-	MintBoxesInstruction::initialize(&mut data)
+	MintBoxesInstruction::initialize(&mut data, |_| Ok(()))
 		.expect("mint data")
 		.amount
 		.set(amount);
@@ -388,7 +388,7 @@ fn mint_data(amount: u64) -> Vec<u8> {
 
 fn request_data(recent_slot: u64, bump: u8) -> Vec<u8> {
 	let mut data = vec![0u8; RequestOpenInstruction::SIZE];
-	let args = RequestOpenInstruction::initialize(&mut data).expect("request data");
+	let args = RequestOpenInstruction::initialize(&mut data, |_| Ok(())).expect("request data");
 	args.recent_slot.set(recent_slot);
 	args.bump = bump;
 	data
@@ -441,7 +441,7 @@ fn request_accounts(
 
 fn settle_data(value: [u8; 32]) -> Vec<u8> {
 	let mut data = vec![0u8; SettleOpenInstruction::SIZE];
-	let args = SettleOpenInstruction::initialize(&mut data).expect("settle data");
+	let args = SettleOpenInstruction::initialize(&mut data, |_| Ok(())).expect("settle data");
 	args.signature.fill(7);
 	args.recovery_id = 1;
 	args.value = value;
@@ -508,7 +508,7 @@ fn close_accounts(
 
 fn withdraw_data(lamports: u64) -> Vec<u8> {
 	let mut data = vec![0u8; WithdrawSurplusInstruction::SIZE];
-	WithdrawSurplusInstruction::initialize(&mut data)
+	WithdrawSurplusInstruction::initialize(&mut data, |_| Ok(()))
 		.expect("withdraw data")
 		.lamports
 		.set(lamports);

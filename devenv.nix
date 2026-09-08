@@ -89,8 +89,8 @@ in
     '';
     "install:all".exec = ''
       set -euo pipefail
-      pnpm install
-      (cd sdks/dart && dart pub get)
+      pnpm install --frozen-lockfile
+      (cd sdks/dart && dart pub get --enforce-lockfile)
       pnpm --dir apps/web exec playwright install chromium
     '';
     "fix:format".exec = ''

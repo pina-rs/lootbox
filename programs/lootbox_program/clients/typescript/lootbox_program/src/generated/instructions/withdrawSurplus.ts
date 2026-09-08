@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -27,7 +27,7 @@ export function getWithdrawSurplusInstructionDataEncoder(): FixedSizeEncoder<Wit
 }
 
 export function getWithdrawSurplusInstructionDataDecoder(): FixedSizeDecoder<WithdrawSurplusInstructionData> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(WITHDRAW_SURPLUS_DISCRIMINATOR, getU8Decoder())], ['lamports', getU64Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(WITHDRAW_SURPLUS_DISCRIMINATOR, getU8Decoder())], ['lamports', getU64Decoder()]]);
 }
 
 export function getWithdrawSurplusInstructionDataCodec(): FixedSizeCodec<WithdrawSurplusInstructionDataArgs, WithdrawSurplusInstructionData> {

@@ -77,26 +77,31 @@ impl<'a> ProcessAccountInfos<'a> for RetireTemplateAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = RetireTemplateInstruction::try_from_bytes(data)?;
 		let address = *self.template.address();
-		let mut state = as_template_mut(self.template)?;
+		let state = as_template(self.template)?;
 		assert_template(&address, &state)?;
 		assert_template_authority(self.authority, &state)?;
 		validate_retirement(&state, sysvars::clock::Clock::get()?.unix_timestamp)?;
 
-		state.status = TEMPLATE_RETIRED;
-		if state.locked_at.get() == 0 {
+		let patch = if state.locked_at.get() == 0 {
 			// The optional services are funded only by a successful market lock.
 			// A missed-deadline recovery therefore preserves opening rights without
 			// promising receipts or bounties that were never collateralized.
-			state.result_receipts_enabled.set(false);
-			state.settlement_bounty_lamports.set(0);
-		}
+			TemplateStatePatch::new()
+				.status(TEMPLATE_RETIRED)
+				.result_receipts_enabled(false)
+				.settlement_bounty_lamports(0)
+		} else {
+			TemplateStatePatch::new().status(TEMPLATE_RETIRED)
+		};
+		update_template(self.template, &patch)?;
 
 		Ok(())
 	}
 }
 
 pub(super) fn reclaim_amount(
-	state: &TemplateStateHeader,
+	template_status: u8,
+	pending_openings: u64,
 	bundle: &mut BundleStateZc,
 	supply: u64,
 	asset_index: u8,
@@ -119,8 +124,7 @@ pub(super) fn reclaim_amount(
 	let unused = match bundle.status {
 		BUNDLE_FUNDING => bundle.quantity.get(),
 		BUNDLE_ACTIVE => {
-			if state.status != TEMPLATE_RETIRED || supply != 0 || state.pending_openings.get() != 0
-			{
+			if template_status != TEMPLATE_RETIRED || supply != 0 || pending_openings != 0 {
 				return Err(lootbox_error(LootboxError::InvalidState));
 			}
 			active_remaining.ok_or(ProgramError::InvalidAccountData)?
@@ -156,19 +160,15 @@ mod proofs {
 		kani::assume(claimed <= quantity);
 		kani::assume(active_remaining <= quantity - claimed);
 
-		let mut template_bytes = [0; TemplateState::HEADER_SIZE];
-		let mut state = TemplateState::initialize(&mut template_bytes).expect("template");
-		state.status = TEMPLATE_RETIRED;
-
 		let mut bundle_bytes = [0; BundleState::SIZE];
-		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
+		let bundle = BundleState::initialize(&mut bundle_bytes, |_| Ok(())).expect("bundle");
 		bundle.quantity.set(quantity);
 		bundle.funded_assets = 1;
 		bundle.status = BUNDLE_ACTIVE;
 		write_slot(&mut bundle.claimed, 0, claimed).expect("claimed slot");
 		write_slot(&mut bundle.amounts, 0, 1).expect("amount slot");
 
-		let reclaimed = reclaim_amount(&state, bundle, 0, 0, Some(active_remaining))
+		let reclaimed = reclaim_amount(TEMPLATE_RETIRED, 0, bundle, 0, 0, Some(active_remaining))
 			.expect("valid retirement recovery");
 		let released = claimed + active_remaining;
 
@@ -177,7 +177,7 @@ mod proofs {
 		assert_eq!(bundle.reclaimed_mask, 1);
 		assert_eq!(quantity - released, quantity - claimed - active_remaining);
 
-		assert!(reclaim_amount(&state, bundle, 0, 0, Some(active_remaining)).is_err());
+		assert!(reclaim_amount(TEMPLATE_RETIRED, 0, bundle, 0, 0, Some(active_remaining)).is_err());
 		assert_eq!(read_slot(&bundle.claimed, 0), Ok(released));
 	}
 }
@@ -210,7 +210,8 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimSolPrizeAccounts<'a> {
 			None
 		};
 		let amount = reclaim_amount(
-			&state,
+			state.status,
+			state.pending_openings.get(),
 			&mut bundle,
 			supply,
 			args.asset_index,
@@ -288,7 +289,8 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 			None
 		};
 		let amount = reclaim_amount(
-			&state,
+			state.status,
+			state.pending_openings.get(),
 			&mut bundle,
 			supply,
 			args.asset_index,
@@ -377,7 +379,8 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMintPrizeAccounts<'a> {
 			None
 		};
 		let _ = reclaim_amount(
-			&state,
+			state.status,
+			state.pending_openings.get(),
 			&mut bundle,
 			supply,
 			args.asset_index,
@@ -422,8 +425,7 @@ mod tests {
 
 	#[test]
 	fn issued_unlocked_treasury_can_only_recover_after_its_deadline() {
-		let mut bytes = [0; TemplateState::HEADER_SIZE];
-		let mut state = TemplateState::initialize(&mut bytes).expect("template");
+		let mut state = initialized_template_header(&TemplateStatePatch::new());
 		state.status = TEMPLATE_LIVE;
 		state.total_minted.set(1);
 		state.opens_at.set(1_001);
@@ -436,25 +438,64 @@ mod tests {
 
 	#[test]
 	fn retirement_preserves_allocated_but_unclaimed_prizes() {
-		let mut bytes = [0; TemplateState::HEADER_SIZE];
-		let mut state = TemplateState::initialize(&mut bytes).expect("template");
+		let mut state = initialized_template_header(&TemplateStatePatch::new());
 		state.status = TEMPLATE_RETIRED;
 		let mut bundle_bytes = [0; BundleState::SIZE];
-		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
+		let bundle = BundleState::initialize(&mut bundle_bytes, |_| Ok(())).expect("bundle");
 		bundle.quantity.set(5);
 		bundle.funded_assets = 1;
 		bundle.status = BUNDLE_ACTIVE;
 		write_slot(&mut bundle.amounts, 0, 100).expect("amount");
-		assert!(reclaim_amount(&state, bundle, 1, 0, Some(3)).is_err());
+		assert!(
+			reclaim_amount(
+				state.status,
+				state.pending_openings.get(),
+				bundle,
+				1,
+				0,
+				Some(3),
+			)
+			.is_err()
+		);
 		state.pending_openings.set(1);
-		assert!(reclaim_amount(&state, bundle, 0, 0, Some(3)).is_err());
+		assert!(
+			reclaim_amount(
+				state.status,
+				state.pending_openings.get(),
+				bundle,
+				0,
+				0,
+				Some(3),
+			)
+			.is_err()
+		);
 		state.pending_openings.set(0);
-		assert_eq!(reclaim_amount(&state, bundle, 0, 0, Some(3)), Ok(300));
+		assert_eq!(
+			reclaim_amount(
+				state.status,
+				state.pending_openings.get(),
+				bundle,
+				0,
+				0,
+				Some(3),
+			),
+			Ok(300)
+		);
 		assert_eq!(read_slot(&bundle.claimed, 0), Ok(3));
 		assert_eq!(
 			bundle.quantity.get() - read_slot(&bundle.claimed, 0).expect("released"),
 			2
 		);
-		assert!(reclaim_amount(&state, bundle, 0, 0, Some(3)).is_err());
+		assert!(
+			reclaim_amount(
+				state.status,
+				state.pending_openings.get(),
+				bundle,
+				0,
+				0,
+				Some(3),
+			)
+			.is_err()
+		);
 	}
 }

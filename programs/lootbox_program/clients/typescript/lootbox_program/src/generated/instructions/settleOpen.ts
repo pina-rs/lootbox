@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixZeroPodEncoderSize, getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -23,11 +23,11 @@ export type SettleOpenInstructionData = { discriminator: number; signature: Read
 export type SettleOpenInstructionDataArgs = { signature: ReadonlyUint8Array; recoveryId: number; value: ReadonlyUint8Array;  };
 
 export function getSettleOpenInstructionDataEncoder(): FixedSizeEncoder<SettleOpenInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['signature', fixZeroPodEncoderSize(getBytesEncoder(), 64)], ['recoveryId', getU8Encoder()], ['value', fixZeroPodEncoderSize(getBytesEncoder(), 32)]]), (value) => ({ ...value, discriminator: 6 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['signature', fixPinaPodEncoderSize(getBytesEncoder(), 64)], ['recoveryId', getU8Encoder()], ['value', fixPinaPodEncoderSize(getBytesEncoder(), 32)]]), (value) => ({ ...value, discriminator: 6 }));
 }
 
 export function getSettleOpenInstructionDataDecoder(): FixedSizeDecoder<SettleOpenInstructionData> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(SETTLE_OPEN_DISCRIMINATOR, getU8Decoder())], ['signature', fixDecoderSize(getBytesDecoder(), 64)], ['recoveryId', getU8Decoder()], ['value', fixDecoderSize(getBytesDecoder(), 32)]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(SETTLE_OPEN_DISCRIMINATOR, getU8Decoder())], ['signature', fixDecoderSize(getBytesDecoder(), 64)], ['recoveryId', getU8Decoder()], ['value', fixDecoderSize(getBytesDecoder(), 32)]]);
 }
 
 export function getSettleOpenInstructionDataCodec(): FixedSizeCodec<SettleOpenInstructionDataArgs, SettleOpenInstructionData> {

@@ -8,8 +8,6 @@
 	clippy::too_many_arguments
 )]
 
-use pina::pinapod;
-
 pub const WITHDRAW_SURPLUS_DISCRIMINATOR: u8 = 9u8;
 
 /// Accounts.
@@ -62,21 +60,20 @@ pub struct WithdrawSurplusInstructionData {
 
 impl WithdrawSurplusInstructionData {
 	pub fn new(configure: impl FnOnce(&mut WithdrawSurplusInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; <WithdrawSurplusInstructionWire as pina::ZeroPodFixed>::SIZE];
-		{
-			let data = <WithdrawSurplusInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		let mut bytes = vec![0u8; core::mem::size_of::<WithdrawSurplusInstructionWireZc>()];
+		<WithdrawSurplusInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = WITHDRAW_SURPLUS_DISCRIMINATOR;
-		}
-		<WithdrawSurplusInstructionWire as pina::ZeroPodFixed>::validate(&bytes)
+			Ok(())
+		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }
 
 #[doc(hidden)]
-#[derive(pina::ZeroPod)]
+#[derive(pina::PinaPod)]
+#[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct WithdrawSurplusInstructionWire {
 	pub discriminator: u8,
 	pub lamports: u64,

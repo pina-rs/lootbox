@@ -1544,7 +1544,7 @@ mod tests {
 	#[test]
 	fn weighted_boundaries_select_expected_outcomes() {
 		let mut bytes = [0u8; LootboxState::SIZE];
-		let state = LootboxState::initialize(&mut bytes).unwrap();
+		let state = LootboxState::initialize(&mut bytes, |_| Ok(())).unwrap();
 		state.outcome_count = 3;
 		write_outcome_slot(&mut state.outcome_weights, 0, 50).expect("first weight");
 		write_outcome_slot(&mut state.outcome_weights, 1, 30).expect("second weight");
@@ -1564,7 +1564,7 @@ mod tests {
 	#[test]
 	fn timeout_floor_uses_the_lowest_configured_reward() {
 		let mut bytes = [0u8; LootboxState::SIZE];
-		let state = LootboxState::initialize(&mut bytes).unwrap();
+		let state = LootboxState::initialize(&mut bytes, |_| Ok(())).unwrap();
 		state.outcome_count = 3;
 		write_outcome_slot(&mut state.outcome_lamports, 0, 50).expect("first reward");
 		write_outcome_slot(&mut state.outcome_lamports, 1, 10).expect("second reward");
@@ -1576,7 +1576,7 @@ mod tests {
 	#[test]
 	fn liability_counts_minted_and_pending_boxes_once() {
 		let mut bytes = [0u8; LootboxState::SIZE];
-		let state = LootboxState::initialize(&mut bytes).expect("state");
+		let state = LootboxState::initialize(&mut bytes, |_| Ok(())).expect("state");
 		state.max_reward_lamports.set(500_000);
 
 		assert_eq!(required_liability(state, 3, 2), Ok(2_500_000));

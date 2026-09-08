@@ -8,8 +8,6 @@
 	clippy::too_many_arguments
 )]
 
-use pina::pinapod;
-
 pub const CREATE_TEMPLATE_DISCRIMINATOR: u8 = 10u8;
 
 /// Accounts.
@@ -65,21 +63,20 @@ pub struct CreateTemplateInstructionData {
 
 impl CreateTemplateInstructionData {
 	pub fn new(configure: impl FnOnce(&mut CreateTemplateInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; <CreateTemplateInstructionWire as pina::ZeroPodFixed>::SIZE];
-		{
-			let data = <CreateTemplateInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		let mut bytes = vec![0u8; core::mem::size_of::<CreateTemplateInstructionWireZc>()];
+		<CreateTemplateInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = CREATE_TEMPLATE_DISCRIMINATOR;
-		}
-		<CreateTemplateInstructionWire as pina::ZeroPodFixed>::validate(&bytes)
+			Ok(())
+		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }
 
 #[doc(hidden)]
-#[derive(pina::ZeroPod)]
+#[derive(pina::PinaPod)]
+#[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct CreateTemplateInstructionWire {
 	pub discriminator: u8,
 	pub id: u64,

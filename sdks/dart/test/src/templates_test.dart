@@ -84,9 +84,8 @@ void main() {
         assets: [PrizeAsset.sol(BigInt.one)],
       );
       expect(
-        () => TemplatePlan(
-          bundles: List.filled(maxTemplateBundles + 1, bundle),
-        ),
+        () =>
+            TemplatePlan(bundles: List.filled(maxTemplateBundles + 1, bundle)),
         throwsRangeError,
       );
     });

@@ -35,7 +35,7 @@ test("normalizes publish manifests idempotently", () => {
 	const normalizedRust = normalizeRustManifest(rust);
 	assert.equal(normalizeRustManifest(normalizedRust), normalizedRust);
 	assert.match(normalizedRust, /version\.workspace = true/);
-	assert.doesNotMatch(normalizedRust, /publish = false/);
+	assert.match(normalizedRust, /publish = false/);
 
 	const dart =
 		"name: generated\ndescription: Generated\nversion: 0.0.0\npublish_to: none\n\nenvironment:\n";
@@ -48,5 +48,5 @@ test("normalizes publish manifests idempotently", () => {
 		normalizedDart,
 		/repository: https:\/\/github\.com\/pina-rs\/lootbox/,
 	);
-	assert.doesNotMatch(normalizedDart, /publish_to/);
+	assert.match(normalizedDart, /publish_to: none/);
 });

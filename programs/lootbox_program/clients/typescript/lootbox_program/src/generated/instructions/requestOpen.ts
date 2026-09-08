@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { findOpeningPda } from '../pdas';
@@ -28,7 +28,7 @@ export function getRequestOpenInstructionDataEncoder(): FixedSizeEncoder<Request
 }
 
 export function getRequestOpenInstructionDataDecoder(): FixedSizeDecoder<RequestOpenInstructionData> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(REQUEST_OPEN_DISCRIMINATOR, getU8Decoder())], ['recentSlot', getU64Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(REQUEST_OPEN_DISCRIMINATOR, getU8Decoder())], ['recentSlot', getU64Decoder()], ['bump', getU8Decoder()]]);
 }
 
 export function getRequestOpenInstructionDataCodec(): FixedSizeCodec<RequestOpenInstructionDataArgs, RequestOpenInstructionData> {

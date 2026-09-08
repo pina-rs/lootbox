@@ -8,8 +8,6 @@
 	clippy::too_many_arguments
 )]
 
-use pina::pinapod;
-
 pub const SEAL_TEMPLATE_DISCRIMINATOR: u8 = 14u8;
 
 /// Accounts.
@@ -56,21 +54,20 @@ pub struct SealTemplateInstructionData {
 
 impl SealTemplateInstructionData {
 	pub fn new(configure: impl FnOnce(&mut SealTemplateInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; <SealTemplateInstructionWire as pina::ZeroPodFixed>::SIZE];
-		{
-			let data = <SealTemplateInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		let mut bytes = vec![0u8; core::mem::size_of::<SealTemplateInstructionWireZc>()];
+		<SealTemplateInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = SEAL_TEMPLATE_DISCRIMINATOR;
-		}
-		<SealTemplateInstructionWire as pina::ZeroPodFixed>::validate(&bytes)
+			Ok(())
+		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }
 
 #[doc(hidden)]
-#[derive(pina::ZeroPod)]
+#[derive(pina::PinaPod)]
+#[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct SealTemplateInstructionWire {
 	pub discriminator: u8,
 }

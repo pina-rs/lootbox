@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, getAddressDecoder, getAddressEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findOpeningPda, type OpeningSeeds } from '../pdas';
 
@@ -26,7 +26,7 @@ export function getOpeningStateEncoder(): FixedSizeEncoder<OpeningStateArgs> {
 
 /** Gets the decoder for {@link OpeningState} account data. */
 export function getOpeningStateDecoder(): FixedSizeDecoder<OpeningState> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(OPENING_STATE_DISCRIMINATOR, getU8Decoder())], ['lootbox', getAddressDecoder()], ['recipient', getAddressDecoder()], ['randomness', getAddressDecoder()], ['seedSlot', getU64Decoder()], ['rewardLamports', getU64Decoder()], ['selectedOutcome', getU8Decoder()], ['status', getU8Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(OPENING_STATE_DISCRIMINATOR, getU8Decoder())], ['lootbox', getAddressDecoder()], ['recipient', getAddressDecoder()], ['randomness', getAddressDecoder()], ['seedSlot', getU64Decoder()], ['rewardLamports', getU64Decoder()], ['selectedOutcome', getU8Decoder()], ['status', getU8Decoder()], ['bump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link OpeningState} account data. */

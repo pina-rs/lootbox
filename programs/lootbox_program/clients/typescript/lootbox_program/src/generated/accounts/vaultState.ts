@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, getAddressDecoder, getAddressEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findVaultPda, type VaultSeeds } from '../pdas';
 
@@ -26,7 +26,7 @@ export function getVaultStateEncoder(): FixedSizeEncoder<VaultStateArgs> {
 
 /** Gets the decoder for {@link VaultState} account data. */
 export function getVaultStateDecoder(): FixedSizeDecoder<VaultState> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(VAULT_STATE_DISCRIMINATOR, getU8Decoder())], ['lootbox', getAddressDecoder()], ['rentReserve', getU64Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(VAULT_STATE_DISCRIMINATOR, getU8Decoder())], ['lootbox', getAddressDecoder()], ['rentReserve', getU64Decoder()], ['bump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link VaultState} account data. */

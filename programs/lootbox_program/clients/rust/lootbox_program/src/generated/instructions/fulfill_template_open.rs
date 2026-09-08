@@ -8,8 +8,6 @@
 	clippy::too_many_arguments
 )]
 
-use pina::pinapod;
-
 pub const FULFILL_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 17u8;
 
 /// Accounts.
@@ -95,21 +93,20 @@ pub struct FulfillTemplateOpenInstructionData {
 
 impl FulfillTemplateOpenInstructionData {
 	pub fn new(configure: impl FnOnce(&mut FulfillTemplateOpenInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; <FulfillTemplateOpenInstructionWire as pina::ZeroPodFixed>::SIZE];
-		{
-			let data = <FulfillTemplateOpenInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		let mut bytes = vec![0u8; core::mem::size_of::<FulfillTemplateOpenInstructionWireZc>()];
+		<FulfillTemplateOpenInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = FULFILL_TEMPLATE_OPEN_DISCRIMINATOR;
-		}
-		<FulfillTemplateOpenInstructionWire as pina::ZeroPodFixed>::validate(&bytes)
+			Ok(())
+		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }
 
 #[doc(hidden)]
-#[derive(pina::ZeroPod)]
+#[derive(pina::PinaPod)]
+#[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct FulfillTemplateOpenInstructionWire {
 	pub discriminator: u8,
 	pub signature: [u8; 64],

@@ -8,8 +8,6 @@
 	clippy::too_many_arguments
 )]
 
-use pina::pinapod;
-
 pub const FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 36u8;
 
 /// Accounts.
@@ -70,21 +68,20 @@ pub struct ForfeitTemplateOpenInstructionData {
 
 impl ForfeitTemplateOpenInstructionData {
 	pub fn new(configure: impl FnOnce(&mut ForfeitTemplateOpenInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; <ForfeitTemplateOpenInstructionWire as pina::ZeroPodFixed>::SIZE];
-		{
-			let data = <ForfeitTemplateOpenInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		let mut bytes = vec![0u8; core::mem::size_of::<ForfeitTemplateOpenInstructionWireZc>()];
+		<ForfeitTemplateOpenInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR;
-		}
-		<ForfeitTemplateOpenInstructionWire as pina::ZeroPodFixed>::validate(&bytes)
+			Ok(())
+		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }
 
 #[doc(hidden)]
-#[derive(pina::ZeroPod)]
+#[derive(pina::PinaPod)]
+#[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct ForfeitTemplateOpenInstructionWire {
 	pub discriminator: u8,
 }

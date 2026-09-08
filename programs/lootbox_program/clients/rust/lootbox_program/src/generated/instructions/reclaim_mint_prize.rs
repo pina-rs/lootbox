@@ -8,8 +8,6 @@
 	clippy::too_many_arguments
 )]
 
-use pina::pinapod;
-
 pub const RECLAIM_MINT_PRIZE_DISCRIMINATOR: u8 = 43u8;
 
 /// Accounts.
@@ -68,21 +66,20 @@ pub struct ReclaimMintPrizeInstructionData {
 
 impl ReclaimMintPrizeInstructionData {
 	pub fn new(configure: impl FnOnce(&mut ReclaimMintPrizeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; <ReclaimMintPrizeInstructionWire as pina::ZeroPodFixed>::SIZE];
-		{
-			let data = <ReclaimMintPrizeInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		let mut bytes = vec![0u8; core::mem::size_of::<ReclaimMintPrizeInstructionWireZc>()];
+		<ReclaimMintPrizeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = RECLAIM_MINT_PRIZE_DISCRIMINATOR;
-		}
-		<ReclaimMintPrizeInstructionWire as pina::ZeroPodFixed>::validate(&bytes)
+			Ok(())
+		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }
 
 #[doc(hidden)]
-#[derive(pina::ZeroPod)]
+#[derive(pina::PinaPod)]
+#[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct ReclaimMintPrizeInstructionWire {
 	pub discriminator: u8,
 	pub asset_index: u8,

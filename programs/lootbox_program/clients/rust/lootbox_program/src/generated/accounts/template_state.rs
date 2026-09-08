@@ -8,9 +8,8 @@
 	clippy::too_many_arguments
 )]
 
-use pina::pinapod;
-
-#[derive(pina::ZeroPod)]
+#[derive(pina::PinaPod)]
+#[pinapod(crate = pina::pinapod, no_inherent)]
 #[pinapod(compact)]
 pub struct TemplateState {
 /// Immutable template terms and the live finite inventory.
@@ -60,37 +59,21 @@ pub struct TemplateState {
 	pub service_vault_bump: u8,
 	/// Undrawn inventory per append-only bundle. Only activated slots occupy
 	/// account bytes; slots are never removed because openings snapshot indices.
-	/// Pina compact capacity: 1024.
 	pub remaining: pina::Vec<u64, 1024>,
 }
 
 pub const TEMPLATE_STATE_DISCRIMINATOR: u8 = 4u8;
 
 impl TemplateState {
-	pub const HEADER_SIZE: usize = <Self as pina::ZeroPodCompact>::HEADER_SIZE;
+	pub const HEADER_SIZE: usize = <Self as pina::PinaPodCompact>::HEADER_SIZE;
 
-	pub fn initialize(data: &mut [u8]) -> Result<TemplateStateMut<'_>, solana_program_error::ProgramError> {
-		if data.len() < Self::HEADER_SIZE {
-			return Err(solana_program_error::ProgramError::InvalidAccountData);
-		}
-		data.fill(0);
-		let mut account = TemplateStateMut::new(data)
-			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
-		account.discriminator = TEMPLATE_STATE_DISCRIMINATOR;
-		Ok(account)
+	pub fn initialize(data: &mut [u8], patch: TemplateStatePatch<'_>) -> Result<usize, solana_program_error::ProgramError> {
+		patch.discriminator(TEMPLATE_STATE_DISCRIMINATOR).initialize(data)
+			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)
 	}
 
 	pub fn from_bytes(data: &[u8]) -> Result<TemplateStateRef<'_>, solana_program_error::ProgramError> {
 		let account = TemplateStateRef::new(data)
-			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
-		if account.discriminator != TEMPLATE_STATE_DISCRIMINATOR {
-			return Err(solana_program_error::ProgramError::InvalidAccountData);
-		}
-		Ok(account)
-	}
-
-	pub fn from_bytes_mut(data: &mut [u8]) -> Result<TemplateStateMut<'_>, solana_program_error::ProgramError> {
-		let account = TemplateStateMut::new(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != TEMPLATE_STATE_DISCRIMINATOR {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);

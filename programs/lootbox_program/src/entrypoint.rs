@@ -2,4 +2,6 @@ use pina::*;
 
 use crate::*;
 
-nostd_entrypoint!(process_instruction);
+pinocchio::program_entrypoint!(process_instruction);
+pinocchio::default_allocator!();
+pinocchio::nostd_panic_handler!();

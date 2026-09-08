@@ -8,8 +8,6 @@
 	clippy::too_many_arguments
 )]
 
-use pina::pinapod;
-
 pub const REQUEST_OPEN_DISCRIMINATOR: u8 = 5u8;
 
 /// Accounts.
@@ -113,21 +111,20 @@ pub struct RequestOpenInstructionData {
 
 impl RequestOpenInstructionData {
 	pub fn new(configure: impl FnOnce(&mut RequestOpenInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; <RequestOpenInstructionWire as pina::ZeroPodFixed>::SIZE];
-		{
-			let data = <RequestOpenInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		let mut bytes = vec![0u8; core::mem::size_of::<RequestOpenInstructionWireZc>()];
+		<RequestOpenInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = REQUEST_OPEN_DISCRIMINATOR;
-		}
-		<RequestOpenInstructionWire as pina::ZeroPodFixed>::validate(&bytes)
+			Ok(())
+		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }
 
 #[doc(hidden)]
-#[derive(pina::ZeroPod)]
+#[derive(pina::PinaPod)]
+#[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct RequestOpenInstructionWire {
 	pub discriminator: u8,
 	pub recent_slot: u64,

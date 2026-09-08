@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixZeroPodEncoderSize, getZeroPodBooleanDecoder, getZeroPodDiscriminatorDecoder } from "../zeropodCodecs";
+import { fixPinaPodEncoderSize, getPinaPodBooleanDecoder, getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { combineCodec, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBooleanDecoder, getBooleanEncoder, getBytesDecoder, getBytesEncoder, getI64Decoder, getI64Encoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -23,11 +23,11 @@ export type CreateTemplateInstructionData = { discriminator: number; id: bigint;
 export type CreateTemplateInstructionDataArgs = { id: number | bigint; opensAt: number | bigint; oracleProgram: Address; oracleQueue: Address; name: ReadonlyUint8Array; uri: ReadonlyUint8Array; settlementBountyLamports: number | bigint; resultReceiptsEnabled: boolean; bump: number;  };
 
 export function getCreateTemplateInstructionDataEncoder(): FixedSizeEncoder<CreateTemplateInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['id', getU64Encoder()], ['opensAt', getI64Encoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['name', fixZeroPodEncoderSize(getBytesEncoder(), 32)], ['uri', fixZeroPodEncoderSize(getBytesEncoder(), 200)], ['settlementBountyLamports', getU64Encoder()], ['resultReceiptsEnabled', getBooleanEncoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 10 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['id', getU64Encoder()], ['opensAt', getI64Encoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['name', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['uri', fixPinaPodEncoderSize(getBytesEncoder(), 200)], ['settlementBountyLamports', getU64Encoder()], ['resultReceiptsEnabled', getBooleanEncoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 10 }));
 }
 
 export function getCreateTemplateInstructionDataDecoder(): FixedSizeDecoder<CreateTemplateInstructionData> {
-    return getStructDecoder([['discriminator', getZeroPodDiscriminatorDecoder(CREATE_TEMPLATE_DISCRIMINATOR, getU8Decoder())], ['id', getU64Decoder()], ['opensAt', getI64Decoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['name', fixDecoderSize(getBytesDecoder(), 32)], ['uri', fixDecoderSize(getBytesDecoder(), 200)], ['settlementBountyLamports', getU64Decoder()], ['resultReceiptsEnabled', getZeroPodBooleanDecoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(CREATE_TEMPLATE_DISCRIMINATOR, getU8Decoder())], ['id', getU64Decoder()], ['opensAt', getI64Decoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['name', fixDecoderSize(getBytesDecoder(), 32)], ['uri', fixDecoderSize(getBytesDecoder(), 200)], ['settlementBountyLamports', getU64Decoder()], ['resultReceiptsEnabled', getPinaPodBooleanDecoder()], ['bump', getU8Decoder()]]);
 }
 
 export function getCreateTemplateInstructionDataCodec(): FixedSizeCodec<CreateTemplateInstructionDataArgs, CreateTemplateInstructionData> {

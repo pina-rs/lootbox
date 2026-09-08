@@ -8,8 +8,6 @@
 	clippy::too_many_arguments
 )]
 
-use pina::pinapod;
-
 pub const RECLAIM_METADATA_NFT_PRIZE_DISCRIMINATOR: u8 = 29u8;
 
 /// Accounts.
@@ -93,21 +91,20 @@ pub struct ReclaimMetadataNftPrizeInstructionData {
 
 impl ReclaimMetadataNftPrizeInstructionData {
 	pub fn new(configure: impl FnOnce(&mut ReclaimMetadataNftPrizeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; <ReclaimMetadataNftPrizeInstructionWire as pina::ZeroPodFixed>::SIZE];
-		{
-			let data = <ReclaimMetadataNftPrizeInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		let mut bytes = vec![0u8; core::mem::size_of::<ReclaimMetadataNftPrizeInstructionWireZc>()];
+		<ReclaimMetadataNftPrizeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = RECLAIM_METADATA_NFT_PRIZE_DISCRIMINATOR;
-		}
-		<ReclaimMetadataNftPrizeInstructionWire as pina::ZeroPodFixed>::validate(&bytes)
+			Ok(())
+		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }
 
 #[doc(hidden)]
-#[derive(pina::ZeroPod)]
+#[derive(pina::PinaPod)]
+#[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct ReclaimMetadataNftPrizeInstructionWire {
 	pub discriminator: u8,
 	pub asset_index: u8,

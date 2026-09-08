@@ -106,8 +106,29 @@ fn bundle_for_target(
 	Err(lootbox_error(LootboxError::InvalidOutcome))
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct AllocationState {
+	bundle_count: u32,
+	remaining_bundles: u64,
+	pending_openings: u64,
+	next_allocation: u64,
+	revision: u64,
+}
+
+impl From<&TemplateStateHeader> for AllocationState {
+	fn from(state: &TemplateStateHeader) -> Self {
+		Self {
+			bundle_count: state.bundle_count.get(),
+			remaining_bundles: state.remaining_bundles.get(),
+			pending_openings: state.pending_openings.get(),
+			next_allocation: state.next_allocation.get(),
+			revision: state.revision.get(),
+		}
+	}
+}
+
 fn allocate(
-	state: &mut TemplateStateHeader,
+	state: &mut AllocationState,
 	opening: &mut TemplateOpeningStateZc,
 	bundle_index: u32,
 	remaining: u64,
@@ -116,39 +137,30 @@ fn allocate(
 		return Err(lootbox_error(LootboxError::RandomnessNotReady));
 	}
 
-	if opening.sequence.get() != state.next_allocation.get() {
+	if opening.sequence.get() != state.next_allocation {
 		return Err(lootbox_error(LootboxError::AllocationOutOfOrder));
 	}
 
-	if opening.eligible_bundle_count.get() > state.bundle_count.get()
-		|| opening.treasury_revision.get() > state.revision.get()
+	if opening.eligible_bundle_count.get() > state.bundle_count
+		|| opening.treasury_revision.get() > state.revision
 	{
 		return Err(ProgramError::InvalidAccountData);
 	}
 	let remaining = remaining
 		.checked_sub(1)
 		.ok_or(ProgramError::ArithmeticOverflow)?;
-	state.remaining_bundles.set(
-		state
-			.remaining_bundles
-			.get()
-			.checked_sub(1)
-			.ok_or(ProgramError::ArithmeticOverflow)?,
-	);
-	state.pending_openings.set(
-		state
-			.pending_openings
-			.get()
-			.checked_sub(1)
-			.ok_or(ProgramError::ArithmeticOverflow)?,
-	);
-	state.next_allocation.set(
-		state
-			.next_allocation
-			.get()
-			.checked_add(1)
-			.ok_or(ProgramError::ArithmeticOverflow)?,
-	);
+	state.remaining_bundles = state
+		.remaining_bundles
+		.checked_sub(1)
+		.ok_or(ProgramError::ArithmeticOverflow)?;
+	state.pending_openings = state
+		.pending_openings
+		.checked_sub(1)
+		.ok_or(ProgramError::ArithmeticOverflow)?;
+	state.next_allocation = state
+		.next_allocation
+		.checked_add(1)
+		.ok_or(ProgramError::ArithmeticOverflow)?;
 	opening.selected_bundle.set(bundle_index);
 	opening.status = 2;
 
@@ -186,16 +198,32 @@ impl<'a> ProcessAccountInfos<'a> for AllocateTemplateOpenAccounts<'a> {
 		}
 		let index = usize::try_from(selected).map_err(|_| ProgramError::InvalidAccountData)?;
 		let selected_remaining = remaining_at(&state, index)?;
+		let mut remaining_values = alloc::vec::Vec::with_capacity(state.remaining().len());
+		remaining_values.extend_from_slice(state.remaining());
+		let mut template_state = *state;
+		let mut allocation_state = AllocationState::from(&template_state);
 		drop(bundle);
 		drop(account_data);
 
-		let mut state = as_template_mut(self.template)?;
-		let remaining = allocate(&mut state, &mut opening, selected, selected_remaining)?;
+		let remaining = allocate(
+			&mut allocation_state,
+			&mut opening,
+			selected,
+			selected_remaining,
+		)?;
+		remaining_values[index].set(remaining);
 
-		if !state.result_receipts_enabled.get() {
-			drop(state);
+		if !template_state.result_receipts_enabled.get() {
 			drop(opening);
-			return write_template_remaining(self.template, index, remaining);
+
+			return update_template(
+				self.template,
+				&TemplateStatePatch::new()
+					.remaining_bundles(allocation_state.remaining_bundles)
+					.pending_openings(allocation_state.pending_openings)
+					.next_allocation(allocation_state.next_allocation)
+					.replace_remaining(&remaining_values),
+			);
 		}
 
 		let result_receipt_seeds = ResultReceiptState::seeds(&address);
@@ -214,13 +242,13 @@ impl<'a> ProcessAccountInfos<'a> for AllocateTemplateOpenAccounts<'a> {
 		let consumer_context = opening.consumer_context;
 		let randomness = opening.randomness;
 		let sequence = opening.sequence.get();
-		let manifest_hash = state.manifest_hash;
-		let service_vault_bump = state.service_vault_bump;
+		let manifest_hash = template_state.manifest_hash;
+		let service_vault_bump = template_state.service_vault_bump;
 		drop(opening);
 
 		let service_vault_balance = self.service_vault.lamports();
-		let required_before = required_service_balance(&state)?;
-		let remaining_receipts = state
+		let required_before = required_service_balance(&template_state)?;
+		let remaining_receipts = template_state
 			.remaining_result_receipts
 			.get()
 			.checked_sub(1)
@@ -230,11 +258,20 @@ impl<'a> ProcessAccountInfos<'a> for AllocateTemplateOpenAccounts<'a> {
 			return Err(lootbox_error(LootboxError::ServiceBudgetExhausted));
 		}
 
-		let receipt_rent_lamports = state.result_receipt_rent_lamports.get();
-		state.remaining_result_receipts.set(remaining_receipts);
-		let required_after = required_service_balance(&state)?;
-		drop(state);
-		write_template_remaining(self.template, index, remaining)?;
+		let receipt_rent_lamports = template_state.result_receipt_rent_lamports.get();
+		template_state
+			.remaining_result_receipts
+			.set(remaining_receipts);
+		let required_after = required_service_balance(&template_state)?;
+		update_template(
+			self.template,
+			&TemplateStatePatch::new()
+				.remaining_bundles(allocation_state.remaining_bundles)
+				.pending_openings(allocation_state.pending_openings)
+				.next_allocation(allocation_state.next_allocation)
+				.remaining_result_receipts(remaining_receipts)
+				.replace_remaining(&remaining_values),
+		)?;
 
 		let service_vault_bump = [service_vault_bump];
 		let service_vault_signer = PdaSigner::from_slices([
@@ -344,16 +381,17 @@ mod proofs {
 		kani::assume(pending > 0);
 		kani::assume(next_allocation < u64::MAX);
 
-		let mut template_bytes = [0; TemplateState::HEADER_SIZE];
-		let mut state = TemplateState::initialize(&mut template_bytes).expect("template");
-		state.bundle_count.set(MAX_TEMPLATE_BUNDLES as u32);
-		state.remaining_bundles.set(remaining);
-		state.pending_openings.set(pending);
-		state.next_allocation.set(next_allocation);
-		state.revision.set(1);
+		let mut state = AllocationState {
+			bundle_count: MAX_TEMPLATE_BUNDLES as u32,
+			remaining_bundles: remaining,
+			pending_openings: pending,
+			next_allocation,
+			revision: 1,
+		};
 
 		let mut opening_bytes = [0; TemplateOpeningState::SIZE];
-		let opening = TemplateOpeningState::initialize(&mut opening_bytes).expect("opening");
+		let opening =
+			TemplateOpeningState::initialize(&mut opening_bytes, |_| Ok(())).expect("opening");
 		opening.status = 1;
 		opening.sequence.set(next_allocation);
 		opening.eligible_bundle_count.set(1);
@@ -363,9 +401,9 @@ mod proofs {
 			allocate(&mut state, opening, selected_bundle, remaining).expect("valid allocation");
 
 		assert_eq!(after, remaining - 1);
-		assert_eq!(state.remaining_bundles.get(), remaining - 1);
-		assert_eq!(state.pending_openings.get(), pending - 1);
-		assert_eq!(state.next_allocation.get(), next_allocation + 1);
+		assert_eq!(state.remaining_bundles, remaining - 1);
+		assert_eq!(state.pending_openings, pending - 1);
+		assert_eq!(state.next_allocation, next_allocation + 1);
 		assert_eq!(opening.selected_bundle.get(), selected_bundle);
 		assert_eq!(opening.status, 2);
 	}
@@ -382,14 +420,15 @@ mod proofs {
 		let recipient = Address::new_from_array([7; 32]);
 		let thief = Address::new_from_array([8; 32]);
 		let mut bundle_bytes = [0; BundleState::SIZE];
-		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
+		let bundle = BundleState::initialize(&mut bundle_bytes, |_| Ok(())).expect("bundle");
 		bundle.quantity.set(quantity);
 		bundle.asset_count = 1;
 		write_slot(&mut bundle.claimed, 0, already_claimed).expect("claimed slot");
 		write_slot(&mut bundle.amounts, 0, amount).expect("amount slot");
 
 		let mut opening_bytes = [0; TemplateOpeningState::SIZE];
-		let opening = TemplateOpeningState::initialize(&mut opening_bytes).expect("opening");
+		let opening =
+			TemplateOpeningState::initialize(&mut opening_bytes, |_| Ok(())).expect("opening");
 		opening.template = bundle.template;
 		opening.beneficiary = recipient;
 		opening.selected_bundle.set(bundle.index.get());
@@ -416,13 +455,14 @@ mod proofs {
 		let quantity = kani::any::<u64>();
 		let recipient = Address::new_from_array([7; 32]);
 		let mut bundle_bytes = [0; BundleState::SIZE];
-		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
+		let bundle = BundleState::initialize(&mut bundle_bytes, |_| Ok(())).expect("bundle");
 		bundle.quantity.set(quantity);
 		bundle.asset_count = 1;
 		write_slot(&mut bundle.claimed, 0, quantity).expect("claimed slot");
 
 		let mut opening_bytes = [0; TemplateOpeningState::SIZE];
-		let opening = TemplateOpeningState::initialize(&mut opening_bytes).expect("opening");
+		let opening =
+			TemplateOpeningState::initialize(&mut opening_bytes, |_| Ok(())).expect("opening");
 		opening.template = bundle.template;
 		opening.beneficiary = recipient;
 		opening.selected_bundle.set(bundle.index.get());
@@ -657,20 +697,16 @@ mod tests {
 
 	fn initialize_pool(bytes: &mut [u8; POOL_SIZE], quantities: [u64; 3]) {
 		let remaining = quantities.map(PodU64::from);
-		let mut state = TemplateState::initialize(bytes).expect("template");
-		state.bundle_count.set(3);
-		state.revision.set(3);
-		state.status = TEMPLATE_LIVE;
-		let total = quantities.iter().sum();
-		state.remaining_bundles.set(total);
-		state.total_bundles.set(total);
-		state.set_remaining(&remaining).expect("inventory");
-		assert_eq!(state.commit(), Ok(POOL_SIZE));
-	}
+		let total: u64 = quantities.iter().sum();
+		let patch = TemplateStatePatch::new()
+			.bundle_count(3)
+			.revision(3)
+			.status(TEMPLATE_LIVE)
+			.remaining_bundles(total)
+			.total_bundles(total)
+			.replace_remaining(&remaining);
 
-	fn write_remaining(bytes: &mut [u8], index: usize, value: u64) {
-		let start = TemplateState::HEADER_SIZE + index * size_of::<PodU64>();
-		bytes[start..start + size_of::<PodU64>()].copy_from_slice(&value.to_le_bytes());
+		assert_eq!(TemplateState::initialize(bytes, &patch), Ok(POOL_SIZE));
 	}
 
 	#[test]
@@ -682,9 +718,14 @@ mod tests {
 		assert_eq!(bundle_for_target(&state, 3, 89), Ok(0));
 		assert_eq!(bundle_for_target(&state, 3, 90), Ok(1));
 		assert_eq!(bundle_for_target(&state, 3, 99), Ok(2));
-		write_remaining(&mut bytes, 2, 0);
-		let mut state = TemplateState::try_from_bytes_mut(&mut bytes).expect("template");
-		state.remaining_bundles.set(99);
+		let remaining = [PodU64::from(90), PodU64::from(9), PodU64::ZERO];
+		TemplateState::update(
+			&mut bytes,
+			&TemplateStatePatch::new()
+				.remaining_bundles(99)
+				.replace_remaining(&remaining),
+		)
+		.expect("update pool");
 		let state = TemplateState::try_from_bytes(&bytes).expect("template");
 		assert_eq!(available_in_prefix(&state, 3), Ok(99));
 		assert_eq!(bundle_for_target(&state, 3, 98), Ok(1));
@@ -696,7 +737,7 @@ mod tests {
 	fn mint_capacity_includes_pending_openings() {
 		let mut bytes = [0; POOL_SIZE];
 		initialize_pool(&mut bytes, [3, 3, 1]);
-		let mut state = TemplateState::try_from_bytes_mut(&mut bytes).expect("template");
+		let mut state = *TemplateState::try_from_bytes(&bytes).expect("template");
 		state.pending_openings.set(2);
 		assert_eq!(validate_issuance(&state, 4, 1), Ok(1));
 		assert_eq!(
@@ -714,32 +755,33 @@ mod tests {
 	fn revealed_openings_cannot_jump_the_queue() {
 		let mut bytes = [0; POOL_SIZE];
 		initialize_pool(&mut bytes, [3, 3, 1]);
-		let mut state = TemplateState::try_from_bytes_mut(&mut bytes).expect("template");
+		let mut state = *TemplateState::try_from_bytes(&bytes).expect("template");
 		state.pending_openings.set(2);
+		let mut allocation_state = AllocationState::from(&state);
 		let mut receipt = [0; TemplateOpeningState::SIZE];
-		let opening = TemplateOpeningState::initialize(&mut receipt).expect("opening");
+		let opening = TemplateOpeningState::initialize(&mut receipt, |_| Ok(())).expect("opening");
 		opening.status = 1;
 		opening.sequence.set(1);
 		opening.treasury_revision.set(3);
 		opening.eligible_bundle_count.set(3);
 		assert_eq!(
-			allocate(&mut state, opening, 0, 3),
+			allocate(&mut allocation_state, opening, 0, 3),
 			Err(lootbox_error(LootboxError::AllocationOutOfOrder))
 		);
-		assert_eq!(state.remaining_bundles.get(), 7);
-		assert_eq!(state.next_allocation.get(), 0);
+		assert_eq!(allocation_state.remaining_bundles, 7);
+		assert_eq!(allocation_state.next_allocation, 0);
 	}
 
 	#[test]
 	fn bundles_are_paid_once_per_asset_to_the_bound_recipient() {
 		let mut bundle_bytes = [0; BundleState::SIZE];
-		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
+		let bundle = BundleState::initialize(&mut bundle_bytes, |_| Ok(())).expect("bundle");
 		bundle.quantity.set(1);
 		bundle.asset_count = 2;
 		write_slot(&mut bundle.amounts, 0, 50).expect("SOL");
 		write_slot(&mut bundle.amounts, 1, 1).expect("NFT");
 		let mut receipt = [0; TemplateOpeningState::SIZE];
-		let opening = TemplateOpeningState::initialize(&mut receipt).expect("opening");
+		let opening = TemplateOpeningState::initialize(&mut receipt, |_| Ok(())).expect("opening");
 		opening.status = 2;
 		let thief = Address::new_from_array([9; 32]);
 		assert_eq!(
@@ -765,7 +807,7 @@ mod tests {
 	fn mint_prize_accounting_never_exceeds_the_bundle_quantity() {
 		let recipient = Address::new_from_array([7; 32]);
 		let mut bundle_bytes = [0; BundleState::SIZE];
-		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
+		let bundle = BundleState::initialize(&mut bundle_bytes, |_| Ok(())).expect("bundle");
 		bundle.quantity.set(2);
 		bundle.asset_count = 1;
 		bundle.kinds[0] = PRIZE_MINT_BADGE;
@@ -773,7 +815,8 @@ mod tests {
 
 		for _ in 0..2 {
 			let mut receipt = [0; TemplateOpeningState::SIZE];
-			let opening = TemplateOpeningState::initialize(&mut receipt).expect("opening");
+			let opening =
+				TemplateOpeningState::initialize(&mut receipt, |_| Ok(())).expect("opening");
 			opening.template = bundle.template;
 			opening.beneficiary = recipient;
 			opening.selected_bundle.set(bundle.index.get());
@@ -782,7 +825,7 @@ mod tests {
 		}
 
 		let mut receipt = [0; TemplateOpeningState::SIZE];
-		let opening = TemplateOpeningState::initialize(&mut receipt).expect("opening");
+		let opening = TemplateOpeningState::initialize(&mut receipt, |_| Ok(())).expect("opening");
 		opening.template = bundle.template;
 		opening.beneficiary = recipient;
 		opening.selected_bundle.set(bundle.index.get());
@@ -797,7 +840,7 @@ mod tests {
 	#[test]
 	fn funding_cannot_count_one_asset_twice() {
 		let mut bundle_bytes = [0; BundleState::SIZE];
-		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
+		let bundle = BundleState::initialize(&mut bundle_bytes, |_| Ok(())).expect("bundle");
 		bundle.quantity.set(3);
 		bundle.asset_count = 2;
 		assert_eq!(
@@ -814,7 +857,7 @@ mod tests {
 	#[test]
 	fn funding_overflow_fails_closed() {
 		let mut bundle_bytes = [0; BundleState::SIZE];
-		let bundle = BundleState::initialize(&mut bundle_bytes).expect("bundle");
+		let bundle = BundleState::initialize(&mut bundle_bytes, |_| Ok(())).expect("bundle");
 		bundle.quantity.set(2);
 		bundle.asset_count = 1;
 		assert_eq!(
@@ -839,10 +882,13 @@ mod tests {
 	fn all_1024_append_slots_are_addressable_and_snapshots_exclude_later_bundles() {
 		let remaining = alloc::vec![PodU64::from(1); MAX_TEMPLATE_BUNDLES];
 		let mut bytes = [0; TemplateState::MAX_SIZE];
-		let mut state = TemplateState::initialize(&mut bytes).expect("template");
-		state.bundle_count.set(MAX_TEMPLATE_BUNDLES as u32);
-		state.set_remaining(&remaining).expect("inventory");
-		assert_eq!(state.commit(), Ok(TemplateState::MAX_SIZE));
+		let patch = TemplateStatePatch::new()
+			.bundle_count(MAX_TEMPLATE_BUNDLES as u32)
+			.replace_remaining(&remaining);
+		assert_eq!(
+			TemplateState::initialize(&mut bytes, &patch),
+			Ok(TemplateState::MAX_SIZE)
+		);
 		let state = TemplateState::try_from_bytes(&bytes).expect("template");
 		assert_eq!(available_in_prefix(&state, 9), Ok(9));
 		assert_eq!(available_in_prefix(&state, 1_024), Ok(1_024));
@@ -858,13 +904,18 @@ mod tests {
 			let total = a + b + c;
 			let mut bytes = [0; POOL_SIZE];
 			initialize_pool(&mut bytes, quantities);
-			let mut state = TemplateState::try_from_bytes_mut(&mut bytes).expect("template");
-			state.total_minted.set(total);
-			state.pending_openings.set(total);
+			TemplateState::update(
+				&mut bytes,
+				&TemplateStatePatch::new()
+					.total_minted(total)
+					.pending_openings(total),
+			)
+			.expect("fund pool");
 			let mut awarded = [0u64; 3];
 			for sequence in 0..total {
 				let mut receipt = [0; TemplateOpeningState::SIZE];
-				let opening = TemplateOpeningState::initialize(&mut receipt).expect("opening");
+				let opening =
+					TemplateOpeningState::initialize(&mut receipt, |_| Ok(())).expect("opening");
 				opening.status = 1;
 				opening.sequence.set(sequence);
 				opening.treasury_revision.set(3);
@@ -875,13 +926,24 @@ mod tests {
 				let selected = bundle_for_target(&state, 3, target).expect("outcome");
 				let selected_index = usize::try_from(selected).expect("index");
 				let selected_remaining = remaining_at(&state, selected_index).expect("remaining");
-				let mut state = TemplateState::try_from_bytes_mut(&mut bytes).expect("template");
-				let after = allocate(&mut state, opening, selected, selected_remaining).expect("allocate");
+				let mut remaining_values = alloc::vec::Vec::with_capacity(state.remaining().len());
+				remaining_values.extend_from_slice(state.remaining());
+				let mut allocation_state = AllocationState::from(&*state);
+				let after = allocate(&mut allocation_state, opening, selected, selected_remaining).expect("allocate");
+				remaining_values[selected_index].set(after);
 				awarded[usize::try_from(selected).expect("index")] += 1;
-				prop_assert_eq!(state.pending_openings.get(), total - sequence - 1);
-				prop_assert_eq!(state.remaining_bundles.get(), total - sequence - 1);
-				prop_assert!(allocate(&mut state, opening, selected, selected_remaining).is_err());
-				write_remaining(&mut bytes, selected_index, after);
+				prop_assert_eq!(allocation_state.pending_openings, total - sequence - 1);
+				prop_assert_eq!(allocation_state.remaining_bundles, total - sequence - 1);
+				prop_assert!(allocate(&mut allocation_state, opening, selected, selected_remaining).is_err());
+				TemplateState::update(
+					&mut bytes,
+					&TemplateStatePatch::new()
+						.remaining_bundles(allocation_state.remaining_bundles)
+						.pending_openings(allocation_state.pending_openings)
+						.next_allocation(allocation_state.next_allocation)
+						.replace_remaining(&remaining_values),
+				)
+				.expect("commit allocation");
 			}
 			prop_assert_eq!(awarded, quantities);
 			let state = TemplateState::try_from_bytes(&bytes).expect("template");

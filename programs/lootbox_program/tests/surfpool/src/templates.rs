@@ -85,7 +85,8 @@ fn create_template_data(
 	result_receipts_enabled: bool,
 ) -> Vec<u8> {
 	let mut bytes = vec![0; CreateTemplateInstruction::SIZE];
-	let args = CreateTemplateInstruction::initialize(&mut bytes).expect("create template data");
+	let args = CreateTemplateInstruction::initialize(&mut bytes, |_| Ok(()))
+		.expect("create template data");
 	args.id.set(1);
 	args.opens_at.set(opens_at);
 	args.oracle_program = SWITCHBOARD_DEVNET_ID;
@@ -111,7 +112,7 @@ fn add_bundle(
 		&program.program_id,
 	);
 	let mut bytes = vec![0; AddBundleInstruction::SIZE];
-	let args = AddBundleInstruction::initialize(&mut bytes).expect("bundle data");
+	let args = AddBundleInstruction::initialize(&mut bytes, |_| Ok(())).expect("bundle data");
 	args.quantity.set(quantity);
 	args.asset_count = assets;
 	args.bump = bump;
@@ -150,7 +151,7 @@ fn fund_sol(
 	amount: u64,
 ) -> Result<(), String> {
 	let mut bytes = vec![0; FundSolPrizeInstruction::SIZE];
-	FundSolPrizeInstruction::initialize(&mut bytes)
+	FundSolPrizeInstruction::initialize(&mut bytes, |_| Ok(()))
 		.expect("fund data")
 		.lamports_per_win
 		.set(amount);
@@ -172,7 +173,7 @@ fn fund_quote_sol(
 	amount: u64,
 ) -> Result<(), String> {
 	let mut bytes = vec![0; FundQuoteSolPrizeInstruction::SIZE];
-	FundQuoteSolPrizeInstruction::initialize(&mut bytes)
+	FundQuoteSolPrizeInstruction::initialize(&mut bytes, |_| Ok(()))
 		.expect("fund quote data")
 		.lamports_per_win
 		.set(amount);
@@ -246,7 +247,8 @@ fn fund_token(
 			.expect("make unique NFT");
 	}
 	let mut data = vec![0; FundTokenPrizeInstruction::SIZE];
-	let args = FundTokenPrizeInstruction::initialize(&mut data).expect("fund token data");
+	let args =
+		FundTokenPrizeInstruction::initialize(&mut data, |_| Ok(())).expect("fund token data");
 	args.amount_per_win.set(amount);
 	args.is_nft.set(nft);
 	program
@@ -291,7 +293,7 @@ fn fund_quote_token(
 		))
 		.expect("mint quote collateral");
 	let mut data = vec![0; FundQuoteTokenPrizeInstruction::SIZE];
-	FundQuoteTokenPrizeInstruction::initialize(&mut data)
+	FundQuoteTokenPrizeInstruction::initialize(&mut data, |_| Ok(()))
 		.expect("fund token quote data")
 		.amount_per_win
 		.set(amount);
@@ -314,7 +316,7 @@ fn fund_quote_token(
 
 fn template_mint_data(amount: u64) -> Vec<u8> {
 	let mut data = vec![0; MintTemplateBoxesInstruction::SIZE];
-	MintTemplateBoxesInstruction::initialize(&mut data)
+	MintTemplateBoxesInstruction::initialize(&mut data, |_| Ok(()))
 		.expect("mint data")
 		.amount
 		.set(amount);
@@ -335,7 +337,7 @@ fn lock_treasury(program: &Harness, template: Pubkey, mint: Pubkey, bundle_count
 	let (service_vault, service_vault_bump) =
 		Pubkey::find_program_address(&[b"service-vault", template.as_ref()], &program.program_id);
 	let mut data = vec![0; LockTreasuryInstruction::SIZE];
-	LockTreasuryInstruction::initialize(&mut data)
+	LockTreasuryInstruction::initialize(&mut data, |_| Ok(()))
 		.expect("lock data")
 		.service_vault_bump = service_vault_bump;
 	program
@@ -359,7 +361,8 @@ fn lock_treasury(program: &Harness, template: Pubkey, mint: Pubkey, bundle_count
 
 fn template_request_data(bump: u8, beneficiary: Pubkey) -> Vec<u8> {
 	let mut data = vec![0; RequestTemplateOpenInstruction::SIZE];
-	let args = RequestTemplateOpenInstruction::initialize(&mut data).expect("request data");
+	let args =
+		RequestTemplateOpenInstruction::initialize(&mut data, |_| Ok(())).expect("request data");
 	args.recent_slot.set(1);
 	args.beneficiary = beneficiary.to_bytes().into();
 	args.bump = bump;
@@ -465,7 +468,7 @@ fn fulfill(context: &FulfillContext<'_>, value: u8) -> Result<(), String> {
 	.0;
 	accounts.insert(2, AccountMeta::new(service_vault, false));
 	let mut data = vec![0; FulfillTemplateOpenInstruction::SIZE];
-	let args = FulfillTemplateOpenInstruction::initialize(&mut data).expect("fulfill");
+	let args = FulfillTemplateOpenInstruction::initialize(&mut data, |_| Ok(())).expect("fulfill");
 	args.signature.fill(7);
 	args.recovery_id = 1;
 	args.value.fill(value);
@@ -506,7 +509,7 @@ fn allocate_any(
 			&program.program_id,
 		);
 		let mut data = vec![0; AllocateTemplateOpenInstruction::SIZE];
-		AllocateTemplateOpenInstruction::initialize(&mut data)
+		AllocateTemplateOpenInstruction::initialize(&mut data, |_| Ok(()))
 			.expect("allocate")
 			.result_receipt_bump = result_receipt_bump;
 		match program.send(
@@ -834,7 +837,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 						AccountMeta::new_readonly(token_program_id(), false),
 					];
 					let mut data = vec![0; ClaimTokenPrizeInstruction::SIZE];
-					ClaimTokenPrizeInstruction::initialize(&mut data)
+					ClaimTokenPrizeInstruction::initialize(&mut data, |_| Ok(()))
 						.expect("claim")
 						.asset_index = asset_index;
 					if program.account(&destination).is_err() {
@@ -855,7 +858,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 					);
 				} else {
 					let mut data = vec![0; ClaimSolPrizeInstruction::SIZE];
-					ClaimSolPrizeInstruction::initialize(&mut data)
+					ClaimSolPrizeInstruction::initialize(&mut data, |_| Ok(()))
 						.expect("claim")
 						.asset_index = asset_index;
 					let mut accounts = vec![
@@ -1127,7 +1130,7 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 				&program.program_id,
 			);
 			let mut allocate = vec![0; AllocateTemplateOpenInstruction::SIZE];
-			AllocateTemplateOpenInstruction::initialize(&mut allocate)
+			AllocateTemplateOpenInstruction::initialize(&mut allocate, |_| Ok(()))
 				.expect("allocation data")
 				.result_receipt_bump = result_receipt_bump;
 			program
@@ -1185,7 +1188,7 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 				.expect("permissionless quote release");
 
 			let mut token_quote_data = vec![0; ClaimTokenPrizeInstruction::SIZE];
-			ClaimTokenPrizeInstruction::initialize(&mut token_quote_data)
+			ClaimTokenPrizeInstruction::initialize(&mut token_quote_data, |_| Ok(()))
 				.expect("claim token quote")
 				.asset_index = 1;
 			program
@@ -1410,7 +1413,7 @@ fn missed_market_lock_retires_without_stranding_holder_claims() {
 			&program.program_id,
 		);
 		let mut allocate = vec![0; AllocateTemplateOpenInstruction::SIZE];
-		AllocateTemplateOpenInstruction::initialize(&mut allocate)
+		AllocateTemplateOpenInstruction::initialize(&mut allocate, |_| Ok(()))
 			.expect("allocation data")
 			.result_receipt_bump = result_receipt_bump;
 		program

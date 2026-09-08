@@ -8,8 +8,6 @@
 	clippy::too_many_arguments
 )]
 
-use pina::pinapod;
-
 pub const FUND_MINT_PRIZE_DISCRIMINATOR: u8 = 41u8;
 
 /// Accounts.
@@ -65,21 +63,20 @@ pub struct FundMintPrizeInstructionData {
 
 impl FundMintPrizeInstructionData {
 	pub fn new(configure: impl FnOnce(&mut FundMintPrizeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; <FundMintPrizeInstructionWire as pina::ZeroPodFixed>::SIZE];
-		{
-			let data = <FundMintPrizeInstructionWire as pina::ZeroPodFixed>::from_bytes_mut(&mut bytes)
-				.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		let mut bytes = vec![0u8; core::mem::size_of::<FundMintPrizeInstructionWireZc>()];
+		<FundMintPrizeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = FUND_MINT_PRIZE_DISCRIMINATOR;
-		}
-		<FundMintPrizeInstructionWire as pina::ZeroPodFixed>::validate(&bytes)
+			Ok(())
+		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }
 
 #[doc(hidden)]
-#[derive(pina::ZeroPod)]
+#[derive(pina::PinaPod)]
+#[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct FundMintPrizeInstructionWire {
 	pub discriminator: u8,
 }

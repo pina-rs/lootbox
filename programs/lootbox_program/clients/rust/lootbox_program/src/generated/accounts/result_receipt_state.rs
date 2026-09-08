@@ -8,9 +8,8 @@
 	clippy::too_many_arguments
 )]
 
-use pina::pinapod;
-
-#[derive(pina::ZeroPod)]
+#[derive(pina::PinaPod)]
+#[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct ResultReceiptState {
 /// Optional immutable allocation result for consumption by another program.
 ///
@@ -32,28 +31,25 @@ pub struct ResultReceiptState {
 pub const RESULT_RECEIPT_STATE_DISCRIMINATOR: u8 = 7u8;
 
 impl ResultReceiptState {
-	pub const LEN: usize = <Self as pina::ZeroPodFixed>::SIZE;
+	pub const LEN: usize = core::mem::size_of::<ResultReceiptStateZc>();
 
-	/// Initialize zero-valid account storage.
+	/// Initialize and validate account storage in one pass.
 	///
-	/// Every non-discriminator field must accept an all-zero
-	/// representation. Otherwise this method returns `InvalidAccountData`.
-	pub fn initialize(data: &mut [u8]) -> Result<&mut ResultReceiptStateZc, solana_program_error::ProgramError> {
-		if data.len() != Self::LEN {
-			return Err(solana_program_error::ProgramError::InvalidAccountData);
-		}
-		data.fill(0);
-		let account = <Self as pina::ZeroPodFixed>::from_bytes_mut(data)
-			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
-		account.discriminator = RESULT_RECEIPT_STATE_DISCRIMINATOR;
-		Ok(account)
+	/// The destination is cleared again if configuration or validation fails.
+	pub fn initialize(
+		data: &mut [u8],
+		configure: impl FnOnce(&mut ResultReceiptStateZc),
+	) -> Result<&mut ResultReceiptStateZc, solana_program_error::ProgramError> {
+		<Self as pina::PinaPodFixed>::initialize(data, |account| {
+			configure(account);
+			account.discriminator = RESULT_RECEIPT_STATE_DISCRIMINATOR;
+			Ok(())
+		})
+		.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)
 	}
 
 	pub fn from_bytes(data: &[u8]) -> Result<&ResultReceiptStateZc, solana_program_error::ProgramError> {
-		if data.len() != Self::LEN {
-			return Err(solana_program_error::ProgramError::InvalidAccountData);
-		}
-		let account = <Self as pina::ZeroPodFixed>::from_bytes(data)
+		let account = <Self as pina::PinaPodFixed>::read_exact(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != RESULT_RECEIPT_STATE_DISCRIMINATOR {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
@@ -62,10 +58,7 @@ impl ResultReceiptState {
 	}
 
 	pub fn from_bytes_mut(data: &mut [u8]) -> Result<&mut ResultReceiptStateZc, solana_program_error::ProgramError> {
-		if data.len() != Self::LEN {
-			return Err(solana_program_error::ProgramError::InvalidAccountData);
-		}
-		let account = <Self as pina::ZeroPodFixed>::from_bytes_mut(data)
+		let account = <Self as pina::PinaPodFixed>::read_exact_mut(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != RESULT_RECEIPT_STATE_DISCRIMINATOR {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);

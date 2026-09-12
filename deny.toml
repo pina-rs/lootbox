@@ -40,6 +40,8 @@ skip = [
 	{ name = "rand" },
 	{ name = "rand_chacha" },
 	{ name = "rand_core" },
+	# Pina's ABI hashing pulls sha2 0.11 while spl-discriminator stays on 0.10.
+	{ name = "sha2" },
 	{ name = "solana-account" },
 	{ name = "solana-address" },
 	{ name = "solana-instructions-sysvar" },

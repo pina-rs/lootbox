@@ -1,7 +1,6 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -12,19 +11,17 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
-
 @immutable
 class ReclaimSolPrizeInstructionData {
-  const ReclaimSolPrizeInstructionData({
-    required this.assetIndex,
-  }) :
-      discriminator = 22;
+  const ReclaimSolPrizeInstructionData({required this.assetIndex})
+    : discriminator = 22;
 
   final int discriminator;
   final int assetIndex;
 }
 
-Encoder<ReclaimSolPrizeInstructionData> getReclaimSolPrizeInstructionDataEncoder() {
+Encoder<ReclaimSolPrizeInstructionData>
+getReclaimSolPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
     ('assetIndex', getU8Encoder()),
@@ -39,36 +36,33 @@ Encoder<ReclaimSolPrizeInstructionData> getReclaimSolPrizeInstructionDataEncoder
   );
 }
 
-Decoder<ReclaimSolPrizeInstructionData> getReclaimSolPrizeInstructionDataDecoder() {
+Decoder<ReclaimSolPrizeInstructionData>
+getReclaimSolPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
     ('assetIndex', getU8Decoder()),
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(
-      SolanaErrorCode.codecsInvalidByteLength,
-      {
-        'codecDescription': 'reclaimSolPrize instruction decoder',
-        'expected': expected,
-        'bytesLength': bytesLength,
-      },
-    );
+    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
+      'codecDescription': 'reclaimSolPrize instruction decoder',
+      'expected': expected,
+      'bytesLength': bytesLength,
+    });
   }
 
-  (ReclaimSolPrizeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(
-      getU8Encoder().encode(22),
-    ).read(bytes, offset + 0);
+  (ReclaimSolPrizeInstructionData, int) readTopLevel(
+    Uint8List bytes,
+    int offset,
+  ) {
+    getConstantDecoder(getU8Encoder().encode(22)).read(bytes, offset + 0);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
     }
 
     return (
-      ReclaimSolPrizeInstructionData(
-      assetIndex: map['assetIndex']! as int,
-      ),
+      ReclaimSolPrizeInstructionData(assetIndex: map['assetIndex']! as int),
       newOffset,
     );
   }
@@ -93,8 +87,12 @@ Decoder<ReclaimSolPrizeInstructionData> getReclaimSolPrizeInstructionDataDecoder
   };
 }
 
-Codec<ReclaimSolPrizeInstructionData, ReclaimSolPrizeInstructionData> getReclaimSolPrizeInstructionDataCodec() {
-  return combineCodec(getReclaimSolPrizeInstructionDataEncoder(), getReclaimSolPrizeInstructionDataDecoder());
+Codec<ReclaimSolPrizeInstructionData, ReclaimSolPrizeInstructionData>
+getReclaimSolPrizeInstructionDataCodec() {
+  return combineCodec(
+    getReclaimSolPrizeInstructionDataEncoder(),
+    getReclaimSolPrizeInstructionDataDecoder(),
+  );
 }
 
 /// Creates a [ReclaimSolPrize] instruction.
@@ -107,22 +105,24 @@ Instruction getReclaimSolPrizeInstruction({
   required int assetIndex,
 }) {
   final instructionData = ReclaimSolPrizeInstructionData(
-      assetIndex: assetIndex,
+    assetIndex: assetIndex,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-    AccountMeta(address: authority, role: AccountRole.writable),
-    AccountMeta(address: template, role: AccountRole.readonly),
-    AccountMeta(address: boxMint, role: AccountRole.readonly),
-    AccountMeta(address: bundle, role: AccountRole.writable),
+      AccountMeta(address: authority, role: AccountRole.writable),
+      AccountMeta(address: template, role: AccountRole.readonly),
+      AccountMeta(address: boxMint, role: AccountRole.readonly),
+      AccountMeta(address: bundle, role: AccountRole.writable),
     ],
     data: getReclaimSolPrizeInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [ReclaimSolPrize] instruction from raw instruction data.
-ReclaimSolPrizeInstructionData parseReclaimSolPrizeInstruction(Instruction instruction) {
+ReclaimSolPrizeInstructionData parseReclaimSolPrizeInstruction(
+  Instruction instruction,
+) {
   return getReclaimSolPrizeInstructionDataDecoder().decode(instruction.data!);
 }

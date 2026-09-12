@@ -1,7 +1,6 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,7 +10,6 @@ import 'package:solana_kit_codecs_core/solana_kit_codecs_core.dart';
 import 'package:solana_kit_codecs_data_structures/solana_kit_codecs_data_structures.dart';
 import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
-
 
 @immutable
 class ResultReceiptState {
@@ -27,8 +25,7 @@ class ResultReceiptState {
     required this.sequence,
     required this.selectedBundle,
     required this.bump,
-  }) :
-      discriminator = 7;
+  }) : discriminator = 7;
 
   final int discriminator;
   final Address template;
@@ -62,12 +59,25 @@ class ResultReceiptState {
           bump == other.bump;
 
   @override
-  int get hashCode => Object.hash(discriminator, template, opening, boxAuthority, beneficiary, consumerProgram, consumerContext, manifestHash, randomness, sequence, selectedBundle, bump);
+  int get hashCode => Object.hash(
+    discriminator,
+    template,
+    opening,
+    boxAuthority,
+    beneficiary,
+    consumerProgram,
+    consumerContext,
+    manifestHash,
+    randomness,
+    sequence,
+    selectedBundle,
+    bump,
+  );
 
   @override
-  String toString() => 'ResultReceiptState(discriminator: $discriminator, template: $template, opening: $opening, boxAuthority: $boxAuthority, beneficiary: $beneficiary, consumerProgram: $consumerProgram, consumerContext: $consumerContext, manifestHash: $manifestHash, randomness: $randomness, sequence: $sequence, selectedBundle: $selectedBundle, bump: $bump)';
+  String toString() =>
+      'ResultReceiptState(discriminator: $discriminator, template: $template, opening: $opening, boxAuthority: $boxAuthority, beneficiary: $beneficiary, consumerProgram: $consumerProgram, consumerContext: $consumerContext, manifestHash: $manifestHash, randomness: $randomness, sequence: $sequence, selectedBundle: $selectedBundle, bump: $bump)';
 }
-
 
 Encoder<ResultReceiptState> getResultReceiptStateEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
@@ -77,8 +87,14 @@ Encoder<ResultReceiptState> getResultReceiptStateEncoder() {
     ('boxAuthority', getAddressEncoder()),
     ('beneficiary', getAddressEncoder()),
     ('consumerProgram', getAddressEncoder()),
-    ('consumerContext', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
-    ('manifestHash', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
+    (
+      'consumerContext',
+      fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false),
+    ),
+    (
+      'manifestHash',
+      fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false),
+    ),
     ('randomness', getAddressEncoder()),
     ('sequence', getU64Encoder()),
     ('selectedBundle', getU32Encoder()),
@@ -121,35 +137,30 @@ Decoder<ResultReceiptState> getResultReceiptStateDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(
-      SolanaErrorCode.codecsInvalidByteLength,
-      {
-        'codecDescription': 'resultReceiptState account decoder',
-        'expected': expected,
-        'bytesLength': bytesLength,
-      },
-    );
+    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
+      'codecDescription': 'resultReceiptState account decoder',
+      'expected': expected,
+      'bytesLength': bytesLength,
+    });
   }
 
   (ResultReceiptState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(
-      getU8Encoder().encode(7),
-    ).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(7)).read(bytes, offset + 0);
     final (map, newOffset) = structDecoder.read(bytes, offset);
 
     return (
       ResultReceiptState(
-      template: map['template']! as Address,
-      opening: map['opening']! as Address,
-      boxAuthority: map['boxAuthority']! as Address,
-      beneficiary: map['beneficiary']! as Address,
-      consumerProgram: map['consumerProgram']! as Address,
-      consumerContext: map['consumerContext']! as Uint8List,
-      manifestHash: map['manifestHash']! as Uint8List,
-      randomness: map['randomness']! as Address,
-      sequence: map['sequence']! as BigInt,
-      selectedBundle: map['selectedBundle']! as int,
-      bump: map['bump']! as int,
+        template: map['template']! as Address,
+        opening: map['opening']! as Address,
+        boxAuthority: map['boxAuthority']! as Address,
+        beneficiary: map['beneficiary']! as Address,
+        consumerProgram: map['consumerProgram']! as Address,
+        consumerContext: map['consumerContext']! as Uint8List,
+        manifestHash: map['manifestHash']! as Uint8List,
+        randomness: map['randomness']! as Address,
+        sequence: map['sequence']! as BigInt,
+        selectedBundle: map['selectedBundle']! as int,
+        bump: map['bump']! as int,
       ),
       newOffset,
     );
@@ -176,9 +187,14 @@ Decoder<ResultReceiptState> getResultReceiptStateDecoder() {
 }
 
 Codec<ResultReceiptState, ResultReceiptState> getResultReceiptStateCodec() {
-  return combineCodec(getResultReceiptStateEncoder(), getResultReceiptStateDecoder());
+  return combineCodec(
+    getResultReceiptStateEncoder(),
+    getResultReceiptStateDecoder(),
+  );
 }
 
-Account<ResultReceiptState> decodeResultReceiptState(EncodedAccount encodedAccount) {
+Account<ResultReceiptState> decodeResultReceiptState(
+  EncodedAccount encodedAccount,
+) {
   return decodeAccount(encodedAccount, getResultReceiptStateDecoder());
 }

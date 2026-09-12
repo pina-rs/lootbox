@@ -493,7 +493,7 @@ fn assert_box_mint(
 	expected_mint: &Address,
 ) -> Result<u64, ProgramError> {
 	box_mint.assert_address(expected_mint)?;
-	let mint = box_mint.as_token_mint_checked()?;
+	let mint = box_mint.as_token_mint()?;
 
 	if mint.decimals() != 0
 		|| mint.mint_authority() != Some(lootbox)
@@ -682,7 +682,7 @@ impl<'a> ProcessAccountInfos<'a> for CreateLootboxAccounts<'a> {
 			.assert_empty()?
 			.assert_writable()?
 			.assert_seeds_with_bump(&vault_seeds_with_bump.as_slices(), &ID)?;
-		let mint = self.box_mint.as_token_mint_checked()?;
+		let mint = self.box_mint.as_token_mint()?;
 
 		if mint.decimals() != 0
 			|| mint.supply() != 0
@@ -862,17 +862,14 @@ impl<'a> ProcessAccountInfos<'a> for MintBoxesAccounts<'a> {
 			return Err(lootbox_error(LootboxError::SupplyExceeded));
 		}
 
-		let recipient_box_account = self.recipient_box_account.as_token_account_checked()?;
+		let recipient_box_account = self.recipient_box_account.as_token_account()?;
 		let recipient = *recipient_box_account.owner();
 		drop(recipient_box_account);
-		drop(
-			self.recipient_box_account
-				.as_associated_token_account_checked(
-					&recipient,
-					self.box_mint.address(),
-					&token::ID,
-				)?,
-		);
+		drop(self.recipient_box_account.as_associated_token_account(
+			&recipient,
+			self.box_mint.address(),
+			&token::ID,
+		)?);
 		let new_supply = mint_supply
 			.checked_add(amount)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
@@ -936,7 +933,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestOpenAccounts<'a> {
 		}
 
 		let mint_supply = assert_box_mint(self.box_mint, &lootbox_address, &state.box_mint)?;
-		let box_account = self.owner_box_account.as_associated_token_account_checked(
+		let box_account = self.owner_box_account.as_associated_token_account(
 			&owner_address,
 			self.box_mint.address(),
 			&token::ID,
@@ -1190,7 +1187,7 @@ impl<'a> ProcessAccountInfos<'a> for SettleOpenAccounts<'a> {
 		drop(state);
 
 		self.vault.assert_owner(&ID)?;
-		self.vault.send(reward_lamports, self.recipient)
+		self.vault.send_owned(&ID, reward_lamports, self.recipient)
 	}
 }
 
@@ -1287,7 +1284,7 @@ impl<'a> ProcessAccountInfos<'a> for RefundOpenAccounts<'a> {
 		drop(state);
 
 		self.vault.assert_owner(&ID)?;
-		self.vault.send(floor_lamports, self.recipient)
+		self.vault.send_owned(&ID, floor_lamports, self.recipient)
 	}
 }
 
@@ -1356,7 +1353,7 @@ impl<'a> ProcessAccountInfos<'a> for CloseOpeningAccounts<'a> {
 		}
 		.invoke_signed(&signers)?;
 
-		self.opening.close_account_zeroed(self.recipient)
+		self.opening.close_account_zeroed(&ID, self.recipient)
 	}
 }
 
@@ -1384,7 +1381,8 @@ impl<'a> ProcessAccountInfos<'a> for WithdrawSurplusAccounts<'a> {
 
 		drop(state);
 		self.vault.assert_owner(&ID)?;
-		self.vault.send(args.lamports.get(), self.authority)
+		self.vault
+			.send_owned(&ID, args.lamports.get(), self.authority)
 	}
 }
 

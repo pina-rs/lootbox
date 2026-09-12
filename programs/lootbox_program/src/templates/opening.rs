@@ -250,7 +250,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 			&state.box_mint,
 			state.locked_at.get() != 0,
 		)?;
-		let box_account = self.box_account.as_associated_token_account_checked(
+		let box_account = self.box_account.as_associated_token_account(
 			&box_authority_address,
 			self.box_mint.address(),
 			&token_2022::ID,

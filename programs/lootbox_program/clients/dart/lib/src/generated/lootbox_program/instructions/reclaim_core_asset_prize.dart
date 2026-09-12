@@ -1,7 +1,6 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -12,19 +11,17 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
-
 @immutable
 class ReclaimCoreAssetPrizeInstructionData {
-  const ReclaimCoreAssetPrizeInstructionData({
-    required this.assetIndex,
-  }) :
-      discriminator = 32;
+  const ReclaimCoreAssetPrizeInstructionData({required this.assetIndex})
+    : discriminator = 32;
 
   final int discriminator;
   final int assetIndex;
 }
 
-Encoder<ReclaimCoreAssetPrizeInstructionData> getReclaimCoreAssetPrizeInstructionDataEncoder() {
+Encoder<ReclaimCoreAssetPrizeInstructionData>
+getReclaimCoreAssetPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
     ('assetIndex', getU8Encoder()),
@@ -39,27 +36,26 @@ Encoder<ReclaimCoreAssetPrizeInstructionData> getReclaimCoreAssetPrizeInstructio
   );
 }
 
-Decoder<ReclaimCoreAssetPrizeInstructionData> getReclaimCoreAssetPrizeInstructionDataDecoder() {
+Decoder<ReclaimCoreAssetPrizeInstructionData>
+getReclaimCoreAssetPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
     ('assetIndex', getU8Decoder()),
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(
-      SolanaErrorCode.codecsInvalidByteLength,
-      {
-        'codecDescription': 'reclaimCoreAssetPrize instruction decoder',
-        'expected': expected,
-        'bytesLength': bytesLength,
-      },
-    );
+    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
+      'codecDescription': 'reclaimCoreAssetPrize instruction decoder',
+      'expected': expected,
+      'bytesLength': bytesLength,
+    });
   }
 
-  (ReclaimCoreAssetPrizeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(
-      getU8Encoder().encode(32),
-    ).read(bytes, offset + 0);
+  (ReclaimCoreAssetPrizeInstructionData, int) readTopLevel(
+    Uint8List bytes,
+    int offset,
+  ) {
+    getConstantDecoder(getU8Encoder().encode(32)).read(bytes, offset + 0);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
@@ -67,7 +63,7 @@ Decoder<ReclaimCoreAssetPrizeInstructionData> getReclaimCoreAssetPrizeInstructio
 
     return (
       ReclaimCoreAssetPrizeInstructionData(
-      assetIndex: map['assetIndex']! as int,
+        assetIndex: map['assetIndex']! as int,
       ),
       newOffset,
     );
@@ -93,8 +89,15 @@ Decoder<ReclaimCoreAssetPrizeInstructionData> getReclaimCoreAssetPrizeInstructio
   };
 }
 
-Codec<ReclaimCoreAssetPrizeInstructionData, ReclaimCoreAssetPrizeInstructionData> getReclaimCoreAssetPrizeInstructionDataCodec() {
-  return combineCodec(getReclaimCoreAssetPrizeInstructionDataEncoder(), getReclaimCoreAssetPrizeInstructionDataDecoder());
+Codec<
+  ReclaimCoreAssetPrizeInstructionData,
+  ReclaimCoreAssetPrizeInstructionData
+>
+getReclaimCoreAssetPrizeInstructionDataCodec() {
+  return combineCodec(
+    getReclaimCoreAssetPrizeInstructionDataEncoder(),
+    getReclaimCoreAssetPrizeInstructionDataDecoder(),
+  );
 }
 
 /// Creates a [ReclaimCoreAssetPrize] instruction.
@@ -113,28 +116,34 @@ Instruction getReclaimCoreAssetPrizeInstruction({
   required int assetIndex,
 }) {
   final instructionData = ReclaimCoreAssetPrizeInstructionData(
-      assetIndex: assetIndex,
+    assetIndex: assetIndex,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-    AccountMeta(address: authority, role: AccountRole.writableSigner),
-    AccountMeta(address: template, role: AccountRole.readonly),
-    AccountMeta(address: boxMint, role: AccountRole.readonly),
-    AccountMeta(address: bundle, role: AccountRole.writable),
-    AccountMeta(address: asset, role: AccountRole.writable),
-    AccountMeta(address: collection, role: AccountRole.readonly),
-    AccountMeta(address: coreProgram, role: AccountRole.readonly),
-    AccountMeta(address: systemProgram, role: AccountRole.readonly),
-    AccountMeta(address: logWrapper, role: AccountRole.readonly),
-    AccountMeta(address: pluginAccounts, role: AccountRole.readonly),
+      AccountMeta(address: authority, role: AccountRole.writableSigner),
+      AccountMeta(address: template, role: AccountRole.readonly),
+      AccountMeta(address: boxMint, role: AccountRole.readonly),
+      AccountMeta(address: bundle, role: AccountRole.writable),
+      AccountMeta(address: asset, role: AccountRole.writable),
+      AccountMeta(address: collection, role: AccountRole.readonly),
+      AccountMeta(address: coreProgram, role: AccountRole.readonly),
+      AccountMeta(address: systemProgram, role: AccountRole.readonly),
+      AccountMeta(address: logWrapper, role: AccountRole.readonly),
+      AccountMeta(address: pluginAccounts, role: AccountRole.readonly),
     ],
-    data: getReclaimCoreAssetPrizeInstructionDataEncoder().encode(instructionData),
+    data: getReclaimCoreAssetPrizeInstructionDataEncoder().encode(
+      instructionData,
+    ),
   );
 }
 
 /// Parses a [ReclaimCoreAssetPrize] instruction from raw instruction data.
-ReclaimCoreAssetPrizeInstructionData parseReclaimCoreAssetPrizeInstruction(Instruction instruction) {
-  return getReclaimCoreAssetPrizeInstructionDataDecoder().decode(instruction.data!);
+ReclaimCoreAssetPrizeInstructionData parseReclaimCoreAssetPrizeInstruction(
+  Instruction instruction,
+) {
+  return getReclaimCoreAssetPrizeInstructionDataDecoder().decode(
+    instruction.data!,
+  );
 }

@@ -146,6 +146,10 @@ impl ResultReceiptState {
 		if account.discriminator != RESULT_RECEIPT_STATE_DISCRIMINATOR {
 			return Err(ResultReceiptStateVersionError::InvalidData);
 		}
+		#[allow(clippy::absurd_extreme_comparisons)] // version 0 cannot be stale
+		if account.migration_version < RESULT_RECEIPT_STATE_MIGRATION_VERSION {
+			return Err(ResultReceiptStateVersionError::Stale { stored: account.migration_version });
+		}
 		if account.migration_version > RESULT_RECEIPT_STATE_MIGRATION_VERSION {
 			return Err(ResultReceiptStateVersionError::Future { stored: account.migration_version });
 		}

@@ -158,6 +158,10 @@ impl TemplateOpeningState {
 		if account.discriminator != TEMPLATE_OPENING_STATE_DISCRIMINATOR {
 			return Err(TemplateOpeningStateVersionError::InvalidData);
 		}
+		#[allow(clippy::absurd_extreme_comparisons)] // version 0 cannot be stale
+		if account.migration_version < TEMPLATE_OPENING_STATE_MIGRATION_VERSION {
+			return Err(TemplateOpeningStateVersionError::Stale { stored: account.migration_version });
+		}
 		if account.migration_version > TEMPLATE_OPENING_STATE_MIGRATION_VERSION {
 			return Err(TemplateOpeningStateVersionError::Future { stored: account.migration_version });
 		}

@@ -11,7 +11,8 @@ import '../programs/lootbox_program.dart' show lootboxProgramProgramAddress;
 /// Discriminator reserved by Pina for the framework `Migrate` instruction.
 const migrateDiscriminator = 255;
 
-Uint8List getMigrateDiscriminatorBytes() => Uint8List.fromList(const [255]);
+Uint8List getMigrateDiscriminatorBytes() =>
+    Uint8List.fromList(const [255]);
 
 /// Creates the framework-owned `Migrate` instruction: it runs the program's
 /// on-demand account migrations on their own, so the payer authorizes exactly
@@ -41,10 +42,7 @@ Instruction getMigrateInstruction({
       address: payer ?? resolvedProgram,
       role: payer == null ? AccountRole.readonly : AccountRole.writableSigner,
     ),
-    AccountMeta(
-      address: systemProgram ?? resolvedProgram,
-      role: AccountRole.readonly,
-    ),
+    AccountMeta(address: systemProgram ?? resolvedProgram, role: AccountRole.readonly),
     AccountMeta(
       address: lootboxState ?? resolvedProgram,
       role: lootboxState == null ? AccountRole.readonly : AccountRole.writable,
@@ -67,28 +65,14 @@ Instruction getMigrateInstruction({
     ),
     AccountMeta(
       address: templateOpeningState ?? resolvedProgram,
-      role: templateOpeningState == null
-          ? AccountRole.readonly
-          : AccountRole.writable,
+      role: templateOpeningState == null ? AccountRole.readonly : AccountRole.writable,
     ),
     AccountMeta(
       address: resultReceiptState ?? resolvedProgram,
-      role: resultReceiptState == null
-          ? AccountRole.readonly
-          : AccountRole.writable,
+      role: resultReceiptState == null ? AccountRole.readonly : AccountRole.writable,
     ),
   ];
-  final provided = [
-    payer,
-    systemProgram,
-    lootboxState,
-    vaultState,
-    openingState,
-    templateState,
-    bundleState,
-    templateOpeningState,
-    resultReceiptState,
-  ];
+  final provided = [payer, systemProgram, lootboxState, vaultState, openingState, templateState, bundleState, templateOpeningState, resultReceiptState];
   var last = -1;
   for (var index = 0; index < provided.length; index++) {
     if (provided[index] != null) {

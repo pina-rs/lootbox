@@ -1,13 +1,19 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
+
 import 'package:meta/meta.dart';
 import 'package:solana_kit_addresses/solana_kit_addresses.dart';
 import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 
+
 @immutable
 class TemplateSeeds {
-  const TemplateSeeds({required this.authority, required this.id});
+  const TemplateSeeds({
+    required this.authority,
+    required this.id,
+  });
 
   final Address authority;
   final BigInt id;

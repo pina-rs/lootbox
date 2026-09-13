@@ -136,6 +136,10 @@ impl VaultState {
 		if account.discriminator != VAULT_STATE_DISCRIMINATOR {
 			return Err(VaultStateVersionError::InvalidData);
 		}
+		#[allow(clippy::absurd_extreme_comparisons)] // version 0 cannot be stale
+		if account.migration_version < VAULT_STATE_MIGRATION_VERSION {
+			return Err(VaultStateVersionError::Stale { stored: account.migration_version });
+		}
 		if account.migration_version > VAULT_STATE_MIGRATION_VERSION {
 			return Err(VaultStateVersionError::Future { stored: account.migration_version });
 		}

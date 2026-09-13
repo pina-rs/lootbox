@@ -1984,6 +1984,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "lootbox-program-cpi"
+version = "0.0.1-alpha.0"
+dependencies = [
+ "pina",
+]
+
+[[package]]
 name = "lootbox-sdk"
 version = "0.0.1-alpha.0"
 dependencies = [
@@ -2341,9 +2348,9 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
 name = "pina"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a35aedcbd21c0cd92935102793b784be53313e482fd0f78bf63da32ba9d7e705"
+checksum = "46db60a0956f061179805b4b18af80c742d02ac4a7db95d327d53d6884971fc5"
 dependencies = [
  "pastey",
  "pina_macros",
@@ -2359,9 +2366,9 @@ dependencies = [
 
 [[package]]
 name = "pina_abi"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0b49c6eea178619d7e8b0e832a7d5ba1823e64ee95ce3ffed8bbe976fe58eaf"
+checksum = "f3d8c4347cc8f5118a43ac484b2318ed0d56ce69e9c5bf688863bbdc5cecd61a"
 dependencies = [
  "quote",
  "serde",
@@ -2372,9 +2379,9 @@ dependencies = [
 
 [[package]]
 name = "pina_macros"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ccd297404cf80a2ccf3ee54075d68ea4e054820182c902e06ebf533d87a82df"
+checksum = "8f67e9cc835f0265740804431fbe24ad9dda12caf477e9eb80048604ff05b574"
 dependencies = [
  "darling 0.24.1",
  "heck",

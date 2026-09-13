@@ -154,6 +154,10 @@ impl BundleState {
 		if account.discriminator != BUNDLE_STATE_DISCRIMINATOR {
 			return Err(BundleStateVersionError::InvalidData);
 		}
+		#[allow(clippy::absurd_extreme_comparisons)] // version 0 cannot be stale
+		if account.migration_version < BUNDLE_STATE_MIGRATION_VERSION {
+			return Err(BundleStateVersionError::Stale { stored: account.migration_version });
+		}
 		if account.migration_version > BUNDLE_STATE_MIGRATION_VERSION {
 			return Err(BundleStateVersionError::Future { stored: account.migration_version });
 		}

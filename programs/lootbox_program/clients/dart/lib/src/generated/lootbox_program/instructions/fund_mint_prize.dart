@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,10 +12,11 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
+
 @immutable
 class FundMintPrizeInstructionData {
-  const FundMintPrizeInstructionData()
-    : discriminator = 41,
+  const FundMintPrizeInstructionData() :
+      discriminator = 41,
       migrationVersion = 0;
 
   final int discriminator;
@@ -43,25 +45,34 @@ Decoder<FundMintPrizeInstructionData> getFundMintPrizeInstructionDataDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'fundMintPrize instruction decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'fundMintPrize instruction decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
-  (FundMintPrizeInstructionData, int) readTopLevel(
-    Uint8List bytes,
-    int offset,
-  ) {
-    getConstantDecoder(getU8Encoder().encode(41)).read(bytes, offset + 0);
-    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
+  (FundMintPrizeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
+    getConstantDecoder(
+      getU8Encoder().encode(41),
+    ).read(bytes, offset + 0);
+    getConstantDecoder(
+      getU8Encoder().encode(0),
+    ).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
     }
 
-    return (FundMintPrizeInstructionData(), newOffset);
+    return (
+      FundMintPrizeInstructionData(
+
+      ),
+      newOffset,
+    );
   }
 
   return switch (structDecoder) {
@@ -84,12 +95,8 @@ Decoder<FundMintPrizeInstructionData> getFundMintPrizeInstructionDataDecoder() {
   };
 }
 
-Codec<FundMintPrizeInstructionData, FundMintPrizeInstructionData>
-getFundMintPrizeInstructionDataCodec() {
-  return combineCodec(
-    getFundMintPrizeInstructionDataEncoder(),
-    getFundMintPrizeInstructionDataDecoder(),
-  );
+Codec<FundMintPrizeInstructionData, FundMintPrizeInstructionData> getFundMintPrizeInstructionDataCodec() {
+  return combineCodec(getFundMintPrizeInstructionDataEncoder(), getFundMintPrizeInstructionDataDecoder());
 }
 
 /// Creates a [FundMintPrize] instruction.
@@ -100,25 +107,26 @@ Instruction getFundMintPrizeInstruction({
   required Address bundle,
   required Address mint,
   required Address tokenProgram,
+
 }) {
-  final instructionData = FundMintPrizeInstructionData();
+  final instructionData = FundMintPrizeInstructionData(
+
+  );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.readonly),
-      AccountMeta(address: template, role: AccountRole.writable),
-      AccountMeta(address: bundle, role: AccountRole.writable),
-      AccountMeta(address: mint, role: AccountRole.writable),
-      AccountMeta(address: tokenProgram, role: AccountRole.readonly),
+    AccountMeta(address: authority, role: AccountRole.readonly),
+    AccountMeta(address: template, role: AccountRole.writable),
+    AccountMeta(address: bundle, role: AccountRole.writable),
+    AccountMeta(address: mint, role: AccountRole.writable),
+    AccountMeta(address: tokenProgram, role: AccountRole.readonly),
     ],
     data: getFundMintPrizeInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [FundMintPrize] instruction from raw instruction data.
-FundMintPrizeInstructionData parseFundMintPrizeInstruction(
-  Instruction instruction,
-) {
+FundMintPrizeInstructionData parseFundMintPrizeInstruction(Instruction instruction) {
   return getFundMintPrizeInstructionDataDecoder().decode(instruction.data!);
 }

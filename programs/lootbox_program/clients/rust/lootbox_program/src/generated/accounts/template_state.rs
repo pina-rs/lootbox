@@ -117,13 +117,6 @@ impl TemplateState {
 
 /// Whether raw account bytes are stale for this contract: the envelope names this account's discriminator and carries a version older than
 /// [`TEMPLATE_STATE_MIGRATION_VERSION`]. Current or foreign bytes return false; decoding explains the difference.
-pub fn template_state_needs_migration(data: &[u8]) -> bool {
-	data.len() >= 2
-			&& data[0] == 4
-			&& {
-				let mut version = [0_u8; 8];
-				version[..1]
-					.copy_from_slice(&data[1..2]);
-						 u64::from_le_bytes(version) < 0
-			}
+pub fn template_state_needs_migration(_data: &[u8]) -> bool {
+	false
 }

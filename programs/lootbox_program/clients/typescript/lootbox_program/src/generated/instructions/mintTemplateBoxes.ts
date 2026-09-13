@@ -19,7 +19,7 @@ export const MINT_TEMPLATE_BOXES_DISCRIMINATOR2 = 0;
 
 export function getMintTemplateBoxesDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(MINT_TEMPLATE_BOXES_DISCRIMINATOR2); }
 
-export type MintTemplateBoxesInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountRecipientBoxAccount extends string | AccountMeta<string> = string, TAccountBoxTokenProgram extends string | AccountMeta<string> = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+export type MintTemplateBoxesInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountRecipientBoxAccount extends string | AccountMeta<string> = string, TAccountBoxTokenProgram extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlyAccount<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? WritableAccount<TAccountBoxMint> : TAccountBoxMint, TAccountRecipientBoxAccount extends string ? WritableAccount<TAccountRecipientBoxAccount> : TAccountRecipientBoxAccount, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, ...TRemainingAccounts]>;
 
 export type MintTemplateBoxesInstructionData = { discriminator: number; migrationVersion: number; amount: bigint;  };
@@ -43,7 +43,7 @@ export type MintTemplateBoxesInput<TAccountAuthority extends string = string, TA
 template: Address<TAccountTemplate>;
 boxMint: Address<TAccountBoxMint>;
 recipientBoxAccount: Address<TAccountRecipientBoxAccount>;
-boxTokenProgram?: Address<TAccountBoxTokenProgram>;
+boxTokenProgram: Address<TAccountBoxTokenProgram>;
 amount: MintTemplateBoxesInstructionDataArgs["amount"];
 }
 
@@ -60,10 +60,7 @@ const accounts = originalAccounts as Record<keyof typeof originalAccounts, Resol
 const args = { ...input,  };
 
 
-// Resolve default values.
-if (!accounts.boxTokenProgram.value) {
-accounts.boxTokenProgram.value = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address<'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'>;
-}
+
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
 return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("recipientBoxAccount", accounts.recipientBoxAccount), getAccountMeta("boxTokenProgram", accounts.boxTokenProgram)], data: getMintTemplateBoxesInstructionDataEncoder().encode(args as MintTemplateBoxesInstructionDataArgs), programAddress } as MintTemplateBoxesInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountRecipientBoxAccount, TAccountBoxTokenProgram>);

@@ -1,7 +1,6 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,7 +10,6 @@ import 'package:solana_kit_codecs_core/solana_kit_codecs_core.dart';
 import 'package:solana_kit_codecs_data_structures/solana_kit_codecs_data_structures.dart';
 import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
-
 
 @immutable
 class TemplateOpeningState {
@@ -32,9 +30,8 @@ class TemplateOpeningState {
     required this.selectedBundle,
     required this.claimedMask,
     required this.bump,
-  }) :
-      discriminator = 6,
-      migrationVersion = 0;
+  }) : discriminator = 6,
+       migrationVersion = 0;
 
   final int discriminator;
   final int migrationVersion;
@@ -80,12 +77,31 @@ class TemplateOpeningState {
           bump == other.bump;
 
   @override
-  int get hashCode => Object.hash(discriminator, migrationVersion, template, boxAuthority, beneficiary, rentRefund, consumerProgram, consumerContext, randomness, sequence, seedSlot, entropy, treasuryRevision, eligibleBundleCount, status, selectedBundle, claimedMask, bump);
+  int get hashCode => Object.hash(
+    discriminator,
+    migrationVersion,
+    template,
+    boxAuthority,
+    beneficiary,
+    rentRefund,
+    consumerProgram,
+    consumerContext,
+    randomness,
+    sequence,
+    seedSlot,
+    entropy,
+    treasuryRevision,
+    eligibleBundleCount,
+    status,
+    selectedBundle,
+    claimedMask,
+    bump,
+  );
 
   @override
-  String toString() => 'TemplateOpeningState(discriminator: $discriminator, migrationVersion: $migrationVersion, template: $template, boxAuthority: $boxAuthority, beneficiary: $beneficiary, rentRefund: $rentRefund, consumerProgram: $consumerProgram, consumerContext: $consumerContext, randomness: $randomness, sequence: $sequence, seedSlot: $seedSlot, entropy: $entropy, treasuryRevision: $treasuryRevision, eligibleBundleCount: $eligibleBundleCount, status: $status, selectedBundle: $selectedBundle, claimedMask: $claimedMask, bump: $bump)';
+  String toString() =>
+      'TemplateOpeningState(discriminator: $discriminator, migrationVersion: $migrationVersion, template: $template, boxAuthority: $boxAuthority, beneficiary: $beneficiary, rentRefund: $rentRefund, consumerProgram: $consumerProgram, consumerContext: $consumerContext, randomness: $randomness, sequence: $sequence, seedSlot: $seedSlot, entropy: $entropy, treasuryRevision: $treasuryRevision, eligibleBundleCount: $eligibleBundleCount, status: $status, selectedBundle: $selectedBundle, claimedMask: $claimedMask, bump: $bump)';
 }
-
 
 Encoder<TemplateOpeningState> getTemplateOpeningStateEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
@@ -96,7 +112,10 @@ Encoder<TemplateOpeningState> getTemplateOpeningStateEncoder() {
     ('beneficiary', getAddressEncoder()),
     ('rentRefund', getAddressEncoder()),
     ('consumerProgram', getAddressEncoder()),
-    ('consumerContext', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
+    (
+      'consumerContext',
+      fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false),
+    ),
     ('randomness', getAddressEncoder()),
     ('sequence', getU64Encoder()),
     ('seedSlot', getU64Encoder()),
@@ -157,20 +176,15 @@ Decoder<TemplateOpeningState> getTemplateOpeningStateDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(
-      SolanaErrorCode.codecsInvalidByteLength,
-      {
-        'codecDescription': 'templateOpeningState account decoder',
-        'expected': expected,
-        'bytesLength': bytesLength,
-      },
-    );
+    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
+      'codecDescription': 'templateOpeningState account decoder',
+      'expected': expected,
+      'bytesLength': bytesLength,
+    });
   }
 
   (TemplateOpeningState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(
-      getU8Encoder().encode(6),
-    ).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(6)).read(bytes, offset + 0);
     final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
     if (storedMigrationVersion != 0) {
       throw StateError(
@@ -183,22 +197,22 @@ Decoder<TemplateOpeningState> getTemplateOpeningStateDecoder() {
 
     return (
       TemplateOpeningState(
-      template: map['template']! as Address,
-      boxAuthority: map['boxAuthority']! as Address,
-      beneficiary: map['beneficiary']! as Address,
-      rentRefund: map['rentRefund']! as Address,
-      consumerProgram: map['consumerProgram']! as Address,
-      consumerContext: map['consumerContext']! as Uint8List,
-      randomness: map['randomness']! as Address,
-      sequence: map['sequence']! as BigInt,
-      seedSlot: map['seedSlot']! as BigInt,
-      entropy: map['entropy']! as Uint8List,
-      treasuryRevision: map['treasuryRevision']! as BigInt,
-      eligibleBundleCount: map['eligibleBundleCount']! as int,
-      status: map['status']! as int,
-      selectedBundle: map['selectedBundle']! as int,
-      claimedMask: map['claimedMask']! as int,
-      bump: map['bump']! as int,
+        template: map['template']! as Address,
+        boxAuthority: map['boxAuthority']! as Address,
+        beneficiary: map['beneficiary']! as Address,
+        rentRefund: map['rentRefund']! as Address,
+        consumerProgram: map['consumerProgram']! as Address,
+        consumerContext: map['consumerContext']! as Uint8List,
+        randomness: map['randomness']! as Address,
+        sequence: map['sequence']! as BigInt,
+        seedSlot: map['seedSlot']! as BigInt,
+        entropy: map['entropy']! as Uint8List,
+        treasuryRevision: map['treasuryRevision']! as BigInt,
+        eligibleBundleCount: map['eligibleBundleCount']! as int,
+        status: map['status']! as int,
+        selectedBundle: map['selectedBundle']! as int,
+        claimedMask: map['claimedMask']! as int,
+        bump: map['bump']! as int,
       ),
       newOffset,
     );
@@ -224,11 +238,17 @@ Decoder<TemplateOpeningState> getTemplateOpeningStateDecoder() {
   };
 }
 
-Codec<TemplateOpeningState, TemplateOpeningState> getTemplateOpeningStateCodec() {
-  return combineCodec(getTemplateOpeningStateEncoder(), getTemplateOpeningStateDecoder());
+Codec<TemplateOpeningState, TemplateOpeningState>
+getTemplateOpeningStateCodec() {
+  return combineCodec(
+    getTemplateOpeningStateEncoder(),
+    getTemplateOpeningStateDecoder(),
+  );
 }
 
-Account<TemplateOpeningState> decodeTemplateOpeningState(EncodedAccount encodedAccount) {
+Account<TemplateOpeningState> decodeTemplateOpeningState(
+  EncodedAccount encodedAccount,
+) {
   return decodeAccount(encodedAccount, getTemplateOpeningStateDecoder());
 }
 
@@ -240,11 +260,11 @@ const int templateOpeningStateMigrationVersion = 0;
 /// than this client's schema — exactly the accounts [getMigrateInstruction]
 /// can bring current. Decoding reports every other mismatch.
 bool templateOpeningStateNeedsMigration(List<int> data) {
-	if (data.length < 2) {
-		return false;
-	}
-	if (data[0] != 6) {
-		return false;
-	}
-	return data[1] < 0;
+  if (data.length < 2) {
+    return false;
+  }
+  if (data[0] != 6) {
+    return false;
+  }
+  return data[1] < 0;
 }

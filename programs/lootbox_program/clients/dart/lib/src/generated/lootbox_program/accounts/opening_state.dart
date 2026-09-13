@@ -1,7 +1,6 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,7 +10,6 @@ import 'package:solana_kit_codecs_core/solana_kit_codecs_core.dart';
 import 'package:solana_kit_codecs_data_structures/solana_kit_codecs_data_structures.dart';
 import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
-
 
 @immutable
 class OpeningState {
@@ -24,9 +22,8 @@ class OpeningState {
     required this.selectedOutcome,
     required this.status,
     required this.bump,
-  }) :
-      discriminator = 3,
-      migrationVersion = 0;
+  }) : discriminator = 3,
+       migrationVersion = 0;
 
   final int discriminator;
   final int migrationVersion;
@@ -56,12 +53,23 @@ class OpeningState {
           bump == other.bump;
 
   @override
-  int get hashCode => Object.hash(discriminator, migrationVersion, lootbox, recipient, randomness, seedSlot, rewardLamports, selectedOutcome, status, bump);
+  int get hashCode => Object.hash(
+    discriminator,
+    migrationVersion,
+    lootbox,
+    recipient,
+    randomness,
+    seedSlot,
+    rewardLamports,
+    selectedOutcome,
+    status,
+    bump,
+  );
 
   @override
-  String toString() => 'OpeningState(discriminator: $discriminator, migrationVersion: $migrationVersion, lootbox: $lootbox, recipient: $recipient, randomness: $randomness, seedSlot: $seedSlot, rewardLamports: $rewardLamports, selectedOutcome: $selectedOutcome, status: $status, bump: $bump)';
+  String toString() =>
+      'OpeningState(discriminator: $discriminator, migrationVersion: $migrationVersion, lootbox: $lootbox, recipient: $recipient, randomness: $randomness, seedSlot: $seedSlot, rewardLamports: $rewardLamports, selectedOutcome: $selectedOutcome, status: $status, bump: $bump)';
 }
-
 
 Encoder<OpeningState> getOpeningStateEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
@@ -109,20 +117,15 @@ Decoder<OpeningState> getOpeningStateDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(
-      SolanaErrorCode.codecsInvalidByteLength,
-      {
-        'codecDescription': 'openingState account decoder',
-        'expected': expected,
-        'bytesLength': bytesLength,
-      },
-    );
+    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
+      'codecDescription': 'openingState account decoder',
+      'expected': expected,
+      'bytesLength': bytesLength,
+    });
   }
 
   (OpeningState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(
-      getU8Encoder().encode(3),
-    ).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(3)).read(bytes, offset + 0);
     final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
     if (storedMigrationVersion != 0) {
       throw StateError(
@@ -135,31 +138,30 @@ Decoder<OpeningState> getOpeningStateDecoder() {
 
     return (
       OpeningState(
-      lootbox: map['lootbox']! as Address,
-      recipient: map['recipient']! as Address,
-      randomness: map['randomness']! as Address,
-      seedSlot: map['seedSlot']! as BigInt,
-      rewardLamports: map['rewardLamports']! as BigInt,
-      selectedOutcome: map['selectedOutcome']! as int,
-      status: map['status']! as int,
-      bump: map['bump']! as int,
+        lootbox: map['lootbox']! as Address,
+        recipient: map['recipient']! as Address,
+        randomness: map['randomness']! as Address,
+        seedSlot: map['seedSlot']! as BigInt,
+        rewardLamports: map['rewardLamports']! as BigInt,
+        selectedOutcome: map['selectedOutcome']! as int,
+        status: map['status']! as int,
+        bump: map['bump']! as int,
       ),
       newOffset,
     );
   }
 
   return switch (structDecoder) {
-    FixedSizeDecoder<Map<String, Object?>>() =>
-      FixedSizeDecoder<OpeningState>(
-        fixedSize: structDecoder.fixedSize,
-        read: (bytes, offset) {
-          final bytesLength = bytes.length - offset;
-          if (bytesLength < structDecoder.fixedSize) {
-            throwInvalidByteLength(structDecoder.fixedSize, bytesLength);
-          }
-          return readTopLevel(bytes, offset);
-        },
-      ),
+    FixedSizeDecoder<Map<String, Object?>>() => FixedSizeDecoder<OpeningState>(
+      fixedSize: structDecoder.fixedSize,
+      read: (bytes, offset) {
+        final bytesLength = bytes.length - offset;
+        if (bytesLength < structDecoder.fixedSize) {
+          throwInvalidByteLength(structDecoder.fixedSize, bytesLength);
+        }
+        return readTopLevel(bytes, offset);
+      },
+    ),
     VariableSizeDecoder<Map<String, Object?>>() =>
       VariableSizeDecoder<OpeningState>(
         read: readTopLevel,
@@ -184,11 +186,11 @@ const int openingStateMigrationVersion = 0;
 /// than this client's schema — exactly the accounts [getMigrateInstruction]
 /// can bring current. Decoding reports every other mismatch.
 bool openingStateNeedsMigration(List<int> data) {
-	if (data.length < 2) {
-		return false;
-	}
-	if (data[0] != 3) {
-		return false;
-	}
-	return data[1] < 0;
+  if (data.length < 2) {
+    return false;
+  }
+  if (data[0] != 3) {
+    return false;
+  }
+  return data[1] < 0;
 }

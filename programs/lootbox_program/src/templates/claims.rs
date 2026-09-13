@@ -30,7 +30,9 @@ pub struct AllocateTemplateOpenAccounts<'a> {
 	/// Creator-funded when permanent result receipts are enabled.
 	pub service_vault: &'a mut AccountView,
 	/// Created only when enabled in the locked treasury configuration.
+	#[pina(validate(empty))]
 	pub result_receipt: &'a mut AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
@@ -172,9 +174,6 @@ impl<'a> ProcessAccountInfos<'a> for AllocateTemplateOpenAccounts<'a> {
 		let args = AllocateTemplateOpenInstruction::try_from_bytes(data)?;
 		let template = *self.template.address();
 		let address = *self.opening.address();
-		self.service_vault.assert_writable()?;
-		self.result_receipt.assert_empty()?.assert_writable()?;
-		self.system_program.assert_address(&system::ID)?;
 		let account_data = self.template.try_borrow()?;
 		let state = TemplateState::try_from_bytes(&account_data)?;
 		assert_template(&template, &state)?;

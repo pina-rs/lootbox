@@ -1,7 +1,6 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -12,13 +11,10 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
-
 @immutable
 class FundQuoteSolPrizeInstructionData {
-  const FundQuoteSolPrizeInstructionData({
-    required this.lamportsPerWin,
-  }) :
-      discriminator = 39,
+  const FundQuoteSolPrizeInstructionData({required this.lamportsPerWin})
+    : discriminator = 39,
       migrationVersion = 0;
 
   final int discriminator;
@@ -26,7 +22,8 @@ class FundQuoteSolPrizeInstructionData {
   final BigInt lamportsPerWin;
 }
 
-Encoder<FundQuoteSolPrizeInstructionData> getFundQuoteSolPrizeInstructionDataEncoder() {
+Encoder<FundQuoteSolPrizeInstructionData>
+getFundQuoteSolPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
     ('migrationVersion', getU8Encoder()),
@@ -43,7 +40,8 @@ Encoder<FundQuoteSolPrizeInstructionData> getFundQuoteSolPrizeInstructionDataEnc
   );
 }
 
-Decoder<FundQuoteSolPrizeInstructionData> getFundQuoteSolPrizeInstructionDataDecoder() {
+Decoder<FundQuoteSolPrizeInstructionData>
+getFundQuoteSolPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
     ('migrationVersion', getU8Decoder()),
@@ -51,23 +49,19 @@ Decoder<FundQuoteSolPrizeInstructionData> getFundQuoteSolPrizeInstructionDataDec
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(
-      SolanaErrorCode.codecsInvalidByteLength,
-      {
-        'codecDescription': 'fundQuoteSolPrize instruction decoder',
-        'expected': expected,
-        'bytesLength': bytesLength,
-      },
-    );
+    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
+      'codecDescription': 'fundQuoteSolPrize instruction decoder',
+      'expected': expected,
+      'bytesLength': bytesLength,
+    });
   }
 
-  (FundQuoteSolPrizeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(
-      getU8Encoder().encode(39),
-    ).read(bytes, offset + 0);
-    getConstantDecoder(
-      getU8Encoder().encode(0),
-    ).read(bytes, offset + 1);
+  (FundQuoteSolPrizeInstructionData, int) readTopLevel(
+    Uint8List bytes,
+    int offset,
+  ) {
+    getConstantDecoder(getU8Encoder().encode(39)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
@@ -75,7 +69,7 @@ Decoder<FundQuoteSolPrizeInstructionData> getFundQuoteSolPrizeInstructionDataDec
 
     return (
       FundQuoteSolPrizeInstructionData(
-      lamportsPerWin: map['lamportsPerWin']! as BigInt,
+        lamportsPerWin: map['lamportsPerWin']! as BigInt,
       ),
       newOffset,
     );
@@ -101,8 +95,12 @@ Decoder<FundQuoteSolPrizeInstructionData> getFundQuoteSolPrizeInstructionDataDec
   };
 }
 
-Codec<FundQuoteSolPrizeInstructionData, FundQuoteSolPrizeInstructionData> getFundQuoteSolPrizeInstructionDataCodec() {
-  return combineCodec(getFundQuoteSolPrizeInstructionDataEncoder(), getFundQuoteSolPrizeInstructionDataDecoder());
+Codec<FundQuoteSolPrizeInstructionData, FundQuoteSolPrizeInstructionData>
+getFundQuoteSolPrizeInstructionDataCodec() {
+  return combineCodec(
+    getFundQuoteSolPrizeInstructionDataEncoder(),
+    getFundQuoteSolPrizeInstructionDataDecoder(),
+  );
 }
 
 /// Creates a [FundQuoteSolPrize] instruction.
@@ -115,22 +113,24 @@ Instruction getFundQuoteSolPrizeInstruction({
   required BigInt lamportsPerWin,
 }) {
   final instructionData = FundQuoteSolPrizeInstructionData(
-      lamportsPerWin: lamportsPerWin,
+    lamportsPerWin: lamportsPerWin,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-    AccountMeta(address: authority, role: AccountRole.writable),
-    AccountMeta(address: template, role: AccountRole.writable),
-    AccountMeta(address: bundle, role: AccountRole.writable),
-    AccountMeta(address: systemProgram, role: AccountRole.readonly),
+      AccountMeta(address: authority, role: AccountRole.writable),
+      AccountMeta(address: template, role: AccountRole.writable),
+      AccountMeta(address: bundle, role: AccountRole.writable),
+      AccountMeta(address: systemProgram, role: AccountRole.readonly),
     ],
     data: getFundQuoteSolPrizeInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [FundQuoteSolPrize] instruction from raw instruction data.
-FundQuoteSolPrizeInstructionData parseFundQuoteSolPrizeInstruction(Instruction instruction) {
+FundQuoteSolPrizeInstructionData parseFundQuoteSolPrizeInstruction(
+  Instruction instruction,
+) {
   return getFundQuoteSolPrizeInstructionDataDecoder().decode(instruction.data!);
 }

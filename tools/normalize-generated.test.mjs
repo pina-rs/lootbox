@@ -5,7 +5,9 @@ import {
 	normalizeDartHashes,
 	normalizeDartManifest,
 	normalizeRustManifest,
+	normalizeRustVersionEnvelopeGuards,
 	normalizeRustVersionEnvelopeTests,
+	normalizeTypeScriptTypeArguments,
 } from "./normalize-generated.mjs";
 
 test("requires every handwritten client to use the workspace version", () => {
@@ -99,13 +101,79 @@ test("drops impossible stale assertions from v0 version-envelope tests", () => {
 });
 
 test("keeps stale assertions for contracts above the initial version", () => {
-	const advanced = V0_ENVELOPE_TEST.replace(
-		"MIGRATION_VERSION: u8 = 0u8;",
-		"MIGRATION_VERSION: u8 = 2u8;",
-	);
+	const advanced = `pub const TEMPLATE_STATE_MIGRATION_VERSION: u8 = 2u8;
+
+#[cfg(test)]
+mod template_state_version_error_tests {
+	#[test]
+	fn stale_and_future_versions_are_distinguishable() {
+		let error = TemplateState::try_from_bytes(&envelope(1_u8)).err().expect("a stale envelope must fail");
+		assert_eq!(error, TemplateStateVersionError::Stale { stored: 1 });
+		let error = TemplateState::try_from_bytes(&envelope(3_u8)).err().expect("a future envelope must fail");
+		assert!(TemplateState::try_from_bytes(&envelope(2_u8)).is_ok(), "the current version must decode",);
+	}
+}
+`;
 	assert.equal(
 		normalizeRustVersionEnvelopeTests(advanced),
 		advanced,
 		"untouched",
+	);
+});
+
+test("drops the unreachable stale guard for v0 contracts", () => {
+	const source = `pub const VAULT_STATE_MIGRATION_VERSION: u8 = 0u8;
+
+pub fn vault_state_needs_migration(data: &[u8]) -> bool {
+	data.len() >= 2
+			&& data[0] == 2
+			&& {
+				let mut version = [0_u8; 8];
+				version[..1]
+					.copy_from_slice(&data[1..2]);
+						 u64::from_le_bytes(version) < 0
+			}
+}
+`;
+	const normalized = normalizeRustVersionEnvelopeGuards(source);
+	assert.match(
+		normalized,
+		/pub fn vault_state_needs_migration\(_data: &\[u8\]\) -> bool \{\n\tfalse\n\}/,
+		"the helper becomes a constant false for v0 contracts",
+	);
+	assert.equal(
+		normalizeRustVersionEnvelopeGuards(normalized),
+		normalized,
+		"idempotent",
+	);
+
+	const advanced = source.replace(
+		"MIGRATION_VERSION: u8 = 0u8;",
+		"MIGRATION_VERSION: u8 = 2u8;",
+	);
+	assert.equal(
+		normalizeRustVersionEnvelopeGuards(advanced),
+		advanced,
+		"untouched",
+	);
+});
+
+test("drops trailing commas before closing type-argument brackets", () => {
+	const source =
+		"export function getMigrateInstruction<\n\tA extends string = string,\n\tB extends string = string,\n>(";
+	assert.equal(
+		normalizeTypeScriptTypeArguments(
+			"input: MigrateInput<\n\tA,\n\tB,\n>",
+		),
+		"input: MigrateInput<\n\tA,\n\tB\n>",
+	);
+	assert.equal(
+		normalizeTypeScriptTypeArguments(source),
+		source.replace(",\n>", "\n>"),
+	);
+	assert.equal(
+		normalizeTypeScriptTypeArguments("MigrateInput<\n\tA\n>"),
+		"MigrateInput<\n\tA\n>",
+		"untouched when no trailing comma",
 	);
 });

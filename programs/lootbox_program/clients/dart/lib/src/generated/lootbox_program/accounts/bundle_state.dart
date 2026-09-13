@@ -1,7 +1,6 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,7 +10,6 @@ import 'package:solana_kit_codecs_core/solana_kit_codecs_core.dart';
 import 'package:solana_kit_codecs_data_structures/solana_kit_codecs_data_structures.dart';
 import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
-
 
 @immutable
 class BundleState {
@@ -31,9 +29,8 @@ class BundleState {
     required this.reclaimedMask,
     required this.status,
     required this.bump,
-  }) :
-      discriminator = 5,
-      migrationVersion = 0;
+  }) : discriminator = 5,
+       migrationVersion = 0;
 
   final int discriminator;
   final int migrationVersion;
@@ -77,12 +74,30 @@ class BundleState {
           bump == other.bump;
 
   @override
-  int get hashCode => Object.hash(discriminator, migrationVersion, template, quantity, rentReserve, mints, amounts, claimed, kinds, decimals, activatedRevision, index, assetCount, fundedAssets, reclaimedMask, status, bump);
+  int get hashCode => Object.hash(
+    discriminator,
+    migrationVersion,
+    template,
+    quantity,
+    rentReserve,
+    mints,
+    amounts,
+    claimed,
+    kinds,
+    decimals,
+    activatedRevision,
+    index,
+    assetCount,
+    fundedAssets,
+    reclaimedMask,
+    status,
+    bump,
+  );
 
   @override
-  String toString() => 'BundleState(discriminator: $discriminator, migrationVersion: $migrationVersion, template: $template, quantity: $quantity, rentReserve: $rentReserve, mints: $mints, amounts: $amounts, claimed: $claimed, kinds: $kinds, decimals: $decimals, activatedRevision: $activatedRevision, index: $index, assetCount: $assetCount, fundedAssets: $fundedAssets, reclaimedMask: $reclaimedMask, status: $status, bump: $bump)';
+  String toString() =>
+      'BundleState(discriminator: $discriminator, migrationVersion: $migrationVersion, template: $template, quantity: $quantity, rentReserve: $rentReserve, mints: $mints, amounts: $amounts, claimed: $claimed, kinds: $kinds, decimals: $decimals, activatedRevision: $activatedRevision, index: $index, assetCount: $assetCount, fundedAssets: $fundedAssets, reclaimedMask: $reclaimedMask, status: $status, bump: $bump)';
 }
-
 
 Encoder<BundleState> getBundleStateEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
@@ -151,20 +166,15 @@ Decoder<BundleState> getBundleStateDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(
-      SolanaErrorCode.codecsInvalidByteLength,
-      {
-        'codecDescription': 'bundleState account decoder',
-        'expected': expected,
-        'bytesLength': bytesLength,
-      },
-    );
+    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
+      'codecDescription': 'bundleState account decoder',
+      'expected': expected,
+      'bytesLength': bytesLength,
+    });
   }
 
   (BundleState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(
-      getU8Encoder().encode(5),
-    ).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(5)).read(bytes, offset + 0);
     final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
     if (storedMigrationVersion != 0) {
       throw StateError(
@@ -177,38 +187,37 @@ Decoder<BundleState> getBundleStateDecoder() {
 
     return (
       BundleState(
-      template: map['template']! as Address,
-      quantity: map['quantity']! as BigInt,
-      rentReserve: map['rentReserve']! as BigInt,
-      mints: map['mints']! as Uint8List,
-      amounts: map['amounts']! as Uint8List,
-      claimed: map['claimed']! as Uint8List,
-      kinds: map['kinds']! as Uint8List,
-      decimals: map['decimals']! as Uint8List,
-      activatedRevision: map['activatedRevision']! as BigInt,
-      index: map['index']! as int,
-      assetCount: map['assetCount']! as int,
-      fundedAssets: map['fundedAssets']! as int,
-      reclaimedMask: map['reclaimedMask']! as int,
-      status: map['status']! as int,
-      bump: map['bump']! as int,
+        template: map['template']! as Address,
+        quantity: map['quantity']! as BigInt,
+        rentReserve: map['rentReserve']! as BigInt,
+        mints: map['mints']! as Uint8List,
+        amounts: map['amounts']! as Uint8List,
+        claimed: map['claimed']! as Uint8List,
+        kinds: map['kinds']! as Uint8List,
+        decimals: map['decimals']! as Uint8List,
+        activatedRevision: map['activatedRevision']! as BigInt,
+        index: map['index']! as int,
+        assetCount: map['assetCount']! as int,
+        fundedAssets: map['fundedAssets']! as int,
+        reclaimedMask: map['reclaimedMask']! as int,
+        status: map['status']! as int,
+        bump: map['bump']! as int,
       ),
       newOffset,
     );
   }
 
   return switch (structDecoder) {
-    FixedSizeDecoder<Map<String, Object?>>() =>
-      FixedSizeDecoder<BundleState>(
-        fixedSize: structDecoder.fixedSize,
-        read: (bytes, offset) {
-          final bytesLength = bytes.length - offset;
-          if (bytesLength < structDecoder.fixedSize) {
-            throwInvalidByteLength(structDecoder.fixedSize, bytesLength);
-          }
-          return readTopLevel(bytes, offset);
-        },
-      ),
+    FixedSizeDecoder<Map<String, Object?>>() => FixedSizeDecoder<BundleState>(
+      fixedSize: structDecoder.fixedSize,
+      read: (bytes, offset) {
+        final bytesLength = bytes.length - offset;
+        if (bytesLength < structDecoder.fixedSize) {
+          throwInvalidByteLength(structDecoder.fixedSize, bytesLength);
+        }
+        return readTopLevel(bytes, offset);
+      },
+    ),
     VariableSizeDecoder<Map<String, Object?>>() =>
       VariableSizeDecoder<BundleState>(
         read: readTopLevel,
@@ -233,11 +242,11 @@ const int bundleStateMigrationVersion = 0;
 /// than this client's schema — exactly the accounts [getMigrateInstruction]
 /// can bring current. Decoding reports every other mismatch.
 bool bundleStateNeedsMigration(List<int> data) {
-	if (data.length < 2) {
-		return false;
-	}
-	if (data[0] != 5) {
-		return false;
-	}
-	return data[1] < 0;
+  if (data.length < 2) {
+    return false;
+  }
+  if (data[0] != 5) {
+    return false;
+  }
+  return data[1] < 0;
 }

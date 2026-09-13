@@ -22,13 +22,13 @@ pub struct MintTemplateBoxes {
 }
 
 impl MintTemplateBoxes {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, recipient_box_account: solana_pubkey::Pubkey) -> Self {
+	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, recipient_box_account: solana_pubkey::Pubkey, box_token_program: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			template,
 			box_mint,
 			recipient_box_account,
-			box_token_program: solana_pubkey::pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
+			box_token_program,
 		}
 	}
 

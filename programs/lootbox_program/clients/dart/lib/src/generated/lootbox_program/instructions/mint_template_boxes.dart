@@ -1,7 +1,6 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -12,13 +11,10 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
-
 @immutable
 class MintTemplateBoxesInstructionData {
-  const MintTemplateBoxesInstructionData({
-    required this.amount,
-  }) :
-      discriminator = 15,
+  const MintTemplateBoxesInstructionData({required this.amount})
+    : discriminator = 15,
       migrationVersion = 0;
 
   final int discriminator;
@@ -26,7 +22,8 @@ class MintTemplateBoxesInstructionData {
   final BigInt amount;
 }
 
-Encoder<MintTemplateBoxesInstructionData> getMintTemplateBoxesInstructionDataEncoder() {
+Encoder<MintTemplateBoxesInstructionData>
+getMintTemplateBoxesInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
     ('migrationVersion', getU8Encoder()),
@@ -43,7 +40,8 @@ Encoder<MintTemplateBoxesInstructionData> getMintTemplateBoxesInstructionDataEnc
   );
 }
 
-Decoder<MintTemplateBoxesInstructionData> getMintTemplateBoxesInstructionDataDecoder() {
+Decoder<MintTemplateBoxesInstructionData>
+getMintTemplateBoxesInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
     ('migrationVersion', getU8Decoder()),
@@ -51,32 +49,26 @@ Decoder<MintTemplateBoxesInstructionData> getMintTemplateBoxesInstructionDataDec
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(
-      SolanaErrorCode.codecsInvalidByteLength,
-      {
-        'codecDescription': 'mintTemplateBoxes instruction decoder',
-        'expected': expected,
-        'bytesLength': bytesLength,
-      },
-    );
+    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
+      'codecDescription': 'mintTemplateBoxes instruction decoder',
+      'expected': expected,
+      'bytesLength': bytesLength,
+    });
   }
 
-  (MintTemplateBoxesInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(
-      getU8Encoder().encode(15),
-    ).read(bytes, offset + 0);
-    getConstantDecoder(
-      getU8Encoder().encode(0),
-    ).read(bytes, offset + 1);
+  (MintTemplateBoxesInstructionData, int) readTopLevel(
+    Uint8List bytes,
+    int offset,
+  ) {
+    getConstantDecoder(getU8Encoder().encode(15)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
     }
 
     return (
-      MintTemplateBoxesInstructionData(
-      amount: map['amount']! as BigInt,
-      ),
+      MintTemplateBoxesInstructionData(amount: map['amount']! as BigInt),
       newOffset,
     );
   }
@@ -101,8 +93,12 @@ Decoder<MintTemplateBoxesInstructionData> getMintTemplateBoxesInstructionDataDec
   };
 }
 
-Codec<MintTemplateBoxesInstructionData, MintTemplateBoxesInstructionData> getMintTemplateBoxesInstructionDataCodec() {
-  return combineCodec(getMintTemplateBoxesInstructionDataEncoder(), getMintTemplateBoxesInstructionDataDecoder());
+Codec<MintTemplateBoxesInstructionData, MintTemplateBoxesInstructionData>
+getMintTemplateBoxesInstructionDataCodec() {
+  return combineCodec(
+    getMintTemplateBoxesInstructionDataEncoder(),
+    getMintTemplateBoxesInstructionDataDecoder(),
+  );
 }
 
 /// Creates a [MintTemplateBoxes] instruction.
@@ -115,24 +111,24 @@ Instruction getMintTemplateBoxesInstruction({
   required Address boxTokenProgram,
   required BigInt amount,
 }) {
-  final instructionData = MintTemplateBoxesInstructionData(
-      amount: amount,
-  );
+  final instructionData = MintTemplateBoxesInstructionData(amount: amount);
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-    AccountMeta(address: authority, role: AccountRole.readonly),
-    AccountMeta(address: template, role: AccountRole.writable),
-    AccountMeta(address: boxMint, role: AccountRole.writable),
-    AccountMeta(address: recipientBoxAccount, role: AccountRole.writable),
-    AccountMeta(address: boxTokenProgram, role: AccountRole.readonly),
+      AccountMeta(address: authority, role: AccountRole.readonly),
+      AccountMeta(address: template, role: AccountRole.writable),
+      AccountMeta(address: boxMint, role: AccountRole.writable),
+      AccountMeta(address: recipientBoxAccount, role: AccountRole.writable),
+      AccountMeta(address: boxTokenProgram, role: AccountRole.readonly),
     ],
     data: getMintTemplateBoxesInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [MintTemplateBoxes] instruction from raw instruction data.
-MintTemplateBoxesInstructionData parseMintTemplateBoxesInstruction(Instruction instruction) {
+MintTemplateBoxesInstructionData parseMintTemplateBoxesInstruction(
+  Instruction instruction,
+) {
   return getMintTemplateBoxesInstructionDataDecoder().decode(instruction.data!);
 }

@@ -1,7 +1,6 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -12,13 +11,10 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
-
 @immutable
 class WithdrawSurplusInstructionData {
-  const WithdrawSurplusInstructionData({
-    required this.lamports,
-  }) :
-      discriminator = 9,
+  const WithdrawSurplusInstructionData({required this.lamports})
+    : discriminator = 9,
       migrationVersion = 0;
 
   final int discriminator;
@@ -26,7 +22,8 @@ class WithdrawSurplusInstructionData {
   final BigInt lamports;
 }
 
-Encoder<WithdrawSurplusInstructionData> getWithdrawSurplusInstructionDataEncoder() {
+Encoder<WithdrawSurplusInstructionData>
+getWithdrawSurplusInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
     ('migrationVersion', getU8Encoder()),
@@ -43,7 +40,8 @@ Encoder<WithdrawSurplusInstructionData> getWithdrawSurplusInstructionDataEncoder
   );
 }
 
-Decoder<WithdrawSurplusInstructionData> getWithdrawSurplusInstructionDataDecoder() {
+Decoder<WithdrawSurplusInstructionData>
+getWithdrawSurplusInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
     ('migrationVersion', getU8Decoder()),
@@ -51,32 +49,26 @@ Decoder<WithdrawSurplusInstructionData> getWithdrawSurplusInstructionDataDecoder
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(
-      SolanaErrorCode.codecsInvalidByteLength,
-      {
-        'codecDescription': 'withdrawSurplus instruction decoder',
-        'expected': expected,
-        'bytesLength': bytesLength,
-      },
-    );
+    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
+      'codecDescription': 'withdrawSurplus instruction decoder',
+      'expected': expected,
+      'bytesLength': bytesLength,
+    });
   }
 
-  (WithdrawSurplusInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(
-      getU8Encoder().encode(9),
-    ).read(bytes, offset + 0);
-    getConstantDecoder(
-      getU8Encoder().encode(0),
-    ).read(bytes, offset + 1);
+  (WithdrawSurplusInstructionData, int) readTopLevel(
+    Uint8List bytes,
+    int offset,
+  ) {
+    getConstantDecoder(getU8Encoder().encode(9)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
     }
 
     return (
-      WithdrawSurplusInstructionData(
-      lamports: map['lamports']! as BigInt,
-      ),
+      WithdrawSurplusInstructionData(lamports: map['lamports']! as BigInt),
       newOffset,
     );
   }
@@ -101,8 +93,12 @@ Decoder<WithdrawSurplusInstructionData> getWithdrawSurplusInstructionDataDecoder
   };
 }
 
-Codec<WithdrawSurplusInstructionData, WithdrawSurplusInstructionData> getWithdrawSurplusInstructionDataCodec() {
-  return combineCodec(getWithdrawSurplusInstructionDataEncoder(), getWithdrawSurplusInstructionDataDecoder());
+Codec<WithdrawSurplusInstructionData, WithdrawSurplusInstructionData>
+getWithdrawSurplusInstructionDataCodec() {
+  return combineCodec(
+    getWithdrawSurplusInstructionDataEncoder(),
+    getWithdrawSurplusInstructionDataDecoder(),
+  );
 }
 
 /// Creates a [WithdrawSurplus] instruction.
@@ -114,23 +110,23 @@ Instruction getWithdrawSurplusInstruction({
   required Address boxMint,
   required BigInt lamports,
 }) {
-  final instructionData = WithdrawSurplusInstructionData(
-      lamports: lamports,
-  );
+  final instructionData = WithdrawSurplusInstructionData(lamports: lamports);
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-    AccountMeta(address: authority, role: AccountRole.writableSigner),
-    AccountMeta(address: lootbox, role: AccountRole.readonly),
-    AccountMeta(address: vault, role: AccountRole.writable),
-    AccountMeta(address: boxMint, role: AccountRole.readonly),
+      AccountMeta(address: authority, role: AccountRole.writableSigner),
+      AccountMeta(address: lootbox, role: AccountRole.readonly),
+      AccountMeta(address: vault, role: AccountRole.writable),
+      AccountMeta(address: boxMint, role: AccountRole.readonly),
     ],
     data: getWithdrawSurplusInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [WithdrawSurplus] instruction from raw instruction data.
-WithdrawSurplusInstructionData parseWithdrawSurplusInstruction(Instruction instruction) {
+WithdrawSurplusInstructionData parseWithdrawSurplusInstruction(
+  Instruction instruction,
+) {
   return getWithdrawSurplusInstructionDataDecoder().decode(instruction.data!);
 }

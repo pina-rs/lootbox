@@ -1,7 +1,6 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -12,16 +11,14 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
-
 @immutable
 class AddBundleInstructionData {
   const AddBundleInstructionData({
     required this.quantity,
     required this.assetCount,
     required this.bump,
-  }) :
-      discriminator = 11,
-      migrationVersion = 0;
+  }) : discriminator = 11,
+       migrationVersion = 0;
 
   final int discriminator;
   final int migrationVersion;
@@ -61,23 +58,16 @@ Decoder<AddBundleInstructionData> getAddBundleInstructionDataDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(
-      SolanaErrorCode.codecsInvalidByteLength,
-      {
-        'codecDescription': 'addBundle instruction decoder',
-        'expected': expected,
-        'bytesLength': bytesLength,
-      },
-    );
+    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
+      'codecDescription': 'addBundle instruction decoder',
+      'expected': expected,
+      'bytesLength': bytesLength,
+    });
   }
 
   (AddBundleInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(
-      getU8Encoder().encode(11),
-    ).read(bytes, offset + 0);
-    getConstantDecoder(
-      getU8Encoder().encode(0),
-    ).read(bytes, offset + 1);
+    getConstantDecoder(getU8Encoder().encode(11)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
@@ -85,9 +75,9 @@ Decoder<AddBundleInstructionData> getAddBundleInstructionDataDecoder() {
 
     return (
       AddBundleInstructionData(
-      quantity: map['quantity']! as BigInt,
-      assetCount: map['assetCount']! as int,
-      bump: map['bump']! as int,
+        quantity: map['quantity']! as BigInt,
+        assetCount: map['assetCount']! as int,
+        bump: map['bump']! as int,
       ),
       newOffset,
     );
@@ -113,8 +103,12 @@ Decoder<AddBundleInstructionData> getAddBundleInstructionDataDecoder() {
   };
 }
 
-Codec<AddBundleInstructionData, AddBundleInstructionData> getAddBundleInstructionDataCodec() {
-  return combineCodec(getAddBundleInstructionDataEncoder(), getAddBundleInstructionDataDecoder());
+Codec<AddBundleInstructionData, AddBundleInstructionData>
+getAddBundleInstructionDataCodec() {
+  return combineCodec(
+    getAddBundleInstructionDataEncoder(),
+    getAddBundleInstructionDataDecoder(),
+  );
 }
 
 /// Creates a [AddBundle] instruction.
@@ -129,18 +123,18 @@ Instruction getAddBundleInstruction({
   required int bump,
 }) {
   final instructionData = AddBundleInstructionData(
-      quantity: quantity,
-      assetCount: assetCount,
-      bump: bump,
+    quantity: quantity,
+    assetCount: assetCount,
+    bump: bump,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-    AccountMeta(address: authority, role: AccountRole.writable),
-    AccountMeta(address: template, role: AccountRole.writable),
-    AccountMeta(address: bundle, role: AccountRole.writable),
-    AccountMeta(address: systemProgram, role: AccountRole.readonly),
+      AccountMeta(address: authority, role: AccountRole.writable),
+      AccountMeta(address: template, role: AccountRole.writable),
+      AccountMeta(address: bundle, role: AccountRole.writable),
+      AccountMeta(address: systemProgram, role: AccountRole.readonly),
     ],
     data: getAddBundleInstructionDataEncoder().encode(instructionData),
   );

@@ -54,7 +54,7 @@ export function getPinaPodBoundedArrayEncoder<TFrom extends PinaPodCollection>(
 /** Rejects a decoded collection that exceeds its schema capacity. */
 export function getPinaPodBoundedArrayDecoder<
 	TTo extends PinaPodCollection,
-	TCount extends Integer,
+	TCount extends Integer
 >(
 	decoder: Decoder<TTo>,
 	countDecoder: Decoder<TCount>,
@@ -166,7 +166,7 @@ export function getPinaPodBooleanDecoder(): FixedSizeDecoder<boolean, 1> {
 /** Accepts only PinaPod's `None` and `Some` option tags. */
 export function getPinaPodOptionTagDecoder<
 	TDecoded extends Integer,
-	TSize extends number,
+	TSize extends number
 >(
 	decoder: FixedSizeDecoder<TDecoded, TSize>,
 ): FixedSizeDecoder<TDecoded, TSize> {
@@ -181,7 +181,7 @@ export function getPinaPodOptionTagDecoder<
 /** Rejects data for a different account or instruction before decoding it. */
 export function getPinaPodDiscriminatorDecoder<
 	TDecoded extends Integer,
-	TSize extends number,
+	TSize extends number
 >(
 	expected: Integer,
 	decoder: FixedSizeDecoder<TDecoded, TSize>,
@@ -199,7 +199,7 @@ export function getPinaPodDiscriminatorDecoder<
 /** Rejects account or instruction data from another migration version. */
 export function getPinaPodMigrationVersionDecoder<
 	TDecoded extends Integer,
-	TSize extends number,
+	TSize extends number
 >(
 	expected: Integer,
 	decoder: FixedSizeDecoder<TDecoded, TSize>,

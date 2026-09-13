@@ -323,71 +323,93 @@ pub struct WithdrawSurplusInstruction {
 
 #[derive(Accounts, Debug)]
 pub struct CreateLootboxAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
 	pub box_mint: &'a AccountView,
+	#[pina(validate(empty))]
 	pub lootbox: &'a mut AccountView,
+	#[pina(validate(empty))]
 	pub vault: &'a mut AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
 }
 
 #[derive(Accounts, Debug)]
 pub struct AddOutcomeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
 	pub lootbox: &'a mut AccountView,
 }
 
 #[derive(Accounts, Debug)]
 pub struct DepositAccounts<'a> {
+	#[pina(validate(signer))]
 	pub depositor: &'a mut AccountView,
 	pub lootbox: &'a AccountView,
 	pub vault: &'a mut AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
 #[derive(Accounts, Debug)]
 pub struct SealAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
 	pub lootbox: &'a mut AccountView,
 }
 
 #[derive(Accounts, Debug)]
 pub struct MintBoxesAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
 	pub lootbox: &'a mut AccountView,
 	pub vault: &'a AccountView,
 	pub box_mint: &'a mut AccountView,
 	pub recipient_box_account: &'a mut AccountView,
+	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
 }
 
 #[derive(Accounts, Debug)]
 pub struct RequestOpenAccounts<'a> {
+	#[pina(validate(signer))]
 	pub owner: &'a mut AccountView,
 	pub lootbox: &'a mut AccountView,
 	pub vault: &'a AccountView,
 	pub box_mint: &'a mut AccountView,
 	pub owner_box_account: &'a mut AccountView,
+	#[pina(validate(empty))]
 	pub opening: &'a mut AccountView,
+	#[pina(validate(signer))]
+	#[pina(validate(empty))]
 	pub randomness: &'a mut AccountView,
 	pub reward_escrow: &'a mut AccountView,
 	pub oracle_queue: &'a mut AccountView,
 	pub oracle: &'a mut AccountView,
+	#[pina(validate(sysvar = SLOT_HASHES_SYSVAR_ID))]
 	pub recent_slot_hashes: &'a AccountView,
 	pub oracle_program: &'a AccountView,
 	pub oracle_program_state: &'a AccountView,
 	pub oracle_lut_signer: &'a AccountView,
 	pub oracle_lut: &'a mut AccountView,
+	#[pina(validate(address = associated_token_account::ID))]
 	pub associated_token_program: &'a AccountView,
+	#[pina(validate(address = WRAPPED_SOL_MINT_ID))]
 	pub wrapped_sol_mint: &'a AccountView,
+	#[pina(validate(address = ADDRESS_LOOKUP_TABLE_PROGRAM_ID))]
 	pub address_lookup_table_program: &'a AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
 }
 
 #[derive(Accounts, Debug)]
 pub struct SettleOpenAccounts<'a> {
 	pub recipient: &'a mut AccountView,
+	#[pina(validate(signer))]
 	pub payer: &'a mut AccountView,
 	pub lootbox: &'a mut AccountView,
 	pub vault: &'a mut AccountView,
@@ -397,17 +419,22 @@ pub struct SettleOpenAccounts<'a> {
 	pub oracle_queue: &'a AccountView,
 	pub oracle: &'a AccountView,
 	pub oracle_stats: &'a mut AccountView,
+	#[pina(validate(sysvar = SLOT_HASHES_SYSVAR_ID))]
 	pub recent_slot_hashes: &'a AccountView,
 	pub oracle_program: &'a AccountView,
 	pub reward_escrow: &'a mut AccountView,
 	pub oracle_program_state: &'a AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
+	#[pina(validate(address = WRAPPED_SOL_MINT_ID))]
 	pub wrapped_sol_mint: &'a AccountView,
 }
 
 #[derive(Accounts, Debug)]
 pub struct RefundOpenAccounts<'a> {
+	#[pina(validate(signer))]
 	pub recipient: &'a mut AccountView,
 	pub lootbox: &'a mut AccountView,
 	pub vault: &'a mut AccountView,
@@ -428,14 +455,19 @@ pub struct CloseOpeningAccounts<'a> {
 	pub oracle_program_state: &'a AccountView,
 	pub oracle_lut: &'a mut AccountView,
 	pub oracle_lut_signer: &'a AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
+	#[pina(validate(address = WRAPPED_SOL_MINT_ID))]
 	pub wrapped_sol_mint: &'a AccountView,
+	#[pina(validate(address = ADDRESS_LOOKUP_TABLE_PROGRAM_ID))]
 	pub address_lookup_table_program: &'a AccountView,
 }
 
 #[derive(Accounts, Debug)]
 pub struct WithdrawSurplusAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
 	pub lootbox: &'a AccountView,
 	pub vault: &'a mut AccountView,
@@ -649,9 +681,6 @@ impl<'a> ProcessAccountInfos<'a> for CreateLootboxAccounts<'a> {
 		let vault_seeds = VaultState::seeds(&lootbox_address);
 		let vault_seeds_with_bump = vault_seeds.with_bump(args.vault_bump);
 
-		self.authority.assert_signer()?.assert_writable()?;
-		self.system_program.assert_address(&system::ID)?;
-		self.token_program.assert_address(&token::ID)?;
 		assert_known_oracle_program(&args.oracle_program)?;
 
 		if args.max_supply.get() == 0 {
@@ -667,8 +696,6 @@ impl<'a> ProcessAccountInfos<'a> for CreateLootboxAccounts<'a> {
 		}
 
 		self.lootbox
-			.assert_empty()?
-			.assert_writable()?
 			.assert_seeds_with_bump(&lootbox_seeds_with_bump.as_slices(), &ID)?;
 		let canonical_vault_bump = self
 			.vault
@@ -679,8 +706,6 @@ impl<'a> ProcessAccountInfos<'a> for CreateLootboxAccounts<'a> {
 		}
 
 		self.vault
-			.assert_empty()?
-			.assert_writable()?
 			.assert_seeds_with_bump(&vault_seeds_with_bump.as_slices(), &ID)?;
 		let mint = self.box_mint.as_token_mint()?;
 
@@ -738,7 +763,6 @@ impl<'a> ProcessAccountInfos<'a> for AddOutcomeAccounts<'a> {
 		let lootbox_address = *self.lootbox.address();
 		let mut state = self.lootbox.as_account_mut::<LootboxState>(&ID)?;
 		assert_lootbox_pda(&lootbox_address, &state)?;
-		self.authority.assert_signer()?;
 		assert_authority_address(self.authority, &state.authority)?;
 
 		if state.sealed.get() {
@@ -816,7 +840,6 @@ impl<'a> ProcessAccountInfos<'a> for SealAccounts<'a> {
 		let lootbox_address = *self.lootbox.address();
 		let mut state = self.lootbox.as_account_mut::<LootboxState>(&ID)?;
 		assert_lootbox_pda(&lootbox_address, &state)?;
-		self.authority.assert_signer()?;
 		assert_authority_address(self.authority, &state.authority)?;
 
 		if state.sealed.get() {
@@ -838,13 +861,9 @@ impl<'a> ProcessAccountInfos<'a> for MintBoxesAccounts<'a> {
 		let args = MintBoxesInstruction::try_from_bytes(data)?;
 		let amount = args.amount.get();
 		let lootbox_address = *self.lootbox.address();
-		self.token_program.assert_address(&token::ID)?;
-		self.box_mint.assert_writable()?;
-		self.recipient_box_account.assert_writable()?;
 		let rent_reserve = assert_vault(self.vault, &lootbox_address)?;
 		let mut state = self.lootbox.as_account_mut::<LootboxState>(&ID)?;
 		assert_lootbox_pda(&lootbox_address, &state)?;
-		self.authority.assert_signer()?;
 		assert_authority_address(self.authority, &state.authority)?;
 
 		if !state.sealed.get() || amount == 0 {
@@ -901,27 +920,6 @@ impl<'a> ProcessAccountInfos<'a> for RequestOpenAccounts<'a> {
 		let owner_address = *self.owner.address();
 		let randomness_address = *self.randomness.address();
 		let opening_address = *self.opening.address();
-		self.owner.assert_signer()?.assert_writable()?;
-		self.system_program.assert_address(&system::ID)?;
-		self.token_program.assert_address(&token::ID)?;
-		self.box_mint.assert_writable()?;
-		self.owner_box_account.assert_writable()?;
-		self.opening.assert_empty()?.assert_writable()?;
-		self.randomness
-			.assert_signer()?
-			.assert_empty()?
-			.assert_writable()?;
-		self.reward_escrow.assert_writable()?;
-		self.oracle_queue.assert_writable()?;
-		self.oracle.assert_writable()?;
-		self.oracle_lut.assert_writable()?;
-		self.recent_slot_hashes
-			.assert_sysvar(&SLOT_HASHES_SYSVAR_ID)?;
-		self.associated_token_program
-			.assert_address(&associated_token_account::ID)?;
-		self.wrapped_sol_mint.assert_address(&WRAPPED_SOL_MINT_ID)?;
-		self.address_lookup_table_program
-			.assert_address(&ADDRESS_LOOKUP_TABLE_PROGRAM_ID)?;
 		let rent_reserve = assert_vault(self.vault, &lootbox_address)?;
 		let mut state = self.lootbox.as_account_mut::<LootboxState>(&ID)?;
 		assert_lootbox_pda(&lootbox_address, &state)?;
@@ -1056,18 +1054,6 @@ impl<'a> ProcessAccountInfos<'a> for SettleOpenAccounts<'a> {
 		let opening_address = *self.opening.address();
 		let randomness_address = *self.randomness.address();
 		let recipient_address = *self.recipient.address();
-		self.recipient.assert_writable()?;
-		self.payer.assert_signer()?.assert_writable()?;
-		self.vault.assert_writable()?;
-		self.opening.assert_writable()?;
-		self.randomness.assert_writable()?;
-		self.oracle_stats.assert_writable()?;
-		self.reward_escrow.assert_writable()?;
-		self.recent_slot_hashes
-			.assert_sysvar(&SLOT_HASHES_SYSVAR_ID)?;
-		self.system_program.assert_address(&system::ID)?;
-		self.token_program.assert_address(&token::ID)?;
-		self.wrapped_sol_mint.assert_address(&WRAPPED_SOL_MINT_ID)?;
 		let rent_reserve = assert_vault(self.vault, &lootbox_address)?;
 		let state = self.lootbox.as_account_mut::<LootboxState>(&ID)?;
 		assert_lootbox_pda(&lootbox_address, &state)?;
@@ -1199,9 +1185,6 @@ impl<'a> ProcessAccountInfos<'a> for RefundOpenAccounts<'a> {
 		let opening_address = *self.opening.address();
 		let randomness_address = *self.randomness.address();
 		let recipient_address = *self.recipient.address();
-		self.recipient.assert_signer()?.assert_writable()?;
-		self.vault.assert_writable()?;
-		self.opening.assert_writable()?;
 		let rent_reserve = assert_vault(self.vault, &lootbox_address)?;
 		let mut state = self.lootbox.as_account_mut::<LootboxState>(&ID)?;
 		assert_lootbox_pda(&lootbox_address, &state)?;
@@ -1294,16 +1277,6 @@ impl<'a> ProcessAccountInfos<'a> for CloseOpeningAccounts<'a> {
 		let lootbox_address = *self.lootbox.address();
 		let opening_address = *self.opening.address();
 		let randomness_address = *self.randomness.address();
-		self.recipient.assert_writable()?;
-		self.opening.assert_writable()?;
-		self.randomness.assert_writable()?;
-		self.reward_escrow.assert_writable()?;
-		self.oracle_lut.assert_writable()?;
-		self.system_program.assert_address(&system::ID)?;
-		self.token_program.assert_address(&token::ID)?;
-		self.wrapped_sol_mint.assert_address(&WRAPPED_SOL_MINT_ID)?;
-		self.address_lookup_table_program
-			.assert_address(&ADDRESS_LOOKUP_TABLE_PROGRAM_ID)?;
 		let state = self.lootbox.as_account::<LootboxState>(&ID)?;
 		assert_lootbox_pda(&lootbox_address, &state)?;
 		self.oracle_program.assert_program(&state.oracle_program)?;
@@ -1361,12 +1334,9 @@ impl<'a> ProcessAccountInfos<'a> for WithdrawSurplusAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = WithdrawSurplusInstruction::try_from_bytes(data)?;
 		let lootbox_address = *self.lootbox.address();
-		self.authority.assert_writable()?;
-		self.vault.assert_writable()?;
 		let rent_reserve = assert_vault(self.vault, &lootbox_address)?;
 		let state = self.lootbox.as_account::<LootboxState>(&ID)?;
 		assert_lootbox_pda(&lootbox_address, &state)?;
-		self.authority.assert_signer()?;
 		assert_authority_address(self.authority, &state.authority)?;
 		let supply = assert_box_mint(self.box_mint, &lootbox_address, &state.box_mint)?;
 		let liability = required_liability(&state, supply, state.pending_openings.get())?;

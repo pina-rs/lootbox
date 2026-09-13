@@ -1,7 +1,6 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -12,13 +11,10 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
-
 @immutable
 class ReclaimMintPrizeInstructionData {
-  const ReclaimMintPrizeInstructionData({
-    required this.assetIndex,
-  }) :
-      discriminator = 43,
+  const ReclaimMintPrizeInstructionData({required this.assetIndex})
+    : discriminator = 43,
       migrationVersion = 0;
 
   final int discriminator;
@@ -26,7 +22,8 @@ class ReclaimMintPrizeInstructionData {
   final int assetIndex;
 }
 
-Encoder<ReclaimMintPrizeInstructionData> getReclaimMintPrizeInstructionDataEncoder() {
+Encoder<ReclaimMintPrizeInstructionData>
+getReclaimMintPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
     ('migrationVersion', getU8Encoder()),
@@ -43,7 +40,8 @@ Encoder<ReclaimMintPrizeInstructionData> getReclaimMintPrizeInstructionDataEncod
   );
 }
 
-Decoder<ReclaimMintPrizeInstructionData> getReclaimMintPrizeInstructionDataDecoder() {
+Decoder<ReclaimMintPrizeInstructionData>
+getReclaimMintPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
     ('migrationVersion', getU8Decoder()),
@@ -51,32 +49,26 @@ Decoder<ReclaimMintPrizeInstructionData> getReclaimMintPrizeInstructionDataDecod
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(
-      SolanaErrorCode.codecsInvalidByteLength,
-      {
-        'codecDescription': 'reclaimMintPrize instruction decoder',
-        'expected': expected,
-        'bytesLength': bytesLength,
-      },
-    );
+    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
+      'codecDescription': 'reclaimMintPrize instruction decoder',
+      'expected': expected,
+      'bytesLength': bytesLength,
+    });
   }
 
-  (ReclaimMintPrizeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(
-      getU8Encoder().encode(43),
-    ).read(bytes, offset + 0);
-    getConstantDecoder(
-      getU8Encoder().encode(0),
-    ).read(bytes, offset + 1);
+  (ReclaimMintPrizeInstructionData, int) readTopLevel(
+    Uint8List bytes,
+    int offset,
+  ) {
+    getConstantDecoder(getU8Encoder().encode(43)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
     }
 
     return (
-      ReclaimMintPrizeInstructionData(
-      assetIndex: map['assetIndex']! as int,
-      ),
+      ReclaimMintPrizeInstructionData(assetIndex: map['assetIndex']! as int),
       newOffset,
     );
   }
@@ -101,8 +93,12 @@ Decoder<ReclaimMintPrizeInstructionData> getReclaimMintPrizeInstructionDataDecod
   };
 }
 
-Codec<ReclaimMintPrizeInstructionData, ReclaimMintPrizeInstructionData> getReclaimMintPrizeInstructionDataCodec() {
-  return combineCodec(getReclaimMintPrizeInstructionDataEncoder(), getReclaimMintPrizeInstructionDataDecoder());
+Codec<ReclaimMintPrizeInstructionData, ReclaimMintPrizeInstructionData>
+getReclaimMintPrizeInstructionDataCodec() {
+  return combineCodec(
+    getReclaimMintPrizeInstructionDataEncoder(),
+    getReclaimMintPrizeInstructionDataDecoder(),
+  );
 }
 
 /// Creates a [ReclaimMintPrize] instruction.
@@ -117,24 +113,26 @@ Instruction getReclaimMintPrizeInstruction({
   required int assetIndex,
 }) {
   final instructionData = ReclaimMintPrizeInstructionData(
-      assetIndex: assetIndex,
+    assetIndex: assetIndex,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-    AccountMeta(address: authority, role: AccountRole.readonly),
-    AccountMeta(address: template, role: AccountRole.readonly),
-    AccountMeta(address: boxMint, role: AccountRole.readonly),
-    AccountMeta(address: bundle, role: AccountRole.writable),
-    AccountMeta(address: mint, role: AccountRole.writable),
-    AccountMeta(address: tokenProgram, role: AccountRole.readonly),
+      AccountMeta(address: authority, role: AccountRole.readonly),
+      AccountMeta(address: template, role: AccountRole.readonly),
+      AccountMeta(address: boxMint, role: AccountRole.readonly),
+      AccountMeta(address: bundle, role: AccountRole.writable),
+      AccountMeta(address: mint, role: AccountRole.writable),
+      AccountMeta(address: tokenProgram, role: AccountRole.readonly),
     ],
     data: getReclaimMintPrizeInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [ReclaimMintPrize] instruction from raw instruction data.
-ReclaimMintPrizeInstructionData parseReclaimMintPrizeInstruction(Instruction instruction) {
+ReclaimMintPrizeInstructionData parseReclaimMintPrizeInstruction(
+  Instruction instruction,
+) {
   return getReclaimMintPrizeInstructionDataDecoder().decode(instruction.data!);
 }

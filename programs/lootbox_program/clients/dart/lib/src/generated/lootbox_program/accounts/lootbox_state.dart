@@ -1,7 +1,6 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,7 +10,6 @@ import 'package:solana_kit_codecs_core/solana_kit_codecs_core.dart';
 import 'package:solana_kit_codecs_data_structures/solana_kit_codecs_data_structures.dart';
 import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
-
 
 @immutable
 class LootboxState {
@@ -34,9 +32,8 @@ class LootboxState {
     required this.sealed,
     required this.bump,
     required this.vaultBump,
-  }) :
-      discriminator = 1,
-      migrationVersion = 0;
+  }) : discriminator = 1,
+       migrationVersion = 0;
 
   final int discriminator;
   final int migrationVersion;
@@ -86,12 +83,33 @@ class LootboxState {
           vaultBump == other.vaultBump;
 
   @override
-  int get hashCode => Object.hash(discriminator, migrationVersion, authority, boxMint, oracleProgram, oracleQueue, id, maxSupply, totalMinted, pendingOpenings, opened, refunded, totalWeight, maxRewardLamports, outcomeWeights, outcomeLamports, outcomeCount, sealed, bump, vaultBump);
+  int get hashCode => Object.hash(
+    discriminator,
+    migrationVersion,
+    authority,
+    boxMint,
+    oracleProgram,
+    oracleQueue,
+    id,
+    maxSupply,
+    totalMinted,
+    pendingOpenings,
+    opened,
+    refunded,
+    totalWeight,
+    maxRewardLamports,
+    outcomeWeights,
+    outcomeLamports,
+    outcomeCount,
+    sealed,
+    bump,
+    vaultBump,
+  );
 
   @override
-  String toString() => 'LootboxState(discriminator: $discriminator, migrationVersion: $migrationVersion, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, maxSupply: $maxSupply, totalMinted: $totalMinted, pendingOpenings: $pendingOpenings, opened: $opened, refunded: $refunded, totalWeight: $totalWeight, maxRewardLamports: $maxRewardLamports, outcomeWeights: $outcomeWeights, outcomeLamports: $outcomeLamports, outcomeCount: $outcomeCount, sealed: $sealed, bump: $bump, vaultBump: $vaultBump)';
+  String toString() =>
+      'LootboxState(discriminator: $discriminator, migrationVersion: $migrationVersion, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, maxSupply: $maxSupply, totalMinted: $totalMinted, pendingOpenings: $pendingOpenings, opened: $opened, refunded: $refunded, totalWeight: $totalWeight, maxRewardLamports: $maxRewardLamports, outcomeWeights: $outcomeWeights, outcomeLamports: $outcomeLamports, outcomeCount: $outcomeCount, sealed: $sealed, bump: $bump, vaultBump: $vaultBump)';
 }
-
 
 Encoder<LootboxState> getLootboxStateEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
@@ -109,8 +127,14 @@ Encoder<LootboxState> getLootboxStateEncoder() {
     ('refunded', getU64Encoder()),
     ('totalWeight', getU64Encoder()),
     ('maxRewardLamports', getU64Encoder()),
-    ('outcomeWeights', fixEncoderSize(getBytesEncoder(), 64, allowTruncation: false)),
-    ('outcomeLamports', fixEncoderSize(getBytesEncoder(), 64, allowTruncation: false)),
+    (
+      'outcomeWeights',
+      fixEncoderSize(getBytesEncoder(), 64, allowTruncation: false),
+    ),
+    (
+      'outcomeLamports',
+      fixEncoderSize(getBytesEncoder(), 64, allowTruncation: false),
+    ),
     ('outcomeCount', getU8Encoder()),
     ('sealed', getBooleanEncoder()),
     ('bump', getU8Encoder()),
@@ -169,20 +193,15 @@ Decoder<LootboxState> getLootboxStateDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(
-      SolanaErrorCode.codecsInvalidByteLength,
-      {
-        'codecDescription': 'lootboxState account decoder',
-        'expected': expected,
-        'bytesLength': bytesLength,
-      },
-    );
+    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
+      'codecDescription': 'lootboxState account decoder',
+      'expected': expected,
+      'bytesLength': bytesLength,
+    });
   }
 
   (LootboxState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(
-      getU8Encoder().encode(1),
-    ).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(1)).read(bytes, offset + 0);
     final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
     if (storedMigrationVersion != 0) {
       throw StateError(
@@ -195,41 +214,40 @@ Decoder<LootboxState> getLootboxStateDecoder() {
 
     return (
       LootboxState(
-      authority: map['authority']! as Address,
-      boxMint: map['boxMint']! as Address,
-      oracleProgram: map['oracleProgram']! as Address,
-      oracleQueue: map['oracleQueue']! as Address,
-      id: map['id']! as BigInt,
-      maxSupply: map['maxSupply']! as BigInt,
-      totalMinted: map['totalMinted']! as BigInt,
-      pendingOpenings: map['pendingOpenings']! as BigInt,
-      opened: map['opened']! as BigInt,
-      refunded: map['refunded']! as BigInt,
-      totalWeight: map['totalWeight']! as BigInt,
-      maxRewardLamports: map['maxRewardLamports']! as BigInt,
-      outcomeWeights: map['outcomeWeights']! as Uint8List,
-      outcomeLamports: map['outcomeLamports']! as Uint8List,
-      outcomeCount: map['outcomeCount']! as int,
-      sealed: map['sealed']! as bool,
-      bump: map['bump']! as int,
-      vaultBump: map['vaultBump']! as int,
+        authority: map['authority']! as Address,
+        boxMint: map['boxMint']! as Address,
+        oracleProgram: map['oracleProgram']! as Address,
+        oracleQueue: map['oracleQueue']! as Address,
+        id: map['id']! as BigInt,
+        maxSupply: map['maxSupply']! as BigInt,
+        totalMinted: map['totalMinted']! as BigInt,
+        pendingOpenings: map['pendingOpenings']! as BigInt,
+        opened: map['opened']! as BigInt,
+        refunded: map['refunded']! as BigInt,
+        totalWeight: map['totalWeight']! as BigInt,
+        maxRewardLamports: map['maxRewardLamports']! as BigInt,
+        outcomeWeights: map['outcomeWeights']! as Uint8List,
+        outcomeLamports: map['outcomeLamports']! as Uint8List,
+        outcomeCount: map['outcomeCount']! as int,
+        sealed: map['sealed']! as bool,
+        bump: map['bump']! as int,
+        vaultBump: map['vaultBump']! as int,
       ),
       newOffset,
     );
   }
 
   return switch (structDecoder) {
-    FixedSizeDecoder<Map<String, Object?>>() =>
-      FixedSizeDecoder<LootboxState>(
-        fixedSize: structDecoder.fixedSize,
-        read: (bytes, offset) {
-          final bytesLength = bytes.length - offset;
-          if (bytesLength < structDecoder.fixedSize) {
-            throwInvalidByteLength(structDecoder.fixedSize, bytesLength);
-          }
-          return readTopLevel(bytes, offset);
-        },
-      ),
+    FixedSizeDecoder<Map<String, Object?>>() => FixedSizeDecoder<LootboxState>(
+      fixedSize: structDecoder.fixedSize,
+      read: (bytes, offset) {
+        final bytesLength = bytes.length - offset;
+        if (bytesLength < structDecoder.fixedSize) {
+          throwInvalidByteLength(structDecoder.fixedSize, bytesLength);
+        }
+        return readTopLevel(bytes, offset);
+      },
+    ),
     VariableSizeDecoder<Map<String, Object?>>() =>
       VariableSizeDecoder<LootboxState>(
         read: readTopLevel,
@@ -254,11 +272,11 @@ const int lootboxStateMigrationVersion = 0;
 /// than this client's schema — exactly the accounts [getMigrateInstruction]
 /// can bring current. Decoding reports every other mismatch.
 bool lootboxStateNeedsMigration(List<int> data) {
-	if (data.length < 2) {
-		return false;
-	}
-	if (data[0] != 1) {
-		return false;
-	}
-	return data[1] < 0;
+  if (data.length < 2) {
+    return false;
+  }
+  if (data[0] != 1) {
+    return false;
+  }
+  return data[1] < 0;
 }

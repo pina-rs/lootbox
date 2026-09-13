@@ -101,15 +101,8 @@ impl OpeningState {
 
 /// Whether raw account bytes are stale for this contract: the envelope names this account's discriminator and carries a version older than
 /// [`OPENING_STATE_MIGRATION_VERSION`]. Current or foreign bytes return false; decoding explains the difference.
-pub fn opening_state_needs_migration(data: &[u8]) -> bool {
-	data.len() >= 2
-			&& data[0] == 3
-			&& {
-				let mut version = [0_u8; 8];
-				version[..1]
-					.copy_from_slice(&data[1..2]);
-						 u64::from_le_bytes(version) < 0
-			}
+pub fn opening_state_needs_migration(_data: &[u8]) -> bool {
+	false
 }
 
 
@@ -150,9 +143,6 @@ impl OpeningState {
 		if account.discriminator != OPENING_STATE_DISCRIMINATOR {
 			return Err(OpeningStateVersionError::InvalidData);
 		}
-		if account.migration_version < OPENING_STATE_MIGRATION_VERSION {
-			return Err(OpeningStateVersionError::Stale { stored: account.migration_version });
-		}
 		if account.migration_version > OPENING_STATE_MIGRATION_VERSION {
 			return Err(OpeningStateVersionError::Future { stored: account.migration_version });
 		}
@@ -173,11 +163,11 @@ mod opening_state_version_error_tests {
 
 	#[test]
 	fn stale_and_future_versions_are_distinguishable() {
-		let error = OpeningState::try_from_bytes(&envelope(1 as u8)).err().expect("a future envelope must fail");
+		let error = OpeningState::try_from_bytes(&envelope(1_u8)).err().expect("a future envelope must fail");
 		assert_eq!(error, OpeningStateVersionError::Future { stored: 1 });
 		assert_eq!(OpeningStateVersionError::Future { stored: 1 }.to_string(), "migration version mismatch: expected 0, received 1 (the data was written by a newer program; upgrade this client)");
 		assert!(
-			OpeningState::try_from_bytes(&envelope(0 as u8)).is_ok(),
+			OpeningState::try_from_bytes(&envelope(0_u8)).is_ok(),
 			"the current version must decode",
 		);
 	}

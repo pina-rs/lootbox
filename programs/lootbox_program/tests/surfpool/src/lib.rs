@@ -529,6 +529,61 @@ fn randomness_snapshot(account: &Account) -> RandomnessSnapshot {
 
 #[test]
 #[ignore = "run with `devenv shell -- test:surfpool`"]
+fn reserved_migrate_instruction_noops_on_placeholder_slots() {
+	pina_test::run(async {
+		let program_id = Pubkey::new_from_array(ID.to_bytes());
+		let program = Harness::start(program_id)
+			.await
+			.expect("start isolated Surfpool test");
+
+		// Every state slot holds the program-address placeholder, so the
+		// reserved Migrate instruction routes, validates, and does nothing.
+		let accounts: Vec<AccountMeta> = (0..7)
+			.map(|_| AccountMeta::new(program_id, false))
+			.collect();
+		program
+			.send(
+				&[255],
+				vec![
+					AccountMeta::new(program_id, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+				]
+				.into_iter()
+				.chain(accounts)
+				.collect(),
+			)
+			.expect("reserved Migrate no-ops on placeholder slots");
+	});
+}
+
+#[test]
+#[ignore = "run with `devenv shell -- test:surfpool`"]
+fn reserved_migrate_instruction_rejects_foreign_accounts() {
+	pina_test::run(async {
+		let program_id = Pubkey::new_from_array(ID.to_bytes());
+		let program = Harness::start(program_id)
+			.await
+			.expect("start isolated Surfpool test");
+		let foreign = Keypair::new();
+		program
+			.fund(&foreign.pubkey(), FUND)
+			.expect("fund intruder");
+
+		program
+			.send(
+				&[255],
+				vec![
+					AccountMeta::new(program_id, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+					AccountMeta::new(foreign.pubkey(), false),
+				],
+			)
+			.expect_err("a foreign-owned account is not a migratable account");
+	});
+}
+
+#[test]
+#[ignore = "run with `devenv shell -- test:surfpool`"]
 fn commit_burn_reveal_and_payout_round_trip() {
 	pina_test::run(async {
 		let program_id = Pubkey::new_from_array(ID.to_bytes());
@@ -822,7 +877,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		assert_eq!(
 			stored_u64(
 				&program.account(&opening).expect("opening receipt").data,
-				97
+				98
 			),
 			seed_slot,
 			"atomic request binds the committed slot"
@@ -833,7 +888,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		);
 		let pending_state = program.account(&lootbox).expect("lootbox state");
 		assert_eq!(
-			stored_u64(&pending_state.data, 153),
+			stored_u64(&pending_state.data, 154),
 			1,
 			"one pending opening"
 		);
@@ -892,7 +947,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 			.expect("advance beyond the commitment slot");
 
 		let mut direct_reveal_data = RANDOMNESS_REVEAL_DISCRIMINATOR.to_vec();
-		direct_reveal_data.extend_from_slice(&settle_instruction_data[1..]);
+		direct_reveal_data.extend_from_slice(&settle_instruction_data[2..]);
 		assert!(
 			program
 				.send_instruction(Instruction::new_with_bytes(
@@ -980,9 +1035,9 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		assert_eq!(revealed_randomness.value, revealed_value);
 
 		let opening_account = program.account(&opening).expect("opening receipt");
-		let reward = stored_u64(&opening_account.data, 105);
-		let selected = usize::from(opening_account.data[113]);
-		assert_eq!(opening_account.data[114], 1, "opening is settled");
+		let reward = stored_u64(&opening_account.data, 106);
+		let selected = usize::from(opening_account.data[114]);
+		assert_eq!(opening_account.data[115], 1, "opening is settled");
 		assert_eq!(
 			reward, OUTCOMES[selected].1,
 			"receipt contains selected reward"
@@ -1002,12 +1057,12 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		);
 		let settled_state = program.account(&lootbox).expect("settled lootbox state");
 		assert_eq!(
-			stored_u64(&settled_state.data, 153),
+			stored_u64(&settled_state.data, 154),
 			0,
 			"pending decremented"
 		);
 		assert_eq!(
-			stored_u64(&settled_state.data, 161),
+			stored_u64(&settled_state.data, 162),
 			1,
 			"opened incremented"
 		);
@@ -1186,12 +1241,12 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		let refunded_receipt = program
 			.account(&refund_opening)
 			.expect("refunded opening receipt");
-		assert_eq!(refunded_receipt.data[114], 2, "opening is refunded");
-		assert_eq!(stored_u64(&refunded_receipt.data, 105), OUTCOMES[0].1);
-		assert_eq!(refunded_receipt.data[113], 0, "minimum outcome recorded");
+		assert_eq!(refunded_receipt.data[115], 2, "opening is refunded");
+		assert_eq!(stored_u64(&refunded_receipt.data, 106), OUTCOMES[0].1);
+		assert_eq!(refunded_receipt.data[114], 0, "minimum outcome recorded");
 		let refunded_state = program.account(&lootbox).expect("refunded lootbox state");
-		assert_eq!(stored_u64(&refunded_state.data, 153), 0, "pending cleared");
-		assert_eq!(stored_u64(&refunded_state.data, 169), 1, "refund counted");
+		assert_eq!(stored_u64(&refunded_state.data, 154), 0, "pending cleared");
+		assert_eq!(stored_u64(&refunded_state.data, 170), 1, "refund counted");
 		program
 			.send(
 				&[LootboxInstruction::CloseOpening as u8, 0],

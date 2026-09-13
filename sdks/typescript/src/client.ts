@@ -948,6 +948,7 @@ export class LootboxClient {
 				template: current.address,
 				boxMint: current.data.boxMint,
 				recipientBoxAccount: await this.ata(recipient, current.data.boxMint),
+				boxTokenProgram: BOX_TOKEN_PROGRAM,
 				amount,
 			}),
 		], "Mint gift to recipient");
@@ -1002,6 +1003,7 @@ export class LootboxClient {
 						recipient,
 						current.data.boxMint,
 					),
+					boxTokenProgram: BOX_TOKEN_PROGRAM,
 					amount: readiness.mintRequired,
 				}),
 			);

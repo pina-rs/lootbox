@@ -94,15 +94,8 @@ impl VaultState {
 
 /// Whether raw account bytes are stale for this contract: the envelope names this account's discriminator and carries a version older than
 /// [`VAULT_STATE_MIGRATION_VERSION`]. Current or foreign bytes return false; decoding explains the difference.
-pub fn vault_state_needs_migration(data: &[u8]) -> bool {
-	data.len() >= 2
-			&& data[0] == 2
-			&& {
-				let mut version = [0_u8; 8];
-				version[..1]
-					.copy_from_slice(&data[1..2]);
-						 u64::from_le_bytes(version) < 0
-			}
+pub fn vault_state_needs_migration(_data: &[u8]) -> bool {
+	false
 }
 
 
@@ -143,9 +136,6 @@ impl VaultState {
 		if account.discriminator != VAULT_STATE_DISCRIMINATOR {
 			return Err(VaultStateVersionError::InvalidData);
 		}
-		if account.migration_version < VAULT_STATE_MIGRATION_VERSION {
-			return Err(VaultStateVersionError::Stale { stored: account.migration_version });
-		}
 		if account.migration_version > VAULT_STATE_MIGRATION_VERSION {
 			return Err(VaultStateVersionError::Future { stored: account.migration_version });
 		}
@@ -166,11 +156,11 @@ mod vault_state_version_error_tests {
 
 	#[test]
 	fn stale_and_future_versions_are_distinguishable() {
-		let error = VaultState::try_from_bytes(&envelope(1 as u8)).err().expect("a future envelope must fail");
+		let error = VaultState::try_from_bytes(&envelope(1_u8)).err().expect("a future envelope must fail");
 		assert_eq!(error, VaultStateVersionError::Future { stored: 1 });
 		assert_eq!(VaultStateVersionError::Future { stored: 1 }.to_string(), "migration version mismatch: expected 0, received 1 (the data was written by a newer program; upgrade this client)");
 		assert!(
-			VaultState::try_from_bytes(&envelope(0 as u8)).is_ok(),
+			VaultState::try_from_bytes(&envelope(0_u8)).is_ok(),
 			"the current version must decode",
 		);
 	}

@@ -20,15 +20,46 @@ export function normalizeDartHashes(source) {
  * which cannot both hold. Drop the impossible stale-path assertions for v0
  * contracts; no envelope can predate the initial version. Kept in the
  * reproducible generation pipeline, never patched by hand.
+ *
+ * It also emits `N as u8` literal casts in the envelope tests, which clippy's
+ * `unnecessary_cast` rejects; rewrite them as `N_u8` literals.
  */
 export function normalizeRustVersionEnvelopeTests(source) {
-	const isInitialVersion = /pub const \w+_MIGRATION_VERSION: u\d+ = 0u\d+;/
-		.test(source);
-	if (!isInitialVersion) return source;
-	return source.replace(
-		/^\t\tlet error = \w+::try_from_bytes\(&envelope\(0 as u\d+\)\)\.err\(\)\.expect\("a stale envelope must fail"\);\n\t\tassert_eq!\(error, \w+::Stale \{ stored: 0 \}\);\n\t\tassert_eq!\(\w+::Stale \{ stored: 0 \}\.to_string\(\), "[^"]*"\);\n/gm,
+	const withoutCasts = source.replace(
+		/envelope\((\d+) as u8\)/g,
+		"envelope($1_u8)",
+	);
+	if (!isInitialVersionContract(withoutCasts)) return withoutCasts;
+	return withoutCasts.replace(
+		/^\t\tlet error = \w+::try_from_bytes\(&envelope\(0_u8\)\)\.err\(\)\.expect\("a stale envelope must fail"\);\n\t\tassert_eq!\(error, \w+::Stale \{ stored: 0 \}\);\n\t\tassert_eq!\(\w+::Stale \{ stored: 0 \}\.to_string\(\), "[^"]*"\);\n/gm,
 		"",
 	);
+}
+
+/** Pina 0.16.0 also emits a `*_needs_migration` helper whose stale comparison
+ * (`version < 0`) rustc rejects as a useless comparison for v0 contracts under
+ * `-D warnings`. No envelope can predate the initial version, so the helper
+ * is always false there.
+ */
+export function normalizeRustVersionEnvelopeGuards(source) {
+	if (!isInitialVersionContract(source)) return source;
+	return source.replace(
+		/pub fn (\w+_needs_migration)\(data: &\[u8\]\) -> bool \{[\s\S]*?\n\}/,
+		"pub fn $1(_data: &[u8]) -> bool {\n\tfalse\n}",
+	);
+}
+
+function isInitialVersionContract(source) {
+	return /pub const \w+_MIGRATION_VERSION: u\d+ = 0u\d;/.test(source);
+}
+
+/** Pina 0.16.0's emitted reserved-Migrate module leaves a trailing comma in
+ * TypeScript type argument lists, which tsc rejects (TS1009). Drop commas
+ * that directly precede a closing angle bracket line. Kept in the
+ * reproducible generation pipeline, never patched by hand.
+ */
+export function normalizeTypeScriptTypeArguments(source) {
+	return source.replace(/,(\n\t*)>/g, "$1>");
 }
 
 function normalizeDirectory(directory) {
@@ -45,6 +76,20 @@ function normalizeDirectory(directory) {
 	}
 }
 
+function normalizeTypeScriptDirectory(directory) {
+	for (const entry of readdirSync(directory, { withFileTypes: true })) {
+		const path = join(directory, entry.name);
+		if (entry.isDirectory()) {
+			normalizeTypeScriptDirectory(path);
+			continue;
+		}
+		if (!entry.name.endsWith(".ts")) continue;
+		const source = readFileSync(path, "utf8");
+		const normalized = normalizeTypeScriptTypeArguments(source);
+		if (normalized !== source) writeFileSync(path, normalized);
+	}
+}
+
 function normalizeRustAccounts(directory) {
 	for (const entry of readdirSync(directory, { withFileTypes: true })) {
 		const path = join(directory, entry.name);
@@ -54,7 +99,9 @@ function normalizeRustAccounts(directory) {
 		}
 		if (!entry.name.endsWith(".rs")) continue;
 		const source = readFileSync(path, "utf8");
-		const normalized = normalizeRustVersionEnvelopeTests(source);
+		const normalized = normalizeRustVersionEnvelopeGuards(
+			normalizeRustVersionEnvelopeTests(source),
+		);
 		if (normalized !== source) writeFileSync(path, normalized);
 	}
 }
@@ -169,6 +216,12 @@ if (
 		resolve(
 			root,
 			"programs/lootbox_program/clients/rust/lootbox_program/src/generated/accounts",
+		),
+	);
+	normalizeTypeScriptDirectory(
+		resolve(
+			root,
+			"programs/lootbox_program/clients/typescript/lootbox_program/src/generated",
 		),
 	);
 	// Keep generated and ergonomic clients on the same Kit major as the token

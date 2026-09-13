@@ -112,15 +112,8 @@ impl BundleState {
 
 /// Whether raw account bytes are stale for this contract: the envelope names this account's discriminator and carries a version older than
 /// [`BUNDLE_STATE_MIGRATION_VERSION`]. Current or foreign bytes return false; decoding explains the difference.
-pub fn bundle_state_needs_migration(data: &[u8]) -> bool {
-	data.len() >= 2
-			&& data[0] == 5
-			&& {
-				let mut version = [0_u8; 8];
-				version[..1]
-					.copy_from_slice(&data[1..2]);
-						 u64::from_le_bytes(version) < 0
-			}
+pub fn bundle_state_needs_migration(_data: &[u8]) -> bool {
+	false
 }
 
 
@@ -161,9 +154,6 @@ impl BundleState {
 		if account.discriminator != BUNDLE_STATE_DISCRIMINATOR {
 			return Err(BundleStateVersionError::InvalidData);
 		}
-		if account.migration_version < BUNDLE_STATE_MIGRATION_VERSION {
-			return Err(BundleStateVersionError::Stale { stored: account.migration_version });
-		}
 		if account.migration_version > BUNDLE_STATE_MIGRATION_VERSION {
 			return Err(BundleStateVersionError::Future { stored: account.migration_version });
 		}
@@ -184,11 +174,11 @@ mod bundle_state_version_error_tests {
 
 	#[test]
 	fn stale_and_future_versions_are_distinguishable() {
-		let error = BundleState::try_from_bytes(&envelope(1 as u8)).err().expect("a future envelope must fail");
+		let error = BundleState::try_from_bytes(&envelope(1_u8)).err().expect("a future envelope must fail");
 		assert_eq!(error, BundleStateVersionError::Future { stored: 1 });
 		assert_eq!(BundleStateVersionError::Future { stored: 1 }.to_string(), "migration version mismatch: expected 0, received 1 (the data was written by a newer program; upgrade this client)");
 		assert!(
-			BundleState::try_from_bytes(&envelope(0 as u8)).is_ok(),
+			BundleState::try_from_bytes(&envelope(0_u8)).is_ok(),
 			"the current version must decode",
 		);
 	}

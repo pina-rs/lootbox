@@ -756,7 +756,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		assert!(
 			program
 				.send(
-					&[LootboxInstruction::ReclaimSolPrize as u8, 0],
+					&[LootboxInstruction::ReclaimSolPrize as u8, 0, 0],
 					reclaim_accounts,
 				)
 				.is_err(),
@@ -1148,7 +1148,7 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 				.expect("allocate only bundle");
 
 			let quote_claim = program.instruction(
-				&[LootboxInstruction::ClaimSolPrize as u8, 0],
+				&[LootboxInstruction::ClaimSolPrize as u8, 0, 0],
 				vec![
 					AccountMeta::new_readonly(template, false),
 					AccountMeta::new(*opening, false),
@@ -1208,7 +1208,7 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 				.expect("permissionless token quote release");
 
 			let mint_claim = program.instruction(
-				&[LootboxInstruction::ClaimMintPrize as u8, 2],
+				&[LootboxInstruction::ClaimMintPrize as u8, 0, 2],
 				vec![
 					AccountMeta::new_readonly(template, false),
 					AccountMeta::new(*opening, false),
@@ -1221,7 +1221,7 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 			);
 			if index == 0 {
 				let redirect = program.instruction(
-					&[LootboxInstruction::ClaimMintPrize as u8, 2],
+					&[LootboxInstruction::ClaimMintPrize as u8, 0, 2],
 					vec![
 						AccountMeta::new_readonly(template, false),
 						AccountMeta::new(*opening, false),
@@ -1344,7 +1344,10 @@ fn missed_market_lock_retires_without_stranding_holder_claims() {
 			.time_travel_to_timestamp(u64::try_from(opens_at + 1).expect("timestamp") * 1000)
 			.expect("miss reveal deadline");
 		program
-			.send(&[LootboxInstruction::RetireTemplate as u8, 0], admin_accounts)
+			.send(
+				&[LootboxInstruction::RetireTemplate as u8, 0],
+				admin_accounts,
+			)
 			.expect("bounded recovery retirement");
 		assert_eq!(
 			&program.account(&mint).expect("mint").data[..4],
@@ -1432,7 +1435,7 @@ fn missed_market_lock_retires_without_stranding_holder_claims() {
 		let badge_ata = provision_ata(&program, &payer, &payer, &badge_mint).expect("badge ATA");
 		program
 			.send(
-				&[LootboxInstruction::ReclaimMintPrize as u8, 1],
+				&[LootboxInstruction::ReclaimMintPrize as u8, 0, 1],
 				vec![
 					AccountMeta::new_readonly(payer, true),
 					AccountMeta::new_readonly(template, false),
@@ -1449,7 +1452,7 @@ fn missed_market_lock_retires_without_stranding_holder_claims() {
 		assert_eq!(stored_u64(&badge.data, 36), 0);
 		program
 			.send(
-				&[LootboxInstruction::ClaimMintPrize as u8, 1],
+				&[LootboxInstruction::ClaimMintPrize as u8, 0, 1],
 				vec![
 					AccountMeta::new_readonly(template, false),
 					AccountMeta::new(opening, false),
@@ -1634,7 +1637,10 @@ fn expired_fifo_head_can_be_forfeited_by_an_unrelated_signer() {
 			)
 			.expect("bound recipient closes forfeited receipt");
 		program
-			.send(&[LootboxInstruction::RetireTemplate as u8, 0], admin_accounts)
+			.send(
+				&[LootboxInstruction::RetireTemplate as u8, 0],
+				admin_accounts,
+			)
 			.expect("retire");
 		program
 			.send_instructions_with_signers(
@@ -1654,7 +1660,7 @@ fn expired_fifo_head_can_be_forfeited_by_an_unrelated_signer() {
 		let before = program.balance(&bundle).expect("funded escrow");
 		program
 			.send(
-				&[LootboxInstruction::ReclaimSolPrize as u8, 0],
+				&[LootboxInstruction::ReclaimSolPrize as u8, 0, 0],
 				vec![
 					AccountMeta::new(payer, true),
 					AccountMeta::new_readonly(template, false),
@@ -1703,7 +1709,7 @@ fn retirement_recovers_inventory_only_after_all_claims_are_gone() {
 		fund_sol(&program, template, cancelled, 50_000).expect("fund staged bundle");
 		program
 			.send(
-				&[LootboxInstruction::ReclaimSolPrize as u8, 0],
+				&[LootboxInstruction::ReclaimSolPrize as u8, 0, 0],
 				vec![
 					AccountMeta::new(payer, true),
 					AccountMeta::new_readonly(template, false),
@@ -1745,7 +1751,7 @@ fn retirement_recovers_inventory_only_after_all_claims_are_gone() {
 			.expect("escrow staged badge authority");
 		program
 			.send(
-				&[LootboxInstruction::ReclaimMintPrize as u8, 0],
+				&[LootboxInstruction::ReclaimMintPrize as u8, 0, 0],
 				vec![
 					AccountMeta::new_readonly(payer, true),
 					AccountMeta::new_readonly(template, false),
@@ -1815,13 +1821,16 @@ fn retirement_recovers_inventory_only_after_all_claims_are_gone() {
 			AccountMeta::new_readonly(mint, false),
 			AccountMeta::new(bundle, false),
 		];
-		let reclaim = [LootboxInstruction::ReclaimSolPrize as u8, 0];
+		let reclaim = [LootboxInstruction::ReclaimSolPrize as u8, 0, 0];
 		assert!(
 			program.send(&reclaim, reclaim_accounts.clone()).is_err(),
 			"active template"
 		);
 		program
-			.send(&[LootboxInstruction::RetireTemplate as u8, 0], admin_accounts)
+			.send(
+				&[LootboxInstruction::RetireTemplate as u8, 0],
+				admin_accounts,
+			)
 			.expect("retire");
 		assert!(
 			program.send(&template_mint_data(1), mint_accounts).is_err(),

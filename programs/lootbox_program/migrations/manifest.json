@@ -1179,7 +1179,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "box_mint",
@@ -1195,7 +1198,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": "lootbox"
+								"pda": "lootbox",
+								"constraints": [
+									"empty"
+								]
 							},
 							{
 								"name": "vault",
@@ -1203,7 +1209,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": "vault"
+								"pda": "vault",
+								"constraints": [
+									"empty"
+								]
 							},
 							{
 								"name": "system_program",
@@ -1211,7 +1220,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							},
 							{
 								"name": "token_program",
@@ -1219,11 +1231,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=token::ID"
+								]
 							}
 						]
 					},
-					"processSha256": "158d267740700d8ae8a8d7c9a54a29cceb78c7bf5b1702db4db4cee21017f9cc",
+					"processSha256": "6dc509ba77fcc9b558d6c651adf953930ca888c1b970e3190801ca497c2709fa",
 					"transition": null
 				}
 			]
@@ -1277,7 +1292,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "lootbox",
@@ -1289,7 +1307,7 @@
 							}
 						]
 					},
-					"processSha256": "76f2238ea70cca45c202922d1e8aa5df36568c4ea45b2fcab36fdd2cb4d5e0f4",
+					"processSha256": "7f992dc9c1a84ee2ce3fcc0bcfc906ccf2089d6381e430b582c9d8123eef1d7c",
 					"transition": null
 				}
 			]
@@ -1334,7 +1352,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "lootbox",
@@ -1358,11 +1379,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							}
 						]
 					},
-					"processSha256": "84153717ecc50cc1b3cd56c191e9e69c7e6a531bfd61aa70c93ecde5f028323a",
+					"processSha256": "a4cef584d1ad3b40f449138d4f3a16f4dc637eda853a25b4dd77ad7f2a036b9a",
 					"transition": null
 				}
 			]
@@ -1396,7 +1420,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "lootbox",
@@ -1408,7 +1435,7 @@
 							}
 						]
 					},
-					"processSha256": "76f2238ea70cca45c202922d1e8aa5df36568c4ea45b2fcab36fdd2cb4d5e0f4",
+					"processSha256": "7f992dc9c1a84ee2ce3fcc0bcfc906ccf2089d6381e430b582c9d8123eef1d7c",
 					"transition": null
 				}
 			]
@@ -1453,7 +1480,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "lootbox",
@@ -1493,11 +1523,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=token::ID"
+								]
 							}
 						]
 					},
-					"processSha256": "5af940f28e163790fade9cad20fa28be2276179cdbc2b0648a7c64185f6aceb7",
+					"processSha256": "2d22c08a4d215db1de7ec8c594572b42235fd080f875ffea12267d648ddc3bdb",
 					"transition": null
 				}
 			]
@@ -1551,7 +1584,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "lootbox",
@@ -1591,7 +1627,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": "opening"
+								"pda": "opening",
+								"constraints": [
+									"empty"
+								]
 							},
 							{
 								"name": "randomness",
@@ -1599,7 +1638,11 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"empty",
+									"signer"
+								]
 							},
 							{
 								"name": "reward_escrow",
@@ -1631,7 +1674,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"sysvar=SLOT_HASHES_SYSVAR_ID"
+								]
 							},
 							{
 								"name": "oracle_program",
@@ -1671,7 +1717,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=associated_token_account::ID"
+								]
 							},
 							{
 								"name": "wrapped_sol_mint",
@@ -1679,7 +1728,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=WRAPPED_SOL_MINT_ID"
+								]
 							},
 							{
 								"name": "address_lookup_table_program",
@@ -1687,7 +1739,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=ADDRESS_LOOKUP_TABLE_PROGRAM_ID"
+								]
 							},
 							{
 								"name": "system_program",
@@ -1695,7 +1750,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							},
 							{
 								"name": "token_program",
@@ -1703,11 +1761,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=token::ID"
+								]
 							}
 						]
 					},
-					"processSha256": "e159f1c1245fd8d7c475a7c844988a99096fd1b38004dc2b0fa2f119400d7145",
+					"processSha256": "4e8e0be44b60175763cfcd8e5eb31c5096b55d1d4ce440876cd7fa397f855c86",
 					"transition": null
 				}
 			]
@@ -1778,7 +1839,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "lootbox",
@@ -1850,7 +1914,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"sysvar=SLOT_HASHES_SYSVAR_ID"
+								]
 							},
 							{
 								"name": "oracle_program",
@@ -1882,7 +1949,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							},
 							{
 								"name": "token_program",
@@ -1890,7 +1960,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=token::ID"
+								]
 							},
 							{
 								"name": "wrapped_sol_mint",
@@ -1898,11 +1971,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=WRAPPED_SOL_MINT_ID"
+								]
 							}
 						]
 					},
-					"processSha256": "8d8f2d9883e6928df3bad11baa55ae787eac143a9b610753d7c95b4a96337c03",
+					"processSha256": "84d0afbe93681c1552cd7c3324f04d28db08aafeb2c447104deb4219043e5d19",
 					"transition": null
 				}
 			]
@@ -1936,7 +2012,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "lootbox",
@@ -1988,7 +2067,7 @@
 							}
 						]
 					},
-					"processSha256": "effe7ca7826ea997eba601e71b17b8ec92441969162f9e95b3a285965e541a81",
+					"processSha256": "a8b49493f547911eeb3eeb9e2497bc8183b23bf120ce05aff0ae536cc754b06d",
 					"transition": null
 				}
 			]
@@ -2094,7 +2173,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							},
 							{
 								"name": "token_program",
@@ -2102,7 +2184,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=token::ID"
+								]
 							},
 							{
 								"name": "wrapped_sol_mint",
@@ -2110,7 +2195,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=WRAPPED_SOL_MINT_ID"
+								]
 							},
 							{
 								"name": "address_lookup_table_program",
@@ -2118,11 +2206,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=ADDRESS_LOOKUP_TABLE_PROGRAM_ID"
+								]
 							}
 						]
 					},
-					"processSha256": "d54dd944ee098f9de9df4b3a24e3b7695cf9c9047d1f0a1fe752896122ebdf0e",
+					"processSha256": "7559737b0ffe4a7d5a8f6ca0105ca28e03b024297f2f028d63ed6972b60eeda8",
 					"transition": null
 				}
 			]
@@ -2167,7 +2258,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "lootbox",
@@ -2195,7 +2289,7 @@
 							}
 						]
 					},
-					"processSha256": "e70c5f4b8b7fff487f0bf0409e8c2c9702108d3b972f9f8bbef399ea9a118e27",
+					"processSha256": "1473cc7c36288a4a428ff1979b43f7bafb81acdc32015e7fac8f9564c9fa58f2",
 					"transition": null
 				}
 			]
@@ -2312,7 +2406,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -2320,7 +2417,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": "template"
+								"pda": "template",
+								"constraints": [
+									"empty"
+								]
 							},
 							{
 								"name": "box_mint",
@@ -2336,7 +2436,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							},
 							{
 								"name": "box_token_program",
@@ -2344,11 +2447,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=token_2022::ID"
+								]
 							}
 						]
 					},
-					"processSha256": "924aff692ef2e08bcc1ac17cc23860d2fd2088dfc54878322de05a4327997c51",
+					"processSha256": "eed7b1affdda9c3d227f003fd6407870dee426a6376aa57a85228c9035079c07",
 					"transition": null
 				}
 			]
@@ -2427,7 +2533,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": "bundle"
+								"pda": "bundle",
+								"constraints": [
+									"empty"
+								]
 							},
 							{
 								"name": "system_program",
@@ -2435,11 +2544,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							}
 						]
 					},
-					"processSha256": "1978d260934ea7bfccf0f56d34b372beedde7f08089a1674bdd2743499c0022d",
+					"processSha256": "ca3981e7c370a4a9b3cc21813a3df3f05b17a47b8549107f6148e3c49db244ad",
 					"transition": null
 				}
 			]
@@ -2508,11 +2620,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							}
 						]
 					},
-					"processSha256": "1c48704954ad79a394de9a06e7686ef79581210e52da8d40d9a8c355bca0280b",
+					"processSha256": "bb18223a44f22a24e34434575dc134913240b4a97e90857994948fe03309f8b3",
 					"transition": null
 				}
 			]
@@ -2740,12 +2855,12 @@
 								"writable": false,
 								"signer": false,
 								"optional": false,
-								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+								"defaultValue": null,
 								"pda": null
 							}
 						]
 					},
-					"processSha256": "fd524d70afddf44d2fbe0056016eaed82541ada8f3c8b70b5a363ced1e921ce8",
+					"processSha256": "63eed587dbbcec72293afda8ecd1f7935ff1ac0a8c81f6efaa050685ef3c0835",
 					"transition": null
 				}
 			]
@@ -2826,7 +2941,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "payer",
@@ -2834,7 +2952,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -2866,7 +2987,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": "opening"
+								"pda": "opening",
+								"constraints": [
+									"empty"
+								]
 							},
 							{
 								"name": "randomness",
@@ -2874,7 +2998,11 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"empty",
+									"signer"
+								]
 							},
 							{
 								"name": "reward_escrow",
@@ -2906,7 +3034,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"sysvar=SLOT_HASHES_SYSVAR_ID"
+								]
 							},
 							{
 								"name": "oracle_program",
@@ -2946,7 +3077,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=associated_token_account::ID"
+								]
 							},
 							{
 								"name": "wrapped_sol_mint",
@@ -2954,7 +3088,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=WRAPPED_SOL_MINT_ID"
+								]
 							},
 							{
 								"name": "address_lookup_table_program",
@@ -2962,7 +3099,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=ADDRESS_LOOKUP_TABLE_PROGRAM_ID"
+								]
 							},
 							{
 								"name": "system_program",
@@ -2970,7 +3110,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							},
 							{
 								"name": "box_token_program",
@@ -2978,7 +3121,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=token_2022::ID"
+								]
 							},
 							{
 								"name": "token_program",
@@ -2986,11 +3132,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=token::ID"
+								]
 							}
 						]
 					},
-					"processSha256": "56d95380c0fd30053f56b10656310ee9ee051dfb1945ed795daedb3d4700a97f",
+					"processSha256": "abbbf8f7749396f7da31555cb264c620da14ba14f651550c23bf8feba9ce68a1",
 					"transition": null
 				}
 			]
@@ -3053,7 +3202,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -3117,7 +3269,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"sysvar=SLOT_HASHES_SYSVAR_ID"
+								]
 							},
 							{
 								"name": "oracle_program",
@@ -3149,7 +3304,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							},
 							{
 								"name": "token_program",
@@ -3157,7 +3315,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=token::ID"
+								]
 							},
 							{
 								"name": "wrapped_sol_mint",
@@ -3165,11 +3326,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=WRAPPED_SOL_MINT_ID"
+								]
 							}
 						]
 					},
-					"processSha256": "54cd8eddd2e4d71829cd9d64c76dfbb664a0aeebe430b436d06d11d58b0f1879",
+					"processSha256": "2bbd97892a5c60104298b1a4ff43ecfac0e56a965b29f5df6ae6d1ca1dd956b4",
 					"transition": null
 				}
 			]
@@ -3246,7 +3410,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": "result_receipt"
+								"pda": "result_receipt",
+								"constraints": [
+									"empty"
+								]
 							},
 							{
 								"name": "system_program",
@@ -3254,11 +3421,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							}
 						]
 					},
-					"processSha256": "6f333892ad0dc33f4b6a97af88274d06ad52b17faa3f73666f739295a746b5ba",
+					"processSha256": "8ad9091957dbb9389d8f27db4be61f70e8e517e7f79006f81b9cf89683803dcf",
 					"transition": null
 				}
 			]
@@ -3766,7 +3936,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							},
 							{
 								"name": "token_program",
@@ -3774,7 +3947,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=token::ID"
+								]
 							},
 							{
 								"name": "wrapped_sol_mint",
@@ -3782,7 +3958,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=WRAPPED_SOL_MINT_ID"
+								]
 							},
 							{
 								"name": "address_lookup_table_program",
@@ -3790,11 +3969,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=ADDRESS_LOOKUP_TABLE_PROGRAM_ID"
+								]
 							}
 						]
 					},
-					"processSha256": "f6e98abf226d2d69748072472911dccece8118d319981785b85c8aca9a87da0f",
+					"processSha256": "65a319c674cdf82ac3c71526de040b058565875055e083c14d25c81446f66437",
 					"transition": null
 				}
 			]
@@ -3828,7 +4010,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -3852,11 +4037,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							}
 						]
 					},
-					"processSha256": "38ea37311c0362f35fb61a51aa400d67fb45554d984ab24f99ddcb2de903d881",
+					"processSha256": "38a717e8f0e4073c3a39031072cbcaa4b85e1257f98f2e5f60b6926f369fe883",
 					"transition": null
 				}
 			]
@@ -3944,7 +4132,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -4047,7 +4238,7 @@
 							}
 						]
 					},
-					"processSha256": "d2bad01e62c7460fa85b3085a7ecbdb20be9773d84d391b9e0598f1a7f8b70f8",
+					"processSha256": "d6af6b98e38b2f3c89550cbf91250257afc19c9207a5c4a4aaa03cdfc05d2765",
 					"transition": null
 				}
 			]
@@ -4092,7 +4283,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -4211,7 +4405,7 @@
 							}
 						]
 					},
-					"processSha256": "5add7489a9644216579ddaef7ea5f6e87408377c318d14acf4676b47daf4c359",
+					"processSha256": "1371aa7ed5a5b479cbc573cf70a8d378946f84f534ee0ac43111b5e7ca725dca",
 					"transition": null
 				}
 			]
@@ -4256,7 +4450,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -4367,7 +4564,7 @@
 							}
 						]
 					},
-					"processSha256": "074a7f9ac2ef3bc91362a6bb7570c5f5b7279de991f2572a42c98d1e2aeefe15",
+					"processSha256": "d9b8b76b1516efb0f1230a5158f793e9b191aa383365245df79753324eff9376",
 					"transition": null
 				}
 			]
@@ -4401,7 +4598,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -4472,7 +4672,7 @@
 							}
 						]
 					},
-					"processSha256": "8f43f27f88f7c290174b98eab2c68da6b97d77753a165c7d199cf12fe7ebd597",
+					"processSha256": "840f71485097792855074d3ba42d313dbefc63461a6f20f444bfb71d3092c3fa",
 					"transition": null
 				}
 			]
@@ -4517,7 +4717,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -4604,7 +4807,7 @@
 							}
 						]
 					},
-					"processSha256": "9677105e1afb4108a662d5c9cc0cd232ef3b2c3d924c62f96459e23178b9e935",
+					"processSha256": "3e0efc8521e7f5dd51678e8578aafa19809e2d3a3956fe9cd0b842eb29b397b2",
 					"transition": null
 				}
 			]
@@ -4649,7 +4852,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -4728,7 +4934,7 @@
 							}
 						]
 					},
-					"processSha256": "d3cc324186e7d82e9cb143c0e17e2e2feff22228a31f2d223232ef7dc9bfe1d4",
+					"processSha256": "44eea46c014376eae0c869e2b9cb52067c259ad3b437020e7451219e2d1bee1d",
 					"transition": null
 				}
 			]
@@ -4809,7 +5015,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -4888,7 +5097,7 @@
 							}
 						]
 					},
-					"processSha256": "edd64f87026cea89541db87d66e616ae1ded90a0b7e06c3673a1e64b6eb35c42",
+					"processSha256": "39d4067ec7e1b6d255f4f074b583c77d40887bd82b1b50da691cea04ae2a782f",
 					"transition": null
 				}
 			]
@@ -5155,7 +5364,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -5242,7 +5454,7 @@
 							}
 						]
 					},
-					"processSha256": "bd5803c22936a9e76399623875e3d9f21b67457f86b83940c7f2e769479df191",
+					"processSha256": "630eed8fa8fb1737782328ecd6455131e758d90a5d5e0f5ce3f955af13201533",
 					"transition": null
 				}
 			]
@@ -5276,7 +5488,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -5316,11 +5531,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							}
 						]
 					},
-					"processSha256": "5f908916572e9ae7250e71276cb73c0e26f7a49f9e5a7bc3207f54db4da7f452",
+					"processSha256": "41f5ada22bc8a66d027e61c8be9c6c0281bd4f4a0fabf67e94f157b3853d140c",
 					"transition": null
 				}
 			]
@@ -5389,7 +5607,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": "bundle"
+								"pda": "bundle",
+								"constraints": [
+									"empty"
+								]
 							},
 							{
 								"name": "service_vault",
@@ -5397,7 +5618,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"empty"
+								]
 							},
 							{
 								"name": "system_program",
@@ -5405,7 +5629,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							},
 							{
 								"name": "box_token_program",
@@ -5413,11 +5640,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=token_2022::ID"
+								]
 							}
 						]
 					},
-					"processSha256": "4937db547aa463445cb5779a430491d87039ab7f4700f936403c3fcccb408505",
+					"processSha256": "d3708e16c448cec518e6e6e254a4b2878a882a2bdc7bd3e75cb8a70eb3214b5e",
 					"transition": null
 				}
 			]
@@ -5451,7 +5681,10 @@
 								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -5483,11 +5716,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							}
 						]
 					},
-					"processSha256": "233e83db0e0b9f346e0781df051be8e03b0c17b01c9b0cf7c0b4aaf00c925c65",
+					"processSha256": "835d6520a44d8c26a629d58f883d87cde4f3266f025a128eed11e5381aa5c63e",
 					"transition": null
 				}
 			]
@@ -5556,11 +5792,14 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
 							}
 						]
 					},
-					"processSha256": "1c48704954ad79a394de9a06e7686ef79581210e52da8d40d9a8c355bca0280b",
+					"processSha256": "bb18223a44f22a24e34434575dc134913240b4a97e90857994948fe03309f8b3",
 					"transition": null
 				}
 			]

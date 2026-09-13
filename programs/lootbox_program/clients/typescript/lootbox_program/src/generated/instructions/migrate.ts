@@ -49,7 +49,7 @@ export type MigrateInstruction<
 	TAccountBundleState extends string | AccountMeta<string> = string,
 	TAccountTemplateOpeningState extends string | AccountMeta<string> = string,
 	TAccountResultReceiptState extends string | AccountMeta<string> = string,
-	TRemainingAccounts extends readonly AccountMeta<string>[] = [],
+	TRemainingAccounts extends readonly AccountMeta<string>[] = []
 > =
 	& Instruction<TProgram>
 	& InstructionWithData<ReadonlyUint8Array>
@@ -88,7 +88,7 @@ export type MigrateInput<
 	TAccountTemplateState extends string = string,
 	TAccountBundleState extends string = string,
 	TAccountTemplateOpeningState extends string = string,
-	TAccountResultReceiptState extends string = string,
+	TAccountResultReceiptState extends string = string
 > = {
 	payer?: TransactionSigner<TAccountPayer>;
 	systemProgram?: Address<TAccountSystemProgram>;
@@ -121,7 +121,7 @@ export function getMigrateInstruction<
 	TAccountBundleState extends string = string,
 	TAccountTemplateOpeningState extends string = string,
 	TAccountResultReceiptState extends string = string,
-	TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
+	TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS
 >(
 	input: MigrateInput<
 		TAccountPayer,
@@ -132,7 +132,7 @@ export function getMigrateInstruction<
 		TAccountTemplateState,
 		TAccountBundleState,
 		TAccountTemplateOpeningState,
-		TAccountResultReceiptState,
+		TAccountResultReceiptState
 	>,
 	config?: { programAddress?: TProgramAddress },
 ): MigrateInstruction<

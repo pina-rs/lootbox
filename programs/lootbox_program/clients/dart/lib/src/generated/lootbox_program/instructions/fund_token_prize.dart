@@ -1,7 +1,6 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -12,15 +11,13 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
-
 @immutable
 class FundTokenPrizeInstructionData {
   const FundTokenPrizeInstructionData({
     required this.amountPerWin,
     required this.isNft,
-  }) :
-      discriminator = 13,
-      migrationVersion = 0;
+  }) : discriminator = 13,
+       migrationVersion = 0;
 
   final int discriminator;
   final int migrationVersion;
@@ -28,7 +25,8 @@ class FundTokenPrizeInstructionData {
   final bool isNft;
 }
 
-Encoder<FundTokenPrizeInstructionData> getFundTokenPrizeInstructionDataEncoder() {
+Encoder<FundTokenPrizeInstructionData>
+getFundTokenPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
     ('migrationVersion', getU8Encoder()),
@@ -47,7 +45,8 @@ Encoder<FundTokenPrizeInstructionData> getFundTokenPrizeInstructionDataEncoder()
   );
 }
 
-Decoder<FundTokenPrizeInstructionData> getFundTokenPrizeInstructionDataDecoder() {
+Decoder<FundTokenPrizeInstructionData>
+getFundTokenPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
     ('migrationVersion', getU8Decoder()),
@@ -56,23 +55,19 @@ Decoder<FundTokenPrizeInstructionData> getFundTokenPrizeInstructionDataDecoder()
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(
-      SolanaErrorCode.codecsInvalidByteLength,
-      {
-        'codecDescription': 'fundTokenPrize instruction decoder',
-        'expected': expected,
-        'bytesLength': bytesLength,
-      },
-    );
+    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
+      'codecDescription': 'fundTokenPrize instruction decoder',
+      'expected': expected,
+      'bytesLength': bytesLength,
+    });
   }
 
-  (FundTokenPrizeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(
-      getU8Encoder().encode(13),
-    ).read(bytes, offset + 0);
-    getConstantDecoder(
-      getU8Encoder().encode(0),
-    ).read(bytes, offset + 1);
+  (FundTokenPrizeInstructionData, int) readTopLevel(
+    Uint8List bytes,
+    int offset,
+  ) {
+    getConstantDecoder(getU8Encoder().encode(13)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
@@ -80,8 +75,8 @@ Decoder<FundTokenPrizeInstructionData> getFundTokenPrizeInstructionDataDecoder()
 
     return (
       FundTokenPrizeInstructionData(
-      amountPerWin: map['amountPerWin']! as BigInt,
-      isNft: map['isNft']! as bool,
+        amountPerWin: map['amountPerWin']! as BigInt,
+        isNft: map['isNft']! as bool,
       ),
       newOffset,
     );
@@ -107,8 +102,12 @@ Decoder<FundTokenPrizeInstructionData> getFundTokenPrizeInstructionDataDecoder()
   };
 }
 
-Codec<FundTokenPrizeInstructionData, FundTokenPrizeInstructionData> getFundTokenPrizeInstructionDataCodec() {
-  return combineCodec(getFundTokenPrizeInstructionDataEncoder(), getFundTokenPrizeInstructionDataDecoder());
+Codec<FundTokenPrizeInstructionData, FundTokenPrizeInstructionData>
+getFundTokenPrizeInstructionDataCodec() {
+  return combineCodec(
+    getFundTokenPrizeInstructionDataEncoder(),
+    getFundTokenPrizeInstructionDataDecoder(),
+  );
 }
 
 /// Creates a [FundTokenPrize] instruction.
@@ -125,26 +124,28 @@ Instruction getFundTokenPrizeInstruction({
   required bool isNft,
 }) {
   final instructionData = FundTokenPrizeInstructionData(
-      amountPerWin: amountPerWin,
-      isNft: isNft,
+    amountPerWin: amountPerWin,
+    isNft: isNft,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-    AccountMeta(address: authority, role: AccountRole.readonly),
-    AccountMeta(address: template, role: AccountRole.writable),
-    AccountMeta(address: bundle, role: AccountRole.writable),
-    AccountMeta(address: mint, role: AccountRole.readonly),
-    AccountMeta(address: source, role: AccountRole.writable),
-    AccountMeta(address: escrow, role: AccountRole.writable),
-    AccountMeta(address: tokenProgram, role: AccountRole.readonly),
+      AccountMeta(address: authority, role: AccountRole.readonly),
+      AccountMeta(address: template, role: AccountRole.writable),
+      AccountMeta(address: bundle, role: AccountRole.writable),
+      AccountMeta(address: mint, role: AccountRole.readonly),
+      AccountMeta(address: source, role: AccountRole.writable),
+      AccountMeta(address: escrow, role: AccountRole.writable),
+      AccountMeta(address: tokenProgram, role: AccountRole.readonly),
     ],
     data: getFundTokenPrizeInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [FundTokenPrize] instruction from raw instruction data.
-FundTokenPrizeInstructionData parseFundTokenPrizeInstruction(Instruction instruction) {
+FundTokenPrizeInstructionData parseFundTokenPrizeInstruction(
+  Instruction instruction,
+) {
   return getFundTokenPrizeInstructionDataDecoder().decode(instruction.data!);
 }

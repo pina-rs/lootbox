@@ -751,6 +751,8 @@ impl InstructionBuilder for MintTemplateBoxesArgs {
 			self.template,
 			self.box_mint,
 			self.recipient_box_account,
+			// The program only accepts Token-2022 custody for template boxes.
+			solana_pubkey::pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
 		);
 		let amount = self.amount;
 		let data = generated::MintTemplateBoxesInstructionData::new(|wire| {

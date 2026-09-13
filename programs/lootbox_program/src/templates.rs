@@ -189,9 +189,9 @@ mod layout_tests {
 
 	#[test]
 	fn template_layout_charges_only_for_the_activated_prefix() {
-		assert_eq!(TemplateState::HEADER_SIZE, 547);
-		assert_eq!(TemplateState::MAX_SIZE, 8_739);
-		assert_eq!(size_of::<TemplateStateHeader>(), 547);
+		assert_eq!(TemplateState::HEADER_SIZE, 548);
+		assert_eq!(TemplateState::MAX_SIZE, 8_740);
+		assert_eq!(size_of::<TemplateStateHeader>(), 548);
 		assert_eq!(BundleState::SIZE, size_of::<BundleStateZc>());
 		assert_eq!(
 			TemplateOpeningState::SIZE,
@@ -205,7 +205,7 @@ mod layout_tests {
 				TemplateOpeningState::SIZE,
 				ResultReceiptState::SIZE,
 			),
-			(547, 266, 292, 270),
+			(548, 267, 293, 271),
 		);
 	}
 
@@ -342,10 +342,14 @@ pub struct CancelBundleInstruction {}
 
 #[derive(Accounts, Debug)]
 pub struct CreateTemplateAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	#[pina(validate(empty))]
 	pub template: &'a mut AccountView,
 	pub box_mint: &'a AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	#[pina(validate(address = token_2022::ID))]
 	pub box_token_program: &'a AccountView,
 }
 
@@ -353,7 +357,9 @@ pub struct CreateTemplateAccounts<'a> {
 pub struct AddBundleAccounts<'a> {
 	pub authority: &'a mut AccountView,
 	pub template: &'a mut AccountView,
+	#[pina(validate(empty))]
 	pub bundle: &'a mut AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
@@ -362,6 +368,7 @@ pub struct FundSolPrizeAccounts<'a> {
 	pub authority: &'a mut AccountView,
 	pub template: &'a mut AccountView,
 	pub bundle: &'a mut AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
@@ -381,6 +388,7 @@ pub struct FundQuoteSolPrizeAccounts<'a> {
 	pub authority: &'a mut AccountView,
 	pub template: &'a mut AccountView,
 	pub bundle: &'a mut AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
@@ -416,10 +424,14 @@ pub struct LockTreasuryAccounts<'a> {
 	pub template: &'a mut AccountView,
 	pub box_mint: &'a mut AccountView,
 	/// The first unused bundle PDA proves that no funded tail was omitted.
+	#[pina(validate(empty))]
 	pub bundle: &'a AccountView,
 	/// Created and creator-funded only when receipts or crank bounties are enabled.
+	#[pina(validate(empty))]
 	pub service_vault: &'a mut AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	#[pina(validate(address = token_2022::ID))]
 	pub box_token_program: &'a AccountView,
 }
 
@@ -434,9 +446,11 @@ pub struct MintTemplateBoxesAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct ActivateBundleAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
 	pub template: &'a mut AccountView,
 	pub bundle: &'a mut AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
@@ -790,9 +804,6 @@ fn validate_text<const N: usize>(text: &[u8; N], required: bool) -> ProgramResul
 impl<'a> ProcessAccountInfos<'a> for CreateTemplateAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = CreateTemplateInstruction::try_from_bytes(data)?;
-		self.authority.assert_signer()?.assert_writable()?;
-		self.system_program.assert_address(&system::ID)?;
-		self.box_token_program.assert_address(&token_2022::ID)?;
 		assert_known_oracle_program(&args.oracle_program)?;
 		validate_text(&args.name, true)?;
 		validate_text(&args.uri, false)?;
@@ -810,7 +821,6 @@ impl<'a> ProcessAccountInfos<'a> for CreateTemplateAccounts<'a> {
 			return Err(ProgramError::InvalidSeeds);
 		}
 
-		self.template.assert_empty()?.assert_writable()?;
 		if assert_template_mint(
 			self.box_mint,
 			self.template.address(),
@@ -857,9 +867,6 @@ impl<'a> ProcessAccountInfos<'a> for AddBundleAccounts<'a> {
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
-		self.authority.assert_writable()?;
-		self.system_program.assert_address(&system::ID)?;
-		self.bundle.assert_empty()?.assert_writable()?;
 
 		if usize::try_from(state.bundle_count.get())
 			.map_err(|_| ProgramError::InvalidAccountData)?
@@ -941,7 +948,6 @@ impl<'a> ProcessAccountInfos<'a> for FundSolPrizeAccounts<'a> {
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, &template_address)?;
-		self.system_program.assert_address(&system::ID)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		if bundle.status != BUNDLE_FUNDING {
 			return Err(lootbox_error(LootboxError::InvalidState));
@@ -973,7 +979,6 @@ impl<'a> ProcessAccountInfos<'a> for FundQuoteSolPrizeAccounts<'a> {
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, &template_address)?;
-		self.system_program.assert_address(&system::ID)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		if bundle.status != BUNDLE_FUNDING {
 			return Err(lootbox_error(LootboxError::InvalidState));
@@ -1308,9 +1313,6 @@ impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 		let args = LockTreasuryInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
 		let now = sysvars::clock::Clock::get()?.unix_timestamp;
-		self.authority.assert_writable()?;
-		self.system_program.assert_address(&system::ID)?;
-		self.box_token_program.assert_address(&token_2022::ID)?;
 		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
@@ -1321,7 +1323,6 @@ impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 		let next_bundle_seeds = BundleState::seeds(&template_address, state.bundle_count.get());
 		self.bundle
 			.assert_canonical_bump(&next_bundle_seeds.as_slices(), &ID)?;
-		self.bundle.assert_empty()?;
 		let service_vault_seeds = [SEED_SERVICE_VAULT, template_address.as_ref()];
 		if self
 			.service_vault
@@ -1330,7 +1331,6 @@ impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 		{
 			return Err(ProgramError::InvalidSeeds);
 		}
-		self.service_vault.assert_empty()?.assert_writable()?;
 		let (receipt_rent, service_budget) = service_budget(&state)?;
 		let total_bundles = state.total_bundles.get();
 		let settlement_bounty = state.settlement_bounty_lamports.get();
@@ -1416,8 +1416,6 @@ impl<'a> ProcessAccountInfos<'a> for ActivateBundleAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = ActivateBundleInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
-		self.authority.assert_signer()?.assert_writable()?;
-		self.system_program.assert_address(&system::ID)?;
 		let template_data = self.template.try_borrow()?;
 		let state = TemplateState::try_from_bytes(&template_data)?;
 		assert_template(&template_address, &state)?;
@@ -1532,7 +1530,6 @@ impl<'a> ProcessAccountInfos<'a> for MintTemplateBoxesAccounts<'a> {
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
-		self.box_token_program.assert_address(&token_2022::ID)?;
 		let supply =
 			assert_template_mint(self.box_mint, &template_address, &state.box_mint, false)?;
 		let account = self

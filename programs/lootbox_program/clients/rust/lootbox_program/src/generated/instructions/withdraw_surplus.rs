@@ -9,6 +9,7 @@
 )]
 
 pub const WITHDRAW_SURPLUS_DISCRIMINATOR: u8 = 9u8;
+pub const WITHDRAW_SURPLUS_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -64,6 +65,7 @@ impl WithdrawSurplusInstructionData {
 		<WithdrawSurplusInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = WITHDRAW_SURPLUS_DISCRIMINATOR;
+			data.migration_version = WITHDRAW_SURPLUS_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -77,5 +79,6 @@ impl WithdrawSurplusInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct WithdrawSurplusInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 	pub lamports: u64,
 }

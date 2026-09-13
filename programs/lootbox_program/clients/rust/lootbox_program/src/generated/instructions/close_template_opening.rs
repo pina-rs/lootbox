@@ -9,6 +9,7 @@
 )]
 
 pub const CLOSE_TEMPLATE_OPENING_DISCRIMINATOR: u8 = 24u8;
+pub const CLOSE_TEMPLATE_OPENING_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -91,6 +92,7 @@ impl CloseTemplateOpeningInstructionData {
 		<CloseTemplateOpeningInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = CLOSE_TEMPLATE_OPENING_DISCRIMINATOR;
+			data.migration_version = CLOSE_TEMPLATE_OPENING_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -104,4 +106,5 @@ impl CloseTemplateOpeningInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct CloseTemplateOpeningInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 }

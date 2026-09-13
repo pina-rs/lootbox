@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodBooleanDecoder, getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodBooleanDecoder, getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getBooleanDecoder, getBooleanEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -15,19 +15,23 @@ export const FUND_TOKEN_PRIZE_DISCRIMINATOR = 13;
 
 export function getFundTokenPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(FUND_TOKEN_PRIZE_DISCRIMINATOR); }
 
+export const FUND_TOKEN_PRIZE_DISCRIMINATOR2 = 0;
+
+export function getFundTokenPrizeDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(FUND_TOKEN_PRIZE_DISCRIMINATOR2); }
+
 export type FundTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountSource extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlyAccount<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountSource extends string ? WritableAccount<TAccountSource> : TAccountSource, TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type FundTokenPrizeInstructionData = { discriminator: number; amountPerWin: bigint; isNft: boolean;  };
+export type FundTokenPrizeInstructionData = { discriminator: number; migrationVersion: number; amountPerWin: bigint; isNft: boolean;  };
 
 export type FundTokenPrizeInstructionDataArgs = { amountPerWin: number | bigint; isNft: boolean;  };
 
 export function getFundTokenPrizeInstructionDataEncoder(): FixedSizeEncoder<FundTokenPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['amountPerWin', getU64Encoder()], ['isNft', getBooleanEncoder()]]), (value) => ({ ...value, discriminator: 13 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['amountPerWin', getU64Encoder()], ['isNft', getBooleanEncoder()]]), (value) => ({ ...value, discriminator: 13, migrationVersion: 0 }));
 }
 
 export function getFundTokenPrizeInstructionDataDecoder(): FixedSizeDecoder<FundTokenPrizeInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(FUND_TOKEN_PRIZE_DISCRIMINATOR, getU8Decoder())], ['amountPerWin', getU64Decoder()], ['isNft', getPinaPodBooleanDecoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(FUND_TOKEN_PRIZE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['amountPerWin', getU64Decoder()], ['isNft', getPinaPodBooleanDecoder()]]);
 }
 
 export function getFundTokenPrizeInstructionDataCodec(): FixedSizeCodec<FundTokenPrizeInstructionDataArgs, FundTokenPrizeInstructionData> {

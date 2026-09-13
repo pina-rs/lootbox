@@ -17,9 +17,11 @@ class AddBundleInstructionData {
     required this.quantity,
     required this.assetCount,
     required this.bump,
-  }) : discriminator = 11;
+  }) : discriminator = 11,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final BigInt quantity;
   final int assetCount;
   final int bump;
@@ -28,6 +30,7 @@ class AddBundleInstructionData {
 Encoder<AddBundleInstructionData> getAddBundleInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('quantity', getU64Encoder()),
     ('assetCount', getU8Encoder()),
     ('bump', getU8Encoder()),
@@ -37,6 +40,7 @@ Encoder<AddBundleInstructionData> getAddBundleInstructionDataEncoder() {
     structEncoder,
     (AddBundleInstructionData value) => <String, Object?>{
       'discriminator': 11,
+      'migrationVersion': 0,
       'quantity': value.quantity,
       'assetCount': value.assetCount,
       'bump': value.bump,
@@ -47,6 +51,7 @@ Encoder<AddBundleInstructionData> getAddBundleInstructionDataEncoder() {
 Decoder<AddBundleInstructionData> getAddBundleInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('quantity', getU64Decoder()),
     ('assetCount', getU8Decoder()),
     ('bump', getU8Decoder()),
@@ -62,6 +67,7 @@ Decoder<AddBundleInstructionData> getAddBundleInstructionDataDecoder() {
 
   (AddBundleInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
     getConstantDecoder(getU8Encoder().encode(11)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

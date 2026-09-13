@@ -14,9 +14,11 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class AllocateTemplateOpenInstructionData {
   const AllocateTemplateOpenInstructionData({required this.resultReceiptBump})
-    : discriminator = 18;
+    : discriminator = 18,
+      migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final int resultReceiptBump;
 }
 
@@ -24,6 +26,7 @@ Encoder<AllocateTemplateOpenInstructionData>
 getAllocateTemplateOpenInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('resultReceiptBump', getU8Encoder()),
   ]);
 
@@ -31,6 +34,7 @@ getAllocateTemplateOpenInstructionDataEncoder() {
     structEncoder,
     (AllocateTemplateOpenInstructionData value) => <String, Object?>{
       'discriminator': 18,
+      'migrationVersion': 0,
       'resultReceiptBump': value.resultReceiptBump,
     },
   );
@@ -40,6 +44,7 @@ Decoder<AllocateTemplateOpenInstructionData>
 getAllocateTemplateOpenInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('resultReceiptBump', getU8Decoder()),
   ]);
 
@@ -56,6 +61,7 @@ getAllocateTemplateOpenInstructionDataDecoder() {
     int offset,
   ) {
     getConstantDecoder(getU8Encoder().encode(18)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

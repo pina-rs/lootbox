@@ -17,9 +17,11 @@ class FulfillTemplateOpenInstructionData {
     required this.signature,
     required this.recoveryId,
     required this.value,
-  }) : discriminator = 17;
+  }) : discriminator = 17,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final Uint8List signature;
   final int recoveryId;
   final Uint8List value;
@@ -29,6 +31,7 @@ Encoder<FulfillTemplateOpenInstructionData>
 getFulfillTemplateOpenInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     (
       'signature',
       fixEncoderSize(getBytesEncoder(), 64, allowTruncation: false),
@@ -41,6 +44,7 @@ getFulfillTemplateOpenInstructionDataEncoder() {
     structEncoder,
     (FulfillTemplateOpenInstructionData value) => <String, Object?>{
       'discriminator': 17,
+      'migrationVersion': 0,
       'signature': value.signature,
       'recoveryId': value.recoveryId,
       'value': value.value,
@@ -52,6 +56,7 @@ Decoder<FulfillTemplateOpenInstructionData>
 getFulfillTemplateOpenInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('signature', fixDecoderSize(getBytesDecoder(), 64)),
     ('recoveryId', getU8Decoder()),
     ('value', fixDecoderSize(getBytesDecoder(), 32)),
@@ -70,6 +75,7 @@ getFulfillTemplateOpenInstructionDataDecoder() {
     int offset,
   ) {
     getConstantDecoder(getU8Encoder().encode(17)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

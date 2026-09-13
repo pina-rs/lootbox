@@ -19,9 +19,11 @@ class FundCompressedNftPrizeInstructionData {
     required this.creatorHash,
     required this.nonce,
     required this.index,
-  }) : discriminator = 33;
+  }) : discriminator = 33,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final Uint8List root;
   final Uint8List dataHash;
   final Uint8List creatorHash;
@@ -33,6 +35,7 @@ Encoder<FundCompressedNftPrizeInstructionData>
 getFundCompressedNftPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('root', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     ('dataHash', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     (
@@ -47,6 +50,7 @@ getFundCompressedNftPrizeInstructionDataEncoder() {
     structEncoder,
     (FundCompressedNftPrizeInstructionData value) => <String, Object?>{
       'discriminator': 33,
+      'migrationVersion': 0,
       'root': value.root,
       'dataHash': value.dataHash,
       'creatorHash': value.creatorHash,
@@ -60,6 +64,7 @@ Decoder<FundCompressedNftPrizeInstructionData>
 getFundCompressedNftPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('root', fixDecoderSize(getBytesDecoder(), 32)),
     ('dataHash', fixDecoderSize(getBytesDecoder(), 32)),
     ('creatorHash', fixDecoderSize(getBytesDecoder(), 32)),
@@ -80,6 +85,7 @@ getFundCompressedNftPrizeInstructionDataDecoder() {
     int offset,
   ) {
     getConstantDecoder(getU8Encoder().encode(33)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

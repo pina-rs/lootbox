@@ -9,6 +9,7 @@
 )]
 
 pub const ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 18u8;
+pub const ALLOCATE_TEMPLATE_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -75,6 +76,7 @@ impl AllocateTemplateOpenInstructionData {
 		<AllocateTemplateOpenInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR;
+			data.migration_version = ALLOCATE_TEMPLATE_OPEN_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -88,5 +90,6 @@ impl AllocateTemplateOpenInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct AllocateTemplateOpenInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 	pub result_receipt_bump: u8,
 }

@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -15,19 +15,23 @@ export const CLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR = 34;
 
 export function getClaimCompressedNftPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR); }
 
+export const CLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR2 = 0;
+
+export function getClaimCompressedNftPrizeDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR2); }
+
 export type ClaimCompressedNftPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountRecipient extends string | AccountMeta<string> = string, TAccountTreeConfig extends string | AccountMeta<string> = string, TAccountMerkleTree extends string | AccountMeta<string> = string, TAccountBubblegumProgram extends string | AccountMeta<string> = string, TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountCompressionProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = string, TAccountProofAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountRecipient extends string ? ReadonlyAccount<TAccountRecipient> : TAccountRecipient, TAccountTreeConfig extends string ? ReadonlyAccount<TAccountTreeConfig> : TAccountTreeConfig, TAccountMerkleTree extends string ? WritableAccount<TAccountMerkleTree> : TAccountMerkleTree, TAccountBubblegumProgram extends string ? ReadonlyAccount<TAccountBubblegumProgram> : TAccountBubblegumProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountCompressionProgram extends string ? ReadonlyAccount<TAccountCompressionProgram> : TAccountCompressionProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountProofAccounts extends string ? ReadonlyAccount<TAccountProofAccounts> : TAccountProofAccounts, ...TRemainingAccounts]>;
 
-export type ClaimCompressedNftPrizeInstructionData = { discriminator: number; assetIndex: number; root: ReadonlyUint8Array; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: bigint; index: number;  };
+export type ClaimCompressedNftPrizeInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number; root: ReadonlyUint8Array; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: bigint; index: number;  };
 
 export type ClaimCompressedNftPrizeInstructionDataArgs = { assetIndex: number; root: ReadonlyUint8Array; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: number | bigint; index: number;  };
 
 export function getClaimCompressedNftPrizeInstructionDataEncoder(): FixedSizeEncoder<ClaimCompressedNftPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['assetIndex', getU8Encoder()], ['root', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()]]), (value) => ({ ...value, discriminator: 34 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()], ['root', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()]]), (value) => ({ ...value, discriminator: 34, migrationVersion: 0 }));
 }
 
 export function getClaimCompressedNftPrizeInstructionDataDecoder(): FixedSizeDecoder<ClaimCompressedNftPrizeInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(CLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR, getU8Decoder())], ['assetIndex', getU8Decoder()], ['root', fixDecoderSize(getBytesDecoder(), 32)], ['dataHash', fixDecoderSize(getBytesDecoder(), 32)], ['creatorHash', fixDecoderSize(getBytesDecoder(), 32)], ['nonce', getU64Decoder()], ['index', getU32Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(CLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['assetIndex', getU8Decoder()], ['root', fixDecoderSize(getBytesDecoder(), 32)], ['dataHash', fixDecoderSize(getBytesDecoder(), 32)], ['creatorHash', fixDecoderSize(getBytesDecoder(), 32)], ['nonce', getU64Decoder()], ['index', getU32Decoder()]]);
 }
 
 export function getClaimCompressedNftPrizeInstructionDataCodec(): FixedSizeCodec<ClaimCompressedNftPrizeInstructionDataArgs, ClaimCompressedNftPrizeInstructionData> {

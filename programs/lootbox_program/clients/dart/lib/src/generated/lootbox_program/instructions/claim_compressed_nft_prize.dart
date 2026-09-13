@@ -20,9 +20,11 @@ class ClaimCompressedNftPrizeInstructionData {
     required this.creatorHash,
     required this.nonce,
     required this.index,
-  }) : discriminator = 34;
+  }) : discriminator = 34,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final int assetIndex;
   final Uint8List root;
   final Uint8List dataHash;
@@ -35,6 +37,7 @@ Encoder<ClaimCompressedNftPrizeInstructionData>
 getClaimCompressedNftPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('assetIndex', getU8Encoder()),
     ('root', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     ('dataHash', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
@@ -50,6 +53,7 @@ getClaimCompressedNftPrizeInstructionDataEncoder() {
     structEncoder,
     (ClaimCompressedNftPrizeInstructionData value) => <String, Object?>{
       'discriminator': 34,
+      'migrationVersion': 0,
       'assetIndex': value.assetIndex,
       'root': value.root,
       'dataHash': value.dataHash,
@@ -64,6 +68,7 @@ Decoder<ClaimCompressedNftPrizeInstructionData>
 getClaimCompressedNftPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('assetIndex', getU8Decoder()),
     ('root', fixDecoderSize(getBytesDecoder(), 32)),
     ('dataHash', fixDecoderSize(getBytesDecoder(), 32)),
@@ -85,6 +90,7 @@ getClaimCompressedNftPrizeInstructionDataDecoder() {
     int offset,
   ) {
     getConstantDecoder(getU8Encoder().encode(34)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

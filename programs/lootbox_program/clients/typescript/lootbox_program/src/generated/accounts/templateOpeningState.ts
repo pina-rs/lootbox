@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findTemplateOpeningPda, type TemplateOpeningSeeds } from '../pdas';
 
@@ -14,8 +14,12 @@ export const TEMPLATE_OPENING_STATE_DISCRIMINATOR = 6;
 
 export function getTemplateOpeningStateDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(TEMPLATE_OPENING_STATE_DISCRIMINATOR); }
 
+export const TEMPLATE_OPENING_STATE_DISCRIMINATOR2 = 0;
+
+export function getTemplateOpeningStateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(TEMPLATE_OPENING_STATE_DISCRIMINATOR2); }
+
 /** A burned box, its verified entropy, and independently claimable winning assets. */
-export type TemplateOpeningState = { discriminator: number; template: Address;
+export type TemplateOpeningState = { discriminator: number; migrationVersion: number; template: Address;
 /** Authority that owned and burned the box. */
 boxAuthority: Address;
 /** Immutable destination for every prize claim. */
@@ -49,12 +53,12 @@ status: number; selectedBundle: number; claimedMask: number; bump: number;  };
 
 /** Gets the encoder for {@link TemplateOpeningStateArgs} account data. */
 export function getTemplateOpeningStateEncoder(): FixedSizeEncoder<TemplateOpeningStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['template', getAddressEncoder()], ['boxAuthority', getAddressEncoder()], ['beneficiary', getAddressEncoder()], ['rentRefund', getAddressEncoder()], ['consumerProgram', getAddressEncoder()], ['consumerContext', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['randomness', getAddressEncoder()], ['sequence', getU64Encoder()], ['seedSlot', getU64Encoder()], ['entropy', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['treasuryRevision', getU64Encoder()], ['eligibleBundleCount', getU32Encoder()], ['status', getU8Encoder()], ['selectedBundle', getU32Encoder()], ['claimedMask', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 6 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['template', getAddressEncoder()], ['boxAuthority', getAddressEncoder()], ['beneficiary', getAddressEncoder()], ['rentRefund', getAddressEncoder()], ['consumerProgram', getAddressEncoder()], ['consumerContext', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['randomness', getAddressEncoder()], ['sequence', getU64Encoder()], ['seedSlot', getU64Encoder()], ['entropy', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['treasuryRevision', getU64Encoder()], ['eligibleBundleCount', getU32Encoder()], ['status', getU8Encoder()], ['selectedBundle', getU32Encoder()], ['claimedMask', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 6, migrationVersion: 0 }));
 }
 
 /** Gets the decoder for {@link TemplateOpeningState} account data. */
 export function getTemplateOpeningStateDecoder(): FixedSizeDecoder<TemplateOpeningState> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(TEMPLATE_OPENING_STATE_DISCRIMINATOR, getU8Decoder())], ['template', getAddressDecoder()], ['boxAuthority', getAddressDecoder()], ['beneficiary', getAddressDecoder()], ['rentRefund', getAddressDecoder()], ['consumerProgram', getAddressDecoder()], ['consumerContext', fixDecoderSize(getBytesDecoder(), 32)], ['randomness', getAddressDecoder()], ['sequence', getU64Decoder()], ['seedSlot', getU64Decoder()], ['entropy', fixDecoderSize(getBytesDecoder(), 32)], ['treasuryRevision', getU64Decoder()], ['eligibleBundleCount', getU32Decoder()], ['status', getU8Decoder()], ['selectedBundle', getU32Decoder()], ['claimedMask', getU8Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(TEMPLATE_OPENING_STATE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['template', getAddressDecoder()], ['boxAuthority', getAddressDecoder()], ['beneficiary', getAddressDecoder()], ['rentRefund', getAddressDecoder()], ['consumerProgram', getAddressDecoder()], ['consumerContext', fixDecoderSize(getBytesDecoder(), 32)], ['randomness', getAddressDecoder()], ['sequence', getU64Decoder()], ['seedSlot', getU64Decoder()], ['entropy', fixDecoderSize(getBytesDecoder(), 32)], ['treasuryRevision', getU64Decoder()], ['eligibleBundleCount', getU32Decoder()], ['status', getU8Decoder()], ['selectedBundle', getU32Decoder()], ['claimedMask', getU8Decoder()], ['bump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link TemplateOpeningState} account data. */
@@ -124,4 +128,32 @@ export async function fetchMaybeTemplateOpeningStateFromSeeds(
   const { programAddress, ...fetchConfig } = config;
   const [address] = await findTemplateOpeningPda(seeds, { programAddress });
   return await fetchMaybeTemplateOpeningState(rpc, address, fetchConfig);
+}
+
+/** The account schema version this client was generated from. */
+export const TEMPLATE_OPENING_STATE_MIGRATION_VERSION = 0;
+
+/**
+ * Cheap envelope check for a fetched `TemplateOpeningState` account: `true` only when the
+ * bytes name this account's discriminator and a migration version older than
+ * this client's schema. Those are exactly the accounts
+ * {@link getMigrateInstruction} can bring current; every other mismatch is
+ * reported by the decoder when the account is decoded.
+ *
+ * ```ts
+ * const { data } = await fetchEncodedAccount(rpc, address);
+ * if (templateOpeningStateNeedsMigration(data)) {
+ * 	// Migrate first, then retry the instruction that failed.
+ * 	await send(getMigrateInstruction({ templateOpeningState: address, payer }).make());
+ * }
+ * ```
+ */
+export function templateOpeningStateNeedsMigration(data: ReadonlyUint8Array): boolean {
+	if (data.length < 2) {
+		return false;
+	}
+	if (data[0] !== 6) {
+		return false;
+	}
+	return data[1]! < 0;
 }

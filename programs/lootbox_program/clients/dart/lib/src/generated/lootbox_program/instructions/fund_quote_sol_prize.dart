@@ -14,9 +14,11 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class FundQuoteSolPrizeInstructionData {
   const FundQuoteSolPrizeInstructionData({required this.lamportsPerWin})
-    : discriminator = 39;
+    : discriminator = 39,
+      migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final BigInt lamportsPerWin;
 }
 
@@ -24,6 +26,7 @@ Encoder<FundQuoteSolPrizeInstructionData>
 getFundQuoteSolPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('lamportsPerWin', getU64Encoder()),
   ]);
 
@@ -31,6 +34,7 @@ getFundQuoteSolPrizeInstructionDataEncoder() {
     structEncoder,
     (FundQuoteSolPrizeInstructionData value) => <String, Object?>{
       'discriminator': 39,
+      'migrationVersion': 0,
       'lamportsPerWin': value.lamportsPerWin,
     },
   );
@@ -40,6 +44,7 @@ Decoder<FundQuoteSolPrizeInstructionData>
 getFundQuoteSolPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('lamportsPerWin', getU64Decoder()),
   ]);
 
@@ -56,6 +61,7 @@ getFundQuoteSolPrizeInstructionDataDecoder() {
     int offset,
   ) {
     getConstantDecoder(getU8Encoder().encode(39)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

@@ -29,9 +29,11 @@ class BundleState {
     required this.reclaimedMask,
     required this.status,
     required this.bump,
-  }) : discriminator = 5;
+  }) : discriminator = 5,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final Address template;
   final BigInt quantity;
   final BigInt rentReserve;
@@ -54,6 +56,7 @@ class BundleState {
       other is BundleState &&
           runtimeType == other.runtimeType &&
           discriminator == other.discriminator &&
+          migrationVersion == other.migrationVersion &&
           template == other.template &&
           quantity == other.quantity &&
           rentReserve == other.rentReserve &&
@@ -73,6 +76,7 @@ class BundleState {
   @override
   int get hashCode => Object.hash(
     discriminator,
+    migrationVersion,
     template,
     quantity,
     rentReserve,
@@ -92,12 +96,13 @@ class BundleState {
 
   @override
   String toString() =>
-      'BundleState(discriminator: $discriminator, template: $template, quantity: $quantity, rentReserve: $rentReserve, mints: $mints, amounts: $amounts, claimed: $claimed, kinds: $kinds, decimals: $decimals, activatedRevision: $activatedRevision, index: $index, assetCount: $assetCount, fundedAssets: $fundedAssets, reclaimedMask: $reclaimedMask, status: $status, bump: $bump)';
+      'BundleState(discriminator: $discriminator, migrationVersion: $migrationVersion, template: $template, quantity: $quantity, rentReserve: $rentReserve, mints: $mints, amounts: $amounts, claimed: $claimed, kinds: $kinds, decimals: $decimals, activatedRevision: $activatedRevision, index: $index, assetCount: $assetCount, fundedAssets: $fundedAssets, reclaimedMask: $reclaimedMask, status: $status, bump: $bump)';
 }
 
 Encoder<BundleState> getBundleStateEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('template', getAddressEncoder()),
     ('quantity', getU64Encoder()),
     ('rentReserve', getU64Encoder()),
@@ -119,6 +124,7 @@ Encoder<BundleState> getBundleStateEncoder() {
     structEncoder,
     (BundleState value) => <String, Object?>{
       'discriminator': 5,
+      'migrationVersion': 0,
       'template': value.template,
       'quantity': value.quantity,
       'rentReserve': value.rentReserve,
@@ -141,6 +147,7 @@ Encoder<BundleState> getBundleStateEncoder() {
 Decoder<BundleState> getBundleStateDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('template', getAddressDecoder()),
     ('quantity', getU64Decoder()),
     ('rentReserve', getU64Decoder()),
@@ -168,6 +175,14 @@ Decoder<BundleState> getBundleStateDecoder() {
 
   (BundleState, int) readTopLevel(Uint8List bytes, int offset) {
     getConstantDecoder(getU8Encoder().encode(5)).read(bytes, offset + 0);
+    final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
+    if (storedMigrationVersion != 0) {
+      throw StateError(
+        storedMigrationVersion < 0
+            ? 'migration version mismatch: expected 0, received $storedMigrationVersion (the data predates this client; migrate it by sending a transaction to the program, or decode it with a client generated from an older IDL)'
+            : 'migration version mismatch: expected 0, received $storedMigrationVersion (the data was written by a newer program; upgrade this client)',
+      );
+    }
     final (map, newOffset) = structDecoder.read(bytes, offset);
 
     return (
@@ -217,4 +232,21 @@ Codec<BundleState, BundleState> getBundleStateCodec() {
 
 Account<BundleState> decodeBundleState(EncodedAccount encodedAccount) {
   return decodeAccount(encodedAccount, getBundleStateDecoder());
+}
+
+/// The account schema version this client was generated from.
+const int bundleStateMigrationVersion = 0;
+
+/// Cheap envelope check for fetched `BundleState` bytes: returns true only when
+/// the bytes carry this account's discriminator and a migration version older
+/// than this client's schema — exactly the accounts [getMigrateInstruction]
+/// can bring current. Decoding reports every other mismatch.
+bool bundleStateNeedsMigration(List<int> data) {
+  if (data.length < 2) {
+    return false;
+  }
+  if (data[0] != 5) {
+    return false;
+  }
+  return data[1] < 0;
 }

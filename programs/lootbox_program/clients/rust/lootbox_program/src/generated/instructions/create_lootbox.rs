@@ -9,6 +9,7 @@
 )]
 
 pub const CREATE_LOOTBOX_DISCRIMINATOR: u8 = 0u8;
+pub const CREATE_LOOTBOX_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -73,6 +74,7 @@ impl CreateLootboxInstructionData {
 		<CreateLootboxInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = CREATE_LOOTBOX_DISCRIMINATOR;
+			data.migration_version = CREATE_LOOTBOX_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -86,6 +88,7 @@ impl CreateLootboxInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct CreateLootboxInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 	pub id: u64,
 	pub max_supply: u64,
 	pub oracle_program: solana_pubkey::Pubkey,

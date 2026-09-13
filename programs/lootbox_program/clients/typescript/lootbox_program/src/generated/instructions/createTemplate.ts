@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixPinaPodEncoderSize, getPinaPodBooleanDecoder, getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { fixPinaPodEncoderSize, getPinaPodBooleanDecoder, getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBooleanDecoder, getBooleanEncoder, getBytesDecoder, getBytesEncoder, getI64Decoder, getI64Encoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -15,19 +15,23 @@ export const CREATE_TEMPLATE_DISCRIMINATOR = 10;
 
 export function getCreateTemplateDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CREATE_TEMPLATE_DISCRIMINATOR); }
 
+export const CREATE_TEMPLATE_DISCRIMINATOR2 = 0;
+
+export function getCreateTemplateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(CREATE_TEMPLATE_DISCRIMINATOR2); }
+
 export type CreateTemplateInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountBoxTokenProgram extends string | AccountMeta<string> = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, ...TRemainingAccounts]>;
 
-export type CreateTemplateInstructionData = { discriminator: number; id: bigint; opensAt: bigint; oracleProgram: Address; oracleQueue: Address; name: ReadonlyUint8Array; uri: ReadonlyUint8Array; settlementBountyLamports: bigint; resultReceiptsEnabled: boolean; bump: number;  };
+export type CreateTemplateInstructionData = { discriminator: number; migrationVersion: number; id: bigint; opensAt: bigint; oracleProgram: Address; oracleQueue: Address; name: ReadonlyUint8Array; uri: ReadonlyUint8Array; settlementBountyLamports: bigint; resultReceiptsEnabled: boolean; bump: number;  };
 
 export type CreateTemplateInstructionDataArgs = { id: number | bigint; opensAt: number | bigint; oracleProgram: Address; oracleQueue: Address; name: ReadonlyUint8Array; uri: ReadonlyUint8Array; settlementBountyLamports: number | bigint; resultReceiptsEnabled: boolean; bump: number;  };
 
 export function getCreateTemplateInstructionDataEncoder(): FixedSizeEncoder<CreateTemplateInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['id', getU64Encoder()], ['opensAt', getI64Encoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['name', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['uri', fixPinaPodEncoderSize(getBytesEncoder(), 200)], ['settlementBountyLamports', getU64Encoder()], ['resultReceiptsEnabled', getBooleanEncoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 10 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['id', getU64Encoder()], ['opensAt', getI64Encoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['name', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['uri', fixPinaPodEncoderSize(getBytesEncoder(), 200)], ['settlementBountyLamports', getU64Encoder()], ['resultReceiptsEnabled', getBooleanEncoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 10, migrationVersion: 0 }));
 }
 
 export function getCreateTemplateInstructionDataDecoder(): FixedSizeDecoder<CreateTemplateInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(CREATE_TEMPLATE_DISCRIMINATOR, getU8Decoder())], ['id', getU64Decoder()], ['opensAt', getI64Decoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['name', fixDecoderSize(getBytesDecoder(), 32)], ['uri', fixDecoderSize(getBytesDecoder(), 200)], ['settlementBountyLamports', getU64Decoder()], ['resultReceiptsEnabled', getPinaPodBooleanDecoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(CREATE_TEMPLATE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['id', getU64Decoder()], ['opensAt', getI64Decoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['name', fixDecoderSize(getBytesDecoder(), 32)], ['uri', fixDecoderSize(getBytesDecoder(), 200)], ['settlementBountyLamports', getU64Decoder()], ['resultReceiptsEnabled', getPinaPodBooleanDecoder()], ['bump', getU8Decoder()]]);
 }
 
 export function getCreateTemplateInstructionDataCodec(): FixedSizeCodec<CreateTemplateInstructionDataArgs, CreateTemplateInstructionData> {

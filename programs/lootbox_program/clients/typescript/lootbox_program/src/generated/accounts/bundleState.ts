@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findBundlePda, type BundleSeeds } from '../pdas';
 
@@ -14,8 +14,12 @@ export const BUNDLE_STATE_DISCRIMINATOR = 5;
 
 export function getBundleStateDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(BUNDLE_STATE_DISCRIMINATOR); }
 
+export const BUNDLE_STATE_DISCRIMINATOR2 = 0;
+
+export function getBundleStateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(BUNDLE_STATE_DISCRIMINATOR2); }
+
 /** A complete prize outcome and its escrow authority, shared across all boxes. */
-export type BundleState = { discriminator: number; template: Address; quantity: bigint; rentReserve: bigint;
+export type BundleState = { discriminator: number; migrationVersion: number; template: Address; quantity: bigint; rentReserve: bigint;
 /** Four asset identifiers; the zero address denotes native SOL. */
 mints: ReadonlyUint8Array;
 /** Four little-endian base-unit amounts paid per winning bundle. */
@@ -37,12 +41,12 @@ status: number; bump: number;  };
 
 /** Gets the encoder for {@link BundleStateArgs} account data. */
 export function getBundleStateEncoder(): FixedSizeEncoder<BundleStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['template', getAddressEncoder()], ['quantity', getU64Encoder()], ['rentReserve', getU64Encoder()], ['mints', fixPinaPodEncoderSize(getBytesEncoder(), 128)], ['amounts', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['claimed', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['kinds', fixPinaPodEncoderSize(getBytesEncoder(), 4)], ['decimals', fixPinaPodEncoderSize(getBytesEncoder(), 4)], ['activatedRevision', getU64Encoder()], ['index', getU32Encoder()], ['assetCount', getU8Encoder()], ['fundedAssets', getU8Encoder()], ['reclaimedMask', getU8Encoder()], ['status', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 5 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['template', getAddressEncoder()], ['quantity', getU64Encoder()], ['rentReserve', getU64Encoder()], ['mints', fixPinaPodEncoderSize(getBytesEncoder(), 128)], ['amounts', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['claimed', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['kinds', fixPinaPodEncoderSize(getBytesEncoder(), 4)], ['decimals', fixPinaPodEncoderSize(getBytesEncoder(), 4)], ['activatedRevision', getU64Encoder()], ['index', getU32Encoder()], ['assetCount', getU8Encoder()], ['fundedAssets', getU8Encoder()], ['reclaimedMask', getU8Encoder()], ['status', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 5, migrationVersion: 0 }));
 }
 
 /** Gets the decoder for {@link BundleState} account data. */
 export function getBundleStateDecoder(): FixedSizeDecoder<BundleState> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(BUNDLE_STATE_DISCRIMINATOR, getU8Decoder())], ['template', getAddressDecoder()], ['quantity', getU64Decoder()], ['rentReserve', getU64Decoder()], ['mints', fixDecoderSize(getBytesDecoder(), 128)], ['amounts', fixDecoderSize(getBytesDecoder(), 32)], ['claimed', fixDecoderSize(getBytesDecoder(), 32)], ['kinds', fixDecoderSize(getBytesDecoder(), 4)], ['decimals', fixDecoderSize(getBytesDecoder(), 4)], ['activatedRevision', getU64Decoder()], ['index', getU32Decoder()], ['assetCount', getU8Decoder()], ['fundedAssets', getU8Decoder()], ['reclaimedMask', getU8Decoder()], ['status', getU8Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(BUNDLE_STATE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['template', getAddressDecoder()], ['quantity', getU64Decoder()], ['rentReserve', getU64Decoder()], ['mints', fixDecoderSize(getBytesDecoder(), 128)], ['amounts', fixDecoderSize(getBytesDecoder(), 32)], ['claimed', fixDecoderSize(getBytesDecoder(), 32)], ['kinds', fixDecoderSize(getBytesDecoder(), 4)], ['decimals', fixDecoderSize(getBytesDecoder(), 4)], ['activatedRevision', getU64Decoder()], ['index', getU32Decoder()], ['assetCount', getU8Decoder()], ['fundedAssets', getU8Decoder()], ['reclaimedMask', getU8Decoder()], ['status', getU8Decoder()], ['bump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link BundleState} account data. */
@@ -112,4 +116,32 @@ export async function fetchMaybeBundleStateFromSeeds(
   const { programAddress, ...fetchConfig } = config;
   const [address] = await findBundlePda(seeds, { programAddress });
   return await fetchMaybeBundleState(rpc, address, fetchConfig);
+}
+
+/** The account schema version this client was generated from. */
+export const BUNDLE_STATE_MIGRATION_VERSION = 0;
+
+/**
+ * Cheap envelope check for a fetched `BundleState` account: `true` only when the
+ * bytes name this account's discriminator and a migration version older than
+ * this client's schema. Those are exactly the accounts
+ * {@link getMigrateInstruction} can bring current; every other mismatch is
+ * reported by the decoder when the account is decoded.
+ *
+ * ```ts
+ * const { data } = await fetchEncodedAccount(rpc, address);
+ * if (bundleStateNeedsMigration(data)) {
+ * 	// Migrate first, then retry the instruction that failed.
+ * 	await send(getMigrateInstruction({ bundleState: address, payer }).make());
+ * }
+ * ```
+ */
+export function bundleStateNeedsMigration(data: ReadonlyUint8Array): boolean {
+	if (data.length < 2) {
+		return false;
+	}
+	if (data[0] !== 5) {
+		return false;
+	}
+	return data[1]! < 0;
 }

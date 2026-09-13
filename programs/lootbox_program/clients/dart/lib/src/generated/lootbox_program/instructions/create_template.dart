@@ -23,9 +23,11 @@ class CreateTemplateInstructionData {
     required this.settlementBountyLamports,
     required this.resultReceiptsEnabled,
     required this.bump,
-  }) : discriminator = 10;
+  }) : discriminator = 10,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final BigInt id;
   final BigInt opensAt;
   final Address oracleProgram;
@@ -41,6 +43,7 @@ Encoder<CreateTemplateInstructionData>
 getCreateTemplateInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('id', getU64Encoder()),
     ('opensAt', getI64Encoder()),
     ('oracleProgram', getAddressEncoder()),
@@ -56,6 +59,7 @@ getCreateTemplateInstructionDataEncoder() {
     structEncoder,
     (CreateTemplateInstructionData value) => <String, Object?>{
       'discriminator': 10,
+      'migrationVersion': 0,
       'id': value.id,
       'opensAt': value.opensAt,
       'oracleProgram': value.oracleProgram,
@@ -73,6 +77,7 @@ Decoder<CreateTemplateInstructionData>
 getCreateTemplateInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('id', getU64Decoder()),
     ('opensAt', getI64Decoder()),
     ('oracleProgram', getAddressDecoder()),
@@ -97,6 +102,7 @@ getCreateTemplateInstructionDataDecoder() {
     int offset,
   ) {
     getConstantDecoder(getU8Encoder().encode(10)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

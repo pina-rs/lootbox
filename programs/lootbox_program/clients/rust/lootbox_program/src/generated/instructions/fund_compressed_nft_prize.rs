@@ -9,6 +9,7 @@
 )]
 
 pub const FUND_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: u8 = 33u8;
+pub const FUND_COMPRESSED_NFT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -83,6 +84,7 @@ impl FundCompressedNftPrizeInstructionData {
 		<FundCompressedNftPrizeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = FUND_COMPRESSED_NFT_PRIZE_DISCRIMINATOR;
+			data.migration_version = FUND_COMPRESSED_NFT_PRIZE_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -96,6 +98,7 @@ impl FundCompressedNftPrizeInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct FundCompressedNftPrizeInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 	pub root: [u8; 32],
 	pub data_hash: [u8; 32],
 	pub creator_hash: [u8; 32],

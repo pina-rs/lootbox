@@ -9,6 +9,7 @@
 )]
 
 pub const MINT_TEMPLATE_BOXES_DISCRIMINATOR: u8 = 15u8;
+pub const MINT_TEMPLATE_BOXES_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -21,13 +22,13 @@ pub struct MintTemplateBoxes {
 }
 
 impl MintTemplateBoxes {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, recipient_box_account: solana_pubkey::Pubkey) -> Self {
+	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, recipient_box_account: solana_pubkey::Pubkey, box_token_program: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			template,
 			box_mint,
 			recipient_box_account,
-			box_token_program: solana_pubkey::pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
+			box_token_program,
 		}
 	}
 
@@ -67,6 +68,7 @@ impl MintTemplateBoxesInstructionData {
 		<MintTemplateBoxesInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = MINT_TEMPLATE_BOXES_DISCRIMINATOR;
+			data.migration_version = MINT_TEMPLATE_BOXES_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -80,5 +82,6 @@ impl MintTemplateBoxesInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct MintTemplateBoxesInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 	pub amount: u64,
 }

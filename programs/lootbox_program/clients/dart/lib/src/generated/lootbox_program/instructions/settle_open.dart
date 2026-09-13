@@ -17,9 +17,11 @@ class SettleOpenInstructionData {
     required this.signature,
     required this.recoveryId,
     required this.value,
-  }) : discriminator = 6;
+  }) : discriminator = 6,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final Uint8List signature;
   final int recoveryId;
   final Uint8List value;
@@ -28,6 +30,7 @@ class SettleOpenInstructionData {
 Encoder<SettleOpenInstructionData> getSettleOpenInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     (
       'signature',
       fixEncoderSize(getBytesEncoder(), 64, allowTruncation: false),
@@ -40,6 +43,7 @@ Encoder<SettleOpenInstructionData> getSettleOpenInstructionDataEncoder() {
     structEncoder,
     (SettleOpenInstructionData value) => <String, Object?>{
       'discriminator': 6,
+      'migrationVersion': 0,
       'signature': value.signature,
       'recoveryId': value.recoveryId,
       'value': value.value,
@@ -50,6 +54,7 @@ Encoder<SettleOpenInstructionData> getSettleOpenInstructionDataEncoder() {
 Decoder<SettleOpenInstructionData> getSettleOpenInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('signature', fixDecoderSize(getBytesDecoder(), 64)),
     ('recoveryId', getU8Decoder()),
     ('value', fixDecoderSize(getBytesDecoder(), 32)),
@@ -65,6 +70,7 @@ Decoder<SettleOpenInstructionData> getSettleOpenInstructionDataDecoder() {
 
   (SettleOpenInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
     getConstantDecoder(getU8Encoder().encode(6)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

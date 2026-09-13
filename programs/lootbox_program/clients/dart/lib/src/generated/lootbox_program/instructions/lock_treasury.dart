@@ -14,15 +14,18 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class LockTreasuryInstructionData {
   const LockTreasuryInstructionData({required this.serviceVaultBump})
-    : discriminator = 37;
+    : discriminator = 37,
+      migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final int serviceVaultBump;
 }
 
 Encoder<LockTreasuryInstructionData> getLockTreasuryInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('serviceVaultBump', getU8Encoder()),
   ]);
 
@@ -30,6 +33,7 @@ Encoder<LockTreasuryInstructionData> getLockTreasuryInstructionDataEncoder() {
     structEncoder,
     (LockTreasuryInstructionData value) => <String, Object?>{
       'discriminator': 37,
+      'migrationVersion': 0,
       'serviceVaultBump': value.serviceVaultBump,
     },
   );
@@ -38,6 +42,7 @@ Encoder<LockTreasuryInstructionData> getLockTreasuryInstructionDataEncoder() {
 Decoder<LockTreasuryInstructionData> getLockTreasuryInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('serviceVaultBump', getU8Decoder()),
   ]);
 
@@ -51,6 +56,7 @@ Decoder<LockTreasuryInstructionData> getLockTreasuryInstructionDataDecoder() {
 
   (LockTreasuryInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
     getConstantDecoder(getU8Encoder().encode(37)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

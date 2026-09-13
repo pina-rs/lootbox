@@ -30,9 +30,11 @@ class TemplateOpeningState {
     required this.selectedBundle,
     required this.claimedMask,
     required this.bump,
-  }) : discriminator = 6;
+  }) : discriminator = 6,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final Address template;
   final Address boxAuthority;
   final Address beneficiary;
@@ -56,6 +58,7 @@ class TemplateOpeningState {
       other is TemplateOpeningState &&
           runtimeType == other.runtimeType &&
           discriminator == other.discriminator &&
+          migrationVersion == other.migrationVersion &&
           template == other.template &&
           boxAuthority == other.boxAuthority &&
           beneficiary == other.beneficiary &&
@@ -76,6 +79,7 @@ class TemplateOpeningState {
   @override
   int get hashCode => Object.hash(
     discriminator,
+    migrationVersion,
     template,
     boxAuthority,
     beneficiary,
@@ -96,12 +100,13 @@ class TemplateOpeningState {
 
   @override
   String toString() =>
-      'TemplateOpeningState(discriminator: $discriminator, template: $template, boxAuthority: $boxAuthority, beneficiary: $beneficiary, rentRefund: $rentRefund, consumerProgram: $consumerProgram, consumerContext: $consumerContext, randomness: $randomness, sequence: $sequence, seedSlot: $seedSlot, entropy: $entropy, treasuryRevision: $treasuryRevision, eligibleBundleCount: $eligibleBundleCount, status: $status, selectedBundle: $selectedBundle, claimedMask: $claimedMask, bump: $bump)';
+      'TemplateOpeningState(discriminator: $discriminator, migrationVersion: $migrationVersion, template: $template, boxAuthority: $boxAuthority, beneficiary: $beneficiary, rentRefund: $rentRefund, consumerProgram: $consumerProgram, consumerContext: $consumerContext, randomness: $randomness, sequence: $sequence, seedSlot: $seedSlot, entropy: $entropy, treasuryRevision: $treasuryRevision, eligibleBundleCount: $eligibleBundleCount, status: $status, selectedBundle: $selectedBundle, claimedMask: $claimedMask, bump: $bump)';
 }
 
 Encoder<TemplateOpeningState> getTemplateOpeningStateEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('template', getAddressEncoder()),
     ('boxAuthority', getAddressEncoder()),
     ('beneficiary', getAddressEncoder()),
@@ -127,6 +132,7 @@ Encoder<TemplateOpeningState> getTemplateOpeningStateEncoder() {
     structEncoder,
     (TemplateOpeningState value) => <String, Object?>{
       'discriminator': 6,
+      'migrationVersion': 0,
       'template': value.template,
       'boxAuthority': value.boxAuthority,
       'beneficiary': value.beneficiary,
@@ -150,6 +156,7 @@ Encoder<TemplateOpeningState> getTemplateOpeningStateEncoder() {
 Decoder<TemplateOpeningState> getTemplateOpeningStateDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('template', getAddressDecoder()),
     ('boxAuthority', getAddressDecoder()),
     ('beneficiary', getAddressDecoder()),
@@ -178,6 +185,14 @@ Decoder<TemplateOpeningState> getTemplateOpeningStateDecoder() {
 
   (TemplateOpeningState, int) readTopLevel(Uint8List bytes, int offset) {
     getConstantDecoder(getU8Encoder().encode(6)).read(bytes, offset + 0);
+    final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
+    if (storedMigrationVersion != 0) {
+      throw StateError(
+        storedMigrationVersion < 0
+            ? 'migration version mismatch: expected 0, received $storedMigrationVersion (the data predates this client; migrate it by sending a transaction to the program, or decode it with a client generated from an older IDL)'
+            : 'migration version mismatch: expected 0, received $storedMigrationVersion (the data was written by a newer program; upgrade this client)',
+      );
+    }
     final (map, newOffset) = structDecoder.read(bytes, offset);
 
     return (
@@ -235,4 +250,21 @@ Account<TemplateOpeningState> decodeTemplateOpeningState(
   EncodedAccount encodedAccount,
 ) {
   return decodeAccount(encodedAccount, getTemplateOpeningStateDecoder());
+}
+
+/// The account schema version this client was generated from.
+const int templateOpeningStateMigrationVersion = 0;
+
+/// Cheap envelope check for fetched `TemplateOpeningState` bytes: returns true only when
+/// the bytes carry this account's discriminator and a migration version older
+/// than this client's schema — exactly the accounts [getMigrateInstruction]
+/// can bring current. Decoding reports every other mismatch.
+bool templateOpeningStateNeedsMigration(List<int> data) {
+  if (data.length < 2) {
+    return false;
+  }
+  if (data[0] != 6) {
+    return false;
+  }
+  return data[1] < 0;
 }

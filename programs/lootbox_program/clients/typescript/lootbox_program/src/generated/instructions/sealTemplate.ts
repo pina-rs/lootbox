@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -15,19 +15,23 @@ export const SEAL_TEMPLATE_DISCRIMINATOR = 14;
 
 export function getSealTemplateDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(SEAL_TEMPLATE_DISCRIMINATOR); }
 
+export const SEAL_TEMPLATE_DISCRIMINATOR2 = 0;
+
+export function getSealTemplateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(SEAL_TEMPLATE_DISCRIMINATOR2); }
+
 export type SealTemplateInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlyAccount<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, ...TRemainingAccounts]>;
 
-export type SealTemplateInstructionData = { discriminator: number;  };
+export type SealTemplateInstructionData = { discriminator: number; migrationVersion: number;  };
 
 export type SealTemplateInstructionDataArgs = {  };
 
 export function getSealTemplateInstructionDataEncoder(): FixedSizeEncoder<SealTemplateInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()]]), (value) => ({ ...value, discriminator: 14 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 14, migrationVersion: 0 }));
 }
 
 export function getSealTemplateInstructionDataDecoder(): FixedSizeDecoder<SealTemplateInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(SEAL_TEMPLATE_DISCRIMINATOR, getU8Decoder())]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(SEAL_TEMPLATE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())]]);
 }
 
 export function getSealTemplateInstructionDataCodec(): FixedSizeCodec<SealTemplateInstructionDataArgs, SealTemplateInstructionData> {

@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { findOpeningPda } from '../pdas';
@@ -16,19 +16,23 @@ export const REQUEST_OPEN_DISCRIMINATOR = 5;
 
 export function getRequestOpenDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(REQUEST_OPEN_DISCRIMINATOR); }
 
+export const REQUEST_OPEN_DISCRIMINATOR2 = 0;
+
+export function getRequestOpenDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(REQUEST_OPEN_DISCRIMINATOR2); }
+
 export type RequestOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountOwner extends string | AccountMeta<string> = string, TAccountLootbox extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountOwnerBoxAccount extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountRandomness extends string | AccountMeta<string> = string, TAccountRewardEscrow extends string | AccountMeta<string> = string, TAccountOracleQueue extends string | AccountMeta<string> = string, TAccountOracle extends string | AccountMeta<string> = string, TAccountRecentSlotHashes extends string | AccountMeta<string> = string, TAccountOracleProgram extends string | AccountMeta<string> = string, TAccountOracleProgramState extends string | AccountMeta<string> = string, TAccountOracleLutSigner extends string | AccountMeta<string> = string, TAccountOracleLut extends string | AccountMeta<string> = string, TAccountAssociatedTokenProgram extends string | AccountMeta<string> = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL", TAccountWrappedSolMint extends string | AccountMeta<string> = string, TAccountAddressLookupTableProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountOwner extends string ? WritableSignerAccount<TAccountOwner> & AccountSignerMeta<TAccountOwner> : TAccountOwner, TAccountLootbox extends string ? WritableAccount<TAccountLootbox> : TAccountLootbox, TAccountVault extends string ? ReadonlyAccount<TAccountVault> : TAccountVault, TAccountBoxMint extends string ? WritableAccount<TAccountBoxMint> : TAccountBoxMint, TAccountOwnerBoxAccount extends string ? WritableAccount<TAccountOwnerBoxAccount> : TAccountOwnerBoxAccount, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountRandomness extends string ? WritableSignerAccount<TAccountRandomness> & AccountSignerMeta<TAccountRandomness> : TAccountRandomness, TAccountRewardEscrow extends string ? WritableAccount<TAccountRewardEscrow> : TAccountRewardEscrow, TAccountOracleQueue extends string ? WritableAccount<TAccountOracleQueue> : TAccountOracleQueue, TAccountOracle extends string ? WritableAccount<TAccountOracle> : TAccountOracle, TAccountRecentSlotHashes extends string ? ReadonlyAccount<TAccountRecentSlotHashes> : TAccountRecentSlotHashes, TAccountOracleProgram extends string ? ReadonlyAccount<TAccountOracleProgram> : TAccountOracleProgram, TAccountOracleProgramState extends string ? ReadonlyAccount<TAccountOracleProgramState> : TAccountOracleProgramState, TAccountOracleLutSigner extends string ? ReadonlyAccount<TAccountOracleLutSigner> : TAccountOracleLutSigner, TAccountOracleLut extends string ? WritableAccount<TAccountOracleLut> : TAccountOracleLut, TAccountAssociatedTokenProgram extends string ? ReadonlyAccount<TAccountAssociatedTokenProgram> : TAccountAssociatedTokenProgram, TAccountWrappedSolMint extends string ? ReadonlyAccount<TAccountWrappedSolMint> : TAccountWrappedSolMint, TAccountAddressLookupTableProgram extends string ? ReadonlyAccount<TAccountAddressLookupTableProgram> : TAccountAddressLookupTableProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type RequestOpenInstructionData = { discriminator: number; recentSlot: bigint; bump: number;  };
+export type RequestOpenInstructionData = { discriminator: number; migrationVersion: number; recentSlot: bigint; bump: number;  };
 
 export type RequestOpenInstructionDataArgs = { recentSlot: number | bigint; bump: number;  };
 
 export function getRequestOpenInstructionDataEncoder(): FixedSizeEncoder<RequestOpenInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['recentSlot', getU64Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 5 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['recentSlot', getU64Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 5, migrationVersion: 0 }));
 }
 
 export function getRequestOpenInstructionDataDecoder(): FixedSizeDecoder<RequestOpenInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(REQUEST_OPEN_DISCRIMINATOR, getU8Decoder())], ['recentSlot', getU64Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(REQUEST_OPEN_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['recentSlot', getU64Decoder()], ['bump', getU8Decoder()]]);
 }
 
 export function getRequestOpenInstructionDataCodec(): FixedSizeCodec<RequestOpenInstructionDataArgs, RequestOpenInstructionData> {

@@ -4,20 +4,20 @@ use pina::sysvars::Sysvar;
 
 use super::*;
 
-#[instruction(discriminator = LootboxInstruction::RetireTemplate)]
+#[instruction(discriminator = LootboxInstruction::RetireTemplate, migrations)]
 pub struct RetireTemplateInstruction {}
 
-#[instruction(discriminator = LootboxInstruction::ReclaimSolPrize)]
+#[instruction(discriminator = LootboxInstruction::ReclaimSolPrize, migrations)]
 pub struct ReclaimSolPrizeInstruction {
 	pub asset_index: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::ReclaimTokenPrize)]
+#[instruction(discriminator = LootboxInstruction::ReclaimTokenPrize, migrations)]
 pub struct ReclaimTokenPrizeInstruction {
 	pub asset_index: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::ReclaimMintPrize)]
+#[instruction(discriminator = LootboxInstruction::ReclaimMintPrize, migrations)]
 pub struct ReclaimMintPrizeInstruction {
 	pub asset_index: u8,
 }

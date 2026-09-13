@@ -44,9 +44,11 @@ class TemplateState {
     required this.bump,
     required this.serviceVaultBump,
     required this.remaining,
-  }) : discriminator = 4;
+  }) : discriminator = 4,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final Address authority;
   final Address boxMint;
   final Address oracleProgram;
@@ -82,6 +84,7 @@ class TemplateState {
       other is TemplateState &&
           runtimeType == other.runtimeType &&
           discriminator == other.discriminator &&
+          migrationVersion == other.migrationVersion &&
           authority == other.authority &&
           boxMint == other.boxMint &&
           oracleProgram == other.oracleProgram &&
@@ -114,6 +117,7 @@ class TemplateState {
   @override
   int get hashCode => Object.hashAll([
     discriminator,
+    migrationVersion,
     authority,
     boxMint,
     oracleProgram,
@@ -146,12 +150,13 @@ class TemplateState {
 
   @override
   String toString() =>
-      'TemplateState(discriminator: $discriminator, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, opensAt: $opensAt, lockedAt: $lockedAt, totalBundles: $totalBundles, totalMinted: $totalMinted, remainingBundles: $remainingBundles, pendingOpenings: $pendingOpenings, nextRequest: $nextRequest, nextAllocation: $nextAllocation, revision: $revision, manifestAccumulator: $manifestAccumulator, manifestHash: $manifestHash, settlementBountyLamports: $settlementBountyLamports, resultReceiptRentLamports: $resultReceiptRentLamports, remainingResultReceipts: $remainingResultReceipts, remainingSettlementBounties: $remainingSettlementBounties, name: $name, uri: $uri, bundleCount: $bundleCount, status: $status, resultReceiptsEnabled: $resultReceiptsEnabled, bump: $bump, serviceVaultBump: $serviceVaultBump, remaining: $remaining)';
+      'TemplateState(discriminator: $discriminator, migrationVersion: $migrationVersion, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, opensAt: $opensAt, lockedAt: $lockedAt, totalBundles: $totalBundles, totalMinted: $totalMinted, remainingBundles: $remainingBundles, pendingOpenings: $pendingOpenings, nextRequest: $nextRequest, nextAllocation: $nextAllocation, revision: $revision, manifestAccumulator: $manifestAccumulator, manifestHash: $manifestHash, settlementBountyLamports: $settlementBountyLamports, resultReceiptRentLamports: $resultReceiptRentLamports, remainingResultReceipts: $remainingResultReceipts, remainingSettlementBounties: $remainingSettlementBounties, name: $name, uri: $uri, bundleCount: $bundleCount, status: $status, resultReceiptsEnabled: $resultReceiptsEnabled, bump: $bump, serviceVaultBump: $serviceVaultBump, remaining: $remaining)';
 }
 
 Encoder<TemplateState> getTemplateStateEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('authority', getAddressEncoder()),
     ('boxMint', getAddressEncoder()),
     ('oracleProgram', getAddressEncoder()),
@@ -198,6 +203,7 @@ Encoder<TemplateState> getTemplateStateEncoder() {
     structEncoder,
     (TemplateState value) => <String, Object?>{
       'discriminator': 4,
+      'migrationVersion': 0,
       'authority': value.authority,
       'boxMint': value.boxMint,
       'oracleProgram': value.oracleProgram,
@@ -233,6 +239,7 @@ Encoder<TemplateState> getTemplateStateEncoder() {
 Decoder<TemplateState> getTemplateStateDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('authority', getAddressDecoder()),
     ('boxMint', getAddressDecoder()),
     ('oracleProgram', getAddressDecoder()),
@@ -283,6 +290,14 @@ Decoder<TemplateState> getTemplateStateDecoder() {
 
   (TemplateState, int) readTopLevel(Uint8List bytes, int offset) {
     getConstantDecoder(getU8Encoder().encode(4)).read(bytes, offset + 0);
+    final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
+    if (storedMigrationVersion != 0) {
+      throw StateError(
+        storedMigrationVersion < 0
+            ? 'migration version mismatch: expected 0, received $storedMigrationVersion (the data predates this client; migrate it by sending a transaction to the program, or decode it with a client generated from an older IDL)'
+            : 'migration version mismatch: expected 0, received $storedMigrationVersion (the data was written by a newer program; upgrade this client)',
+      );
+    }
     final (map, newOffset) = structDecoder.read(bytes, offset);
 
     return (
@@ -346,4 +361,21 @@ Codec<TemplateState, TemplateState> getTemplateStateCodec() {
 
 Account<TemplateState> decodeTemplateState(EncodedAccount encodedAccount) {
   return decodeAccount(encodedAccount, getTemplateStateDecoder());
+}
+
+/// The account schema version this client was generated from.
+const int templateStateMigrationVersion = 0;
+
+/// Cheap envelope check for fetched `TemplateState` bytes: returns true only when
+/// the bytes carry this account's discriminator and a migration version older
+/// than this client's schema — exactly the accounts [getMigrateInstruction]
+/// can bring current. Decoding reports every other mismatch.
+bool templateStateNeedsMigration(List<int> data) {
+  if (data.length < 2) {
+    return false;
+  }
+  if (data[0] != 4) {
+    return false;
+  }
+  return data[1] < 0;
 }

@@ -13,20 +13,25 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
 @immutable
 class CancelBundleInstructionData {
-  const CancelBundleInstructionData() : discriminator = 26;
+  const CancelBundleInstructionData()
+    : discriminator = 26,
+      migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
 }
 
 Encoder<CancelBundleInstructionData> getCancelBundleInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
   ]);
 
   return transformEncoder(
     structEncoder,
     (CancelBundleInstructionData value) => <String, Object?>{
       'discriminator': 26,
+      'migrationVersion': 0,
     },
   );
 }
@@ -34,6 +39,7 @@ Encoder<CancelBundleInstructionData> getCancelBundleInstructionDataEncoder() {
 Decoder<CancelBundleInstructionData> getCancelBundleInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
@@ -46,6 +52,7 @@ Decoder<CancelBundleInstructionData> getCancelBundleInstructionDataDecoder() {
 
   (CancelBundleInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
     getConstantDecoder(getU8Encoder().encode(26)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

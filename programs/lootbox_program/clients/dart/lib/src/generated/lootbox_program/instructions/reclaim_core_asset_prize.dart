@@ -14,9 +14,11 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class ReclaimCoreAssetPrizeInstructionData {
   const ReclaimCoreAssetPrizeInstructionData({required this.assetIndex})
-    : discriminator = 32;
+    : discriminator = 32,
+      migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final int assetIndex;
 }
 
@@ -24,6 +26,7 @@ Encoder<ReclaimCoreAssetPrizeInstructionData>
 getReclaimCoreAssetPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('assetIndex', getU8Encoder()),
   ]);
 
@@ -31,6 +34,7 @@ getReclaimCoreAssetPrizeInstructionDataEncoder() {
     structEncoder,
     (ReclaimCoreAssetPrizeInstructionData value) => <String, Object?>{
       'discriminator': 32,
+      'migrationVersion': 0,
       'assetIndex': value.assetIndex,
     },
   );
@@ -40,6 +44,7 @@ Decoder<ReclaimCoreAssetPrizeInstructionData>
 getReclaimCoreAssetPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('assetIndex', getU8Decoder()),
   ]);
 
@@ -56,6 +61,7 @@ getReclaimCoreAssetPrizeInstructionDataDecoder() {
     int offset,
   ) {
     getConstantDecoder(getU8Encoder().encode(32)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

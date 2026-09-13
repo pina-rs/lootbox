@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -15,19 +15,23 @@ export const CLOSE_SERVICE_VAULT_DISCRIMINATOR = 38;
 
 export function getCloseServiceVaultDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLOSE_SERVICE_VAULT_DISCRIMINATOR); }
 
+export const CLOSE_SERVICE_VAULT_DISCRIMINATOR2 = 0;
+
+export function getCloseServiceVaultDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLOSE_SERVICE_VAULT_DISCRIMINATOR2); }
+
 export type CloseServiceVaultInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountServiceVault extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountServiceVault extends string ? WritableAccount<TAccountServiceVault> : TAccountServiceVault, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type CloseServiceVaultInstructionData = { discriminator: number;  };
+export type CloseServiceVaultInstructionData = { discriminator: number; migrationVersion: number;  };
 
 export type CloseServiceVaultInstructionDataArgs = {  };
 
 export function getCloseServiceVaultInstructionDataEncoder(): FixedSizeEncoder<CloseServiceVaultInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()]]), (value) => ({ ...value, discriminator: 38 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 38, migrationVersion: 0 }));
 }
 
 export function getCloseServiceVaultInstructionDataDecoder(): FixedSizeDecoder<CloseServiceVaultInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(CLOSE_SERVICE_VAULT_DISCRIMINATOR, getU8Decoder())]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(CLOSE_SERVICE_VAULT_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())]]);
 }
 
 export function getCloseServiceVaultInstructionDataCodec(): FixedSizeCodec<CloseServiceVaultInstructionDataArgs, CloseServiceVaultInstructionData> {

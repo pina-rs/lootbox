@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -15,19 +15,23 @@ export const RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR = 32;
 
 export function getReclaimCoreAssetPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR); }
 
+export const RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR2 = 0;
+
+export function getReclaimCoreAssetPrizeDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR2); }
+
 export type ReclaimCoreAssetPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountAsset extends string | AccountMeta<string> = string, TAccountCollection extends string | AccountMeta<string> = string, TAccountCoreProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = string, TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountPluginAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountAsset extends string ? WritableAccount<TAccountAsset> : TAccountAsset, TAccountCollection extends string ? ReadonlyAccount<TAccountCollection> : TAccountCollection, TAccountCoreProgram extends string ? ReadonlyAccount<TAccountCoreProgram> : TAccountCoreProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountPluginAccounts extends string ? ReadonlyAccount<TAccountPluginAccounts> : TAccountPluginAccounts, ...TRemainingAccounts]>;
 
-export type ReclaimCoreAssetPrizeInstructionData = { discriminator: number; assetIndex: number;  };
+export type ReclaimCoreAssetPrizeInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number;  };
 
 export type ReclaimCoreAssetPrizeInstructionDataArgs = { assetIndex: number;  };
 
 export function getReclaimCoreAssetPrizeInstructionDataEncoder(): FixedSizeEncoder<ReclaimCoreAssetPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 32 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 32, migrationVersion: 0 }));
 }
 
 export function getReclaimCoreAssetPrizeInstructionDataDecoder(): FixedSizeDecoder<ReclaimCoreAssetPrizeInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR, getU8Decoder())], ['assetIndex', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['assetIndex', getU8Decoder()]]);
 }
 
 export function getReclaimCoreAssetPrizeInstructionDataCodec(): FixedSizeCodec<ReclaimCoreAssetPrizeInstructionDataArgs, ReclaimCoreAssetPrizeInstructionData> {

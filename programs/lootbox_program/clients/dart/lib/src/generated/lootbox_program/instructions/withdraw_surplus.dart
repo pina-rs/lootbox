@@ -14,9 +14,11 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class WithdrawSurplusInstructionData {
   const WithdrawSurplusInstructionData({required this.lamports})
-    : discriminator = 9;
+    : discriminator = 9,
+      migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final BigInt lamports;
 }
 
@@ -24,6 +26,7 @@ Encoder<WithdrawSurplusInstructionData>
 getWithdrawSurplusInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('lamports', getU64Encoder()),
   ]);
 
@@ -31,6 +34,7 @@ getWithdrawSurplusInstructionDataEncoder() {
     structEncoder,
     (WithdrawSurplusInstructionData value) => <String, Object?>{
       'discriminator': 9,
+      'migrationVersion': 0,
       'lamports': value.lamports,
     },
   );
@@ -40,6 +44,7 @@ Decoder<WithdrawSurplusInstructionData>
 getWithdrawSurplusInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('lamports', getU64Decoder()),
   ]);
 
@@ -56,6 +61,7 @@ getWithdrawSurplusInstructionDataDecoder() {
     int offset,
   ) {
     getConstantDecoder(getU8Encoder().encode(9)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

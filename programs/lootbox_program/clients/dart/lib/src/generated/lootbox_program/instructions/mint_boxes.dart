@@ -13,15 +13,19 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
 @immutable
 class MintBoxesInstructionData {
-  const MintBoxesInstructionData({required this.amount}) : discriminator = 4;
+  const MintBoxesInstructionData({required this.amount})
+    : discriminator = 4,
+      migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final BigInt amount;
 }
 
 Encoder<MintBoxesInstructionData> getMintBoxesInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('amount', getU64Encoder()),
   ]);
 
@@ -29,6 +33,7 @@ Encoder<MintBoxesInstructionData> getMintBoxesInstructionDataEncoder() {
     structEncoder,
     (MintBoxesInstructionData value) => <String, Object?>{
       'discriminator': 4,
+      'migrationVersion': 0,
       'amount': value.amount,
     },
   );
@@ -37,6 +42,7 @@ Encoder<MintBoxesInstructionData> getMintBoxesInstructionDataEncoder() {
 Decoder<MintBoxesInstructionData> getMintBoxesInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('amount', getU64Decoder()),
   ]);
 
@@ -50,6 +56,7 @@ Decoder<MintBoxesInstructionData> getMintBoxesInstructionDataDecoder() {
 
   (MintBoxesInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
     getConstantDecoder(getU8Encoder().encode(4)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

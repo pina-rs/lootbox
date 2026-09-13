@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, getAddressDecoder, getAddressEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findOpeningPda, type OpeningSeeds } from '../pdas';
 
@@ -14,19 +14,23 @@ export const OPENING_STATE_DISCRIMINATOR = 3;
 
 export function getOpeningStateDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(OPENING_STATE_DISCRIMINATOR); }
 
+export const OPENING_STATE_DISCRIMINATOR2 = 0;
+
+export function getOpeningStateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(OPENING_STATE_DISCRIMINATOR2); }
+
 /** Receipt binding a burned box to one unrevealed randomness commitment. */
-export type OpeningState = { discriminator: number; lootbox: Address; recipient: Address; randomness: Address; seedSlot: bigint; rewardLamports: bigint; selectedOutcome: number; status: number; bump: number;  };
+export type OpeningState = { discriminator: number; migrationVersion: number; lootbox: Address; recipient: Address; randomness: Address; seedSlot: bigint; rewardLamports: bigint; selectedOutcome: number; status: number; bump: number;  };
 
 export type OpeningStateArgs = { lootbox: Address; recipient: Address; randomness: Address; seedSlot: number | bigint; rewardLamports: number | bigint; selectedOutcome: number; status: number; bump: number;  };
 
 /** Gets the encoder for {@link OpeningStateArgs} account data. */
 export function getOpeningStateEncoder(): FixedSizeEncoder<OpeningStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['lootbox', getAddressEncoder()], ['recipient', getAddressEncoder()], ['randomness', getAddressEncoder()], ['seedSlot', getU64Encoder()], ['rewardLamports', getU64Encoder()], ['selectedOutcome', getU8Encoder()], ['status', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 3 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['lootbox', getAddressEncoder()], ['recipient', getAddressEncoder()], ['randomness', getAddressEncoder()], ['seedSlot', getU64Encoder()], ['rewardLamports', getU64Encoder()], ['selectedOutcome', getU8Encoder()], ['status', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 3, migrationVersion: 0 }));
 }
 
 /** Gets the decoder for {@link OpeningState} account data. */
 export function getOpeningStateDecoder(): FixedSizeDecoder<OpeningState> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(OPENING_STATE_DISCRIMINATOR, getU8Decoder())], ['lootbox', getAddressDecoder()], ['recipient', getAddressDecoder()], ['randomness', getAddressDecoder()], ['seedSlot', getU64Decoder()], ['rewardLamports', getU64Decoder()], ['selectedOutcome', getU8Decoder()], ['status', getU8Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(OPENING_STATE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['lootbox', getAddressDecoder()], ['recipient', getAddressDecoder()], ['randomness', getAddressDecoder()], ['seedSlot', getU64Decoder()], ['rewardLamports', getU64Decoder()], ['selectedOutcome', getU8Decoder()], ['status', getU8Decoder()], ['bump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link OpeningState} account data. */
@@ -96,4 +100,32 @@ export async function fetchMaybeOpeningStateFromSeeds(
   const { programAddress, ...fetchConfig } = config;
   const [address] = await findOpeningPda(seeds, { programAddress });
   return await fetchMaybeOpeningState(rpc, address, fetchConfig);
+}
+
+/** The account schema version this client was generated from. */
+export const OPENING_STATE_MIGRATION_VERSION = 0;
+
+/**
+ * Cheap envelope check for a fetched `OpeningState` account: `true` only when the
+ * bytes name this account's discriminator and a migration version older than
+ * this client's schema. Those are exactly the accounts
+ * {@link getMigrateInstruction} can bring current; every other mismatch is
+ * reported by the decoder when the account is decoded.
+ *
+ * ```ts
+ * const { data } = await fetchEncodedAccount(rpc, address);
+ * if (openingStateNeedsMigration(data)) {
+ * 	// Migrate first, then retry the instruction that failed.
+ * 	await send(getMigrateInstruction({ openingState: address, payer }).make());
+ * }
+ * ```
+ */
+export function openingStateNeedsMigration(data: ReadonlyUint8Array): boolean {
+	if (data.length < 2) {
+		return false;
+	}
+	if (data[0] !== 3) {
+		return false;
+	}
+	return data[1]! < 0;
 }

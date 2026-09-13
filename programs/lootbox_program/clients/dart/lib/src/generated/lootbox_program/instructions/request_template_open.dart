@@ -19,9 +19,11 @@ class RequestTemplateOpenInstructionData {
     required this.consumerProgram,
     required this.consumerContext,
     required this.bump,
-  }) : discriminator = 16;
+  }) : discriminator = 16,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final BigInt recentSlot;
   final Address beneficiary;
   final Address consumerProgram;
@@ -33,6 +35,7 @@ Encoder<RequestTemplateOpenInstructionData>
 getRequestTemplateOpenInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('recentSlot', getU64Encoder()),
     ('beneficiary', getAddressEncoder()),
     ('consumerProgram', getAddressEncoder()),
@@ -47,6 +50,7 @@ getRequestTemplateOpenInstructionDataEncoder() {
     structEncoder,
     (RequestTemplateOpenInstructionData value) => <String, Object?>{
       'discriminator': 16,
+      'migrationVersion': 0,
       'recentSlot': value.recentSlot,
       'beneficiary': value.beneficiary,
       'consumerProgram': value.consumerProgram,
@@ -60,6 +64,7 @@ Decoder<RequestTemplateOpenInstructionData>
 getRequestTemplateOpenInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('recentSlot', getU64Decoder()),
     ('beneficiary', getAddressDecoder()),
     ('consumerProgram', getAddressDecoder()),
@@ -80,6 +85,7 @@ getRequestTemplateOpenInstructionDataDecoder() {
     int offset,
   ) {
     getConstantDecoder(getU8Encoder().encode(16)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

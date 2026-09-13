@@ -32,9 +32,11 @@ class LootboxState {
     required this.sealed,
     required this.bump,
     required this.vaultBump,
-  }) : discriminator = 1;
+  }) : discriminator = 1,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final Address authority;
   final Address boxMint;
   final Address oracleProgram;
@@ -60,6 +62,7 @@ class LootboxState {
       other is LootboxState &&
           runtimeType == other.runtimeType &&
           discriminator == other.discriminator &&
+          migrationVersion == other.migrationVersion &&
           authority == other.authority &&
           boxMint == other.boxMint &&
           oracleProgram == other.oracleProgram &&
@@ -82,6 +85,7 @@ class LootboxState {
   @override
   int get hashCode => Object.hash(
     discriminator,
+    migrationVersion,
     authority,
     boxMint,
     oracleProgram,
@@ -104,12 +108,13 @@ class LootboxState {
 
   @override
   String toString() =>
-      'LootboxState(discriminator: $discriminator, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, maxSupply: $maxSupply, totalMinted: $totalMinted, pendingOpenings: $pendingOpenings, opened: $opened, refunded: $refunded, totalWeight: $totalWeight, maxRewardLamports: $maxRewardLamports, outcomeWeights: $outcomeWeights, outcomeLamports: $outcomeLamports, outcomeCount: $outcomeCount, sealed: $sealed, bump: $bump, vaultBump: $vaultBump)';
+      'LootboxState(discriminator: $discriminator, migrationVersion: $migrationVersion, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, maxSupply: $maxSupply, totalMinted: $totalMinted, pendingOpenings: $pendingOpenings, opened: $opened, refunded: $refunded, totalWeight: $totalWeight, maxRewardLamports: $maxRewardLamports, outcomeWeights: $outcomeWeights, outcomeLamports: $outcomeLamports, outcomeCount: $outcomeCount, sealed: $sealed, bump: $bump, vaultBump: $vaultBump)';
 }
 
 Encoder<LootboxState> getLootboxStateEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('authority', getAddressEncoder()),
     ('boxMint', getAddressEncoder()),
     ('oracleProgram', getAddressEncoder()),
@@ -140,6 +145,7 @@ Encoder<LootboxState> getLootboxStateEncoder() {
     structEncoder,
     (LootboxState value) => <String, Object?>{
       'discriminator': 1,
+      'migrationVersion': 0,
       'authority': value.authority,
       'boxMint': value.boxMint,
       'oracleProgram': value.oracleProgram,
@@ -165,6 +171,7 @@ Encoder<LootboxState> getLootboxStateEncoder() {
 Decoder<LootboxState> getLootboxStateDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('authority', getAddressDecoder()),
     ('boxMint', getAddressDecoder()),
     ('oracleProgram', getAddressDecoder()),
@@ -195,6 +202,14 @@ Decoder<LootboxState> getLootboxStateDecoder() {
 
   (LootboxState, int) readTopLevel(Uint8List bytes, int offset) {
     getConstantDecoder(getU8Encoder().encode(1)).read(bytes, offset + 0);
+    final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
+    if (storedMigrationVersion != 0) {
+      throw StateError(
+        storedMigrationVersion < 0
+            ? 'migration version mismatch: expected 0, received $storedMigrationVersion (the data predates this client; migrate it by sending a transaction to the program, or decode it with a client generated from an older IDL)'
+            : 'migration version mismatch: expected 0, received $storedMigrationVersion (the data was written by a newer program; upgrade this client)',
+      );
+    }
     final (map, newOffset) = structDecoder.read(bytes, offset);
 
     return (
@@ -247,4 +262,21 @@ Codec<LootboxState, LootboxState> getLootboxStateCodec() {
 
 Account<LootboxState> decodeLootboxState(EncodedAccount encodedAccount) {
   return decodeAccount(encodedAccount, getLootboxStateDecoder());
+}
+
+/// The account schema version this client was generated from.
+const int lootboxStateMigrationVersion = 0;
+
+/// Cheap envelope check for fetched `LootboxState` bytes: returns true only when
+/// the bytes carry this account's discriminator and a migration version older
+/// than this client's schema — exactly the accounts [getMigrateInstruction]
+/// can bring current. Decoding reports every other mismatch.
+bool lootboxStateNeedsMigration(List<int> data) {
+  if (data.length < 2) {
+    return false;
+  }
+  if (data[0] != 1) {
+    return false;
+  }
+  return data[1] < 0;
 }

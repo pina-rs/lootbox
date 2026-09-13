@@ -162,6 +162,7 @@ in
     '';
     "lint:all".exec = ''
       set -euo pipefail
+      pina migrations check --project programs/lootbox_program
       pina lint --project programs/lootbox_program
       cargo clippy --workspace --all-features --all-targets --locked -- -D warnings
       cargo clippy \

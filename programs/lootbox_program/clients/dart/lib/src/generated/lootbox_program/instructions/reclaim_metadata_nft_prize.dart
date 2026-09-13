@@ -14,9 +14,11 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class ReclaimMetadataNftPrizeInstructionData {
   const ReclaimMetadataNftPrizeInstructionData({required this.assetIndex})
-    : discriminator = 29;
+    : discriminator = 29,
+      migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final int assetIndex;
 }
 
@@ -24,6 +26,7 @@ Encoder<ReclaimMetadataNftPrizeInstructionData>
 getReclaimMetadataNftPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('assetIndex', getU8Encoder()),
   ]);
 
@@ -31,6 +34,7 @@ getReclaimMetadataNftPrizeInstructionDataEncoder() {
     structEncoder,
     (ReclaimMetadataNftPrizeInstructionData value) => <String, Object?>{
       'discriminator': 29,
+      'migrationVersion': 0,
       'assetIndex': value.assetIndex,
     },
   );
@@ -40,6 +44,7 @@ Decoder<ReclaimMetadataNftPrizeInstructionData>
 getReclaimMetadataNftPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('assetIndex', getU8Decoder()),
   ]);
 
@@ -56,6 +61,7 @@ getReclaimMetadataNftPrizeInstructionDataDecoder() {
     int offset,
   ) {
     getConstantDecoder(getU8Encoder().encode(29)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

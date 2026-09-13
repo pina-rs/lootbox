@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -15,19 +15,23 @@ export const DEPOSIT_DISCRIMINATOR = 2;
 
 export function getDepositDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(DEPOSIT_DISCRIMINATOR); }
 
+export const DEPOSIT_DISCRIMINATOR2 = 0;
+
+export function getDepositDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(DEPOSIT_DISCRIMINATOR2); }
+
 export type DepositInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountDepositor extends string | AccountMeta<string> = string, TAccountLootbox extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountDepositor extends string ? WritableSignerAccount<TAccountDepositor> & AccountSignerMeta<TAccountDepositor> : TAccountDepositor, TAccountLootbox extends string ? ReadonlyAccount<TAccountLootbox> : TAccountLootbox, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type DepositInstructionData = { discriminator: number; lamports: bigint;  };
+export type DepositInstructionData = { discriminator: number; migrationVersion: number; lamports: bigint;  };
 
 export type DepositInstructionDataArgs = { lamports: number | bigint;  };
 
 export function getDepositInstructionDataEncoder(): FixedSizeEncoder<DepositInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['lamports', getU64Encoder()]]), (value) => ({ ...value, discriminator: 2 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['lamports', getU64Encoder()]]), (value) => ({ ...value, discriminator: 2, migrationVersion: 0 }));
 }
 
 export function getDepositInstructionDataDecoder(): FixedSizeDecoder<DepositInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(DEPOSIT_DISCRIMINATOR, getU8Decoder())], ['lamports', getU64Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(DEPOSIT_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['lamports', getU64Decoder()]]);
 }
 
 export function getDepositInstructionDataCodec(): FixedSizeCodec<DepositInstructionDataArgs, DepositInstructionData> {

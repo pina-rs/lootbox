@@ -16,9 +16,11 @@ class RequestOpenInstructionData {
   const RequestOpenInstructionData({
     required this.recentSlot,
     required this.bump,
-  }) : discriminator = 5;
+  }) : discriminator = 5,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final BigInt recentSlot;
   final int bump;
 }
@@ -26,6 +28,7 @@ class RequestOpenInstructionData {
 Encoder<RequestOpenInstructionData> getRequestOpenInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('recentSlot', getU64Encoder()),
     ('bump', getU8Encoder()),
   ]);
@@ -34,6 +37,7 @@ Encoder<RequestOpenInstructionData> getRequestOpenInstructionDataEncoder() {
     structEncoder,
     (RequestOpenInstructionData value) => <String, Object?>{
       'discriminator': 5,
+      'migrationVersion': 0,
       'recentSlot': value.recentSlot,
       'bump': value.bump,
     },
@@ -43,6 +47,7 @@ Encoder<RequestOpenInstructionData> getRequestOpenInstructionDataEncoder() {
 Decoder<RequestOpenInstructionData> getRequestOpenInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('recentSlot', getU64Decoder()),
     ('bump', getU8Decoder()),
   ]);
@@ -57,6 +62,7 @@ Decoder<RequestOpenInstructionData> getRequestOpenInstructionDataDecoder() {
 
   (RequestOpenInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
     getConstantDecoder(getU8Encoder().encode(5)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

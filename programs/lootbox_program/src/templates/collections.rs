@@ -11,33 +11,33 @@ const SPL_ACCOUNT_COMPRESSION_ID: Address = address!("cmtDvXumGCrqC1Age74AVPhSRV
 const SPL_NOOP_ID: Address = address!("noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV");
 const INSTRUCTIONS_SYSVAR_ID: Address = address!("Sysvar1nstructions1111111111111111111111111");
 
-#[instruction(discriminator = LootboxInstruction::FundMetadataNftPrize)]
+#[instruction(discriminator = LootboxInstruction::FundMetadataNftPrize, migrations)]
 pub struct FundMetadataNftPrizeInstruction {}
 
-#[instruction(discriminator = LootboxInstruction::ClaimMetadataNftPrize)]
+#[instruction(discriminator = LootboxInstruction::ClaimMetadataNftPrize, migrations)]
 pub struct ClaimMetadataNftPrizeInstruction {
 	pub asset_index: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::ReclaimMetadataNftPrize)]
+#[instruction(discriminator = LootboxInstruction::ReclaimMetadataNftPrize, migrations)]
 pub struct ReclaimMetadataNftPrizeInstruction {
 	pub asset_index: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::FundCoreAssetPrize)]
+#[instruction(discriminator = LootboxInstruction::FundCoreAssetPrize, migrations)]
 pub struct FundCoreAssetPrizeInstruction {}
 
-#[instruction(discriminator = LootboxInstruction::ClaimCoreAssetPrize)]
+#[instruction(discriminator = LootboxInstruction::ClaimCoreAssetPrize, migrations)]
 pub struct ClaimCoreAssetPrizeInstruction {
 	pub asset_index: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::ReclaimCoreAssetPrize)]
+#[instruction(discriminator = LootboxInstruction::ReclaimCoreAssetPrize, migrations)]
 pub struct ReclaimCoreAssetPrizeInstruction {
 	pub asset_index: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::FundCompressedNftPrize)]
+#[instruction(discriminator = LootboxInstruction::FundCompressedNftPrize, migrations)]
 pub struct FundCompressedNftPrizeInstruction {
 	pub root: [u8; 32],
 	pub data_hash: [u8; 32],
@@ -46,7 +46,7 @@ pub struct FundCompressedNftPrizeInstruction {
 	pub index: u32,
 }
 
-#[instruction(discriminator = LootboxInstruction::ClaimCompressedNftPrize)]
+#[instruction(discriminator = LootboxInstruction::ClaimCompressedNftPrize, migrations)]
 pub struct ClaimCompressedNftPrizeInstruction {
 	pub asset_index: u8,
 	pub root: [u8; 32],
@@ -56,7 +56,7 @@ pub struct ClaimCompressedNftPrizeInstruction {
 	pub index: u32,
 }
 
-#[instruction(discriminator = LootboxInstruction::ReclaimCompressedNftPrize)]
+#[instruction(discriminator = LootboxInstruction::ReclaimCompressedNftPrize, migrations)]
 pub struct ReclaimCompressedNftPrizeInstruction {
 	pub asset_index: u8,
 	pub root: [u8; 32],
@@ -68,6 +68,7 @@ pub struct ReclaimCompressedNftPrizeInstruction {
 
 #[derive(Accounts, Debug)]
 pub struct FundMetadataNftPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
 	pub template: &'a AccountView,
 	pub bundle: &'a mut AccountView,
@@ -87,6 +88,7 @@ pub struct FundMetadataNftPrizeAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct ClaimMetadataNftPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub payer: &'a mut AccountView,
 	pub template: &'a AccountView,
 	pub opening: &'a mut AccountView,
@@ -108,6 +110,7 @@ pub struct ClaimMetadataNftPrizeAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct ReclaimMetadataNftPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
 	pub template: &'a AccountView,
 	pub box_mint: &'a AccountView,
@@ -128,6 +131,7 @@ pub struct ReclaimMetadataNftPrizeAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct FundCoreAssetPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
 	pub template: &'a AccountView,
 	pub bundle: &'a mut AccountView,
@@ -143,6 +147,7 @@ pub struct FundCoreAssetPrizeAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct ClaimCoreAssetPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub payer: &'a mut AccountView,
 	pub template: &'a AccountView,
 	pub opening: &'a mut AccountView,
@@ -160,6 +165,7 @@ pub struct ClaimCoreAssetPrizeAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct ReclaimCoreAssetPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
 	pub template: &'a AccountView,
 	pub box_mint: &'a AccountView,
@@ -176,6 +182,7 @@ pub struct ReclaimCoreAssetPrizeAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct FundCompressedNftPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
 	pub template: &'a AccountView,
 	pub bundle: &'a mut AccountView,
@@ -209,6 +216,7 @@ pub struct ClaimCompressedNftPrizeAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct ReclaimCompressedNftPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
 	pub template: &'a AccountView,
 	pub box_mint: &'a AccountView,
@@ -581,7 +589,6 @@ fn validate_compressed_accounts(accounts: &CompressedTransfer<'_>) -> ProgramRes
 impl<'a> ProcessAccountInfos<'a> for FundMetadataNftPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = FundMetadataNftPrizeInstruction::try_from_bytes(data)?;
-		self.authority.assert_signer()?.assert_writable()?;
 		let state = as_template(self.template)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
@@ -642,7 +649,6 @@ impl<'a> ProcessAccountInfos<'a> for FundMetadataNftPrizeAccounts<'a> {
 impl<'a> ProcessAccountInfos<'a> for ClaimMetadataNftPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ClaimMetadataNftPrizeInstruction::try_from_bytes(data)?;
-		self.payer.assert_signer()?.assert_writable()?;
 		let state = as_template(self.template)?;
 		assert_template(self.template.address(), &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
@@ -717,7 +723,6 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMetadataNftPrizeAccounts<'a> {
 impl<'a> ProcessAccountInfos<'a> for ReclaimMetadataNftPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ReclaimMetadataNftPrizeInstruction::try_from_bytes(data)?;
-		self.authority.assert_signer()?.assert_writable()?;
 		let template_data = self.template.try_borrow()?;
 		let state = TemplateState::try_from_bytes(&template_data)?;
 		assert_template(self.template.address(), &state)?;
@@ -808,7 +813,6 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMetadataNftPrizeAccounts<'a> {
 impl<'a> ProcessAccountInfos<'a> for FundCoreAssetPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = FundCoreAssetPrizeInstruction::try_from_bytes(data)?;
-		self.authority.assert_signer()?.assert_writable()?;
 		let state = as_template(self.template)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
@@ -849,7 +853,6 @@ impl<'a> ProcessAccountInfos<'a> for FundCoreAssetPrizeAccounts<'a> {
 impl<'a> ProcessAccountInfos<'a> for ClaimCoreAssetPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ClaimCoreAssetPrizeInstruction::try_from_bytes(data)?;
-		self.payer.assert_signer()?.assert_writable()?;
 		let state = as_template(self.template)?;
 		assert_template(self.template.address(), &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
@@ -904,7 +907,6 @@ impl<'a> ProcessAccountInfos<'a> for ClaimCoreAssetPrizeAccounts<'a> {
 impl<'a> ProcessAccountInfos<'a> for ReclaimCoreAssetPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ReclaimCoreAssetPrizeInstruction::try_from_bytes(data)?;
-		self.authority.assert_signer()?.assert_writable()?;
 		let template_data = self.template.try_borrow()?;
 		let state = TemplateState::try_from_bytes(&template_data)?;
 		assert_template(self.template.address(), &state)?;
@@ -975,7 +977,6 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCoreAssetPrizeAccounts<'a> {
 impl<'a> ProcessAccountInfos<'a> for FundCompressedNftPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = FundCompressedNftPrizeInstruction::try_from_bytes(data)?;
-		self.authority.assert_signer()?;
 		let state = as_template(self.template)?;
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
@@ -1074,7 +1075,6 @@ impl<'a> ProcessAccountInfos<'a> for ClaimCompressedNftPrizeAccounts<'a> {
 impl<'a> ProcessAccountInfos<'a> for ReclaimCompressedNftPrizeAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ReclaimCompressedNftPrizeInstruction::try_from_bytes(data)?;
-		self.authority.assert_signer()?;
 		let template_data = self.template.try_borrow()?;
 		let state = TemplateState::try_from_bytes(&template_data)?;
 		assert_template(self.template.address(), &state)?;

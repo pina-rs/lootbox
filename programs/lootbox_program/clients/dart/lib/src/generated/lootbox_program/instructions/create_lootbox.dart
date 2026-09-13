@@ -20,9 +20,11 @@ class CreateLootboxInstructionData {
     required this.oracleQueue,
     required this.bump,
     required this.vaultBump,
-  }) : discriminator = 0;
+  }) : discriminator = 0,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final BigInt id;
   final BigInt maxSupply;
   final Address oracleProgram;
@@ -34,6 +36,7 @@ class CreateLootboxInstructionData {
 Encoder<CreateLootboxInstructionData> getCreateLootboxInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('id', getU64Encoder()),
     ('maxSupply', getU64Encoder()),
     ('oracleProgram', getAddressEncoder()),
@@ -46,6 +49,7 @@ Encoder<CreateLootboxInstructionData> getCreateLootboxInstructionDataEncoder() {
     structEncoder,
     (CreateLootboxInstructionData value) => <String, Object?>{
       'discriminator': 0,
+      'migrationVersion': 0,
       'id': value.id,
       'maxSupply': value.maxSupply,
       'oracleProgram': value.oracleProgram,
@@ -59,6 +63,7 @@ Encoder<CreateLootboxInstructionData> getCreateLootboxInstructionDataEncoder() {
 Decoder<CreateLootboxInstructionData> getCreateLootboxInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('id', getU64Decoder()),
     ('maxSupply', getU64Decoder()),
     ('oracleProgram', getAddressDecoder()),
@@ -80,6 +85,7 @@ Decoder<CreateLootboxInstructionData> getCreateLootboxInstructionDataDecoder() {
     int offset,
   ) {
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

@@ -17,9 +17,11 @@ class VaultState {
     required this.lootbox,
     required this.rentReserve,
     required this.bump,
-  }) : discriminator = 2;
+  }) : discriminator = 2,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final Address lootbox;
   final BigInt rentReserve;
   final int bump;
@@ -30,21 +32,24 @@ class VaultState {
       other is VaultState &&
           runtimeType == other.runtimeType &&
           discriminator == other.discriminator &&
+          migrationVersion == other.migrationVersion &&
           lootbox == other.lootbox &&
           rentReserve == other.rentReserve &&
           bump == other.bump;
 
   @override
-  int get hashCode => Object.hash(discriminator, lootbox, rentReserve, bump);
+  int get hashCode =>
+      Object.hash(discriminator, migrationVersion, lootbox, rentReserve, bump);
 
   @override
   String toString() =>
-      'VaultState(discriminator: $discriminator, lootbox: $lootbox, rentReserve: $rentReserve, bump: $bump)';
+      'VaultState(discriminator: $discriminator, migrationVersion: $migrationVersion, lootbox: $lootbox, rentReserve: $rentReserve, bump: $bump)';
 }
 
 Encoder<VaultState> getVaultStateEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('lootbox', getAddressEncoder()),
     ('rentReserve', getU64Encoder()),
     ('bump', getU8Encoder()),
@@ -54,6 +59,7 @@ Encoder<VaultState> getVaultStateEncoder() {
     structEncoder,
     (VaultState value) => <String, Object?>{
       'discriminator': 2,
+      'migrationVersion': 0,
       'lootbox': value.lootbox,
       'rentReserve': value.rentReserve,
       'bump': value.bump,
@@ -64,6 +70,7 @@ Encoder<VaultState> getVaultStateEncoder() {
 Decoder<VaultState> getVaultStateDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('lootbox', getAddressDecoder()),
     ('rentReserve', getU64Decoder()),
     ('bump', getU8Decoder()),
@@ -79,6 +86,14 @@ Decoder<VaultState> getVaultStateDecoder() {
 
   (VaultState, int) readTopLevel(Uint8List bytes, int offset) {
     getConstantDecoder(getU8Encoder().encode(2)).read(bytes, offset + 0);
+    final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
+    if (storedMigrationVersion != 0) {
+      throw StateError(
+        storedMigrationVersion < 0
+            ? 'migration version mismatch: expected 0, received $storedMigrationVersion (the data predates this client; migrate it by sending a transaction to the program, or decode it with a client generated from an older IDL)'
+            : 'migration version mismatch: expected 0, received $storedMigrationVersion (the data was written by a newer program; upgrade this client)',
+      );
+    }
     final (map, newOffset) = structDecoder.read(bytes, offset);
 
     return (
@@ -116,4 +131,21 @@ Codec<VaultState, VaultState> getVaultStateCodec() {
 
 Account<VaultState> decodeVaultState(EncodedAccount encodedAccount) {
   return decodeAccount(encodedAccount, getVaultStateDecoder());
+}
+
+/// The account schema version this client was generated from.
+const int vaultStateMigrationVersion = 0;
+
+/// Cheap envelope check for fetched `VaultState` bytes: returns true only when
+/// the bytes carry this account's discriminator and a migration version older
+/// than this client's schema — exactly the accounts [getMigrateInstruction]
+/// can bring current. Decoding reports every other mismatch.
+bool vaultStateNeedsMigration(List<int> data) {
+  if (data.length < 2) {
+    return false;
+  }
+  if (data[0] != 2) {
+    return false;
+  }
+  return data[1] < 0;
 }

@@ -4,7 +4,7 @@ use pina::sysvars::Sysvar;
 
 use super::*;
 
-#[instruction(discriminator = LootboxInstruction::RequestTemplateOpen)]
+#[instruction(discriminator = LootboxInstruction::RequestTemplateOpen, migrations)]
 pub struct RequestTemplateOpenInstruction {
 	pub recent_slot: u64,
 	pub beneficiary: Address,
@@ -13,19 +13,20 @@ pub struct RequestTemplateOpenInstruction {
 	pub bump: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::FulfillTemplateOpen)]
+#[instruction(discriminator = LootboxInstruction::FulfillTemplateOpen, migrations)]
 pub struct FulfillTemplateOpenInstruction {
 	pub signature: [u8; 64],
 	pub recovery_id: u8,
 	pub value: [u8; 32],
 }
 
-#[instruction(discriminator = LootboxInstruction::ForfeitTemplateOpen)]
+#[instruction(discriminator = LootboxInstruction::ForfeitTemplateOpen, migrations)]
 pub struct ForfeitTemplateOpenInstruction {}
 
 #[derive(Accounts, Debug)]
 pub struct RequestTemplateOpenAccounts<'a> {
 	/// Owns the box token account and authorizes burning exactly one box.
+	#[pina(validate(signer))]
 	pub box_authority: &'a AccountView,
 	/// Pays for the opening and oracle initialization; may be a sponsor.
 	///
@@ -33,30 +34,42 @@ pub struct RequestTemplateOpenAccounts<'a> {
 	/// same signer may fill both roles after Solana promotes duplicate metas to
 	/// writable. Parsing the mutable alias last preserves the cursor's safety
 	/// checks while supporting the common self-paid opening flow.
+	#[pina(validate(signer))]
 	pub payer: &'a mut AccountView,
 	pub template: &'a mut AccountView,
 	pub box_mint: &'a mut AccountView,
 	pub box_account: &'a mut AccountView,
+	#[pina(validate(empty))]
 	pub opening: &'a mut AccountView,
+	#[pina(validate(signer))]
+	#[pina(validate(empty))]
 	pub randomness: &'a mut AccountView,
 	pub reward_escrow: &'a mut AccountView,
 	pub oracle_queue: &'a mut AccountView,
 	pub oracle: &'a mut AccountView,
+	#[pina(validate(sysvar = SLOT_HASHES_SYSVAR_ID))]
 	pub recent_slot_hashes: &'a AccountView,
 	pub oracle_program: &'a AccountView,
 	pub oracle_program_state: &'a AccountView,
 	pub oracle_lut_signer: &'a AccountView,
 	pub oracle_lut: &'a mut AccountView,
+	#[pina(validate(address = associated_token_account::ID))]
 	pub associated_token_program: &'a AccountView,
+	#[pina(validate(address = WRAPPED_SOL_MINT_ID))]
 	pub wrapped_sol_mint: &'a AccountView,
+	#[pina(validate(address = ADDRESS_LOOKUP_TABLE_PROGRAM_ID))]
 	pub address_lookup_table_program: &'a AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	#[pina(validate(address = token_2022::ID))]
 	pub box_token_program: &'a AccountView,
+	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
 }
 
 #[derive(Accounts, Debug)]
 pub struct FulfillTemplateOpenAccounts<'a> {
+	#[pina(validate(signer))]
 	pub payer: &'a mut AccountView,
 	pub template: &'a mut AccountView,
 	pub service_vault: &'a mut AccountView,
@@ -65,12 +78,16 @@ pub struct FulfillTemplateOpenAccounts<'a> {
 	pub oracle_queue: &'a AccountView,
 	pub oracle: &'a AccountView,
 	pub oracle_stats: &'a mut AccountView,
+	#[pina(validate(sysvar = SLOT_HASHES_SYSVAR_ID))]
 	pub recent_slot_hashes: &'a AccountView,
 	pub oracle_program: &'a AccountView,
 	pub reward_escrow: &'a mut AccountView,
 	pub oracle_program_state: &'a AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
+	#[pina(validate(address = WRAPPED_SOL_MINT_ID))]
 	pub wrapped_sol_mint: &'a AccountView,
 }
 
@@ -78,11 +95,13 @@ pub struct FulfillTemplateOpenAccounts<'a> {
 pub struct ForfeitTemplateOpenAccounts<'a> {
 	/// Any signer may advance an expired FIFO head; the stored beneficiary and
 	/// their exclusive claim rights are never changed.
+	#[pina(validate(signer))]
 	pub caller: &'a mut AccountView,
 	pub template: &'a mut AccountView,
 	pub service_vault: &'a mut AccountView,
 	pub opening: &'a mut AccountView,
 	pub randomness: &'a AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
@@ -202,29 +221,6 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		let box_authority_address = *self.box_authority.address();
 		let randomness_address = *self.randomness.address();
 		let opening_address = *self.opening.address();
-		self.payer.assert_signer()?.assert_writable()?;
-		self.box_authority.assert_signer()?;
-		self.system_program.assert_address(&system::ID)?;
-		self.token_program.assert_address(&token::ID)?;
-		self.box_token_program.assert_address(&token_2022::ID)?;
-		self.box_mint.assert_writable()?;
-		self.box_account.assert_writable()?;
-		self.opening.assert_empty()?.assert_writable()?;
-		self.randomness
-			.assert_signer()?
-			.assert_empty()?
-			.assert_writable()?;
-		self.reward_escrow.assert_writable()?;
-		self.oracle_queue.assert_writable()?;
-		self.oracle.assert_writable()?;
-		self.oracle_lut.assert_writable()?;
-		self.recent_slot_hashes
-			.assert_sysvar(&SLOT_HASHES_SYSVAR_ID)?;
-		self.associated_token_program
-			.assert_address(&associated_token_account::ID)?;
-		self.wrapped_sol_mint.assert_address(&WRAPPED_SOL_MINT_ID)?;
-		self.address_lookup_table_program
-			.assert_address(&ADDRESS_LOOKUP_TABLE_PROGRAM_ID)?;
 		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		self.oracle_queue.assert_address(&state.oracle_queue)?;
@@ -394,17 +390,6 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 		let template_address = *self.template.address();
 		let opening_address = *self.opening.address();
 		let randomness_address = *self.randomness.address();
-		self.payer.assert_signer()?.assert_writable()?;
-		self.service_vault.assert_writable()?;
-		self.opening.assert_writable()?;
-		self.randomness.assert_writable()?;
-		self.oracle_stats.assert_writable()?;
-		self.reward_escrow.assert_writable()?;
-		self.recent_slot_hashes
-			.assert_sysvar(&SLOT_HASHES_SYSVAR_ID)?;
-		self.system_program.assert_address(&system::ID)?;
-		self.token_program.assert_address(&token::ID)?;
-		self.wrapped_sol_mint.assert_address(&WRAPPED_SOL_MINT_ID)?;
 		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_service_vault(self.service_vault, &template_address, &state)?;
@@ -504,9 +489,6 @@ impl<'a> ProcessAccountInfos<'a> for ForfeitTemplateOpenAccounts<'a> {
 		let _ = ForfeitTemplateOpenInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
 		let opening_address = *self.opening.address();
-		self.caller.assert_signer()?.assert_writable()?;
-		self.service_vault.assert_writable()?;
-		self.system_program.assert_address(&system::ID)?;
 		let mut state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_service_vault(self.service_vault, &template_address, &state)?;

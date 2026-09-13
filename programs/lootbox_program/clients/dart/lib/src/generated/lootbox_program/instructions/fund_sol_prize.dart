@@ -14,15 +14,18 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class FundSolPrizeInstructionData {
   const FundSolPrizeInstructionData({required this.lamportsPerWin})
-    : discriminator = 12;
+    : discriminator = 12,
+      migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final BigInt lamportsPerWin;
 }
 
 Encoder<FundSolPrizeInstructionData> getFundSolPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('lamportsPerWin', getU64Encoder()),
   ]);
 
@@ -30,6 +33,7 @@ Encoder<FundSolPrizeInstructionData> getFundSolPrizeInstructionDataEncoder() {
     structEncoder,
     (FundSolPrizeInstructionData value) => <String, Object?>{
       'discriminator': 12,
+      'migrationVersion': 0,
       'lamportsPerWin': value.lamportsPerWin,
     },
   );
@@ -38,6 +42,7 @@ Encoder<FundSolPrizeInstructionData> getFundSolPrizeInstructionDataEncoder() {
 Decoder<FundSolPrizeInstructionData> getFundSolPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('lamportsPerWin', getU64Decoder()),
   ]);
 
@@ -51,6 +56,7 @@ Decoder<FundSolPrizeInstructionData> getFundSolPrizeInstructionDataDecoder() {
 
   (FundSolPrizeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
     getConstantDecoder(getU8Encoder().encode(12)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

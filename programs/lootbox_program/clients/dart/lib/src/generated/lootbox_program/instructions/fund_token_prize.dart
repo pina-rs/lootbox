@@ -16,9 +16,11 @@ class FundTokenPrizeInstructionData {
   const FundTokenPrizeInstructionData({
     required this.amountPerWin,
     required this.isNft,
-  }) : discriminator = 13;
+  }) : discriminator = 13,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final BigInt amountPerWin;
   final bool isNft;
 }
@@ -27,6 +29,7 @@ Encoder<FundTokenPrizeInstructionData>
 getFundTokenPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('amountPerWin', getU64Encoder()),
     ('isNft', getBooleanEncoder()),
   ]);
@@ -35,6 +38,7 @@ getFundTokenPrizeInstructionDataEncoder() {
     structEncoder,
     (FundTokenPrizeInstructionData value) => <String, Object?>{
       'discriminator': 13,
+      'migrationVersion': 0,
       'amountPerWin': value.amountPerWin,
       'isNft': value.isNft,
     },
@@ -45,6 +49,7 @@ Decoder<FundTokenPrizeInstructionData>
 getFundTokenPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('amountPerWin', getU64Decoder()),
     ('isNft', getBooleanDecoder()),
   ]);
@@ -62,6 +67,7 @@ getFundTokenPrizeInstructionDataDecoder() {
     int offset,
   ) {
     getConstantDecoder(getU8Encoder().encode(13)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

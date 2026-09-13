@@ -13,21 +13,26 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
 @immutable
 class ForfeitTemplateOpenInstructionData {
-  const ForfeitTemplateOpenInstructionData() : discriminator = 36;
+  const ForfeitTemplateOpenInstructionData()
+    : discriminator = 36,
+      migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
 }
 
 Encoder<ForfeitTemplateOpenInstructionData>
 getForfeitTemplateOpenInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
   ]);
 
   return transformEncoder(
     structEncoder,
     (ForfeitTemplateOpenInstructionData value) => <String, Object?>{
       'discriminator': 36,
+      'migrationVersion': 0,
     },
   );
 }
@@ -36,6 +41,7 @@ Decoder<ForfeitTemplateOpenInstructionData>
 getForfeitTemplateOpenInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
@@ -51,6 +57,7 @@ getForfeitTemplateOpenInstructionDataDecoder() {
     int offset,
   ) {
     getConstantDecoder(getU8Encoder().encode(36)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

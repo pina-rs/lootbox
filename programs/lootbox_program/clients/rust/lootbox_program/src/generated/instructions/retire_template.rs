@@ -9,6 +9,7 @@
 )]
 
 pub const RETIRE_TEMPLATE_DISCRIMINATOR: u8 = 21u8;
+pub const RETIRE_TEMPLATE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -58,6 +59,7 @@ impl RetireTemplateInstructionData {
 		<RetireTemplateInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = RETIRE_TEMPLATE_DISCRIMINATOR;
+			data.migration_version = RETIRE_TEMPLATE_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -71,4 +73,5 @@ impl RetireTemplateInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct RetireTemplateInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 }

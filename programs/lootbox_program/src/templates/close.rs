@@ -2,10 +2,10 @@
 
 use super::*;
 
-#[instruction(discriminator = LootboxInstruction::CloseTemplateOpening)]
+#[instruction(discriminator = LootboxInstruction::CloseTemplateOpening, migrations)]
 pub struct CloseTemplateOpeningInstruction {}
 
-#[instruction(discriminator = LootboxInstruction::CloseServiceVault)]
+#[instruction(discriminator = LootboxInstruction::CloseServiceVault, migrations)]
 pub struct CloseServiceVaultInstruction {}
 
 #[derive(Accounts, Debug)]
@@ -19,18 +19,24 @@ pub struct CloseTemplateOpeningAccounts<'a> {
 	pub oracle_program_state: &'a AccountView,
 	pub oracle_lut: &'a mut AccountView,
 	pub oracle_lut_signer: &'a AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
+	#[pina(validate(address = WRAPPED_SOL_MINT_ID))]
 	pub wrapped_sol_mint: &'a AccountView,
+	#[pina(validate(address = ADDRESS_LOOKUP_TABLE_PROGRAM_ID))]
 	pub address_lookup_table_program: &'a AccountView,
 }
 
 #[derive(Accounts, Debug)]
 pub struct CloseServiceVaultAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
 	pub template: &'a AccountView,
 	pub box_mint: &'a AccountView,
 	pub service_vault: &'a mut AccountView,
+	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
@@ -40,16 +46,6 @@ impl<'a> ProcessAccountInfos<'a> for CloseTemplateOpeningAccounts<'a> {
 		let template_address = *self.template.address();
 		let opening_address = *self.opening.address();
 		let randomness_address = *self.randomness.address();
-		self.rent_refund.assert_writable()?;
-		self.opening.assert_writable()?;
-		self.randomness.assert_writable()?;
-		self.reward_escrow.assert_writable()?;
-		self.oracle_lut.assert_writable()?;
-		self.system_program.assert_address(&system::ID)?;
-		self.token_program.assert_address(&token::ID)?;
-		self.wrapped_sol_mint.assert_address(&WRAPPED_SOL_MINT_ID)?;
-		self.address_lookup_table_program
-			.assert_address(&ADDRESS_LOOKUP_TABLE_PROGRAM_ID)?;
 		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		self.oracle_program.assert_program(&state.oracle_program)?;
@@ -106,9 +102,6 @@ impl<'a> ProcessAccountInfos<'a> for CloseServiceVaultAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = CloseServiceVaultInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
-		self.authority.assert_signer()?.assert_writable()?;
-		self.service_vault.assert_writable()?;
-		self.system_program.assert_address(&system::ID)?;
 		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;

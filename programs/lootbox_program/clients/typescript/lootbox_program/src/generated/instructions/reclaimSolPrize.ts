@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -15,19 +15,23 @@ export const RECLAIM_SOL_PRIZE_DISCRIMINATOR = 22;
 
 export function getReclaimSolPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(RECLAIM_SOL_PRIZE_DISCRIMINATOR); }
 
+export const RECLAIM_SOL_PRIZE_DISCRIMINATOR2 = 0;
+
+export function getReclaimSolPrizeDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(RECLAIM_SOL_PRIZE_DISCRIMINATOR2); }
+
 export type ReclaimSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableAccount<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, ...TRemainingAccounts]>;
 
-export type ReclaimSolPrizeInstructionData = { discriminator: number; assetIndex: number;  };
+export type ReclaimSolPrizeInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number;  };
 
 export type ReclaimSolPrizeInstructionDataArgs = { assetIndex: number;  };
 
 export function getReclaimSolPrizeInstructionDataEncoder(): FixedSizeEncoder<ReclaimSolPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 22 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 22, migrationVersion: 0 }));
 }
 
 export function getReclaimSolPrizeInstructionDataDecoder(): FixedSizeDecoder<ReclaimSolPrizeInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(RECLAIM_SOL_PRIZE_DISCRIMINATOR, getU8Decoder())], ['assetIndex', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(RECLAIM_SOL_PRIZE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['assetIndex', getU8Decoder()]]);
 }
 
 export function getReclaimSolPrizeInstructionDataCodec(): FixedSizeCodec<ReclaimSolPrizeInstructionDataArgs, ReclaimSolPrizeInstructionData> {

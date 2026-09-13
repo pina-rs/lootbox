@@ -16,9 +16,11 @@ class AddOutcomeInstructionData {
   const AddOutcomeInstructionData({
     required this.weight,
     required this.rewardLamports,
-  }) : discriminator = 1;
+  }) : discriminator = 1,
+       migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final BigInt weight;
   final BigInt rewardLamports;
 }
@@ -26,6 +28,7 @@ class AddOutcomeInstructionData {
 Encoder<AddOutcomeInstructionData> getAddOutcomeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('weight', getU64Encoder()),
     ('rewardLamports', getU64Encoder()),
   ]);
@@ -34,6 +37,7 @@ Encoder<AddOutcomeInstructionData> getAddOutcomeInstructionDataEncoder() {
     structEncoder,
     (AddOutcomeInstructionData value) => <String, Object?>{
       'discriminator': 1,
+      'migrationVersion': 0,
       'weight': value.weight,
       'rewardLamports': value.rewardLamports,
     },
@@ -43,6 +47,7 @@ Encoder<AddOutcomeInstructionData> getAddOutcomeInstructionDataEncoder() {
 Decoder<AddOutcomeInstructionData> getAddOutcomeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('weight', getU64Decoder()),
     ('rewardLamports', getU64Decoder()),
   ]);
@@ -57,6 +62,7 @@ Decoder<AddOutcomeInstructionData> getAddOutcomeInstructionDataDecoder() {
 
   (AddOutcomeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
     getConstantDecoder(getU8Encoder().encode(1)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);

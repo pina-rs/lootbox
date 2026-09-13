@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -15,19 +15,23 @@ export const RECLAIM_METADATA_NFT_PRIZE_DISCRIMINATOR = 29;
 
 export function getReclaimMetadataNftPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(RECLAIM_METADATA_NFT_PRIZE_DISCRIMINATOR); }
 
+export const RECLAIM_METADATA_NFT_PRIZE_DISCRIMINATOR2 = 0;
+
+export function getReclaimMetadataNftPrizeDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(RECLAIM_METADATA_NFT_PRIZE_DISCRIMINATOR2); }
+
 export type ReclaimMetadataNftPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountDestination extends string | AccountMeta<string> = string, TAccountMetadata extends string | AccountMeta<string> = string, TAccountTokenMetadataProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = string, TAccountInstructionsSysvar extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = string, TAccountAssociatedTokenProgram extends string | AccountMeta<string> = string, TAccountOptionalAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow, TAccountDestination extends string ? WritableAccount<TAccountDestination> : TAccountDestination, TAccountMetadata extends string ? WritableAccount<TAccountMetadata> : TAccountMetadata, TAccountTokenMetadataProgram extends string ? ReadonlyAccount<TAccountTokenMetadataProgram> : TAccountTokenMetadataProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountInstructionsSysvar extends string ? ReadonlyAccount<TAccountInstructionsSysvar> : TAccountInstructionsSysvar, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, TAccountAssociatedTokenProgram extends string ? ReadonlyAccount<TAccountAssociatedTokenProgram> : TAccountAssociatedTokenProgram, TAccountOptionalAccounts extends string ? ReadonlyAccount<TAccountOptionalAccounts> : TAccountOptionalAccounts, ...TRemainingAccounts]>;
 
-export type ReclaimMetadataNftPrizeInstructionData = { discriminator: number; assetIndex: number;  };
+export type ReclaimMetadataNftPrizeInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number;  };
 
 export type ReclaimMetadataNftPrizeInstructionDataArgs = { assetIndex: number;  };
 
 export function getReclaimMetadataNftPrizeInstructionDataEncoder(): FixedSizeEncoder<ReclaimMetadataNftPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 29 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 29, migrationVersion: 0 }));
 }
 
 export function getReclaimMetadataNftPrizeInstructionDataDecoder(): FixedSizeDecoder<ReclaimMetadataNftPrizeInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(RECLAIM_METADATA_NFT_PRIZE_DISCRIMINATOR, getU8Decoder())], ['assetIndex', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(RECLAIM_METADATA_NFT_PRIZE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['assetIndex', getU8Decoder()]]);
 }
 
 export function getReclaimMetadataNftPrizeInstructionDataCodec(): FixedSizeCodec<ReclaimMetadataNftPrizeInstructionDataArgs, ReclaimMetadataNftPrizeInstructionData> {

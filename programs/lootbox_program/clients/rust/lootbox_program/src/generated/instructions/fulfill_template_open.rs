@@ -9,6 +9,7 @@
 )]
 
 pub const FULFILL_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 17u8;
+pub const FULFILL_TEMPLATE_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -97,6 +98,7 @@ impl FulfillTemplateOpenInstructionData {
 		<FulfillTemplateOpenInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = FULFILL_TEMPLATE_OPEN_DISCRIMINATOR;
+			data.migration_version = FULFILL_TEMPLATE_OPEN_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -110,6 +112,7 @@ impl FulfillTemplateOpenInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct FulfillTemplateOpenInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 	pub signature: [u8; 64],
 	pub recovery_id: u8,
 	pub value: [u8; 32],

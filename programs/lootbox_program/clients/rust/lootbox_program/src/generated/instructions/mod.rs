@@ -52,6 +52,7 @@ pub(crate) mod r#fund_quote_token_prize;
 pub(crate) mod r#fund_mint_prize;
 pub(crate) mod r#claim_mint_prize;
 pub(crate) mod r#reclaim_mint_prize;
+pub(crate) mod r#migrate;
 
 pub use self::r#create_lootbox::*;
 pub use self::r#add_outcome::*;
@@ -97,3 +98,4 @@ pub use self::r#fund_quote_token_prize::*;
 pub use self::r#fund_mint_prize::*;
 pub use self::r#claim_mint_prize::*;
 pub use self::r#reclaim_mint_prize::*;
+pub use self::r#migrate::*;

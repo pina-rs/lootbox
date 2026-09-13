@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -15,19 +15,23 @@ export const FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR = 36;
 
 export function getForfeitTemplateOpenDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR); }
 
+export const FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR2 = 0;
+
+export function getForfeitTemplateOpenDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR2); }
+
 export type ForfeitTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountCaller extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountServiceVault extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountRandomness extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountCaller extends string ? WritableSignerAccount<TAccountCaller> & AccountSignerMeta<TAccountCaller> : TAccountCaller, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountServiceVault extends string ? WritableAccount<TAccountServiceVault> : TAccountServiceVault, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountRandomness extends string ? ReadonlyAccount<TAccountRandomness> : TAccountRandomness, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type ForfeitTemplateOpenInstructionData = { discriminator: number;  };
+export type ForfeitTemplateOpenInstructionData = { discriminator: number; migrationVersion: number;  };
 
 export type ForfeitTemplateOpenInstructionDataArgs = {  };
 
 export function getForfeitTemplateOpenInstructionDataEncoder(): FixedSizeEncoder<ForfeitTemplateOpenInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()]]), (value) => ({ ...value, discriminator: 36 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 36, migrationVersion: 0 }));
 }
 
 export function getForfeitTemplateOpenInstructionDataDecoder(): FixedSizeDecoder<ForfeitTemplateOpenInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR, getU8Decoder())]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())]]);
 }
 
 export function getForfeitTemplateOpenInstructionDataCodec(): FixedSizeCodec<ForfeitTemplateOpenInstructionDataArgs, ForfeitTemplateOpenInstructionData> {

@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -10,6 +11,7 @@ import 'package:solana_kit_codecs_data_structures/solana_kit_codecs_data_structu
 import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
+
 
 @immutable
 class CreateTemplateInstructionData {
@@ -23,9 +25,12 @@ class CreateTemplateInstructionData {
     required this.settlementBountyLamports,
     required this.resultReceiptsEnabled,
     required this.bump,
-  }) : discriminator = 10;
+  }) :
+      discriminator = 10,
+      migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final BigInt id;
   final BigInt opensAt;
   final Address oracleProgram;
@@ -37,10 +42,10 @@ class CreateTemplateInstructionData {
   final int bump;
 }
 
-Encoder<CreateTemplateInstructionData>
-getCreateTemplateInstructionDataEncoder() {
+Encoder<CreateTemplateInstructionData> getCreateTemplateInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('id', getU64Encoder()),
     ('opensAt', getI64Encoder()),
     ('oracleProgram', getAddressEncoder()),
@@ -56,6 +61,7 @@ getCreateTemplateInstructionDataEncoder() {
     structEncoder,
     (CreateTemplateInstructionData value) => <String, Object?>{
       'discriminator': 10,
+      'migrationVersion': 0,
       'id': value.id,
       'opensAt': value.opensAt,
       'oracleProgram': value.oracleProgram,
@@ -69,10 +75,10 @@ getCreateTemplateInstructionDataEncoder() {
   );
 }
 
-Decoder<CreateTemplateInstructionData>
-getCreateTemplateInstructionDataDecoder() {
+Decoder<CreateTemplateInstructionData> getCreateTemplateInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('id', getU64Decoder()),
     ('opensAt', getI64Decoder()),
     ('oracleProgram', getAddressDecoder()),
@@ -85,18 +91,23 @@ getCreateTemplateInstructionDataDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'createTemplate instruction decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'createTemplate instruction decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
-  (CreateTemplateInstructionData, int) readTopLevel(
-    Uint8List bytes,
-    int offset,
-  ) {
-    getConstantDecoder(getU8Encoder().encode(10)).read(bytes, offset + 0);
+  (CreateTemplateInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
+    getConstantDecoder(
+      getU8Encoder().encode(10),
+    ).read(bytes, offset + 0);
+    getConstantDecoder(
+      getU8Encoder().encode(0),
+    ).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
@@ -104,15 +115,15 @@ getCreateTemplateInstructionDataDecoder() {
 
     return (
       CreateTemplateInstructionData(
-        id: map['id']! as BigInt,
-        opensAt: map['opensAt']! as BigInt,
-        oracleProgram: map['oracleProgram']! as Address,
-        oracleQueue: map['oracleQueue']! as Address,
-        name: map['name']! as Uint8List,
-        uri: map['uri']! as Uint8List,
-        settlementBountyLamports: map['settlementBountyLamports']! as BigInt,
-        resultReceiptsEnabled: map['resultReceiptsEnabled']! as bool,
-        bump: map['bump']! as int,
+      id: map['id']! as BigInt,
+      opensAt: map['opensAt']! as BigInt,
+      oracleProgram: map['oracleProgram']! as Address,
+      oracleQueue: map['oracleQueue']! as Address,
+      name: map['name']! as Uint8List,
+      uri: map['uri']! as Uint8List,
+      settlementBountyLamports: map['settlementBountyLamports']! as BigInt,
+      resultReceiptsEnabled: map['resultReceiptsEnabled']! as bool,
+      bump: map['bump']! as int,
       ),
       newOffset,
     );
@@ -138,12 +149,8 @@ getCreateTemplateInstructionDataDecoder() {
   };
 }
 
-Codec<CreateTemplateInstructionData, CreateTemplateInstructionData>
-getCreateTemplateInstructionDataCodec() {
-  return combineCodec(
-    getCreateTemplateInstructionDataEncoder(),
-    getCreateTemplateInstructionDataDecoder(),
-  );
+Codec<CreateTemplateInstructionData, CreateTemplateInstructionData> getCreateTemplateInstructionDataCodec() {
+  return combineCodec(getCreateTemplateInstructionDataEncoder(), getCreateTemplateInstructionDataDecoder());
 }
 
 /// Creates a [CreateTemplate] instruction.
@@ -165,33 +172,31 @@ Instruction getCreateTemplateInstruction({
   required int bump,
 }) {
   final instructionData = CreateTemplateInstructionData(
-    id: id,
-    opensAt: opensAt,
-    oracleProgram: oracleProgram,
-    oracleQueue: oracleQueue,
-    name: name,
-    uri: uri,
-    settlementBountyLamports: settlementBountyLamports,
-    resultReceiptsEnabled: resultReceiptsEnabled,
-    bump: bump,
+      id: id,
+      opensAt: opensAt,
+      oracleProgram: oracleProgram,
+      oracleQueue: oracleQueue,
+      name: name,
+      uri: uri,
+      settlementBountyLamports: settlementBountyLamports,
+      resultReceiptsEnabled: resultReceiptsEnabled,
+      bump: bump,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.writableSigner),
-      AccountMeta(address: template, role: AccountRole.writable),
-      AccountMeta(address: boxMint, role: AccountRole.readonly),
-      AccountMeta(address: systemProgram, role: AccountRole.readonly),
-      AccountMeta(address: boxTokenProgram, role: AccountRole.readonly),
+    AccountMeta(address: authority, role: AccountRole.writableSigner),
+    AccountMeta(address: template, role: AccountRole.writable),
+    AccountMeta(address: boxMint, role: AccountRole.readonly),
+    AccountMeta(address: systemProgram, role: AccountRole.readonly),
+    AccountMeta(address: boxTokenProgram, role: AccountRole.readonly),
     ],
     data: getCreateTemplateInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [CreateTemplate] instruction from raw instruction data.
-CreateTemplateInstructionData parseCreateTemplateInstruction(
-  Instruction instruction,
-) {
+CreateTemplateInstructionData parseCreateTemplateInstruction(Instruction instruction) {
   return getCreateTemplateInstructionDataDecoder().decode(instruction.data!);
 }

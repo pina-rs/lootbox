@@ -1,8 +1,8 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-import '../pina_pod_codecs.dart';
 
+import '../pina_pod_codecs.dart';
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -12,6 +12,7 @@ import 'package:solana_kit_codecs_core/solana_kit_codecs_core.dart';
 import 'package:solana_kit_codecs_data_structures/solana_kit_codecs_data_structures.dart';
 import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
+
 
 @immutable
 class TemplateState {
@@ -44,9 +45,12 @@ class TemplateState {
     required this.bump,
     required this.serviceVaultBump,
     required this.remaining,
-  }) : discriminator = 4;
+  }) :
+      discriminator = 4,
+      migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final Address authority;
   final Address boxMint;
   final Address oracleProgram;
@@ -82,6 +86,7 @@ class TemplateState {
       other is TemplateState &&
           runtimeType == other.runtimeType &&
           discriminator == other.discriminator &&
+          migrationVersion == other.migrationVersion &&
           authority == other.authority &&
           boxMint == other.boxMint &&
           oracleProgram == other.oracleProgram &&
@@ -112,46 +117,17 @@ class TemplateState {
           remaining == other.remaining;
 
   @override
-  int get hashCode => Object.hashAll([
-    discriminator,
-    authority,
-    boxMint,
-    oracleProgram,
-    oracleQueue,
-    id,
-    opensAt,
-    lockedAt,
-    totalBundles,
-    totalMinted,
-    remainingBundles,
-    pendingOpenings,
-    nextRequest,
-    nextAllocation,
-    revision,
-    manifestAccumulator,
-    manifestHash,
-    settlementBountyLamports,
-    resultReceiptRentLamports,
-    remainingResultReceipts,
-    remainingSettlementBounties,
-    name,
-    uri,
-    bundleCount,
-    status,
-    resultReceiptsEnabled,
-    bump,
-    serviceVaultBump,
-    remaining,
-  ]);
+  int get hashCode => Object.hashAll([discriminator, migrationVersion, authority, boxMint, oracleProgram, oracleQueue, id, opensAt, lockedAt, totalBundles, totalMinted, remainingBundles, pendingOpenings, nextRequest, nextAllocation, revision, manifestAccumulator, manifestHash, settlementBountyLamports, resultReceiptRentLamports, remainingResultReceipts, remainingSettlementBounties, name, uri, bundleCount, status, resultReceiptsEnabled, bump, serviceVaultBump, remaining]);
 
   @override
-  String toString() =>
-      'TemplateState(discriminator: $discriminator, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, opensAt: $opensAt, lockedAt: $lockedAt, totalBundles: $totalBundles, totalMinted: $totalMinted, remainingBundles: $remainingBundles, pendingOpenings: $pendingOpenings, nextRequest: $nextRequest, nextAllocation: $nextAllocation, revision: $revision, manifestAccumulator: $manifestAccumulator, manifestHash: $manifestHash, settlementBountyLamports: $settlementBountyLamports, resultReceiptRentLamports: $resultReceiptRentLamports, remainingResultReceipts: $remainingResultReceipts, remainingSettlementBounties: $remainingSettlementBounties, name: $name, uri: $uri, bundleCount: $bundleCount, status: $status, resultReceiptsEnabled: $resultReceiptsEnabled, bump: $bump, serviceVaultBump: $serviceVaultBump, remaining: $remaining)';
+  String toString() => 'TemplateState(discriminator: $discriminator, migrationVersion: $migrationVersion, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, opensAt: $opensAt, lockedAt: $lockedAt, totalBundles: $totalBundles, totalMinted: $totalMinted, remainingBundles: $remainingBundles, pendingOpenings: $pendingOpenings, nextRequest: $nextRequest, nextAllocation: $nextAllocation, revision: $revision, manifestAccumulator: $manifestAccumulator, manifestHash: $manifestHash, settlementBountyLamports: $settlementBountyLamports, resultReceiptRentLamports: $resultReceiptRentLamports, remainingResultReceipts: $remainingResultReceipts, remainingSettlementBounties: $remainingSettlementBounties, name: $name, uri: $uri, bundleCount: $bundleCount, status: $status, resultReceiptsEnabled: $resultReceiptsEnabled, bump: $bump, serviceVaultBump: $serviceVaultBump, remaining: $remaining)';
 }
+
 
 Encoder<TemplateState> getTemplateStateEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('authority', getAddressEncoder()),
     ('boxMint', getAddressEncoder()),
     ('oracleProgram', getAddressEncoder()),
@@ -166,14 +142,8 @@ Encoder<TemplateState> getTemplateStateEncoder() {
     ('nextRequest', getU64Encoder()),
     ('nextAllocation', getU64Encoder()),
     ('revision', getU64Encoder()),
-    (
-      'manifestAccumulator',
-      fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false),
-    ),
-    (
-      'manifestHash',
-      fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false),
-    ),
+    ('manifestAccumulator', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
+    ('manifestHash', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     ('settlementBountyLamports', getU64Encoder()),
     ('resultReceiptRentLamports', getU64Encoder()),
     ('remainingResultReceipts', getU64Encoder()),
@@ -185,19 +155,14 @@ Encoder<TemplateState> getTemplateStateEncoder() {
     ('resultReceiptsEnabled', getBooleanEncoder()),
     ('bump', getU8Encoder()),
     ('serviceVaultBump', getU8Encoder()),
-    (
-      'remaining',
-      getArrayEncoder<BigInt>(
-        transformEncoder(getU64Encoder(), (BigInt value) => value),
-        size: PrefixedArraySize(getU16Encoder()),
-      ),
-    ),
+    ('remaining', getArrayEncoder<BigInt>(transformEncoder(getU64Encoder(), (BigInt value) => value), size: PrefixedArraySize(getU16Encoder()))),
   ]);
 
   return transformEncoder(
     structEncoder,
     (TemplateState value) => <String, Object?>{
       'discriminator': 4,
+      'migrationVersion': 0,
       'authority': value.authority,
       'boxMint': value.boxMint,
       'oracleProgram': value.oracleProgram,
@@ -233,6 +198,7 @@ Encoder<TemplateState> getTemplateStateEncoder() {
 Decoder<TemplateState> getTemplateStateDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('authority', getAddressDecoder()),
     ('boxMint', getAddressDecoder()),
     ('oracleProgram', getAddressDecoder()),
@@ -260,78 +226,81 @@ Decoder<TemplateState> getTemplateStateDecoder() {
     ('resultReceiptsEnabled', getBooleanDecoder()),
     ('bump', getU8Decoder()),
     ('serviceVaultBump', getU8Decoder()),
-    (
-      'remaining',
-      getPinaPodBoundedArrayDecoder(
-        getArrayDecoder(
-          getU64Decoder(),
-          size: PrefixedArraySize(getU16Decoder()),
-        ),
-        getPinaPodBoundedCountDecoder(getU16Decoder(), 1024),
-        1024,
-      ),
-    ),
+    ('remaining', getPinaPodBoundedArrayDecoder(getArrayDecoder(getU64Decoder(), size: PrefixedArraySize(getU16Decoder())), getPinaPodBoundedCountDecoder(getU16Decoder(), 1024), 1024)),
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'templateState account decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'templateState account decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
   (TemplateState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(4)).read(bytes, offset + 0);
+    getConstantDecoder(
+      getU8Encoder().encode(4),
+    ).read(bytes, offset + 0);
+    final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
+    if (storedMigrationVersion != 0) {
+      throw StateError(
+        storedMigrationVersion < 0
+            ? 'migration version mismatch: expected 0, received $storedMigrationVersion (the data predates this client; migrate it by sending a transaction to the program, or decode it with a client generated from an older IDL)'
+            : 'migration version mismatch: expected 0, received $storedMigrationVersion (the data was written by a newer program; upgrade this client)',
+      );
+    }
     final (map, newOffset) = structDecoder.read(bytes, offset);
 
     return (
       TemplateState(
-        authority: map['authority']! as Address,
-        boxMint: map['boxMint']! as Address,
-        oracleProgram: map['oracleProgram']! as Address,
-        oracleQueue: map['oracleQueue']! as Address,
-        id: map['id']! as BigInt,
-        opensAt: map['opensAt']! as BigInt,
-        lockedAt: map['lockedAt']! as BigInt,
-        totalBundles: map['totalBundles']! as BigInt,
-        totalMinted: map['totalMinted']! as BigInt,
-        remainingBundles: map['remainingBundles']! as BigInt,
-        pendingOpenings: map['pendingOpenings']! as BigInt,
-        nextRequest: map['nextRequest']! as BigInt,
-        nextAllocation: map['nextAllocation']! as BigInt,
-        revision: map['revision']! as BigInt,
-        manifestAccumulator: map['manifestAccumulator']! as Uint8List,
-        manifestHash: map['manifestHash']! as Uint8List,
-        settlementBountyLamports: map['settlementBountyLamports']! as BigInt,
-        resultReceiptRentLamports: map['resultReceiptRentLamports']! as BigInt,
-        remainingResultReceipts: map['remainingResultReceipts']! as BigInt,
-        remainingSettlementBounties:
-            map['remainingSettlementBounties']! as BigInt,
-        name: map['name']! as Uint8List,
-        uri: map['uri']! as Uint8List,
-        bundleCount: map['bundleCount']! as int,
-        status: map['status']! as int,
-        resultReceiptsEnabled: map['resultReceiptsEnabled']! as bool,
-        bump: map['bump']! as int,
-        serviceVaultBump: map['serviceVaultBump']! as int,
-        remaining: map['remaining']! as List<BigInt>,
+      authority: map['authority']! as Address,
+      boxMint: map['boxMint']! as Address,
+      oracleProgram: map['oracleProgram']! as Address,
+      oracleQueue: map['oracleQueue']! as Address,
+      id: map['id']! as BigInt,
+      opensAt: map['opensAt']! as BigInt,
+      lockedAt: map['lockedAt']! as BigInt,
+      totalBundles: map['totalBundles']! as BigInt,
+      totalMinted: map['totalMinted']! as BigInt,
+      remainingBundles: map['remainingBundles']! as BigInt,
+      pendingOpenings: map['pendingOpenings']! as BigInt,
+      nextRequest: map['nextRequest']! as BigInt,
+      nextAllocation: map['nextAllocation']! as BigInt,
+      revision: map['revision']! as BigInt,
+      manifestAccumulator: map['manifestAccumulator']! as Uint8List,
+      manifestHash: map['manifestHash']! as Uint8List,
+      settlementBountyLamports: map['settlementBountyLamports']! as BigInt,
+      resultReceiptRentLamports: map['resultReceiptRentLamports']! as BigInt,
+      remainingResultReceipts: map['remainingResultReceipts']! as BigInt,
+      remainingSettlementBounties: map['remainingSettlementBounties']! as BigInt,
+      name: map['name']! as Uint8List,
+      uri: map['uri']! as Uint8List,
+      bundleCount: map['bundleCount']! as int,
+      status: map['status']! as int,
+      resultReceiptsEnabled: map['resultReceiptsEnabled']! as bool,
+      bump: map['bump']! as int,
+      serviceVaultBump: map['serviceVaultBump']! as int,
+      remaining: map['remaining']! as List<BigInt>,
       ),
       newOffset,
     );
   }
 
   return switch (structDecoder) {
-    FixedSizeDecoder<Map<String, Object?>>() => FixedSizeDecoder<TemplateState>(
-      fixedSize: structDecoder.fixedSize,
-      read: (bytes, offset) {
-        final bytesLength = bytes.length - offset;
-        if (bytesLength < structDecoder.fixedSize) {
-          throwInvalidByteLength(structDecoder.fixedSize, bytesLength);
-        }
-        return readTopLevel(bytes, offset);
-      },
-    ),
+    FixedSizeDecoder<Map<String, Object?>>() =>
+      FixedSizeDecoder<TemplateState>(
+        fixedSize: structDecoder.fixedSize,
+        read: (bytes, offset) {
+          final bytesLength = bytes.length - offset;
+          if (bytesLength < structDecoder.fixedSize) {
+            throwInvalidByteLength(structDecoder.fixedSize, bytesLength);
+          }
+          return readTopLevel(bytes, offset);
+        },
+      ),
     VariableSizeDecoder<Map<String, Object?>>() =>
       VariableSizeDecoder<TemplateState>(
         read: readTopLevel,
@@ -346,4 +315,21 @@ Codec<TemplateState, TemplateState> getTemplateStateCodec() {
 
 Account<TemplateState> decodeTemplateState(EncodedAccount encodedAccount) {
   return decodeAccount(encodedAccount, getTemplateStateDecoder());
+}
+
+/// The account schema version this client was generated from.
+const int templateStateMigrationVersion = 0;
+
+/// Cheap envelope check for fetched `TemplateState` bytes: returns true only when
+/// the bytes carry this account's discriminator and a migration version older
+/// than this client's schema — exactly the accounts [getMigrateInstruction]
+/// can bring current. Decoding reports every other mismatch.
+bool templateStateNeedsMigration(List<int> data) {
+	if (data.length < 2) {
+		return false;
+	}
+	if (data[0] != 4) {
+		return false;
+	}
+	return data[1] < 0;
 }

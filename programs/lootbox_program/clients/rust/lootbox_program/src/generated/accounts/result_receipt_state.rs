@@ -16,6 +16,7 @@ pub struct ResultReceiptState {
 ///
 /// No instruction mutates or closes this account after initialization.
 	pub discriminator: u8,
+	pub migration_version: u8,
 	pub template: solana_pubkey::Pubkey,
 	pub opening: solana_pubkey::Pubkey,
 	pub box_authority: solana_pubkey::Pubkey,
@@ -31,6 +32,8 @@ pub struct ResultReceiptState {
 
 pub const RESULT_RECEIPT_STATE_DISCRIMINATOR: u8 = 7u8;
 
+pub const RESULT_RECEIPT_STATE_MIGRATION_VERSION: u8 = 0u8;
+
 impl ResultReceiptState {
 	pub const LEN: usize = core::mem::size_of::<ResultReceiptStateZc>();
 
@@ -44,6 +47,7 @@ impl ResultReceiptState {
 		<Self as pina::PinaPodFixed>::initialize(data, |account| {
 			configure(account);
 			account.discriminator = RESULT_RECEIPT_STATE_DISCRIMINATOR;
+			account.migration_version = RESULT_RECEIPT_STATE_MIGRATION_VERSION;
 			Ok(())
 		})
 		.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)
@@ -55,6 +59,9 @@ impl ResultReceiptState {
 		if account.discriminator != RESULT_RECEIPT_STATE_DISCRIMINATOR {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
+		if account.migration_version != RESULT_RECEIPT_STATE_MIGRATION_VERSION {
+			return Err(solana_program_error::ProgramError::InvalidAccountData);
+		}
 		Ok(account)
 	}
 
@@ -62,6 +69,9 @@ impl ResultReceiptState {
 		let account = <Self as pina::PinaPodFixed>::read_exact_mut(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != RESULT_RECEIPT_STATE_DISCRIMINATOR {
+			return Err(solana_program_error::ProgramError::InvalidAccountData);
+		}
+		if account.migration_version != RESULT_RECEIPT_STATE_MIGRATION_VERSION {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
 		Ok(account)
@@ -88,5 +98,90 @@ impl ResultReceiptState {
 			],
 			&crate::LOOTBOX_PROGRAM_ID,
 		)
+	}
+}
+
+
+/// Whether raw account bytes are stale for this contract: the envelope names this account's discriminator and carries a version older than
+/// [`RESULT_RECEIPT_STATE_MIGRATION_VERSION`]. Current or foreign bytes return false; decoding explains the difference.
+pub fn result_receipt_state_needs_migration(data: &[u8]) -> bool {
+	data.len() >= 2
+			&& data[0] == 7
+			&& {
+				let mut version = [0_u8; 8];
+				version[..1]
+					.copy_from_slice(&data[1..2]);
+						 u64::from_le_bytes(version) < 0
+			}
+}
+
+
+/// Why `ResultReceiptState::try_from_bytes` rejected account bytes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ResultReceiptStateVersionError {
+	/// The bytes do not decode as this account's layout at all.
+	InvalidData,
+	/// The envelope names this account but the stored version predates this client: migrate the account on-chain, then retry.
+	Stale { stored: u8 },
+	/// The envelope names this account but the stored version is newer than this client's schema: upgrade this client.
+	Future { stored: u8 },
+}
+
+impl core::fmt::Display for ResultReceiptStateVersionError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		match self {
+			Self::InvalidData => write!(f, "invalid ResultReceiptState account data"),
+			Self::Stale { stored } => write!(
+				f,
+				"migration version mismatch: expected 0, received {stored} (the data predates this client; migrate it by sending a transaction to the program, or decode it with a client generated from an older IDL)"
+			),
+			Self::Future { stored } => write!(
+				f,
+				"migration version mismatch: expected 0, received {stored} (the data was written by a newer program; upgrade this client)"
+			),
+		}
+	}
+}
+
+impl ResultReceiptState {
+	/// Decodes current-version bytes and tells stale envelopes (migrate the account) apart from future ones (upgrade this client). The failure message mirrors the generated JavaScript decoder. For the strict current-only convenience returning `ProgramError`, see [`ResultReceiptState::from_bytes`].
+	pub fn try_from_bytes(
+		data: &[u8],
+	) -> Result<&ResultReceiptStateZc, ResultReceiptStateVersionError> {
+		let account = <Self as pina::PinaPodFixed>::read_exact(data)
+			.map_err(|_| ResultReceiptStateVersionError::InvalidData)?;
+		if account.discriminator != RESULT_RECEIPT_STATE_DISCRIMINATOR {
+			return Err(ResultReceiptStateVersionError::InvalidData);
+		}
+		if account.migration_version < RESULT_RECEIPT_STATE_MIGRATION_VERSION {
+			return Err(ResultReceiptStateVersionError::Stale { stored: account.migration_version });
+		}
+		if account.migration_version > RESULT_RECEIPT_STATE_MIGRATION_VERSION {
+			return Err(ResultReceiptStateVersionError::Future { stored: account.migration_version });
+		}
+		Ok(account)
+	}
+}
+
+#[cfg(test)]
+mod result_receipt_state_version_error_tests {
+	use super::*;
+
+	fn envelope(version: u8) -> Vec<u8> {
+		let mut data = vec![0_u8; core::mem::size_of::<ResultReceiptStateZc>()];
+		data[..1].copy_from_slice(&[7]);
+		data[1..2].copy_from_slice(&version.to_le_bytes());
+		data
+	}
+
+	#[test]
+	fn stale_and_future_versions_are_distinguishable() {
+		let error = ResultReceiptState::try_from_bytes(&envelope(1 as u8)).err().expect("a future envelope must fail");
+		assert_eq!(error, ResultReceiptStateVersionError::Future { stored: 1 });
+		assert_eq!(ResultReceiptStateVersionError::Future { stored: 1 }.to_string(), "migration version mismatch: expected 0, received 1 (the data was written by a newer program; upgrade this client)");
+		assert!(
+			ResultReceiptState::try_from_bytes(&envelope(0 as u8)).is_ok(),
+			"the current version must decode",
+		);
 	}
 }

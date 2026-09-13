@@ -9,6 +9,7 @@
 )]
 
 pub const ADD_BUNDLE_DISCRIMINATOR: u8 = 11u8;
+pub const ADD_BUNDLE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -64,6 +65,7 @@ impl AddBundleInstructionData {
 		<AddBundleInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = ADD_BUNDLE_DISCRIMINATOR;
+			data.migration_version = ADD_BUNDLE_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -77,6 +79,7 @@ impl AddBundleInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct AddBundleInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 	pub quantity: u64,
 	pub asset_count: u8,
 	pub bump: u8,

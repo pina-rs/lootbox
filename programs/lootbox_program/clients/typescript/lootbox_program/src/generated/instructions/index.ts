@@ -6,6 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from "./migrate";
 export * from './activateBundle';
 export * from './addBundle';
 export * from './addOutcome';

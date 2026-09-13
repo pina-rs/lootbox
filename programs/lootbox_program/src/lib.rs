@@ -182,7 +182,7 @@ pub enum LootboxAccountType {
 }
 
 /// Immutable definition and live accounting for one lootbox mint.
-#[account(discriminator = LootboxAccountType)]
+#[account(discriminator = LootboxAccountType, migrations)]
 #[pda(seeds = [SEED_LOOTBOX, authority: Address, id: u64], bump = bump)]
 pub struct LootboxState {
 	pub authority: Address,
@@ -208,7 +208,7 @@ pub struct LootboxState {
 }
 
 /// Program-owned SOL vault for one lootbox definition.
-#[account(discriminator = LootboxAccountType)]
+#[account(discriminator = LootboxAccountType, migrations)]
 #[pda(seeds = [SEED_VAULT, lootbox: Address], bump = bump)]
 pub struct VaultState {
 	pub lootbox: Address,
@@ -217,7 +217,7 @@ pub struct VaultState {
 }
 
 /// Receipt binding a burned box to one unrevealed randomness commitment.
-#[account(discriminator = LootboxAccountType)]
+#[account(discriminator = LootboxAccountType, migrations)]
 #[pda(
 	seeds = [SEED_OPENING, lootbox: Address, randomness: Address],
 	bump = bump
@@ -264,7 +264,7 @@ fn write_outcome_slot(slots: &mut [u8; 64], index: usize, value: u64) -> Result<
 	Ok(())
 }
 
-#[instruction(discriminator = LootboxInstruction::CreateLootbox)]
+#[instruction(discriminator = LootboxInstruction::CreateLootbox, migrations)]
 pub struct CreateLootboxInstruction {
 	pub id: u64,
 	pub max_supply: u64,
@@ -274,33 +274,33 @@ pub struct CreateLootboxInstruction {
 	pub vault_bump: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::AddOutcome)]
+#[instruction(discriminator = LootboxInstruction::AddOutcome, migrations)]
 pub struct AddOutcomeInstruction {
 	pub weight: u64,
 	pub reward_lamports: u64,
 }
 
-#[instruction(discriminator = LootboxInstruction::Deposit)]
+#[instruction(discriminator = LootboxInstruction::Deposit, migrations)]
 pub struct DepositInstruction {
 	pub lamports: u64,
 }
 
-#[instruction(discriminator = LootboxInstruction::Seal)]
+#[instruction(discriminator = LootboxInstruction::Seal, migrations)]
 pub struct SealInstruction {}
 
-#[instruction(discriminator = LootboxInstruction::MintBoxes)]
+#[instruction(discriminator = LootboxInstruction::MintBoxes, migrations)]
 pub struct MintBoxesInstruction {
 	pub amount: u64,
 }
 
-#[instruction(discriminator = LootboxInstruction::RequestOpen)]
+#[instruction(discriminator = LootboxInstruction::RequestOpen, migrations)]
 pub struct RequestOpenInstruction {
 	/// Recent slot used by Switchboard to derive its per-randomness lookup table.
 	pub recent_slot: u64,
 	pub bump: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::SettleOpen)]
+#[instruction(discriminator = LootboxInstruction::SettleOpen, migrations)]
 pub struct SettleOpenInstruction {
 	/// Switchboard enclave signature returned by the randomness gateway.
 	pub signature: [u8; 64],
@@ -310,13 +310,13 @@ pub struct SettleOpenInstruction {
 	pub value: [u8; 32],
 }
 
-#[instruction(discriminator = LootboxInstruction::RefundOpen)]
+#[instruction(discriminator = LootboxInstruction::RefundOpen, migrations)]
 pub struct RefundOpenInstruction {}
 
-#[instruction(discriminator = LootboxInstruction::CloseOpening)]
+#[instruction(discriminator = LootboxInstruction::CloseOpening, migrations)]
 pub struct CloseOpeningInstruction {}
 
-#[instruction(discriminator = LootboxInstruction::WithdrawSurplus)]
+#[instruction(discriminator = LootboxInstruction::WithdrawSurplus, migrations)]
 pub struct WithdrawSurplusInstruction {
 	pub lamports: u64,
 }
@@ -1386,6 +1386,27 @@ impl<'a> ProcessAccountInfos<'a> for WithdrawSurplusAccounts<'a> {
 	}
 }
 
+/// Largest total rent top-up the reserved `Migrate` instruction may draw from
+/// its payer across every account slot in one invocation.
+const MAX_MIGRATION_LAMPORTS: u64 = 1_000_000;
+
+/// Runs the reserved framework `Migrate` instruction.
+///
+/// Accounts are `[payer, systemProgram, lootbox, vault, opening, template,
+/// bundle, templateOpening, resultReceipt]`; every state slot is optional and
+/// skipped when it holds the program-address placeholder.
+fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> ProgramResult {
+	let mut context = MigrateContext::new(program_id, accounts, MAX_MIGRATION_LAMPORTS)?;
+	context.run_optional::<LootboxState>(2)?;
+	context.run_optional::<VaultState>(3)?;
+	context.run_optional::<OpeningState>(4)?;
+	context.run_optional::<TemplateState>(5)?;
+	context.run_optional::<BundleState>(6)?;
+	context.run_optional::<TemplateOpeningState>(7)?;
+	context.run_optional::<ResultReceiptState>(8)?;
+	Ok(())
+}
+
 /// Dispatches one validated lootbox instruction.
 ///
 /// # Errors
@@ -1397,6 +1418,10 @@ pub fn process_instruction(
 	accounts: &mut [AccountView],
 	data: &[u8],
 ) -> ProgramResult {
+	if is_migrate_instruction(data) {
+		return process_migrate(program_id, accounts);
+	}
+
 	let instruction: LootboxInstruction = parse_instruction(program_id, &ID, data)?;
 
 	match instruction {

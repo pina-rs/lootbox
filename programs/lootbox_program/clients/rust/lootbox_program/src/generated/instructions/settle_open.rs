@@ -9,6 +9,7 @@
 )]
 
 pub const SETTLE_OPEN_DISCRIMINATOR: u8 = 6u8;
+pub const SETTLE_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -103,6 +104,7 @@ impl SettleOpenInstructionData {
 		<SettleOpenInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = SETTLE_OPEN_DISCRIMINATOR;
+			data.migration_version = SETTLE_OPEN_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -116,6 +118,7 @@ impl SettleOpenInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct SettleOpenInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 	pub signature: [u8; 64],
 	pub recovery_id: u8,
 	pub value: [u8; 32],

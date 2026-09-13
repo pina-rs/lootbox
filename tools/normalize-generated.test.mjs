@@ -5,6 +5,7 @@ import {
 	normalizeDartHashes,
 	normalizeDartManifest,
 	normalizeRustManifest,
+	normalizeRustVersionEnvelopeTests,
 } from "./normalize-generated.mjs";
 
 test("requires every handwritten client to use the workspace version", () => {
@@ -49,4 +50,62 @@ test("normalizes publish manifests idempotently", () => {
 		/repository: https:\/\/github\.com\/pina-rs\/lootbox/,
 	);
 	assert.match(normalizedDart, /publish_to: none/);
+});
+
+const V0_ENVELOPE_TEST = `pub const VAULT_STATE_MIGRATION_VERSION: u8 = 0u8;
+
+#[cfg(test)]
+mod vault_state_version_error_tests {
+	use super::*;
+
+	fn envelope(version: u8) -> Vec<u8> {
+		let mut data = vec![0_u8; core::mem::size_of::<VaultStateZc>()];
+		data[..1].copy_from_slice(&[2]);
+		data[1..2].copy_from_slice(&version.to_le_bytes());
+		data
+	}
+
+	#[test]
+	fn stale_and_future_versions_are_distinguishable() {
+		let error = VaultState::try_from_bytes(&envelope(0 as u8)).err().expect("a stale envelope must fail");
+		assert_eq!(error, VaultStateVersionError::Stale { stored: 0 });
+		assert_eq!(VaultStateVersionError::Stale { stored: 0 }.to_string(), "migration version mismatch: expected 0, received 0 (the data predates this client; migrate it by sending a transaction to the program, or decode it with a client generated from an older IDL)");
+		let error = VaultState::try_from_bytes(&envelope(1 as u8)).err().expect("a future envelope must fail");
+		assert_eq!(error, VaultStateVersionError::Future { stored: 1 });
+		assert!(VaultState::try_from_bytes(&envelope(0 as u8)).is_ok(), "the current version must decode",);
+	}
+}
+`;
+
+test("drops impossible stale assertions from v0 version-envelope tests", () => {
+	const normalized = normalizeRustVersionEnvelopeTests(V0_ENVELOPE_TEST);
+	assert.match(
+		normalized,
+		/expect\("a future envelope must fail"\)/,
+		"keeps the future-path assertions",
+	);
+	assert.match(
+		normalized,
+		/the current version must decode/,
+		"keeps the current-version assertion",
+	);
+	assert.equal(
+		normalizeRustVersionEnvelopeTests(normalized),
+		normalized,
+		"idempotent",
+	);
+	assert.doesNotMatch(normalized, /a stale envelope must fail/);
+	assert.doesNotMatch(normalized, /::Stale \{ stored: 0 \}/);
+});
+
+test("keeps stale assertions for contracts above the initial version", () => {
+	const advanced = V0_ENVELOPE_TEST.replace(
+		"MIGRATION_VERSION: u8 = 0u8;",
+		"MIGRATION_VERSION: u8 = 2u8;",
+	);
+	assert.equal(
+		normalizeRustVersionEnvelopeTests(advanced),
+		advanced,
+		"untouched",
+	);
 });

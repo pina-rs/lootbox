@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getAddressDecoder, getAddressEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { findVaultPda } from '../pdas';
@@ -16,19 +16,23 @@ export const CREATE_LOOTBOX_DISCRIMINATOR = 0;
 
 export function getCreateLootboxDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CREATE_LOOTBOX_DISCRIMINATOR); }
 
+export const CREATE_LOOTBOX_DISCRIMINATOR2 = 0;
+
+export function getCreateLootboxDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(CREATE_LOOTBOX_DISCRIMINATOR2); }
+
 export type CreateLootboxInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountLootbox extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountLootbox extends string ? WritableAccount<TAccountLootbox> : TAccountLootbox, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type CreateLootboxInstructionData = { discriminator: number; id: bigint; maxSupply: bigint; oracleProgram: Address; oracleQueue: Address; bump: number; vaultBump: number;  };
+export type CreateLootboxInstructionData = { discriminator: number; migrationVersion: number; id: bigint; maxSupply: bigint; oracleProgram: Address; oracleQueue: Address; bump: number; vaultBump: number;  };
 
 export type CreateLootboxInstructionDataArgs = { id: number | bigint; maxSupply: number | bigint; oracleProgram: Address; oracleQueue: Address; bump: number; vaultBump: number;  };
 
 export function getCreateLootboxInstructionDataEncoder(): FixedSizeEncoder<CreateLootboxInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['id', getU64Encoder()], ['maxSupply', getU64Encoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['bump', getU8Encoder()], ['vaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['id', getU64Encoder()], ['maxSupply', getU64Encoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['bump', getU8Encoder()], ['vaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 0, migrationVersion: 0 }));
 }
 
 export function getCreateLootboxInstructionDataDecoder(): FixedSizeDecoder<CreateLootboxInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(CREATE_LOOTBOX_DISCRIMINATOR, getU8Decoder())], ['id', getU64Decoder()], ['maxSupply', getU64Decoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['bump', getU8Decoder()], ['vaultBump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(CREATE_LOOTBOX_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['id', getU64Decoder()], ['maxSupply', getU64Decoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['bump', getU8Decoder()], ['vaultBump', getU8Decoder()]]);
 }
 
 export function getCreateLootboxInstructionDataCodec(): FixedSizeCodec<CreateLootboxInstructionDataArgs, CreateLootboxInstructionData> {

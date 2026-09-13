@@ -9,6 +9,7 @@
 )]
 
 pub const REQUEST_OPEN_DISCRIMINATOR: u8 = 5u8;
+pub const REQUEST_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -115,6 +116,7 @@ impl RequestOpenInstructionData {
 		<RequestOpenInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = REQUEST_OPEN_DISCRIMINATOR;
+			data.migration_version = REQUEST_OPEN_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -128,6 +130,7 @@ impl RequestOpenInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct RequestOpenInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 	pub recent_slot: u64,
 	pub bump: u8,
 }

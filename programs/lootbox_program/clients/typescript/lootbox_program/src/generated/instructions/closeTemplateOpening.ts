@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -15,19 +15,23 @@ export const CLOSE_TEMPLATE_OPENING_DISCRIMINATOR = 24;
 
 export function getCloseTemplateOpeningDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLOSE_TEMPLATE_OPENING_DISCRIMINATOR); }
 
+export const CLOSE_TEMPLATE_OPENING_DISCRIMINATOR2 = 0;
+
+export function getCloseTemplateOpeningDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLOSE_TEMPLATE_OPENING_DISCRIMINATOR2); }
+
 export type CloseTemplateOpeningInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountRentRefund extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountRandomness extends string | AccountMeta<string> = string, TAccountRewardEscrow extends string | AccountMeta<string> = string, TAccountOracleProgram extends string | AccountMeta<string> = string, TAccountOracleProgramState extends string | AccountMeta<string> = string, TAccountOracleLut extends string | AccountMeta<string> = string, TAccountOracleLutSigner extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TAccountWrappedSolMint extends string | AccountMeta<string> = string, TAccountAddressLookupTableProgram extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountRentRefund extends string ? WritableAccount<TAccountRentRefund> : TAccountRentRefund, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountRandomness extends string ? WritableAccount<TAccountRandomness> : TAccountRandomness, TAccountRewardEscrow extends string ? WritableAccount<TAccountRewardEscrow> : TAccountRewardEscrow, TAccountOracleProgram extends string ? ReadonlyAccount<TAccountOracleProgram> : TAccountOracleProgram, TAccountOracleProgramState extends string ? ReadonlyAccount<TAccountOracleProgramState> : TAccountOracleProgramState, TAccountOracleLut extends string ? WritableAccount<TAccountOracleLut> : TAccountOracleLut, TAccountOracleLutSigner extends string ? ReadonlyAccount<TAccountOracleLutSigner> : TAccountOracleLutSigner, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, TAccountWrappedSolMint extends string ? ReadonlyAccount<TAccountWrappedSolMint> : TAccountWrappedSolMint, TAccountAddressLookupTableProgram extends string ? ReadonlyAccount<TAccountAddressLookupTableProgram> : TAccountAddressLookupTableProgram, ...TRemainingAccounts]>;
 
-export type CloseTemplateOpeningInstructionData = { discriminator: number;  };
+export type CloseTemplateOpeningInstructionData = { discriminator: number; migrationVersion: number;  };
 
 export type CloseTemplateOpeningInstructionDataArgs = {  };
 
 export function getCloseTemplateOpeningInstructionDataEncoder(): FixedSizeEncoder<CloseTemplateOpeningInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()]]), (value) => ({ ...value, discriminator: 24 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 24, migrationVersion: 0 }));
 }
 
 export function getCloseTemplateOpeningInstructionDataDecoder(): FixedSizeDecoder<CloseTemplateOpeningInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(CLOSE_TEMPLATE_OPENING_DISCRIMINATOR, getU8Decoder())]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(CLOSE_TEMPLATE_OPENING_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())]]);
 }
 
 export function getCloseTemplateOpeningInstructionDataCodec(): FixedSizeCodec<CloseTemplateOpeningInstructionDataArgs, CloseTemplateOpeningInstructionData> {

@@ -15,6 +15,7 @@
 pub struct TemplateState {
 /// Immutable template terms and the live finite inventory.
 	pub discriminator: u8,
+	pub migration_version: u8,
 	pub authority: solana_pubkey::Pubkey,
 	pub box_mint: solana_pubkey::Pubkey,
 	pub oracle_program: solana_pubkey::Pubkey,
@@ -65,11 +66,13 @@ pub struct TemplateState {
 
 pub const TEMPLATE_STATE_DISCRIMINATOR: u8 = 4u8;
 
+pub const TEMPLATE_STATE_MIGRATION_VERSION: u8 = 0u8;
+
 impl TemplateState {
 	pub const HEADER_SIZE: usize = <Self as pina::PinaPodCompact>::HEADER_SIZE;
 
 	pub fn initialize(data: &mut [u8], patch: TemplateStatePatch<'_>) -> Result<usize, solana_program_error::ProgramError> {
-		patch.discriminator(TEMPLATE_STATE_DISCRIMINATOR).initialize(data)
+		patch.discriminator(TEMPLATE_STATE_DISCRIMINATOR).migration_version(TEMPLATE_STATE_MIGRATION_VERSION).initialize(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)
 	}
 
@@ -77,6 +80,9 @@ impl TemplateState {
 		let account = TemplateStateRef::new(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != TEMPLATE_STATE_DISCRIMINATOR {
+			return Err(solana_program_error::ProgramError::InvalidAccountData);
+		}
+		if account.migration_version != TEMPLATE_STATE_MIGRATION_VERSION {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
 		Ok(account)
@@ -106,4 +112,18 @@ impl TemplateState {
 			&crate::LOOTBOX_PROGRAM_ID,
 		)
 	}
+}
+
+
+/// Whether raw account bytes are stale for this contract: the envelope names this account's discriminator and carries a version older than
+/// [`TEMPLATE_STATE_MIGRATION_VERSION`]. Current or foreign bytes return false; decoding explains the difference.
+pub fn template_state_needs_migration(data: &[u8]) -> bool {
+	data.len() >= 2
+			&& data[0] == 4
+			&& {
+				let mut version = [0_u8; 8];
+				version[..1]
+					.copy_from_slice(&data[1..2]);
+						 u64::from_le_bytes(version) < 0
+			}
 }

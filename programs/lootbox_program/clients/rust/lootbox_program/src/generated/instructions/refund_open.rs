@@ -9,6 +9,7 @@
 )]
 
 pub const REFUND_OPEN_DISCRIMINATOR: u8 = 7u8;
+pub const REFUND_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -73,6 +74,7 @@ impl RefundOpenInstructionData {
 		<RefundOpenInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = REFUND_OPEN_DISCRIMINATOR;
+			data.migration_version = REFUND_OPEN_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -86,4 +88,5 @@ impl RefundOpenInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct RefundOpenInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 }

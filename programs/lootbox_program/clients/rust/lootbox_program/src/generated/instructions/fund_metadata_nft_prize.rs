@@ -9,6 +9,7 @@
 )]
 
 pub const FUND_METADATA_NFT_PRIZE_DISCRIMINATOR: u8 = 27u8;
+pub const FUND_METADATA_NFT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -92,6 +93,7 @@ impl FundMetadataNftPrizeInstructionData {
 		<FundMetadataNftPrizeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = FUND_METADATA_NFT_PRIZE_DISCRIMINATOR;
+			data.migration_version = FUND_METADATA_NFT_PRIZE_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -105,4 +107,5 @@ impl FundMetadataNftPrizeInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct FundMetadataNftPrizeInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 }

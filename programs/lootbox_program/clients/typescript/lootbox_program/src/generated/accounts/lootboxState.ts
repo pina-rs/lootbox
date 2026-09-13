@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixPinaPodEncoderSize, getPinaPodBooleanDecoder, getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { fixPinaPodEncoderSize, getPinaPodBooleanDecoder, getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBooleanDecoder, getBooleanEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findLootboxPda, type LootboxSeeds } from '../pdas';
 
@@ -14,8 +14,12 @@ export const LOOTBOX_STATE_DISCRIMINATOR = 1;
 
 export function getLootboxStateDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(LOOTBOX_STATE_DISCRIMINATOR); }
 
+export const LOOTBOX_STATE_DISCRIMINATOR2 = 0;
+
+export function getLootboxStateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(LOOTBOX_STATE_DISCRIMINATOR2); }
+
 /** Immutable definition and live accounting for one lootbox mint. */
-export type LootboxState = { discriminator: number; authority: Address; boxMint: Address; oracleProgram: Address; oracleQueue: Address; id: bigint; maxSupply: bigint; totalMinted: bigint; pendingOpenings: bigint; opened: bigint; refunded: bigint; totalWeight: bigint; maxRewardLamports: bigint;
+export type LootboxState = { discriminator: number; migrationVersion: number; authority: Address; boxMint: Address; oracleProgram: Address; oracleQueue: Address; id: bigint; maxSupply: bigint; totalMinted: bigint; pendingOpenings: bigint; opened: bigint; refunded: bigint; totalWeight: bigint; maxRewardLamports: bigint;
 /** Eight little-endian `u64` weight slots. */
 outcomeWeights: ReadonlyUint8Array;
 /** Eight little-endian `u64` reward slots. */
@@ -29,12 +33,12 @@ outcomeLamports: ReadonlyUint8Array; outcomeCount: number; sealed: boolean; bump
 
 /** Gets the encoder for {@link LootboxStateArgs} account data. */
 export function getLootboxStateEncoder(): FixedSizeEncoder<LootboxStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['authority', getAddressEncoder()], ['boxMint', getAddressEncoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['id', getU64Encoder()], ['maxSupply', getU64Encoder()], ['totalMinted', getU64Encoder()], ['pendingOpenings', getU64Encoder()], ['opened', getU64Encoder()], ['refunded', getU64Encoder()], ['totalWeight', getU64Encoder()], ['maxRewardLamports', getU64Encoder()], ['outcomeWeights', fixPinaPodEncoderSize(getBytesEncoder(), 64)], ['outcomeLamports', fixPinaPodEncoderSize(getBytesEncoder(), 64)], ['outcomeCount', getU8Encoder()], ['sealed', getBooleanEncoder()], ['bump', getU8Encoder()], ['vaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 1 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['authority', getAddressEncoder()], ['boxMint', getAddressEncoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['id', getU64Encoder()], ['maxSupply', getU64Encoder()], ['totalMinted', getU64Encoder()], ['pendingOpenings', getU64Encoder()], ['opened', getU64Encoder()], ['refunded', getU64Encoder()], ['totalWeight', getU64Encoder()], ['maxRewardLamports', getU64Encoder()], ['outcomeWeights', fixPinaPodEncoderSize(getBytesEncoder(), 64)], ['outcomeLamports', fixPinaPodEncoderSize(getBytesEncoder(), 64)], ['outcomeCount', getU8Encoder()], ['sealed', getBooleanEncoder()], ['bump', getU8Encoder()], ['vaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 1, migrationVersion: 0 }));
 }
 
 /** Gets the decoder for {@link LootboxState} account data. */
 export function getLootboxStateDecoder(): FixedSizeDecoder<LootboxState> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(LOOTBOX_STATE_DISCRIMINATOR, getU8Decoder())], ['authority', getAddressDecoder()], ['boxMint', getAddressDecoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['id', getU64Decoder()], ['maxSupply', getU64Decoder()], ['totalMinted', getU64Decoder()], ['pendingOpenings', getU64Decoder()], ['opened', getU64Decoder()], ['refunded', getU64Decoder()], ['totalWeight', getU64Decoder()], ['maxRewardLamports', getU64Decoder()], ['outcomeWeights', fixDecoderSize(getBytesDecoder(), 64)], ['outcomeLamports', fixDecoderSize(getBytesDecoder(), 64)], ['outcomeCount', getU8Decoder()], ['sealed', getPinaPodBooleanDecoder()], ['bump', getU8Decoder()], ['vaultBump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(LOOTBOX_STATE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['authority', getAddressDecoder()], ['boxMint', getAddressDecoder()], ['oracleProgram', getAddressDecoder()], ['oracleQueue', getAddressDecoder()], ['id', getU64Decoder()], ['maxSupply', getU64Decoder()], ['totalMinted', getU64Decoder()], ['pendingOpenings', getU64Decoder()], ['opened', getU64Decoder()], ['refunded', getU64Decoder()], ['totalWeight', getU64Decoder()], ['maxRewardLamports', getU64Decoder()], ['outcomeWeights', fixDecoderSize(getBytesDecoder(), 64)], ['outcomeLamports', fixDecoderSize(getBytesDecoder(), 64)], ['outcomeCount', getU8Decoder()], ['sealed', getPinaPodBooleanDecoder()], ['bump', getU8Decoder()], ['vaultBump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link LootboxState} account data. */
@@ -104,4 +108,32 @@ export async function fetchMaybeLootboxStateFromSeeds(
   const { programAddress, ...fetchConfig } = config;
   const [address] = await findLootboxPda(seeds, { programAddress });
   return await fetchMaybeLootboxState(rpc, address, fetchConfig);
+}
+
+/** The account schema version this client was generated from. */
+export const LOOTBOX_STATE_MIGRATION_VERSION = 0;
+
+/**
+ * Cheap envelope check for a fetched `LootboxState` account: `true` only when the
+ * bytes name this account's discriminator and a migration version older than
+ * this client's schema. Those are exactly the accounts
+ * {@link getMigrateInstruction} can bring current; every other mismatch is
+ * reported by the decoder when the account is decoded.
+ *
+ * ```ts
+ * const { data } = await fetchEncodedAccount(rpc, address);
+ * if (lootboxStateNeedsMigration(data)) {
+ * 	// Migrate first, then retry the instruction that failed.
+ * 	await send(getMigrateInstruction({ lootboxState: address, payer }).make());
+ * }
+ * ```
+ */
+export function lootboxStateNeedsMigration(data: ReadonlyUint8Array): boolean {
+	if (data.length < 2) {
+		return false;
+	}
+	if (data[0] !== 1) {
+		return false;
+	}
+	return data[1]! < 0;
 }

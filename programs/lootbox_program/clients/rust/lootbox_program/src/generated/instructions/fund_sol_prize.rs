@@ -9,6 +9,7 @@
 )]
 
 pub const FUND_SOL_PRIZE_DISCRIMINATOR: u8 = 12u8;
+pub const FUND_SOL_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -64,6 +65,7 @@ impl FundSolPrizeInstructionData {
 		<FundSolPrizeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = FUND_SOL_PRIZE_DISCRIMINATOR;
+			data.migration_version = FUND_SOL_PRIZE_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -77,5 +79,6 @@ impl FundSolPrizeInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct FundSolPrizeInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 	pub lamports_per_win: u64,
 }

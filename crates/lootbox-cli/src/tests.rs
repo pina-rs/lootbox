@@ -86,7 +86,7 @@ fn create_lootbox_builds_with_derived_pdas() {
 	assert_eq!(instruction.program_id, pubkey(PROGRAM));
 	assert_eq!(instruction.data[0], 0);
 	// id (8) + max_supply (8) + oracle_program (32) + oracle_queue (32) + bumps (2)
-	assert_eq!(instruction.data.len(), 1 + 8 + 8 + 32 + 32 + 2);
+	assert_eq!(instruction.data.len(), 2 +  8 + 8 + 32 + 32 + 2);
 
 	let explicit = build_from(&[
 		"create-lootbox",
@@ -128,7 +128,7 @@ fn deposit_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 2);
-	assert_eq!(instruction.data.len(), 1 + 8);
+	assert_eq!(instruction.data.len(), 2 +  8);
 	assert!(instruction.accounts.iter().any(|meta| meta.is_signer));
 }
 
@@ -148,7 +148,7 @@ fn add_outcome_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 1);
-	assert_eq!(instruction.data.len(), 1 + 8 + 8);
+	assert_eq!(instruction.data.len(), 2 +  8 + 8);
 }
 
 #[test]
@@ -156,7 +156,7 @@ fn seal_builds() {
 	let instruction = build_from(&["seal", "--authority", PK1, "--lootbox", PK2]).expect("builds");
 
 	assert_eq!(instruction.data[0], 3);
-	assert_eq!(instruction.data.len(), 1);
+	assert_eq!(instruction.data.len(), 2);
 }
 
 #[test]
@@ -179,7 +179,7 @@ fn mint_boxes_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 4);
-	assert_eq!(instruction.data.len(), 1 + 8);
+	assert_eq!(instruction.data.len(), 2 +  8);
 }
 
 #[test]
@@ -226,7 +226,7 @@ fn request_open_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 5);
-	assert_eq!(instruction.data.len(), 1 + 8 + 1);
+	assert_eq!(instruction.data.len(), 2 +  8 + 1);
 }
 
 #[test]
@@ -273,7 +273,7 @@ fn settle_open_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 6);
-	assert_eq!(instruction.data.len(), 1 + 64 + 1 + 32);
+	assert_eq!(instruction.data.len(), 2 + 64 + 1 + 32);
 }
 
 #[test]
@@ -298,7 +298,7 @@ fn refund_open_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 7);
-	assert_eq!(instruction.data.len(), 1);
+	assert_eq!(instruction.data.len(), 2);
 }
 
 #[test]
@@ -331,7 +331,7 @@ fn close_opening_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 8);
-	assert_eq!(instruction.data.len(), 1);
+	assert_eq!(instruction.data.len(), 2);
 }
 
 #[test]
@@ -352,7 +352,7 @@ fn withdraw_surplus_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 9);
-	assert_eq!(instruction.data.len(), 1 + 8);
+	assert_eq!(instruction.data.len(), 2 +  8);
 }
 
 #[test]
@@ -379,7 +379,7 @@ fn create_template_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 10);
-	assert_eq!(instruction.data.len(), 323);
+	assert_eq!(instruction.data.len(), 324);
 }
 
 #[test]
@@ -456,7 +456,7 @@ fn add_bundle_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 11);
-	assert_eq!(instruction.data.len(), 1 + 8 + 1 + 1);
+	assert_eq!(instruction.data.len(), 2 +  8 + 1 + 1);
 	assert_eq!(instruction.accounts.len(), 4 + 2);
 }
 
@@ -490,7 +490,7 @@ fn seal_template_builds() {
 		build_from(&["seal-template", "--authority", PK1, "--template", PK2]).expect("builds");
 
 	assert_eq!(instruction.data[0], 14);
-	assert_eq!(instruction.data.len(), 1);
+	assert_eq!(instruction.data.len(), 2);
 }
 
 #[test]
@@ -511,7 +511,7 @@ fn mint_template_boxes_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 15);
-	assert_eq!(instruction.data.len(), 1 + 8);
+	assert_eq!(instruction.data.len(), 2 +  8);
 }
 
 #[test]
@@ -566,7 +566,7 @@ fn request_template_open_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 16);
-	assert_eq!(instruction.data.len(), 106);
+	assert_eq!(instruction.data.len(), 107);
 }
 
 #[test]
@@ -607,7 +607,7 @@ fn fulfill_template_open_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 17);
-	assert_eq!(instruction.data.len(), 1 + 64 + 1 + 32);
+	assert_eq!(instruction.data.len(), 2 + 64 + 1 + 32);
 }
 
 #[test]
@@ -628,7 +628,7 @@ fn allocate_template_open_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 18);
-	assert_eq!(instruction.data.len(), 2);
+	assert_eq!(instruction.data.len(), 3);
 }
 
 #[test]
@@ -649,7 +649,7 @@ fn forfeit_template_open_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 36);
-	assert_eq!(instruction.data.len(), 1);
+	assert_eq!(instruction.data.len(), 2);
 }
 
 #[test]
@@ -682,7 +682,7 @@ fn close_template_opening_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 24);
-	assert_eq!(instruction.data.len(), 1);
+	assert_eq!(instruction.data.len(), 2);
 }
 
 #[test]
@@ -691,7 +691,7 @@ fn retire_template_builds() {
 		build_from(&["retire-template", "--authority", PK1, "--template", PK2]).expect("builds");
 
 	assert_eq!(instruction.data[0], 21);
-	assert_eq!(instruction.data.len(), 1);
+	assert_eq!(instruction.data.len(), 2);
 }
 
 #[test]
@@ -712,7 +712,7 @@ fn lock_treasury_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 37);
-	assert_eq!(instruction.data.len(), 2);
+	assert_eq!(instruction.data.len(), 3);
 }
 
 #[test]
@@ -729,7 +729,7 @@ fn activate_bundle_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 25);
-	assert_eq!(instruction.data.len(), 1);
+	assert_eq!(instruction.data.len(), 2);
 }
 
 #[test]
@@ -746,7 +746,7 @@ fn cancel_bundle_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 26);
-	assert_eq!(instruction.data.len(), 1);
+	assert_eq!(instruction.data.len(), 2);
 }
 
 #[test]
@@ -765,7 +765,7 @@ fn fund_sol_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 12);
-	assert_eq!(instruction.data.len(), 1 + 8);
+	assert_eq!(instruction.data.len(), 2 +  8);
 }
 
 #[test]
@@ -791,7 +791,7 @@ fn fund_token_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 13);
-	assert_eq!(instruction.data.len(), 1 + 8 + 1);
+	assert_eq!(instruction.data.len(), 2 +  8 + 1);
 }
 
 #[test]
@@ -828,7 +828,7 @@ fn fund_metadata_nft_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 27);
-	assert_eq!(instruction.data.len(), 1);
+	assert_eq!(instruction.data.len(), 2);
 }
 
 #[test]
@@ -857,7 +857,7 @@ fn fund_core_asset_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 30);
-	assert_eq!(instruction.data.len(), 1);
+	assert_eq!(instruction.data.len(), 2);
 }
 
 #[test]
@@ -898,7 +898,7 @@ fn fund_compressed_nft_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 33);
-	assert_eq!(instruction.data.len(), 1 + 32 * 3 + 8 + 4);
+	assert_eq!(instruction.data.len(), 2 +  32 * 3 + 8 + 4);
 }
 
 #[test]
@@ -919,7 +919,7 @@ fn claim_sol_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 19);
-	assert_eq!(instruction.data.len(), 1 + 1);
+	assert_eq!(instruction.data.len(), 2 +  1);
 }
 
 #[test]
@@ -946,7 +946,7 @@ fn claim_token_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 20);
-	assert_eq!(instruction.data.len(), 1 + 1);
+	assert_eq!(instruction.data.len(), 2 +  1);
 }
 
 #[test]
@@ -989,7 +989,7 @@ fn claim_metadata_nft_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 28);
-	assert_eq!(instruction.data.len(), 1 + 1);
+	assert_eq!(instruction.data.len(), 2 +  1);
 }
 
 #[test]
@@ -1024,7 +1024,7 @@ fn claim_core_asset_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 31);
-	assert_eq!(instruction.data.len(), 1 + 1);
+	assert_eq!(instruction.data.len(), 2 +  1);
 }
 
 #[test]
@@ -1069,7 +1069,7 @@ fn claim_compressed_nft_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 34);
-	assert_eq!(instruction.data.len(), 1 + 1 + 32 * 3 + 8 + 4);
+	assert_eq!(instruction.data.len(), 2 +  1 + 32 * 3 + 8 + 4);
 }
 
 #[test]
@@ -1090,7 +1090,7 @@ fn reclaim_sol_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 22);
-	assert_eq!(instruction.data.len(), 1 + 1);
+	assert_eq!(instruction.data.len(), 2 +  1);
 }
 
 #[test]
@@ -1117,7 +1117,7 @@ fn reclaim_token_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 23);
-	assert_eq!(instruction.data.len(), 1 + 1);
+	assert_eq!(instruction.data.len(), 2 +  1);
 }
 
 #[test]
@@ -1158,7 +1158,7 @@ fn reclaim_metadata_nft_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 29);
-	assert_eq!(instruction.data.len(), 1 + 1);
+	assert_eq!(instruction.data.len(), 2 +  1);
 }
 
 #[test]
@@ -1191,7 +1191,7 @@ fn reclaim_core_asset_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 32);
-	assert_eq!(instruction.data.len(), 1 + 1);
+	assert_eq!(instruction.data.len(), 2 +  1);
 }
 
 #[test]
@@ -1236,7 +1236,7 @@ fn reclaim_compressed_nft_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 35);
-	assert_eq!(instruction.data.len(), 1 + 1 + 32 * 3 + 8 + 4);
+	assert_eq!(instruction.data.len(), 2 +  1 + 32 * 3 + 8 + 4);
 }
 
 #[test]
@@ -1742,7 +1742,7 @@ fn allocate_template_open_with_default_bump() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data.len(), 2);
+	assert_eq!(instruction.data.len(), 3);
 }
 
 #[test]

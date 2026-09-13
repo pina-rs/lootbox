@@ -57,7 +57,7 @@ const BUNDLE_FUNDING: u8 = 0;
 const BUNDLE_ACTIVE: u8 = 1;
 
 /// Immutable template terms and the live finite inventory.
-#[account(discriminator = LootboxAccountType, compact)]
+#[account(discriminator = LootboxAccountType, compact, migrations)]
 #[pda(seeds = [SEED_TEMPLATE, authority: Address, id: u64], bump = bump)]
 pub struct TemplateState {
 	pub authority: Address,
@@ -109,7 +109,7 @@ pub struct TemplateState {
 }
 
 /// A complete prize outcome and its escrow authority, shared across all boxes.
-#[account(discriminator = LootboxAccountType)]
+#[account(discriminator = LootboxAccountType, migrations)]
 #[pda(seeds = [SEED_BUNDLE, template: Address, index: u32], bump = bump)]
 pub struct BundleState {
 	pub template: Address,
@@ -134,7 +134,7 @@ pub struct BundleState {
 }
 
 /// A burned box, its verified entropy, and independently claimable winning assets.
-#[account(discriminator = LootboxAccountType)]
+#[account(discriminator = LootboxAccountType, migrations)]
 #[pda(seeds = [SEED_TEMPLATE_OPENING, template: Address, randomness: Address], bump = bump)]
 pub struct TemplateOpeningState {
 	pub template: Address,
@@ -165,7 +165,7 @@ pub struct TemplateOpeningState {
 /// Optional immutable allocation result for consumption by another program.
 ///
 /// No instruction mutates or closes this account after initialization.
-#[account(discriminator = LootboxAccountType)]
+#[account(discriminator = LootboxAccountType, migrations)]
 #[pda(seeds = [SEED_RESULT_RECEIPT, opening: Address], bump = bump)]
 pub struct ResultReceiptState {
 	pub template: Address,
@@ -277,7 +277,7 @@ mod proofs {
 	}
 }
 
-#[instruction(discriminator = LootboxInstruction::CreateTemplate)]
+#[instruction(discriminator = LootboxInstruction::CreateTemplate, migrations)]
 pub struct CreateTemplateInstruction {
 	pub id: u64,
 	pub opens_at: i64,
@@ -290,54 +290,54 @@ pub struct CreateTemplateInstruction {
 	pub bump: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::AddBundle)]
+#[instruction(discriminator = LootboxInstruction::AddBundle, migrations)]
 pub struct AddBundleInstruction {
 	pub quantity: u64,
 	pub asset_count: u8,
 	pub bump: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::FundSolPrize)]
+#[instruction(discriminator = LootboxInstruction::FundSolPrize, migrations)]
 pub struct FundSolPrizeInstruction {
 	pub lamports_per_win: u64,
 }
 
-#[instruction(discriminator = LootboxInstruction::FundTokenPrize)]
+#[instruction(discriminator = LootboxInstruction::FundTokenPrize, migrations)]
 pub struct FundTokenPrizeInstruction {
 	pub amount_per_win: u64,
 	pub is_nft: bool,
 }
 
-#[instruction(discriminator = LootboxInstruction::FundQuoteSolPrize)]
+#[instruction(discriminator = LootboxInstruction::FundQuoteSolPrize, migrations)]
 pub struct FundQuoteSolPrizeInstruction {
 	pub lamports_per_win: u64,
 }
 
-#[instruction(discriminator = LootboxInstruction::FundQuoteTokenPrize)]
+#[instruction(discriminator = LootboxInstruction::FundQuoteTokenPrize, migrations)]
 pub struct FundQuoteTokenPrizeInstruction {
 	pub amount_per_win: u64,
 }
 
-#[instruction(discriminator = LootboxInstruction::FundMintPrize)]
+#[instruction(discriminator = LootboxInstruction::FundMintPrize, migrations)]
 pub struct FundMintPrizeInstruction {}
 
-#[instruction(discriminator = LootboxInstruction::SealTemplate)]
+#[instruction(discriminator = LootboxInstruction::SealTemplate, migrations)]
 pub struct SealTemplateInstruction {}
 
-#[instruction(discriminator = LootboxInstruction::LockTreasury)]
+#[instruction(discriminator = LootboxInstruction::LockTreasury, migrations)]
 pub struct LockTreasuryInstruction {
 	pub service_vault_bump: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::MintTemplateBoxes)]
+#[instruction(discriminator = LootboxInstruction::MintTemplateBoxes, migrations)]
 pub struct MintTemplateBoxesInstruction {
 	pub amount: u64,
 }
 
-#[instruction(discriminator = LootboxInstruction::ActivateBundle)]
+#[instruction(discriminator = LootboxInstruction::ActivateBundle, migrations)]
 pub struct ActivateBundleInstruction {}
 
-#[instruction(discriminator = LootboxInstruction::CancelBundle)]
+#[instruction(discriminator = LootboxInstruction::CancelBundle, migrations)]
 pub struct CancelBundleInstruction {}
 
 #[derive(Accounts, Debug)]

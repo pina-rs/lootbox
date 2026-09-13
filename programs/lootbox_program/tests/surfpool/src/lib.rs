@@ -629,7 +629,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 			.expect("fully collateralize lootbox");
 		program
 			.send(
-				&[LootboxInstruction::Seal as u8],
+				&[LootboxInstruction::Seal as u8, 0],
 				vec![
 					AccountMeta::new_readonly(authority, true),
 					AccountMeta::new(lootbox, false),
@@ -871,7 +871,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 			program
 				.send_with_signers(
 					program.instruction(
-						&[LootboxInstruction::RefundOpen as u8],
+						&[LootboxInstruction::RefundOpen as u8, 0],
 						vec![
 							AccountMeta::new(recipient.pubkey(), true),
 							AccountMeta::new(lootbox, false),
@@ -1053,7 +1053,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 
 		program
 			.send(
-				&[LootboxInstruction::CloseOpening as u8],
+				&[LootboxInstruction::CloseOpening as u8, 0],
 				close_accounts(
 					&recipient.pubkey(),
 					&lootbox,
@@ -1134,7 +1134,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		assert!(
 			program
 				.send(
-					&[LootboxInstruction::RefundOpen as u8],
+					&[LootboxInstruction::RefundOpen as u8, 0],
 					vec![
 						AccountMeta::new(recipient.pubkey(), false),
 						AccountMeta::new(lootbox, false),
@@ -1151,7 +1151,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		program
 			.send_with_signers(
 				program.instruction(
-					&[LootboxInstruction::RefundOpen as u8],
+					&[LootboxInstruction::RefundOpen as u8, 0],
 					vec![
 						AccountMeta::new(recipient.pubkey(), true),
 						AccountMeta::new(lootbox, false),
@@ -1194,7 +1194,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		assert_eq!(stored_u64(&refunded_state.data, 169), 1, "refund counted");
 		program
 			.send(
-				&[LootboxInstruction::CloseOpening as u8],
+				&[LootboxInstruction::CloseOpening as u8, 0],
 				close_accounts(
 					&recipient.pubkey(),
 					&lootbox,

@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -15,19 +15,23 @@ export const WITHDRAW_SURPLUS_DISCRIMINATOR = 9;
 
 export function getWithdrawSurplusDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(WITHDRAW_SURPLUS_DISCRIMINATOR); }
 
+export const WITHDRAW_SURPLUS_DISCRIMINATOR2 = 0;
+
+export function getWithdrawSurplusDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(WITHDRAW_SURPLUS_DISCRIMINATOR2); }
+
 export type WithdrawSurplusInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountLootbox extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountLootbox extends string ? ReadonlyAccount<TAccountLootbox> : TAccountLootbox, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, ...TRemainingAccounts]>;
 
-export type WithdrawSurplusInstructionData = { discriminator: number; lamports: bigint;  };
+export type WithdrawSurplusInstructionData = { discriminator: number; migrationVersion: number; lamports: bigint;  };
 
 export type WithdrawSurplusInstructionDataArgs = { lamports: number | bigint;  };
 
 export function getWithdrawSurplusInstructionDataEncoder(): FixedSizeEncoder<WithdrawSurplusInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['lamports', getU64Encoder()]]), (value) => ({ ...value, discriminator: 9 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['lamports', getU64Encoder()]]), (value) => ({ ...value, discriminator: 9, migrationVersion: 0 }));
 }
 
 export function getWithdrawSurplusInstructionDataDecoder(): FixedSizeDecoder<WithdrawSurplusInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(WITHDRAW_SURPLUS_DISCRIMINATOR, getU8Decoder())], ['lamports', getU64Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(WITHDRAW_SURPLUS_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['lamports', getU64Decoder()]]);
 }
 
 export function getWithdrawSurplusInstructionDataCodec(): FixedSizeCodec<WithdrawSurplusInstructionDataArgs, WithdrawSurplusInstructionData> {

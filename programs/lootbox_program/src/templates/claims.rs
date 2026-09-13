@@ -2,22 +2,22 @@
 
 use super::*;
 
-#[instruction(discriminator = LootboxInstruction::AllocateTemplateOpen)]
+#[instruction(discriminator = LootboxInstruction::AllocateTemplateOpen, migrations)]
 pub struct AllocateTemplateOpenInstruction {
 	pub result_receipt_bump: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::ClaimSolPrize)]
+#[instruction(discriminator = LootboxInstruction::ClaimSolPrize, migrations)]
 pub struct ClaimSolPrizeInstruction {
 	pub asset_index: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::ClaimTokenPrize)]
+#[instruction(discriminator = LootboxInstruction::ClaimTokenPrize, migrations)]
 pub struct ClaimTokenPrizeInstruction {
 	pub asset_index: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::ClaimMintPrize)]
+#[instruction(discriminator = LootboxInstruction::ClaimMintPrize, migrations)]
 pub struct ClaimMintPrizeInstruction {
 	pub asset_index: u8,
 }

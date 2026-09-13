@@ -9,6 +9,7 @@
 )]
 
 pub const FUND_CORE_ASSET_PRIZE_DISCRIMINATOR: u8 = 30u8;
+pub const FUND_CORE_ASSET_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -80,6 +81,7 @@ impl FundCoreAssetPrizeInstructionData {
 		<FundCoreAssetPrizeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = FUND_CORE_ASSET_PRIZE_DISCRIMINATOR;
+			data.migration_version = FUND_CORE_ASSET_PRIZE_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -93,4 +95,5 @@ impl FundCoreAssetPrizeInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct FundCoreAssetPrizeInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 }

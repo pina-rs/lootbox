@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,17 +12,24 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
+
 @immutable
 class MintBoxesInstructionData {
-  const MintBoxesInstructionData({required this.amount}) : discriminator = 4;
+  const MintBoxesInstructionData({
+    required this.amount,
+  }) :
+      discriminator = 4,
+      migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final BigInt amount;
 }
 
 Encoder<MintBoxesInstructionData> getMintBoxesInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('amount', getU64Encoder()),
   ]);
 
@@ -29,6 +37,7 @@ Encoder<MintBoxesInstructionData> getMintBoxesInstructionDataEncoder() {
     structEncoder,
     (MintBoxesInstructionData value) => <String, Object?>{
       'discriminator': 4,
+      'migrationVersion': 0,
       'amount': value.amount,
     },
   );
@@ -37,26 +46,37 @@ Encoder<MintBoxesInstructionData> getMintBoxesInstructionDataEncoder() {
 Decoder<MintBoxesInstructionData> getMintBoxesInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('amount', getU64Decoder()),
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'mintBoxes instruction decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'mintBoxes instruction decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
   (MintBoxesInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(4)).read(bytes, offset + 0);
+    getConstantDecoder(
+      getU8Encoder().encode(4),
+    ).read(bytes, offset + 0);
+    getConstantDecoder(
+      getU8Encoder().encode(0),
+    ).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
     }
 
     return (
-      MintBoxesInstructionData(amount: map['amount']! as BigInt),
+      MintBoxesInstructionData(
+      amount: map['amount']! as BigInt,
+      ),
       newOffset,
     );
   }
@@ -81,12 +101,8 @@ Decoder<MintBoxesInstructionData> getMintBoxesInstructionDataDecoder() {
   };
 }
 
-Codec<MintBoxesInstructionData, MintBoxesInstructionData>
-getMintBoxesInstructionDataCodec() {
-  return combineCodec(
-    getMintBoxesInstructionDataEncoder(),
-    getMintBoxesInstructionDataDecoder(),
-  );
+Codec<MintBoxesInstructionData, MintBoxesInstructionData> getMintBoxesInstructionDataCodec() {
+  return combineCodec(getMintBoxesInstructionDataEncoder(), getMintBoxesInstructionDataDecoder());
 }
 
 /// Creates a [MintBoxes] instruction.
@@ -100,17 +116,19 @@ Instruction getMintBoxesInstruction({
   required Address tokenProgram,
   required BigInt amount,
 }) {
-  final instructionData = MintBoxesInstructionData(amount: amount);
+  final instructionData = MintBoxesInstructionData(
+      amount: amount,
+  );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.readonlySigner),
-      AccountMeta(address: lootbox, role: AccountRole.writable),
-      AccountMeta(address: vault, role: AccountRole.readonly),
-      AccountMeta(address: boxMint, role: AccountRole.writable),
-      AccountMeta(address: recipientBoxAccount, role: AccountRole.writable),
-      AccountMeta(address: tokenProgram, role: AccountRole.readonly),
+    AccountMeta(address: authority, role: AccountRole.readonlySigner),
+    AccountMeta(address: lootbox, role: AccountRole.writable),
+    AccountMeta(address: vault, role: AccountRole.readonly),
+    AccountMeta(address: boxMint, role: AccountRole.writable),
+    AccountMeta(address: recipientBoxAccount, role: AccountRole.writable),
+    AccountMeta(address: tokenProgram, role: AccountRole.readonly),
     ],
     data: getMintBoxesInstructionDataEncoder().encode(instructionData),
   );

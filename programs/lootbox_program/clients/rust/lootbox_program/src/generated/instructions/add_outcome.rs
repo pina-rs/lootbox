@@ -9,6 +9,7 @@
 )]
 
 pub const ADD_OUTCOME_DISCRIMINATOR: u8 = 1u8;
+pub const ADD_OUTCOME_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -58,6 +59,7 @@ impl AddOutcomeInstructionData {
 		<AddOutcomeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = ADD_OUTCOME_DISCRIMINATOR;
+			data.migration_version = ADD_OUTCOME_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -71,6 +73,7 @@ impl AddOutcomeInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct AddOutcomeInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 	pub weight: u64,
 	pub reward_lamports: u64,
 }

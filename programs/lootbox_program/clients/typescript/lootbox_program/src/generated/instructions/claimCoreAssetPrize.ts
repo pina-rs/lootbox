@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -15,19 +15,23 @@ export const CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR = 31;
 
 export function getClaimCoreAssetPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR); }
 
+export const CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR2 = 0;
+
+export function getClaimCoreAssetPrizeDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR2); }
+
 export type ClaimCoreAssetPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountPayer extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountRecipient extends string | AccountMeta<string> = string, TAccountAsset extends string | AccountMeta<string> = string, TAccountCollection extends string | AccountMeta<string> = string, TAccountCoreProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = string, TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountPluginAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountPayer extends string ? WritableSignerAccount<TAccountPayer> & AccountSignerMeta<TAccountPayer> : TAccountPayer, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountRecipient extends string ? ReadonlyAccount<TAccountRecipient> : TAccountRecipient, TAccountAsset extends string ? WritableAccount<TAccountAsset> : TAccountAsset, TAccountCollection extends string ? ReadonlyAccount<TAccountCollection> : TAccountCollection, TAccountCoreProgram extends string ? ReadonlyAccount<TAccountCoreProgram> : TAccountCoreProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountPluginAccounts extends string ? ReadonlyAccount<TAccountPluginAccounts> : TAccountPluginAccounts, ...TRemainingAccounts]>;
 
-export type ClaimCoreAssetPrizeInstructionData = { discriminator: number; assetIndex: number;  };
+export type ClaimCoreAssetPrizeInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number;  };
 
 export type ClaimCoreAssetPrizeInstructionDataArgs = { assetIndex: number;  };
 
 export function getClaimCoreAssetPrizeInstructionDataEncoder(): FixedSizeEncoder<ClaimCoreAssetPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 31 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 31, migrationVersion: 0 }));
 }
 
 export function getClaimCoreAssetPrizeInstructionDataDecoder(): FixedSizeDecoder<ClaimCoreAssetPrizeInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR, getU8Decoder())], ['assetIndex', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['assetIndex', getU8Decoder()]]);
 }
 
 export function getClaimCoreAssetPrizeInstructionDataCodec(): FixedSizeCodec<ClaimCoreAssetPrizeInstructionDataArgs, ClaimCoreAssetPrizeInstructionData> {

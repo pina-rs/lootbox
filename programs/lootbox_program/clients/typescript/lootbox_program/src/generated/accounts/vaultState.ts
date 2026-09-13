@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, getAddressDecoder, getAddressEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findVaultPda, type VaultSeeds } from '../pdas';
 
@@ -14,19 +14,23 @@ export const VAULT_STATE_DISCRIMINATOR = 2;
 
 export function getVaultStateDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(VAULT_STATE_DISCRIMINATOR); }
 
+export const VAULT_STATE_DISCRIMINATOR2 = 0;
+
+export function getVaultStateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(VAULT_STATE_DISCRIMINATOR2); }
+
 /** Program-owned SOL vault for one lootbox definition. */
-export type VaultState = { discriminator: number; lootbox: Address; rentReserve: bigint; bump: number;  };
+export type VaultState = { discriminator: number; migrationVersion: number; lootbox: Address; rentReserve: bigint; bump: number;  };
 
 export type VaultStateArgs = { lootbox: Address; rentReserve: number | bigint; bump: number;  };
 
 /** Gets the encoder for {@link VaultStateArgs} account data. */
 export function getVaultStateEncoder(): FixedSizeEncoder<VaultStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['lootbox', getAddressEncoder()], ['rentReserve', getU64Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 2 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['lootbox', getAddressEncoder()], ['rentReserve', getU64Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 2, migrationVersion: 0 }));
 }
 
 /** Gets the decoder for {@link VaultState} account data. */
 export function getVaultStateDecoder(): FixedSizeDecoder<VaultState> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(VAULT_STATE_DISCRIMINATOR, getU8Decoder())], ['lootbox', getAddressDecoder()], ['rentReserve', getU64Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(VAULT_STATE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['lootbox', getAddressDecoder()], ['rentReserve', getU64Decoder()], ['bump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link VaultState} account data. */
@@ -96,4 +100,32 @@ export async function fetchMaybeVaultStateFromSeeds(
   const { programAddress, ...fetchConfig } = config;
   const [address] = await findVaultPda(seeds, { programAddress });
   return await fetchMaybeVaultState(rpc, address, fetchConfig);
+}
+
+/** The account schema version this client was generated from. */
+export const VAULT_STATE_MIGRATION_VERSION = 0;
+
+/**
+ * Cheap envelope check for a fetched `VaultState` account: `true` only when the
+ * bytes name this account's discriminator and a migration version older than
+ * this client's schema. Those are exactly the accounts
+ * {@link getMigrateInstruction} can bring current; every other mismatch is
+ * reported by the decoder when the account is decoded.
+ *
+ * ```ts
+ * const { data } = await fetchEncodedAccount(rpc, address);
+ * if (vaultStateNeedsMigration(data)) {
+ * 	// Migrate first, then retry the instruction that failed.
+ * 	await send(getMigrateInstruction({ vaultState: address, payer }).make());
+ * }
+ * ```
+ */
+export function vaultStateNeedsMigration(data: ReadonlyUint8Array): boolean {
+	if (data.length < 2) {
+		return false;
+	}
+	if (data[0] !== 2) {
+		return false;
+	}
+	return data[1]! < 0;
 }

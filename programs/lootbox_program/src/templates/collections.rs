@@ -11,33 +11,33 @@ const SPL_ACCOUNT_COMPRESSION_ID: Address = address!("cmtDvXumGCrqC1Age74AVPhSRV
 const SPL_NOOP_ID: Address = address!("noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV");
 const INSTRUCTIONS_SYSVAR_ID: Address = address!("Sysvar1nstructions1111111111111111111111111");
 
-#[instruction(discriminator = LootboxInstruction::FundMetadataNftPrize)]
+#[instruction(discriminator = LootboxInstruction::FundMetadataNftPrize, migrations)]
 pub struct FundMetadataNftPrizeInstruction {}
 
-#[instruction(discriminator = LootboxInstruction::ClaimMetadataNftPrize)]
+#[instruction(discriminator = LootboxInstruction::ClaimMetadataNftPrize, migrations)]
 pub struct ClaimMetadataNftPrizeInstruction {
 	pub asset_index: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::ReclaimMetadataNftPrize)]
+#[instruction(discriminator = LootboxInstruction::ReclaimMetadataNftPrize, migrations)]
 pub struct ReclaimMetadataNftPrizeInstruction {
 	pub asset_index: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::FundCoreAssetPrize)]
+#[instruction(discriminator = LootboxInstruction::FundCoreAssetPrize, migrations)]
 pub struct FundCoreAssetPrizeInstruction {}
 
-#[instruction(discriminator = LootboxInstruction::ClaimCoreAssetPrize)]
+#[instruction(discriminator = LootboxInstruction::ClaimCoreAssetPrize, migrations)]
 pub struct ClaimCoreAssetPrizeInstruction {
 	pub asset_index: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::ReclaimCoreAssetPrize)]
+#[instruction(discriminator = LootboxInstruction::ReclaimCoreAssetPrize, migrations)]
 pub struct ReclaimCoreAssetPrizeInstruction {
 	pub asset_index: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::FundCompressedNftPrize)]
+#[instruction(discriminator = LootboxInstruction::FundCompressedNftPrize, migrations)]
 pub struct FundCompressedNftPrizeInstruction {
 	pub root: [u8; 32],
 	pub data_hash: [u8; 32],
@@ -46,7 +46,7 @@ pub struct FundCompressedNftPrizeInstruction {
 	pub index: u32,
 }
 
-#[instruction(discriminator = LootboxInstruction::ClaimCompressedNftPrize)]
+#[instruction(discriminator = LootboxInstruction::ClaimCompressedNftPrize, migrations)]
 pub struct ClaimCompressedNftPrizeInstruction {
 	pub asset_index: u8,
 	pub root: [u8; 32],
@@ -56,7 +56,7 @@ pub struct ClaimCompressedNftPrizeInstruction {
 	pub index: u32,
 }
 
-#[instruction(discriminator = LootboxInstruction::ReclaimCompressedNftPrize)]
+#[instruction(discriminator = LootboxInstruction::ReclaimCompressedNftPrize, migrations)]
 pub struct ReclaimCompressedNftPrizeInstruction {
 	pub asset_index: u8,
 	pub root: [u8; 32],

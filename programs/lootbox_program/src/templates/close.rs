@@ -2,10 +2,10 @@
 
 use super::*;
 
-#[instruction(discriminator = LootboxInstruction::CloseTemplateOpening)]
+#[instruction(discriminator = LootboxInstruction::CloseTemplateOpening, migrations)]
 pub struct CloseTemplateOpeningInstruction {}
 
-#[instruction(discriminator = LootboxInstruction::CloseServiceVault)]
+#[instruction(discriminator = LootboxInstruction::CloseServiceVault, migrations)]
 pub struct CloseServiceVaultInstruction {}
 
 #[derive(Accounts, Debug)]

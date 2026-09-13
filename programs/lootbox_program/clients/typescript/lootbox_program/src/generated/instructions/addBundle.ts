@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
@@ -15,19 +15,23 @@ export const ADD_BUNDLE_DISCRIMINATOR = 11;
 
 export function getAddBundleDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(ADD_BUNDLE_DISCRIMINATOR); }
 
+export const ADD_BUNDLE_DISCRIMINATOR2 = 0;
+
+export function getAddBundleDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(ADD_BUNDLE_DISCRIMINATOR2); }
+
 export type AddBundleInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableAccount<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type AddBundleInstructionData = { discriminator: number; quantity: bigint; assetCount: number; bump: number;  };
+export type AddBundleInstructionData = { discriminator: number; migrationVersion: number; quantity: bigint; assetCount: number; bump: number;  };
 
 export type AddBundleInstructionDataArgs = { quantity: number | bigint; assetCount: number; bump: number;  };
 
 export function getAddBundleInstructionDataEncoder(): FixedSizeEncoder<AddBundleInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['quantity', getU64Encoder()], ['assetCount', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 11 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['quantity', getU64Encoder()], ['assetCount', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 11, migrationVersion: 0 }));
 }
 
 export function getAddBundleInstructionDataDecoder(): FixedSizeDecoder<AddBundleInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(ADD_BUNDLE_DISCRIMINATOR, getU8Decoder())], ['quantity', getU64Decoder()], ['assetCount', getU8Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(ADD_BUNDLE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['quantity', getU64Decoder()], ['assetCount', getU8Decoder()], ['bump', getU8Decoder()]]);
 }
 
 export function getAddBundleInstructionDataCodec(): FixedSizeCodec<AddBundleInstructionDataArgs, AddBundleInstructionData> {

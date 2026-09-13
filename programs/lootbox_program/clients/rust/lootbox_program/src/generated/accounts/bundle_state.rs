@@ -14,6 +14,7 @@
 pub struct BundleState {
 /// A complete prize outcome and its escrow authority, shared across all boxes.
 	pub discriminator: u8,
+	pub migration_version: u8,
 	pub template: solana_pubkey::Pubkey,
 	pub quantity: u64,
 	pub rent_reserve: u64,
@@ -37,6 +38,8 @@ pub struct BundleState {
 
 pub const BUNDLE_STATE_DISCRIMINATOR: u8 = 5u8;
 
+pub const BUNDLE_STATE_MIGRATION_VERSION: u8 = 0u8;
+
 impl BundleState {
 	pub const LEN: usize = core::mem::size_of::<BundleStateZc>();
 
@@ -50,6 +53,7 @@ impl BundleState {
 		<Self as pina::PinaPodFixed>::initialize(data, |account| {
 			configure(account);
 			account.discriminator = BUNDLE_STATE_DISCRIMINATOR;
+			account.migration_version = BUNDLE_STATE_MIGRATION_VERSION;
 			Ok(())
 		})
 		.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)
@@ -61,6 +65,9 @@ impl BundleState {
 		if account.discriminator != BUNDLE_STATE_DISCRIMINATOR {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
+		if account.migration_version != BUNDLE_STATE_MIGRATION_VERSION {
+			return Err(solana_program_error::ProgramError::InvalidAccountData);
+		}
 		Ok(account)
 	}
 
@@ -68,6 +75,9 @@ impl BundleState {
 		let account = <Self as pina::PinaPodFixed>::read_exact_mut(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != BUNDLE_STATE_DISCRIMINATOR {
+			return Err(solana_program_error::ProgramError::InvalidAccountData);
+		}
+		if account.migration_version != BUNDLE_STATE_MIGRATION_VERSION {
 			return Err(solana_program_error::ProgramError::InvalidAccountData);
 		}
 		Ok(account)
@@ -96,5 +106,90 @@ impl BundleState {
 			],
 			&crate::LOOTBOX_PROGRAM_ID,
 		)
+	}
+}
+
+
+/// Whether raw account bytes are stale for this contract: the envelope names this account's discriminator and carries a version older than
+/// [`BUNDLE_STATE_MIGRATION_VERSION`]. Current or foreign bytes return false; decoding explains the difference.
+pub fn bundle_state_needs_migration(data: &[u8]) -> bool {
+	data.len() >= 2
+			&& data[0] == 5
+			&& {
+				let mut version = [0_u8; 8];
+				version[..1]
+					.copy_from_slice(&data[1..2]);
+						 u64::from_le_bytes(version) < 0
+			}
+}
+
+
+/// Why `BundleState::try_from_bytes` rejected account bytes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BundleStateVersionError {
+	/// The bytes do not decode as this account's layout at all.
+	InvalidData,
+	/// The envelope names this account but the stored version predates this client: migrate the account on-chain, then retry.
+	Stale { stored: u8 },
+	/// The envelope names this account but the stored version is newer than this client's schema: upgrade this client.
+	Future { stored: u8 },
+}
+
+impl core::fmt::Display for BundleStateVersionError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		match self {
+			Self::InvalidData => write!(f, "invalid BundleState account data"),
+			Self::Stale { stored } => write!(
+				f,
+				"migration version mismatch: expected 0, received {stored} (the data predates this client; migrate it by sending a transaction to the program, or decode it with a client generated from an older IDL)"
+			),
+			Self::Future { stored } => write!(
+				f,
+				"migration version mismatch: expected 0, received {stored} (the data was written by a newer program; upgrade this client)"
+			),
+		}
+	}
+}
+
+impl BundleState {
+	/// Decodes current-version bytes and tells stale envelopes (migrate the account) apart from future ones (upgrade this client). The failure message mirrors the generated JavaScript decoder. For the strict current-only convenience returning `ProgramError`, see [`BundleState::from_bytes`].
+	pub fn try_from_bytes(
+		data: &[u8],
+	) -> Result<&BundleStateZc, BundleStateVersionError> {
+		let account = <Self as pina::PinaPodFixed>::read_exact(data)
+			.map_err(|_| BundleStateVersionError::InvalidData)?;
+		if account.discriminator != BUNDLE_STATE_DISCRIMINATOR {
+			return Err(BundleStateVersionError::InvalidData);
+		}
+		if account.migration_version < BUNDLE_STATE_MIGRATION_VERSION {
+			return Err(BundleStateVersionError::Stale { stored: account.migration_version });
+		}
+		if account.migration_version > BUNDLE_STATE_MIGRATION_VERSION {
+			return Err(BundleStateVersionError::Future { stored: account.migration_version });
+		}
+		Ok(account)
+	}
+}
+
+#[cfg(test)]
+mod bundle_state_version_error_tests {
+	use super::*;
+
+	fn envelope(version: u8) -> Vec<u8> {
+		let mut data = vec![0_u8; core::mem::size_of::<BundleStateZc>()];
+		data[..1].copy_from_slice(&[5]);
+		data[1..2].copy_from_slice(&version.to_le_bytes());
+		data
+	}
+
+	#[test]
+	fn stale_and_future_versions_are_distinguishable() {
+		let error = BundleState::try_from_bytes(&envelope(1 as u8)).err().expect("a future envelope must fail");
+		assert_eq!(error, BundleStateVersionError::Future { stored: 1 });
+		assert_eq!(BundleStateVersionError::Future { stored: 1 }.to_string(), "migration version mismatch: expected 0, received 1 (the data was written by a newer program; upgrade this client)");
+		assert!(
+			BundleState::try_from_bytes(&envelope(0 as u8)).is_ok(),
+			"the current version must decode",
+		);
 	}
 }

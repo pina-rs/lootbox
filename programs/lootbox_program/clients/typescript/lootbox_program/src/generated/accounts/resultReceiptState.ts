@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findResultReceiptPda, type ResultReceiptSeeds } from '../pdas';
 
@@ -14,23 +14,27 @@ export const RESULT_RECEIPT_STATE_DISCRIMINATOR = 7;
 
 export function getResultReceiptStateDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(RESULT_RECEIPT_STATE_DISCRIMINATOR); }
 
+export const RESULT_RECEIPT_STATE_DISCRIMINATOR2 = 0;
+
+export function getResultReceiptStateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(RESULT_RECEIPT_STATE_DISCRIMINATOR2); }
+
 /**
  * Optional immutable allocation result for consumption by another program.
  *
  * No instruction mutates or closes this account after initialization.
  */
-export type ResultReceiptState = { discriminator: number; template: Address; opening: Address; boxAuthority: Address; beneficiary: Address; consumerProgram: Address; consumerContext: ReadonlyUint8Array; manifestHash: ReadonlyUint8Array; randomness: Address; sequence: bigint; selectedBundle: number; bump: number;  };
+export type ResultReceiptState = { discriminator: number; migrationVersion: number; template: Address; opening: Address; boxAuthority: Address; beneficiary: Address; consumerProgram: Address; consumerContext: ReadonlyUint8Array; manifestHash: ReadonlyUint8Array; randomness: Address; sequence: bigint; selectedBundle: number; bump: number;  };
 
 export type ResultReceiptStateArgs = { template: Address; opening: Address; boxAuthority: Address; beneficiary: Address; consumerProgram: Address; consumerContext: ReadonlyUint8Array; manifestHash: ReadonlyUint8Array; randomness: Address; sequence: number | bigint; selectedBundle: number; bump: number;  };
 
 /** Gets the encoder for {@link ResultReceiptStateArgs} account data. */
 export function getResultReceiptStateEncoder(): FixedSizeEncoder<ResultReceiptStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['template', getAddressEncoder()], ['opening', getAddressEncoder()], ['boxAuthority', getAddressEncoder()], ['beneficiary', getAddressEncoder()], ['consumerProgram', getAddressEncoder()], ['consumerContext', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['manifestHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['randomness', getAddressEncoder()], ['sequence', getU64Encoder()], ['selectedBundle', getU32Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 7 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['template', getAddressEncoder()], ['opening', getAddressEncoder()], ['boxAuthority', getAddressEncoder()], ['beneficiary', getAddressEncoder()], ['consumerProgram', getAddressEncoder()], ['consumerContext', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['manifestHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['randomness', getAddressEncoder()], ['sequence', getU64Encoder()], ['selectedBundle', getU32Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 7, migrationVersion: 0 }));
 }
 
 /** Gets the decoder for {@link ResultReceiptState} account data. */
 export function getResultReceiptStateDecoder(): FixedSizeDecoder<ResultReceiptState> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(RESULT_RECEIPT_STATE_DISCRIMINATOR, getU8Decoder())], ['template', getAddressDecoder()], ['opening', getAddressDecoder()], ['boxAuthority', getAddressDecoder()], ['beneficiary', getAddressDecoder()], ['consumerProgram', getAddressDecoder()], ['consumerContext', fixDecoderSize(getBytesDecoder(), 32)], ['manifestHash', fixDecoderSize(getBytesDecoder(), 32)], ['randomness', getAddressDecoder()], ['sequence', getU64Decoder()], ['selectedBundle', getU32Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(RESULT_RECEIPT_STATE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['template', getAddressDecoder()], ['opening', getAddressDecoder()], ['boxAuthority', getAddressDecoder()], ['beneficiary', getAddressDecoder()], ['consumerProgram', getAddressDecoder()], ['consumerContext', fixDecoderSize(getBytesDecoder(), 32)], ['manifestHash', fixDecoderSize(getBytesDecoder(), 32)], ['randomness', getAddressDecoder()], ['sequence', getU64Decoder()], ['selectedBundle', getU32Decoder()], ['bump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link ResultReceiptState} account data. */
@@ -100,4 +104,32 @@ export async function fetchMaybeResultReceiptStateFromSeeds(
   const { programAddress, ...fetchConfig } = config;
   const [address] = await findResultReceiptPda(seeds, { programAddress });
   return await fetchMaybeResultReceiptState(rpc, address, fetchConfig);
+}
+
+/** The account schema version this client was generated from. */
+export const RESULT_RECEIPT_STATE_MIGRATION_VERSION = 0;
+
+/**
+ * Cheap envelope check for a fetched `ResultReceiptState` account: `true` only when the
+ * bytes name this account's discriminator and a migration version older than
+ * this client's schema. Those are exactly the accounts
+ * {@link getMigrateInstruction} can bring current; every other mismatch is
+ * reported by the decoder when the account is decoded.
+ *
+ * ```ts
+ * const { data } = await fetchEncodedAccount(rpc, address);
+ * if (resultReceiptStateNeedsMigration(data)) {
+ * 	// Migrate first, then retry the instruction that failed.
+ * 	await send(getMigrateInstruction({ resultReceiptState: address, payer }).make());
+ * }
+ * ```
+ */
+export function resultReceiptStateNeedsMigration(data: ReadonlyUint8Array): boolean {
+	if (data.length < 2) {
+		return false;
+	}
+	if (data[0] !== 7) {
+		return false;
+	}
+	return data[1]! < 0;
 }

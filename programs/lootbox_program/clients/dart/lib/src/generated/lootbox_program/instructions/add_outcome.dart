@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,14 +12,18 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
+
 @immutable
 class AddOutcomeInstructionData {
   const AddOutcomeInstructionData({
     required this.weight,
     required this.rewardLamports,
-  }) : discriminator = 1;
+  }) :
+      discriminator = 1,
+      migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final BigInt weight;
   final BigInt rewardLamports;
 }
@@ -26,6 +31,7 @@ class AddOutcomeInstructionData {
 Encoder<AddOutcomeInstructionData> getAddOutcomeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('weight', getU64Encoder()),
     ('rewardLamports', getU64Encoder()),
   ]);
@@ -34,6 +40,7 @@ Encoder<AddOutcomeInstructionData> getAddOutcomeInstructionDataEncoder() {
     structEncoder,
     (AddOutcomeInstructionData value) => <String, Object?>{
       'discriminator': 1,
+      'migrationVersion': 0,
       'weight': value.weight,
       'rewardLamports': value.rewardLamports,
     },
@@ -43,20 +50,29 @@ Encoder<AddOutcomeInstructionData> getAddOutcomeInstructionDataEncoder() {
 Decoder<AddOutcomeInstructionData> getAddOutcomeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('weight', getU64Decoder()),
     ('rewardLamports', getU64Decoder()),
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'addOutcome instruction decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'addOutcome instruction decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
   (AddOutcomeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(1)).read(bytes, offset + 0);
+    getConstantDecoder(
+      getU8Encoder().encode(1),
+    ).read(bytes, offset + 0);
+    getConstantDecoder(
+      getU8Encoder().encode(0),
+    ).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
@@ -64,8 +80,8 @@ Decoder<AddOutcomeInstructionData> getAddOutcomeInstructionDataDecoder() {
 
     return (
       AddOutcomeInstructionData(
-        weight: map['weight']! as BigInt,
-        rewardLamports: map['rewardLamports']! as BigInt,
+      weight: map['weight']! as BigInt,
+      rewardLamports: map['rewardLamports']! as BigInt,
       ),
       newOffset,
     );
@@ -91,12 +107,8 @@ Decoder<AddOutcomeInstructionData> getAddOutcomeInstructionDataDecoder() {
   };
 }
 
-Codec<AddOutcomeInstructionData, AddOutcomeInstructionData>
-getAddOutcomeInstructionDataCodec() {
-  return combineCodec(
-    getAddOutcomeInstructionDataEncoder(),
-    getAddOutcomeInstructionDataDecoder(),
-  );
+Codec<AddOutcomeInstructionData, AddOutcomeInstructionData> getAddOutcomeInstructionDataCodec() {
+  return combineCodec(getAddOutcomeInstructionDataEncoder(), getAddOutcomeInstructionDataDecoder());
 }
 
 /// Creates a [AddOutcome] instruction.
@@ -108,15 +120,15 @@ Instruction getAddOutcomeInstruction({
   required BigInt rewardLamports,
 }) {
   final instructionData = AddOutcomeInstructionData(
-    weight: weight,
-    rewardLamports: rewardLamports,
+      weight: weight,
+      rewardLamports: rewardLamports,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.readonlySigner),
-      AccountMeta(address: lootbox, role: AccountRole.writable),
+    AccountMeta(address: authority, role: AccountRole.readonlySigner),
+    AccountMeta(address: lootbox, role: AccountRole.writable),
     ],
     data: getAddOutcomeInstructionDataEncoder().encode(instructionData),
   );

@@ -9,6 +9,7 @@
 )]
 
 pub const SEAL_TEMPLATE_DISCRIMINATOR: u8 = 14u8;
+pub const SEAL_TEMPLATE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -58,6 +59,7 @@ impl SealTemplateInstructionData {
 		<SealTemplateInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = SEAL_TEMPLATE_DISCRIMINATOR;
+			data.migration_version = SEAL_TEMPLATE_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -71,4 +73,5 @@ impl SealTemplateInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct SealTemplateInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 }

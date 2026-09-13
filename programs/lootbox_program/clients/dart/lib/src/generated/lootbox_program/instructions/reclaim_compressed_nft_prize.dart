@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -11,6 +12,7 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
+
 @immutable
 class ReclaimCompressedNftPrizeInstructionData {
   const ReclaimCompressedNftPrizeInstructionData({
@@ -20,9 +22,12 @@ class ReclaimCompressedNftPrizeInstructionData {
     required this.creatorHash,
     required this.nonce,
     required this.index,
-  }) : discriminator = 35;
+  }) :
+      discriminator = 35,
+      migrationVersion = 0;
 
   final int discriminator;
+  final int migrationVersion;
   final int assetIndex;
   final Uint8List root;
   final Uint8List dataHash;
@@ -31,17 +36,14 @@ class ReclaimCompressedNftPrizeInstructionData {
   final int index;
 }
 
-Encoder<ReclaimCompressedNftPrizeInstructionData>
-getReclaimCompressedNftPrizeInstructionDataEncoder() {
+Encoder<ReclaimCompressedNftPrizeInstructionData> getReclaimCompressedNftPrizeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
+    ('migrationVersion', getU8Encoder()),
     ('assetIndex', getU8Encoder()),
     ('root', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     ('dataHash', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
-    (
-      'creatorHash',
-      fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false),
-    ),
+    ('creatorHash', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     ('nonce', getU64Encoder()),
     ('index', getU32Encoder()),
   ]);
@@ -50,6 +52,7 @@ getReclaimCompressedNftPrizeInstructionDataEncoder() {
     structEncoder,
     (ReclaimCompressedNftPrizeInstructionData value) => <String, Object?>{
       'discriminator': 35,
+      'migrationVersion': 0,
       'assetIndex': value.assetIndex,
       'root': value.root,
       'dataHash': value.dataHash,
@@ -60,10 +63,10 @@ getReclaimCompressedNftPrizeInstructionDataEncoder() {
   );
 }
 
-Decoder<ReclaimCompressedNftPrizeInstructionData>
-getReclaimCompressedNftPrizeInstructionDataDecoder() {
+Decoder<ReclaimCompressedNftPrizeInstructionData> getReclaimCompressedNftPrizeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
+    ('migrationVersion', getU8Decoder()),
     ('assetIndex', getU8Decoder()),
     ('root', fixDecoderSize(getBytesDecoder(), 32)),
     ('dataHash', fixDecoderSize(getBytesDecoder(), 32)),
@@ -73,18 +76,23 @@ getReclaimCompressedNftPrizeInstructionDataDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'reclaimCompressedNftPrize instruction decoder',
-      'expected': expected,
-      'bytesLength': bytesLength,
-    });
+    throw SolanaError(
+      SolanaErrorCode.codecsInvalidByteLength,
+      {
+        'codecDescription': 'reclaimCompressedNftPrize instruction decoder',
+        'expected': expected,
+        'bytesLength': bytesLength,
+      },
+    );
   }
 
-  (ReclaimCompressedNftPrizeInstructionData, int) readTopLevel(
-    Uint8List bytes,
-    int offset,
-  ) {
-    getConstantDecoder(getU8Encoder().encode(35)).read(bytes, offset + 0);
+  (ReclaimCompressedNftPrizeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
+    getConstantDecoder(
+      getU8Encoder().encode(35),
+    ).read(bytes, offset + 0);
+    getConstantDecoder(
+      getU8Encoder().encode(0),
+    ).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
@@ -92,12 +100,12 @@ getReclaimCompressedNftPrizeInstructionDataDecoder() {
 
     return (
       ReclaimCompressedNftPrizeInstructionData(
-        assetIndex: map['assetIndex']! as int,
-        root: map['root']! as Uint8List,
-        dataHash: map['dataHash']! as Uint8List,
-        creatorHash: map['creatorHash']! as Uint8List,
-        nonce: map['nonce']! as BigInt,
-        index: map['index']! as int,
+      assetIndex: map['assetIndex']! as int,
+      root: map['root']! as Uint8List,
+      dataHash: map['dataHash']! as Uint8List,
+      creatorHash: map['creatorHash']! as Uint8List,
+      nonce: map['nonce']! as BigInt,
+      index: map['index']! as int,
       ),
       newOffset,
     );
@@ -123,15 +131,8 @@ getReclaimCompressedNftPrizeInstructionDataDecoder() {
   };
 }
 
-Codec<
-  ReclaimCompressedNftPrizeInstructionData,
-  ReclaimCompressedNftPrizeInstructionData
->
-getReclaimCompressedNftPrizeInstructionDataCodec() {
-  return combineCodec(
-    getReclaimCompressedNftPrizeInstructionDataEncoder(),
-    getReclaimCompressedNftPrizeInstructionDataDecoder(),
-  );
+Codec<ReclaimCompressedNftPrizeInstructionData, ReclaimCompressedNftPrizeInstructionData> getReclaimCompressedNftPrizeInstructionDataCodec() {
+  return combineCodec(getReclaimCompressedNftPrizeInstructionDataEncoder(), getReclaimCompressedNftPrizeInstructionDataDecoder());
 }
 
 /// Creates a [ReclaimCompressedNftPrize] instruction.
@@ -156,39 +157,34 @@ Instruction getReclaimCompressedNftPrizeInstruction({
   required int index,
 }) {
   final instructionData = ReclaimCompressedNftPrizeInstructionData(
-    assetIndex: assetIndex,
-    root: root,
-    dataHash: dataHash,
-    creatorHash: creatorHash,
-    nonce: nonce,
-    index: index,
+      assetIndex: assetIndex,
+      root: root,
+      dataHash: dataHash,
+      creatorHash: creatorHash,
+      nonce: nonce,
+      index: index,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.readonlySigner),
-      AccountMeta(address: template, role: AccountRole.readonly),
-      AccountMeta(address: boxMint, role: AccountRole.readonly),
-      AccountMeta(address: bundle, role: AccountRole.writable),
-      AccountMeta(address: treeConfig, role: AccountRole.readonly),
-      AccountMeta(address: merkleTree, role: AccountRole.writable),
-      AccountMeta(address: bubblegumProgram, role: AccountRole.readonly),
-      AccountMeta(address: logWrapper, role: AccountRole.readonly),
-      AccountMeta(address: compressionProgram, role: AccountRole.readonly),
-      AccountMeta(address: systemProgram, role: AccountRole.readonly),
-      AccountMeta(address: proofAccounts, role: AccountRole.readonly),
+    AccountMeta(address: authority, role: AccountRole.readonlySigner),
+    AccountMeta(address: template, role: AccountRole.readonly),
+    AccountMeta(address: boxMint, role: AccountRole.readonly),
+    AccountMeta(address: bundle, role: AccountRole.writable),
+    AccountMeta(address: treeConfig, role: AccountRole.readonly),
+    AccountMeta(address: merkleTree, role: AccountRole.writable),
+    AccountMeta(address: bubblegumProgram, role: AccountRole.readonly),
+    AccountMeta(address: logWrapper, role: AccountRole.readonly),
+    AccountMeta(address: compressionProgram, role: AccountRole.readonly),
+    AccountMeta(address: systemProgram, role: AccountRole.readonly),
+    AccountMeta(address: proofAccounts, role: AccountRole.readonly),
     ],
-    data: getReclaimCompressedNftPrizeInstructionDataEncoder().encode(
-      instructionData,
-    ),
+    data: getReclaimCompressedNftPrizeInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [ReclaimCompressedNftPrize] instruction from raw instruction data.
-ReclaimCompressedNftPrizeInstructionData
-parseReclaimCompressedNftPrizeInstruction(Instruction instruction) {
-  return getReclaimCompressedNftPrizeInstructionDataDecoder().decode(
-    instruction.data!,
-  );
+ReclaimCompressedNftPrizeInstructionData parseReclaimCompressedNftPrizeInstruction(Instruction instruction) {
+  return getReclaimCompressedNftPrizeInstructionDataDecoder().decode(instruction.data!);
 }

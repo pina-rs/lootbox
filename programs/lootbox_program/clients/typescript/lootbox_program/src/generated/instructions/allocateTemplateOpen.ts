@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
+import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
 import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { findResultReceiptPda } from '../pdas';
@@ -16,19 +16,23 @@ export const ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR = 18;
 
 export function getAllocateTemplateOpenDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR); }
 
+export const ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR2 = 0;
+
+export function getAllocateTemplateOpenDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR2); }
+
 export type AllocateTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountServiceVault extends string | AccountMeta<string> = string, TAccountResultReceipt extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? ReadonlyAccount<TAccountBundle> : TAccountBundle, TAccountServiceVault extends string ? WritableAccount<TAccountServiceVault> : TAccountServiceVault, TAccountResultReceipt extends string ? WritableAccount<TAccountResultReceipt> : TAccountResultReceipt, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type AllocateTemplateOpenInstructionData = { discriminator: number; resultReceiptBump: number;  };
+export type AllocateTemplateOpenInstructionData = { discriminator: number; migrationVersion: number; resultReceiptBump: number;  };
 
 export type AllocateTemplateOpenInstructionDataArgs = { resultReceiptBump: number;  };
 
 export function getAllocateTemplateOpenInstructionDataEncoder(): FixedSizeEncoder<AllocateTemplateOpenInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['resultReceiptBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 18 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['resultReceiptBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 18, migrationVersion: 0 }));
 }
 
 export function getAllocateTemplateOpenInstructionDataDecoder(): FixedSizeDecoder<AllocateTemplateOpenInstructionData> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR, getU8Decoder())], ['resultReceiptBump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['resultReceiptBump', getU8Decoder()]]);
 }
 
 export function getAllocateTemplateOpenInstructionDataCodec(): FixedSizeCodec<AllocateTemplateOpenInstructionDataArgs, AllocateTemplateOpenInstructionData> {

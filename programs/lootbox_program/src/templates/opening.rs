@@ -4,7 +4,7 @@ use pina::sysvars::Sysvar;
 
 use super::*;
 
-#[instruction(discriminator = LootboxInstruction::RequestTemplateOpen)]
+#[instruction(discriminator = LootboxInstruction::RequestTemplateOpen, migrations)]
 pub struct RequestTemplateOpenInstruction {
 	pub recent_slot: u64,
 	pub beneficiary: Address,
@@ -13,14 +13,14 @@ pub struct RequestTemplateOpenInstruction {
 	pub bump: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::FulfillTemplateOpen)]
+#[instruction(discriminator = LootboxInstruction::FulfillTemplateOpen, migrations)]
 pub struct FulfillTemplateOpenInstruction {
 	pub signature: [u8; 64],
 	pub recovery_id: u8,
 	pub value: [u8; 32],
 }
 
-#[instruction(discriminator = LootboxInstruction::ForfeitTemplateOpen)]
+#[instruction(discriminator = LootboxInstruction::ForfeitTemplateOpen, migrations)]
 pub struct ForfeitTemplateOpenInstruction {}
 
 #[derive(Accounts, Debug)]

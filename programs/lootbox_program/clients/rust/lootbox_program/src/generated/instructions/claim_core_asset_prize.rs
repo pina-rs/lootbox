@@ -9,6 +9,7 @@
 )]
 
 pub const CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR: u8 = 31u8;
+pub const CLAIM_CORE_ASSET_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
@@ -86,6 +87,7 @@ impl ClaimCoreAssetPrizeInstructionData {
 		<ClaimCoreAssetPrizeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
 			data.discriminator = CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR;
+			data.migration_version = CLAIM_CORE_ASSET_PRIZE_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -99,5 +101,6 @@ impl ClaimCoreAssetPrizeInstructionData {
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct ClaimCoreAssetPrizeInstructionWire {
 	pub discriminator: u8,
+	pub migration_version: u8,
 	pub asset_index: u8,
 }

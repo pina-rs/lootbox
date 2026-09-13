@@ -1,7 +1,6 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -12,13 +11,10 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
-
 @immutable
 class LockTreasuryInstructionData {
-  const LockTreasuryInstructionData({
-    required this.serviceVaultBump,
-  }) :
-      discriminator = 37;
+  const LockTreasuryInstructionData({required this.serviceVaultBump})
+    : discriminator = 37;
 
   final int discriminator;
   final int serviceVaultBump;
@@ -46,20 +42,15 @@ Decoder<LockTreasuryInstructionData> getLockTreasuryInstructionDataDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(
-      SolanaErrorCode.codecsInvalidByteLength,
-      {
-        'codecDescription': 'lockTreasury instruction decoder',
-        'expected': expected,
-        'bytesLength': bytesLength,
-      },
-    );
+    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
+      'codecDescription': 'lockTreasury instruction decoder',
+      'expected': expected,
+      'bytesLength': bytesLength,
+    });
   }
 
   (LockTreasuryInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(
-      getU8Encoder().encode(37),
-    ).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(37)).read(bytes, offset + 0);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
@@ -67,7 +58,7 @@ Decoder<LockTreasuryInstructionData> getLockTreasuryInstructionDataDecoder() {
 
     return (
       LockTreasuryInstructionData(
-      serviceVaultBump: map['serviceVaultBump']! as int,
+        serviceVaultBump: map['serviceVaultBump']! as int,
       ),
       newOffset,
     );
@@ -93,8 +84,12 @@ Decoder<LockTreasuryInstructionData> getLockTreasuryInstructionDataDecoder() {
   };
 }
 
-Codec<LockTreasuryInstructionData, LockTreasuryInstructionData> getLockTreasuryInstructionDataCodec() {
-  return combineCodec(getLockTreasuryInstructionDataEncoder(), getLockTreasuryInstructionDataDecoder());
+Codec<LockTreasuryInstructionData, LockTreasuryInstructionData>
+getLockTreasuryInstructionDataCodec() {
+  return combineCodec(
+    getLockTreasuryInstructionDataEncoder(),
+    getLockTreasuryInstructionDataDecoder(),
+  );
 }
 
 /// Creates a [LockTreasury] instruction.
@@ -110,25 +105,27 @@ Instruction getLockTreasuryInstruction({
   required int serviceVaultBump,
 }) {
   final instructionData = LockTreasuryInstructionData(
-      serviceVaultBump: serviceVaultBump,
+    serviceVaultBump: serviceVaultBump,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-    AccountMeta(address: authority, role: AccountRole.writable),
-    AccountMeta(address: template, role: AccountRole.writable),
-    AccountMeta(address: boxMint, role: AccountRole.writable),
-    AccountMeta(address: bundle, role: AccountRole.readonly),
-    AccountMeta(address: serviceVault, role: AccountRole.writable),
-    AccountMeta(address: systemProgram, role: AccountRole.readonly),
-    AccountMeta(address: boxTokenProgram, role: AccountRole.readonly),
+      AccountMeta(address: authority, role: AccountRole.writable),
+      AccountMeta(address: template, role: AccountRole.writable),
+      AccountMeta(address: boxMint, role: AccountRole.writable),
+      AccountMeta(address: bundle, role: AccountRole.readonly),
+      AccountMeta(address: serviceVault, role: AccountRole.writable),
+      AccountMeta(address: systemProgram, role: AccountRole.readonly),
+      AccountMeta(address: boxTokenProgram, role: AccountRole.readonly),
     ],
     data: getLockTreasuryInstructionDataEncoder().encode(instructionData),
   );
 }
 
 /// Parses a [LockTreasury] instruction from raw instruction data.
-LockTreasuryInstructionData parseLockTreasuryInstruction(Instruction instruction) {
+LockTreasuryInstructionData parseLockTreasuryInstruction(
+  Instruction instruction,
+) {
   return getLockTreasuryInstructionDataDecoder().decode(instruction.data!);
 }

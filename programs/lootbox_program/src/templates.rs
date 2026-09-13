@@ -1039,7 +1039,7 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 
 		let decimals = mint.decimals();
 		drop(mint);
-		let escrow = self.escrow.as_associated_token_account_checked(
+		let escrow = self.escrow.as_associated_token_account(
 			&bundle_address,
 			self.mint.address(),
 			&token_program,
@@ -1122,7 +1122,7 @@ impl<'a> ProcessAccountInfos<'a> for FundQuoteTokenPrizeAccounts<'a> {
 
 		let decimals = mint.decimals();
 		drop(mint);
-		let escrow = self.escrow.as_associated_token_account_checked(
+		let escrow = self.escrow.as_associated_token_account(
 			&bundle_address,
 			self.mint.address(),
 			&token_program,
@@ -1520,7 +1520,7 @@ impl<'a> ProcessAccountInfos<'a> for CancelBundleAccounts<'a> {
 		}
 		drop(bundle);
 
-		self.bundle.close_account_zeroed(self.authority)
+		self.bundle.close_account_zeroed(&ID, self.authority)
 	}
 }
 
@@ -1540,14 +1540,11 @@ impl<'a> ProcessAccountInfos<'a> for MintTemplateBoxesAccounts<'a> {
 			.as_token_account_for_program(&token_2022::ID)?;
 		let recipient = *account.owner();
 		drop(account);
-		drop(
-			self.recipient_box_account
-				.as_associated_token_account_checked(
-					&recipient,
-					self.box_mint.address(),
-					&token_2022::ID,
-				)?,
-		);
+		drop(self.recipient_box_account.as_associated_token_account(
+			&recipient,
+			self.box_mint.address(),
+			&token_2022::ID,
+		)?);
 		let minted = validate_issuance(&state, supply, args.amount.get())?;
 		let authority = state.authority;
 		let seeds = TemplateState::seeds(&authority, state.id.get()).with_bump(state.bump);

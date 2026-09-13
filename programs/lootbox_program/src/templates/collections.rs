@@ -364,7 +364,7 @@ fn validate_metadata_accounts(
 	accounts
 		.associated_token_program
 		.assert_address(&associated_token_account::ID)?;
-	let mint_data = accounts.mint.as_token_mint_checked()?;
+	let mint_data = accounts.mint.as_token_mint()?;
 	if mint_data.supply() != 1 || mint_data.decimals() != 0 {
 		return Err(lootbox_error(LootboxError::InvalidPrize));
 	}
@@ -600,12 +600,12 @@ impl<'a> ProcessAccountInfos<'a> for FundMetadataNftPrizeAccounts<'a> {
 			self.optional_accounts,
 		)?;
 		let bundle_address = *self.bundle.address();
-		drop(self.source.as_associated_token_account_checked(
+		drop(self.source.as_associated_token_account(
 			self.authority.address(),
 			self.mint.address(),
 			&token::ID,
 		)?);
-		drop(self.escrow.as_associated_token_account_checked(
+		drop(self.escrow.as_associated_token_account(
 			&bundle_address,
 			self.mint.address(),
 			&token::ID,
@@ -669,12 +669,12 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMetadataNftPrizeAccounts<'a> {
 		{
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
-		drop(self.escrow.as_associated_token_account_checked(
+		drop(self.escrow.as_associated_token_account(
 			&bundle_address,
 			self.mint.address(),
 			&token::ID,
 		)?);
-		drop(self.destination.as_associated_token_account_checked(
+		drop(self.destination.as_associated_token_account(
 			&opening.beneficiary,
 			self.mint.address(),
 			&token::ID,
@@ -749,12 +749,12 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMetadataNftPrizeAccounts<'a> {
 		{
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
-		drop(self.escrow.as_associated_token_account_checked(
+		drop(self.escrow.as_associated_token_account(
 			&bundle_address,
 			self.mint.address(),
 			&token::ID,
 		)?);
-		drop(self.destination.as_associated_token_account_checked(
+		drop(self.destination.as_associated_token_account(
 			self.authority.address(),
 			self.mint.address(),
 			&token::ID,

@@ -965,20 +965,22 @@ pub struct AllocateTemplateOpenArgs {
 	/// Service vault PDA.
 	#[arg(long)]
 	pub service_vault: Pubkey,
-	/// Result receipt PDA.
+	/// Result receipt PDA. Defaults to the canonical PDA derived from the opening.
 	#[arg(long)]
-	pub result_receipt: Pubkey,
+	pub result_receipt: Option<Pubkey>,
 }
 
 impl InstructionBuilder for AllocateTemplateOpenArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let accounts = generated::AllocateTemplateOpen::new(
+		let mut accounts = generated::AllocateTemplateOpen::new(
 			self.template,
 			self.opening,
 			self.bundle,
 			self.service_vault,
-			self.result_receipt,
 		);
+		if let Some(result_receipt) = self.result_receipt {
+			accounts.result_receipt = result_receipt;
+		}
 		let data = generated::AllocateTemplateOpenInstructionData::new(|_wire| {})?;
 
 		Ok(accounts.instruction(data))

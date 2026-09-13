@@ -1,7 +1,6 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
-
 import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
@@ -12,14 +11,12 @@ import 'package:solana_kit_codecs_numbers/solana_kit_codecs_numbers.dart';
 import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
-
 @immutable
 class AddOutcomeInstructionData {
   const AddOutcomeInstructionData({
     required this.weight,
     required this.rewardLamports,
-  }) :
-      discriminator = 1;
+  }) : discriminator = 1;
 
   final int discriminator;
   final BigInt weight;
@@ -51,20 +48,15 @@ Decoder<AddOutcomeInstructionData> getAddOutcomeInstructionDataDecoder() {
   ]);
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
-    throw SolanaError(
-      SolanaErrorCode.codecsInvalidByteLength,
-      {
-        'codecDescription': 'addOutcome instruction decoder',
-        'expected': expected,
-        'bytesLength': bytesLength,
-      },
-    );
+    throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
+      'codecDescription': 'addOutcome instruction decoder',
+      'expected': expected,
+      'bytesLength': bytesLength,
+    });
   }
 
   (AddOutcomeInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(
-      getU8Encoder().encode(1),
-    ).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(1)).read(bytes, offset + 0);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
       throwInvalidByteLength(newOffset - offset, bytes.length - offset);
@@ -72,8 +64,8 @@ Decoder<AddOutcomeInstructionData> getAddOutcomeInstructionDataDecoder() {
 
     return (
       AddOutcomeInstructionData(
-      weight: map['weight']! as BigInt,
-      rewardLamports: map['rewardLamports']! as BigInt,
+        weight: map['weight']! as BigInt,
+        rewardLamports: map['rewardLamports']! as BigInt,
       ),
       newOffset,
     );
@@ -99,8 +91,12 @@ Decoder<AddOutcomeInstructionData> getAddOutcomeInstructionDataDecoder() {
   };
 }
 
-Codec<AddOutcomeInstructionData, AddOutcomeInstructionData> getAddOutcomeInstructionDataCodec() {
-  return combineCodec(getAddOutcomeInstructionDataEncoder(), getAddOutcomeInstructionDataDecoder());
+Codec<AddOutcomeInstructionData, AddOutcomeInstructionData>
+getAddOutcomeInstructionDataCodec() {
+  return combineCodec(
+    getAddOutcomeInstructionDataEncoder(),
+    getAddOutcomeInstructionDataDecoder(),
+  );
 }
 
 /// Creates a [AddOutcome] instruction.
@@ -112,15 +108,15 @@ Instruction getAddOutcomeInstruction({
   required BigInt rewardLamports,
 }) {
   final instructionData = AddOutcomeInstructionData(
-      weight: weight,
-      rewardLamports: rewardLamports,
+    weight: weight,
+    rewardLamports: rewardLamports,
   );
 
   return Instruction(
     programAddress: programAddress,
     accounts: [
-    AccountMeta(address: authority, role: AccountRole.readonlySigner),
-    AccountMeta(address: lootbox, role: AccountRole.writable),
+      AccountMeta(address: authority, role: AccountRole.readonlySigner),
+      AccountMeta(address: lootbox, role: AccountRole.writable),
     ],
     data: getAddOutcomeInstructionDataEncoder().encode(instructionData),
   );

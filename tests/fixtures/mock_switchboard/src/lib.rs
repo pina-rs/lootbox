@@ -193,7 +193,7 @@ fn process_close(accounts: &mut [AccountView]) -> ProgramResult {
 	}
 	drop(bytes);
 
-	randomness.close_account_zeroed(authority)
+	randomness.close_account_zeroed(&ID, authority)
 }
 
 /// Process a test-oracle instruction.

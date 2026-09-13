@@ -8,7 +8,8 @@
 
 import { getPinaPodDiscriminatorDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { findResultReceiptPda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR = 18;
@@ -32,6 +33,43 @@ export function getAllocateTemplateOpenInstructionDataDecoder(): FixedSizeDecode
 
 export function getAllocateTemplateOpenInstructionDataCodec(): FixedSizeCodec<AllocateTemplateOpenInstructionDataArgs, AllocateTemplateOpenInstructionData> {
     return combineCodec(getAllocateTemplateOpenInstructionDataEncoder(), getAllocateTemplateOpenInstructionDataDecoder());
+}
+
+export type AllocateTemplateOpenAsyncInput<TAccountTemplate extends string = string, TAccountOpening extends string = string, TAccountBundle extends string = string, TAccountServiceVault extends string = string, TAccountResultReceipt extends string = string, TAccountSystemProgram extends string = string> =  {
+  template: Address<TAccountTemplate>;
+opening: Address<TAccountOpening>;
+bundle: Address<TAccountBundle>;
+/** Creator-funded when permanent result receipts are enabled. */
+serviceVault: Address<TAccountServiceVault>;
+/** Created only when enabled in the locked treasury configuration. */
+resultReceipt?: Address<TAccountResultReceipt>;
+systemProgram?: Address<TAccountSystemProgram>;
+resultReceiptBump: AllocateTemplateOpenInstructionDataArgs["resultReceiptBump"];
+}
+
+export async function getAllocateTemplateOpenInstructionAsync<TAccountTemplate extends string, TAccountOpening extends string, TAccountBundle extends string, TAccountServiceVault extends string, TAccountResultReceipt extends string, TAccountSystemProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: AllocateTemplateOpenAsyncInput<TAccountTemplate, TAccountOpening, TAccountBundle, TAccountServiceVault, TAccountResultReceipt, TAccountSystemProgram>, config?: { programAddress?: TProgramAddress } ): Promise<AllocateTemplateOpenInstruction<TProgramAddress, TAccountTemplate, TAccountOpening, TAccountBundle, TAccountServiceVault, TAccountResultReceipt, TAccountSystemProgram>> {
+  // Program address.
+const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
+
+ // Original accounts.
+const originalAccounts = { template: { value: input.template ?? null, isWritable: true }, opening: { value: input.opening ?? null, isWritable: true }, bundle: { value: input.bundle ?? null, isWritable: false }, serviceVault: { value: input.serviceVault ?? null, isWritable: true }, resultReceipt: { value: input.resultReceipt ?? null, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isWritable: false } }
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
+
+
+// Original args.
+const args = { ...input,  };
+
+
+// Resolve default values.
+if (!accounts.resultReceipt.value) {
+accounts.resultReceipt.value = await findResultReceiptPda({ opening: getAddressFromResolvedInstructionAccount("opening", accounts.opening.value) }, { programAddress });
+}
+if (!accounts.systemProgram.value) {
+accounts.systemProgram.value = '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+}
+
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+return Object.freeze({ accounts: [getAccountMeta("template", accounts.template), getAccountMeta("opening", accounts.opening), getAccountMeta("bundle", accounts.bundle), getAccountMeta("serviceVault", accounts.serviceVault), getAccountMeta("resultReceipt", accounts.resultReceipt), getAccountMeta("systemProgram", accounts.systemProgram)], data: getAllocateTemplateOpenInstructionDataEncoder().encode(args as AllocateTemplateOpenInstructionDataArgs), programAddress } as AllocateTemplateOpenInstruction<TProgramAddress, TAccountTemplate, TAccountOpening, TAccountBundle, TAccountServiceVault, TAccountResultReceipt, TAccountSystemProgram>);
 }
 
 export type AllocateTemplateOpenInput<TAccountTemplate extends string = string, TAccountOpening extends string = string, TAccountBundle extends string = string, TAccountServiceVault extends string = string, TAccountResultReceipt extends string = string, TAccountSystemProgram extends string = string> =  {

@@ -235,7 +235,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimSolPrizeAccounts<'a> {
 		}
 
 		self.bundle.assert_owner(&ID)?;
-		self.bundle.send(amount, self.authority)
+		self.bundle.send_owned(&ID, amount, self.authority)
 	}
 }
 
@@ -271,12 +271,12 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 
-		drop(self.escrow.as_associated_token_account_checked(
+		drop(self.escrow.as_associated_token_account(
 			&bundle_address,
 			self.mint.address(),
 			&token_program,
 		)?);
-		drop(self.destination.as_associated_token_account_checked(
+		drop(self.destination.as_associated_token_account(
 			self.authority.address(),
 			self.mint.address(),
 			&token_program,

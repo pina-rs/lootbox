@@ -24,13 +24,16 @@ pub struct AllocateTemplateOpen {
 }
 
 impl AllocateTemplateOpen {
-	pub fn new(template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, service_vault: solana_pubkey::Pubkey, result_receipt: solana_pubkey::Pubkey) -> Self {
+	pub fn new(template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, service_vault: solana_pubkey::Pubkey) -> Self {
 		Self {
 			template,
 			opening,
 			bundle,
 			service_vault,
-			result_receipt,
+			result_receipt: solana_pubkey::Pubkey::find_program_address(
+				&["result-receipt".as_bytes(), opening.as_ref()],
+				&crate::LOOTBOX_PROGRAM_ID,
+			).0,
 			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
 		}
 	}
@@ -80,6 +83,7 @@ impl AllocateTemplateOpenInstructionData {
 }
 
 #[doc(hidden)]
+#[allow(clippy::len_without_is_empty)]
 #[derive(pina::PinaPod)]
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct AllocateTemplateOpenInstructionWire {

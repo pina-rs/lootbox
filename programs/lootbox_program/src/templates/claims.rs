@@ -514,7 +514,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimSolPrizeAccounts<'a> {
 		}
 
 		self.bundle.assert_owner(&ID)?;
-		self.bundle.send(amount, self.recipient)
+		self.bundle.send_owned(&ID, amount, self.recipient)
 	}
 }
 
@@ -545,12 +545,12 @@ impl<'a> ProcessAccountInfos<'a> for ClaimTokenPrizeAccounts<'a> {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 
-		drop(self.escrow.as_associated_token_account_checked(
+		drop(self.escrow.as_associated_token_account(
 			&bundle_address,
 			self.mint.address(),
 			&token_program,
 		)?);
-		drop(self.destination.as_associated_token_account_checked(
+		drop(self.destination.as_associated_token_account(
 			&opening.beneficiary,
 			self.mint.address(),
 			&token_program,
@@ -632,7 +632,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 		drop(mint);
-		drop(self.destination.as_associated_token_account_checked(
+		drop(self.destination.as_associated_token_account(
 			&opening.beneficiary,
 			self.mint.address(),
 			&token_program,

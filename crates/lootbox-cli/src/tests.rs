@@ -1746,6 +1746,31 @@ fn allocate_template_open_with_default_bump() {
 }
 
 #[test]
+fn allocate_template_open_defaults_receipt_to_canonical_pda() {
+	let instruction = build_from(&[
+		"allocate-template-open",
+		"--template",
+		PK1,
+		"--opening",
+		PK2,
+		"--bundle",
+		PK3,
+		"--service-vault",
+		PK1,
+	])
+	.expect("builds");
+
+	let opening: Pubkey = PK2.parse().expect("valid pubkey");
+	let (receipt, _) = Pubkey::find_program_address(
+		&[b"result-receipt", opening.as_ref()],
+		&lootbox_program_client::generated::programs::LOOTBOX_PROGRAM_ID,
+	);
+
+	assert_eq!(instruction.data[0], 18);
+	assert_eq!(instruction.accounts[4].pubkey, receipt);
+}
+
+#[test]
 fn create_template_bump_defaults_to_pda_bump() {
 	let without_bump = build_from(&[
 		"create-template",

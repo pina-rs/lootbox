@@ -98,7 +98,7 @@ impl<'a> ProcessAccountInfos<'a> for CloseTemplateOpeningAccounts<'a> {
 		}
 		.invoke_signed(&signers)?;
 
-		self.opening.close_account_zeroed(self.rent_refund)
+		self.opening.close_account_zeroed(&ID, self.rent_refund)
 	}
 }
 

@@ -1,6 +1,55 @@
 { pkgs, inputs, ... }:
 let
   custom = inputs.ifiokjr-nixpkgs.packages.${pkgs.stdenv.hostPlatform.system};
+  # Stopgap: the pinned `ifiokjr-nixpkgs` rev still packages Pina 0.16.0,
+  # while the programs now require the 0.17 CLI (manifest format 4,
+  # `[migrations].auto`). This mirrors the fork's `packages/pina/package.nix`
+  # recipe against the official v0.17.0 release tarball. Drop this override and
+  # return to `custom.pina` once the fork packages 0.17.0.
+  pinaCli =
+    let
+      version = "0.17.0";
+      platformSuffix =
+        {
+          "aarch64-darwin" = "aarch64-apple-darwin";
+          "x86_64-darwin" = "x86_64-apple-darwin";
+          "aarch64-linux" = "aarch64-unknown-linux-gnu";
+          "x86_64-linux" = "x86_64-unknown-linux-gnu";
+        }
+        .${pkgs.stdenv.hostPlatform.system}
+          or (throw "Unsupported platform: ${pkgs.stdenv.hostPlatform.system}");
+      hashes = {
+        "aarch64-apple-darwin" = "sha256-y1r1qbCRZxUZ8cuz70rvJ2JNBBUa+lk7q3EohM/1cpY=";
+        "x86_64-apple-darwin" = "sha256-F15GbV8ky6I9aeQflYtyb6BiCv+9jV/Mj1k+I++/GgM=";
+        "x86_64-unknown-linux-gnu" = "sha256-ec88q0WMr9R6jAco2t2eCypFZH0ww4nio3G9Wj7LImw=";
+        "aarch64-unknown-linux-gnu" = "sha256-mgOoRG/vqDlTcmDOLKB7rezh8vGL6/HHf41w3hzagAU=";
+      };
+    in
+    pkgs.stdenv.mkDerivation {
+      pname = "pina";
+      inherit version;
+
+      src = pkgs.fetchurl {
+        url = "https://github.com/pina-rs/pina/releases/download/v${version}/pina-${platformSuffix}-v${version}.tar.gz";
+        hash = hashes.${platformSuffix} or (throw "No prebuilt for platform: ${platformSuffix}");
+      };
+
+      dontUnpack = true;
+      dontBuild = true;
+      dontStrip = true;
+
+      installPhase = ''
+        runHook preInstall
+
+        mkdir -p $out/bin
+        tar xzf $src -C $out/bin/
+        chmod +x $out/bin/pina $out/bin/pina_lint_driver
+
+        runHook postInstall
+      '';
+
+      meta.mainProgram = "pina";
+    };
   kani = custom.kani.overrideAttrs (_: {
     # kani-compiler loads the driver from Kani's pinned rustup toolchain at
     # runtime, so it is intentionally absent while the bundle is packaged.
@@ -15,7 +64,7 @@ in
     custom.agave
     kani
     custom.monochange
-    custom.pina
+    pinaCli
     custom.sbpf-linker
     custom.surfpool
     dart

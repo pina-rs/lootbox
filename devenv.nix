@@ -2,13 +2,13 @@
 let
   custom = inputs.ifiokjr-nixpkgs.packages.${pkgs.stdenv.hostPlatform.system};
   # Stopgap: the pinned `ifiokjr-nixpkgs` rev still packages Pina 0.16.0,
-  # while the programs now require the 0.17 CLI (manifest format 4,
-  # `[migrations].auto`). This mirrors the fork's `packages/pina/package.nix`
-  # recipe against the official v0.17.0 release tarball. Drop this override and
-  # return to `custom.pina` once the fork packages 0.17.0.
+  # while the programs now require the 0.18 CLI. This mirrors the fork's
+  # `packages/pina/package.nix` recipe against the official v0.18.0 release
+  # tarball. Drop this override and return to `custom.pina` once the fork
+  # packages 0.18.0.
   pinaCli =
     let
-      version = "0.17.0";
+      version = "0.18.0";
       platformSuffix =
         {
           "aarch64-darwin" = "aarch64-apple-darwin";
@@ -19,10 +19,10 @@ let
         .${pkgs.stdenv.hostPlatform.system}
           or (throw "Unsupported platform: ${pkgs.stdenv.hostPlatform.system}");
       hashes = {
-        "aarch64-apple-darwin" = "sha256-y1r1qbCRZxUZ8cuz70rvJ2JNBBUa+lk7q3EohM/1cpY=";
-        "x86_64-apple-darwin" = "sha256-F15GbV8ky6I9aeQflYtyb6BiCv+9jV/Mj1k+I++/GgM=";
-        "x86_64-unknown-linux-gnu" = "sha256-ec88q0WMr9R6jAco2t2eCypFZH0ww4nio3G9Wj7LImw=";
-        "aarch64-unknown-linux-gnu" = "sha256-mgOoRG/vqDlTcmDOLKB7rezh8vGL6/HHf41w3hzagAU=";
+        "aarch64-apple-darwin" = "sha256-1c75dml0k70jjlmyqg8rcvbh858zh8s35k4zs1sgb1faq9k30iq5";
+        "x86_64-apple-darwin" = "sha256-1rw0danbzz6zd946179bsds453hr7qbs3aids4akrc2rx885k47a";
+        "x86_64-unknown-linux-gnu" = "sha256-12wr2m58zlrixsc66gaf1p69kn8nzyiaw84r45wyq1mkym9h53jc";
+        "aarch64-unknown-linux-gnu" = "sha256-079g6kpd26mdqr1y2b9qa79i2v0q4whfqdhirjfnvkihrzs8glkf";
       };
     in
     pkgs.stdenv.mkDerivation {

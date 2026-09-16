@@ -1984,6 +1984,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "lootbox-program-cpi"
+version = "0.0.1-alpha.0"
+dependencies = [
+ "pina",
+]
+
+[[package]]
 name = "lootbox-sdk"
 version = "0.0.1-alpha.0"
 dependencies = [
@@ -2341,9 +2348,9 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
 name = "pina"
-version = "0.16.0"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a35aedcbd21c0cd92935102793b784be53313e482fd0f78bf63da32ba9d7e705"
+checksum = "7eb7a6447fb47a1506125349f03eb9534d7e93c85653bf0d97cb3c6a46b5f81c"
 dependencies = [
  "pastey",
  "pina_macros",
@@ -2359,9 +2366,9 @@ dependencies = [
 
 [[package]]
 name = "pina_abi"
-version = "0.16.0"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0b49c6eea178619d7e8b0e832a7d5ba1823e64ee95ce3ffed8bbe976fe58eaf"
+checksum = "0a9b44cf7b0990d24792fe04ce2a26c76a136bc9670f028362634ac7c1fa242c"
 dependencies = [
  "quote",
  "serde",
@@ -2372,9 +2379,9 @@ dependencies = [
 
 [[package]]
 name = "pina_macros"
-version = "0.16.0"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ccd297404cf80a2ccf3ee54075d68ea4e054820182c902e06ebf533d87a82df"
+checksum = "2cec985f1cc030ec7b925d12051372ac005a88168c410bde25f65ce71974c703"
 dependencies = [
  "darling 0.24.1",
  "heck",
@@ -2386,9 +2393,9 @@ dependencies = [
 
 [[package]]
 name = "pinapod"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d69d3951e5656f07d66c908f3dfd52385c27230140dae6000ed0f9e1e60423a3"
+checksum = "c44a010bc0548a14eb99b3dfb7abafaf839bcd2b2d6ea38090085664d27039dc"
 dependencies = [
  "pinapod-derive",
  "solana-address 2.6.1",
@@ -2397,9 +2404,9 @@ dependencies = [
 
 [[package]]
 name = "pinapod-derive"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55964a0e09d05021ade218dec2616962fe4b24a35025709574eab7b9d532d7a4"
+checksum = "b800816ea8d3a8122046062829999d32e196b984d2fde42410b89e81c79777b6"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -2920,9 +2927,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.43"
+version = "0.23.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0283386ce02abc0151e1761d08802dfe86c173b0b494af5cbc086574e453da06"
+checksum = "0d41d731c7d2f962d1ccc364cec258de3c0e93b38c2fb3ba97ac74513048d634"
 dependencies = [
  "once_cell",
  "ring",

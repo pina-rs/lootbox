@@ -3,7 +3,8 @@ program = "."
 
 [migrations]
 version-type = "u8"
+auto = true
 
 [clients]
 output = "clients"
-languages = ["rust", "typescript", "dart"]
+languages = ["rust", "typescript", "dart", "cpi"]

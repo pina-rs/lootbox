@@ -155,6 +155,10 @@ impl LootboxState {
 		if account.discriminator != LOOTBOX_STATE_DISCRIMINATOR {
 			return Err(LootboxStateVersionError::InvalidData);
 		}
+		#[allow(clippy::absurd_extreme_comparisons)] // version 0 cannot be stale
+		if account.migration_version < LOOTBOX_STATE_MIGRATION_VERSION {
+			return Err(LootboxStateVersionError::Stale { stored: account.migration_version });
+		}
 		if account.migration_version > LOOTBOX_STATE_MIGRATION_VERSION {
 			return Err(LootboxStateVersionError::Future { stored: account.migration_version });
 		}

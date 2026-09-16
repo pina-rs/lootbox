@@ -143,6 +143,10 @@ impl OpeningState {
 		if account.discriminator != OPENING_STATE_DISCRIMINATOR {
 			return Err(OpeningStateVersionError::InvalidData);
 		}
+		#[allow(clippy::absurd_extreme_comparisons)] // version 0 cannot be stale
+		if account.migration_version < OPENING_STATE_MIGRATION_VERSION {
+			return Err(OpeningStateVersionError::Stale { stored: account.migration_version });
+		}
 		if account.migration_version > OPENING_STATE_MIGRATION_VERSION {
 			return Err(OpeningStateVersionError::Future { stored: account.migration_version });
 		}

@@ -45,6 +45,9 @@ importers:
       '@pina-rs/lootbox':
         specifier: workspace:*
         version: link:../../sdks/typescript
+      '@rive-app/canvas':
+        specifier: ^2.42.2
+        version: 2.42.2
       '@solana/kit':
         specifier: ^7.0.0
         version: 7.1.1(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
@@ -610,6 +613,9 @@ packages:
     resolution: {integrity: sha512-DTcUc8qii+cpHvtOwggMtBRMjKZHXYWdw8syRYu2vtzuq4Wxphqq4NfCs5Zt44L6mA8rfDfj+PHnxFc/FeK6mQ==}
     engines: {node: '>=20'}
     hasBin: true
+
+  '@rive-app/canvas@2.42.2':
+    resolution: {integrity: sha512-NlSngaccl6L0XambU8XuK+0MT9cIbQBQrBod+/tWPLIjL/G82cXs7c6hj6wdrfk9YSVj8ZNuXcUEKoEo6YABYg==}
 
   '@rolldown/pluginutils@1.0.0-rc.3':
     resolution: {integrity: sha512-eybk3TjzzzV97Dlj5c+XrBFW57eTNhzod66y9HrBlzJ6NsCrWCp/2kaPS3K9wJmurBC0Tdw4yPjXKZqlznim3Q==}
@@ -2656,6 +2662,8 @@ snapshots:
   '@playwright/test@1.62.1':
     dependencies:
       playwright: 1.62.1
+
+  '@rive-app/canvas@2.42.2': {}
 
   '@rolldown/pluginutils@1.0.0-rc.3': {}
 

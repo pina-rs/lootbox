@@ -8,6 +8,11 @@ export default defineConfig(({ mode }) => ({
 		),
 	},
 	plugins: [react()],
+	build: {
+		rollupOptions: {
+			input: { app: "index.html", reveal: "reveal-preview.html" },
+		},
+	},
 	test: {
 		environment: "jsdom",
 		exclude: ["e2e/**", "node_modules/**"],

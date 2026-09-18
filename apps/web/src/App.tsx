@@ -51,6 +51,7 @@ import {
 	settleOpenings,
 	validateInput,
 } from "./lootbox/playground.js";
+import { type RevealOutcome, revealOutcome } from "./lootbox/reveal.js";
 import { UnlockDatePicker } from "./lootbox/UnlockDatePicker.js";
 
 type Workspace = {
@@ -140,7 +141,12 @@ export default function App() {
 	const [error, setError] = useState("");
 	const [notice, setNotice] = useState("");
 	const [phase, setPhase] = useState<MachinePhase>("received");
-	const [revealed, setRevealed] = useState<Set<string>>(new Set());
+	const [revealed, setRevealed] = useState<Map<string, RevealOutcome>>(
+		new Map(),
+	);
+	const [wishes, setWishes] = useState<Record<string, string>>({});
+	const [activeReveal, setActiveReveal] = useState<string | null>(null);
+	const completeReveal = useCallback(() => setActiveReveal(null), []);
 	const [giftAmount, setGiftAmount] = useState("1");
 	const [destination, setDestination] = useState("");
 	const [lockAcknowledged, setLockAcknowledged] = useState(false);
@@ -324,6 +330,12 @@ export default function App() {
 		fifoHead && fifoHead.address !== receipt?.address &&
 			fifoHead.data.seedSlot + 300n <= workspace.chainSlot,
 	);
+	const wish = selected ? wishes[selected.address] ?? "" : "";
+	useEffect(() => setActiveReveal(null), [
+		tab,
+		selected?.address,
+		receipt?.address,
+	]);
 	const delivered = receipt?.data.status === 3;
 	const closable = delivered || receipt?.data.status === 4;
 	const visiblePrize = receipt && receipt.data.status >= 2 &&
@@ -331,6 +343,20 @@ export default function App() {
 	const prize = visiblePrize
 		? workspace.bundles[receipt.data.selectedBundle]
 		: undefined;
+	function revealPrize(opening: ChainOpening) {
+		const recorded = workspace.bundles[opening.data.selectedBundle];
+		if (!recorded) {
+			setError(
+				"The recorded prize is not loaded. Refresh chain state and try again.",
+			);
+			return;
+		}
+		setRevealed((value) =>
+			new Map(value).set(opening.address, revealOutcome(recorded.address, wish))
+		);
+		setActiveReveal(opening.address);
+		setPhase("revealed");
+	}
 	const capacity = selected
 		? templateMintCapacity(selected.data, workspace.supply)
 		: 0n;
@@ -701,7 +727,44 @@ export default function App() {
 										{selected ? short(selected.address) : "SEALED / UNKNOWN"}
 									</span>
 								</div>
-								<LootboxMachine phase={effectivePhase} />
+								<LootboxMachine
+									phase={effectivePhase}
+									outcome={receipt
+										? revealed.get(receipt.address) ?? "small-prize"
+										: "small-prize"}
+									playReveal={Boolean(
+										receipt && activeReveal === receipt.address,
+									)}
+									onRevealComplete={completeReveal}
+								/>
+								{selected && !visiblePrize && (
+									<label className="field prize-wish">
+										<span>
+											Make a wish <span className="muted">(optional)</span>
+										</span>
+										<select
+											aria-describedby="prize-wish-help"
+											value={wish}
+											disabled={busy}
+											onChange={(event) =>
+												setWishes((values) => ({
+													...values,
+													[selected.address]: event.target.value,
+												}))}
+										>
+											<option value="">No wish — surprise me</option>
+											{workspace.bundles.map((bundle) => (
+												<option key={bundle.address} value={bundle.address}>
+													{prizeName(bundle)}
+												</option>
+											))}
+										</select>
+										<small id="prize-wish-help">
+											Changes the celebration, never the odds. Your wish stays
+											in this tab until you reload.
+										</small>
+									</label>
+								)}
 								{prize && (
 									<div className="prize-reveal" data-testid="prize-reveal">
 										<h2>{prizeName(prize)}</h2>
@@ -819,10 +882,7 @@ export default function App() {
 																"All prize assets delivered to your test wallet",
 															);
 														})
-														: (setRevealed((value) =>
-															new Set([...value, receipt.address])
-														),
-															setPhase("revealed"))}
+														: revealPrize(receipt)}
 											>
 												{busy
 													? "Delivering cargo…"
@@ -913,7 +973,7 @@ export default function App() {
 														session.config.oracle,
 													);
 												setRevealed((items) => {
-													const next = new Set(items);
+													const next = new Map(items);
 													next.delete(receipt.address);
 													return next;
 												});

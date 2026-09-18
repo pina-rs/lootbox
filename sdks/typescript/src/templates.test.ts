@@ -55,16 +55,7 @@ describe("finite template plans", () => {
 	});
 
 	it("rejects duplicated NFT inventory and overflow", () => {
-		expect(() =>
-			createTemplatePlan({
-				name: "Invalid",
-				bundles: [{
-					label: "NFT",
-					quantity: 2n,
-					assets: [{ kind: "nft", mint: nft }],
-				}],
-			})
-		).toThrow("unique asset");
+		let duplicateError: unknown;
 		try {
 			createTemplatePlan({
 				name: "Invalid",
@@ -75,11 +66,12 @@ describe("finite template plans", () => {
 				}],
 			});
 		} catch (error: unknown) {
-			expect(error).toBeInstanceOf(TemplatePlanError);
-			expect((error as TemplatePlanError).code).toBe(
-				"DUPLICATE_UNIQUE_ASSET",
-			);
+			duplicateError = error;
 		}
+		expect(duplicateError).toBeInstanceOf(TemplatePlanError);
+		expect((duplicateError as TemplatePlanError).code).toBe(
+			"DUPLICATE_UNIQUE_ASSET",
+		);
 		expect(() =>
 			createTemplatePlan({
 				name: "Invalid",

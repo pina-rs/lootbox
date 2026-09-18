@@ -50,7 +50,7 @@ test("normalizes publish manifests idempotently", () => {
 	);
 	assert.match(
 		normalizedDart,
-		/repository: https:\/\/github\.com\/pina-rs\/lootbox/,
+		/repository: https:\/\/github\.com\/pina-rs\/lootbox\/tree\/main\/clients\/dart/,
 	);
 	assert.match(normalizedDart, /name: lootbox_program_client/);
 	assert.match(normalizedDart, /publish_to: none/);

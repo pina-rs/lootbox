@@ -23,10 +23,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/pina-rs/lootbox.git"
-	},
+	"repository": "https://github.com/pina-rs/lootbox/tree/main/sdks/typescript",
 	"scripts": {
 		"build": "tsc --noEmit",
 		"check": "tsc --noEmit",

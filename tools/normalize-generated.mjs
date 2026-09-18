@@ -141,7 +141,7 @@ export function normalizeDartManifest(source, version) {
 	if (!/^repository:/m.test(manifest)) {
 		manifest = manifest.replace(
 			/^(version: .*\n)/m,
-			"$1repository: https://github.com/pina-rs/lootbox\n",
+			"$1repository: https://github.com/pina-rs/lootbox/tree/main/clients/dart\n",
 		);
 	}
 	return manifest;
@@ -267,10 +267,8 @@ if (
 	manifest.description =
 		"Generated TypeScript interface for the Pina Lootbox program";
 	manifest.license = "Apache-2.0";
-	manifest.repository = {
-		type: "git",
-		url: "git+https://github.com/pina-rs/lootbox.git",
-	};
+	manifest.repository =
+		"https://github.com/pina-rs/lootbox/tree/main/clients/typescript/lootbox_program";
 	manifest.publishConfig = { access: "public" };
 	manifest.files = ["src"];
 	manifest.dependencies["@solana/program-client-core"] = "^7.0.0";

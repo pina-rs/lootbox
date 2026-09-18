@@ -47,6 +47,21 @@ pub enum PlanError {
 	ArithmeticOverflow,
 }
 
+impl core::fmt::Display for PlanError {
+	fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		formatter.write_str(match self {
+			Self::ZeroSupply => "maximum supply must be greater than zero",
+			Self::NoOutcomes => "at least one outcome is required",
+			Self::ZeroWeight => "outcome weight must be greater than zero",
+			Self::WeightLimitExceeded => "total outcome weight exceeds u32::MAX",
+			Self::TooManyOutcomes => "single-reward protocol supports at most eight outcomes",
+			Self::ArithmeticOverflow => "lootbox plan exceeds the on-chain u64 range",
+		})
+	}
+}
+
+impl core::error::Error for PlanError {}
+
 /// Gateway proof fields accepted by `settle_open`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SwitchboardReveal {
@@ -61,6 +76,17 @@ pub enum RevealDataError {
 	InvalidLength,
 	InvalidDiscriminator,
 }
+
+impl core::fmt::Display for RevealDataError {
+	fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		formatter.write_str(match self {
+			Self::InvalidLength => "Switchboard reveal data must contain exactly 105 bytes",
+			Self::InvalidDiscriminator => "instruction is not a Switchboard randomness reveal",
+		})
+	}
+}
+
+impl core::error::Error for RevealDataError {}
 
 /// Decode the data from Switchboard's generated `randomness_reveal`
 /// instruction into fields for Lootbox's generated `settle_open` builder.

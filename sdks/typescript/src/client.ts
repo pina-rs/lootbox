@@ -1,4 +1,4 @@
-import * as generated from "@pina-rs/lootbox-generated";
+import * as generated from "@pina-rs/lootbox-program-client";
 import { getCreateAccountInstruction } from "@solana-program/system";
 import * as token from "@solana-program/token-2022";
 import {

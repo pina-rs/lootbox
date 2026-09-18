@@ -1,4 +1,4 @@
-import type { TemplateState } from "@pina-rs/lootbox-generated";
+import type { TemplateState } from "@pina-rs/lootbox-program-client";
 import { address } from "@solana/kit";
 import { describe, expect, it } from "vitest";
 import {

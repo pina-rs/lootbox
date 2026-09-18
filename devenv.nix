@@ -1,55 +1,6 @@
 { pkgs, inputs, ... }:
 let
   custom = inputs.ifiokjr-nixpkgs.packages.${pkgs.stdenv.hostPlatform.system};
-  # Stopgap: the pinned `ifiokjr-nixpkgs` rev still packages Pina 0.16.0,
-  # while the programs now require the 0.18 CLI. This mirrors the fork's
-  # `packages/pina/package.nix` recipe against the official v0.18.0 release
-  # tarball. Drop this override and return to `custom.pina` once the fork
-  # packages 0.18.0.
-  pinaCli =
-    let
-      version = "0.18.0";
-      platformSuffix =
-        {
-          "aarch64-darwin" = "aarch64-apple-darwin";
-          "x86_64-darwin" = "x86_64-apple-darwin";
-          "aarch64-linux" = "aarch64-unknown-linux-gnu";
-          "x86_64-linux" = "x86_64-unknown-linux-gnu";
-        }
-        .${pkgs.stdenv.hostPlatform.system}
-          or (throw "Unsupported platform: ${pkgs.stdenv.hostPlatform.system}");
-      hashes = {
-        "aarch64-apple-darwin" = "sha256-BUcwZsLKhfV00J/MMjSCHxUE12YZPewrlRKcCWht5bA=";
-        "x86_64-apple-darwin" = "sha256-6pBZEOpZsDwV0S2qoRc+GY5CdNMrnWBIat/8v6xqgOc=";
-        "x86_64-unknown-linux-gnu" = "sha256-TI4CU/WzBux5IZkgrqL/FtmZzA1OPWOY7jHTj0oVmYs=";
-        "aarch64-unknown-linux-gnu" = "sha256-btKH9M8wzm2dzBE27CAnGGwR01E4LeFDxq0a0e40Lx0=";
-      };
-    in
-    pkgs.stdenv.mkDerivation {
-      pname = "pina";
-      inherit version;
-
-      src = pkgs.fetchurl {
-        url = "https://github.com/pina-rs/pina/releases/download/v${version}/pina-${platformSuffix}-v${version}.tar.gz";
-        hash = hashes.${platformSuffix} or (throw "No prebuilt for platform: ${platformSuffix}");
-      };
-
-      dontUnpack = true;
-      dontBuild = true;
-      dontStrip = true;
-
-      installPhase = ''
-        runHook preInstall
-
-        mkdir -p $out/bin
-        tar xzf $src -C $out/bin/
-        chmod +x $out/bin/pina $out/bin/pina_lint_driver
-
-        runHook postInstall
-      '';
-
-      meta.mainProgram = "pina";
-    };
   kani = custom.kani.overrideAttrs (_: {
     # kani-compiler loads the driver from Kani's pinned rustup toolchain at
     # runtime, so it is intentionally absent while the bundle is packaged.
@@ -64,7 +15,7 @@ in
     custom.agave
     kani
     custom.monochange
-    pinaCli
+    custom.pina
     custom.sbpf-linker
     custom.surfpool
     dart
@@ -146,30 +97,41 @@ in
       set -euo pipefail
       dprint fmt
       dart format sdks/dart 2>/dev/null || true
-      dart format programs/lootbox_program/clients/dart 2>/dev/null || true
+      dart format clients/dart 2>/dev/null || true
       clean:generated
     '';
     "clean:generated".exec = ''
       set -euo pipefail
       node tools/normalize-generated.mjs
-      find programs/lootbox_program/clients \
+      dart format clients/dart >/dev/null
+      find clients \
         -type f \
         \( -name '*.rs' -o -name '*.ts' -o -name '*.dart' -o -name '*.toml' -o -name '*.yaml' \) \
         -exec perl -0pi -e 's/[ \t]+(?=\r?$)//mg; s/(?:\r?\n)+\z/\n/' {} +
     '';
     "build:program".exec = ''
       set -euo pipefail
-      RUST_LOG=error pina build --project programs/lootbox_program
+      sbf_target="$PWD/target/sbf"
+      CARGO_TARGET_DIR="$sbf_target" RUST_LOG=error \
+        pina build --project programs/lootbox_program
+      mkdir -p target/deploy target/idl
+      cp "$sbf_target/deploy/lootbox_program.so" target/deploy/
+      cp "$sbf_target/idl/lootbox_program.json" target/idl/
     '';
     "build:test-programs".exec = ''
       set -euo pipefail
-      RUST_LOG=error pina build --project tests/fixtures/mock_switchboard
+      sbf_target="$PWD/target/sbf"
+      CARGO_TARGET_DIR="$sbf_target" RUST_LOG=error \
+        pina build --project tests/fixtures/mock_switchboard
+      mkdir -p target/deploy target/idl
+      cp "$sbf_target/deploy/mock_switchboard.so" target/deploy/
+      cp "$sbf_target/idl/mock_switchboard.json" target/idl/
     '';
     "generate:clients".exec = ''
       set -euo pipefail
-      generated_client_modules="$PWD/programs/lootbox_program/clients/typescript/lootbox_program/node_modules"
+      generated_client_modules="$PWD/clients/typescript/lootbox_program/node_modules"
       rm -rf -- "$generated_client_modules"
-      pina generate --project programs/lootbox_program --npx node
+      pina generate --project programs/lootbox_program --output clients --npx node
       clean:generated
       pnpm install --frozen-lockfile
     '';
@@ -182,7 +144,7 @@ in
     '';
     "test:coverage".exec = ''
       set -euo pipefail
-      cargo llvm-cov test -p lootbox-cli --all-features --locked \
+      cargo llvm-cov test -p lootbox_cli --all-features --locked \
         --fail-under-lines 96 \
         --ignore-filename-regex 'lootbox-cli/src/main\.rs$'
     '';
@@ -212,7 +174,11 @@ in
     "lint:all".exec = ''
       set -euo pipefail
       pina migrations check --project programs/lootbox_program
-      pina lint --project programs/lootbox_program
+      if [ "$(uname -s)-$(uname -m)" = "Darwin-x86_64" ]; then
+        echo "Skipping Pina security lints: Pina 0.18 does not publish an Intel macOS lint driver."
+      else
+        pina lint --project programs/lootbox_program
+      fi
       cargo clippy --workspace --all-features --all-targets --locked -- -D warnings
       cargo clippy \
         --manifest-path programs/lootbox_program/tests/surfpool/Cargo.toml \

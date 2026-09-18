@@ -15,14 +15,12 @@ export function normalizeDartHashes(source) {
 	});
 }
 
-/** Pina 0.16.0 emits a version-envelope test that treats version zero as
- * both "stale" and "current" for contracts still on their initial v0 schema,
- * which cannot both hold. Drop the impossible stale-path assertions for v0
- * contracts; no envelope can predate the initial version. Kept in the
- * reproducible generation pipeline, never patched by hand.
- *
- * It also emits `N as u8` literal casts in the envelope tests, which clippy's
+/** Some generated version-envelope tests use `N as u8` literal casts, which clippy's
  * `unnecessary_cast` rejects; rewrite them as `N_u8` literals.
+ *
+ * Older Pina releases also treated version zero as both stale and current.
+ * Keep removing those impossible assertions so regeneration remains stable
+ * across supported Pina upgrades.
  */
 export function normalizeRustVersionEnvelopeTests(source) {
 	const withoutCasts = source.replace(
@@ -36,7 +34,7 @@ export function normalizeRustVersionEnvelopeTests(source) {
 	);
 }
 
-/** Pina 0.16.0 also emits a `*_needs_migration` helper whose stale comparison
+/** Older Pina releases emitted a `*_needs_migration` helper whose stale comparison
  * (`version < 0`) rustc rejects as a useless comparison for v0 contracts under
  * `-D warnings`. No envelope can predate the initial version, so the helper
  * is always false there.
@@ -53,7 +51,7 @@ function isInitialVersionContract(source) {
 	return /pub const \w+_MIGRATION_VERSION: u\d+ = 0u\d;/.test(source);
 }
 
-/** Pina 0.16.0's emitted reserved-Migrate module leaves a trailing comma in
+/** Some generated reserved-Migrate modules leave a trailing comma in
  * TypeScript type argument lists, which tsc rejects (TS1009). Drop commas
  * that directly precede a closing angle bracket line. Kept in the
  * reproducible generation pipeline, never patched by hand.
@@ -108,8 +106,15 @@ function normalizeRustAccounts(directory) {
 
 export function normalizeRustManifest(source) {
 	let manifest = source
+		.replace(/^name = "[^"]+"$/m, 'name = "lootbox_program_client"')
 		.replace(/version = "[^"]+"/, "version.workspace = true")
 		.replace(/edition = "[^"]+"/, "edition.workspace = true");
+	if (!/^name = "lootbox_program_client"$/m.test(manifest)) {
+		manifest = manifest.replace(
+			"[package]\n",
+			'[package]\nname = "lootbox_program_client"\n',
+		);
+	}
 	if (!/^publish = false$/m.test(manifest)) {
 		manifest = manifest.replace("[package]\n", "[package]\npublish = false\n");
 	}
@@ -124,6 +129,7 @@ export function normalizeRustManifest(source) {
 
 export function normalizeDartManifest(source, version) {
 	let manifest = source
+		.replace(/^name: .*$/m, "name: lootbox_program_client")
 		.replace(/^version: .*$/m, `version: ${version}`)
 		.replace(
 			/^description: .*$/m,
@@ -199,38 +205,39 @@ if (
 		readFileSync(dartSdkManifestPath, "utf8"),
 	);
 	normalizeDirectory(
-		resolve(root, "programs/lootbox_program/clients/dart/lib"),
+		resolve(root, "clients/dart/lib"),
 	);
 	const dartManifestPath = resolve(
 		root,
-		"programs/lootbox_program/clients/dart/pubspec.yaml",
+		"clients/dart/pubspec.yaml",
 	);
 	writeFileSync(
 		dartManifestPath,
 		normalizeDartManifest(readFileSync(dartManifestPath, "utf8"), version),
 	);
 	normalizeRustClient(
-		resolve(root, "programs/lootbox_program/clients/rust/lootbox_program"),
+		resolve(root, "clients/rust/lootbox_program"),
 	);
 	normalizeRustAccounts(
 		resolve(
 			root,
-			"programs/lootbox_program/clients/rust/lootbox_program/src/generated/accounts",
+			"clients/rust/lootbox_program/src/generated/accounts",
 		),
 	);
 	normalizeTypeScriptDirectory(
 		resolve(
 			root,
-			"programs/lootbox_program/clients/typescript/lootbox_program/src/generated",
+			"clients/typescript/lootbox_program/src/generated",
 		),
 	);
 	// Keep generated and ergonomic clients on the same Kit major as the token
 	// instruction builders. Codama's default package versions currently lag it.
 	const manifestPath = resolve(
 		root,
-		"programs/lootbox_program/clients/typescript/lootbox_program/package.json",
+		"clients/typescript/lootbox_program/package.json",
 	);
 	const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+	manifest.name = "@pina-rs/lootbox-program-client";
 	manifest.version = version;
 	manifest.private = true;
 	manifest.description =

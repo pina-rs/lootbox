@@ -3,7 +3,7 @@ library;
 
 import 'dart:typed_data';
 
-export 'package:lootbox_program_generated/lootbox_program.dart';
+export 'package:lootbox_program_client/lootbox_program.dart';
 
 export 'src/templates.dart';
 

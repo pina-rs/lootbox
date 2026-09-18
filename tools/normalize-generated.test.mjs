@@ -38,6 +38,7 @@ test("normalizes publish manifests idempotently", () => {
 	const normalizedRust = normalizeRustManifest(rust);
 	assert.equal(normalizeRustManifest(normalizedRust), normalizedRust);
 	assert.match(normalizedRust, /version\.workspace = true/);
+	assert.match(normalizedRust, /name = "lootbox_program_client"/);
 	assert.match(normalizedRust, /publish = false/);
 
 	const dart =
@@ -51,6 +52,7 @@ test("normalizes publish manifests idempotently", () => {
 		normalizedDart,
 		/repository: https:\/\/github\.com\/pina-rs\/lootbox/,
 	);
+	assert.match(normalizedDart, /name: lootbox_program_client/);
 	assert.match(normalizedDart, /publish_to: none/);
 });
 

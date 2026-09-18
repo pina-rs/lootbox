@@ -1,11 +1,11 @@
 [workspace]
 resolver = "2"
 members = [
+	"clients/cpi/lootbox_program",
+	"clients/rust/lootbox_program",
 	"crates/lootbox-cli",
 	"crates/switchboard_randomness_cpi",
 	"programs/lootbox_program",
-	"programs/lootbox_program/clients/cpi/lootbox_program",
-	"programs/lootbox_program/clients/rust/lootbox_program",
 	"sdks/rust",
 ]
 exclude = [
@@ -22,7 +22,7 @@ repository = "https://github.com/pina-rs/lootbox"
 rust-version = "1.89.0"
 
 [workspace.dependencies]
-lootbox-program-client = { path = "programs/lootbox_program/clients/rust/lootbox_program", version = "0.0.1-alpha.0" }
+lootbox_program_client = { path = "clients/rust/lootbox_program", version = "0.0.1-alpha.0" }
 num-derive = { default-features = false, version = "0.5" }
 num-traits = { default-features = false, version = "0.2" }
 pina = { default-features = false, features = ["compact"], version = "0.18" }

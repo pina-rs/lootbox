@@ -1,4 +1,5 @@
 import { address } from "@solana/kit";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
 	createTemplatePlan,
@@ -7,9 +8,14 @@ import {
 	remainingTemplateBundleCapacity,
 	requiredServiceBudget,
 	templateInventory,
+	TemplatePlanError,
 } from "./templates.js";
 
 const nft = address("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
+const serviceBudgetVector = JSON.parse(readFileSync(
+	new URL("../../../tests/vectors/service-budget.json", import.meta.url),
+	"utf8",
+)) as Readonly<Record<string, string | boolean>>;
 
 describe("finite template plans", () => {
 	it("escrows the complete inventory instead of a probabilistic buffer", () => {
@@ -49,7 +55,8 @@ describe("finite template plans", () => {
 	});
 
 	it("rejects duplicated NFT inventory and overflow", () => {
-		expect(() =>
+		let duplicateError: unknown;
+		try {
 			createTemplatePlan({
 				name: "Invalid",
 				bundles: [{
@@ -57,8 +64,14 @@ describe("finite template plans", () => {
 					quantity: 2n,
 					assets: [{ kind: "nft", mint: nft }],
 				}],
-			})
-		).toThrow("unique asset");
+			});
+		} catch (error: unknown) {
+			duplicateError = error;
+		}
+		expect(duplicateError).toBeInstanceOf(TemplatePlanError);
+		expect((duplicateError as TemplatePlanError).code).toBe(
+			"DUPLICATE_UNIQUE_ASSET",
+		);
 		expect(() =>
 			createTemplatePlan({
 				name: "Invalid",
@@ -161,18 +174,39 @@ describe("finite template plans", () => {
 	});
 
 	it("funds optional services exactly at lock", () => {
+		const totalBundles = BigInt(String(serviceBudgetVector.totalBundles));
+		const settlementBountyLamports = BigInt(
+			String(serviceBudgetVector.settlementBountyLamports),
+		);
+		const resultReceiptRentLamports = BigInt(
+			String(serviceBudgetVector.resultReceiptRentLamports),
+		);
+		const serviceVaultRentLamports = BigInt(
+			String(serviceBudgetVector.serviceVaultRentLamports),
+		);
+		const expectedBudgetLamports = BigInt(
+			String(serviceBudgetVector.expectedBudgetLamports),
+		);
 		const plan = createTemplatePlan({
 			name: "Services",
-			settlementBountyLamports: 50_000n,
-			resultReceiptsEnabled: true,
+			settlementBountyLamports,
+			resultReceiptsEnabled: Boolean(
+				serviceBudgetVector.resultReceiptsEnabled,
+			),
 			bundles: [{
 				label: "SOL",
-				quantity: 3n,
+				quantity: totalBundles,
 				assets: [{ kind: "sol", lamports: 1n }],
 			}],
 		});
-		expect(requiredServiceBudget(plan, 2_000_000n, 890_880n)).toBe(
-			7_040_880n,
+		expect(
+			requiredServiceBudget(
+				plan,
+				resultReceiptRentLamports,
+				serviceVaultRentLamports,
+			),
+		).toBe(
+			expectedBudgetLamports,
 		);
 		expect(
 			requiredServiceBudget(

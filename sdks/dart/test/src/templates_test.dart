@@ -1,9 +1,17 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:lootbox/lootbox.dart';
 import 'package:solana_kit_addresses/solana_kit_addresses.dart';
 import 'package:test/test.dart';
 
 void main() {
   const nft = Address('Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op');
+  final serviceBudgetVector =
+      jsonDecode(
+            File('../../tests/vectors/service-budget.json').readAsStringSync(),
+          )
+          as Map<String, dynamic>;
   group('finite templates', () {
     test('computes full collateral and exact initial odds', () {
       final plan = TemplatePlan(
@@ -41,7 +49,13 @@ void main() {
             ),
           ],
         ),
-        throwsRangeError,
+        throwsA(
+          isA<TemplatePlanException>().having(
+            (error) => error.code,
+            'code',
+            TemplatePlanErrorCode.duplicateUniqueAsset,
+          ),
+        ),
       );
     });
 
@@ -56,7 +70,7 @@ void main() {
             ),
           ],
         ),
-        throwsRangeError,
+        throwsA(isA<TemplatePlanException>()),
       );
     });
 
@@ -86,7 +100,13 @@ void main() {
       expect(
         () =>
             TemplatePlan(bundles: List.filled(maxTemplateBundles + 1, bundle)),
-        throwsRangeError,
+        throwsA(
+          isA<TemplatePlanException>().having(
+            (error) => error.code,
+            'code',
+            TemplatePlanErrorCode.invalidBundleCount,
+          ),
+        ),
       );
     });
 
@@ -106,27 +126,47 @@ void main() {
     });
 
     test('creator service funding is exact and optional', () {
+      final totalBundles = BigInt.parse(
+        serviceBudgetVector['totalBundles'] as String,
+      );
+      final settlementBountyLamports = BigInt.parse(
+        serviceBudgetVector['settlementBountyLamports'] as String,
+      );
+      final resultReceiptRentLamports = BigInt.parse(
+        serviceBudgetVector['resultReceiptRentLamports'] as String,
+      );
+      final serviceVaultRentLamports = BigInt.parse(
+        serviceBudgetVector['serviceVaultRentLamports'] as String,
+      );
+      final expectedBudgetLamports = BigInt.parse(
+        serviceBudgetVector['expectedBudgetLamports'] as String,
+      );
       final bundles = [
         PrizeBundle(
           label: 'SOL',
-          quantity: BigInt.from(3),
+          quantity: totalBundles,
           assets: [PrizeAsset.sol(BigInt.one)],
         ),
       ];
       expect(
-        TemplatePlan(
-          bundles: bundles,
-        ).requiredServiceBudget(BigInt.from(2000000)),
+        TemplatePlan(bundles: bundles).requiredServiceBudget(
+          resultReceiptRentLamports,
+          serviceVaultRentLamports,
+        ),
         BigInt.zero,
       );
       final plan = TemplatePlan(
         bundles: bundles,
-        settlementBountyLamports: BigInt.from(50000),
-        resultReceiptsEnabled: true,
+        settlementBountyLamports: settlementBountyLamports,
+        resultReceiptsEnabled:
+            serviceBudgetVector['resultReceiptsEnabled'] as bool,
       );
       expect(
-        plan.requiredServiceBudget(BigInt.from(2000000)),
-        BigInt.from(6150000),
+        plan.requiredServiceBudget(
+          resultReceiptRentLamports,
+          serviceVaultRentLamports,
+        ),
+        expectedBudgetLamports,
       );
     });
   });

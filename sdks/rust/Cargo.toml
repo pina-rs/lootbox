@@ -1,5 +1,5 @@
 [package]
-name = "lootbox-sdk"
+name = "lootbox_sdk"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,7 +8,11 @@ repository = "https://github.com/pina-rs/lootbox/tree/main/sdks/rust"
 description = "Ergonomic Rust SDK for the Pina lootbox primitive"
 
 [dependencies]
-lootbox-program-client = { workspace = true }
+lootbox_program_client = { workspace = true }
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
 [lints]
 workspace = true

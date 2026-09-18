@@ -1,0 +1,8 @@
+{
+	"totalBundles": "3",
+	"settlementBountyLamports": "50000",
+	"resultReceiptsEnabled": true,
+	"resultReceiptRentLamports": "2000000",
+	"serviceVaultRentLamports": "890880",
+	"expectedBudgetLamports": "7040880"
+}

@@ -42,7 +42,7 @@ The TypeScript client also provides `settle`, which verifies the oracle proof an
 
 ## Verifying immutable results
 
-The generated Rust package exports `cpi::verify_result_receipt`. A consumer must verify all application-relevant bindings, not only the selected bundle:
+The `lootbox_program_client` Rust package exports `cpi::verify_result_receipt`. A consumer must verify all application-relevant bindings, not only the selected bundle:
 
 ```rust,ignore
 let result = lootbox_program_client::cpi::verify_result_receipt(

@@ -46,7 +46,7 @@ Funding --reclaim every funded asset--> Cancelled and closed
 
 ## Capacity and snapshots
 
-The append-only inventory uses Pina's compact-account layout. A new treasury starts with a 547-byte fixed header. Each successful bundle activation grows it by exactly one eight-byte `u64` remaining-copy slot, up to 1,024 bundles and an 8,739-byte maximum. The activating authority funds only the incremental rent. Slots remain allocated after depletion because opening receipts snapshot stable bundle indices; compactness changes rent growth, not draw semantics.
+The append-only inventory uses Pina's compact-account layout. A new treasury starts with a 548-byte fixed header, including its migration-version byte. Each successful bundle activation grows it by exactly one eight-byte `u64` remaining-copy slot, up to 1,024 bundles and an 8,740-byte maximum. The activating authority funds only the incremental rent. Slots remain allocated after depletion because opening receipts snapshot stable bundle indices; compactness changes rent growth, not draw semantics.
 
 Before lock, the client and program enforce both issuance bounds:
 

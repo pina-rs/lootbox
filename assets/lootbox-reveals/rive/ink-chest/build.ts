@@ -9,19 +9,15 @@ const output = fileURLToPath(
 );
 mkdirSync(output, { recursive: true });
 execFileSync("rive", [project, "--verify"], { stdio: "inherit" });
-for (
-	const [outcome, name] of [
-		"closed",
-		"big-prize",
-		"small-prize",
-		"disappointed",
-	].entries()
-) {
-	execFileSync("rive", [
-		project,
-		`--screenshot=${output}/${name}.png`,
-		`--data=outcome=${outcome - 1}`,
-		"--advance=5.1s",
-	], { stdio: "inherit" });
-}
+execFileSync("rive", [project, "--once"], { stdio: "inherit" });
 copyFileSync(`${project}/build/ink_chest.riv`, `${output}/ink-chest.riv`);
+// The CLI viewer composites screenshots over opaque gray. Export the actual
+// browser canvas so reduced-motion stills preserve the Rive file's alpha.
+execFileSync(process.execPath, [
+	fileURLToPath(
+		new URL(
+			"../../../../apps/web/tools/render-reveal-stills.ts",
+			import.meta.url,
+		),
+	),
+], { stdio: "inherit" });

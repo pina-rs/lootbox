@@ -1366,7 +1366,7 @@ const MAX_MIGRATION_LAMPORTS: u64 = 1_000_000;
 /// bundle, templateOpening, resultReceipt]`; every state slot is optional and
 /// skipped when it holds the program-address placeholder.
 fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> ProgramResult {
-	let mut context = MigrateContext::new(program_id, accounts, MAX_MIGRATION_LAMPORTS)?;
+	let mut context = MigrateContext::new(program_id, accounts, Some(MAX_MIGRATION_LAMPORTS))?;
 	context.run_optional::<LootboxState>(2)?;
 	context.run_optional::<VaultState>(3)?;
 	context.run_optional::<OpeningState>(4)?;

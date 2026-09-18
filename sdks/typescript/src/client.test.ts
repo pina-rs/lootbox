@@ -32,6 +32,51 @@ import {
 
 const payer = address("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
 
+function bubblegumMetadata(
+	input: Readonly<{
+		uri?: string;
+		mutable?: boolean;
+		collectionVerified?: boolean;
+		creatorVerified?: boolean;
+	}> = {},
+): Uint8Array {
+	const parts: number[] = [];
+	const pushU16 = (value: number) => {
+		parts.push(value & 0xff, value >>> 8);
+	};
+	const pushU32 = (value: number) => {
+		parts.push(
+			value & 0xff,
+			(value >>> 8) & 0xff,
+			(value >>> 16) & 0xff,
+			value >>> 24,
+		);
+	};
+	const pushString = (value: string) => {
+		const bytes = new TextEncoder().encode(value);
+		pushU32(bytes.length);
+		parts.push(...bytes);
+	};
+
+	pushString("Pool prize");
+	pushString("POOL");
+	pushString(input.uri ?? "https://example.com/1.json");
+	pushU16(500);
+	parts.push(0, Number(input.mutable ?? false)); // primary sale + mutability
+	parts.push(0, 0); // no edition nonce + no token standard
+	parts.push(
+		1,
+		Number(input.collectionVerified ?? false),
+		...new Uint8Array(32).fill(4),
+	);
+	parts.push(0); // no uses
+	parts.push(0); // original TokenProgramVersion
+	pushU32(1);
+	parts.push(...new Uint8Array(32).fill(5));
+	parts.push(Number(input.creatorVerified ?? false), 100);
+	return Uint8Array.from(parts);
+}
+
 function instructionWithAccounts(
 	offset: number,
 	count: number,
@@ -235,7 +280,7 @@ describe("chain prize decoding", () => {
 		const item = (asset: Address, nonce: bigint) => ({
 			asset,
 			metadataMutable: false,
-			metadata: new Uint8Array([1]),
+			metadata: bubblegumMetadata(),
 			proof: {
 				root: new Uint8Array(32),
 				dataHash: new Uint8Array(32).fill(Number(nonce) + 1),
@@ -256,6 +301,41 @@ describe("chain prize decoding", () => {
 			[item(second, 1n), item(payer, 0n)],
 		);
 		expect(ordered).not.toEqual(reversed);
+		const verifiedFlagsOnly = await prizePoolManifestAccumulator(
+			payer,
+			[{
+				...item(payer, 0n),
+				metadata: bubblegumMetadata({
+					collectionVerified: true,
+					creatorVerified: true,
+				}),
+			}],
+		);
+		const unverifiedFlagsOnly = await prizePoolManifestAccumulator(
+			payer,
+			[item(payer, 0n)],
+		);
+		expect(verifiedFlagsOnly).toEqual(unverifiedFlagsOnly);
+		const changedMetadata = await prizePoolManifestAccumulator(
+			payer,
+			[{
+				...item(payer, 0n),
+				metadata: bubblegumMetadata({ uri: "https://example.com/2.json" }),
+			}],
+		);
+		expect(changedMetadata).not.toEqual(unverifiedFlagsOnly);
+		await expect(
+			prizePoolManifestAccumulator(payer, [{
+				...item(payer, 0n),
+				metadata: bubblegumMetadata({ mutable: true }),
+			}]),
+		).rejects.toThrow(/immutable/);
+		await expect(
+			prizePoolManifestAccumulator(payer, [{
+				...item(payer, 0n),
+				metadata: new Uint8Array([1]),
+			}]),
+		).rejects.toThrow(/canonical/);
 		const commitment = await prizePoolCommitment({
 			pool: payer,
 			tree,

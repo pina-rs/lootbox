@@ -47,6 +47,21 @@ fn replace_proof_tail(
 	Ok(instruction)
 }
 
+fn canonical_result_receipt(
+	opening: &Pubkey,
+	sequence: u64,
+	override_address: Option<Pubkey>,
+) -> Result<(Pubkey, u8), CliError> {
+	let (expected, bump) = generated_accounts::ResultReceiptState::find_pda(opening, sequence);
+	if let Some(actual) = override_address
+		&& actual != expected
+	{
+		return Err(CliError::NonCanonicalResultReceipt { expected, actual });
+	}
+
+	Ok((expected, bump))
+}
+
 /// Parses a fixed-size hex argument (`0x` prefix optional).
 fn hex_arg<const N: usize>(value: &str, field: &'static str) -> Result<[u8; N], CliError> {
 	let digits = value.strip_prefix("0x").unwrap_or(value);
@@ -1031,9 +1046,8 @@ pub struct AllocateTemplateOpenArgs {
 
 impl InstructionBuilder for AllocateTemplateOpenArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let (canonical_receipt, result_receipt_bump) =
-			generated_accounts::ResultReceiptState::find_pda(&self.opening, self.sequence);
-		let result_receipt = self.result_receipt.unwrap_or(canonical_receipt);
+		let (result_receipt, result_receipt_bump) =
+			canonical_result_receipt(&self.opening, self.sequence, self.result_receipt)?;
 		let accounts = generated::AllocateTemplateOpen::new(
 			self.template,
 			self.opening,
@@ -2390,15 +2404,15 @@ pub struct AllocatePrizePoolOpenArgs {
 
 impl InstructionBuilder for AllocatePrizePoolOpenArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let (canonical, bump) =
-			generated_accounts::ResultReceiptState::find_pda(&self.opening, self.sequence);
+		let (result_receipt, bump) =
+			canonical_result_receipt(&self.opening, self.sequence, self.result_receipt)?;
 		let accounts = generated::AllocatePrizePoolOpen::new(
 			self.template,
 			self.opening,
 			self.bundle,
 			self.prize_pool,
 			self.service_vault,
-			self.result_receipt.unwrap_or(canonical),
+			result_receipt,
 		);
 		let data = generated::AllocatePrizePoolOpenInstructionData::new(|wire| {
 			wire.result_receipt_bump = bump;

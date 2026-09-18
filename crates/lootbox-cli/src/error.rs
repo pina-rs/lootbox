@@ -3,6 +3,7 @@
 use std::path::PathBuf;
 
 use base64::DecodeError;
+use solana_pubkey::Pubkey;
 
 /// Failure modes of the lootbox CLI.
 #[derive(Debug, thiserror::Error)]
@@ -48,8 +49,12 @@ pub enum CliError {
 	AssetCountMismatch { declared: usize, remaining: usize },
 
 	/// A Bubblegum proof exceeded the program's bounded remaining-account list.
-	#[error("Bubblegum proofs support at most 32 account nodes, got {actual}")]
+	#[error("Bubblegum proofs support at most 16 account nodes, got {actual}")]
 	ProofAccountCount { actual: usize },
+
+	/// A caller supplied a result receipt other than the canonical PDA.
+	#[error("result receipt must be the canonical PDA {expected}, got {actual}")]
+	NonCanonicalResultReceipt { expected: Pubkey, actual: Pubkey },
 
 	/// A text argument did not fit its fixed-size wire field.
 	#[error("argument `{field}` must be at most {limit} bytes, got {actual}")]

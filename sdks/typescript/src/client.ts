@@ -82,6 +82,10 @@ const PRIZE_POOL_MANIFEST_DOMAIN = utf8.encode(
 const PRIZE_POOL_COMMITMENT_DOMAIN = utf8.encode(
 	"pina-lootbox-prize-pool-commitment",
 );
+const PRIZE_POOL_METADATA_DOMAIN = utf8.encode(
+	"pina-lootbox-prize-pool-metadata",
+);
+const strictUtf8 = new TextDecoder("utf-8", { fatal: true });
 
 export type ChainTemplate = Readonly<
 	{ address: Address; data: generated.TemplateState }
@@ -175,6 +179,94 @@ async function hashParts(
 	);
 }
 
+async function prizePoolSemanticMetadataHash(
+	metadata: ReadonlyUint8Array,
+): Promise<Uint8Array<ArrayBuffer>> {
+	const normalized = Uint8Array.from(metadata);
+	let offset = 0;
+	const malformed = (): never => {
+		throw new Error(
+			"PrizePool metadata is not canonical Bubblegum V1 metadata",
+		);
+	};
+	const take = (length: number): Uint8Array => {
+		const end = offset + length;
+		if (!Number.isSafeInteger(end) || end > normalized.length) malformed();
+		const value = normalized.subarray(offset, end);
+		offset = end;
+		return value;
+	};
+	const byte = (): number => take(1)[0] ?? malformed();
+	const boolean = (): boolean => {
+		const value = byte();
+		if (value > 1) malformed();
+		return value === 1;
+	};
+	const option = (): boolean => {
+		const tag = byte();
+		if (tag > 1) malformed();
+		return tag === 1;
+	};
+	const enumeration = (variants: number): void => {
+		if (byte() >= variants) malformed();
+	};
+	const u16 = (): number => {
+		const value = take(2);
+		return new DataView(value.buffer, value.byteOffset, 2).getUint16(0, true);
+	};
+	const u32 = (): number => {
+		const value = take(4);
+		return new DataView(value.buffer, value.byteOffset, 4).getUint32(0, true);
+	};
+	const string = (maximumBytes: number): void => {
+		const length = u32();
+		if (length > maximumBytes) malformed();
+		try {
+			strictUtf8.decode(take(length));
+		} catch {
+			malformed();
+		}
+	};
+	const normalizeVerification = (): void => {
+		const verificationOffset = offset;
+		boolean();
+		normalized[verificationOffset] = 0;
+	};
+
+	if (
+		normalized.length === 0 || normalized.length > MAX_PRIZE_POOL_METADATA_BYTES
+	) {
+		malformed();
+	}
+	string(32);
+	string(10);
+	string(200);
+	if (u16() > 10_000) malformed();
+	boolean(); // primary_sale_happened
+	if (boolean()) throw new Error("PrizePool metadata must be immutable");
+	if (option()) byte(); // edition_nonce
+	if (option()) enumeration(4); // TokenStandard
+	if (option()) {
+		normalizeVerification();
+		take(32); // collection key
+	}
+	if (option()) {
+		enumeration(3); // UseMethod
+		take(16); // remaining + total
+	}
+	enumeration(2); // TokenProgramVersion
+	const creatorCount = u32();
+	if (creatorCount > 5) malformed();
+	for (let index = 0; index < creatorCount; index += 1) {
+		take(32);
+		normalizeVerification();
+		byte(); // share
+	}
+	if (offset !== normalized.length) malformed();
+
+	return hashParts([PRIZE_POOL_METADATA_DOMAIN, normalized]);
+}
+
 /** Reproduce the ordered on-chain PrizePool inventory commitment. */
 export async function prizePoolManifestAccumulator(
 	pool: Address,
@@ -190,6 +282,7 @@ export async function prizePoolManifestAccumulator(
 			addressBytes.encode(item.asset),
 			item.proof.dataHash,
 			item.proof.creatorHash,
+			await prizePoolSemanticMetadataHash(item.metadata),
 			getU64Encoder().encode(item.proof.nonce),
 			getU32Encoder().encode(item.proof.leafIndex),
 		]);

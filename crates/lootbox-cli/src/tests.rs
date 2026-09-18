@@ -624,8 +624,6 @@ fn allocate_template_open_builds() {
 		PK1,
 		"--sequence",
 		"0",
-		"--result-receipt",
-		PK2,
 	])
 	.expect("builds");
 
@@ -1728,8 +1726,8 @@ fn reclaim_compressed_nft_rejects_bad_hex() {
 }
 
 #[test]
-fn allocate_template_open_with_default_bump() {
-	let instruction = build_from(&[
+fn allocation_builders_reject_noncanonical_result_receipts() {
+	let template = build_from(&[
 		"allocate-template-open",
 		"--template",
 		PK1,
@@ -1743,10 +1741,33 @@ fn allocate_template_open_with_default_bump() {
 		"0",
 		"--result-receipt",
 		PK2,
-	])
-	.expect("builds");
+	]);
+	assert!(matches!(
+		template,
+		Err(CliError::NonCanonicalResultReceipt { .. })
+	));
 
-	assert_eq!(instruction.data.len(), 3);
+	let prize_pool = build_from(&[
+		"allocate-prize-pool-open",
+		"--template",
+		PK1,
+		"--opening",
+		PK2,
+		"--bundle",
+		PK3,
+		"--prize-pool",
+		PK1,
+		"--service-vault",
+		PK2,
+		"--sequence",
+		"0",
+		"--result-receipt",
+		PK2,
+	]);
+	assert!(matches!(
+		prize_pool,
+		Err(CliError::NonCanonicalResultReceipt { .. })
+	));
 }
 
 #[test]
@@ -1774,6 +1795,19 @@ fn allocate_template_open_defaults_receipt_to_canonical_pda() {
 
 	assert_eq!(instruction.data[0], 18);
 	assert_eq!(instruction.accounts[4].pubkey, receipt);
+
+	use crate::InstructionBuilder;
+	let explicit = crate::build::AllocateTemplateOpenArgs {
+		template: pubkey(PK1),
+		opening,
+		bundle: pubkey(PK3),
+		service_vault: pubkey(PK1),
+		sequence: 7,
+		result_receipt: Some(receipt),
+	}
+	.build()
+	.expect("canonical override");
+	assert_eq!(explicit.accounts[4].pubkey, receipt);
 }
 
 #[test]
@@ -2084,7 +2118,7 @@ fn prize_pool_cli_rejects_oversized_proof_lists() {
 		bubblegum_program: key,
 		log_wrapper: key,
 		compression_program: key,
-		proof_accounts: vec![key; 33],
+		proof_accounts: vec![key; 17],
 		root: HASH32.to_owned(),
 		data_hash: HASH32.to_owned(),
 		creator_hash: HASH32.to_owned(),
@@ -2093,6 +2127,46 @@ fn prize_pool_cli_rejects_oversized_proof_lists() {
 	};
 	assert!(matches!(
 		args.build(),
-		Err(CliError::ProofAccountCount { actual: 33 })
+		Err(CliError::ProofAccountCount { actual: 17 })
+	));
+}
+
+#[test]
+fn prize_pool_cli_rejects_invalid_metadata_hex() {
+	use crate::InstructionBuilder;
+
+	let build = |metadata_borsh_hex: String| {
+		let key = pubkey(PK1);
+		crate::build::PreparePrizePoolItemArgs {
+			authority: key,
+			template: key,
+			bundle: key,
+			prize_pool: key,
+			prize_pool_item: key,
+			item_bump: 0,
+			data_hash: HASH32.to_owned(),
+			creator_hash: HASH32.to_owned(),
+			nonce: 0,
+			index: 0,
+			metadata_borsh_hex,
+		}
+		.build()
+	};
+
+	assert!(matches!(
+		build("0".to_owned()),
+		Err(CliError::InvalidHexEncoding { .. })
+	));
+	assert!(matches!(
+		build(String::new()),
+		Err(CliError::ByteArgumentLength { actual: 0, .. })
+	));
+	assert!(matches!(
+		build("00".repeat(513)),
+		Err(CliError::ByteArgumentLength { actual: 513, .. })
+	));
+	assert!(matches!(
+		build("gg".to_owned()),
+		Err(CliError::InvalidHexEncoding { .. })
 	));
 }

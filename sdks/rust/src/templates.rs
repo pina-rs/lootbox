@@ -1,4 +1,6 @@
-//! Allocation-free planning for append-only, fully funded prize inventories.
+//! `no_std` planning for append-only, fully funded prize inventories.
+
+use alloc::vec::Vec;
 
 use crate::MAX_TEMPLATE_BUNDLES;
 
@@ -142,6 +144,7 @@ pub enum TemplatePlanError {
 	InvalidAsset,
 	DuplicateAsset,
 	DuplicateUniqueAsset,
+	PlanningCapacityExceeded,
 	TicketLimitExceeded,
 	ArithmeticOverflow,
 }
@@ -155,6 +158,9 @@ impl core::fmt::Display for TemplatePlanError {
 			Self::InvalidAsset => "prize asset is not supported",
 			Self::DuplicateAsset => "a bundle cannot contain the same asset twice",
 			Self::DuplicateUniqueAsset => "a unique asset can fund only one bundle copy",
+			Self::PlanningCapacityExceeded => {
+				"the planner could not reserve memory for unique-asset validation"
+			}
 			Self::TicketLimitExceeded => "total bundle copies exceed u32::MAX",
 			Self::ArithmeticOverflow => "template plan exceeds the on-chain u64 range",
 		})
@@ -198,28 +204,38 @@ impl<'a> TemplatePlan<'a> {
 				return Err(TemplatePlanError::TicketLimitExceeded);
 			}
 		}
-		for bundle in bundles {
-			for asset in bundle.assets {
-				match asset {
-					PrizeAsset::PrizePool { items, .. } => {
-						for item in *items {
-							if unique_identifier_occurrences(bundles, item.asset) != 1 {
-								return Err(TemplatePlanError::DuplicateUniqueAsset);
-							}
-						}
-					}
-					_ if asset.is_unique() => {
-						if unique_identifier_occurrences(
-							bundles,
-							asset.identifier().ok_or(TemplatePlanError::InvalidAsset)?,
-						) != 1
-						{
-							return Err(TemplatePlanError::DuplicateUniqueAsset);
-						}
-					}
-					_ => {}
+		let unique_identifier_count =
+			bundles
+				.iter()
+				.flat_map(|bundle| bundle.assets)
+				.try_fold(0usize, |count, asset| {
+					let additional = match asset {
+						PrizeAsset::PrizePool { items, .. } => items.len(),
+						_ => usize::from(asset.is_unique()),
+					};
+					count
+						.checked_add(additional)
+						.ok_or(TemplatePlanError::ArithmeticOverflow)
+				})?;
+		let mut unique_identifiers = Vec::new();
+		unique_identifiers
+			.try_reserve_exact(unique_identifier_count)
+			.map_err(|_| TemplatePlanError::PlanningCapacityExceeded)?;
+		for asset in bundles.iter().flat_map(|bundle| bundle.assets) {
+			match asset {
+				PrizeAsset::PrizePool { items, .. } => {
+					unique_identifiers.extend(items.iter().map(|item| item.asset));
 				}
+				_ if asset.is_unique() => {
+					unique_identifiers
+						.push(asset.identifier().ok_or(TemplatePlanError::InvalidAsset)?);
+				}
+				_ => {}
 			}
+		}
+		unique_identifiers.sort_unstable();
+		if unique_identifiers.windows(2).any(|pair| pair[0] == pair[1]) {
+			return Err(TemplatePlanError::DuplicateUniqueAsset);
 		}
 
 		let plan = Self {
@@ -382,21 +398,6 @@ fn validate_bundle(bundle: &PrizeBundle<'_>) -> Result<(), TemplatePlanError> {
 	Ok(())
 }
 
-fn unique_identifier_occurrences(bundles: &[PrizeBundle<'_>], identifier: [u8; 32]) -> usize {
-	bundles
-		.iter()
-		.flat_map(|bundle| bundle.assets)
-		.map(|asset| {
-			match asset {
-				PrizeAsset::PrizePool { items, .. } => {
-					items.iter().filter(|item| item.asset == identifier).count()
-				}
-				_ => usize::from(asset.is_unique() && asset.identifier() == Some(identifier)),
-			}
-		})
-		.sum()
-}
-
 #[cfg(test)]
 mod tests {
 	use std::vec;
@@ -465,7 +466,7 @@ mod tests {
 		let tree = [9; 32];
 		let valid_items = (1..=vector.valid_item_count)
 			.map(|value| pool_item([u8::try_from(value).expect("small vector"); 32], tree))
-			.collect::<vec::Vec<_>>();
+			.collect::<Vec<_>>();
 		let valid = [PrizeAsset::PrizePool {
 			tree,
 			items: &valid_items,
@@ -581,6 +582,29 @@ mod tests {
 			}]),
 			Err(TemplatePlanError::InvalidAsset),
 		);
+	}
+
+	#[test]
+	fn maximum_prize_pool_validates_unique_items_in_one_plan() {
+		let tree = [9; 32];
+		let items = (0..MAX_PRIZE_POOL_ITEMS)
+			.map(|index| {
+				let mut asset = [0; 32];
+				asset[..4].copy_from_slice(&index.to_le_bytes());
+				asset[31] = 1;
+				pool_item(asset, tree)
+			})
+			.collect::<Vec<_>>();
+		let assets = [PrizeAsset::PrizePool {
+			tree,
+			items: &items,
+		}];
+		let bundles = [PrizeBundle {
+			quantity: u64::from(MAX_PRIZE_POOL_ITEMS),
+			assets: &assets,
+		}];
+
+		assert!(TemplatePlan::new(&bundles).is_ok());
 	}
 
 	#[test]

@@ -185,8 +185,24 @@ function normalizeRustClient(root) {
 	);
 
 	const library = readFileSync(libraryPath, "utf8");
-	if (!library.includes("pub mod cpi;")) {
-		writeFileSync(libraryPath, `pub mod cpi;\n${library}`);
+	let normalizedLibrary = library;
+	for (const module of ["cpi", "proof"]) {
+		if (!normalizedLibrary.includes(`pub mod ${module};`)) {
+			normalizedLibrary = `pub mod ${module};\n${normalizedLibrary}`;
+		}
+	}
+	if (!normalizedLibrary.includes("pub use proof::*;")) {
+		normalizedLibrary = `${normalizedLibrary.trimEnd()}\npub use proof::*;\n`;
+	}
+	if (normalizedLibrary !== library) {
+		writeFileSync(libraryPath, normalizedLibrary);
+	}
+}
+
+function ensureExport(path, statement) {
+	const source = readFileSync(path, "utf8");
+	if (!source.includes(statement)) {
+		writeFileSync(path, `${source.trimEnd()}\n${statement}\n`);
 	}
 }
 
@@ -206,6 +222,10 @@ if (
 	);
 	normalizeDirectory(
 		resolve(root, "clients/dart/lib"),
+	);
+	ensureExport(
+		resolve(root, "clients/dart/lib/lootbox_program.dart"),
+		"export 'src/proof_accounts.dart';",
 	);
 	const dartManifestPath = resolve(
 		root,
@@ -229,6 +249,10 @@ if (
 			root,
 			"clients/typescript/lootbox_program/src/generated",
 		),
+	);
+	ensureExport(
+		resolve(root, "clients/typescript/lootbox_program/src/index.ts"),
+		'export * from "./proofAccounts.js";',
 	);
 	// Keep generated and ergonomic clients on the same Kit major as the token
 	// instruction builders. Codama's default package versions currently lag it.

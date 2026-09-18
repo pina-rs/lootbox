@@ -103,6 +103,38 @@ const int lootboxProgramErrorInvalidServiceAccount = 0x17; // 23
 /// Message: "The creator-funded receipt or settlement budget is exhausted."
 const int lootboxProgramErrorServiceBudgetExhausted = 0x18; // 24
 
+/// The prize-pool account, item, tree, or bundle binding is invalid.
+/// Message: "The prize-pool account, item, tree, or bundle binding is invalid."
+const int lootboxProgramErrorInvalidPrizePool = 0x19; // 25
+
+/// The prize pool already contains its advertised number of items.
+/// Message: "The prize pool already contains its advertised number of items."
+const int lootboxProgramErrorPrizePoolFull = 0x1a; // 26
+
+/// The prize pool cannot be sealed until every advertised item is escrowed.
+/// Message: "The prize pool cannot be sealed until every advertised item is escrowed."
+const int lootboxProgramErrorPrizePoolIncomplete = 0x1b; // 27
+
+/// The selected pool item was already reserved, claimed, or reclaimed.
+/// Message: "The selected pool item was already reserved, claimed, or reclaimed."
+const int lootboxProgramErrorPrizePoolItemUnavailable = 0x1c; // 28
+
+/// The supplied Bubblegum leaf identity differs from the deposited item.
+/// Message: "The supplied Bubblegum leaf identity differs from the deposited item."
+const int lootboxProgramErrorPrizePoolItemMismatch = 0x1d; // 29
+
+/// The Bubblegum metadata preimage is malformed or does not match the leaf.
+/// Message: "The Bubblegum metadata preimage is malformed or does not match the leaf."
+const int lootboxProgramErrorInvalidPrizePoolMetadata = 0x1e; // 30
+
+/// `PrizePool` custody accepts only permanently immutable Bubblegum metadata.
+/// Message: "`PrizePool` custody accepts only permanently immutable Bubblegum metadata."
+const int lootboxProgramErrorMutablePrizePoolItem = 0x1f; // 31
+
+/// Every bounded rejection-sampling round landed outside the uniform range.
+/// Message: "Every bounded rejection-sampling round landed outside the uniform range."
+const int lootboxProgramErrorEntropyRejectionExhausted = 0x20; // 32
+
 /// Map of error codes to human-readable messages.
 const Map<int, String> _lootboxProgramErrorMessages = {
   lootboxProgramErrorUnauthorized:
@@ -111,14 +143,16 @@ const Map<int, String> _lootboxProgramErrorMessages = {
       'The account or lootbox is not in the required state.',
   lootboxProgramErrorInvalidOutcome:
       'The configured outcome does not exist or is out of range.',
-  lootboxProgramErrorInvalidWeight: 'An outcome weight must be non-zero and keep total weight within the bound.',
+  lootboxProgramErrorInvalidWeight:
+      'An outcome weight must be non-zero and keep total weight within the bound.',
   lootboxProgramErrorIncompleteConfiguration:
       'The lootbox cannot be sealed until at least one outcome exists.',
   lootboxProgramErrorInsolvent:
       'The vault cannot cover the worst-case outstanding liability.',
   lootboxProgramErrorInvalidMint:
       'The box mint or token account does not match the lootbox.',
-  lootboxProgramErrorInvalidRandomness: 'The randomness account, owner, queue, authority, or commitment is invalid.',
+  lootboxProgramErrorInvalidRandomness:
+      'The randomness account, owner, queue, authority, or commitment is invalid.',
   lootboxProgramErrorRandomnessNotReady:
       'The committed randomness is not ready for the requested transition.',
   lootboxProgramErrorRandomnessExpired:
@@ -153,6 +187,22 @@ const Map<int, String> _lootboxProgramErrorMessages = {
       'The optional service vault or result receipt is invalid.',
   lootboxProgramErrorServiceBudgetExhausted:
       'The creator-funded receipt or settlement budget is exhausted.',
+  lootboxProgramErrorInvalidPrizePool:
+      'The prize-pool account, item, tree, or bundle binding is invalid.',
+  lootboxProgramErrorPrizePoolFull:
+      'The prize pool already contains its advertised number of items.',
+  lootboxProgramErrorPrizePoolIncomplete:
+      'The prize pool cannot be sealed until every advertised item is escrowed.',
+  lootboxProgramErrorPrizePoolItemUnavailable:
+      'The selected pool item was already reserved, claimed, or reclaimed.',
+  lootboxProgramErrorPrizePoolItemMismatch:
+      'The supplied Bubblegum leaf identity differs from the deposited item.',
+  lootboxProgramErrorInvalidPrizePoolMetadata:
+      'The Bubblegum metadata preimage is malformed or does not match the leaf.',
+  lootboxProgramErrorMutablePrizePoolItem:
+      '`PrizePool` custody accepts only permanently immutable Bubblegum metadata.',
+  lootboxProgramErrorEntropyRejectionExhausted:
+      'Every bounded rejection-sampling round landed outside the uniform range.',
 };
 
 /// Get the error message for a LootboxProgram program error code.

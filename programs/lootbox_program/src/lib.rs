@@ -50,8 +50,8 @@ pub const RANDOMNESS_TIMEOUT_SLOTS: u64 = 300;
 
 /// Maximum sum of outcome weights.
 ///
-/// This bound makes eight-step rejection sampling failure less likely than
-/// `2^-256`; the final deterministic fallback then guarantees settlement.
+/// This bound makes eight-step rejection-sampling exhaustion less likely than
+/// `2^-256`. Exhaustion fails closed instead of introducing modulo bias.
 pub const MAX_TOTAL_WEIGHT: u64 = u32::MAX as u64;
 
 const CLOCK_SYSVAR_ID: Address = address!("SysvarC1ock11111111111111111111111111111111");
@@ -120,6 +120,22 @@ pub enum LootboxError {
 	InvalidServiceAccount = 23,
 	/// The creator-funded receipt or settlement budget is exhausted.
 	ServiceBudgetExhausted = 24,
+	/// The prize-pool account, item, tree, or bundle binding is invalid.
+	InvalidPrizePool = 25,
+	/// The prize pool already contains its advertised number of items.
+	PrizePoolFull = 26,
+	/// The prize pool cannot be sealed until every advertised item is escrowed.
+	PrizePoolIncomplete = 27,
+	/// The selected pool item was already reserved, claimed, or reclaimed.
+	PrizePoolItemUnavailable = 28,
+	/// The supplied Bubblegum leaf identity differs from the deposited item.
+	PrizePoolItemMismatch = 29,
+	/// The Bubblegum metadata preimage is malformed or does not match the leaf.
+	InvalidPrizePoolMetadata = 30,
+	/// `PrizePool` custody accepts only permanently immutable Bubblegum metadata.
+	MutablePrizePoolItem = 31,
+	/// Every bounded rejection-sampling round landed outside the uniform range.
+	EntropyRejectionExhausted = 32,
 }
 
 #[discriminator]
@@ -168,6 +184,15 @@ pub enum LootboxInstruction {
 	FundMintPrize = 41,
 	ClaimMintPrize = 42,
 	ReclaimMintPrize = 43,
+	CreatePrizePool = 44,
+	DepositPrizePoolItem = 45,
+	SealPrizePool = 46,
+	AllocatePrizePoolOpen = 47,
+	ClaimPrizePoolItem = 48,
+	ReclaimPrizePoolItem = 49,
+	ClosePrizePool = 50,
+	PreparePrizePoolItem = 51,
+	CancelPrizePoolItem = 52,
 }
 
 #[discriminator]
@@ -179,6 +204,8 @@ pub enum LootboxAccountType {
 	BundleState = 5,
 	TemplateOpeningState = 6,
 	ResultReceiptState = 7,
+	PrizePoolState = 8,
+	PrizePoolItemState = 9,
 }
 
 /// Immutable definition and live accounting for one lootbox mint.
@@ -606,8 +633,6 @@ fn select_outcome(
 	}
 
 	let rejection_threshold = total_weight.wrapping_neg() % total_weight;
-	let mut fallback = 0u64;
-
 	for counter in 0u8..8 {
 		let counter_bytes = [counter];
 		let hash = hashv(&[
@@ -620,17 +645,12 @@ fn select_outcome(
 		let mut candidate_bytes = [0u8; 8];
 		candidate_bytes.copy_from_slice(&hash.as_ref()[..8]);
 		let candidate = u64::from_le_bytes(candidate_bytes);
-		fallback = candidate;
-
 		if candidate >= rejection_threshold {
 			return Ok(candidate % total_weight);
 		}
 	}
 
-	// With `total_weight <= u32::MAX`, reaching this line has probability below
-	// 2^-256 under SHA-256. A modulo fallback introduces only that negligible
-	// statistical distance while ensuring a revealed receipt can always settle.
-	Ok(fallback % total_weight)
+	Err(lootbox_error(LootboxError::EntropyRejectionExhausted))
 }
 
 fn outcome_for_target(state: &LootboxStateZc, target: u64) -> Result<(u8, u64), ProgramError> {
@@ -1363,8 +1383,9 @@ const MAX_MIGRATION_LAMPORTS: u64 = 1_000_000;
 /// Runs the reserved framework `Migrate` instruction.
 ///
 /// Accounts are `[payer, systemProgram, lootbox, vault, opening, template,
-/// bundle, templateOpening, resultReceipt]`; every state slot is optional and
-/// skipped when it holds the program-address placeholder.
+/// bundle, templateOpening, resultReceipt, prizePool, prizePoolItem]`; every
+/// state slot is optional and skipped when it holds the program-address
+/// placeholder.
 fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> ProgramResult {
 	let mut context = MigrateContext::new(program_id, accounts, MAX_MIGRATION_LAMPORTS)?;
 	context.run_optional::<LootboxState>(2)?;
@@ -1374,6 +1395,8 @@ fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> Progra
 	context.run_optional::<BundleState>(6)?;
 	context.run_optional::<TemplateOpeningState>(7)?;
 	context.run_optional::<ResultReceiptState>(8)?;
+	context.run_optional::<PrizePoolState>(9)?;
+	context.run_optional::<PrizePoolItemState>(10)?;
 	Ok(())
 }
 
@@ -1524,6 +1547,33 @@ pub fn process_instruction(
 		}
 		LootboxInstruction::ReclaimMintPrize => {
 			ReclaimMintPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::CreatePrizePool => {
+			CreatePrizePoolAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::PreparePrizePoolItem => {
+			PreparePrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::DepositPrizePoolItem => {
+			DepositPrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::CancelPrizePoolItem => {
+			CancelPrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::SealPrizePool => {
+			SealPrizePoolAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::AllocatePrizePoolOpen => {
+			AllocatePrizePoolOpenAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ClaimPrizePoolItem => {
+			ClaimPrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ReclaimPrizePoolItem => {
+			ReclaimPrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ClosePrizePool => {
+			ClosePrizePoolAccounts::try_from((program_id, accounts))?.process(data)
 		}
 	}
 }

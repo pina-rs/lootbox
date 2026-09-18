@@ -20,6 +20,9 @@ pub struct BundleState {
 	pub rent_reserve: u64,
 	/// Four asset identifiers; the zero address denotes native SOL.
 	pub mints: [u8; 128],
+	/// Adapter-specific immutable commitments, one 32-byte value per slot.
+	/// Plain escrowed assets leave their commitment zeroed.
+	pub commitments: [u8; 128],
 	/// Four little-endian base-unit amounts paid per winning bundle.
 	pub amounts: [u8; 32],
 	/// Four little-endian counts released through claims or retirement recovery.

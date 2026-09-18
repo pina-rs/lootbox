@@ -105,7 +105,7 @@ Instruction getRetireTemplateInstruction({
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.readonly),
+      AccountMeta(address: authority, role: AccountRole.readonlySigner),
       AccountMeta(address: template, role: AccountRole.writable),
     ],
     data: getRetireTemplateInstructionDataEncoder().encode(instructionData),

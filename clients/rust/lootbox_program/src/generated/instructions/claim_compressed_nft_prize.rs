@@ -24,7 +24,7 @@ pub struct ClaimCompressedNftPrize {
 	pub log_wrapper: solana_pubkey::Pubkey,
 	pub compression_program: solana_pubkey::Pubkey,
 	pub system_program: solana_pubkey::Pubkey,
-	/// Merkle proof nodes in root-to-leaf order.
+	/// Merkle proof nodes in leaf-to-root order.
 	pub proof_accounts: solana_pubkey::Pubkey,
 }
 

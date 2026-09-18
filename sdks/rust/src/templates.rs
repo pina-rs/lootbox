@@ -1,8 +1,13 @@
-//! Allocation-free planning for append-only, fully funded prize inventories.
+//! `no_std` planning for append-only, fully funded prize inventories.
+
+use alloc::vec::Vec;
 
 use crate::MAX_TEMPLATE_BUNDLES;
 
 const MAX_TOTAL_TICKETS: u64 = u32::MAX as u64;
+pub const MAX_PRIZE_POOL_ITEMS: u32 = 4_096;
+pub const MAX_PRIZE_POOL_METADATA_BYTES: usize = 512;
+pub const MAX_PRIZE_POOL_PROOF_NODES: usize = 16;
 // So11111111111111111111111111111111111111112. Match the program's
 // reward policy: use native SOL instead of a wrapped-SOL token prize.
 const WRAPPED_SOL_MINT: [u8; 32] = [
@@ -13,20 +18,65 @@ const WRAPPED_SOL_MINT: [u8; 32] = [
 /// A supported treasury asset. External ownership and transfer-rule validation
 /// remains an on-chain concern; this type makes the intended adapter explicit.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum PrizeAsset {
-	Sol { lamports: u64 },
-	QuoteSol { lamports: u64 },
-	ClassicToken { mint: [u8; 32], amount: u64 },
-	Token2022 { mint: [u8; 32], amount: u64 },
-	QuoteToken { mint: [u8; 32], amount: u64 },
-	MintBadge { mint: [u8; 32] },
-	LegacyNft { mint: [u8; 32] },
-	MetadataNft { mint: [u8; 32] },
-	CoreAsset { asset: [u8; 32] },
-	CompressedNft { asset: [u8; 32] },
+pub struct PrizePoolItem<'a> {
+	pub asset: [u8; 32],
+	/// Must be `false`; unknown mutability fails closed in checked planners.
+	pub metadata_mutable: bool,
+	/// Canonical Bubblegum V1 `MetadataArgs` Borsh preimage.
+	pub metadata: &'a [u8],
+	pub tree: [u8; 32],
+	pub tree_config: [u8; 32],
+	pub root: [u8; 32],
+	pub data_hash: [u8; 32],
+	pub creator_hash: [u8; 32],
+	pub nonce: u64,
+	pub leaf_index: u32,
+	pub proof: &'a [[u8; 32]],
 }
 
-impl PrizeAsset {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PrizeAsset<'a> {
+	Sol {
+		lamports: u64,
+	},
+	QuoteSol {
+		lamports: u64,
+	},
+	ClassicToken {
+		mint: [u8; 32],
+		amount: u64,
+	},
+	Token2022 {
+		mint: [u8; 32],
+		amount: u64,
+	},
+	QuoteToken {
+		mint: [u8; 32],
+		amount: u64,
+	},
+	MintBadge {
+		mint: [u8; 32],
+	},
+	LegacyNft {
+		mint: [u8; 32],
+	},
+	MetadataNft {
+		mint: [u8; 32],
+	},
+	CoreAsset {
+		asset: [u8; 32],
+	},
+	CompressedNft {
+		asset: [u8; 32],
+	},
+	/// One entropy-selected Bubblegum leaf from a separately escrowed pool.
+	PrizePool {
+		tree: [u8; 32],
+		items: &'a [PrizePoolItem<'a>],
+	},
+}
+
+impl PrizeAsset<'_> {
 	/// None denotes native SOL; every other value is the stored asset identifier.
 	#[must_use]
 	pub const fn identifier(self) -> Option<[u8; 32]> {
@@ -39,6 +89,7 @@ impl PrizeAsset {
 			| Self::LegacyNft { mint }
 			| Self::MetadataNft { mint } => Some(mint),
 			Self::CoreAsset { asset } | Self::CompressedNft { asset } => Some(asset),
+			Self::PrizePool { tree, .. } => Some(tree),
 		}
 	}
 
@@ -54,7 +105,8 @@ impl PrizeAsset {
 			| Self::LegacyNft { .. }
 			| Self::MetadataNft { .. }
 			| Self::CoreAsset { .. }
-			| Self::CompressedNft { .. } => 1,
+			| Self::CompressedNft { .. }
+			| Self::PrizePool { .. } => 1,
 		}
 	}
 
@@ -80,7 +132,7 @@ impl PrizeAsset {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PrizeBundle<'a> {
 	pub quantity: u64,
-	pub assets: &'a [PrizeAsset],
+	pub assets: &'a [PrizeAsset<'a>],
 }
 
 /// Invalid finite-pool configuration.
@@ -92,6 +144,7 @@ pub enum TemplatePlanError {
 	InvalidAsset,
 	DuplicateAsset,
 	DuplicateUniqueAsset,
+	PlanningCapacityExceeded,
 	TicketLimitExceeded,
 	ArithmeticOverflow,
 }
@@ -105,6 +158,9 @@ impl core::fmt::Display for TemplatePlanError {
 			Self::InvalidAsset => "prize asset is not supported",
 			Self::DuplicateAsset => "a bundle cannot contain the same asset twice",
 			Self::DuplicateUniqueAsset => "a unique asset can fund only one bundle copy",
+			Self::PlanningCapacityExceeded => {
+				"the planner could not reserve memory for unique-asset validation"
+			}
 			Self::TicketLimitExceeded => "total bundle copies exceed u32::MAX",
 			Self::ArithmeticOverflow => "template plan exceeds the on-chain u64 range",
 		})
@@ -139,7 +195,7 @@ impl<'a> TemplatePlan<'a> {
 		}
 
 		let mut total_bundles = 0u64;
-		for (bundle_index, bundle) in bundles.iter().enumerate() {
+		for bundle in bundles {
 			validate_bundle(bundle)?;
 			total_bundles = total_bundles
 				.checked_add(bundle.quantity)
@@ -147,17 +203,39 @@ impl<'a> TemplatePlan<'a> {
 			if total_bundles > MAX_TOTAL_TICKETS {
 				return Err(TemplatePlanError::TicketLimitExceeded);
 			}
-			for asset in bundle.assets {
-				if asset.is_unique()
-					&& bundles[..bundle_index]
-						.iter()
-						.flat_map(|previous| previous.assets)
-						.any(|previous| {
-							previous.is_unique() && previous.identifier() == asset.identifier()
-						}) {
-					return Err(TemplatePlanError::DuplicateUniqueAsset);
+		}
+		let unique_identifier_count =
+			bundles
+				.iter()
+				.flat_map(|bundle| bundle.assets)
+				.try_fold(0usize, |count, asset| {
+					let additional = match asset {
+						PrizeAsset::PrizePool { items, .. } => items.len(),
+						_ => usize::from(asset.is_unique()),
+					};
+					count
+						.checked_add(additional)
+						.ok_or(TemplatePlanError::ArithmeticOverflow)
+				})?;
+		let mut unique_identifiers = Vec::new();
+		unique_identifiers
+			.try_reserve_exact(unique_identifier_count)
+			.map_err(|_| TemplatePlanError::PlanningCapacityExceeded)?;
+		for asset in bundles.iter().flat_map(|bundle| bundle.assets) {
+			match asset {
+				PrizeAsset::PrizePool { items, .. } => {
+					unique_identifiers.extend(items.iter().map(|item| item.asset));
 				}
+				_ if asset.is_unique() => {
+					unique_identifiers
+						.push(asset.identifier().ok_or(TemplatePlanError::InvalidAsset)?);
+				}
+				_ => {}
 			}
+		}
+		unique_identifiers.sort_unstable();
+		if unique_identifiers.windows(2).any(|pair| pair[0] == pair[1]) {
+			return Err(TemplatePlanError::DuplicateUniqueAsset);
 		}
 
 		let plan = Self {
@@ -279,7 +357,27 @@ fn validate_bundle(bundle: &PrizeBundle<'_>) -> Result<(), TemplatePlanError> {
 		return Err(TemplatePlanError::InvalidAssetCount);
 	}
 
+	let mut prize_pool_count = 0;
 	for (index, asset) in bundle.assets.iter().enumerate() {
+		if let PrizeAsset::PrizePool { tree, items } = asset {
+			prize_pool_count += 1;
+			if prize_pool_count > 1
+				|| items.is_empty()
+				|| items.len() > MAX_PRIZE_POOL_ITEMS as usize
+				|| u64::try_from(items.len()).map_err(|_| TemplatePlanError::InvalidAsset)?
+					!= bundle.quantity
+				|| items.iter().any(|item| {
+					item.asset == [0; 32]
+						|| item.metadata_mutable
+						|| item.metadata.is_empty()
+						|| item.metadata.len() > MAX_PRIZE_POOL_METADATA_BYTES
+						|| item.tree != *tree
+						|| item.tree_config == [0; 32]
+						|| item.proof.len() > MAX_PRIZE_POOL_PROOF_NODES
+				}) {
+				return Err(TemplatePlanError::InvalidAsset);
+			}
+		}
 		if asset.amount() == 0
 			|| asset.identifier() == Some([0; 32])
 			|| asset.identifier() == Some(WRAPPED_SOL_MINT)
@@ -302,6 +400,8 @@ fn validate_bundle(bundle: &PrizeBundle<'_>) -> Result<(), TemplatePlanError> {
 
 #[cfg(test)]
 mod tests {
+	use std::vec;
+
 	use super::*;
 
 	#[derive(serde::Deserialize)]
@@ -315,9 +415,196 @@ mod tests {
 		expected_budget_lamports: std::string::String,
 	}
 
+	#[derive(serde::Deserialize)]
+	#[serde(rename_all = "camelCase")]
+	struct PrizePoolVector {
+		max_items: u32,
+		valid_quantity: u64,
+		valid_item_count: u32,
+		mismatched_item_count: u32,
+		mutable_item_count: u32,
+		duplicate_item_count: u32,
+		oversized_quantity: u64,
+		valid_metadata_bytes: usize,
+		oversized_metadata_bytes: usize,
+		valid_proof_nodes: usize,
+		oversized_proof_nodes: usize,
+	}
+
+	fn pool_item(asset: [u8; 32], tree: [u8; 32]) -> PrizePoolItem<'static> {
+		static METADATA: [u8; 1] = [1];
+		static PROOF: [[u8; 32]; 1] = [[7; 32]];
+		PrizePoolItem {
+			asset,
+			metadata_mutable: false,
+			metadata: &METADATA,
+			tree,
+			tree_config: [8; 32],
+			root: [1; 32],
+			data_hash: [2; 32],
+			creator_hash: [3; 32],
+			nonce: 0,
+			leaf_index: 0,
+			proof: &PROOF,
+		}
+	}
+
 	fn service_budget_vector() -> ServiceBudgetVector {
 		serde_json::from_str(include_str!("../../../tests/vectors/service-budget.json"))
 			.expect("valid shared service budget vector")
+	}
+
+	fn prize_pool_vector() -> PrizePoolVector {
+		serde_json::from_str(include_str!("../../../tests/vectors/prize-pool.json"))
+			.expect("valid shared PrizePool vector")
+	}
+
+	#[test]
+	fn prize_pool_capacity_matches_quantity_and_shared_limit() {
+		let vector = prize_pool_vector();
+		assert_eq!(MAX_PRIZE_POOL_ITEMS, vector.max_items);
+		let tree = [9; 32];
+		let valid_items = (1..=vector.valid_item_count)
+			.map(|value| pool_item([u8::try_from(value).expect("small vector"); 32], tree))
+			.collect::<Vec<_>>();
+		let valid = [PrizeAsset::PrizePool {
+			tree,
+			items: &valid_items,
+		}];
+		let bundle = PrizeBundle {
+			quantity: vector.valid_quantity,
+			assets: &valid,
+		};
+		let bundles = [bundle];
+		let plan = TemplatePlan::new(&bundles).expect("valid pool plan");
+		assert_eq!(plan.fixed_supply(), vector.valid_quantity);
+		assert_eq!(
+			plan.required_collateral(Some(tree)),
+			Ok(vector.valid_quantity)
+		);
+
+		let mismatched_items =
+			&valid_items[..usize::try_from(vector.mismatched_item_count).expect("item count")];
+		let mismatched = [PrizeAsset::PrizePool {
+			tree,
+			items: mismatched_items,
+		}];
+		assert_eq!(
+			TemplatePlan::new(&[PrizeBundle {
+				quantity: vector.valid_quantity,
+				assets: &mismatched,
+			}]),
+			Err(TemplatePlanError::InvalidAsset)
+		);
+		let oversized_items = vec![
+			pool_item([7; 32], tree);
+			usize::try_from(vector.oversized_quantity).expect("usize vector")
+		];
+		let oversized = [PrizeAsset::PrizePool {
+			tree,
+			items: &oversized_items,
+		}];
+		assert_eq!(
+			TemplatePlan::new(&[PrizeBundle {
+				quantity: vector.oversized_quantity,
+				assets: &oversized,
+			}]),
+			Err(TemplatePlanError::InvalidAsset)
+		);
+
+		let mutable_items = vec![
+			PrizePoolItem {
+				metadata_mutable: true,
+				..pool_item([4; 32], tree)
+			};
+			usize::try_from(vector.mutable_item_count).expect("mutable count")
+		];
+		let mutable = [PrizeAsset::PrizePool {
+			tree,
+			items: &mutable_items,
+		}];
+		assert_eq!(
+			TemplatePlan::new(&[PrizeBundle {
+				quantity: u64::from(vector.mutable_item_count),
+				assets: &mutable,
+			}]),
+			Err(TemplatePlanError::InvalidAsset),
+		);
+
+		let duplicate_items = vec![
+			pool_item([5; 32], tree);
+			usize::try_from(vector.duplicate_item_count)
+				.expect("duplicate count")
+		];
+		let duplicate = [PrizeAsset::PrizePool {
+			tree,
+			items: &duplicate_items,
+		}];
+		assert_eq!(
+			TemplatePlan::new(&[PrizeBundle {
+				quantity: u64::from(vector.duplicate_item_count),
+				assets: &duplicate,
+			}]),
+			Err(TemplatePlanError::DuplicateUniqueAsset),
+		);
+
+		assert_eq!(vector.valid_metadata_bytes, 1);
+		assert_eq!(vector.valid_proof_nodes, 1);
+		let oversized_metadata = vec![0; vector.oversized_metadata_bytes];
+		let invalid_metadata_item = PrizePoolItem {
+			metadata: &oversized_metadata,
+			..pool_item([6; 32], tree)
+		};
+		let invalid_metadata = [PrizeAsset::PrizePool {
+			tree,
+			items: core::slice::from_ref(&invalid_metadata_item),
+		}];
+		assert_eq!(
+			TemplatePlan::new(&[PrizeBundle {
+				quantity: 1,
+				assets: &invalid_metadata,
+			}]),
+			Err(TemplatePlanError::InvalidAsset),
+		);
+		let oversized_proof = vec![[0; 32]; vector.oversized_proof_nodes];
+		let invalid_proof_item = PrizePoolItem {
+			proof: &oversized_proof,
+			..pool_item([6; 32], tree)
+		};
+		let invalid_proof = [PrizeAsset::PrizePool {
+			tree,
+			items: core::slice::from_ref(&invalid_proof_item),
+		}];
+		assert_eq!(
+			TemplatePlan::new(&[PrizeBundle {
+				quantity: 1,
+				assets: &invalid_proof,
+			}]),
+			Err(TemplatePlanError::InvalidAsset),
+		);
+	}
+
+	#[test]
+	fn maximum_prize_pool_validates_unique_items_in_one_plan() {
+		let tree = [9; 32];
+		let items = (0..MAX_PRIZE_POOL_ITEMS)
+			.map(|index| {
+				let mut asset = [0; 32];
+				asset[..4].copy_from_slice(&index.to_le_bytes());
+				asset[31] = 1;
+				pool_item(asset, tree)
+			})
+			.collect::<Vec<_>>();
+		let assets = [PrizeAsset::PrizePool {
+			tree,
+			items: &items,
+		}];
+		let bundles = [PrizeBundle {
+			quantity: u64::from(MAX_PRIZE_POOL_ITEMS),
+			assets: &assets,
+		}];
+
+		assert!(TemplatePlan::new(&bundles).is_ok());
 	}
 
 	#[test]

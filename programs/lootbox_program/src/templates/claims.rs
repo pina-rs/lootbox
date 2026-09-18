@@ -36,6 +36,14 @@ pub struct AllocateTemplateOpenAccounts<'a> {
 	pub system_program: &'a AccountView,
 }
 
+pub(super) struct TemplateAllocationAccounts<'a> {
+	pub template: &'a mut AccountView,
+	pub opening: &'a mut AccountView,
+	pub bundle: &'a AccountView,
+	pub service_vault: &'a mut AccountView,
+	pub result_receipt: &'a mut AccountView,
+}
+
 #[derive(Accounts, Debug)]
 pub struct ClaimSolPrizeAccounts<'a> {
 	pub template: &'a AccountView,
@@ -172,6 +180,34 @@ fn allocate(
 impl<'a> ProcessAccountInfos<'a> for AllocateTemplateOpenAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = AllocateTemplateOpenInstruction::try_from_bytes(data)?;
+		let opening = self.opening.as_account::<TemplateOpeningState>(&ID)?;
+		let receipt_seeds =
+			ResultReceiptState::seeds(self.opening.address(), opening.sequence.get());
+		drop(opening);
+		if self
+			.result_receipt
+			.assert_canonical_bump(&receipt_seeds.as_slices(), &ID)?
+			!= args.result_receipt_bump
+		{
+			return Err(ProgramError::InvalidSeeds);
+		}
+		TemplateAllocationAccounts {
+			template: self.template,
+			opening: self.opening,
+			bundle: self.bundle,
+			service_vault: self.service_vault,
+			result_receipt: self.result_receipt,
+		}
+		.process(args.result_receipt_bump, None)
+	}
+}
+
+impl TemplateAllocationAccounts<'_> {
+	pub(super) fn process(
+		self,
+		result_receipt_bump: u8,
+		prize_pool: Option<&mut AccountView>,
+	) -> ProgramResult {
 		let template = *self.template.address();
 		let address = *self.opening.address();
 		let account_data = self.template.try_borrow()?;
@@ -197,6 +233,14 @@ impl<'a> ProcessAccountInfos<'a> for AllocateTemplateOpenAccounts<'a> {
 		}
 		let index = usize::try_from(selected).map_err(|_| ProgramError::InvalidAccountData)?;
 		let selected_remaining = remaining_at(&state, index)?;
+		reserve_prize_pool_item(
+			prize_pool,
+			&bundle,
+			self.bundle.address(),
+			&mut opening,
+			&address,
+			selected_remaining,
+		)?;
 		let mut remaining_values = alloc::vec::Vec::with_capacity(state.remaining().len());
 		remaining_values.extend_from_slice(state.remaining());
 		let mut template_state = *state;
@@ -225,11 +269,11 @@ impl<'a> ProcessAccountInfos<'a> for AllocateTemplateOpenAccounts<'a> {
 			);
 		}
 
-		let result_receipt_seeds = ResultReceiptState::seeds(&address);
+		let result_receipt_seeds = ResultReceiptState::seeds(&address, opening.sequence.get());
 		if self
 			.result_receipt
 			.assert_canonical_bump(&result_receipt_seeds.as_slices(), &ID)?
-			!= args.result_receipt_bump
+			!= result_receipt_bump
 		{
 			return Err(ProgramError::InvalidSeeds);
 		}
@@ -241,6 +285,9 @@ impl<'a> ProcessAccountInfos<'a> for AllocateTemplateOpenAccounts<'a> {
 		let consumer_context = opening.consumer_context;
 		let randomness = opening.randomness;
 		let sequence = opening.sequence.get();
+		let opening_pool_item = opening.selected_pool_item.get();
+		let opening_pool_asset = opening.selected_pool_asset;
+		let has_pool_assignment = opening.has_pool_assignment.get();
 		let manifest_hash = template_state.manifest_hash;
 		let service_vault_bump = template_state.service_vault_bump;
 		drop(opening);
@@ -293,7 +340,7 @@ impl<'a> ProcessAccountInfos<'a> for AllocateTemplateOpenAccounts<'a> {
 			payer: self.service_vault,
 			owner: &ID,
 			seeds: &result_receipt_seeds.as_slices(),
-			bump: args.result_receipt_bump,
+			bump: result_receipt_bump,
 		}
 		.invoke_signed::<ResultReceiptState>(&[service_vault_signer.as_signer()])?;
 
@@ -314,7 +361,10 @@ impl<'a> ProcessAccountInfos<'a> for AllocateTemplateOpenAccounts<'a> {
 		result_receipt.randomness = randomness;
 		result_receipt.sequence.set(sequence);
 		result_receipt.selected_bundle.set(selected_bundle);
-		result_receipt.bump = args.result_receipt_bump;
+		result_receipt.selected_pool_item.set(opening_pool_item);
+		result_receipt.selected_pool_asset = opening_pool_asset;
+		result_receipt.has_pool_assignment.set(has_pool_assignment);
+		result_receipt.bump = result_receipt_bump;
 
 		Ok(())
 	}
@@ -772,6 +822,19 @@ mod tests {
 	}
 
 	#[test]
+	fn result_receipts_are_unique_when_a_randomness_address_is_reused() {
+		let opening = Address::new_from_array([6; 32]);
+		let first = ResultReceiptState::seeds(&opening, 11);
+		let second = ResultReceiptState::seeds(&opening, 12);
+		let (first_address, _) =
+			try_find_program_address(&first.as_slices(), &ID).expect("first receipt PDA");
+		let (second_address, _) =
+			try_find_program_address(&second.as_slices(), &ID).expect("second receipt PDA");
+
+		assert_ne!(first_address, second_address);
+	}
+
+	#[test]
 	fn bundles_are_paid_once_per_asset_to_the_bound_recipient() {
 		let mut bundle_bytes = [0; BundleState::SIZE];
 		let bundle = BundleState::initialize(&mut bundle_bytes, |_| Ok(())).expect("bundle");
@@ -864,6 +927,25 @@ mod tests {
 			Err(ProgramError::ArithmeticOverflow)
 		);
 		assert_eq!(bundle.funded_assets, 0);
+	}
+
+	#[test]
+	fn activation_and_cancellation_detect_partial_pool_state() {
+		let pool = Address::new_from_array([8; 32]);
+		let mut bundle_bytes = [0; BundleState::SIZE];
+		let bundle = BundleState::initialize(&mut bundle_bytes, |_| Ok(())).expect("bundle");
+		bundle.quantity.set(2);
+		bundle.asset_count = 1;
+
+		assert!(!has_reserved_slot(bundle).expect("empty bundle"));
+		reserve_prize_pool_slot(bundle, &pool).expect("reserve pool slot");
+		assert!(has_reserved_slot(bundle).expect("reserved pool"));
+
+		bundle.funded_assets = 1;
+		assert!(!has_reserved_slot(bundle).expect("sealed pool"));
+		assert!(!has_released_assets(bundle).expect("unclaimed pool"));
+		write_slot(&mut bundle.claimed, 0, 1).expect("partial recovery");
+		assert!(has_released_assets(bundle).expect("released pool item"));
 	}
 
 	#[test]

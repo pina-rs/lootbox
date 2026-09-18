@@ -27,6 +27,41 @@ fn remaining_metas(writable: &[Pubkey], readonly: &[Pubkey]) -> Vec<AccountMeta>
 		.collect()
 }
 
+/// Replaces Codama's single remaining-account placeholder with the complete
+/// Bubblegum proof. An empty slice is valid for a full-canopy tree.
+fn replace_proof_tail(
+	mut instruction: Instruction,
+	proof_accounts: &[Pubkey],
+) -> Result<Instruction, CliError> {
+	if proof_accounts.len() > 16 {
+		return Err(CliError::ProofAccountCount {
+			actual: proof_accounts.len(),
+		});
+	}
+	instruction.accounts.pop();
+	instruction.accounts.extend(
+		proof_accounts
+			.iter()
+			.map(|account| AccountMeta::new_readonly(*account, false)),
+	);
+	Ok(instruction)
+}
+
+fn canonical_result_receipt(
+	opening: &Pubkey,
+	sequence: u64,
+	override_address: Option<Pubkey>,
+) -> Result<(Pubkey, u8), CliError> {
+	let (expected, bump) = generated_accounts::ResultReceiptState::find_pda(opening, sequence);
+	if let Some(actual) = override_address
+		&& actual != expected
+	{
+		return Err(CliError::NonCanonicalResultReceipt { expected, actual });
+	}
+
+	Ok((expected, bump))
+}
+
 /// Parses a fixed-size hex argument (`0x` prefix optional).
 fn hex_arg<const N: usize>(value: &str, field: &'static str) -> Result<[u8; N], CliError> {
 	let digits = value.strip_prefix("0x").unwrap_or(value);
@@ -52,6 +87,40 @@ fn hex_arg<const N: usize>(value: &str, field: &'static str) -> Result<[u8; N], 
 	}
 
 	Ok(out)
+}
+
+/// Parses a bounded variable-size hex argument (`0x` prefix optional).
+fn bounded_hex_arg(value: &str, field: &'static str, limit: usize) -> Result<Vec<u8>, CliError> {
+	let digits = value.strip_prefix("0x").unwrap_or(value);
+	if !digits.len().is_multiple_of(2) {
+		return Err(CliError::InvalidHexEncoding {
+			field,
+			value: value.to_string(),
+		});
+	}
+	let actual = digits.len() / 2;
+	if actual == 0 || actual > limit {
+		return Err(CliError::ByteArgumentLength {
+			field,
+			limit,
+			actual,
+		});
+	}
+	digits
+		.as_bytes()
+		.chunks_exact(2)
+		.map(|pair| {
+			std::str::from_utf8(pair)
+				.ok()
+				.and_then(|pair| u8::from_str_radix(pair, 16).ok())
+				.ok_or_else(|| {
+					CliError::InvalidHexEncoding {
+						field,
+						value: value.to_string(),
+					}
+				})
+		})
+		.collect()
 }
 
 /// Packs a text argument into a zero-padded fixed-size wire field.
@@ -967,23 +1036,28 @@ pub struct AllocateTemplateOpenArgs {
 	/// Service vault PDA.
 	#[arg(long)]
 	pub service_vault: Pubkey,
-	/// Result receipt PDA. Defaults to the canonical PDA derived from the opening.
+	/// Opening sequence used to derive its generation-unique result receipt.
+	#[arg(long)]
+	pub sequence: u64,
+	/// Result receipt PDA. Defaults to the canonical PDA for opening + sequence.
 	#[arg(long)]
 	pub result_receipt: Option<Pubkey>,
 }
 
 impl InstructionBuilder for AllocateTemplateOpenArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let mut accounts = generated::AllocateTemplateOpen::new(
+		let (result_receipt, result_receipt_bump) =
+			canonical_result_receipt(&self.opening, self.sequence, self.result_receipt)?;
+		let accounts = generated::AllocateTemplateOpen::new(
 			self.template,
 			self.opening,
 			self.bundle,
 			self.service_vault,
+			result_receipt,
 		);
-		if let Some(result_receipt) = self.result_receipt {
-			accounts.result_receipt = result_receipt;
-		}
-		let data = generated::AllocateTemplateOpenInstructionData::new(|_wire| {})?;
+		let data = generated::AllocateTemplateOpenInstructionData::new(|wire| {
+			wire.result_receipt_bump = result_receipt_bump;
+		})?;
 
 		Ok(accounts.instruction(data))
 	}
@@ -2090,6 +2164,446 @@ impl InstructionBuilder for ReclaimCompressedNftPrizeArgs {
 			wire.index = index.into();
 		})?;
 
+		Ok(accounts.instruction(data))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// PrizePool lifecycle
+// ---------------------------------------------------------------------------
+
+/// Arguments for `create-prize-pool`.
+#[derive(Debug, clap::Args)]
+pub struct CreatePrizePoolArgs {
+	#[arg(long)]
+	pub authority: Pubkey,
+	#[arg(long)]
+	pub template: Pubkey,
+	#[arg(long)]
+	pub bundle: Pubkey,
+	#[arg(long)]
+	pub prize_pool: Pubkey,
+	#[arg(long)]
+	pub merkle_tree: Pubkey,
+	#[arg(long)]
+	pub asset_index: u8,
+	#[arg(long)]
+	pub bump: u8,
+}
+
+impl InstructionBuilder for CreatePrizePoolArgs {
+	fn build(&self) -> Result<Instruction, CliError> {
+		let accounts = generated::CreatePrizePool::new(
+			self.authority,
+			self.template,
+			self.bundle,
+			self.prize_pool,
+			self.merkle_tree,
+		);
+		let data = generated::CreatePrizePoolInstructionData::new(|wire| {
+			wire.asset_index = self.asset_index;
+			wire.bump = self.bump;
+		})?;
+		Ok(accounts.instruction(data))
+	}
+}
+
+/// Arguments for `prepare-prize-pool-item`.
+#[derive(Debug, clap::Args)]
+pub struct PreparePrizePoolItemArgs {
+	#[arg(long)]
+	pub authority: Pubkey,
+	#[arg(long)]
+	pub template: Pubkey,
+	#[arg(long)]
+	pub bundle: Pubkey,
+	#[arg(long)]
+	pub prize_pool: Pubkey,
+	#[arg(long)]
+	pub prize_pool_item: Pubkey,
+	#[arg(long)]
+	pub item_bump: u8,
+	#[arg(long)]
+	pub data_hash: String,
+	#[arg(long)]
+	pub creator_hash: String,
+	#[arg(long)]
+	pub nonce: u64,
+	#[arg(long)]
+	pub index: u32,
+	/// Canonical Bubblegum V1 `MetadataArgs` Borsh bytes, hex encoded.
+	#[arg(long)]
+	pub metadata_borsh_hex: String,
+}
+
+impl InstructionBuilder for PreparePrizePoolItemArgs {
+	fn build(&self) -> Result<Instruction, CliError> {
+		let accounts = generated::PreparePrizePoolItem::new(
+			self.authority,
+			self.template,
+			self.bundle,
+			self.prize_pool,
+			self.prize_pool_item,
+		);
+		let data_hash = hex_arg::<32>(&self.data_hash, "data_hash")?;
+		let creator_hash = hex_arg::<32>(&self.creator_hash, "creator_hash")?;
+		let metadata = bounded_hex_arg(&self.metadata_borsh_hex, "metadata_borsh_hex", 512)?;
+		let data = generated::PreparePrizePoolItemInstructionData::new(|wire| {
+			wire.item_bump = self.item_bump;
+			wire.data_hash = data_hash;
+			wire.creator_hash = creator_hash;
+			wire.nonce = self.nonce.into();
+			wire.index = self.index.into();
+			wire.metadata
+				.try_set(metadata.as_slice())
+				.expect("metadata length was validated before encoding");
+		})?;
+		Ok(accounts.instruction(data))
+	}
+}
+
+/// Arguments for `deposit-prize-pool-item`.
+#[derive(Debug, clap::Args)]
+pub struct DepositPrizePoolItemArgs {
+	#[arg(long)]
+	pub authority: Pubkey,
+	#[arg(long)]
+	pub template: Pubkey,
+	#[arg(long)]
+	pub bundle: Pubkey,
+	#[arg(long)]
+	pub prize_pool: Pubkey,
+	#[arg(long)]
+	pub prize_pool_item: Pubkey,
+	#[arg(long)]
+	pub tree_config: Pubkey,
+	#[arg(long)]
+	pub merkle_tree: Pubkey,
+	#[arg(long)]
+	pub bubblegum_program: Pubkey,
+	#[arg(long)]
+	pub log_wrapper: Pubkey,
+	#[arg(long)]
+	pub compression_program: Pubkey,
+	#[arg(long = "proof-account")]
+	pub proof_accounts: Vec<Pubkey>,
+	#[arg(long)]
+	pub root: String,
+	#[arg(long)]
+	pub data_hash: String,
+	#[arg(long)]
+	pub creator_hash: String,
+	#[arg(long)]
+	pub nonce: u64,
+	#[arg(long)]
+	pub index: u32,
+}
+
+impl InstructionBuilder for DepositPrizePoolItemArgs {
+	fn build(&self) -> Result<Instruction, CliError> {
+		let accounts = generated::DepositPrizePoolItem::new(
+			self.authority,
+			self.template,
+			self.bundle,
+			self.prize_pool,
+			self.prize_pool_item,
+			self.tree_config,
+			self.merkle_tree,
+			self.bubblegum_program,
+			self.log_wrapper,
+			self.compression_program,
+			Pubkey::default(),
+		);
+		let root = hex_arg::<32>(&self.root, "root")?;
+		let data_hash = hex_arg::<32>(&self.data_hash, "data_hash")?;
+		let creator_hash = hex_arg::<32>(&self.creator_hash, "creator_hash")?;
+		let data = generated::DepositPrizePoolItemInstructionData::new(|wire| {
+			wire.root = root;
+			wire.data_hash = data_hash;
+			wire.creator_hash = creator_hash;
+			wire.nonce = self.nonce.into();
+			wire.index = self.index.into();
+		})?;
+		replace_proof_tail(accounts.instruction(data), &self.proof_accounts)
+	}
+}
+
+/// Arguments for `cancel-prize-pool-item`.
+#[derive(Debug, clap::Args)]
+pub struct CancelPrizePoolItemArgs {
+	#[arg(long)]
+	pub authority: Pubkey,
+	#[arg(long)]
+	pub template: Pubkey,
+	#[arg(long)]
+	pub bundle: Pubkey,
+	#[arg(long)]
+	pub prize_pool: Pubkey,
+	#[arg(long)]
+	pub prize_pool_item: Pubkey,
+}
+
+impl InstructionBuilder for CancelPrizePoolItemArgs {
+	fn build(&self) -> Result<Instruction, CliError> {
+		let accounts = generated::CancelPrizePoolItem::new(
+			self.authority,
+			self.template,
+			self.bundle,
+			self.prize_pool,
+			self.prize_pool_item,
+		);
+		let data = generated::CancelPrizePoolItemInstructionData::new(|_| {})?;
+		Ok(accounts.instruction(data))
+	}
+}
+
+/// Arguments for `seal-prize-pool`.
+#[derive(Debug, clap::Args)]
+pub struct SealPrizePoolArgs {
+	#[arg(long)]
+	pub authority: Pubkey,
+	#[arg(long)]
+	pub template: Pubkey,
+	#[arg(long)]
+	pub bundle: Pubkey,
+	#[arg(long)]
+	pub prize_pool: Pubkey,
+}
+
+impl InstructionBuilder for SealPrizePoolArgs {
+	fn build(&self) -> Result<Instruction, CliError> {
+		let accounts = generated::SealPrizePool::new(
+			self.authority,
+			self.template,
+			self.bundle,
+			self.prize_pool,
+		);
+		let data = generated::SealPrizePoolInstructionData::new(|_| {})?;
+		Ok(accounts.instruction(data))
+	}
+}
+
+/// Arguments for `allocate-prize-pool-open`.
+#[derive(Debug, clap::Args)]
+pub struct AllocatePrizePoolOpenArgs {
+	#[arg(long)]
+	pub template: Pubkey,
+	#[arg(long)]
+	pub opening: Pubkey,
+	#[arg(long)]
+	pub bundle: Pubkey,
+	#[arg(long)]
+	pub prize_pool: Pubkey,
+	#[arg(long)]
+	pub service_vault: Pubkey,
+	#[arg(long)]
+	pub sequence: u64,
+	#[arg(long)]
+	pub result_receipt: Option<Pubkey>,
+}
+
+impl InstructionBuilder for AllocatePrizePoolOpenArgs {
+	fn build(&self) -> Result<Instruction, CliError> {
+		let (result_receipt, bump) =
+			canonical_result_receipt(&self.opening, self.sequence, self.result_receipt)?;
+		let accounts = generated::AllocatePrizePoolOpen::new(
+			self.template,
+			self.opening,
+			self.bundle,
+			self.prize_pool,
+			self.service_vault,
+			result_receipt,
+		);
+		let data = generated::AllocatePrizePoolOpenInstructionData::new(|wire| {
+			wire.result_receipt_bump = bump;
+		})?;
+		Ok(accounts.instruction(data))
+	}
+}
+
+/// Arguments for `claim-prize-pool-item`.
+#[derive(Debug, clap::Args)]
+pub struct ClaimPrizePoolItemArgs {
+	#[arg(long)]
+	pub template: Pubkey,
+	#[arg(long)]
+	pub opening: Pubkey,
+	#[arg(long)]
+	pub bundle: Pubkey,
+	#[arg(long)]
+	pub prize_pool: Pubkey,
+	#[arg(long)]
+	pub prize_pool_item: Pubkey,
+	#[arg(long)]
+	pub recipient: Pubkey,
+	#[arg(long)]
+	pub rent_refund: Pubkey,
+	#[arg(long)]
+	pub tree_config: Pubkey,
+	#[arg(long)]
+	pub merkle_tree: Pubkey,
+	#[arg(long)]
+	pub bubblegum_program: Pubkey,
+	#[arg(long)]
+	pub log_wrapper: Pubkey,
+	#[arg(long)]
+	pub compression_program: Pubkey,
+	#[arg(long = "proof-account")]
+	pub proof_accounts: Vec<Pubkey>,
+	#[arg(long)]
+	pub asset_index: u8,
+	#[arg(long)]
+	pub root: String,
+	#[arg(long)]
+	pub data_hash: String,
+	#[arg(long)]
+	pub creator_hash: String,
+	#[arg(long)]
+	pub nonce: u64,
+	#[arg(long)]
+	pub index: u32,
+	/// Current canonical Bubblegum V1 `MetadataArgs` Borsh bytes, hex encoded.
+	#[arg(long)]
+	pub metadata_borsh_hex: String,
+}
+
+impl InstructionBuilder for ClaimPrizePoolItemArgs {
+	fn build(&self) -> Result<Instruction, CliError> {
+		let accounts = generated::ClaimPrizePoolItem::new(
+			self.template,
+			self.opening,
+			self.bundle,
+			self.prize_pool,
+			self.prize_pool_item,
+			self.recipient,
+			self.rent_refund,
+			self.tree_config,
+			self.merkle_tree,
+			self.bubblegum_program,
+			self.log_wrapper,
+			self.compression_program,
+			Pubkey::default(),
+		);
+		let root = hex_arg::<32>(&self.root, "root")?;
+		let data_hash = hex_arg::<32>(&self.data_hash, "data_hash")?;
+		let creator_hash = hex_arg::<32>(&self.creator_hash, "creator_hash")?;
+		let metadata = bounded_hex_arg(&self.metadata_borsh_hex, "metadata_borsh_hex", 512)?;
+		let data = generated::ClaimPrizePoolItemInstructionData::new(|wire| {
+			wire.asset_index = self.asset_index;
+			wire.root = root;
+			wire.data_hash = data_hash;
+			wire.creator_hash = creator_hash;
+			wire.nonce = self.nonce.into();
+			wire.index = self.index.into();
+			wire.metadata
+				.try_set(metadata.as_slice())
+				.expect("metadata length was validated before encoding");
+		})?;
+		replace_proof_tail(accounts.instruction(data), &self.proof_accounts)
+	}
+}
+
+/// Arguments for `reclaim-prize-pool-item`.
+#[derive(Debug, clap::Args)]
+pub struct ReclaimPrizePoolItemArgs {
+	#[arg(long)]
+	pub authority: Pubkey,
+	#[arg(long)]
+	pub template: Pubkey,
+	#[arg(long)]
+	pub box_mint: Pubkey,
+	#[arg(long)]
+	pub bundle: Pubkey,
+	#[arg(long)]
+	pub prize_pool: Pubkey,
+	#[arg(long)]
+	pub prize_pool_item: Pubkey,
+	#[arg(long)]
+	pub tree_config: Pubkey,
+	#[arg(long)]
+	pub merkle_tree: Pubkey,
+	#[arg(long)]
+	pub bubblegum_program: Pubkey,
+	#[arg(long)]
+	pub log_wrapper: Pubkey,
+	#[arg(long)]
+	pub compression_program: Pubkey,
+	#[arg(long = "proof-account")]
+	pub proof_accounts: Vec<Pubkey>,
+	#[arg(long)]
+	pub pool_index: u32,
+	#[arg(long)]
+	pub root: String,
+	#[arg(long)]
+	pub data_hash: String,
+	#[arg(long)]
+	pub creator_hash: String,
+	#[arg(long)]
+	pub nonce: u64,
+	#[arg(long)]
+	pub index: u32,
+	/// Current canonical Bubblegum V1 `MetadataArgs` Borsh bytes, hex encoded.
+	#[arg(long)]
+	pub metadata_borsh_hex: String,
+}
+
+impl InstructionBuilder for ReclaimPrizePoolItemArgs {
+	fn build(&self) -> Result<Instruction, CliError> {
+		let accounts = generated::ReclaimPrizePoolItem::new(
+			self.authority,
+			self.template,
+			self.box_mint,
+			self.bundle,
+			self.prize_pool,
+			self.prize_pool_item,
+			self.tree_config,
+			self.merkle_tree,
+			self.bubblegum_program,
+			self.log_wrapper,
+			self.compression_program,
+			Pubkey::default(),
+		);
+		let root = hex_arg::<32>(&self.root, "root")?;
+		let data_hash = hex_arg::<32>(&self.data_hash, "data_hash")?;
+		let creator_hash = hex_arg::<32>(&self.creator_hash, "creator_hash")?;
+		let metadata = bounded_hex_arg(&self.metadata_borsh_hex, "metadata_borsh_hex", 512)?;
+		let data = generated::ReclaimPrizePoolItemInstructionData::new(|wire| {
+			wire.pool_index = self.pool_index.into();
+			wire.root = root;
+			wire.data_hash = data_hash;
+			wire.creator_hash = creator_hash;
+			wire.nonce = self.nonce.into();
+			wire.index = self.index.into();
+			wire.metadata
+				.try_set(metadata.as_slice())
+				.expect("metadata length was validated before encoding");
+		})?;
+		replace_proof_tail(accounts.instruction(data), &self.proof_accounts)
+	}
+}
+
+/// Arguments for `close-prize-pool`.
+#[derive(Debug, clap::Args)]
+pub struct ClosePrizePoolArgs {
+	#[arg(long)]
+	pub authority: Pubkey,
+	#[arg(long)]
+	pub template: Pubkey,
+	#[arg(long)]
+	pub bundle: Pubkey,
+	#[arg(long)]
+	pub prize_pool: Pubkey,
+}
+
+impl InstructionBuilder for ClosePrizePoolArgs {
+	fn build(&self) -> Result<Instruction, CliError> {
+		let accounts = generated::ClosePrizePool::new(
+			self.authority,
+			self.template,
+			self.bundle,
+			self.prize_pool,
+		);
+		let data = generated::ClosePrizePoolInstructionData::new(|_| {})?;
 		Ok(accounts.instruction(data))
 	}
 }

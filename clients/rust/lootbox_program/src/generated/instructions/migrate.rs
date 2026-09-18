@@ -28,6 +28,8 @@ pub struct Migrate {
 	pub bundle_state: Option<solana_pubkey::Pubkey>,
 	pub template_opening_state: Option<solana_pubkey::Pubkey>,
 	pub result_receipt_state: Option<solana_pubkey::Pubkey>,
+	pub prize_pool_state: Option<solana_pubkey::Pubkey>,
+	pub prize_pool_item_state: Option<solana_pubkey::Pubkey>,
 }
 
 impl Migrate {
@@ -42,6 +44,8 @@ impl Migrate {
 			bundle_state: None,
 			template_opening_state: None,
 			result_receipt_state: None,
+			prize_pool_state: None,
+			prize_pool_item_state: None,
 		}
 	}
 
@@ -58,7 +62,7 @@ impl Migrate {
 		&self,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
+		let mut accounts = Vec::with_capacity(11 + remaining_accounts.len());
 		if let Some(payer) = self.payer {
 			accounts.push(solana_instruction::AccountMeta::new(payer, true));
 		} else {
@@ -128,6 +132,22 @@ impl Migrate {
 		}
 		if let Some(result_receipt_state) = self.result_receipt_state {
 			accounts.push(solana_instruction::AccountMeta::new(result_receipt_state, false));
+		} else {
+			accounts.push(solana_instruction::AccountMeta::new_readonly(
+				crate::LOOTBOX_PROGRAM_ID,
+				false,
+			));
+		}
+		if let Some(prize_pool_state) = self.prize_pool_state {
+			accounts.push(solana_instruction::AccountMeta::new(prize_pool_state, false));
+		} else {
+			accounts.push(solana_instruction::AccountMeta::new_readonly(
+				crate::LOOTBOX_PROGRAM_ID,
+				false,
+			));
+		}
+		if let Some(prize_pool_item_state) = self.prize_pool_item_state {
+			accounts.push(solana_instruction::AccountMeta::new(prize_pool_item_state, false));
 		} else {
 			accounts.push(solana_instruction::AccountMeta::new_readonly(
 				crate::LOOTBOX_PROGRAM_ID,

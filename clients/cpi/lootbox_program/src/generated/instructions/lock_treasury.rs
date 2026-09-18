@@ -23,7 +23,7 @@ use crate::ProgramAccount;
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct LockTreasury<'account> {
 	/// CPI account `authority`.
-	/// Required privileges: writable.
+	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
@@ -93,7 +93,7 @@ impl<'account> LockTreasury<'account> {
 		signers: &[Signer<'_, '_>],
 	) -> ProgramResult {
 		let accounts: [CpiHandle<'_>; 7] = [
-			CpiHandle::writable(self.authority)?,
+			CpiHandle::writable_signer(self.authority)?,
 			CpiHandle::writable(self.template)?,
 			CpiHandle::writable(self.box_mint)?,
 			CpiHandle::readonly(self.bundle),

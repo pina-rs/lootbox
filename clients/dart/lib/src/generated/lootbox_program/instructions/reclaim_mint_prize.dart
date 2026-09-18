@@ -119,7 +119,7 @@ Instruction getReclaimMintPrizeInstruction({
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.readonly),
+      AccountMeta(address: authority, role: AccountRole.readonlySigner),
       AccountMeta(address: template, role: AccountRole.readonly),
       AccountMeta(address: boxMint, role: AccountRole.readonly),
       AccountMeta(address: bundle, role: AccountRole.writable),

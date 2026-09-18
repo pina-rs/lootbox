@@ -28,6 +28,9 @@ class TemplateOpeningState {
     required this.eligibleBundleCount,
     required this.status,
     required this.selectedBundle,
+    required this.selectedPoolItem,
+    required this.selectedPoolAsset,
+    required this.hasPoolAssignment,
     required this.claimedMask,
     required this.bump,
   }) : discriminator = 6,
@@ -49,6 +52,9 @@ class TemplateOpeningState {
   final int eligibleBundleCount;
   final int status;
   final int selectedBundle;
+  final int selectedPoolItem;
+  final int selectedPoolAsset;
+  final bool hasPoolAssignment;
   final int claimedMask;
   final int bump;
 
@@ -73,11 +79,14 @@ class TemplateOpeningState {
           eligibleBundleCount == other.eligibleBundleCount &&
           status == other.status &&
           selectedBundle == other.selectedBundle &&
+          selectedPoolItem == other.selectedPoolItem &&
+          selectedPoolAsset == other.selectedPoolAsset &&
+          hasPoolAssignment == other.hasPoolAssignment &&
           claimedMask == other.claimedMask &&
           bump == other.bump;
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     discriminator,
     migrationVersion,
     template,
@@ -94,13 +103,16 @@ class TemplateOpeningState {
     eligibleBundleCount,
     status,
     selectedBundle,
+    selectedPoolItem,
+    selectedPoolAsset,
+    hasPoolAssignment,
     claimedMask,
     bump,
-  );
+  ]);
 
   @override
   String toString() =>
-      'TemplateOpeningState(discriminator: $discriminator, migrationVersion: $migrationVersion, template: $template, boxAuthority: $boxAuthority, beneficiary: $beneficiary, rentRefund: $rentRefund, consumerProgram: $consumerProgram, consumerContext: $consumerContext, randomness: $randomness, sequence: $sequence, seedSlot: $seedSlot, entropy: $entropy, treasuryRevision: $treasuryRevision, eligibleBundleCount: $eligibleBundleCount, status: $status, selectedBundle: $selectedBundle, claimedMask: $claimedMask, bump: $bump)';
+      'TemplateOpeningState(discriminator: $discriminator, migrationVersion: $migrationVersion, template: $template, boxAuthority: $boxAuthority, beneficiary: $beneficiary, rentRefund: $rentRefund, consumerProgram: $consumerProgram, consumerContext: $consumerContext, randomness: $randomness, sequence: $sequence, seedSlot: $seedSlot, entropy: $entropy, treasuryRevision: $treasuryRevision, eligibleBundleCount: $eligibleBundleCount, status: $status, selectedBundle: $selectedBundle, selectedPoolItem: $selectedPoolItem, selectedPoolAsset: $selectedPoolAsset, hasPoolAssignment: $hasPoolAssignment, claimedMask: $claimedMask, bump: $bump)';
 }
 
 Encoder<TemplateOpeningState> getTemplateOpeningStateEncoder() {
@@ -124,6 +136,9 @@ Encoder<TemplateOpeningState> getTemplateOpeningStateEncoder() {
     ('eligibleBundleCount', getU32Encoder()),
     ('status', getU8Encoder()),
     ('selectedBundle', getU32Encoder()),
+    ('selectedPoolItem', getU32Encoder()),
+    ('selectedPoolAsset', getU8Encoder()),
+    ('hasPoolAssignment', getBooleanEncoder()),
     ('claimedMask', getU8Encoder()),
     ('bump', getU8Encoder()),
   ]);
@@ -147,6 +162,9 @@ Encoder<TemplateOpeningState> getTemplateOpeningStateEncoder() {
       'eligibleBundleCount': value.eligibleBundleCount,
       'status': value.status,
       'selectedBundle': value.selectedBundle,
+      'selectedPoolItem': value.selectedPoolItem,
+      'selectedPoolAsset': value.selectedPoolAsset,
+      'hasPoolAssignment': value.hasPoolAssignment,
       'claimedMask': value.claimedMask,
       'bump': value.bump,
     },
@@ -171,6 +189,9 @@ Decoder<TemplateOpeningState> getTemplateOpeningStateDecoder() {
     ('eligibleBundleCount', getU32Decoder()),
     ('status', getU8Decoder()),
     ('selectedBundle', getU32Decoder()),
+    ('selectedPoolItem', getU32Decoder()),
+    ('selectedPoolAsset', getU8Decoder()),
+    ('hasPoolAssignment', getBooleanDecoder()),
     ('claimedMask', getU8Decoder()),
     ('bump', getU8Decoder()),
   ]);
@@ -211,6 +232,9 @@ Decoder<TemplateOpeningState> getTemplateOpeningStateDecoder() {
         eligibleBundleCount: map['eligibleBundleCount']! as int,
         status: map['status']! as int,
         selectedBundle: map['selectedBundle']! as int,
+        selectedPoolItem: map['selectedPoolItem']! as int,
+        selectedPoolAsset: map['selectedPoolAsset']! as int,
+        hasPoolAssignment: map['hasPoolAssignment']! as bool,
         claimedMask: map['claimedMask']! as int,
         bump: map['bump']! as int,
       ),

@@ -2,13 +2,20 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	assertLoopback,
 	formatUnits,
+	hasSavedDraft,
 	initialInput,
 	parseUnits,
+	type Playground,
+	previewInput,
+	savedDraftInfo,
 	searchTokens,
 	validateInput,
 } from "./playground.js";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+	vi.unstubAllGlobals();
+	localStorage.clear();
+});
 
 describe("test wallet and creator safety", () => {
 	it("refuses nonlocal RPCs, credentials, and lookalike hosts", () => {
@@ -59,6 +66,105 @@ describe("test wallet and creator safety", () => {
 		expect(() => validateInput({ ...initialInput, rows: [] })).toThrow();
 		expect(() => validateInput({ ...initialInput, name: "🎁".repeat(10) }))
 			.toThrow(/UTF-8/);
+	});
+	it("keeps expired and unreadable funding drafts available for recovery", () => {
+		const expired = { ...initialInput, opensAt: "2020-01-01T00:00" };
+		expect(() => validateInput(expired)).toThrow(/at least one minute/);
+		expect(() => validateInput(expired, { allowExpiredReveal: true }))
+			.not.toThrow();
+		expect(previewInput(expired, { allowExpiredReveal: true })).not.toBeNull();
+
+		const sandbox = {
+			config: { instanceId: "resume-test" },
+		} as unknown as Playground;
+		const key = "lootbox:draft:resume-test";
+		localStorage.setItem(
+			key,
+			JSON.stringify({
+				format: "treasury",
+				mode: "create",
+				id: "1",
+				mint: [1],
+				rewards: expired.rows.map((row) => row.assets.map(() => null)),
+				input: expired,
+			}),
+		);
+		expect(hasSavedDraft(sandbox)).toBe(true);
+		expect(savedDraftInfo(sandbox)?.input.opensAt).toBe(expired.opensAt);
+
+		localStorage.setItem(key, "not-json-but-may-contain-recovery-seeds");
+		expect(hasSavedDraft(sandbox)).toBe(true);
+		expect(savedDraftInfo(sandbox)).toBeNull();
+		expect(localStorage.getItem(key)).toBe(
+			"not-json-but-may-contain-recovery-seeds",
+		);
+	});
+	it("fails closed when a PrizePool manifest changes tree, count, or identity", () => {
+		const tree = "7RmhTYBS7Uv9PSNmJGX6tM8BjSn7HVbGdVgV6EtCNKLm";
+		const item = {
+			asset: "Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op",
+			name: "Pinned leaf",
+			tree,
+			treeConfig: tree,
+			root: tree,
+			dataHash: "cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK",
+			creatorHash: "noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV",
+			nonce: "7",
+			leafIndex: 7,
+			proof: [],
+			metadata: "AQ==",
+		};
+		const pool = {
+			id: "pool",
+			kind: "prizePool" as const,
+			label: "Two compressed NFTs",
+			amount: "1",
+			source: "das" as const,
+			decimals: 0,
+			mint: tree,
+			poolItems: [item, {
+				...item,
+				asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+				nonce: "8",
+				leafIndex: 8,
+			}],
+		};
+		const input = {
+			...initialInput,
+			rows: [{ label: "Pool", quantity: "2", assets: [pool] }],
+		};
+		expect(() => validateInput(input)).not.toThrow();
+		expect(() =>
+			validateInput({
+				...input,
+				rows: [{ ...input.rows[0]!, quantity: "1" }],
+			})
+		).toThrow(/copies must exactly match/);
+		expect(() =>
+			validateInput({
+				...input,
+				rows: [{
+					...input.rows[0]!,
+					assets: [{ ...pool, poolItems: [item, item] }],
+				}],
+			})
+		).toThrow(/distinct immutable NFTs/);
+		expect(() =>
+			validateInput({
+				...input,
+				rows: [{
+					...input.rows[0]!,
+					assets: [{
+						...pool,
+						poolItems: [item, {
+							...item,
+							asset: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+							tree: "So11111111111111111111111111111111111111112",
+						}],
+					}],
+				}],
+			})
+		).toThrow(/one tree/);
 	});
 	it("hides catalog tokens that the amount parser cannot represent", async () => {
 		vi.stubGlobal(

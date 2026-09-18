@@ -6,9 +6,11 @@ use super::*;
 
 const MPL_TOKEN_METADATA_ID: Address = address!("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 const MPL_CORE_ID: Address = address!("CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d");
-const MPL_BUBBLEGUM_ID: Address = address!("BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY");
-const SPL_ACCOUNT_COMPRESSION_ID: Address = address!("cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK");
-const SPL_NOOP_ID: Address = address!("noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV");
+pub(super) const MPL_BUBBLEGUM_ID: Address =
+	address!("BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY");
+pub(super) const SPL_ACCOUNT_COMPRESSION_ID: Address =
+	address!("cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK");
+pub(super) const SPL_NOOP_ID: Address = address!("noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV");
 const INSTRUCTIONS_SYSVAR_ID: Address = address!("Sysvar1nstructions1111111111111111111111111");
 
 #[instruction(discriminator = LootboxInstruction::FundMetadataNftPrize, migrations)]
@@ -188,11 +190,14 @@ pub struct FundCompressedNftPrizeAccounts<'a> {
 	pub bundle: &'a mut AccountView,
 	pub tree_config: &'a AccountView,
 	pub merkle_tree: &'a mut AccountView,
+	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
 	pub bubblegum_program: &'a AccountView,
+	#[pina(validate(address = SPL_NOOP_ID))]
 	pub log_wrapper: &'a AccountView,
+	#[pina(validate(address = SPL_ACCOUNT_COMPRESSION_ID))]
 	pub compression_program: &'a AccountView,
 	pub system_program: &'a AccountView,
-	/// Merkle proof nodes in root-to-leaf order.
+	/// Merkle proof nodes in leaf-to-root order.
 	#[pina(remaining)]
 	pub proof_accounts: &'a [AccountView],
 }
@@ -205,11 +210,14 @@ pub struct ClaimCompressedNftPrizeAccounts<'a> {
 	pub recipient: &'a AccountView,
 	pub tree_config: &'a AccountView,
 	pub merkle_tree: &'a mut AccountView,
+	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
 	pub bubblegum_program: &'a AccountView,
+	#[pina(validate(address = SPL_NOOP_ID))]
 	pub log_wrapper: &'a AccountView,
+	#[pina(validate(address = SPL_ACCOUNT_COMPRESSION_ID))]
 	pub compression_program: &'a AccountView,
 	pub system_program: &'a AccountView,
-	/// Merkle proof nodes in root-to-leaf order.
+	/// Merkle proof nodes in leaf-to-root order.
 	#[pina(remaining)]
 	pub proof_accounts: &'a [AccountView],
 }
@@ -223,11 +231,14 @@ pub struct ReclaimCompressedNftPrizeAccounts<'a> {
 	pub bundle: &'a mut AccountView,
 	pub tree_config: &'a AccountView,
 	pub merkle_tree: &'a mut AccountView,
+	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
 	pub bubblegum_program: &'a AccountView,
+	#[pina(validate(address = SPL_NOOP_ID))]
 	pub log_wrapper: &'a AccountView,
+	#[pina(validate(address = SPL_ACCOUNT_COMPRESSION_ID))]
 	pub compression_program: &'a AccountView,
 	pub system_program: &'a AccountView,
-	/// Merkle proof nodes in root-to-leaf order.
+	/// Merkle proof nodes in leaf-to-root order.
 	#[pina(remaining)]
 	pub proof_accounts: &'a [AccountView],
 }
@@ -495,34 +506,45 @@ fn validate_core_accounts(
 	Ok(())
 }
 
-struct CompressedTransfer<'a> {
-	tree_config: &'a AccountView,
-	owner: &'a AccountView,
-	new_owner: &'a AccountView,
-	merkle_tree: &'a AccountView,
-	bubblegum_program: &'a AccountView,
-	log_wrapper: &'a AccountView,
-	compression_program: &'a AccountView,
-	system_program: &'a AccountView,
+pub(super) struct CompressedTransfer<'a> {
+	pub tree_config: &'a AccountView,
+	pub owner: &'a AccountView,
+	pub new_owner: &'a AccountView,
+	pub merkle_tree: &'a AccountView,
+	pub bubblegum_program: &'a AccountView,
+	pub log_wrapper: &'a AccountView,
+	pub compression_program: &'a AccountView,
+	pub system_program: &'a AccountView,
 }
 
-struct CompressedProof<'a> {
-	root: &'a [u8; 32],
-	data_hash: &'a [u8; 32],
-	creator_hash: &'a [u8; 32],
-	nonce: u64,
-	index: u32,
+pub(super) struct CompressedProof<'a> {
+	pub root: &'a [u8; 32],
+	pub data_hash: &'a [u8; 32],
+	pub creator_hash: &'a [u8; 32],
+	pub nonce: u64,
+	pub index: u32,
 }
 
-fn invoke_compressed_transfer(
+/// Largest proof tail accepted without an address lookup table.
+pub const MAX_BUBBLEGUM_PROOF_ACCOUNTS: usize = 16;
+
+fn validate_bubblegum_proof_count(length: usize) -> ProgramResult {
+	if length > MAX_BUBBLEGUM_PROOF_ACCOUNTS {
+		return Err(ProgramError::InvalidArgument);
+	}
+	Ok(())
+}
+
+pub(super) fn invoke_compressed_transfer(
 	accounts: &CompressedTransfer<'_>,
 	proof_accounts: &[AccountView],
 	proof: &CompressedProof<'_>,
 	signers: &[Signer<'_, '_>],
 ) -> ProgramResult {
+	validate_bubblegum_proof_count(proof_accounts.len())?;
 	// Bubblegum transfer ABI pinned to upstream commit
 	// f03717ae97c331e4bf4ae576793990c4e3436db1: discriminator and
-	// root/data/creator hashes, nonce, index, then root-to-leaf proof accounts.
+	// root/data/creator hashes, nonce, index, then leaf-to-root proof accounts.
 	let mut metas = Vec::with_capacity(8 + proof_accounts.len());
 	metas.extend_from_slice(&[
 		InstructionAccount::readonly(accounts.tree_config.address()),
@@ -564,7 +586,7 @@ fn invoke_compressed_transfer(
 	pinocchio::cpi::invoke_signed_with_slice(&instruction, &views, signers)
 }
 
-fn compressed_asset_id(tree: &Address, nonce: u64) -> Result<Address, ProgramError> {
+pub(super) fn compressed_asset_id(tree: &Address, nonce: u64) -> Result<Address, ProgramError> {
 	try_find_program_address(
 		&[b"asset", tree.as_ref(), &nonce.to_le_bytes()],
 		&MPL_BUBBLEGUM_ID,
@@ -573,7 +595,7 @@ fn compressed_asset_id(tree: &Address, nonce: u64) -> Result<Address, ProgramErr
 	.ok_or(ProgramError::InvalidSeeds)
 }
 
-fn validate_compressed_accounts(accounts: &CompressedTransfer<'_>) -> ProgramResult {
+pub(super) fn validate_compressed_accounts(accounts: &CompressedTransfer<'_>) -> ProgramResult {
 	accounts
 		.bubblegum_program
 		.assert_program(&MPL_BUBBLEGUM_ID)?;
@@ -1159,5 +1181,15 @@ mod tests {
 			Some(&MPL_CORE_ID),
 			&MPL_TOKEN_METADATA_ID,
 		));
+	}
+
+	#[test]
+	fn bubblegum_proof_tail_is_bounded_at_the_program_boundary() {
+		assert_eq!(validate_bubblegum_proof_count(0), Ok(()));
+		assert_eq!(validate_bubblegum_proof_count(16), Ok(()));
+		assert_eq!(
+			validate_bubblegum_proof_count(17),
+			Err(ProgramError::InvalidArgument),
+		);
 	}
 }

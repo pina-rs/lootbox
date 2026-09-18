@@ -8,6 +8,10 @@ import {
 
 const U64_MAX = (1n << 64n) - 1n;
 export const MAX_TEMPLATE_BUNDLES = 1_024;
+export const MAX_PRIZE_POOL_ITEMS = 4_096;
+export const MAX_PRIZE_POOL_METADATA_BYTES = 512;
+/** Largest proof the SDK can always deliver without an address lookup table. */
+export const MAX_PRIZE_POOL_PROOF_NODES = 16;
 const MAX_TOTAL_TICKETS = 0xffff_ffffn;
 const ZERO_ADDRESS = address("11111111111111111111111111111111");
 const WRAPPED_SOL = address("So11111111111111111111111111111111111111112");
@@ -21,6 +25,17 @@ export type CompressedNftProof = Readonly<{
 	tree: Address;
 	treeConfig: Address;
 	proof: readonly Address[];
+}>;
+
+export type PrizePoolItem = Readonly<{
+	asset: Address;
+	name?: string;
+	image?: string;
+	/** Explicit DAS mutability signal captured by the checked creator flow. */
+	metadataMutable: boolean;
+	/** Canonical Bubblegum V1 `MetadataArgs` Borsh preimage verified on-chain. */
+	metadata: ReadonlyUint8Array;
+	proof: CompressedNftProof;
 }>;
 
 export type PrizeAsset =
@@ -77,6 +92,12 @@ export type PrizeAsset =
 		name?: string;
 		image?: string;
 		proof: CompressedNftProof;
+	}>
+	| Readonly<{
+		kind: "prizePool";
+		/** Every item must be a Bubblegum V1 leaf from this one pinned tree. */
+		tree: Address;
+		items: readonly PrizePoolItem[];
 	}>;
 
 export type PrizeBundleInput = Readonly<{
@@ -174,6 +195,7 @@ function assetAddress(asset: PrizeAsset): Address | null {
 	) {
 		return address(asset.mint);
 	}
+	if (asset.kind === "prizePool") return address(asset.tree);
 	return address(asset.asset);
 }
 
@@ -185,6 +207,50 @@ function assetAmount(asset: PrizeAsset): bigint {
 		return asset.amount;
 	}
 	return 1n;
+}
+
+function copyCompressedProof(proof: CompressedNftProof): CompressedNftProof {
+	return Object.freeze({
+		...proof,
+		root: Uint8Array.from(proof.root),
+		dataHash: Uint8Array.from(proof.dataHash),
+		creatorHash: Uint8Array.from(proof.creatorHash),
+		proof: Object.freeze([...proof.proof]),
+	});
+}
+
+/** Own every nested collection and byte buffer used after asynchronous RPCs. */
+function copyPrizeAsset(asset: PrizeAsset): PrizeAsset {
+	if (asset.kind === "compressedNft") {
+		return Object.freeze({ ...asset, proof: copyCompressedProof(asset.proof) });
+	}
+	if (asset.kind === "prizePool") {
+		return Object.freeze({
+			...asset,
+			items: Object.freeze(asset.items.map((item) =>
+				Object.freeze({
+					...item,
+					metadata: Uint8Array.from(item.metadata),
+					proof: copyCompressedProof(item.proof),
+				})
+			)),
+		});
+	}
+	if (asset.kind === "core") {
+		return Object.freeze({
+			...asset,
+			...(asset.pluginAccounts
+				? {
+					pluginAccounts: Object.freeze(
+						asset.pluginAccounts.map((account) =>
+							Object.freeze({ ...account })
+						),
+					),
+				}
+				: {}),
+		});
+	}
+	return Object.freeze({ ...asset });
 }
 
 /** Return the number of append-only bundle slots that remain. */
@@ -290,7 +356,28 @@ export function createTemplatePlan(
 			);
 		}
 		const seen = new Set<Address | null>();
-		const assets = bundle.assets.map((asset): PrizeAsset => {
+		let prizePools = 0;
+		const assets = bundle.assets.map((inputAsset): PrizeAsset => {
+			const asset = copyPrizeAsset(inputAsset);
+			if (
+				asset.kind === "compressedNft" &&
+				(asset.asset === ZERO_ADDRESS || asset.proof.tree === ZERO_ADDRESS ||
+					asset.proof.treeConfig === ZERO_ADDRESS ||
+					asset.proof.root.length !== 32 ||
+					asset.proof.dataHash.length !== 32 ||
+					asset.proof.creatorHash.length !== 32 ||
+					typeof asset.proof.nonce !== "bigint" ||
+					asset.proof.nonce < 0n || asset.proof.nonce > U64_MAX ||
+					!Number.isInteger(asset.proof.leafIndex) ||
+					asset.proof.leafIndex < 0 ||
+					asset.proof.leafIndex > 0xffff_ffff ||
+					asset.proof.proof.length > MAX_PRIZE_POOL_PROOF_NODES)
+			) {
+				throw new TemplatePlanError(
+					"INVALID_ASSET",
+					"compressed NFTs need a canonical identity and a complete bounded proof",
+				);
+			}
 			if (
 				asset.kind === "nft" &&
 				(asset.tokenRecord || asset.destinationTokenRecord ||
@@ -310,6 +397,43 @@ export function createTemplatePlan(
 					"only plain uncollected Core assets without plugins are admitted",
 				);
 			}
+			if (asset.kind === "prizePool") {
+				prizePools += 1;
+				if (
+					prizePools > 1 || bundle.quantity > BigInt(MAX_PRIZE_POOL_ITEMS) ||
+					BigInt(asset.items.length) !== bundle.quantity
+				) {
+					throw new TemplatePlanError(
+						"INVALID_ASSET",
+						`a bundle supports one prize pool containing exactly its ${bundle.quantity} tickets (maximum ${MAX_PRIZE_POOL_ITEMS})`,
+					);
+				}
+				for (const item of asset.items) {
+					if (
+						item.asset === ZERO_ADDRESS ||
+						item.metadata.length === 0 ||
+						item.metadata.length > MAX_PRIZE_POOL_METADATA_BYTES ||
+						item.proof.tree !== asset.tree ||
+						item.proof.treeConfig === ZERO_ADDRESS ||
+						item.proof.root.length !== 32 ||
+						item.proof.dataHash.length !== 32 ||
+						item.proof.creatorHash.length !== 32 ||
+						typeof item.proof.nonce !== "bigint" ||
+						item.proof.nonce < 0n || item.proof.nonce > U64_MAX ||
+						!Number.isInteger(item.proof.leafIndex) ||
+						item.proof.leafIndex < 0 ||
+						item.proof.leafIndex > 0xffff_ffff ||
+						item.proof.proof.length > MAX_PRIZE_POOL_PROOF_NODES ||
+						item.metadataMutable !== false || uniqueAssets.has(item.asset)
+					) {
+						throw new TemplatePlanError(
+							"INVALID_ASSET",
+							"prize-pool items must be distinct, immutable Bubblegum leaves from one tree with complete proofs",
+						);
+					}
+					uniqueAssets.add(item.asset);
+				}
+			}
 			const identifier = assetAddress(asset);
 			const amount = u64(assetAmount(asset), "prize amount");
 			if (
@@ -326,6 +450,7 @@ export function createTemplatePlan(
 				"quoteSol",
 				"token",
 				"quoteToken",
+				"prizePool",
 			].includes(asset.kind);
 			const singleCopy = exclusive && asset.kind !== "mintBadge";
 			if (exclusive) {
@@ -355,7 +480,7 @@ export function createTemplatePlan(
 					kind: asset.kind,
 				}),
 			);
-			return Object.freeze({ ...asset });
+			return asset;
 		});
 		return { ...bundle, assets: Object.freeze(assets) };
 	});

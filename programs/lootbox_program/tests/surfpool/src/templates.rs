@@ -2,10 +2,13 @@
 //! oracle boundary is emulated; no lootbox account is fabricated or mutated.
 
 use program_under_test::*;
+use solana_keccak_hasher::hashv as keccak_hashv;
 use spl_token_2022_interface::instruction as token_ix;
 use spl_token_metadata_interface::instruction as metadata_ix;
 
 use super::*;
+
+mod prize_pool;
 
 const NAME: &str = "Treasury test";
 const URI: &str = "https://example.com/lootbox.json";
@@ -268,6 +271,370 @@ fn fund_token(
 	mint
 }
 
+fn bubblegum_id() -> Pubkey {
+	Pubkey::from_str_const("BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY")
+}
+
+fn compression_id() -> Pubkey {
+	Pubkey::from_str_const("cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK")
+}
+
+fn noop_id() -> Pubkey {
+	Pubkey::from_str_const("noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV")
+}
+
+#[derive(Clone, Copy)]
+struct MockCompressedLeaf {
+	data_hash: [u8; 32],
+	creator_hash: [u8; 32],
+	nonce: u64,
+	index: u32,
+}
+
+fn push_borsh_string(bytes: &mut Vec<u8>, value: &str) {
+	bytes.extend_from_slice(
+		&u32::try_from(value.len())
+			.expect("small metadata string")
+			.to_le_bytes(),
+	);
+	bytes.extend_from_slice(value.as_bytes());
+}
+
+fn mock_metadata_with_creator_verification(
+	nonce: u64,
+	is_mutable: bool,
+	creator_verified: bool,
+) -> Vec<u8> {
+	let mut metadata = Vec::new();
+	push_borsh_string(&mut metadata, &format!("Prize #{nonce}"));
+	push_borsh_string(&mut metadata, "POOL");
+	push_borsh_string(&mut metadata, &format!("https://example.com/{nonce}.json"));
+	metadata.extend_from_slice(&500u16.to_le_bytes());
+	metadata.push(0); // primary sale happened
+	metadata.push(u8::from(is_mutable));
+	metadata.push(0); // edition nonce
+	metadata.extend_from_slice(&[1, 0]); // Some(NonFungible)
+	metadata.push(0); // collection
+	metadata.push(0); // uses
+	metadata.push(0); // original token program
+	metadata.extend_from_slice(&1u32.to_le_bytes());
+	metadata.extend_from_slice(&[u8::try_from(nonce).unwrap_or(255); 32]);
+	metadata.push(u8::from(creator_verified));
+	metadata.push(100); // creator share
+	metadata
+}
+
+fn mock_metadata(nonce: u64, is_mutable: bool) -> Vec<u8> {
+	mock_metadata_with_creator_verification(nonce, is_mutable, false)
+}
+
+fn mock_leaf_from_metadata(nonce: u64, index: u32, metadata: &[u8]) -> MockCompressedLeaf {
+	let creator_start = metadata.len() - 34;
+	let inner = keccak_hashv(&[metadata]);
+	let data_hash = keccak_hashv(&[inner.as_ref(), &500u16.to_le_bytes()]).to_bytes();
+	let creator_hash = keccak_hashv(&[&metadata[creator_start..]]).to_bytes();
+	MockCompressedLeaf {
+		data_hash,
+		creator_hash,
+		nonce,
+		index,
+	}
+}
+
+fn mock_leaf_with_mutability(nonce: u64, index: u32, is_mutable: bool) -> MockCompressedLeaf {
+	let metadata = mock_metadata(nonce, is_mutable);
+	mock_leaf_from_metadata(nonce, index, &metadata)
+}
+
+fn mock_leaf(nonce: u64, index: u32) -> MockCompressedLeaf {
+	mock_leaf_with_mutability(nonce, index, false)
+}
+
+fn deploy_bubblegum_fixture(program: &Harness) {
+	let artifact = std::env::var("MOCK_BUBBLEGUM_SBF_ARTIFACT").expect("Bubblegum fixture");
+	for program_id in [bubblegum_id(), compression_id(), noop_id()] {
+		program
+			.deploy_program(program_id, Path::new(&artifact))
+			.expect("deploy compressed-NFT fixture boundary");
+	}
+}
+
+fn initialize_mock_tree(program: &Harness, leaves: &[MockCompressedLeaf]) -> Keypair {
+	let tree = Keypair::new();
+	let mut data = b"LBGMINT1".to_vec();
+	data.extend_from_slice(
+		&u32::try_from(leaves.len())
+			.expect("fixture leaf count")
+			.to_le_bytes(),
+	);
+	for leaf in leaves {
+		data.extend_from_slice(&leaf.data_hash);
+		data.extend_from_slice(&leaf.creator_hash);
+		data.extend_from_slice(&leaf.nonce.to_le_bytes());
+		data.extend_from_slice(&leaf.index.to_le_bytes());
+	}
+	program
+		.send_with_signers(
+			Instruction::new_with_bytes(
+				bubblegum_id(),
+				&data,
+				vec![
+					AccountMeta::new(program.payer(), true),
+					AccountMeta::new(tree.pubkey(), true),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+				],
+			),
+			&[&tree],
+		)
+		.expect("initialize mock compressed tree");
+	tree
+}
+
+fn mock_tree_root(program: &Harness, tree: Pubkey) -> [u8; 32] {
+	program.account(&tree).expect("mock tree").data[8..40]
+		.try_into()
+		.expect("mock root")
+}
+
+fn update_mock_leaf_hashes(
+	program: &Harness,
+	tree: Pubkey,
+	leaf: MockCompressedLeaf,
+) -> Result<(), String> {
+	let mut data = b"LBGMUPD1".to_vec();
+	data.extend_from_slice(&leaf.nonce.to_le_bytes());
+	data.extend_from_slice(&leaf.index.to_le_bytes());
+	data.extend_from_slice(&leaf.data_hash);
+	data.extend_from_slice(&leaf.creator_hash);
+	program.send_instruction(Instruction::new_with_bytes(
+		bubblegum_id(),
+		&data,
+		vec![
+			AccountMeta::new_readonly(program.payer(), true),
+			AccountMeta::new(tree, false),
+		],
+	))
+}
+
+fn prize_pool_item_address(program: &Harness, pool: Pubkey, index: u32) -> (Pubkey, u8) {
+	Pubkey::find_program_address(
+		&[b"prize-pool-item", pool.as_ref(), &index.to_le_bytes()],
+		&program.program_id,
+	)
+}
+
+fn prepare_prize_pool_item(
+	program: &Harness,
+	template: Pubkey,
+	bundle: Pubkey,
+	pool: Pubkey,
+	pool_index: u32,
+	leaf: MockCompressedLeaf,
+	metadata: &[u8],
+) -> Result<(), String> {
+	let (item, bump) = prize_pool_item_address(program, pool, pool_index);
+	let mut data = vec![0; PreparePrizePoolItemInstruction::SIZE];
+	let args = PreparePrizePoolItemInstruction::initialize(&mut data, |_| Ok(()))
+		.expect("prepare pool item");
+	args.item_bump = bump;
+	args.data_hash = leaf.data_hash;
+	args.creator_hash = leaf.creator_hash;
+	args.nonce.set(leaf.nonce);
+	args.index.set(leaf.index);
+	args.metadata.try_set(metadata).expect("bounded metadata");
+	program.send(
+		&data,
+		vec![
+			AccountMeta::new(program.payer(), true),
+			AccountMeta::new_readonly(template, false),
+			AccountMeta::new_readonly(bundle, false),
+			AccountMeta::new(pool, false),
+			AccountMeta::new(item, false),
+			AccountMeta::new_readonly(Pubkey::default(), false),
+		],
+	)
+}
+
+struct PrizePoolCustodyContext {
+	template: Pubkey,
+	bundle: Pubkey,
+	pool: Pubkey,
+	tree: Pubkey,
+}
+
+fn transfer_prepared_prize_pool_item(
+	program: &Harness,
+	context: &PrizePoolCustodyContext,
+	pool_index: u32,
+	leaf: MockCompressedLeaf,
+	root: [u8; 32],
+) -> Result<(), String> {
+	let (item, _) = prize_pool_item_address(program, context.pool, pool_index);
+	let mut data = vec![0; DepositPrizePoolItemInstruction::SIZE];
+	let args = DepositPrizePoolItemInstruction::initialize(&mut data, |_| Ok(()))
+		.expect("deposit pool item");
+	args.root = root;
+	args.data_hash = leaf.data_hash;
+	args.creator_hash = leaf.creator_hash;
+	args.nonce.set(leaf.nonce);
+	args.index.set(leaf.index);
+	program.send(
+		&data,
+		vec![
+			AccountMeta::new(program.payer(), true),
+			AccountMeta::new_readonly(context.template, false),
+			AccountMeta::new_readonly(context.bundle, false),
+			AccountMeta::new(context.pool, false),
+			AccountMeta::new(item, false),
+			AccountMeta::new_readonly(context.tree, false),
+			AccountMeta::new(context.tree, false),
+			AccountMeta::new_readonly(bubblegum_id(), false),
+			AccountMeta::new_readonly(noop_id(), false),
+			AccountMeta::new_readonly(compression_id(), false),
+			AccountMeta::new_readonly(Pubkey::default(), false),
+		],
+	)
+}
+
+fn deposit_prize_pool_item(
+	program: &Harness,
+	context: &PrizePoolCustodyContext,
+	pool_index: u32,
+	leaf: MockCompressedLeaf,
+	root: [u8; 32],
+) -> Result<(), String> {
+	prepare_prize_pool_item(
+		program,
+		context.template,
+		context.bundle,
+		context.pool,
+		pool_index,
+		leaf,
+		&mock_metadata(leaf.nonce, false),
+	)?;
+	transfer_prepared_prize_pool_item(program, context, pool_index, leaf, root)
+}
+
+fn direct_mock_transfer(
+	program: &Harness,
+	tree: Pubkey,
+	owner: Pubkey,
+	new_owner: Pubkey,
+	leaf: MockCompressedLeaf,
+	root: [u8; 32],
+) -> Result<(), String> {
+	let mut data = vec![163, 52, 200, 231, 140, 3, 69, 186];
+	data.extend_from_slice(&root);
+	data.extend_from_slice(&leaf.data_hash);
+	data.extend_from_slice(&leaf.creator_hash);
+	data.extend_from_slice(&leaf.nonce.to_le_bytes());
+	data.extend_from_slice(&leaf.index.to_le_bytes());
+	program.send_instruction(Instruction::new_with_bytes(
+		bubblegum_id(),
+		&data,
+		vec![
+			AccountMeta::new_readonly(tree, false),
+			AccountMeta::new_readonly(owner, true),
+			AccountMeta::new_readonly(owner, true),
+			AccountMeta::new_readonly(new_owner, false),
+			AccountMeta::new(tree, false),
+			AccountMeta::new_readonly(noop_id(), false),
+			AccountMeta::new_readonly(compression_id(), false),
+			AccountMeta::new_readonly(Pubkey::default(), false),
+		],
+	))
+}
+
+struct PrizePoolClaimContext {
+	template: Pubkey,
+	opening: Pubkey,
+	bundle: Pubkey,
+	pool: Pubkey,
+	tree: Pubkey,
+	recipient: Pubkey,
+	pool_index: u32,
+}
+
+fn claim_prize_pool_item(
+	program: &Harness,
+	context: &PrizePoolClaimContext,
+	leaf: MockCompressedLeaf,
+	metadata: &[u8],
+	root: [u8; 32],
+) -> Result<(), String> {
+	let (item, _) = prize_pool_item_address(program, context.pool, context.pool_index);
+	let mut data = vec![0; ClaimPrizePoolItemInstruction::SIZE];
+	let args =
+		ClaimPrizePoolItemInstruction::initialize(&mut data, |_| Ok(())).expect("claim pool item");
+	args.asset_index = 0;
+	args.root = root;
+	args.data_hash = leaf.data_hash;
+	args.creator_hash = leaf.creator_hash;
+	args.nonce.set(leaf.nonce);
+	args.index.set(leaf.index);
+	args.metadata
+		.try_set(metadata)
+		.expect("bounded mock metadata");
+	program.send(
+		&data,
+		vec![
+			AccountMeta::new_readonly(context.template, false),
+			AccountMeta::new(context.opening, false),
+			AccountMeta::new(context.bundle, false),
+			AccountMeta::new(context.pool, false),
+			AccountMeta::new(item, false),
+			AccountMeta::new_readonly(context.recipient, false),
+			AccountMeta::new(program.payer(), false),
+			AccountMeta::new_readonly(context.tree, false),
+			AccountMeta::new(context.tree, false),
+			AccountMeta::new_readonly(bubblegum_id(), false),
+			AccountMeta::new_readonly(noop_id(), false),
+			AccountMeta::new_readonly(compression_id(), false),
+			AccountMeta::new_readonly(Pubkey::default(), false),
+		],
+	)
+}
+
+fn reclaim_prize_pool_item(
+	program: &Harness,
+	context: &PrizePoolCustodyContext,
+	box_mint: Pubkey,
+	pool_index: u32,
+	leaf: MockCompressedLeaf,
+	root: [u8; 32],
+) -> Result<(), String> {
+	let (item, _) = prize_pool_item_address(program, context.pool, pool_index);
+	let mut data = vec![0; ReclaimPrizePoolItemInstruction::SIZE];
+	let args = ReclaimPrizePoolItemInstruction::initialize(&mut data, |_| Ok(()))
+		.expect("reclaim pool item");
+	args.pool_index.set(pool_index);
+	args.root = root;
+	args.data_hash = leaf.data_hash;
+	args.creator_hash = leaf.creator_hash;
+	args.nonce.set(leaf.nonce);
+	args.index.set(leaf.index);
+	args.metadata
+		.try_set(mock_metadata(leaf.nonce, false))
+		.expect("bounded mock metadata");
+	program.send(
+		&data,
+		vec![
+			AccountMeta::new(program.payer(), true),
+			AccountMeta::new_readonly(context.template, false),
+			AccountMeta::new_readonly(box_mint, false),
+			AccountMeta::new(context.bundle, false),
+			AccountMeta::new(context.pool, false),
+			AccountMeta::new(item, false),
+			AccountMeta::new_readonly(context.tree, false),
+			AccountMeta::new(context.tree, false),
+			AccountMeta::new_readonly(bubblegum_id(), false),
+			AccountMeta::new_readonly(noop_id(), false),
+			AccountMeta::new_readonly(compression_id(), false),
+			AccountMeta::new_readonly(Pubkey::default(), false),
+		],
+	)
+}
+
 fn fund_quote_token(
 	program: &Harness,
 	template: Pubkey,
@@ -490,6 +857,17 @@ fn fulfill(context: &FulfillContext<'_>, value: u8) -> Result<(), String> {
 	Ok(())
 }
 
+fn result_receipt_address(program: &Harness, opening: Pubkey) -> Result<(Pubkey, u8), String> {
+	let account = program.account(&opening)?;
+	let state = TemplateOpeningState::try_from_bytes(&account.data)
+		.map_err(|error| format!("decode opening sequence: {error}"))?;
+	let sequence = state.sequence.get().to_le_bytes();
+	Ok(Pubkey::find_program_address(
+		&[b"result-receipt", opening.as_ref(), &sequence],
+		&program.program_id,
+	))
+}
+
 fn allocate_any(
 	program: &Harness,
 	template: Pubkey,
@@ -504,10 +882,7 @@ fn allocate_any(
 			&program.program_id,
 		)
 		.0;
-		let (result_receipt, result_receipt_bump) = Pubkey::find_program_address(
-			&[b"result-receipt", opening.as_ref()],
-			&program.program_id,
-		);
+		let (result_receipt, result_receipt_bump) = result_receipt_address(program, opening)?;
 		let mut data = vec![0; AllocateTemplateOpenInstruction::SIZE];
 		AllocateTemplateOpenInstruction::initialize(&mut data, |_| Ok(()))
 			.expect("allocate")
@@ -804,11 +1179,9 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		for (opening, _) in &openings {
 			let index =
 				allocate_any(&program, template, *opening, &bundles).expect("FIFO allocation");
-			let result_receipt = Pubkey::find_program_address(
-				&[b"result-receipt", opening.as_ref()],
-				&program.program_id,
-			)
-			.0;
+			let result_receipt = result_receipt_address(&program, *opening)
+				.expect("canonical result receipt")
+				.0;
 			assert_eq!(
 				program
 					.account(&result_receipt)
@@ -912,11 +1285,9 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 			);
 		}
 		for (opening, randomness) in &openings {
-			let result_receipt = Pubkey::find_program_address(
-				&[b"result-receipt", opening.as_ref()],
-				&program.program_id,
-			)
-			.0;
+			let result_receipt = result_receipt_address(&program, *opening)
+				.expect("canonical result receipt")
+				.0;
 			assert!(
 				program
 					.send(
@@ -1125,10 +1496,8 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 				&program.program_id,
 			)
 			.0;
-			let (result_receipt, result_receipt_bump) = Pubkey::find_program_address(
-				&[b"result-receipt", opening.as_ref()],
-				&program.program_id,
-			);
+			let (result_receipt, result_receipt_bump) =
+				result_receipt_address(&program, *opening).expect("canonical result receipt");
 			let mut allocate = vec![0; AllocateTemplateOpenInstruction::SIZE];
 			AllocateTemplateOpenInstruction::initialize(&mut allocate, |_| Ok(()))
 				.expect("allocation data")
@@ -1411,10 +1780,8 @@ fn missed_market_lock_retires_without_stranding_holder_claims() {
 			&program.program_id,
 		)
 		.0;
-		let (result_receipt, result_receipt_bump) = Pubkey::find_program_address(
-			&[b"result-receipt", opening.as_ref()],
-			&program.program_id,
-		);
+		let (result_receipt, result_receipt_bump) =
+			result_receipt_address(&program, opening).expect("canonical result receipt");
 		let mut allocate = vec![0; AllocateTemplateOpenInstruction::SIZE];
 		AllocateTemplateOpenInstruction::initialize(&mut allocate, |_| Ok(()))
 			.expect("allocation data")

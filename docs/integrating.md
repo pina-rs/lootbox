@@ -38,7 +38,9 @@ await lootbox.requestOpen(template, oracle, {
 });
 ```
 
-The TypeScript client also provides `settle`, which verifies the oracle proof and allocates the predicted bundle in one atomic transaction. `claim` keeps each asset's setup and transfer atomic, partitions mixed bundles across transaction-size/account-bounded batches, and refetches the on-chain claim mask after each batch so interrupted delivery resumes safely.
+The TypeScript client also provides `settle`, which verifies the oracle proof and allocates the predicted bundle in one atomic transaction. `claim` keeps each asset's setup and transfer atomic, partitions mixed bundles across transaction-size/account-bounded batches, and refetches the on-chain claim mask after each batch so interrupted delivery resumes safely. Claims are permissionless: when another relayer wins a race, the client treats an advanced mask or completed opening as progress and continues instead of resubmitting the same prize.
+
+PrizePool claims additionally require the selected leaf's current canonical Bubblegum metadata and a current or changelog-valid proof. Generated Rust, TypeScript, and Dart clients export proof-tail helpers that replace the generated placeholder with zero through 16 readonly proof nodes. Trees with greater depth need enough canopy to meet that limit.
 
 ## Verifying immutable results
 
@@ -57,7 +59,7 @@ let result = lootbox_program_client::cpi::verify_result_receipt(
 )?;
 ```
 
-The helper checks the account owner, account discriminator/layout, canonical PDA derived from the opening, treasury, beneficiary, consumer binding, and optional locked manifest hash. Copy out the verified values before releasing the account-data borrow.
+The helper checks the account owner, account discriminator/layout, canonical PDA derived from the opening and immutable opening sequence, treasury, beneficiary, consumer binding, and optional locked manifest hash. Including the sequence prevents a reused randomness address from colliding with an older permanent receipt. Copy out the verified values before releasing the account-data borrow.
 
 The Lootbox result is immutable, but it cannot stop your program from applying it twice. Before granting anything, derive a consumer-owned marker from the opening or context, require it to be empty, and initialize it atomically with your state transition. Never use only `selectedBundle` as authorization.
 

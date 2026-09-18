@@ -53,5 +53,5 @@ Only introduce inventory lanes after measurements show that a single series need
 - Keep proof fetchers and transaction senders separate, with durable queues and idempotent opening-address keys.
 - Use several RPC providers, explicit commitment policies, simulation, priority fees, and alerting for the oldest FIFO head.
 - Pre-resolve dynamic NFT accounts immediately before claim; cached proofs and authorization-rule accounts expire.
-- Let the SDK split mixed prize delivery and resume from the current claim mask. A single compressed proof that cannot fit by itself still requires proof compression or an application-managed address lookup table.
+- Let the SDK split mixed prize delivery and resume from the current claim mask. Compressed transfers are capped at 16 supplied proof nodes on chain; configure sufficient tree canopy rather than relying on an address lookup table to bypass that account-count policy.
 - Cap initial treasury value and supply, then increase only after observed load and adapter compatibility are stable.

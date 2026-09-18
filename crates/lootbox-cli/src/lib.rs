@@ -62,6 +62,15 @@ pub fn build_command(command: &Command) -> Result<Instruction, CliError> {
 		Command::ReclaimMetadataNftPrize(args) => args.build(),
 		Command::ReclaimCoreAssetPrize(args) => args.build(),
 		Command::ReclaimCompressedNftPrize(args) => args.build(),
+		Command::CreatePrizePool(args) => args.build(),
+		Command::PreparePrizePoolItem(args) => args.build(),
+		Command::DepositPrizePoolItem(args) => args.build(),
+		Command::CancelPrizePoolItem(args) => args.build(),
+		Command::SealPrizePool(args) => args.build(),
+		Command::AllocatePrizePoolOpen(args) => args.build(),
+		Command::ClaimPrizePoolItem(args) => args.build(),
+		Command::ReclaimPrizePoolItem(args) => args.build(),
+		Command::ClosePrizePool(args) => args.build(),
 	}
 }
 
@@ -180,6 +189,24 @@ pub enum Command {
 	ReclaimCoreAssetPrize(build::ReclaimCoreAssetPrizeArgs),
 	/// Reclaim an exhausted compressed NFT prize from the bundle.
 	ReclaimCompressedNftPrize(build::ReclaimCompressedNftPrizeArgs),
+	/// Reserve a manifest slot and create its compact `PrizePool` custody account.
+	CreatePrizePool(build::CreatePrizePoolArgs),
+	/// Verify immutable Bubblegum metadata and reserve the next item PDA.
+	PreparePrizePoolItem(build::PreparePrizePoolItemArgs),
+	/// Transfer one Bubblegum leaf into `PrizePool` PDA custody.
+	DepositPrizePoolItem(build::DepositPrizePoolItemArgs),
+	/// Cancel a prepared item that has not been transferred.
+	CancelPrizePoolItem(build::CancelPrizePoolItemArgs),
+	/// Freeze a fully deposited `PrizePool` and commit it into its bundle.
+	SealPrizePool(build::SealPrizePoolArgs),
+	/// Select one unassigned pool item from committed opening entropy.
+	AllocatePrizePoolOpen(build::AllocatePrizePoolOpenArgs),
+	/// Deliver the entropy-selected Bubblegum leaf to the bound recipient.
+	ClaimPrizePoolItem(build::ClaimPrizePoolItemArgs),
+	/// Return an eligible pool item to the treasury creator.
+	ReclaimPrizePoolItem(build::ReclaimPrizePoolItemArgs),
+	/// Close an empty or fully recovered staged `PrizePool`.
+	ClosePrizePool(build::ClosePrizePoolArgs),
 }
 
 /// Runs the parsed command, returning the rendered output text.

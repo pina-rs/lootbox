@@ -1,0 +1,6 @@
+name: ink_chest
+main: Ink chest
+output:
+  dir: build
+exclude:
+  - build/**

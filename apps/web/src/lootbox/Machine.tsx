@@ -1,5 +1,7 @@
-import { LockKeyhole, Sparkles } from "lucide-react";
-import type { CSSProperties } from "react";
+import type { Rive } from "@rive-app/canvas";
+import { useEffect, useRef, useState } from "react";
+import { revealAnimations, type RevealOutcome } from "./reveal.js";
+import "./machine.css";
 
 export type MachinePhase =
 	| "received"
@@ -9,52 +11,141 @@ export type MachinePhase =
 	| "reveal"
 	| "revealed"
 	| "redeemed";
-const particles = Array.from({ length: 18 }, (_, index) =>
-	({
-		"--particle-angle": `${index * 20}deg`,
-		"--particle-distance": `${105 + (index % 4) * 18}px`,
-		"--particle-delay": `${(index % 5) * 35}ms`,
-	}) as CSSProperties);
 
-export function LootboxMachine({ phase }: { phase: MachinePhase }) {
+type Props = {
+	phase: MachinePhase;
+	outcome?: RevealOutcome;
+	playReveal?: boolean;
+	onRevealComplete?: () => void;
+};
+const assetPath = "/animations/ink-chest";
+
+export function LootboxMachine(
+	{ phase, outcome = "small-prize", playReveal = false, onRevealComplete }:
+		Props,
+) {
+	const canvas = useRef<HTMLCanvasElement>(null);
+	const [playback, setPlayback] = useState<
+		"still" | "loading" | "playing" | "failed"
+	>("still");
+	const opened = phase === "revealed" || phase === "redeemed";
+	const shouldPlay = opened && playReveal;
+
+	useEffect(() => {
+		if (!shouldPlay) {
+			setPlayback("still");
+			return;
+		}
+		const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+		if (motion.matches) {
+			onRevealComplete?.();
+			return;
+		}
+		let disposed = false;
+		let player: Rive | undefined;
+		let observer: ResizeObserver | undefined;
+		let completed = false;
+		const finish = () => {
+			if (disposed || completed) return;
+			completed = true;
+			clearTimeout(deadline);
+			player?.stop();
+			setPlayback("still");
+			onRevealComplete?.();
+		};
+		const fail = (error: unknown) => {
+			if (disposed || completed) return;
+			console.error("Prize animation unavailable", error);
+			finish();
+			setPlayback("failed");
+		};
+		// Missing assets must not leave an endless loading state.
+		let deadline = window.setTimeout(
+			() => fail(new Error("Rive loading timed out")),
+			10_000,
+		);
+		const motionChanged = () => {
+			if (motion.matches) finish();
+		};
+		motion.addEventListener("change", motionChanged);
+		setPlayback("loading");
+		async function start() {
+			const [
+				{ Rive, Layout, Fit, Alignment, RuntimeLoader },
+				{ default: wasmUrl },
+			] = await Promise.all([
+				import("@rive-app/canvas"),
+				import("@rive-app/canvas/rive.wasm?url"),
+			]);
+			if (disposed || completed || !canvas.current) return;
+			RuntimeLoader.setWasmUrl(wasmUrl);
+			RuntimeLoader.setWasmFallbackUrl(null);
+			player = new Rive({
+				canvas: canvas.current,
+				src: `${assetPath}/ink-chest.riv`,
+				artboard: "Ink chest",
+				animations: revealAnimations[outcome],
+				autoplay: true,
+				layout: new Layout({ fit: Fit.Contain, alignment: Alignment.Center }),
+				onLoad: () => {
+					if (disposed || completed) return;
+					clearTimeout(deadline);
+					deadline = window.setTimeout(
+						() => fail(new Error("Rive playback timed out")),
+						8_000,
+					);
+					player?.resizeDrawingSurfaceToCanvas();
+					setPlayback("playing");
+				},
+				onLoadError: fail,
+				onStop: finish,
+			});
+			observer = new ResizeObserver(() =>
+				player?.resizeDrawingSurfaceToCanvas()
+			);
+			observer.observe(canvas.current);
+		}
+		void start().catch(fail);
+		return () => {
+			disposed = true;
+			clearTimeout(deadline);
+			motion.removeEventListener("change", motionChanged);
+			observer?.disconnect();
+			player?.cleanup();
+		};
+	}, [shouldPlay, outcome, onRevealComplete]);
+
 	return (
 		<div
-			className={`machine machine--${phase}`}
+			className="ink-machine"
 			data-phase={phase}
+			data-outcome={outcome}
+			data-playback={playback}
 			data-testid="lootbox-machine"
-			aria-hidden="true"
 		>
-			<div className="machine__orbit">
-				<span>SEALED</span>
-				<span>UNKNOWN</span>
-				<span>YOURS</span>
+			<div className="ink-machine__art" aria-hidden="true">
+				<img
+					src={`${assetPath}/${opened && !shouldPlay ? outcome : "closed"}.png`}
+					width="640"
+					height="640"
+					alt=""
+				/>
+				{shouldPlay && (
+					<canvas
+						ref={canvas}
+						className={playback === "playing" ? "is-playing" : ""}
+					/>
+				)}
 			</div>
-			<div className="machine__shadow" />
-			<div className="crate">
-				<div className="crate__light" />
-				<div className="crate__lid">
-					<div className="crate__lid-panel">
-						<LockKeyhole size={28} strokeWidth={2.5} />
-						<span>LOOT / PINA</span>
-					</div>
-				</div>
-				<div className="crate__body">
-					<div className="crate__hazard" />
-					<div className="crate__mark">
-						<span>HANDLE WITH CURIOSITY</span>
-						<strong>UNKNOWN</strong>
-					</div>
-					{["a", "b", "c", "d"].map((name) => (
-						<div key={name} className={`crate__rivet crate__rivet--${name}`} />
-					))}
-				</div>
-			</div>
-			<div className="machine__core">
-				<Sparkles size={56} strokeWidth={1.5} />
-			</div>
-			<div className="particles">
-				{particles.map((style, index) => <i key={index} style={style} />)}
-			</div>
+			{shouldPlay && playback !== "failed" && (
+				<button
+					type="button"
+					className="ink-machine__skip"
+					onClick={onRevealComplete}
+				>
+					Skip animation
+				</button>
+			)}
 		</div>
 	);
 }

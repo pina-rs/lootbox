@@ -1,0 +1,18 @@
+:root { font-family: "Avenir Next", "Segoe UI", sans-serif; color: #edf1df; background: #172821; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+.reveal-preview { width: min(920px, 100%); margin: auto; padding: 38px 20px 28px; text-align: center; }
+.eyebrow { font-size: 11px; letter-spacing: .18em; color: #a8c0a5; }
+h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.04; letter-spacing: -.05em; margin: 18px 0; }
+header > p:last-child { color: #bacab8; font-size: 14px; }
+.reveal-preview .ink-machine { width: min(440px, 100%); margin: 26px auto; }
+.preview-options { display: flex; gap: 10px; }
+.preview-options button { flex: 1; padding: 16px; background: #22382e; color: inherit; border: 1px solid #57715b; border-radius: 9px; text-align: left; font: inherit; cursor: pointer; }
+.preview-options button[aria-pressed="true"] { border-color: #f5c54e; background: #34432e; }
+.preview-options strong { display: block; font-size: 15px; margin-bottom: 7px; }
+.preview-options span { display: block; font-size: 12px; line-height: 1.5; color: #bdceba; }
+button:focus-visible, a:focus-visible { outline: 3px solid #f5c54e; outline-offset: 4px; }
+.preview-note, footer { color: #b6c8b3; font-size: 12px; line-height: 1.6; }
+footer { margin-top: 25px; }
+a { color: #f5c54e; }
+@media (max-width: 540px) { .reveal-preview { padding-top: 22px; } .preview-options { flex-direction: column; } .preview-options button { padding: 13px 16px; } }

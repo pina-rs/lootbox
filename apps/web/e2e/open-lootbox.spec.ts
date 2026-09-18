@@ -95,6 +95,7 @@ test("funds a real Surfpool treasury, gifts boxes, and delivers every bundle", a
 			await expect(page.getByRole("button", { name: "Reveal your winnings" }))
 				.toBeEnabled();
 		}
+		await page.getByLabel(/Make a wish/).selectOption({ label: "100 tokens" });
 		await page.getByRole("button", { name: "Reveal your winnings" }).click();
 		await expect(page.getByTestId("prize-announcement")).toContainText(
 			"Not yet claimed. Choose Claim your winnings",
@@ -106,6 +107,20 @@ test("funds a real Surfpool treasury, gifts boxes, and delivers every bundle", a
 		prizes.push(
 			await page.getByTestId("prize-reveal").getByRole("heading").innerText(),
 		);
+		await expect(page.getByTestId("lootbox-machine")).toHaveAttribute(
+			"data-outcome",
+			prizes.at(-1) === "100 tokens" ? "big-prize" : "disappointed",
+		);
+		if (test.info().project.name === "mobile") {
+			await expect(page.getByRole("button", { name: "Skip animation" }))
+				.toBeHidden();
+		} else {
+			await expect(page.getByTestId("lootbox-machine")).toHaveAttribute(
+				"data-playback",
+				"playing",
+			);
+		}
+		// Claiming is never gated on the decorative animation finishing.
 		await page.getByRole("button", { name: "Claim your winnings" }).click();
 		await expect(page.getByRole("heading", { name: "Cargo secured." }))
 			.toBeVisible({ timeout: 30_000 });

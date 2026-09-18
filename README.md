@@ -88,9 +88,7 @@ test:web
 lint:all
 ```
 
-Use `generate:clients` instead of invoking `pina generate` directly. Pina
-rejects parent-directory output paths in `pina.toml`, so the wrapper safely
-overrides the destination to the repository-level `clients/` directory.
+Use `generate:clients` instead of invoking `pina generate` directly. Pina rejects parent-directory output paths in `pina.toml`, so the wrapper safely overrides the destination to the repository-level `clients/` directory.
 
 Keep `pnpm playground:rpc` running after building both programs, then start the UI in another development shell at `http://127.0.0.1:5173`:
 

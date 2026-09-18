@@ -50,10 +50,21 @@ test("normalizes publish manifests idempotently", () => {
 	);
 	assert.match(
 		normalizedDart,
-		/repository: https:\/\/github\.com\/pina-rs\/lootbox/,
+		/repository: https:\/\/github\.com\/pina-rs\/lootbox\/tree\/main\/clients\/dart/,
 	);
 	assert.match(normalizedDart, /name: lootbox_program_client/);
 	assert.match(normalizedDart, /publish_to: none/);
+});
+
+test("replaces stale Dart repository metadata", () => {
+	const dart =
+		"name: generated\ndescription: Generated\nversion: 0.0.0\nrepository: https://example.com/stale\n";
+	const normalized = normalizeDartManifest(dart, "0.0.1-alpha.0");
+	assert.match(
+		normalized,
+		/repository: https:\/\/github\.com\/pina-rs\/lootbox\/tree\/main\/clients\/dart/,
+	);
+	assert.doesNotMatch(normalized, /example\.com\/stale/);
 });
 
 const V0_ENVELOPE_TEST = `pub const VAULT_STATE_MIGRATION_VERSION: u8 = 0u8;

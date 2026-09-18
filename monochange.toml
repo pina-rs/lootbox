@@ -91,6 +91,26 @@ type = "cargo"
 path = "crates/lootbox-cli"
 type = "cargo"
 
+[package.lootbox_program_client_typescript]
+path = "clients/typescript/lootbox_program"
+type = "npm"
+publish = { enabled = false }
+
+[package.lootbox_sdk_typescript]
+path = "sdks/typescript"
+type = "npm"
+publish = { enabled = false }
+
+[package.lootbox_program_client_dart]
+path = "clients/dart"
+type = "dart"
+publish = { enabled = false }
+
+[package.lootbox_sdk_dart]
+path = "sdks/dart"
+type = "dart"
+publish = { enabled = false }
+
 [ecosystems.cargo]
 lockfile_commands = [
 	{ command = "cargo update --workspace", cwd = ".", shell = "bash" },
@@ -108,4 +128,13 @@ packages = [
 	"lootbox_program",
 	"lootbox_sdk",
 	"lootbox_cli",
+	"lootbox_program_client_typescript",
+	"lootbox_sdk_typescript",
+	"lootbox_program_client_dart",
+	"lootbox_sdk_dart",
+]
+versioned_files = [
+	{ path = "Cargo.toml", type = "cargo" },
+	{ path = "programs/lootbox_program/tests/surfpool/Cargo.toml", type = "cargo" },
+	{ path = "programs/lootbox_program/tests/surfpool/Cargo.toml", regex = 'program_under_test = .*version = "(?<version>[^"]+)"' },
 ]

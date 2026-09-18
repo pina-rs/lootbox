@@ -128,6 +128,8 @@ export function normalizeRustManifest(source) {
 }
 
 export function normalizeDartManifest(source, version) {
+	const repository =
+		"https://github.com/pina-rs/lootbox/tree/main/clients/dart";
 	let manifest = source
 		.replace(/^name: .*$/m, "name: lootbox_program_client")
 		.replace(/^version: .*$/m, `version: ${version}`)
@@ -138,10 +140,15 @@ export function normalizeDartManifest(source, version) {
 	if (!/^publish_to: none$/m.test(manifest)) {
 		manifest = `publish_to: none\n${manifest}`;
 	}
-	if (!/^repository:/m.test(manifest)) {
+	if (/^repository:/m.test(manifest)) {
+		manifest = manifest.replace(
+			/^repository:.*$/m,
+			`repository: ${repository}`,
+		);
+	} else {
 		manifest = manifest.replace(
 			/^(version: .*\n)/m,
-			"$1repository: https://github.com/pina-rs/lootbox\n",
+			`$1repository: ${repository}\n`,
 		);
 	}
 	return manifest;
@@ -267,10 +274,8 @@ if (
 	manifest.description =
 		"Generated TypeScript interface for the Pina Lootbox program";
 	manifest.license = "Apache-2.0";
-	manifest.repository = {
-		type: "git",
-		url: "git+https://github.com/pina-rs/lootbox.git",
-	};
+	manifest.repository =
+		"https://github.com/pina-rs/lootbox/tree/main/clients/typescript/lootbox_program";
 	manifest.publishConfig = { access: "public" };
 	manifest.files = ["src"];
 	manifest.dependencies["@solana/program-client-core"] = "^7.0.0";

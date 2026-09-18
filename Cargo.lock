@@ -1950,12 +1950,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
-name = "lootbox-cli"
+name = "lootbox_cli"
 version = "0.0.1-alpha.0"
 dependencies = [
  "base64 0.22.1",
  "clap",
- "lootbox-program-client",
+ "lootbox_program_client",
  "serde_json",
  "solana-client",
  "solana-commitment-config",
@@ -1969,7 +1969,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "lootbox-program-client"
+name = "lootbox_program"
+version = "0.0.1-alpha.0"
+dependencies = [
+ "pina",
+ "proptest",
+ "solana-sha256-hasher",
+ "switchboard_randomness_cpi",
+]
+
+[[package]]
+name = "lootbox_program_client"
 version = "0.0.1-alpha.0"
 dependencies = [
  "num-derive 0.5.1",
@@ -1984,27 +1994,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "lootbox-program-cpi"
+name = "lootbox_program_cpi"
 version = "0.0.1-alpha.0"
 dependencies = [
  "pina",
 ]
 
 [[package]]
-name = "lootbox-sdk"
+name = "lootbox_sdk"
 version = "0.0.1-alpha.0"
 dependencies = [
- "lootbox-program-client",
-]
-
-[[package]]
-name = "lootbox_program"
-version = "0.0.1-alpha.0"
-dependencies = [
- "pina",
- "proptest",
- "solana-sha256-hasher",
- "switchboard_randomness_cpi",
+ "lootbox_program_client",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

@@ -74,15 +74,8 @@ The lootbox authority controls configuration, minting within `max_supply`, depos
 
 The opening PDA—not the holder or lootbox authority—is each Switchboard randomness account's authority. Only the Lootbox program can initialize, commit, reveal, or close through that PDA. Switchboard is the external trust/liveness dependency: if no relayer settles within 300 slots, the recipient can claim the minimum configured reward. A holder gains nothing by withholding an unfavorable off-chain proof because timeout never pays more than the authentic outcome and never creates another draw; the recipient signature also prevents a third party from forcing that lower floor payout.
 
-## Treasury evolution
+## Treasury templates
 
-Likely follow-on work, intentionally outside this MVP:
+Treasury templates now provide compact append-only inventories, SPL and Token-2022 rewards, Metadata/Core/compressed NFTs, winner-routed quote delivery, capped badge minting, and an interactive local Surfpool playground. See [Treasury templates](treasury-templates.md) for the current account model and [Dynamic prize delivery](dynamic-prizes.md) for the remaining adapter decisions.
 
-| Capability            | Shape                                                                           | Estimated effort               |
-| --------------------- | ------------------------------------------------------------------------------- | ------------------------------ |
-| SPL-token rewards     | Per-mint vault adapters and token-account validation                            | 1–2 weeks                      |
-| NFT or bundle rewards | Escrow inventory, deterministic bundle manifests, partial depletion rules       | 3–5 weeks                      |
-| Networked playground  | Wallet adapter, Switchboard transport, devnet RPC gateway, transaction progress | 1–2 weeks                      |
-| Production release    | External audit, devnet soak, monitoring/indexer, incident runbooks              | 3–6 weeks plus audit lead time |
-
-These estimates assume the current account model remains stable.
+The unfinished protocol work is PrizePool, fixed bonding-curve adapters, and fresh supply-one NFT minting. Production release work remains separate and includes an external audit, devnet soak, real Switchboard operations, monitoring, and incident runbooks.

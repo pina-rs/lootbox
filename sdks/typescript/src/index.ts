@@ -1,4 +1,4 @@
-export * from "@pina-rs/lootbox-generated";
+export * from "@pina-rs/lootbox-program-client";
 export * from "./client.js";
 export * from "./market.js";
 export * from "./templates.js";

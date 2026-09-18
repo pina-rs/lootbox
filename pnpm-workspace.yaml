@@ -1,6 +1,6 @@
 packages:
   - apps/*
-  - programs/*/clients/typescript/*
+  - clients/typescript/*
   - sdks/typescript
 
 linkWorkspacePackages: true

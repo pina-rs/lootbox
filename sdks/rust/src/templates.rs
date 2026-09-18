@@ -96,6 +96,23 @@ pub enum TemplatePlanError {
 	ArithmeticOverflow,
 }
 
+impl core::fmt::Display for TemplatePlanError {
+	fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		formatter.write_str(match self {
+			Self::InvalidBundleCount => "a template needs between one and 1,024 bundles",
+			Self::InvalidAssetCount => "bundles need between one and four assets",
+			Self::ZeroQuantity => "bundle quantity must be greater than zero",
+			Self::InvalidAsset => "prize asset is not supported",
+			Self::DuplicateAsset => "a bundle cannot contain the same asset twice",
+			Self::DuplicateUniqueAsset => "a unique asset can fund only one bundle copy",
+			Self::TicketLimitExceeded => "total bundle copies exceed u32::MAX",
+			Self::ArithmeticOverflow => "template plan exceeds the on-chain u64 range",
+		})
+	}
+}
+
+impl core::error::Error for TemplatePlanError {}
+
 /// Creator-funded optional services attached to a locked treasury.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct ServicePlan {
@@ -287,6 +304,22 @@ fn validate_bundle(bundle: &PrizeBundle<'_>) -> Result<(), TemplatePlanError> {
 mod tests {
 	use super::*;
 
+	#[derive(serde::Deserialize)]
+	#[serde(rename_all = "camelCase")]
+	struct ServiceBudgetVector {
+		total_bundles: std::string::String,
+		settlement_bounty_lamports: std::string::String,
+		result_receipts_enabled: bool,
+		result_receipt_rent_lamports: std::string::String,
+		service_vault_rent_lamports: std::string::String,
+		expected_budget_lamports: std::string::String,
+	}
+
+	fn service_budget_vector() -> ServiceBudgetVector {
+		serde_json::from_str(include_str!("../../../tests/vectors/service-budget.json"))
+			.expect("valid shared service budget vector")
+	}
+
 	#[test]
 	fn rejects_wrapped_sol_rewards_like_the_program() {
 		let assets = [PrizeAsset::ClassicToken {
@@ -355,23 +388,47 @@ mod tests {
 
 	#[test]
 	fn creator_service_budget_is_exact_and_optional() {
+		let vector = service_budget_vector();
+		let total_bundles = vector.total_bundles.parse().expect("total bundles");
+		let settlement_bounty_lamports = vector
+			.settlement_bounty_lamports
+			.parse()
+			.expect("settlement bounty");
+		let result_receipt_rent_lamports = vector
+			.result_receipt_rent_lamports
+			.parse()
+			.expect("result receipt rent");
+		let service_vault_rent_lamports = vector
+			.service_vault_rent_lamports
+			.parse()
+			.expect("service vault rent");
+		let expected_budget_lamports = vector
+			.expected_budget_lamports
+			.parse()
+			.expect("expected budget");
 		let sol = [PrizeAsset::Sol { lamports: 1 }];
 		let bundles = [PrizeBundle {
-			quantity: 3,
+			quantity: total_bundles,
 			assets: &sol,
 		}];
 		let plan = TemplatePlan::new(&bundles).expect("plan");
-		assert_eq!(plan.required_service_budget(2_000_000, 890_880), Ok(0));
+		assert_eq!(
+			plan.required_service_budget(result_receipt_rent_lamports, service_vault_rent_lamports),
+			Ok(0)
+		);
 
 		let plan = plan.with_services(ServicePlan {
-			settlement_bounty_lamports: 50_000,
-			result_receipts_enabled: true,
+			settlement_bounty_lamports,
+			result_receipts_enabled: vector.result_receipts_enabled,
 		});
 		assert_eq!(
-			plan.required_service_budget(2_000_000, 890_880),
-			Ok(7_040_880)
+			plan.required_service_budget(result_receipt_rent_lamports, service_vault_rent_lamports),
+			Ok(expected_budget_lamports)
 		);
-		assert_eq!(plan.services().settlement_bounty_lamports, 50_000);
+		assert_eq!(
+			plan.services().settlement_bounty_lamports,
+			settlement_bounty_lamports
+		);
 		assert!(plan.services().result_receipts_enabled);
 	}
 

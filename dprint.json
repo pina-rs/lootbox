@@ -39,7 +39,7 @@
 		"**/node_modules",
 		"**/target",
 		"**/pnpm-lock.yaml",
-		"programs/lootbox_program/clients/**"
+		"clients/**"
 	],
 	"plugins": [
 		"https://plugins.dprint.dev/typescript-0.95.13.wasm",

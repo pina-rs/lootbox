@@ -88,6 +88,10 @@ test:web
 lint:all
 ```
 
+Use `generate:clients` instead of invoking `pina generate` directly. Pina
+rejects parent-directory output paths in `pina.toml`, so the wrapper safely
+overrides the destination to the repository-level `clients/` directory.
+
 Keep `pnpm playground:rpc` running after building both programs, then start the UI in another development shell at `http://127.0.0.1:5173`:
 
 ```sh
@@ -99,6 +103,13 @@ Follow the [interactive playground guide](apps/web/README.md). No browser wallet
 ## Developer API
 
 The generated clients expose the exact on-chain surface. The handwritten SDK layer catches invalid plans and calculates collateral before a transaction is built:
+
+- Rust generated client: `lootbox_program_client`
+- Rust CPI client: `lootbox_program_cpi`
+- Dart generated client: `lootbox_program_client`
+- TypeScript generated client: `@pina-rs/lootbox-program-client`
+- Rust SDK: `lootbox_sdk`
+- CLI package: `lootbox_cli`, with the `lootbox` executable
 
 ```ts
 import { createTemplatePlan } from "@pina-rs/lootbox";
@@ -131,7 +142,8 @@ For reuse in other projects, see the [integration and CPI guide](docs/integratin
 ## Repository map
 
 ```text
-programs/lootbox_program/       on-chain program and generated clients
+programs/lootbox_program/       on-chain program
+clients/                        generated Rust, TypeScript, Dart, and CPI clients
 sdks/{rust,typescript,dart}/    checked ergonomic layers
 tests/fixtures/mock_switchboard test-only oracle SBF program
 apps/web/                       animated interaction sandbox

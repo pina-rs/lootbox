@@ -8,19 +8,19 @@ The protocol keeps prize accounting on chain and fully collateralized. That make
 | ----------- | ----------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------- |
 | Request     | Treasury, holder box ATA, opening, oracle accounts                | Requests for one treasury serialize on its inventory counters    | Use multiple independent treasuries for very large campaigns    |
 | Fulfill     | Treasury, opening, oracle accounts, optional service vault        | Oracle and treasury contention; external CPI dominates compute   | Atomic SDK `settle`; bounded creator-funded bounty              |
-| Allocate    | Treasury, opening, selected bundle, optional service vault/result | Every allocation updates the same finite inventory and FIFO head | Constant 256-slot scan; no unbounded accounts or loops          |
+| Allocate    | Treasury, opening, selected bundle, optional service vault/result | Every allocation updates the same finite inventory and FIFO head | Bounded scan of the compact active prefix, up to 1,024 slots    |
 | Claim       | Opening and selected bundle plus adapter accounts                 | Complex NFT adapters can make transactions account-heavy         | Per-asset claim bits; SDK size/account-bounds each atomic batch |
 | Create/fund | One bundle at a time plus asset programs                          | Large manifests require several creator signatures               | Resumable draft state and idempotent chain reads                |
 
 ## Hard limits
 
-- 256 active bundle definitions per treasury.
+- 1,024 active bundle definitions per treasury.
 - Four assets per bundle.
 - `u32::MAX` total bundle copies.
 - One indivisible Token-2022 box per bundle copy.
 - FIFO allocation per treasury, so scarce inventory cannot be double-spent or reordered after results are known.
 
-The 256-entry inventory table makes selection cost predictable, but the treasury account is intentionally large. RPC consumers should use data slices or an indexer for discovery instead of repeatedly downloading every account.
+The bounded inventory prefix makes selection cost predictable. A new treasury stores no unused inventory slots and grows by eight bytes per activation, but a fully populated treasury still reaches 8,740 bytes. RPC consumers should use data slices or an indexer for discovery instead of repeatedly downloading every account.
 
 ## Ecosystem-scale topology
 
@@ -41,7 +41,7 @@ Independent series execute in parallel because they do not share writable invent
 1. Compute units and account-data bytes for the largest supported bundle and each external NFT adapter.
 2. Successful settlements per slot for one treasury and for many treasuries.
 3. Oracle proof latency, expiration rate, relayer inclusion rate, and bounty efficiency.
-4. RPC time to discover treasuries, fetch 256 bundle accounts, and refresh live odds.
+4. RPC time to discover treasuries, fetch up to 1,024 bundle accounts, and refresh live odds.
 5. Transaction size and address lookup table use for mixed four-asset claims.
 6. Failure rates by adapter, especially NFT transfer rules, Core plugins, and compressed-NFT proof depth.
 

@@ -17,6 +17,27 @@ enum PrizeKind {
   compressedNft,
 }
 
+/// Stable reasons why a treasury plan was rejected before transaction build.
+enum TemplatePlanErrorCode {
+  invalidBundleCount,
+  invalidBundle,
+  invalidAsset,
+  duplicateUniqueAsset,
+  ticketLimitExceeded,
+  outOfRange,
+}
+
+/// Invalid treasury configuration rejected before transaction construction.
+final class TemplatePlanException implements Exception {
+  const TemplatePlanException(this.code, this.message);
+
+  final TemplatePlanErrorCode code;
+  final String message;
+
+  @override
+  String toString() => 'TemplatePlanException(${code.name}): $message';
+}
+
 /// A typed treasury asset. Ownership, extensions, plugins, and Merkle proofs
 /// are validated by the corresponding on-chain transfer adapter.
 final class PrizeAsset {
@@ -115,7 +136,8 @@ final class TemplatePlan {
       'settlement bounty',
     );
     if (bundles.isEmpty || bundles.length > maxTemplateBundles) {
-      throw RangeError(
+      throw TemplatePlanException(
+        TemplatePlanErrorCode.invalidBundleCount,
         'a template needs between one and $maxTemplateBundles bundles',
       );
     }
@@ -128,13 +150,17 @@ final class TemplatePlan {
       if (bundle.quantity == BigInt.zero ||
           bundle.assets.isEmpty ||
           bundle.assets.length > 4) {
-        throw RangeError(
+        throw const TemplatePlanException(
+          TemplatePlanErrorCode.invalidBundle,
           'bundles need positive quantity and one to four assets',
         );
       }
       totalBundles = _u64(totalBundles + bundle.quantity, 'total bundles');
       if (totalBundles > _ticketMax) {
-        throw RangeError('total bundle copies cannot exceed u32::MAX');
+        throw const TemplatePlanException(
+          TemplatePlanErrorCode.ticketLimitExceeded,
+          'total bundle copies cannot exceed u32::MAX',
+        );
       }
       final seen = <Address?>{};
       for (final asset in bundle.assets) {
@@ -144,14 +170,18 @@ final class TemplatePlan {
             asset.identifier?.value == '11111111111111111111111111111111' ||
             asset.identifier?.value ==
                 'So11111111111111111111111111111111111111112') {
-          throw RangeError(
+          throw const TemplatePlanException(
+            TemplatePlanErrorCode.invalidAsset,
             'prize assets must be positive and distinct; use native SOL, not wrapped SOL',
           );
         }
         if (asset.isUnique &&
             (asset.requiresSingleCopy && bundle.quantity != BigInt.one ||
                 !uniqueAssets.add(asset.identifier!))) {
-          throw RangeError('each unique asset can fund only one bundle');
+          throw const TemplatePlanException(
+            TemplatePlanErrorCode.duplicateUniqueAsset,
+            'each unique asset can fund only one bundle',
+          );
         }
         final deposit = _u64(
           asset.amount * bundle.quantity,
@@ -195,9 +225,14 @@ final class TemplatePlan {
   /// Exact creator-funded service deposit collected when the treasury locks.
   ///
   /// [resultReceiptRent] is the cluster's current rent-exempt minimum for one
-  /// immutable result receipt. Disabled receipts contribute no rent cost.
-  BigInt requiredServiceBudget(BigInt resultReceiptRent) {
+  /// immutable result receipt. [serviceVaultRent] is charged once whenever the
+  /// plan has a nonzero service reserve. Disabled services contribute no rent.
+  BigInt requiredServiceBudget(
+    BigInt resultReceiptRent,
+    BigInt serviceVaultRent,
+  ) {
     _u64(resultReceiptRent, 'result receipt rent');
+    _u64(serviceVaultRent, 'service vault rent');
     final receiptBudget = resultReceiptsEnabled
         ? _u64(resultReceiptRent * totalBundles, 'result receipt budget')
         : BigInt.zero;
@@ -205,7 +240,11 @@ final class TemplatePlan {
       settlementBountyLamports * totalBundles,
       'settlement bounty budget',
     );
-    return _u64(receiptBudget + bountyBudget, 'service budget');
+    final reserve = _u64(receiptBudget + bountyBudget, 'service reserve');
+
+    return reserve == BigInt.zero
+        ? BigInt.zero
+        : _u64(reserve + serviceVaultRent, 'service budget');
   }
 
   /// Exact initial numerator and denominator; depletion changes future odds.
@@ -220,7 +259,10 @@ final class TemplatePlan {
 
 BigInt _u64(BigInt value, String field) {
   if (value < BigInt.zero || value > _u64Max) {
-    throw RangeError('$field must fit in an unsigned 64-bit integer');
+    throw TemplatePlanException(
+      TemplatePlanErrorCode.outOfRange,
+      '$field must fit in an unsigned 64-bit integer',
+    );
   }
 
   return value;

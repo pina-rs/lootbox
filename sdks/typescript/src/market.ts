@@ -1,4 +1,4 @@
-import type { TemplateState } from "@pina-rs/lootbox-generated";
+import type { TemplateState } from "@pina-rs/lootbox-program-client";
 import { type Address, address } from "@solana/kit";
 import { templateInventory } from "./templates.js";
 

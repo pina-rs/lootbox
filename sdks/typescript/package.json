@@ -1,6 +1,6 @@
 {
 	"dependencies": {
-		"@pina-rs/lootbox-generated": "workspace:*",
+		"@pina-rs/lootbox-program-client": "workspace:*",
 		"@solana-program/system": "0.13.0",
 		"@solana-program/token-2022": "0.13.0",
 		"@solana/kit": "^7.0.0"

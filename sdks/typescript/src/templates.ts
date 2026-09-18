@@ -1,4 +1,4 @@
-import type { TemplateState } from "@pina-rs/lootbox-generated";
+import type { TemplateState } from "@pina-rs/lootbox-program-client";
 import {
 	type AccountMeta,
 	type Address,
@@ -113,6 +113,27 @@ export type TemplatePlan = Readonly<{
 	treasury: readonly TreasuryRequirement[];
 }>;
 
+export type TemplatePlanErrorCode =
+	| "INVALID_NAME"
+	| "INVALID_TIMESTAMP"
+	| "INVALID_BUNDLE_COUNT"
+	| "INVALID_BUNDLE"
+	| "INVALID_ASSET"
+	| "DUPLICATE_UNIQUE_ASSET"
+	| "TICKET_LIMIT_EXCEEDED"
+	| "OUT_OF_RANGE";
+
+/** Invalid treasury configuration rejected before transaction construction. */
+export class TemplatePlanError extends RangeError {
+	readonly code: TemplatePlanErrorCode;
+
+	constructor(code: TemplatePlanErrorCode, message: string) {
+		super(message);
+		this.name = "TemplatePlanError";
+		this.code = code;
+	}
+}
+
 /** Exact creator-funded service deposit collected when a treasury locks. */
 export function requiredServiceBudget(
 	plan: Pick<
@@ -137,7 +158,10 @@ export function requiredServiceBudget(
 
 function u64(value: bigint, field: string): bigint {
 	if (typeof value !== "bigint" || value < 0n || value > U64_MAX) {
-		throw new RangeError(`${field} must be a bigint in the u64 range`);
+		throw new TemplatePlanError(
+			"OUT_OF_RANGE",
+			`${field} must be a bigint in the u64 range`,
+		);
 	}
 	return value;
 }
@@ -223,20 +247,24 @@ export function createTemplatePlan(
 	);
 	const resultReceiptsEnabled = input.resultReceiptsEnabled ?? false;
 	if (input.name.trim().length === 0) {
-		throw new RangeError("template name is required");
+		throw new TemplatePlanError("INVALID_NAME", "template name is required");
 	}
 	encodeTemplateText(input.name, 32);
 	encodeTemplateText(uri, 200);
 	if (
 		typeof opensAt !== "bigint" || opensAt < 0n || opensAt > (1n << 63n) - 1n
 	) {
-		throw new RangeError("opensAt must be a nonnegative i64 Unix timestamp");
+		throw new TemplatePlanError(
+			"INVALID_TIMESTAMP",
+			"opensAt must be a nonnegative i64 Unix timestamp",
+		);
 	}
 	if (
 		input.bundles.length < 1 ||
 		input.bundles.length > MAX_TEMPLATE_BUNDLES
 	) {
-		throw new RangeError(
+		throw new TemplatePlanError(
+			"INVALID_BUNDLE_COUNT",
 			`a template needs between one and ${MAX_TEMPLATE_BUNDLES} prize bundles`,
 		);
 	}
@@ -249,13 +277,17 @@ export function createTemplatePlan(
 		if (
 			quantity === 0n || bundle.assets.length < 1 || bundle.assets.length > 4
 		) {
-			throw new RangeError(
+			throw new TemplatePlanError(
+				"INVALID_BUNDLE",
 				"bundles need positive quantity and one to four assets",
 			);
 		}
 		totalBundles = u64(totalBundles + quantity, "total bundles");
 		if (totalBundles > MAX_TOTAL_TICKETS) {
-			throw new RangeError("total bundle copies cannot exceed u32::MAX");
+			throw new TemplatePlanError(
+				"TICKET_LIMIT_EXCEEDED",
+				"total bundle copies cannot exceed u32::MAX",
+			);
 		}
 		const seen = new Set<Address | null>();
 		const assets = bundle.assets.map((asset): PrizeAsset => {
@@ -264,7 +296,8 @@ export function createTemplatePlan(
 				(asset.tokenRecord || asset.destinationTokenRecord ||
 					asset.authorizationRulesProgram || asset.authorizationRules)
 			) {
-				throw new RangeError(
+				throw new TemplatePlanError(
+					"INVALID_ASSET",
 					"programmable NFT rules are not admitted until their mutability is compatibility-tested",
 				);
 			}
@@ -272,7 +305,8 @@ export function createTemplatePlan(
 				asset.kind === "core" &&
 				(asset.collection || (asset.pluginAccounts?.length ?? 0) > 0)
 			) {
-				throw new RangeError(
+				throw new TemplatePlanError(
+					"INVALID_ASSET",
 					"only plain uncollected Core assets without plugins are admitted",
 				);
 			}
@@ -282,7 +316,8 @@ export function createTemplatePlan(
 				amount === 0n || seen.has(identifier) || identifier === ZERO_ADDRESS ||
 				identifier === WRAPPED_SOL
 			) {
-				throw new RangeError(
+				throw new TemplatePlanError(
+					"INVALID_ASSET",
 					"assets must be positive and distinct within a bundle; use native SOL, not wrapped SOL",
 				);
 			}
@@ -298,7 +333,8 @@ export function createTemplatePlan(
 					(singleCopy && quantity !== 1n) ||
 					uniqueAssets.has(identifier as Address)
 				) {
-					throw new RangeError(
+					throw new TemplatePlanError(
+						"DUPLICATE_UNIQUE_ASSET",
 						"each unique asset can fund only one bundle; non-mint assets require one copy",
 					);
 				}

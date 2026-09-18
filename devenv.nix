@@ -111,11 +111,21 @@ in
     '';
     "build:program".exec = ''
       set -euo pipefail
-      RUST_LOG=error pina build --project programs/lootbox_program
+      sbf_target="$PWD/target/sbf"
+      CARGO_TARGET_DIR="$sbf_target" RUST_LOG=error \
+        pina build --project programs/lootbox_program
+      mkdir -p target/deploy target/idl
+      cp "$sbf_target/deploy/lootbox_program.so" target/deploy/
+      cp "$sbf_target/idl/lootbox_program.json" target/idl/
     '';
     "build:test-programs".exec = ''
       set -euo pipefail
-      RUST_LOG=error pina build --project tests/fixtures/mock_switchboard
+      sbf_target="$PWD/target/sbf"
+      CARGO_TARGET_DIR="$sbf_target" RUST_LOG=error \
+        pina build --project tests/fixtures/mock_switchboard
+      mkdir -p target/deploy target/idl
+      cp "$sbf_target/deploy/mock_switchboard.so" target/deploy/
+      cp "$sbf_target/idl/mock_switchboard.json" target/idl/
     '';
     "generate:clients".exec = ''
       set -euo pipefail

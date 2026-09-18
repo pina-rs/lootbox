@@ -1,0 +1,174 @@
+{
+	"schema_version": "0.6",
+	"kind": "monochange.releaseRecord",
+	"created_at": "2026-09-18T23:41:36Z",
+	"command": "release",
+	"version": "0.0.2",
+	"versions": {
+		"lootbox": "0.0.2"
+	},
+	"release_targets": [
+		{
+			"id": "lootbox",
+			"kind": "group",
+			"version": "0.0.2",
+			"version_format": "namespaced",
+			"tag": false,
+			"release": false,
+			"tag_name": "lootbox/v0.0.2",
+			"members": [
+				"switchboard_randomness_cpi",
+				"lootbox_program",
+				"lootbox_sdk",
+				"lootbox_cli",
+				"lootbox_program_client_typescript",
+				"lootbox_sdk_typescript",
+				"lootbox_program_client_dart",
+				"lootbox_sdk_dart"
+			]
+		}
+	],
+	"released_packages": [
+		"@pina-rs/lootbox",
+		"@pina-rs/lootbox-program-client",
+		"lootbox",
+		"lootbox_cli",
+		"lootbox_program",
+		"lootbox_program_client",
+		"lootbox_sdk",
+		"switchboard_randomness_cpi"
+	],
+	"changed_files": [
+		"Cargo.lock",
+		"Cargo.toml",
+		"clients/dart/pubspec.yaml",
+		"clients/typescript/lootbox_program/package.json",
+		"crates/lootbox-cli/Cargo.toml",
+		"crates/switchboard_randomness_cpi/Cargo.toml",
+		"programs/lootbox_program/Cargo.toml",
+		"programs/lootbox_program/tests/surfpool/Cargo.toml",
+		"sdks/dart/pubspec.lock",
+		"sdks/dart/pubspec.yaml",
+		"sdks/rust/Cargo.toml",
+		"sdks/typescript/package.json"
+	],
+	"package_publications": [],
+	"updated_changelogs": [],
+	"deleted_changesets": [
+		".changeset/entropy-selected-prize-pools.md"
+	],
+	"changesets": [
+		{
+			"path": ".changeset/entropy-selected-prize-pools.md",
+			"summary": "Add entropy-selected PrizePools",
+			"details": "Add compact Bubblegum PrizePool custody, checked cross-language planning, resumable TypeScript funding and claims, adversarial Surfpool coverage, and a creator transfer composer.",
+			"targets": [
+				{
+					"id": "lootbox_sdk",
+					"kind": "package",
+					"bump": "minor",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "feat"
+				}
+			],
+			"context": {
+				"provider": "github",
+				"host": "github.com",
+				"capabilities": {
+					"commit_web_urls": true,
+					"actor_profiles": true,
+					"review_request_lookup": true,
+					"related_issues": true,
+					"issue_comments": true
+				},
+				"introduced": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "75cbf3dcc7c07f6e39c07d3083b1a8a3437d5204",
+						"short_sha": "75cbf3d",
+						"url": "https://github.com/pina-rs/lootbox/commit/75cbf3dcc7c07f6e39c07d3083b1a8a3437d5204",
+						"authored_at": "2026-09-18T09:43:59+01:00",
+						"committed_at": "2026-09-18T09:43:59+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#20",
+						"title": "feat: add entropy-selected prize pools",
+						"url": "https://github.com/pina-rs/lootbox/pull/20",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"last_updated": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "75cbf3dcc7c07f6e39c07d3083b1a8a3437d5204",
+						"short_sha": "75cbf3d",
+						"url": "https://github.com/pina-rs/lootbox/commit/75cbf3dcc7c07f6e39c07d3083b1a8a3437d5204",
+						"authored_at": "2026-09-18T09:43:59+01:00",
+						"committed_at": "2026-09-18T09:43:59+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#20",
+						"title": "feat: add entropy-selected prize pools",
+						"url": "https://github.com/pina-rs/lootbox/pull/20",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"related_issues": []
+			}
+		}
+	],
+	"changelogs": [],
+	"provider": {
+		"kind": "github",
+		"owner": "pina-rs",
+		"repo": "lootbox",
+		"host": null
+	}
+}

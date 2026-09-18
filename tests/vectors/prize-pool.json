@@ -1,0 +1,13 @@
+{
+	"maxItems": 4096,
+	"validQuantity": 3,
+	"validItemCount": 3,
+	"mismatchedItemCount": 2,
+	"mutableItemCount": 1,
+	"duplicateItemCount": 2,
+	"oversizedQuantity": 4097,
+	"validMetadataBytes": 1,
+	"oversizedMetadataBytes": 513,
+	"validProofNodes": 1,
+	"oversizedProofNodes": 17
+}

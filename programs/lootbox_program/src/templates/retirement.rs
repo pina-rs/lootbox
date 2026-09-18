@@ -24,12 +24,14 @@ pub struct ReclaimMintPrizeInstruction {
 
 #[derive(Accounts, Debug)]
 pub struct RetireTemplateAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
 	pub template: &'a mut AccountView,
 }
 
 #[derive(Accounts, Debug)]
 pub struct ReclaimSolPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
 	pub template: &'a AccountView,
 	pub box_mint: &'a AccountView,
@@ -38,6 +40,7 @@ pub struct ReclaimSolPrizeAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct ReclaimTokenPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
 	pub template: &'a AccountView,
 	pub box_mint: &'a AccountView,
@@ -50,6 +53,7 @@ pub struct ReclaimTokenPrizeAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct ReclaimMintPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
 	pub template: &'a AccountView,
 	pub box_mint: &'a AccountView,

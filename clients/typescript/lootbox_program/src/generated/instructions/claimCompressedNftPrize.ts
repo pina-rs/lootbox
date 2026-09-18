@@ -49,7 +49,7 @@ bubblegumProgram: Address<TAccountBubblegumProgram>;
 logWrapper: Address<TAccountLogWrapper>;
 compressionProgram: Address<TAccountCompressionProgram>;
 systemProgram: Address<TAccountSystemProgram>;
-/** Merkle proof nodes in root-to-leaf order. */
+/** Merkle proof nodes in leaf-to-root order. */
 proofAccounts: Address<TAccountProofAccounts>;
 assetIndex: ClaimCompressedNftPrizeInstructionDataArgs["assetIndex"];
 root: ClaimCompressedNftPrizeInstructionDataArgs["root"];
@@ -90,7 +90,7 @@ bubblegumProgram: TAccountMetas[6];
 logWrapper: TAccountMetas[7];
 compressionProgram: TAccountMetas[8];
 systemProgram: TAccountMetas[9];
-/** Merkle proof nodes in root-to-leaf order. */
+/** Merkle proof nodes in leaf-to-root order. */
 proofAccounts: TAccountMetas[10];
 };
 data: ClaimCompressedNftPrizeInstructionData; };

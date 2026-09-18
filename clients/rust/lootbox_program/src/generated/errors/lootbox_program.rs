@@ -113,6 +113,38 @@ pub enum LootboxProgramError {
 	/// 24 - The creator-funded receipt or settlement budget is exhausted.
 	#[error("The creator-funded receipt or settlement budget is exhausted.")]
 	ServiceBudgetExhausted = 0x18,
+	/// The prize-pool account, item, tree, or bundle binding is invalid.
+	/// 25 - The prize-pool account, item, tree, or bundle binding is invalid.
+	#[error("The prize-pool account, item, tree, or bundle binding is invalid.")]
+	InvalidPrizePool = 0x19,
+	/// The prize pool already contains its advertised number of items.
+	/// 26 - The prize pool already contains its advertised number of items.
+	#[error("The prize pool already contains its advertised number of items.")]
+	PrizePoolFull = 0x1A,
+	/// The prize pool cannot be sealed until every advertised item is escrowed.
+	/// 27 - The prize pool cannot be sealed until every advertised item is escrowed.
+	#[error("The prize pool cannot be sealed until every advertised item is escrowed.")]
+	PrizePoolIncomplete = 0x1B,
+	/// The selected pool item was already reserved, claimed, or reclaimed.
+	/// 28 - The selected pool item was already reserved, claimed, or reclaimed.
+	#[error("The selected pool item was already reserved, claimed, or reclaimed.")]
+	PrizePoolItemUnavailable = 0x1C,
+	/// The supplied Bubblegum leaf identity differs from the deposited item.
+	/// 29 - The supplied Bubblegum leaf identity differs from the deposited item.
+	#[error("The supplied Bubblegum leaf identity differs from the deposited item.")]
+	PrizePoolItemMismatch = 0x1D,
+	/// The Bubblegum metadata preimage is malformed or does not match the leaf.
+	/// 30 - The Bubblegum metadata preimage is malformed or does not match the leaf.
+	#[error("The Bubblegum metadata preimage is malformed or does not match the leaf.")]
+	InvalidPrizePoolMetadata = 0x1E,
+	/// `PrizePool` custody accepts only permanently immutable Bubblegum metadata.
+	/// 31 - `PrizePool` custody accepts only permanently immutable Bubblegum metadata.
+	#[error("`PrizePool` custody accepts only permanently immutable Bubblegum metadata.")]
+	MutablePrizePoolItem = 0x1F,
+	/// Every bounded rejection-sampling round landed outside the uniform range.
+	/// 32 - Every bounded rejection-sampling round landed outside the uniform range.
+	#[error("Every bounded rejection-sampling round landed outside the uniform range.")]
+	EntropyRejectionExhausted = 0x20,
 }
 
 impl From<LootboxProgramError> for solana_program_error::ProgramError {

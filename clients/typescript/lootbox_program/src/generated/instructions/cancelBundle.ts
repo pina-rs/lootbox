@@ -7,7 +7,7 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
+import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
@@ -20,7 +20,7 @@ export const CANCEL_BUNDLE_DISCRIMINATOR2 = 0;
 export function getCancelBundleDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(CANCEL_BUNDLE_DISCRIMINATOR2); }
 
 export type CancelBundleInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
-Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableAccount<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, ...TRemainingAccounts]>;
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, ...TRemainingAccounts]>;
 
 export type CancelBundleInstructionData = { discriminator: number; migrationVersion: number;  };
 
@@ -39,7 +39,7 @@ export function getCancelBundleInstructionDataCodec(): FixedSizeCodec<CancelBund
 }
 
 export type CancelBundleInput<TAccountAuthority extends string = string, TAccountTemplate extends string = string, TAccountBundle extends string = string> =  {
-  authority: Address<TAccountAuthority>;
+  authority: TransactionSigner<TAccountAuthority>;
 template: Address<TAccountTemplate>;
 bundle: Address<TAccountBundle>;
 }

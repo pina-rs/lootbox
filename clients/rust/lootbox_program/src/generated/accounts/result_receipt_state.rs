@@ -27,6 +27,9 @@ pub struct ResultReceiptState {
 	pub randomness: solana_pubkey::Pubkey,
 	pub sequence: u64,
 	pub selected_bundle: u32,
+	pub selected_pool_item: u32,
+	pub selected_pool_asset: u8,
+	pub has_pool_assignment: bool,
 	pub bump: u8,
 }
 
@@ -79,21 +82,23 @@ impl ResultReceiptState {
 }
 
 impl ResultReceiptState {
-	pub fn find_pda(opening: &solana_pubkey::Pubkey) -> (solana_pubkey::Pubkey, u8) {
+	pub fn find_pda(opening: &solana_pubkey::Pubkey, sequence: u64) -> (solana_pubkey::Pubkey, u8) {
 		solana_pubkey::Pubkey::find_program_address(
 			&[
 				"result-receipt".as_bytes(),
 				opening.as_ref(),
+				&sequence.to_le_bytes(),
 			],
 			&crate::LOOTBOX_PROGRAM_ID,
 		)
 	}
 
-	pub fn create_pda(opening: &solana_pubkey::Pubkey, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(opening: &solana_pubkey::Pubkey, sequence: u64, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
 			&[
 				"result-receipt".as_bytes(),
 				opening.as_ref(),
+				&sequence.to_le_bytes(),
 				&[bump],
 			],
 			&crate::LOOTBOX_PROGRAM_ID,

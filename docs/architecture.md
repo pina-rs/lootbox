@@ -76,6 +76,6 @@ The opening PDA—not the holder or lootbox authority—is each Switchboard rand
 
 ## Treasury templates
 
-Treasury templates now provide compact append-only inventories, SPL and Token-2022 rewards, Metadata/Core/compressed NFTs, winner-routed quote delivery, capped badge minting, and an interactive local Surfpool playground. See [Treasury templates](treasury-templates.md) for the current account model and [Dynamic prize delivery](dynamic-prizes.md) for the remaining adapter decisions.
+Treasury templates now provide compact append-only inventories, SPL and Token-2022 rewards, Metadata/Core/compressed NFTs, entropy-selected Bubblegum PrizePools, winner-routed quote delivery, capped badge minting, and an interactive local Surfpool playground. See [Treasury templates](treasury-templates.md) for the current account model, [PrizePools](prize-pools.md) for compressed-NFT custody, and [Dynamic prize delivery](dynamic-prizes.md) for the remaining adapter decisions.
 
-The unfinished protocol work is PrizePool, fixed bonding-curve adapters, and fresh supply-one NFT minting. Production release work remains separate and includes an external audit, devnet soak, real Switchboard operations, monitoring, and incident runbooks.
+The unfinished protocol work is fixed bonding-curve adapters and fresh supply-one NFT minting. Production release work remains separate and includes an external audit, real Bubblegum and Switchboard devnet journeys, sustained soak, monitoring, and incident runbooks.

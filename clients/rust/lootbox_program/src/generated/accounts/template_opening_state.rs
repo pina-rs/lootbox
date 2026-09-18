@@ -36,6 +36,11 @@ pub struct TemplateOpeningState {
 	/// 0 committed, 1 verified, 2 allocated, 3 delivered, 4 forfeited.
 	pub status: u8,
 	pub selected_bundle: u32,
+	/// Local item index reserved from a prize pool during allocation.
+	pub selected_pool_item: u32,
+	/// Manifest slot containing the prize pool when `has_pool_assignment` is set.
+	pub selected_pool_asset: u8,
+	pub has_pool_assignment: bool,
 	pub claimed_mask: u8,
 	pub bump: u8,
 }

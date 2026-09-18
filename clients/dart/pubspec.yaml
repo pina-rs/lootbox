@@ -18,3 +18,6 @@ dependencies:
   solana_kit_errors: ^0.8.0
   solana_kit_instructions: ^0.8.0
   solana_kit_rpc_types: ^0.8.0
+
+dev_dependencies:
+  test: ^1.29.0

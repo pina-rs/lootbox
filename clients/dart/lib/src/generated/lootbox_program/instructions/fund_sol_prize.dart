@@ -114,7 +114,7 @@ Instruction getFundSolPrizeInstruction({
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.writable),
+      AccountMeta(address: authority, role: AccountRole.writableSigner),
       AccountMeta(address: template, role: AccountRole.writable),
       AccountMeta(address: bundle, role: AccountRole.writable),
       AccountMeta(address: systemProgram, role: AccountRole.readonly),

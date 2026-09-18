@@ -10,6 +10,7 @@ members = [
 ]
 exclude = [
 	"programs/lootbox_program/tests/surfpool",
+	"tests/fixtures/mock_bubblegum",
 	"tests/fixtures/mock_switchboard",
 ]
 
@@ -32,6 +33,7 @@ solana-account-info = { default-features = false, version = "3" }
 solana-address = { features = ["decode"], version = "2" }
 solana-cpi = { default-features = false, version = "3" }
 solana-instruction = { default-features = false, version = "3.4" }
+solana-keccak-hasher = { default-features = false, version = "3.1" }
 solana-program-error = { default-features = false, version = "3.0" }
 solana-pubkey = { default-features = false, version = "4", features = ["bytemuck"] }
 solana-sha256-hasher = { default-features = false, version = "3.1.0" }

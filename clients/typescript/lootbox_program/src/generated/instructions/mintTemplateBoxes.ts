@@ -7,7 +7,7 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
+import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlySignerAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
@@ -20,7 +20,7 @@ export const MINT_TEMPLATE_BOXES_DISCRIMINATOR2 = 0;
 export function getMintTemplateBoxesDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(MINT_TEMPLATE_BOXES_DISCRIMINATOR2); }
 
 export type MintTemplateBoxesInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountRecipientBoxAccount extends string | AccountMeta<string> = string, TAccountBoxTokenProgram extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
-Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlyAccount<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? WritableAccount<TAccountBoxMint> : TAccountBoxMint, TAccountRecipientBoxAccount extends string ? WritableAccount<TAccountRecipientBoxAccount> : TAccountRecipientBoxAccount, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, ...TRemainingAccounts]>;
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? WritableAccount<TAccountBoxMint> : TAccountBoxMint, TAccountRecipientBoxAccount extends string ? WritableAccount<TAccountRecipientBoxAccount> : TAccountRecipientBoxAccount, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, ...TRemainingAccounts]>;
 
 export type MintTemplateBoxesInstructionData = { discriminator: number; migrationVersion: number; amount: bigint;  };
 
@@ -39,7 +39,7 @@ export function getMintTemplateBoxesInstructionDataCodec(): FixedSizeCodec<MintT
 }
 
 export type MintTemplateBoxesInput<TAccountAuthority extends string = string, TAccountTemplate extends string = string, TAccountBoxMint extends string = string, TAccountRecipientBoxAccount extends string = string, TAccountBoxTokenProgram extends string = string> =  {
-  authority: Address<TAccountAuthority>;
+  authority: TransactionSigner<TAccountAuthority>;
 template: Address<TAccountTemplate>;
 boxMint: Address<TAccountBoxMint>;
 recipientBoxAccount: Address<TAccountRecipientBoxAccount>;

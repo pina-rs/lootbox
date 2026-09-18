@@ -23,7 +23,7 @@ use crate::ProgramAccount;
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct ReclaimMintPrize<'account> {
 	/// CPI account `authority`.
-	/// Required privileges: read-only.
+	/// Required privileges: read-only and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
@@ -87,7 +87,7 @@ impl<'account> ReclaimMintPrize<'account> {
 		signers: &[Signer<'_, '_>],
 	) -> ProgramResult {
 		let accounts: [CpiHandle<'_>; 6] = [
-			CpiHandle::readonly(self.authority),
+			CpiHandle::readonly_signer(self.authority),
 			CpiHandle::readonly(self.template),
 			CpiHandle::readonly(self.box_mint),
 			CpiHandle::writable(self.bundle)?,

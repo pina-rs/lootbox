@@ -49,7 +49,7 @@ impl LockTreasury {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new(self.authority, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.box_mint, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.bundle, false));

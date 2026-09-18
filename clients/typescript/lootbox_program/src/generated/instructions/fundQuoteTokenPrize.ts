@@ -7,7 +7,7 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
+import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlySignerAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
@@ -20,7 +20,7 @@ export const FUND_QUOTE_TOKEN_PRIZE_DISCRIMINATOR2 = 0;
 export function getFundQuoteTokenPrizeDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(FUND_QUOTE_TOKEN_PRIZE_DISCRIMINATOR2); }
 
 export type FundQuoteTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountSource extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
-Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlyAccount<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountSource extends string ? WritableAccount<TAccountSource> : TAccountSource, TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountSource extends string ? WritableAccount<TAccountSource> : TAccountSource, TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
 export type FundQuoteTokenPrizeInstructionData = { discriminator: number; migrationVersion: number; amountPerWin: bigint;  };
 
@@ -39,7 +39,7 @@ export function getFundQuoteTokenPrizeInstructionDataCodec(): FixedSizeCodec<Fun
 }
 
 export type FundQuoteTokenPrizeInput<TAccountAuthority extends string = string, TAccountTemplate extends string = string, TAccountBundle extends string = string, TAccountMint extends string = string, TAccountSource extends string = string, TAccountEscrow extends string = string, TAccountTokenProgram extends string = string> =  {
-  authority: Address<TAccountAuthority>;
+  authority: TransactionSigner<TAccountAuthority>;
 template: Address<TAccountTemplate>;
 bundle: Address<TAccountBundle>;
 mint: Address<TAccountMint>;

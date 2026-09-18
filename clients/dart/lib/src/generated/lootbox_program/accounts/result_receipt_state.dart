@@ -24,6 +24,9 @@ class ResultReceiptState {
     required this.randomness,
     required this.sequence,
     required this.selectedBundle,
+    required this.selectedPoolItem,
+    required this.selectedPoolAsset,
+    required this.hasPoolAssignment,
     required this.bump,
   }) : discriminator = 7,
        migrationVersion = 0;
@@ -40,6 +43,9 @@ class ResultReceiptState {
   final Address randomness;
   final BigInt sequence;
   final int selectedBundle;
+  final int selectedPoolItem;
+  final int selectedPoolAsset;
+  final bool hasPoolAssignment;
   final int bump;
 
   @override
@@ -59,6 +65,9 @@ class ResultReceiptState {
           randomness == other.randomness &&
           sequence == other.sequence &&
           selectedBundle == other.selectedBundle &&
+          selectedPoolItem == other.selectedPoolItem &&
+          selectedPoolAsset == other.selectedPoolAsset &&
+          hasPoolAssignment == other.hasPoolAssignment &&
           bump == other.bump;
 
   @override
@@ -75,12 +84,15 @@ class ResultReceiptState {
     randomness,
     sequence,
     selectedBundle,
+    selectedPoolItem,
+    selectedPoolAsset,
+    hasPoolAssignment,
     bump,
   );
 
   @override
   String toString() =>
-      'ResultReceiptState(discriminator: $discriminator, migrationVersion: $migrationVersion, template: $template, opening: $opening, boxAuthority: $boxAuthority, beneficiary: $beneficiary, consumerProgram: $consumerProgram, consumerContext: $consumerContext, manifestHash: $manifestHash, randomness: $randomness, sequence: $sequence, selectedBundle: $selectedBundle, bump: $bump)';
+      'ResultReceiptState(discriminator: $discriminator, migrationVersion: $migrationVersion, template: $template, opening: $opening, boxAuthority: $boxAuthority, beneficiary: $beneficiary, consumerProgram: $consumerProgram, consumerContext: $consumerContext, manifestHash: $manifestHash, randomness: $randomness, sequence: $sequence, selectedBundle: $selectedBundle, selectedPoolItem: $selectedPoolItem, selectedPoolAsset: $selectedPoolAsset, hasPoolAssignment: $hasPoolAssignment, bump: $bump)';
 }
 
 Encoder<ResultReceiptState> getResultReceiptStateEncoder() {
@@ -103,6 +115,9 @@ Encoder<ResultReceiptState> getResultReceiptStateEncoder() {
     ('randomness', getAddressEncoder()),
     ('sequence', getU64Encoder()),
     ('selectedBundle', getU32Encoder()),
+    ('selectedPoolItem', getU32Encoder()),
+    ('selectedPoolAsset', getU8Encoder()),
+    ('hasPoolAssignment', getBooleanEncoder()),
     ('bump', getU8Encoder()),
   ]);
 
@@ -121,6 +136,9 @@ Encoder<ResultReceiptState> getResultReceiptStateEncoder() {
       'randomness': value.randomness,
       'sequence': value.sequence,
       'selectedBundle': value.selectedBundle,
+      'selectedPoolItem': value.selectedPoolItem,
+      'selectedPoolAsset': value.selectedPoolAsset,
+      'hasPoolAssignment': value.hasPoolAssignment,
       'bump': value.bump,
     },
   );
@@ -140,6 +158,9 @@ Decoder<ResultReceiptState> getResultReceiptStateDecoder() {
     ('randomness', getAddressDecoder()),
     ('sequence', getU64Decoder()),
     ('selectedBundle', getU32Decoder()),
+    ('selectedPoolItem', getU32Decoder()),
+    ('selectedPoolAsset', getU8Decoder()),
+    ('hasPoolAssignment', getBooleanDecoder()),
     ('bump', getU8Decoder()),
   ]);
 
@@ -175,6 +196,9 @@ Decoder<ResultReceiptState> getResultReceiptStateDecoder() {
         randomness: map['randomness']! as Address,
         sequence: map['sequence']! as BigInt,
         selectedBundle: map['selectedBundle']! as int,
+        selectedPoolItem: map['selectedPoolItem']! as int,
+        selectedPoolAsset: map['selectedPoolAsset']! as int,
+        hasPoolAssignment: map['hasPoolAssignment']! as bool,
         bump: map['bump']! as int,
       ),
       newOffset,

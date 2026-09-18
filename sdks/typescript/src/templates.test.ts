@@ -1,4 +1,4 @@
-import { address } from "@solana/kit";
+import { type Address, address, getAddressDecoder } from "@solana/kit";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -11,11 +11,51 @@ import {
 	TemplatePlanError,
 } from "./templates.js";
 
-const nft = address("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
+const nft: Address = address("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
+const poolTree: Address = address(
+	"7RmhTYBS7Uv9PSNmJGX6tM8BjSn7HVbGdVgV6EtCNKLm",
+);
+const zeroAddress: Address = address("11111111111111111111111111111111");
 const serviceBudgetVector = JSON.parse(readFileSync(
 	new URL("../../../tests/vectors/service-budget.json", import.meta.url),
 	"utf8",
 )) as Readonly<Record<string, string | boolean>>;
+const prizePoolVector = JSON.parse(readFileSync(
+	new URL("../../../tests/vectors/prize-pool.json", import.meta.url),
+	"utf8",
+)) as Readonly<{
+	maxItems: number;
+	validQuantity: number;
+	validItemCount: number;
+	mismatchedItemCount: number;
+	mutableItemCount: number;
+	duplicateItemCount: number;
+	oversizedQuantity: number;
+	validMetadataBytes: number;
+	oversizedMetadataBytes: number;
+	validProofNodes: number;
+	oversizedProofNodes: number;
+}>;
+
+function poolItems(count: number) {
+	return Array.from({ length: count }, (_, index) => ({
+		asset: index === 0
+			? nft
+			: getAddressDecoder().decode(new Uint8Array(32).fill(index + 1)),
+		metadataMutable: false,
+		metadata: new Uint8Array(prizePoolVector.validMetadataBytes).fill(1),
+		proof: {
+			root: new Uint8Array(32).fill(1),
+			dataHash: new Uint8Array(32).fill(index + 2),
+			creatorHash: new Uint8Array(32).fill(index + 3),
+			nonce: BigInt(index),
+			leafIndex: index,
+			tree: poolTree,
+			treeConfig: nft,
+			proof: [nft],
+		},
+	}));
+}
 
 describe("finite template plans", () => {
 	it("escrows the complete inventory instead of a probabilistic buffer", () => {
@@ -128,6 +168,154 @@ describe("finite template plans", () => {
 			amount: 10n,
 			kind: "mintBadge",
 		}]);
+	});
+
+	it("plans one entropy-addressed PrizePool item per bundle ticket", () => {
+		const quantity = BigInt(prizePoolVector.validQuantity);
+		const plan = createTemplatePlan({
+			name: "Compressed collection",
+			bundles: [{
+				label: "One of three",
+				quantity,
+				assets: [{
+					kind: "prizePool",
+					tree: poolTree,
+					items: poolItems(prizePoolVector.validItemCount),
+				}],
+			}],
+		});
+		expect(plan.fixedSupply).toBe(quantity);
+		expect(plan.treasury).toEqual([{
+			asset: poolTree,
+			amount: quantity,
+			kind: "prizePool",
+		}]);
+	});
+
+	it("takes an owned snapshot of every PrizePool proof buffer", () => {
+		const items = poolItems(1);
+		const plan = createTemplatePlan({
+			name: "Stable snapshot",
+			bundles: [{
+				label: "Pool",
+				quantity: 1n,
+				assets: [{ kind: "prizePool", tree: poolTree, items }],
+			}],
+		});
+		const planned = plan.bundles[0]?.assets[0];
+		expect(planned?.kind).toBe("prizePool");
+		if (planned?.kind !== "prizePool") throw new Error("planned pool missing");
+		const originalDataHash = planned.items[0]?.proof.dataHash[0];
+		items[0]!.proof.dataHash[0] = 255;
+		items[0]!.metadata[0] = 255;
+		items[0]!.proof.proof.splice(0, 1);
+
+		expect(planned.items[0]?.proof.dataHash[0]).toBe(originalDataHash);
+		expect(planned.items[0]?.metadata[0]).toBe(1);
+		expect(planned.items[0]?.proof.proof).toEqual([nft]);
+		expect(Object.isFrozen(planned.items)).toBe(true);
+	});
+
+	it("rejects incomplete, mutable, duplicate, and oversized PrizePools", () => {
+		const plan = (items: ReturnType<typeof poolItems>, quantity: bigint) =>
+			createTemplatePlan({
+				name: "Invalid pool",
+				bundles: [{
+					label: "Pool",
+					quantity,
+					assets: [{ kind: "prizePool", tree: poolTree, items }],
+				}],
+			});
+		expect(() =>
+			plan(
+				poolItems(prizePoolVector.mismatchedItemCount),
+				BigInt(prizePoolVector.validQuantity),
+			)
+		).toThrow(/exactly/);
+		expect(() =>
+			plan(
+				poolItems(prizePoolVector.mutableItemCount).map((item) => ({
+					...item,
+					metadataMutable: true,
+				})),
+				1n,
+			)
+		).toThrow(/immutable/);
+		const duplicated = poolItems(prizePoolVector.duplicateItemCount);
+		expect(() =>
+			plan(
+				[duplicated[0]!, { ...duplicated[1]!, asset: duplicated[0]!.asset }],
+				2n,
+			)
+		).toThrow(/distinct/);
+		const [bounded] = poolItems(1);
+		expect(() =>
+			plan([{
+				...bounded!,
+				proof: { ...bounded!.proof, leafIndex: 1.5 },
+			}], 1n)
+		).toThrow(/complete proofs/);
+		expect(() =>
+			plan([{
+				...bounded!,
+				proof: { ...bounded!.proof, nonce: 1n << 64n },
+			}], 1n)
+		).toThrow(/complete proofs/);
+		expect(() =>
+			plan([{
+				...bounded!,
+				proof: {
+					...bounded!.proof,
+					proof: Array(prizePoolVector.oversizedProofNodes).fill(nft),
+				},
+			}], 1n)
+		).toThrow(/complete proofs/);
+		expect(() => plan([{ ...bounded!, metadata: new Uint8Array() }], 1n))
+			.toThrow(/complete proofs/);
+		expect(() =>
+			plan([{
+				...bounded!,
+				metadata: new Uint8Array(prizePoolVector.oversizedMetadataBytes),
+			}], 1n)
+		).toThrow(/complete proofs/);
+		expect(() => plan([], BigInt(prizePoolVector.oversizedQuantity))).toThrow(
+			/maximum/,
+		);
+		expect(() => plan([{ ...bounded!, asset: zeroAddress }], 1n)).toThrow(
+			/distinct/,
+		);
+		expect(() =>
+			plan([{
+				...bounded!,
+				proof: { ...bounded!.proof, treeConfig: zeroAddress },
+			}], 1n)
+		).toThrow(/complete proofs/);
+	});
+
+	it("rejects malformed standalone compressed-NFT proofs", () => {
+		const compressed = {
+			kind: "compressedNft" as const,
+			asset: nft,
+			proof: poolItems(1)[0]!.proof,
+		};
+		const plan = (asset: typeof compressed) =>
+			createTemplatePlan({
+				name: "Compressed prize",
+				bundles: [{ label: "NFT", quantity: 1n, assets: [asset] }],
+			});
+		expect(plan(compressed).fixedSupply).toBe(1n);
+		expect(() =>
+			plan({
+				...compressed,
+				proof: { ...compressed.proof, root: new Uint8Array(31) },
+			})
+		).toThrow(/bounded proof/);
+		expect(() =>
+			plan({
+				...compressed,
+				proof: { ...compressed.proof, treeConfig: zeroAddress },
+			})
+		).toThrow(/bounded proof/);
 	});
 
 	it("bounds metadata by UTF-8 bytes and rejects hidden control text", () => {

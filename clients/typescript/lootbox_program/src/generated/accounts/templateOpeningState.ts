@@ -6,8 +6,8 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
+import { fixPinaPodEncoderSize, getPinaPodBooleanDecoder, getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
+import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBooleanDecoder, getBooleanEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findTemplateOpeningPda, type TemplateOpeningSeeds } from '../pdas';
 
 export const TEMPLATE_OPENING_STATE_DISCRIMINATOR = 6;
@@ -33,7 +33,11 @@ consumerContext: ReadonlyUint8Array; randomness: Address; sequence: bigint; seed
 /** Treasury revision and bundle prefix fixed before the box is burned. */
 treasuryRevision: bigint; eligibleBundleCount: number;
 /** 0 committed, 1 verified, 2 allocated, 3 delivered, 4 forfeited. */
-status: number; selectedBundle: number; claimedMask: number; bump: number;  };
+status: number; selectedBundle: number;
+/** Local item index reserved from a prize pool during allocation. */
+selectedPoolItem: number;
+/** Manifest slot containing the prize pool when `has_pool_assignment` is set. */
+selectedPoolAsset: number; hasPoolAssignment: boolean; claimedMask: number; bump: number;  };
 
 export type TemplateOpeningStateArgs = { template: Address;
 /** Authority that owned and burned the box. */
@@ -49,16 +53,20 @@ consumerContext: ReadonlyUint8Array; randomness: Address; sequence: number | big
 /** Treasury revision and bundle prefix fixed before the box is burned. */
 treasuryRevision: number | bigint; eligibleBundleCount: number;
 /** 0 committed, 1 verified, 2 allocated, 3 delivered, 4 forfeited. */
-status: number; selectedBundle: number; claimedMask: number; bump: number;  };
+status: number; selectedBundle: number;
+/** Local item index reserved from a prize pool during allocation. */
+selectedPoolItem: number;
+/** Manifest slot containing the prize pool when `has_pool_assignment` is set. */
+selectedPoolAsset: number; hasPoolAssignment: boolean; claimedMask: number; bump: number;  };
 
 /** Gets the encoder for {@link TemplateOpeningStateArgs} account data. */
 export function getTemplateOpeningStateEncoder(): FixedSizeEncoder<TemplateOpeningStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['template', getAddressEncoder()], ['boxAuthority', getAddressEncoder()], ['beneficiary', getAddressEncoder()], ['rentRefund', getAddressEncoder()], ['consumerProgram', getAddressEncoder()], ['consumerContext', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['randomness', getAddressEncoder()], ['sequence', getU64Encoder()], ['seedSlot', getU64Encoder()], ['entropy', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['treasuryRevision', getU64Encoder()], ['eligibleBundleCount', getU32Encoder()], ['status', getU8Encoder()], ['selectedBundle', getU32Encoder()], ['claimedMask', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 6, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['template', getAddressEncoder()], ['boxAuthority', getAddressEncoder()], ['beneficiary', getAddressEncoder()], ['rentRefund', getAddressEncoder()], ['consumerProgram', getAddressEncoder()], ['consumerContext', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['randomness', getAddressEncoder()], ['sequence', getU64Encoder()], ['seedSlot', getU64Encoder()], ['entropy', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['treasuryRevision', getU64Encoder()], ['eligibleBundleCount', getU32Encoder()], ['status', getU8Encoder()], ['selectedBundle', getU32Encoder()], ['selectedPoolItem', getU32Encoder()], ['selectedPoolAsset', getU8Encoder()], ['hasPoolAssignment', getBooleanEncoder()], ['claimedMask', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 6, migrationVersion: 0 }));
 }
 
 /** Gets the decoder for {@link TemplateOpeningState} account data. */
 export function getTemplateOpeningStateDecoder(): FixedSizeDecoder<TemplateOpeningState> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(TEMPLATE_OPENING_STATE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['template', getAddressDecoder()], ['boxAuthority', getAddressDecoder()], ['beneficiary', getAddressDecoder()], ['rentRefund', getAddressDecoder()], ['consumerProgram', getAddressDecoder()], ['consumerContext', fixDecoderSize(getBytesDecoder(), 32)], ['randomness', getAddressDecoder()], ['sequence', getU64Decoder()], ['seedSlot', getU64Decoder()], ['entropy', fixDecoderSize(getBytesDecoder(), 32)], ['treasuryRevision', getU64Decoder()], ['eligibleBundleCount', getU32Decoder()], ['status', getU8Decoder()], ['selectedBundle', getU32Decoder()], ['claimedMask', getU8Decoder()], ['bump', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(TEMPLATE_OPENING_STATE_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['template', getAddressDecoder()], ['boxAuthority', getAddressDecoder()], ['beneficiary', getAddressDecoder()], ['rentRefund', getAddressDecoder()], ['consumerProgram', getAddressDecoder()], ['consumerContext', fixDecoderSize(getBytesDecoder(), 32)], ['randomness', getAddressDecoder()], ['sequence', getU64Decoder()], ['seedSlot', getU64Decoder()], ['entropy', fixDecoderSize(getBytesDecoder(), 32)], ['treasuryRevision', getU64Decoder()], ['eligibleBundleCount', getU32Decoder()], ['status', getU8Decoder()], ['selectedBundle', getU32Decoder()], ['selectedPoolItem', getU32Decoder()], ['selectedPoolAsset', getU8Decoder()], ['hasPoolAssignment', getPinaPodBooleanDecoder()], ['claimedMask', getU8Decoder()], ['bump', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link TemplateOpeningState} account data. */

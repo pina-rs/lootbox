@@ -123,9 +123,13 @@ in
       sbf_target="$PWD/target/sbf"
       CARGO_TARGET_DIR="$sbf_target" RUST_LOG=error \
         pina build --project tests/fixtures/mock_switchboard
+      CARGO_TARGET_DIR="$sbf_target" RUST_LOG=error \
+        pina build --project tests/fixtures/mock_bubblegum
       mkdir -p target/deploy target/idl
       cp "$sbf_target/deploy/mock_switchboard.so" target/deploy/
       cp "$sbf_target/idl/mock_switchboard.json" target/idl/
+      cp "$sbf_target/deploy/mock_bubblegum.so" target/deploy/
+      cp "$sbf_target/idl/mock_bubblegum.json" target/idl/
     '';
     "generate:clients".exec = ''
       set -euo pipefail
@@ -158,6 +162,7 @@ in
       build:test-programs
       PINA_SBF_ARTIFACT="$PWD/target/deploy/lootbox_program.so" \
         MOCK_SWITCHBOARD_SBF_ARTIFACT="$PWD/target/deploy/mock_switchboard.so" \
+        MOCK_BUBBLEGUM_SBF_ARTIFACT="$PWD/target/deploy/mock_bubblegum.so" \
         cargo test \
           --manifest-path programs/lootbox_program/tests/surfpool/Cargo.toml \
           --locked \
@@ -194,6 +199,13 @@ in
         --locked \
         -- \
         -D warnings
+      cargo clippy \
+        --manifest-path tests/fixtures/mock_bubblegum/Cargo.toml \
+        --all-features \
+        --all-targets \
+        --locked \
+        -- \
+        -D warnings
       RUSTDOCFLAGS="-D warnings" \
         cargo doc --workspace --all-features --no-deps --locked
       dprint check
@@ -206,6 +218,7 @@ in
       set -euo pipefail
       cargo audit --deny warnings --ignore RUSTSEC-2025-0141
       cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --file tests/fixtures/mock_switchboard/Cargo.lock
+      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --file tests/fixtures/mock_bubblegum/Cargo.lock
       cargo audit \
         --deny warnings \
         --file programs/lootbox_program/tests/surfpool/Cargo.lock \

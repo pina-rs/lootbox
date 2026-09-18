@@ -6,13 +6,14 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { getAddressEncoder, getProgramDerivedAddress, getUtf8Encoder, type Address, type ProgramDerivedAddress } from '@solana/kit';
+import { getAddressEncoder, getProgramDerivedAddress, getU64Encoder, getUtf8Encoder, type Address, type ProgramDerivedAddress } from '@solana/kit';
 
 export type ResultReceiptSeeds = {
 opening: Address;
+sequence: number | bigint;
 };
 
 export async function findResultReceiptPda(seeds: ResultReceiptSeeds, config: { programAddress?: Address | undefined } = {}): Promise<ProgramDerivedAddress> {
   const { programAddress = 'Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op' as Address<'Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op'> } = config;
-  return await getProgramDerivedAddress({ programAddress, seeds: [getUtf8Encoder().encode("result-receipt"), getAddressEncoder().encode(seeds.opening)]});
+  return await getProgramDerivedAddress({ programAddress, seeds: [getUtf8Encoder().encode("result-receipt"), getAddressEncoder().encode(seeds.opening), getU64Encoder().encode(seeds.sequence)]});
 }

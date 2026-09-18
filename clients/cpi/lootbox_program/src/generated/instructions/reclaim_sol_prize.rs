@@ -23,7 +23,7 @@ use crate::ProgramAccount;
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct ReclaimSolPrize<'account> {
 	/// CPI account `authority`.
-	/// Required privileges: writable.
+	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
@@ -79,7 +79,7 @@ impl<'account> ReclaimSolPrize<'account> {
 		signers: &[Signer<'_, '_>],
 	) -> ProgramResult {
 		let accounts: [CpiHandle<'_>; 4] = [
-			CpiHandle::writable(self.authority)?,
+			CpiHandle::writable_signer(self.authority)?,
 			CpiHandle::readonly(self.template),
 			CpiHandle::readonly(self.box_mint),
 			CpiHandle::writable(self.bundle)?,

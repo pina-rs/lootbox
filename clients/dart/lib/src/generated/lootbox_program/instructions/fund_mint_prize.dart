@@ -106,7 +106,7 @@ Instruction getFundMintPrizeInstruction({
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.readonly),
+      AccountMeta(address: authority, role: AccountRole.readonlySigner),
       AccountMeta(address: template, role: AccountRole.writable),
       AccountMeta(address: bundle, role: AccountRole.writable),
       AccountMeta(address: mint, role: AccountRole.writable),

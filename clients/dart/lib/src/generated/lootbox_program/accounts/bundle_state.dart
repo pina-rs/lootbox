@@ -18,6 +18,7 @@ class BundleState {
     required this.quantity,
     required this.rentReserve,
     required this.mints,
+    required this.commitments,
     required this.amounts,
     required this.claimed,
     required this.kinds,
@@ -38,6 +39,7 @@ class BundleState {
   final BigInt quantity;
   final BigInt rentReserve;
   final Uint8List mints;
+  final Uint8List commitments;
   final Uint8List amounts;
   final Uint8List claimed;
   final Uint8List kinds;
@@ -61,6 +63,7 @@ class BundleState {
           quantity == other.quantity &&
           rentReserve == other.rentReserve &&
           mints == other.mints &&
+          commitments == other.commitments &&
           amounts == other.amounts &&
           claimed == other.claimed &&
           kinds == other.kinds &&
@@ -81,6 +84,7 @@ class BundleState {
     quantity,
     rentReserve,
     mints,
+    commitments,
     amounts,
     claimed,
     kinds,
@@ -96,7 +100,7 @@ class BundleState {
 
   @override
   String toString() =>
-      'BundleState(discriminator: $discriminator, migrationVersion: $migrationVersion, template: $template, quantity: $quantity, rentReserve: $rentReserve, mints: $mints, amounts: $amounts, claimed: $claimed, kinds: $kinds, decimals: $decimals, activatedRevision: $activatedRevision, index: $index, assetCount: $assetCount, fundedAssets: $fundedAssets, reclaimedMask: $reclaimedMask, status: $status, bump: $bump)';
+      'BundleState(discriminator: $discriminator, migrationVersion: $migrationVersion, template: $template, quantity: $quantity, rentReserve: $rentReserve, mints: $mints, commitments: $commitments, amounts: $amounts, claimed: $claimed, kinds: $kinds, decimals: $decimals, activatedRevision: $activatedRevision, index: $index, assetCount: $assetCount, fundedAssets: $fundedAssets, reclaimedMask: $reclaimedMask, status: $status, bump: $bump)';
 }
 
 Encoder<BundleState> getBundleStateEncoder() {
@@ -107,6 +111,10 @@ Encoder<BundleState> getBundleStateEncoder() {
     ('quantity', getU64Encoder()),
     ('rentReserve', getU64Encoder()),
     ('mints', fixEncoderSize(getBytesEncoder(), 128, allowTruncation: false)),
+    (
+      'commitments',
+      fixEncoderSize(getBytesEncoder(), 128, allowTruncation: false),
+    ),
     ('amounts', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     ('claimed', fixEncoderSize(getBytesEncoder(), 32, allowTruncation: false)),
     ('kinds', fixEncoderSize(getBytesEncoder(), 4, allowTruncation: false)),
@@ -129,6 +137,7 @@ Encoder<BundleState> getBundleStateEncoder() {
       'quantity': value.quantity,
       'rentReserve': value.rentReserve,
       'mints': value.mints,
+      'commitments': value.commitments,
       'amounts': value.amounts,
       'claimed': value.claimed,
       'kinds': value.kinds,
@@ -152,6 +161,7 @@ Decoder<BundleState> getBundleStateDecoder() {
     ('quantity', getU64Decoder()),
     ('rentReserve', getU64Decoder()),
     ('mints', fixDecoderSize(getBytesDecoder(), 128)),
+    ('commitments', fixDecoderSize(getBytesDecoder(), 128)),
     ('amounts', fixDecoderSize(getBytesDecoder(), 32)),
     ('claimed', fixDecoderSize(getBytesDecoder(), 32)),
     ('kinds', fixDecoderSize(getBytesDecoder(), 4)),
@@ -191,6 +201,7 @@ Decoder<BundleState> getBundleStateDecoder() {
         quantity: map['quantity']! as BigInt,
         rentReserve: map['rentReserve']! as BigInt,
         mints: map['mints']! as Uint8List,
+        commitments: map['commitments']! as Uint8List,
         amounts: map['amounts']! as Uint8List,
         claimed: map['claimed']! as Uint8List,
         kinds: map['kinds']! as Uint8List,

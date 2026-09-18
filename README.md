@@ -11,7 +11,7 @@ The repository is pre-release: there is no compatibility release line yet and br
 
 ### Treasury template work
 
-The treasury protocol includes compact append-only treasuries with up to 1,024 bundles, fully funded SOL/token/NFT bundles, winner-routed quote prizes, capped badge minting, irreversible exact-supply locking, immutable Token-2022 box metadata, reveal dates, FIFO allocation, independent claims, staged-funding cancellation, timeout forfeiture, safe retirement, and a bounded non-market recovery seal for a missed lock deadline. See the [treasury specification](docs/treasury-templates.md), [dynamic prize design](docs/dynamic-prizes.md), and [treasury security notes](docs/security-templates.md).
+The treasury protocol includes compact append-only treasuries with up to 1,024 bundles, fully funded SOL/token/NFT bundles, entropy-selected Bubblegum PrizePools, winner-routed quote prizes, capped badge minting, irreversible exact-supply locking, immutable Token-2022 box metadata, reveal dates, FIFO allocation, independent claims, staged-funding cancellation, timeout forfeiture, safe retirement, and a bounded non-market recovery seal for a missed lock deadline. See the [treasury specification](docs/treasury-templates.md), [PrizePool reference](docs/prize-pools.md), [dynamic prize design](docs/dynamic-prizes.md), and [treasury security notes](docs/security-templates.md).
 
 **The web app is connected to the treasury protocol.** Create, fund, publish, append, then mint the exact supply and lock a treasury. Distribute or transfer whole boxes, inspect remaining EV and a constant-product trade preview, then open, reveal, claim, and close the receipt. Creator previews show exact inventory, deposits, and per-copy odds. Searchable Jupiter token and Metaplex DAS asset catalogs are proxied server-side and clearly distinguished from local test fixtures.
 
@@ -30,7 +30,7 @@ It deploys both SBF artifacts and exposes its RPC addresses and oracle fixture a
 
 - A `no_std`, Pina-based Solana program with the single-reward ABI plus treasury instructions.
 - Switchboard On-Demand initialization, commit, reveal, and close CPIs controlled by each opening PDA.
-- Fully escrowed finite SOL, classic SPL, safe Token-2022, standard Token Metadata NFT, Core, compressed-NFT, SOL/token quote, and badge-mint bundles in treasury templates; the single-reward SOL model retains minimum-reward timeouts.
+- Fully escrowed finite SOL, classic SPL, safe Token-2022, standard Token Metadata NFT, Core, compressed-NFT, PrizePool, SOL/token quote, and badge-mint bundles in treasury templates; the single-reward SOL model retains minimum-reward timeouts.
 - Codama-generated Rust, TypeScript, and Dart clients.
 - Ergonomic checked planning APIs in all three languages.
 - An animated React creator/recipient playground with nested bundle composition, a timezone-aware reveal picker, exact-supply lock workflow, market desk, searchable asset selection, live odds/revision/queue state, disposable test wallets, and desktop/mobile Playwright coverage.
@@ -143,7 +143,7 @@ For reuse in other projects, see the [integration and CPI guide](docs/integratin
 programs/lootbox_program/       on-chain program
 clients/                        generated Rust, TypeScript, Dart, and CPI clients
 sdks/{rust,typescript,dart}/    checked ergonomic layers
-tests/fixtures/mock_switchboard test-only oracle SBF program
+tests/fixtures/                 test-only Switchboard and Bubblegum SBF programs
 apps/web/                       animated interaction sandbox
 docs/                           protocol and audit documentation
 ```

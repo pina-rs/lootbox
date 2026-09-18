@@ -63,7 +63,7 @@ pub struct ReclaimCompressedNftPrize<'account> {
 	pub system_program: &'account AccountView,
 
 	/// CPI account `proofAccounts`.
-	/// Merkle proof nodes in root-to-leaf order.
+	/// Merkle proof nodes in leaf-to-root order.
 	/// Required privileges: read-only.
 	pub proof_accounts: &'account AccountView,
 

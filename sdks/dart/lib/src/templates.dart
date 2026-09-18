@@ -3,6 +3,12 @@ import 'package:solana_kit_addresses/solana_kit_addresses.dart';
 final BigInt _u64Max = (BigInt.one << 64) - BigInt.one;
 final BigInt _ticketMax = BigInt.from(0xffffffff);
 const int maxTemplateBundles = 1024;
+const int maxPrizePoolItems = 4096;
+const int maxPrizePoolMetadataBytes = 512;
+const int maxPrizePoolProofNodes = 16;
+
+bool _isByteList(List<int> bytes) =>
+    bytes.every((value) => value >= 0 && value <= 255);
 
 enum PrizeKind {
   sol,
@@ -15,6 +21,7 @@ enum PrizeKind {
   metadataNft,
   coreAsset,
   compressedNft,
+  prizePool,
 }
 
 /// Stable reasons why a treasury plan was rejected before transaction build.
@@ -40,60 +47,111 @@ final class TemplatePlanException implements Exception {
 
 /// A typed treasury asset. Ownership, extensions, plugins, and Merkle proofs
 /// are validated by the corresponding on-chain transfer adapter.
+final class PrizePoolItem {
+  PrizePoolItem({
+    required this.asset,
+    required this.metadataMutable,
+    required List<int> metadata,
+    required this.tree,
+    required this.treeConfig,
+    required List<int> root,
+    required List<int> dataHash,
+    required List<int> creatorHash,
+    required this.nonce,
+    required this.leafIndex,
+    required List<Address> proof,
+  }) : metadata = List.unmodifiable(metadata),
+       root = List.unmodifiable(root),
+       dataHash = List.unmodifiable(dataHash),
+       creatorHash = List.unmodifiable(creatorHash),
+       proof = List.unmodifiable(proof);
+
+  final Address asset;
+  final bool metadataMutable;
+  final List<int> metadata;
+  final Address tree;
+  final Address treeConfig;
+  final List<int> root;
+  final List<int> dataHash;
+  final List<int> creatorHash;
+  final BigInt nonce;
+  final int leafIndex;
+  final List<Address> proof;
+}
+
 final class PrizeAsset {
   const PrizeAsset.sol(BigInt lamports)
     : kind = PrizeKind.sol,
       identifier = null,
-      amount = lamports;
+      amount = lamports,
+      poolItems = const [];
 
   const PrizeAsset.quoteSol(BigInt lamports)
     : kind = PrizeKind.quoteSol,
       identifier = null,
-      amount = lamports;
+      amount = lamports,
+      poolItems = const [];
 
   const PrizeAsset.classicToken(Address mint, BigInt baseUnits)
     : kind = PrizeKind.classicToken,
       identifier = mint,
-      amount = baseUnits;
+      amount = baseUnits,
+      poolItems = const [];
 
   const PrizeAsset.token2022(Address mint, BigInt baseUnits)
     : kind = PrizeKind.token2022,
       identifier = mint,
-      amount = baseUnits;
+      amount = baseUnits,
+      poolItems = const [];
 
   const PrizeAsset.quoteToken(Address mint, BigInt baseUnits)
     : kind = PrizeKind.quoteToken,
       identifier = mint,
-      amount = baseUnits;
+      amount = baseUnits,
+      poolItems = const [];
 
   PrizeAsset.mintBadge(Address mint)
     : kind = PrizeKind.mintBadge,
       identifier = mint,
-      amount = BigInt.one;
+      amount = BigInt.one,
+      poolItems = const [];
 
   PrizeAsset.legacyNft(Address mint)
     : kind = PrizeKind.legacyNft,
       identifier = mint,
-      amount = BigInt.one;
+      amount = BigInt.one,
+      poolItems = const [];
 
   PrizeAsset.metadataNft(Address mint)
     : kind = PrizeKind.metadataNft,
       identifier = mint,
-      amount = BigInt.one;
+      amount = BigInt.one,
+      poolItems = const [];
 
   PrizeAsset.core(Address asset)
     : kind = PrizeKind.coreAsset,
       identifier = asset,
-      amount = BigInt.one;
+      amount = BigInt.one,
+      poolItems = const [];
 
   PrizeAsset.compressedNft(Address asset)
     : kind = PrizeKind.compressedNft,
       identifier = asset,
-      amount = BigInt.one;
+      amount = BigInt.one,
+      poolItems = const [];
+
+  PrizeAsset.prizePool(Address tree, List<PrizePoolItem> items)
+    : kind = PrizeKind.prizePool,
+      identifier = tree,
+      amount = BigInt.one,
+      poolItems = List.unmodifiable(items);
 
   final PrizeKind kind;
   final Address? identifier;
   final BigInt amount;
+  final List<PrizePoolItem> poolItems;
+
+  int get itemCount => poolItems.length;
 
   bool get isUnique => switch (kind) {
     PrizeKind.sol ||
@@ -101,6 +159,7 @@ final class PrizeAsset {
     PrizeKind.classicToken ||
     PrizeKind.token2022 ||
     PrizeKind.quoteToken => false,
+    PrizeKind.prizePool => false,
     PrizeKind.mintBadge ||
     PrizeKind.legacyNft ||
     PrizeKind.metadataNft ||
@@ -163,7 +222,46 @@ final class TemplatePlan {
         );
       }
       final seen = <Address?>{};
+      var prizePoolCount = 0;
       for (final asset in bundle.assets) {
+        if (asset.kind == PrizeKind.prizePool) {
+          prizePoolCount++;
+          if (prizePoolCount > 1 ||
+              asset.itemCount < 1 ||
+              asset.itemCount > maxPrizePoolItems ||
+              BigInt.from(asset.itemCount) != bundle.quantity) {
+            throw const TemplatePlanException(
+              TemplatePlanErrorCode.invalidAsset,
+              'a bundle supports one prize pool with exactly one item per ticket',
+            );
+          }
+          for (final item in asset.poolItems) {
+            if (item.metadataMutable ||
+                item.asset.value == '11111111111111111111111111111111' ||
+                item.metadata.isEmpty ||
+                item.metadata.length > maxPrizePoolMetadataBytes ||
+                !_isByteList(item.metadata) ||
+                item.tree != asset.identifier ||
+                item.treeConfig.value == '11111111111111111111111111111111' ||
+                item.root.length != 32 ||
+                !_isByteList(item.root) ||
+                item.dataHash.length != 32 ||
+                !_isByteList(item.dataHash) ||
+                item.creatorHash.length != 32 ||
+                !_isByteList(item.creatorHash) ||
+                item.nonce < BigInt.zero ||
+                item.nonce > _u64Max ||
+                item.leafIndex < 0 ||
+                item.leafIndex > 0xffffffff ||
+                item.proof.length > maxPrizePoolProofNodes ||
+                !uniqueAssets.add(item.asset)) {
+              throw const TemplatePlanException(
+                TemplatePlanErrorCode.invalidAsset,
+                'prize-pool items need distinct immutable V1 metadata and complete same-tree proofs',
+              );
+            }
+          }
+        }
         _u64(asset.amount, 'prize amount');
         if (asset.amount == BigInt.zero ||
             !seen.add(asset.identifier) ||

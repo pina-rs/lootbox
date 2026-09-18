@@ -23,7 +23,7 @@ use crate::ProgramAccount;
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct CancelBundle<'account> {
 	/// CPI account `authority`.
-	/// Required privileges: writable.
+	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
@@ -71,7 +71,7 @@ impl<'account> CancelBundle<'account> {
 		signers: &[Signer<'_, '_>],
 	) -> ProgramResult {
 		let accounts: [CpiHandle<'_>; 3] = [
-			CpiHandle::writable(self.authority)?,
+			CpiHandle::writable_signer(self.authority)?,
 			CpiHandle::readonly(self.template),
 			CpiHandle::writable(self.bundle)?,
 		];

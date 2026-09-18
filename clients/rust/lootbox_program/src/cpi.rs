@@ -27,6 +27,9 @@ pub struct VerifiedResult {
 	pub randomness: Pubkey,
 	pub sequence: u64,
 	pub selected_bundle: u32,
+	pub selected_pool_item: u32,
+	pub selected_pool_asset: u8,
+	pub has_pool_assignment: bool,
 }
 
 /// Invoke any generated Lootbox instruction from an on-chain program.
@@ -71,8 +74,9 @@ pub fn verify_result_receipt(
 
 	let data = account.try_borrow_data()?;
 	let receipt = ResultReceiptState::from_bytes(&data)?;
-	let canonical = ResultReceiptState::create_pda(&receipt.opening, receipt.bump)
-		.map_err(|_| ProgramError::InvalidSeeds)?;
+	let canonical =
+		ResultReceiptState::create_pda(&receipt.opening, receipt.sequence.get(), receipt.bump)
+			.map_err(|_| ProgramError::InvalidSeeds)?;
 
 	if canonical != *account.key {
 		return Err(ProgramError::InvalidSeeds);
@@ -94,5 +98,8 @@ pub fn verify_result_receipt(
 		randomness: receipt.randomness,
 		sequence: receipt.sequence.get(),
 		selected_bundle: receipt.selected_bundle.get(),
+		selected_pool_item: receipt.selected_pool_item.get(),
+		selected_pool_asset: receipt.selected_pool_asset,
+		has_pool_assignment: receipt.has_pool_assignment.get(),
 	})
 }

@@ -45,7 +45,7 @@ impl ReclaimMintPrize {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.authority, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.authority, true));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));

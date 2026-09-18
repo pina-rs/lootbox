@@ -1,3 +1,11 @@
+import { dasApi } from "@metaplex-foundation/digital-asset-standard-api";
+import {
+	findTreeConfigPda,
+	getAssetWithProof,
+	getMetadataArgsSerializer,
+} from "@metaplex-foundation/mpl-bubblegum";
+import { publicKey } from "@metaplex-foundation/umi";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { Surfnet } from "@solana/surfpool";
 import { randomBytes } from "node:crypto";
 import { createServer } from "node:http";
@@ -7,6 +15,9 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const programId = "Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op";
 const oracleProgram = "Aio4gaXjXzJNVLtzwtNVmSqGKpANtXhybbkhtAC94ji2";
+const bubblegumProgram = "BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY";
+const compressionProgram = "cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK";
+const noopProgram = "noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV";
 const port = Number(process.env.LOOTBOX_PLAYGROUND_PORT ?? 8898);
 if (!Number.isSafeInteger(port) || port < 1024 || port > 65535) {
 	throw new RangeError("invalid playground port");
@@ -25,6 +36,12 @@ surfnet.deploy({
 	programId: oracleProgram,
 	soPath: resolve(root, "target/deploy/mock_switchboard.so"),
 });
+for (const fixtureId of [bubblegumProgram, compressionProgram, noopProgram]) {
+	surfnet.deploy({
+		programId: fixtureId,
+		soPath: resolve(root, "target/deploy/mock_bubblegum.so"),
+	});
+}
 const oracle = Object.fromEntries(
 	[
 		"queue",
@@ -201,18 +218,43 @@ async function searchNftCatalog(owner, query) {
 				if (
 					!validAddress(item?.id) || typeof name !== "string" ||
 					typeof standard !== "string" ||
-					standard.toLowerCase().includes("fungible") ||
+					["FungibleAsset", "FungibleToken"].includes(standard) ||
 					(needle &&
 						!`${name} ${item.id} ${standard}`.toLowerCase().includes(needle))
 				) return [];
 				const image = item?.content?.links?.image ??
 					item?.content?.files?.[0]?.uri;
+				const compression = item?.compression;
+				const ownership = item?.ownership;
+				const owner = ownership?.owner;
+				const delegate = ownership?.delegate;
 				return [{
 					id: item.id,
 					name: name.slice(0, 100),
 					...(typeof image === "string" ? { image } : {}),
 					standard,
-					compressed: item?.compression?.compressed === true,
+					compressed: compression?.compressed === true,
+					// DAS providers occasionally omit mutability. Treat unknown as
+					// mutable so the picker fails closed instead of advertising an
+					// item whose metadata authority could later freeze delivery.
+					mutable: item?.mutable !== false,
+					...(validAddress(compression?.tree)
+						? { tree: compression.tree }
+						: {}),
+					...(Number.isSafeInteger(compression?.leaf_id)
+						? { leafIndex: compression.leaf_id }
+						: {}),
+					...(typeof compression?.data_hash === "string"
+						? { dataHash: compression.data_hash }
+						: {}),
+					...(typeof compression?.creator_hash === "string"
+						? { creatorHash: compression.creator_hash }
+						: {}),
+					...(validAddress(owner) ? { owner } : {}),
+					// The transfer adapter supplies the owner as both Bubblegum
+					// authority fields. Revoke delegation before pool funding.
+					delegated: ownership?.delegated !== false ||
+						(validAddress(delegate) && delegate !== owner),
 				}];
 			});
 			return { items: items.slice(0, 40), source: "live" };
@@ -226,6 +268,56 @@ async function searchNftCatalog(owner, query) {
 			}).`,
 		};
 	}
+}
+
+async function nftProof(assetId) {
+	const endpoint = process.env.DAS_RPC_URL;
+	if (!endpoint) {
+		throw new Error("DAS_RPC_URL is required for compressed proofs");
+	}
+	const umi = createUmi(endpoint).use(dasApi());
+	const resolved = await getAssetWithProof(umi, publicKey(assetId));
+	const asset = resolved.rpcAsset;
+	const proof = resolved.rpcAssetProof;
+	const compression = asset?.compression;
+	const ownership = asset?.ownership;
+	const owner = ownership?.owner?.toString();
+	const delegate = ownership?.delegate?.toString();
+	const metadata = getMetadataArgsSerializer().serialize(resolved.metadata);
+	const treeConfig = findTreeConfigPda(umi, {
+		merkleTree: resolved.merkleTree,
+	})[0].toString();
+	if (
+		asset?.id?.toString() !== assetId || asset?.interface !== "V1_NFT" ||
+		compression?.compressed !== true ||
+		asset?.mutable !== false || !validAddress(owner) ||
+		ownership?.delegated !== false ||
+		(validAddress(delegate) && delegate !== owner) ||
+		compression?.collection_hash !== undefined ||
+		compression?.asset_data_hash !== undefined ||
+		compression?.flags !== undefined ||
+		!validAddress(compression?.tree?.toString()) ||
+		!Number.isSafeInteger(compression?.leaf_id) ||
+		resolved.nonce !== compression.leaf_id ||
+		resolved.index !== compression.leaf_id ||
+		metadata.length === 0 || metadata.length > 512 ||
+		proof?.tree_id?.toString() !== compression.tree.toString() ||
+		!Array.isArray(proof?.proof)
+	) throw new Error("asset is not an immutable, provable Bubblegum leaf");
+	return {
+		asset: assetId,
+		owner,
+		delegated: false,
+		tree: compression.tree.toString(),
+		treeConfig,
+		leafIndex: compression.leaf_id,
+		nonce: String(compression.leaf_id),
+		dataHash: publicKey(resolved.dataHash).toString(),
+		creatorHash: publicKey(resolved.creatorHash).toString(),
+		root: proof.root.toString(),
+		proof: resolved.proof.map((node) => node.toString()),
+		metadata: Buffer.from(metadata).toString("base64"),
+	};
 }
 
 function validAddress(value) {
@@ -291,6 +383,12 @@ const server = createServer(async (request, response) => {
 			const query = safeQuery(url.searchParams.get("q") ?? "");
 			if (!validAddress(owner)) throw new RangeError("invalid wallet address");
 			reply(response, 200, await searchNftCatalog(owner, query));
+			return;
+		}
+		if (request.method === "GET" && url.pathname === "/assets/nft-proof") {
+			const assetId = safeQuery(url.searchParams.get("id") ?? "", 44);
+			if (!validAddress(assetId)) throw new RangeError("invalid asset address");
+			reply(response, 200, await nftProof(assetId));
 			return;
 		}
 		if (request.method === "POST" && url.pathname === "/faucet") {

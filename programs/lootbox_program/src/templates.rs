@@ -17,6 +17,9 @@ pub use retirement::*;
 mod collections;
 pub use collections::*;
 
+mod prize_pool;
+pub use prize_pool::*;
+
 mod close;
 pub use close::*;
 
@@ -25,6 +28,8 @@ const SEED_BUNDLE: &[u8] = b"bundle";
 const SEED_TEMPLATE_OPENING: &[u8] = b"template-opening";
 const SEED_SERVICE_VAULT: &[u8] = b"service-vault";
 const SEED_RESULT_RECEIPT: &[u8] = b"result-receipt";
+const SEED_PRIZE_POOL: &[u8] = b"prize-pool";
+const SEED_PRIZE_POOL_ITEM: &[u8] = b"prize-pool-item";
 const MANIFEST_BUNDLE_DOMAIN: &[u8] = b"pina-lootbox-manifest-bundle";
 const MANIFEST_DOMAIN: &[u8] = b"pina-lootbox-manifest";
 /// Maximum assets delivered by one winning bundle.
@@ -49,6 +54,13 @@ pub const PRIZE_QUOTE_SOL: u8 = 7;
 pub const PRIZE_QUOTE_TOKEN: u8 = 8;
 /// A zero-decimal badge whose mint authority is held by the bundle PDA.
 pub const PRIZE_MINT_BADGE: u8 = 9;
+/// A uniformly sampled Bubblegum V1 inventory owned by a prize-pool PDA.
+pub const PRIZE_POOL: u8 = 10;
+/// Maximum Bubblegum leaves held by one prize pool.
+pub const MAX_PRIZE_POOL_ITEMS: usize = 4_096;
+/// Largest canonical Bubblegum V1 `MetadataArgs` Borsh preimage.
+pub const MAX_PRIZE_POOL_METADATA_BYTES: usize = 512;
+const MAX_PRIZE_POOL_BITMAP_BYTES: usize = MAX_PRIZE_POOL_ITEMS.div_ceil(8);
 
 const TEMPLATE_DRAFT: u8 = 0;
 const TEMPLATE_LIVE: u8 = 1;
@@ -117,6 +129,9 @@ pub struct BundleState {
 	pub rent_reserve: u64,
 	/// Four asset identifiers; the zero address denotes native SOL.
 	pub mints: [u8; 128],
+	/// Adapter-specific immutable commitments, one 32-byte value per slot.
+	/// Plain escrowed assets leave their commitment zeroed.
+	pub commitments: [u8; 128],
 	/// Four little-endian base-unit amounts paid per winning bundle.
 	pub amounts: [u8; 32],
 	/// Four little-endian counts released through claims or retirement recovery.
@@ -158,6 +173,11 @@ pub struct TemplateOpeningState {
 	/// 0 committed, 1 verified, 2 allocated, 3 delivered, 4 forfeited.
 	pub status: u8,
 	pub selected_bundle: u32,
+	/// Local item index reserved from a prize pool during allocation.
+	pub selected_pool_item: u32,
+	/// Manifest slot containing the prize pool when `has_pool_assignment` is set.
+	pub selected_pool_asset: u8,
+	pub has_pool_assignment: bool,
 	pub claimed_mask: u8,
 	pub bump: u8,
 }
@@ -166,7 +186,7 @@ pub struct TemplateOpeningState {
 ///
 /// No instruction mutates or closes this account after initialization.
 #[account(discriminator = LootboxAccountType, migrations)]
-#[pda(seeds = [SEED_RESULT_RECEIPT, opening: Address], bump = bump)]
+#[pda(seeds = [SEED_RESULT_RECEIPT, opening: Address, sequence: u64], bump = bump)]
 pub struct ResultReceiptState {
 	pub template: Address,
 	pub opening: Address,
@@ -178,7 +198,122 @@ pub struct ResultReceiptState {
 	pub randomness: Address,
 	pub sequence: u64,
 	pub selected_bundle: u32,
+	pub selected_pool_item: u32,
+	pub selected_pool_asset: u8,
+	pub has_pool_assignment: bool,
 	pub bump: u8,
+}
+
+/// Compact, append-only Bubblegum inventory for one bundle manifest slot.
+///
+/// The account pays only for deposited bitmap bytes: one byte for every eight
+/// items. Per-item PDAs retain deposit snapshots while the sealed accumulator
+/// commits the ordered inventory into the parent treasury manifest.
+#[account(
+	discriminator = LootboxAccountType,
+	compact,
+	migrations,
+	validate(with = validate_prize_pool_state)
+)]
+#[pda(
+	seeds = [SEED_PRIZE_POOL, bundle: Address, asset_index: u8],
+	bump = bump
+)]
+pub struct PrizePoolState {
+	pub authority: Address,
+	pub bundle: Address,
+	pub tree: Address,
+	pub manifest_accumulator: [u8; 32],
+	pub quantity: u64,
+	pub version: u64,
+	pub deposit_cursor: u32,
+	/// Reserved items, including those already claimed by winners.
+	pub assigned_count: u32,
+	pub claimed_count: u32,
+	pub reclaimed_count: u32,
+	pub asset_index: u8,
+	/// 0 funding, 1 sealed.
+	pub status: u8,
+	/// One metadata-admitted item PDA exists at `deposit_cursor`.
+	pub has_prepared_item: bool,
+	pub bump: u8,
+	/// A set bit means the item cannot be allocated again.
+	pub unavailable: Vec<u8, 512>,
+}
+
+/// Immutable identity and normalized metadata commitment for one Bubblegum leaf.
+///
+/// Bubblegum authorities may change verification flags after custody, so claims
+/// re-prove the current metadata while pinning every semantic field.
+#[account(discriminator = LootboxAccountType, migrations)]
+#[pda(
+	seeds = [SEED_PRIZE_POOL_ITEM, pool: Address, pool_index: u32],
+	bump = bump
+)]
+pub struct PrizePoolItemState {
+	pub pool: Address,
+	pub asset: Address,
+	pub data_hash: [u8; 32],
+	pub creator_hash: [u8; 32],
+	pub semantic_metadata_hash: [u8; 32],
+	/// Restores the append-only accumulator when an unfinished tail is removed.
+	pub previous_manifest_accumulator: [u8; 32],
+	pub nonce: u64,
+	pub tree_index: u32,
+	pub pool_index: u32,
+	/// 0 metadata-admitted, 1 transferred into `PrizePool` custody.
+	pub status: u8,
+	pub bump: u8,
+}
+
+fn validate_prize_pool_state(state: &PrizePoolStateRef<'_>) -> ProgramResult {
+	let quantity =
+		usize::try_from(state.quantity.get()).map_err(|_| ProgramError::InvalidAccountData)?;
+	let deposited = usize::try_from(state.deposit_cursor.get())
+		.map_err(|_| ProgramError::InvalidAccountData)?;
+	let assigned = usize::try_from(state.assigned_count.get())
+		.map_err(|_| ProgramError::InvalidAccountData)?;
+	let claimed =
+		usize::try_from(state.claimed_count.get()).map_err(|_| ProgramError::InvalidAccountData)?;
+	let reclaimed = usize::try_from(state.reclaimed_count.get())
+		.map_err(|_| ProgramError::InvalidAccountData)?;
+	if quantity == 0
+		|| quantity > MAX_PRIZE_POOL_ITEMS
+		|| deposited > quantity
+		|| claimed > assigned
+		|| assigned
+			.checked_add(reclaimed)
+			.ok_or(ProgramError::ArithmeticOverflow)?
+			> deposited
+		|| state.unavailable().len() != deposited.div_ceil(8)
+		|| state.unavailable().len() > MAX_PRIZE_POOL_BITMAP_BYTES
+		|| state.status > 1
+		|| (state.has_prepared_item.get() && (state.status != 0 || deposited >= quantity))
+		|| (state.status == 1 && state.has_prepared_item.get())
+		|| (state.status == 0 && (assigned != 0 || claimed != 0 || reclaimed != 0))
+		|| (state.status == 1 && deposited != quantity)
+	{
+		return Err(lootbox_error(LootboxError::InvalidPrizePool));
+	}
+
+	let unavailable = state.unavailable();
+	let set_bits = (0..deposited)
+		.filter(|index| unavailable[index / 8] & (1 << (index % 8)) != 0)
+		.count();
+	if set_bits != assigned + reclaimed {
+		return Err(lootbox_error(LootboxError::InvalidPrizePool));
+	}
+	if deposited % 8 != 0 {
+		let used_mask = (1u8 << (deposited % 8)) - 1;
+		if unavailable
+			.last()
+			.is_some_and(|byte| byte & !used_mask != 0)
+		{
+			return Err(lootbox_error(LootboxError::InvalidPrizePool));
+		}
+	}
+
+	Ok(())
 }
 
 #[cfg(test)]
@@ -205,8 +340,13 @@ mod layout_tests {
 				TemplateOpeningState::SIZE,
 				ResultReceiptState::SIZE,
 			),
-			(548, 267, 293, 271),
+			(548, 395, 299, 277),
 		);
+		assert_eq!(PrizePoolState::HEADER_SIZE, 168);
+		assert_eq!(PrizePoolState::MIN_SIZE, 168);
+		assert_eq!(PrizePoolState::MAX_SIZE, 680);
+		assert_eq!(PrizePoolItemState::SIZE, 212);
+		assert_eq!(PrizePoolItemState::SIZE, size_of::<PrizePoolItemStateZc>());
 	}
 
 	#[test]
@@ -220,6 +360,9 @@ mod layout_tests {
 		let first = next_manifest_accumulator(&[0; 32], bundle);
 		bundle.amounts[..8].copy_from_slice(&43u64.to_le_bytes());
 		assert_ne!(first, next_manifest_accumulator(&[0; 32], bundle));
+		bundle.amounts[..8].copy_from_slice(&42u64.to_le_bytes());
+		bundle.commitments[..32].copy_from_slice(&[7; 32]);
+		assert_ne!(first, next_manifest_accumulator(&[0; 32], bundle));
 
 		let mut template = initialized_template_header(
 			&TemplateStatePatch::new()
@@ -231,6 +374,69 @@ mod layout_tests {
 		let without_receipts = locked_manifest_hash(&address, &template);
 		template.result_receipts_enabled.set(true);
 		assert_ne!(without_receipts, locked_manifest_hash(&address, &template));
+	}
+
+	#[test]
+	fn compact_prize_pool_rejects_counter_and_bitmap_drift() {
+		let bitmap = [0b0000_0001, 0];
+		let mut bytes = [0; PrizePoolState::MAX_SIZE];
+		let encoded = PrizePoolState::initialize(
+			&mut bytes,
+			&PrizePoolStatePatch::new()
+				.quantity(9)
+				.deposit_cursor(9)
+				.assigned_count(1)
+				.status(1)
+				.replace_unavailable(&bitmap),
+		)
+		.expect("valid sealed pool");
+		assert_eq!(encoded, PrizePoolState::HEADER_SIZE + 2);
+
+		let wrong_count = PrizePoolState::initialize(
+			&mut bytes,
+			&PrizePoolStatePatch::new()
+				.quantity(9)
+				.deposit_cursor(9)
+				.assigned_count(2)
+				.status(1)
+				.replace_unavailable(&bitmap),
+		);
+		assert_eq!(
+			wrong_count,
+			Err(lootbox_error(LootboxError::InvalidPrizePool))
+		);
+
+		let invalid_padding = [0, 0b1000_0000];
+		let padding = PrizePoolState::initialize(
+			&mut bytes,
+			&PrizePoolStatePatch::new()
+				.quantity(9)
+				.deposit_cursor(9)
+				.assigned_count(1)
+				.status(1)
+				.replace_unavailable(&invalid_padding),
+		);
+		assert_eq!(padding, Err(lootbox_error(LootboxError::InvalidPrizePool)));
+
+		let empty_bitmap = [0];
+		for invalid_prepared in [
+			PrizePoolStatePatch::new()
+				.quantity(1)
+				.deposit_cursor(1)
+				.has_prepared_item(true)
+				.replace_unavailable(&empty_bitmap),
+			PrizePoolStatePatch::new()
+				.quantity(1)
+				.deposit_cursor(1)
+				.status(1)
+				.has_prepared_item(true)
+				.replace_unavailable(&empty_bitmap),
+		] {
+			assert_eq!(
+				PrizePoolState::initialize(&mut bytes, &invalid_prepared),
+				Err(lootbox_error(LootboxError::InvalidPrizePool)),
+			);
+		}
 	}
 }
 
@@ -355,6 +561,7 @@ pub struct CreateTemplateAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct AddBundleAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
 	pub template: &'a mut AccountView,
 	#[pina(validate(empty))]
@@ -365,6 +572,7 @@ pub struct AddBundleAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct FundSolPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
 	pub template: &'a mut AccountView,
 	pub bundle: &'a mut AccountView,
@@ -374,6 +582,7 @@ pub struct FundSolPrizeAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct FundTokenPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
 	pub template: &'a mut AccountView,
 	pub bundle: &'a mut AccountView,
@@ -385,6 +594,7 @@ pub struct FundTokenPrizeAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct FundQuoteSolPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
 	pub template: &'a mut AccountView,
 	pub bundle: &'a mut AccountView,
@@ -394,6 +604,7 @@ pub struct FundQuoteSolPrizeAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct FundQuoteTokenPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
 	pub template: &'a mut AccountView,
 	pub bundle: &'a mut AccountView,
@@ -405,6 +616,7 @@ pub struct FundQuoteTokenPrizeAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct FundMintPrizeAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
 	pub template: &'a mut AccountView,
 	pub bundle: &'a mut AccountView,
@@ -414,12 +626,14 @@ pub struct FundMintPrizeAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct SealTemplateAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
 	pub template: &'a mut AccountView,
 }
 
 #[derive(Accounts, Debug)]
 pub struct LockTreasuryAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
 	pub template: &'a mut AccountView,
 	pub box_mint: &'a mut AccountView,
@@ -437,6 +651,7 @@ pub struct LockTreasuryAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct MintTemplateBoxesAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
 	pub template: &'a mut AccountView,
 	pub box_mint: &'a mut AccountView,
@@ -456,6 +671,7 @@ pub struct ActivateBundleAccounts<'a> {
 
 #[derive(Accounts, Debug)]
 pub struct CancelBundleAccounts<'a> {
+	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
 	pub template: &'a AccountView,
 	pub bundle: &'a mut AccountView,
@@ -610,6 +826,7 @@ fn next_manifest_accumulator(previous: &[u8; 32], bundle: &BundleStateZc) -> [u8
 		&quantity,
 		&asset_count,
 		&bundle.mints,
+		&bundle.commitments,
 		&bundle.amounts,
 		&bundle.kinds,
 		&bundle.decimals,
@@ -914,7 +1131,14 @@ fn record_prize(
 	decimals: u8,
 ) -> Result<u64, ProgramError> {
 	let index = usize::from(bundle.funded_assets);
-	if index >= usize::from(bundle.asset_count) || amount == 0 {
+	if index >= usize::from(bundle.asset_count)
+		|| amount == 0
+		|| bundle.kinds[index] != 0
+		|| mint_at(bundle, index)? != Address::default()
+		|| bundle.commitments[index * 32..(index + 1) * 32] != [0; 32]
+		|| read_slot(&bundle.amounts, index)? != 0
+		|| bundle.decimals[index] != 0
+	{
 		return Err(lootbox_error(LootboxError::InvalidPrize));
 	}
 
@@ -937,6 +1161,31 @@ fn record_prize(
 		.ok_or(ProgramError::ArithmeticOverflow)?;
 
 	Ok(deposit)
+}
+
+fn has_released_assets(bundle: &BundleStateZc) -> Result<bool, ProgramError> {
+	for index in 0..usize::from(bundle.funded_assets) {
+		if read_slot(&bundle.claimed, index)? != 0 {
+			return Ok(true);
+		}
+	}
+
+	Ok(false)
+}
+
+fn has_reserved_slot(bundle: &BundleStateZc) -> Result<bool, ProgramError> {
+	let funded = usize::from(bundle.funded_assets);
+	if funded < usize::from(bundle.asset_count)
+		&& (bundle.kinds[funded] != 0
+			|| mint_at(bundle, funded)? != Address::default()
+			|| bundle.commitments[funded * 32..(funded + 1) * 32] != [0; 32]
+			|| read_slot(&bundle.amounts, funded)? != 0
+			|| bundle.decimals[funded] != 0)
+	{
+		return Ok(true);
+	}
+
+	Ok(false)
 }
 
 impl<'a> ProcessAccountInfos<'a> for FundSolPrizeAccounts<'a> {
@@ -1427,6 +1676,7 @@ impl<'a> ProcessAccountInfos<'a> for ActivateBundleAccounts<'a> {
 		if bundle.status != BUNDLE_FUNDING
 			|| bundle.funded_assets != bundle.asset_count
 			|| bundle.reclaimed_mask != 0
+			|| has_released_assets(&bundle)?
 			|| bundle.index.get() != state.bundle_count.get()
 		{
 			return Err(lootbox_error(LootboxError::IncompleteConfiguration));
@@ -1513,6 +1763,8 @@ impl<'a> ProcessAccountInfos<'a> for CancelBundleAccounts<'a> {
 		if bundle.status != BUNDLE_FUNDING
 			|| bundle.index.get() != state.bundle_count.get()
 			|| bundle.reclaimed_mask != reclaimed
+			|| has_reserved_slot(&bundle)?
+			|| (0..usize::from(bundle.funded_assets)).any(|index| bundle.kinds[index] == PRIZE_POOL)
 		{
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}

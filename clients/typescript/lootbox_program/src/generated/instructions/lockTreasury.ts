@@ -7,7 +7,7 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
+import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
@@ -20,7 +20,7 @@ export const LOCK_TREASURY_DISCRIMINATOR2 = 0;
 export function getLockTreasuryDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(LOCK_TREASURY_DISCRIMINATOR2); }
 
 export type LockTreasuryInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountServiceVault extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountBoxTokenProgram extends string | AccountMeta<string> = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
-Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableAccount<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? WritableAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? ReadonlyAccount<TAccountBundle> : TAccountBundle, TAccountServiceVault extends string ? WritableAccount<TAccountServiceVault> : TAccountServiceVault, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, ...TRemainingAccounts]>;
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? WritableAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? ReadonlyAccount<TAccountBundle> : TAccountBundle, TAccountServiceVault extends string ? WritableAccount<TAccountServiceVault> : TAccountServiceVault, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, ...TRemainingAccounts]>;
 
 export type LockTreasuryInstructionData = { discriminator: number; migrationVersion: number; serviceVaultBump: number;  };
 
@@ -39,7 +39,7 @@ export function getLockTreasuryInstructionDataCodec(): FixedSizeCodec<LockTreasu
 }
 
 export type LockTreasuryInput<TAccountAuthority extends string = string, TAccountTemplate extends string = string, TAccountBoxMint extends string = string, TAccountBundle extends string = string, TAccountServiceVault extends string = string, TAccountSystemProgram extends string = string, TAccountBoxTokenProgram extends string = string> =  {
-  authority: Address<TAccountAuthority>;
+  authority: TransactionSigner<TAccountAuthority>;
 template: Address<TAccountTemplate>;
 boxMint: Address<TAccountBoxMint>;
 /** The first unused bundle PDA proves that no funded tail was omitted. */

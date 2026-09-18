@@ -1,33 +1,62 @@
 import {
+	BUBBLEGUM_PROGRAM,
+	bundleAssets,
 	type ChainTemplate,
 	type ClientProgress,
 	createTemplatePlan,
 	encodeTemplateText,
+	fetchMaybePrizePoolItemState,
 	fetchMaybeTemplateState,
+	fetchPrizePoolState,
 	getTemplateOpeningStateDecoder,
 	LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
 	LootboxClient,
+	MAX_PRIZE_POOL_ITEMS,
 	MAX_TEMPLATE_BUNDLES,
 	type OracleAccounts,
 	type PrizeAsset,
 	type PrizeBundleInput,
+	type PrizePoolItem,
 } from "@pina-rs/lootbox";
 import {
+	AccountRole,
 	address,
 	createKeyPairSignerFromPrivateKeyBytes,
+	getAddressEncoder,
+	getBase58Encoder,
 	getBase64Encoder,
+	getProgramDerivedAddress,
+	getU32Encoder,
+	getU64Encoder,
+	type Instruction,
 	type TransactionSigner,
 } from "@solana/kit";
 
 const CONTROL = "http://127.0.0.1:8898";
 const ORACLE = "Aio4gaXjXzJNVLtzwtNVmSqGKpANtXhybbkhtAC94ji2";
 const U64_MAX = (1n << 64n) - 1n;
+export const LOCAL_PRIZE_POOL_MAX = 12;
 const MAX_ASSETS = 4;
 
 export type AssetSource = "native" | "sandbox" | "jupiter" | "das" | "manual";
+export type DraftPrizePoolItem = Readonly<{
+	asset: string;
+	name: string;
+	image?: string;
+	tree: string;
+	treeConfig: string;
+	root: string;
+	dataHash: string;
+	creatorHash: string;
+	nonce: string;
+	leafIndex: number;
+	proof: readonly string[];
+	/** Base64 canonical Bubblegum V1 `MetadataArgs` Borsh bytes. */
+	metadata: string;
+}>;
 export type DraftAsset = {
 	id: string;
-	kind: "sol" | "token" | "nft";
+	kind: "sol" | "token" | "nft" | "prizePool";
 	label: string;
 	amount: string;
 	source: AssetSource;
@@ -36,6 +65,7 @@ export type DraftAsset = {
 	icon?: string;
 	tokenProgram?: string;
 	standard?: string;
+	poolItems?: readonly DraftPrizePoolItem[];
 };
 export type PrizeRow = {
 	label: string;
@@ -86,6 +116,13 @@ export type NftSearchResult = Readonly<{
 	image?: string;
 	standard: string;
 	compressed: boolean;
+	mutable: boolean;
+	delegated: boolean;
+	tree?: string;
+	leafIndex?: number;
+	dataHash?: string;
+	creatorHash?: string;
+	owner?: string;
 }>;
 export type AssetSearchResponse<T> = Readonly<{
 	items: readonly T[];
@@ -302,7 +339,81 @@ export async function searchNfts(
 			...(image ? { image } : {}),
 			standard: string(item.standard),
 			compressed: item.compressed === true,
+			mutable: item.mutable === true,
+			delegated: item.delegated !== false,
+			...(optionalString(item.tree) ? { tree: string(item.tree) } : {}),
+			...(Number.isSafeInteger(item.leafIndex)
+				? { leafIndex: integer(item.leafIndex) }
+				: {}),
+			...(optionalString(item.dataHash)
+				? { dataHash: string(item.dataHash) }
+				: {}),
+			...(optionalString(item.creatorHash)
+				? { creatorHash: string(item.creatorHash) }
+				: {}),
+			...(optionalString(item.owner) ? { owner: string(item.owner) } : {}),
 		});
+	});
+}
+
+export function prizePoolEligible(
+	item: NftSearchResult,
+	owner: string,
+): item is
+	& NftSearchResult
+	& Readonly<{
+		tree: string;
+		leafIndex: number;
+		dataHash: string;
+		creatorHash: string;
+		owner: string;
+	}> {
+	return item.standard === "V1_NFT" && item.compressed && !item.mutable &&
+		!item.delegated &&
+		item.owner === owner &&
+		item.tree !== undefined && item.leafIndex !== undefined &&
+		item.dataHash !== undefined && item.creatorHash !== undefined;
+}
+
+export async function loadPrizePoolItem(
+	item: NftSearchResult,
+	owner: string,
+): Promise<DraftPrizePoolItem> {
+	if (!prizePoolEligible(item, owner)) {
+		throw new Error(
+			"PrizePool items must be immutable, undelegated compressed NFTs owned by this wallet",
+		);
+	}
+	const raw = await control(
+		`/assets/nft-proof?id=${encodeURIComponent(item.id)}`,
+	);
+	if (
+		string(raw.asset) !== item.id || string(raw.tree) !== item.tree ||
+		string(raw.owner) !== owner || raw.delegated !== false ||
+		!optionalString(raw.treeConfig) || !optionalString(raw.metadata) ||
+		integer(raw.leafIndex, -1) !== item.leafIndex ||
+		string(raw.dataHash) !== item.dataHash ||
+		string(raw.creatorHash) !== item.creatorHash ||
+		!Array.isArray(raw.proof) ||
+		!raw.proof.every((node) => typeof node === "string")
+	) throw new Error("DAS proof changed the selected compressed NFT identity");
+	const metadata = getBase64Encoder().encode(string(raw.metadata));
+	if (metadata.length === 0 || metadata.length > 512) {
+		throw new Error("DAS returned an invalid Bubblegum metadata preimage");
+	}
+	return Object.freeze({
+		asset: item.id,
+		name: item.name,
+		...(item.image ? { image: item.image } : {}),
+		tree: item.tree,
+		treeConfig: string(raw.treeConfig),
+		root: string(raw.root),
+		dataHash: item.dataHash,
+		creatorHash: item.creatorHash,
+		nonce: string(raw.nonce),
+		leafIndex: item.leafIndex,
+		proof: Object.freeze(raw.proof as string[]),
+		metadata: string(raw.metadata),
 	});
 }
 
@@ -347,6 +458,18 @@ export function makeAsset(kind: DraftAsset["kind"] = "sol"): DraftAsset {
 			decimals: 0,
 		};
 	}
+	if (kind === "prizePool") {
+		return {
+			id: id(),
+			kind,
+			label: "PrizePool",
+			amount: "1",
+			source: "das",
+			decimals: 0,
+			standard: "Compressed NFT pool",
+			poolItems: [],
+		};
+	}
 	return {
 		id: id(),
 		kind,
@@ -386,7 +509,12 @@ export const initialInput: CreatorInput = {
 	],
 };
 
-export function creatorErrors(input: CreatorInput): Record<string, string> {
+type CreatorValidationOptions = Readonly<{ allowExpiredReveal?: boolean }>;
+
+export function creatorErrors(
+	input: CreatorInput,
+	options: CreatorValidationOptions = {},
+): Record<string, string> {
 	const errors: Record<string, string> = {};
 	const check = (field: string, action: () => void) => {
 		try {
@@ -415,7 +543,7 @@ export function creatorErrors(input: CreatorInput): Record<string, string> {
 	const revealTime = Date.parse(input.opensAt);
 	if (!input.opensAt || !Number.isFinite(revealTime)) {
 		errors.opensAt = "Choose a valid future reveal date and time";
-	} else if (revealTime <= Date.now() + 60_000) {
+	} else if (!options.allowExpiredReveal && revealTime <= Date.now() + 60_000) {
 		errors.opensAt = "Reveal must be at least one minute in the future";
 	}
 	check("settlementBountySol", () => {
@@ -449,6 +577,9 @@ export function creatorErrors(input: CreatorInput): Record<string, string> {
 		if (row.assets.length < 1 || row.assets.length > MAX_ASSETS) {
 			errors[`${key}-assets`] = `A bundle needs one to ${MAX_ASSETS} assets`;
 		}
+		if (row.assets.filter((asset) => asset.kind === "prizePool").length > 1) {
+			errors[`${key}-assets`] = "A bundle can contain only one PrizePool";
+		}
 		const hasUnique = row.assets.some((asset) => asset.kind === "nft");
 		if (hasUnique && row.quantity !== "1") {
 			errors[`${key}-quantity`] =
@@ -457,7 +588,7 @@ export function creatorErrors(input: CreatorInput): Record<string, string> {
 		for (const [assetIndex, asset] of row.assets.entries()) {
 			const assetKey = `${key}-asset-${assetIndex}`;
 			check(`${assetKey}-amount`, () => {
-				const amount = asset.kind === "nft"
+				const amount = asset.kind === "nft" || asset.kind === "prizePool"
 					? 1n
 					: parseUnits(asset.amount, asset.decimals);
 				if (amount === 0n) throw new Error("Enter an amount greater than zero");
@@ -473,6 +604,18 @@ export function creatorErrors(input: CreatorInput): Record<string, string> {
 			if (asset.source === "manual" && asset.kind !== "sol" && !asset.mint) {
 				errors[`${assetKey}-mint`] = "Enter the asset mint address";
 			}
+			if (asset.kind === "prizePool") {
+				const items = asset.poolItems ?? [];
+				if (
+					items.length < 1 || items.length > LOCAL_PRIZE_POOL_MAX ||
+					BigInt(items.length) !== quantity || !asset.mint ||
+					items.some((item) => item.tree !== asset.mint) ||
+					new Set(items.map((item) => item.asset)).size !== items.length
+				) {
+					errors[`${assetKey}-mint`] =
+						`PrizePool copies must exactly match 1–${LOCAL_PRIZE_POOL_MAX} distinct immutable NFTs from one tree`;
+				}
+			}
 		}
 	}
 	if (totalSol > U64_MAX) {
@@ -480,13 +623,19 @@ export function creatorErrors(input: CreatorInput): Record<string, string> {
 	}
 	return errors;
 }
-export function validateInput(input: CreatorInput) {
-	const error = Object.values(creatorErrors(input))[0];
+export function validateInput(
+	input: CreatorInput,
+	options: CreatorValidationOptions = {},
+) {
+	const error = Object.values(creatorErrors(input, options))[0];
 	if (error) throw new Error(error);
 }
-export function previewInput(input: CreatorInput) {
+export function previewInput(
+	input: CreatorInput,
+	options: CreatorValidationOptions = {},
+) {
 	try {
-		validateInput(input);
+		validateInput(input, options);
 		let sol = 0n;
 		let tokenAssets = 0;
 		let nfts = 0;
@@ -498,6 +647,7 @@ export function previewInput(input: CreatorInput) {
 				if (asset.kind === "sol") sol += parseUnits(asset.amount, 9) * quantity;
 				if (asset.kind === "token") tokenAssets += 1;
 				if (asset.kind === "nft") nfts += 1;
+				if (asset.kind === "prizePool") nfts += asset.poolItems?.length ?? 0;
 			}
 			return quantity;
 		});
@@ -539,16 +689,20 @@ export function savedDraftInfo(
 	if (!raw) return null;
 	try {
 		const draft = parseDraft(raw);
-		validateInput(draft.input);
+		validateInput(draft.input, { allowExpiredReveal: true });
 		return {
 			input: draft.input,
 			mode: draft.mode,
 			...(draft.template ? { template: draft.template } : {}),
 		};
 	} catch {
-		localStorage.removeItem(draftKey(sandbox));
+		// Never destroy saved signer seeds or inventory merely because a newer
+		// client cannot interpret the draft. Recovery may still require them.
 		return null;
 	}
+}
+export function hasSavedDraft(sandbox: Playground): boolean {
+	return localStorage.getItem(draftKey(sandbox)) !== null;
 }
 export function savedInput(sandbox: Playground): CreatorInput | null {
 	return savedDraftInfo(sandbox)?.input ?? null;
@@ -599,6 +753,135 @@ function loadDraft(
 	localStorage.setItem(draftKey(sandbox), JSON.stringify(draft));
 	return draft;
 }
+
+const MOCK_TREE_MAGIC = new TextEncoder().encode("LBGMTRE1");
+const MOCK_TREE_INITIALIZE = new TextEncoder().encode("LBGMINT1");
+const SYSTEM_PROGRAM = address("11111111111111111111111111111111");
+const addressBytes = getAddressEncoder();
+const prizePoolMetadataKey = (asset: string) =>
+	`lootbox:prize-pool-metadata:${asset}`;
+
+function decodeHash(value: string, label: string): Uint8Array {
+	const bytes = getBase58Encoder().encode(value);
+	if (bytes.length !== 32) throw new Error(`${label} must decode to 32 bytes`);
+	return Uint8Array.from(bytes);
+}
+
+async function mockTreeRoot(
+	client: LootboxClient,
+	tree: string,
+): Promise<Uint8Array> {
+	const account = await client.rpc.getAccountInfo(address(tree), {
+		commitment: "processed",
+		encoding: "base64",
+	}).send();
+	if (!account.value || account.value.owner !== BUBBLEGUM_PROGRAM) {
+		throw new Error("local PrizePool tree is missing or has the wrong owner");
+	}
+	const bytes = getBase64Encoder().encode(account.value.data[0]);
+	if (
+		bytes.length < 44 ||
+		!MOCK_TREE_MAGIC.every((byte, index) => bytes[index] === byte)
+	) throw new Error("local PrizePool tree has invalid fixture data");
+	return bytes.slice(8, 40);
+}
+
+async function materializePrizePool(
+	client: LootboxClient,
+	tree: TransactionSigner,
+	items: readonly DraftPrizePoolItem[],
+	materialize: boolean,
+): Promise<readonly PrizePoolItem[]> {
+	const existing = await client.rpc.getAccountInfo(tree.address, {
+		commitment: "processed",
+		encoding: "base64",
+	}).send();
+	if (!existing.value && materialize) {
+		if (items.length > LOCAL_PRIZE_POOL_MAX) {
+			throw new Error(
+				"The local Bubblegum fixture supports 12 items per demo pool so its initialization fits one Solana transaction; the production protocol supports 4,096",
+			);
+		}
+		const data = new Uint8Array(12 + items.length * 76);
+		data.set(MOCK_TREE_INITIALIZE);
+		data.set(getU32Encoder().encode(items.length), 8);
+		for (const [index, item] of items.entries()) {
+			const offset = 12 + index * 76;
+			data.set(decodeHash(item.dataHash, "data hash"), offset);
+			data.set(decodeHash(item.creatorHash, "creator hash"), offset + 32);
+			data.set(getU64Encoder().encode(BigInt(item.nonce)), offset + 64);
+			data.set(getU32Encoder().encode(item.leafIndex), offset + 72);
+		}
+		const initialize: Instruction = Object.freeze({
+			programAddress: BUBBLEGUM_PROGRAM,
+			accounts: Object.freeze([{
+				address: client.payer.address,
+				role: AccountRole.WRITABLE_SIGNER,
+				signer: client.payer,
+			}, {
+				address: tree.address,
+				role: AccountRole.WRITABLE_SIGNER,
+				signer: tree,
+			}, {
+				address: SYSTEM_PROGRAM,
+				role: AccountRole.READONLY,
+			}]),
+			data,
+		});
+		await client.send(
+			[initialize],
+			`Mirror ${items.length} cNFTs into local tree`,
+		);
+	}
+	const root = existing.value || materialize
+		? await mockTreeRoot(client, tree.address)
+		: new Uint8Array(32);
+	return Promise.all(items.map(async (item) => {
+		const nonce = BigInt(item.nonce);
+		const asset = (await getProgramDerivedAddress({
+			programAddress: BUBBLEGUM_PROGRAM,
+			seeds: [
+				new TextEncoder().encode("asset"),
+				addressBytes.encode(tree.address),
+				getU64Encoder().encode(nonce),
+			],
+		}))[0];
+		if (materialize) {
+			localStorage.setItem(prizePoolMetadataKey(asset), item.metadata);
+		}
+		return Object.freeze({
+			asset,
+			name: item.name,
+			...(item.image ? { image: item.image } : {}),
+			metadataMutable: false,
+			metadata: Uint8Array.from(getBase64Encoder().encode(item.metadata)),
+			proof: Object.freeze({
+				root,
+				dataHash: decodeHash(item.dataHash, "data hash"),
+				creatorHash: decodeHash(item.creatorHash, "creator hash"),
+				nonce,
+				leafIndex: item.leafIndex,
+				tree: tree.address,
+				treeConfig: materialize ? tree.address : address(item.treeConfig),
+				proof: Object.freeze([]),
+			}),
+		});
+	}));
+}
+
+const mockProofResolver = (client: LootboxClient) =>
+async (
+	item: PrizePoolItem,
+): Promise<Pick<PrizePoolItem, "asset" | "metadata" | "proof">> =>
+	Object.freeze({
+		asset: item.asset,
+		metadata: item.metadata,
+		proof: Object.freeze({
+			...item.proof,
+			root: await mockTreeRoot(client, item.proof.tree),
+		}),
+	});
+
 async function localBundles(
 	sandbox: Playground,
 	draft: Draft,
@@ -622,6 +905,20 @@ async function localBundles(
 			}
 			const reward = rewards[rowIndex]?.[assetIndex];
 			if (!reward) throw new Error("Missing saved reward signer");
+			if (asset.kind === "prizePool") {
+				const items = asset.poolItems ?? [];
+				assets.push({
+					kind: "prizePool",
+					tree: reward.address,
+					items: await materializePrizePool(
+						client,
+						reward,
+						items,
+						materialize,
+					),
+				});
+				continue;
+			}
 			const amount = asset.kind === "nft"
 				? 1n
 				: parseUnits(asset.amount, asset.decimals);
@@ -682,6 +979,7 @@ export async function createDrop(
 		await signer(draft.mint),
 		address(ORACLE),
 		sandbox.config.oracle.queue,
+		{ resolvePrizePoolProof: mockProofResolver(sandbox.client("creator")) },
 	);
 	localStorage.removeItem(draftKey(sandbox));
 	return template;
@@ -708,6 +1006,7 @@ export async function appendDrop(
 		template,
 		bundles,
 		draft.startBundleCount,
+		{ resolvePrizePoolProof: mockProofResolver(sandbox.client("creator")) },
 	);
 	localStorage.removeItem(draftKey(sandbox));
 	return updated;
@@ -730,6 +1029,16 @@ export async function cancelSavedDraft(
 	const raw = localStorage.getItem(draftKey(sandbox));
 	if (!raw) throw new Error("There is no saved funding draft to cancel");
 	const draft = parseDraft(raw);
+	if (
+		draft.mode === "append" &&
+		(draft.startBundleCount === undefined ||
+			!Number.isInteger(draft.startBundleCount) ||
+			draft.startBundleCount < 0)
+	) {
+		throw new Error(
+			"Saved treasury addition is missing its append position; keep the draft for manual recovery",
+		);
+	}
 	const client = sandbox.client("creator", progress);
 	const templateAddress = draft.mode === "append"
 		? address(draft.template ?? "")
@@ -746,13 +1055,20 @@ export async function cancelSavedDraft(
 	}
 
 	let current: ChainTemplate = account;
-	const base = draft.mode === "append" ? draft.startBundleCount ?? 0 : 0;
+	const base = draft.mode === "append" ? draft.startBundleCount! : 0;
 	const offset = current.data.bundleCount - base;
 	const bundles = await localBundles(sandbox, draft, progress, false);
+	if (offset < 0 || offset > bundles.length) {
+		throw new Error(
+			"Saved funding position does not match the on-chain append history; draft retained",
+		);
+	}
 	const stagedAssets = bundles[offset]?.assets;
 	if (stagedAssets) {
 		try {
-			current = await client.cancelFundingBundle(current, stagedAssets);
+			current = await client.cancelFundingBundle(current, stagedAssets, {
+				resolvePrizePoolProof: mockProofResolver(client),
+			});
 		} catch (error) {
 			if (
 				!(error instanceof Error) ||
@@ -792,50 +1108,169 @@ export async function settleOpenings(
 	const pending = openings.filter((opening) =>
 		opening.data.template === template.address && opening.data.status < 2
 	).sort((a, b) => a.data.sequence < b.data.sequence ? -1 : 1);
-	for (const opening of pending) {
-		if (opening.data.status === 0) {
-			const proof = await control(
-				`/proof?randomness=${opening.data.randomness}`,
-			);
-			const bytes = (value: unknown, length: number) => {
-				if (
-					!Array.isArray(value) || value.length !== length ||
-					!value.every((byte: unknown) =>
-						typeof byte === "number" && Number.isInteger(byte) && byte >= 0 &&
-						byte <= 255
-					)
-				) throw new Error("Invalid oracle proof");
-				return Uint8Array.from(value);
+	for (const snapshot of pending) {
+		const readCurrent = async () => {
+			const account = await client.rpc.getAccountInfo(snapshot.address, {
+				commitment: "processed",
+				encoding: "base64",
+			}).send();
+			if (
+				!account.value ||
+				account.value.owner !== LOOTBOX_PROGRAM_PROGRAM_ADDRESS
+			) return null;
+			return {
+				address: snapshot.address,
+				data: getTemplateOpeningStateDecoder().decode(
+					getBase64Encoder().encode(account.value.data[0]),
+				),
 			};
-			if (proof.testOnly !== true || typeof proof.recoveryId !== "number") {
-				throw new Error("Expected an emulator proof");
+		};
+		let opening = await readCurrent();
+		if (!opening || opening.data.status >= 2) continue;
+		try {
+			if (opening.data.status === 0) {
+				const proof = await control(
+					`/proof?randomness=${opening.data.randomness}`,
+				);
+				const bytes = (value: unknown, length: number) => {
+					if (
+						!Array.isArray(value) || value.length !== length ||
+						!value.every((byte: unknown) =>
+							typeof byte === "number" && Number.isInteger(byte) && byte >= 0 &&
+							byte <= 255
+						)
+					) throw new Error("Invalid oracle proof");
+					return Uint8Array.from(value);
+				};
+				if (proof.testOnly !== true || typeof proof.recoveryId !== "number") {
+					throw new Error("Expected an emulator proof");
+				}
+				await client.settle(
+					await client.template(template.address),
+					opening,
+					sandbox.config.oracle,
+					{
+						signature: bytes(proof.signature, 64),
+						recoveryId: proof.recoveryId,
+						value: bytes(proof.value, 32),
+					},
+				);
+			} else {
+				await client.allocate(await client.template(template.address), opening);
 			}
-			await client.settle(
-				await client.template(template.address),
-				opening,
-				sandbox.config.oracle,
-				{
-					signature: bytes(proof.signature, 64),
-					recoveryId: proof.recoveryId,
-					value: bytes(proof.value, 32),
-				},
-			);
-			continue;
+		} catch (reason) {
+			// Settlement is permissionless. A competing relayer winning this race is
+			// progress, not an action failure. Preserve genuine proof/adapter errors.
+			opening = await readCurrent();
+			const currentTemplate = await client.template(template.address);
+			if (
+				!opening || opening.data.status >= 2 ||
+				currentTemplate.data.nextAllocation > snapshot.data.sequence
+			) continue;
+			if (opening.data.status === 1) {
+				try {
+					await client.allocate(currentTemplate, opening);
+					continue;
+				} catch (allocationReason) {
+					opening = await readCurrent();
+					const reconciledTemplate = await client.template(template.address);
+					if (
+						!opening || opening.data.status >= 2 ||
+						reconciledTemplate.data.nextAllocation > snapshot.data.sequence
+					) continue;
+					throw allocationReason;
+				}
+			}
+			throw reason;
 		}
-		const current = await client.rpc.getAccountInfo(opening.address, {
-			commitment: "processed",
-			encoding: "base64",
-		}).send();
-		if (
-			!current.value || current.value.owner !== LOOTBOX_PROGRAM_PROGRAM_ADDRESS
-		) {
-			throw new Error("Opening account missing");
-		}
-		await client.allocate(await client.template(template.address), {
-			address: opening.address,
-			data: getTemplateOpeningStateDecoder().decode(
-				getBase64Encoder().encode(current.value.data[0]),
-			),
-		});
 	}
+}
+
+/** Deliver an allocated playground prize, resolving the entropy-selected
+ * PrizePool item from on-chain state and refreshing its mutable Merkle root.
+ */
+export async function claimOpening(
+	sandbox: Playground,
+	openingAddress: string,
+	progress: ClientProgress,
+): Promise<void> {
+	const client = sandbox.client("recipient", progress);
+	const account = await client.rpc.getAccountInfo(address(openingAddress), {
+		commitment: "processed",
+		encoding: "base64",
+	}).send();
+	if (
+		!account.value || account.value.owner !== LOOTBOX_PROGRAM_PROGRAM_ADDRESS
+	) {
+		throw new Error("Opening account missing");
+	}
+	const opening = getTemplateOpeningStateDecoder().decode(
+		getBase64Encoder().encode(account.value.data[0]),
+	);
+	if (opening.status === 3) return;
+	const [bundleAddress] = await client.bundleAddress(
+		opening.template,
+		opening.selectedBundle,
+	);
+	const bundle = await client.bundles({
+		address: opening.template,
+		data: (await client.template(opening.template)).data,
+	});
+	const selectedBundle = bundle.find(({ address: candidate }) =>
+		candidate === bundleAddress
+	);
+	const poolAsset = selectedBundle
+		? bundleAssets(selectedBundle.data).find((asset) =>
+			asset.kind === "prizePool"
+		)
+		: undefined;
+	if (!poolAsset) {
+		await client.claim(address(openingAddress));
+		return;
+	}
+	if (
+		!opening.hasPoolAssignment || opening.selectedPoolAsset !== poolAsset.index
+	) {
+		throw new Error("Opening has an invalid PrizePool assignment");
+	}
+	if ((opening.claimedMask & (1 << poolAsset.index)) !== 0) {
+		await client.claim(address(openingAddress));
+		return;
+	}
+	const pool = await fetchPrizePoolState(client.rpc, poolAsset.mint, {
+		commitment: "processed",
+	});
+	const [itemAddress] = await client.prizePoolItemAddress(
+		poolAsset.mint,
+		opening.selectedPoolItem,
+	);
+	const item = await fetchMaybePrizePoolItemState(client.rpc, itemAddress, {
+		commitment: "processed",
+	});
+	if (!item.exists) {
+		await client.claim(address(openingAddress));
+		return;
+	}
+	const metadata = localStorage.getItem(prizePoolMetadataKey(item.data.asset));
+	if (!metadata) {
+		throw new Error(
+			"The local PrizePool metadata cache is missing; recover it from DAS before claiming",
+		);
+	}
+	await client.claim(address(openingAddress), {
+		prizePoolItem: {
+			asset: item.data.asset,
+			metadata: Uint8Array.from(getBase64Encoder().encode(metadata)),
+			proof: {
+				root: await mockTreeRoot(client, pool.data.tree),
+				dataHash: item.data.dataHash,
+				creatorHash: item.data.creatorHash,
+				nonce: item.data.nonce,
+				leafIndex: item.data.treeIndex,
+				tree: pool.data.tree,
+				treeConfig: pool.data.tree,
+				proof: [],
+			},
+		},
+	});
 }

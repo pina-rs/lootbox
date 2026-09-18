@@ -1,24 +1,41 @@
 import {
+	MAX_BUBBLEGUM_PROOF_ACCOUNTS,
+	withBubblegumProofAccounts,
+} from "@pina-rs/lootbox-program-client";
+import {
+	type AccountMeta,
 	AccountRole,
+	type Address,
 	address,
 	createNoopSigner,
 	getAddressDecoder,
 	getAddressEncoder,
+	getProgramDerivedAddress,
+	getU64Encoder,
 	type Instruction,
+	type InstructionWithAccounts,
 } from "@solana/kit";
 import { describe, expect, it } from "vitest";
 import {
 	assertFundedPrizeMatches,
+	boundedRejectionTarget,
+	BUBBLEGUM_PROGRAM,
 	bundleAssets,
 	composeWinnerRoutedSolQuoteClaim,
 	composeWinnerRoutedTokenQuoteClaim,
 	partitionPrizeDeliveryInstructions,
+	prizePoolCommitment,
+	prizePoolManifestAccumulator,
 	readU64,
+	validateCompressedNftIdentity,
 } from "./client.js";
 
 const payer = address("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
 
-function instructionWithAccounts(offset: number, count: number): Instruction {
+function instructionWithAccounts(
+	offset: number,
+	count: number,
+): Instruction & InstructionWithAccounts<readonly AccountMeta[]> {
 	return Object.freeze({
 		programAddress: address("11111111111111111111111111111111"),
 		accounts: Object.freeze(Array.from({ length: count }, (_, index) => {
@@ -34,6 +51,64 @@ function instructionWithAccounts(offset: number, count: number): Instruction {
 }
 
 describe("chain prize decoding", () => {
+	it("rejects noncanonical and oversized compressed-NFT witnesses", async () => {
+		const tree = address("7RmhTYBS7Uv9PSNmJGX6tM8BjSn7HVbGdVgV6EtCNKLm");
+		const proof = {
+			tree,
+			treeConfig: payer,
+			root: new Uint8Array(32),
+			dataHash: new Uint8Array(32),
+			creatorHash: new Uint8Array(32),
+			nonce: 7n,
+			leafIndex: 7,
+			proof: [] as readonly Address[],
+		};
+		const [asset] = await getProgramDerivedAddress({
+			programAddress: BUBBLEGUM_PROGRAM,
+			seeds: [
+				new TextEncoder().encode("asset"),
+				getAddressEncoder().encode(tree),
+				getU64Encoder().encode(7n),
+			],
+		});
+		await expect(validateCompressedNftIdentity(asset, proof)).resolves
+			.toBeUndefined();
+		await expect(validateCompressedNftIdentity(payer, proof)).rejects.toThrow(
+			/does not match/,
+		);
+		await expect(validateCompressedNftIdentity(asset, {
+			...proof,
+			proof: Array(17).fill(payer),
+		})).rejects.toThrow(/protocol limit/);
+	});
+
+	it("expands generated Bubblegum proof placeholders and enforces the cap", () => {
+		const base = instructionWithAccounts(0, 2);
+		const empty = withBubblegumProofAccounts(base, []);
+		expect(empty.accounts).toHaveLength(1);
+		const proof = [
+			address("11111111111111111111111111111111"),
+			payer,
+		] as const;
+		const expanded = withBubblegumProofAccounts(base, proof);
+		expect(expanded.accounts.slice(1).map(({ address }) => address)).toEqual(
+			proof,
+		);
+		expect(() =>
+			withBubblegumProofAccounts(
+				base,
+				Array(MAX_BUBBLEGUM_PROOF_ACCOUNTS + 1).fill(payer),
+			)
+		).toThrow(/at most 16/);
+	});
+
+	it("fails closed when all eight unbiased sampler candidates are rejected", () => {
+		const total = 0xffff_ffffn;
+		expect(() => boundedRejectionTarget(Array(8).fill(0n), total)).toThrow(
+			/entropy rejection exhausted/,
+		);
+		expect(boundedRejectionTarget([0n, 1n], total)).toBe(1n);
+	});
 	it("keeps each prize atomic while splitting oversized bundle delivery", () => {
 		const first = [
 			instructionWithAccounts(0, 10),
@@ -82,8 +157,8 @@ describe("chain prize decoding", () => {
 	});
 	it("decodes dynamic kinds and rejects unknown prize tags", () => {
 		const dynamic = bundleAssets({
-			assetCount: 3,
-			kinds: new Uint8Array([7, 8, 9]),
+			assetCount: 4,
+			kinds: new Uint8Array([7, 8, 9, 10]),
 			mints: new Uint8Array(128),
 			amounts: new Uint8Array(32),
 			decimals: new Uint8Array(4),
@@ -92,11 +167,12 @@ describe("chain prize decoding", () => {
 			"quoteSol",
 			"quoteToken",
 			"mintBadge",
+			"prizePool",
 		]);
 		expect(() =>
 			bundleAssets({
 				assetCount: 1,
-				kinds: new Uint8Array([10]),
+				kinds: new Uint8Array([11]),
 				mints: new Uint8Array(128),
 				amounts: new Uint8Array(32),
 				decimals: new Uint8Array(4),
@@ -152,6 +228,52 @@ describe("chain prize decoding", () => {
 		const bytes = new Uint8Array(8).fill(255);
 		expect(readU64(bytes, 0)).toBe((1n << 64n) - 1n);
 		expect(() => readU64(bytes, 1)).toThrow();
+	});
+	it("commits to PrizePool order and sealed version", async () => {
+		const tree = payer;
+		const second = address("7RmhTYBS7Uv9PSNmJGX6tM8BjSn7HVbGdVgV6EtCNKLm");
+		const item = (asset: Address, nonce: bigint) => ({
+			asset,
+			metadataMutable: false,
+			metadata: new Uint8Array([1]),
+			proof: {
+				root: new Uint8Array(32),
+				dataHash: new Uint8Array(32).fill(Number(nonce) + 1),
+				creatorHash: new Uint8Array(32).fill(Number(nonce) + 2),
+				nonce,
+				leafIndex: Number(nonce),
+				tree,
+				treeConfig: tree,
+				proof: [] as const,
+			},
+		});
+		const ordered = await prizePoolManifestAccumulator(
+			payer,
+			[item(payer, 0n), item(second, 1n)],
+		);
+		const reversed = await prizePoolManifestAccumulator(
+			payer,
+			[item(second, 1n), item(payer, 0n)],
+		);
+		expect(ordered).not.toEqual(reversed);
+		const commitment = await prizePoolCommitment({
+			pool: payer,
+			tree,
+			manifestAccumulator: ordered,
+			quantity: 2n,
+			assetIndex: 0,
+			version: 1n,
+		});
+		expect(
+			await prizePoolCommitment({
+				pool: payer,
+				tree,
+				manifestAccumulator: ordered,
+				quantity: 2n,
+				assetIndex: 0,
+				version: 2n,
+			}),
+		).not.toEqual(commitment);
 	});
 	it("rejects a changed asset when append funding resumes", () => {
 		const storedMint = address(

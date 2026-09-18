@@ -31,9 +31,25 @@ pub enum CliError {
 		expected: usize,
 	},
 
+	/// A variable-length byte argument was not valid hexadecimal.
+	#[error("argument `{field}` must be valid even-length hexadecimal: `{value}`")]
+	InvalidHexEncoding { field: &'static str, value: String },
+
+	/// A variable-length byte argument was empty or exceeded its cap.
+	#[error("argument `{field}` must contain 1 to {limit} bytes, got {actual}")]
+	ByteArgumentLength {
+		field: &'static str,
+		limit: usize,
+		actual: usize,
+	},
+
 	/// The declared asset count did not match the remaining accounts.
 	#[error("asset count {declared} does not match the {remaining} remaining accounts")]
 	AssetCountMismatch { declared: usize, remaining: usize },
+
+	/// A Bubblegum proof exceeded the program's bounded remaining-account list.
+	#[error("Bubblegum proofs support at most 32 account nodes, got {actual}")]
+	ProofAccountCount { actual: usize },
 
 	/// A text argument did not fit its fixed-size wire field.
 	#[error("argument `{field}` must be at most {limit} bytes, got {actual}")]

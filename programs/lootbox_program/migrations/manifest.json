@@ -650,7 +650,7 @@
 			"versions": [
 				{
 					"version": 0,
-					"schemaSha256": "a82a2eead578191f70052466b550964538d417293baf090b827c7a5d5fe1747a",
+					"schemaSha256": "beb495647a527666e5988ce06ca09b7164c7b428b248480983b35aeb2b33ec31",
 					"schema": {
 						"layout": "fixed",
 						"fields": [
@@ -668,6 +668,10 @@
 							},
 							{
 								"name": "mints",
+								"rustType": "[u8; 128]"
+							},
+							{
+								"name": "commitments",
 								"rustType": "[u8; 128]"
 							},
 							{
@@ -718,7 +722,7 @@
 						"codec": "pinaPodV2",
 						"physical": {
 							"kind": "fixed",
-							"size": 265,
+							"size": 393,
 							"fields": [
 								{
 									"name": "template",
@@ -741,58 +745,63 @@
 									"size": 128
 								},
 								{
-									"name": "amounts",
+									"name": "commitments",
 									"offset": 176,
+									"size": 128
+								},
+								{
+									"name": "amounts",
+									"offset": 304,
 									"size": 32
 								},
 								{
 									"name": "claimed",
-									"offset": 208,
+									"offset": 336,
 									"size": 32
 								},
 								{
 									"name": "kinds",
-									"offset": 240,
+									"offset": 368,
 									"size": 4
 								},
 								{
 									"name": "decimals",
-									"offset": 244,
+									"offset": 372,
 									"size": 4
 								},
 								{
 									"name": "activated_revision",
-									"offset": 248,
+									"offset": 376,
 									"size": 8
 								},
 								{
 									"name": "index",
-									"offset": 256,
+									"offset": 384,
 									"size": 4
 								},
 								{
 									"name": "asset_count",
-									"offset": 260,
+									"offset": 388,
 									"size": 1
 								},
 								{
 									"name": "funded_assets",
-									"offset": 261,
+									"offset": 389,
 									"size": 1
 								},
 								{
 									"name": "reclaimed_mask",
-									"offset": 262,
+									"offset": 390,
 									"size": 1
 								},
 								{
 									"name": "status",
-									"offset": 263,
+									"offset": 391,
 									"size": 1
 								},
 								{
 									"name": "bump",
-									"offset": 264,
+									"offset": 392,
 									"size": 1
 								}
 							]
@@ -812,7 +821,7 @@
 			"versions": [
 				{
 					"version": 0,
-					"schemaSha256": "8951ab259b1d18a9947a30c71bbe515c41e326696c1833c05718330a7d536801",
+					"schemaSha256": "b402ace776c5bcdb21905856d11b4bf573b952bdb8187252cd171aa65de0e2e4",
 					"schema": {
 						"layout": "fixed",
 						"fields": [
@@ -873,6 +882,18 @@
 								"rustType": "u32"
 							},
 							{
+								"name": "selected_pool_item",
+								"rustType": "u32"
+							},
+							{
+								"name": "selected_pool_asset",
+								"rustType": "u8"
+							},
+							{
+								"name": "has_pool_assignment",
+								"rustType": "bool"
+							},
+							{
 								"name": "claimed_mask",
 								"rustType": "u8"
 							},
@@ -884,7 +905,7 @@
 						"codec": "pinaPodV2",
 						"physical": {
 							"kind": "fixed",
-							"size": 291,
+							"size": 297,
 							"fields": [
 								{
 									"name": "template",
@@ -957,13 +978,28 @@
 									"size": 4
 								},
 								{
-									"name": "claimed_mask",
+									"name": "selected_pool_item",
 									"offset": 289,
+									"size": 4
+								},
+								{
+									"name": "selected_pool_asset",
+									"offset": 293,
+									"size": 1
+								},
+								{
+									"name": "has_pool_assignment",
+									"offset": 294,
+									"size": 1
+								},
+								{
+									"name": "claimed_mask",
+									"offset": 295,
 									"size": 1
 								},
 								{
 									"name": "bump",
-									"offset": 290,
+									"offset": 296,
 									"size": 1
 								}
 							]
@@ -983,7 +1019,7 @@
 			"versions": [
 				{
 					"version": 0,
-					"schemaSha256": "1109ac6adf4e626603a4057569af3115fdaac15bd80758f55a8ce96dcc8e980a",
+					"schemaSha256": "4567f1f83ce9ddd8f72be119ff0f8b8448755ea544eab38334f9ba991e812c24",
 					"schema": {
 						"layout": "fixed",
 						"fields": [
@@ -1028,6 +1064,18 @@
 								"rustType": "u32"
 							},
 							{
+								"name": "selected_pool_item",
+								"rustType": "u32"
+							},
+							{
+								"name": "selected_pool_asset",
+								"rustType": "u8"
+							},
+							{
+								"name": "has_pool_assignment",
+								"rustType": "bool"
+							},
+							{
 								"name": "bump",
 								"rustType": "u8"
 							}
@@ -1035,7 +1083,7 @@
 						"codec": "pinaPodV2",
 						"physical": {
 							"kind": "fixed",
-							"size": 269,
+							"size": 275,
 							"fields": [
 								{
 									"name": "template",
@@ -1088,8 +1136,322 @@
 									"size": 4
 								},
 								{
-									"name": "bump",
+									"name": "selected_pool_item",
 									"offset": 268,
+									"size": 4
+								},
+								{
+									"name": "selected_pool_asset",
+									"offset": 272,
+									"size": 1
+								},
+								{
+									"name": "has_pool_assignment",
+									"offset": 273,
+									"size": 1
+								},
+								{
+									"name": "bump",
+									"offset": 274,
+									"size": 1
+								}
+							]
+						}
+					},
+					"transition": null
+				}
+			]
+		},
+		"account:1:08": {
+			"identity": {
+				"kind": "account",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "08"
+			},
+			"rustName": "PrizePoolState",
+			"versions": [
+				{
+					"version": 0,
+					"schemaSha256": "22b06a1a9d77d40dc4739822b481d05c7954e24a75c6de2614c93dd84a9cdc21",
+					"schema": {
+						"layout": "compact",
+						"fields": [
+							{
+								"name": "authority",
+								"rustType": "Address"
+							},
+							{
+								"name": "bundle",
+								"rustType": "Address"
+							},
+							{
+								"name": "tree",
+								"rustType": "Address"
+							},
+							{
+								"name": "manifest_accumulator",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "quantity",
+								"rustType": "u64"
+							},
+							{
+								"name": "version",
+								"rustType": "u64"
+							},
+							{
+								"name": "deposit_cursor",
+								"rustType": "u32"
+							},
+							{
+								"name": "assigned_count",
+								"rustType": "u32"
+							},
+							{
+								"name": "claimed_count",
+								"rustType": "u32"
+							},
+							{
+								"name": "reclaimed_count",
+								"rustType": "u32"
+							},
+							{
+								"name": "asset_index",
+								"rustType": "u8"
+							},
+							{
+								"name": "status",
+								"rustType": "u8"
+							},
+							{
+								"name": "has_prepared_item",
+								"rustType": "bool"
+							},
+							{
+								"name": "bump",
+								"rustType": "u8"
+							},
+							{
+								"name": "unavailable",
+								"rustType": "Vec<u8, 512>"
+							}
+						],
+						"codec": "pinaPodV2",
+						"physical": {
+							"kind": "compact",
+							"headerSize": 166,
+							"maximumSize": 678,
+							"tailAlignment": 1,
+							"fields": [
+								{
+									"name": "authority",
+									"headerOffset": 0,
+									"headerSize": 32
+								},
+								{
+									"name": "bundle",
+									"headerOffset": 32,
+									"headerSize": 32
+								},
+								{
+									"name": "tree",
+									"headerOffset": 64,
+									"headerSize": 32
+								},
+								{
+									"name": "manifest_accumulator",
+									"headerOffset": 96,
+									"headerSize": 32
+								},
+								{
+									"name": "quantity",
+									"headerOffset": 128,
+									"headerSize": 8
+								},
+								{
+									"name": "version",
+									"headerOffset": 136,
+									"headerSize": 8
+								},
+								{
+									"name": "deposit_cursor",
+									"headerOffset": 144,
+									"headerSize": 4
+								},
+								{
+									"name": "assigned_count",
+									"headerOffset": 148,
+									"headerSize": 4
+								},
+								{
+									"name": "claimed_count",
+									"headerOffset": 152,
+									"headerSize": 4
+								},
+								{
+									"name": "reclaimed_count",
+									"headerOffset": 156,
+									"headerSize": 4
+								},
+								{
+									"name": "asset_index",
+									"headerOffset": 160,
+									"headerSize": 1
+								},
+								{
+									"name": "status",
+									"headerOffset": 161,
+									"headerSize": 1
+								},
+								{
+									"name": "has_prepared_item",
+									"headerOffset": 162,
+									"headerSize": 1
+								},
+								{
+									"name": "bump",
+									"headerOffset": 163,
+									"headerSize": 1
+								},
+								{
+									"name": "unavailable",
+									"headerOffset": 164,
+									"headerSize": 2,
+									"tail": {
+										"index": 0,
+										"kind": "vector",
+										"optional": false,
+										"prefixBytes": 2,
+										"capacity": 512,
+										"elementSize": 1,
+										"maximumBytes": 512
+									}
+								}
+							]
+						}
+					},
+					"transition": null
+				}
+			]
+		},
+		"account:1:09": {
+			"identity": {
+				"kind": "account",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "09"
+			},
+			"rustName": "PrizePoolItemState",
+			"versions": [
+				{
+					"version": 0,
+					"schemaSha256": "9d6e62356aa3ecf35e9f3c5092f6801dd08a06d484c2da42dfcfcc651d5be868",
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "pool",
+								"rustType": "Address"
+							},
+							{
+								"name": "asset",
+								"rustType": "Address"
+							},
+							{
+								"name": "data_hash",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "creator_hash",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "semantic_metadata_hash",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "previous_manifest_accumulator",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "nonce",
+								"rustType": "u64"
+							},
+							{
+								"name": "tree_index",
+								"rustType": "u32"
+							},
+							{
+								"name": "pool_index",
+								"rustType": "u32"
+							},
+							{
+								"name": "status",
+								"rustType": "u8"
+							},
+							{
+								"name": "bump",
+								"rustType": "u8"
+							}
+						],
+						"codec": "pinaPodV2",
+						"physical": {
+							"kind": "fixed",
+							"size": 210,
+							"fields": [
+								{
+									"name": "pool",
+									"offset": 0,
+									"size": 32
+								},
+								{
+									"name": "asset",
+									"offset": 32,
+									"size": 32
+								},
+								{
+									"name": "data_hash",
+									"offset": 64,
+									"size": 32
+								},
+								{
+									"name": "creator_hash",
+									"offset": 96,
+									"size": 32
+								},
+								{
+									"name": "semantic_metadata_hash",
+									"offset": 128,
+									"size": 32
+								},
+								{
+									"name": "previous_manifest_accumulator",
+									"offset": 160,
+									"size": 32
+								},
+								{
+									"name": "nonce",
+									"offset": 192,
+									"size": 8
+								},
+								{
+									"name": "tree_index",
+									"offset": 200,
+									"size": 4
+								},
+								{
+									"name": "pool_index",
+									"offset": 204,
+									"size": 4
+								},
+								{
+									"name": "status",
+									"offset": 208,
+									"size": 1
+								},
+								{
+									"name": "bump",
+									"offset": 209,
 									"size": 1
 								}
 							]
@@ -2519,10 +2881,13 @@
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": false,
+								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -2556,7 +2921,7 @@
 							}
 						]
 					},
-					"processSha256": "ca3981e7c370a4a9b3cc21813a3df3f05b17a47b8549107f6148e3c49db244ad",
+					"processSha256": "d1fb5ee55a0efdc05422278423ed49a72bd5af7c7c74d6462d53da0fb93be013",
 					"transition": null
 				}
 			]
@@ -2598,10 +2963,13 @@
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": false,
+								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -2632,7 +3000,7 @@
 							}
 						]
 					},
-					"processSha256": "bb18223a44f22a24e34434575dc134913240b4a97e90857994948fe03309f8b3",
+					"processSha256": "38a717e8f0e4073c3a39031072cbcaa4b85e1257f98f2e5f60b6926f369fe883",
 					"transition": null
 				}
 			]
@@ -2683,10 +3051,13 @@
 							{
 								"name": "authority",
 								"writable": false,
-								"signer": false,
+								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -2738,7 +3109,7 @@
 							}
 						]
 					},
-					"processSha256": "94023ad55af48b31ce02ab57f87a271fb6e6e48aabedf2a2d09ba2ea7425ef20",
+					"processSha256": "b85c472dc6635cb959a25021796af2600b81f39842a5f35414fe1ef5e936fd11",
 					"transition": null
 				}
 			]
@@ -2769,10 +3140,13 @@
 							{
 								"name": "authority",
 								"writable": false,
-								"signer": false,
+								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -2784,7 +3158,7 @@
 							}
 						]
 					},
-					"processSha256": "ef070922cd0fac36acf9fc1e01be2fe835524ec6901b6b3b9ebf337d2e25214b",
+					"processSha256": "a95db0acf5d93eaff83d801f20766bac6466930c398d07cb107e5cbe0283d3bb",
 					"transition": null
 				}
 			]
@@ -2826,10 +3200,13 @@
 							{
 								"name": "authority",
 								"writable": false,
-								"signer": false,
+								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -2865,7 +3242,7 @@
 							}
 						]
 					},
-					"processSha256": "63eed587dbbcec72293afda8ecd1f7935ff1ac0a8c81f6efaa050685ef3c0835",
+					"processSha256": "8688974d7b6e1ca91887a800251c517a7d56f6cf3d9fded337cbbcb962274334",
 					"transition": null
 				}
 			]
@@ -3415,7 +3792,7 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": "result_receipt",
+								"pda": null,
 								"constraints": [
 									"empty"
 								]
@@ -3433,7 +3810,7 @@
 							}
 						]
 					},
-					"processSha256": "8ad9091957dbb9389d8f27db4be61f70e8e517e7f79006f81b9cf89683803dcf",
+					"processSha256": "22d6758809fd7a9eb1d3f3a73ac099f7557f1fb497f38dee3cbcd92eeb6e08b9",
 					"transition": null
 				}
 			]
@@ -3642,10 +4019,13 @@
 							{
 								"name": "authority",
 								"writable": false,
-								"signer": false,
+								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -3657,7 +4037,7 @@
 							}
 						]
 					},
-					"processSha256": "ef070922cd0fac36acf9fc1e01be2fe835524ec6901b6b3b9ebf337d2e25214b",
+					"processSha256": "a95db0acf5d93eaff83d801f20766bac6466930c398d07cb107e5cbe0283d3bb",
 					"transition": null
 				}
 			]
@@ -3699,10 +4079,13 @@
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": false,
+								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -3730,7 +4113,7 @@
 							}
 						]
 					},
-					"processSha256": "6bb8bb224aed323a7821ab72a69dad2f2bcf9bd3c482d068c7e05a9ae472419a",
+					"processSha256": "531338ff420302729daf336a35ca95c9f6b27b1ce142d307d71bbd4a0e115b4b",
 					"transition": null
 				}
 			]
@@ -3772,10 +4155,13 @@
 							{
 								"name": "authority",
 								"writable": false,
-								"signer": false,
+								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -3835,7 +4221,7 @@
 							}
 						]
 					},
-					"processSha256": "a081cfd0fc52b148267ff1ed684f24b761da6f49f2a2e5a08b534cebbb526644",
+					"processSha256": "02dd3fa65b68a858cf9ad81d8fbff977c1ea4f53b4c62ed3a00cacf84d18c0e0",
 					"transition": null
 				}
 			]
@@ -4080,10 +4466,13 @@
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": false,
+								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -4103,7 +4492,7 @@
 							}
 						]
 					},
-					"processSha256": "5e39648ed452c9577a345826855b59be9af2341d8f2e9a72968b156ef5eb6ba2",
+					"processSha256": "a2c0c0a43556d59c3884ef9a9eb797b3d6723c53a98dbfd4a70e94c82be67c43",
 					"transition": null
 				}
 			]
@@ -5063,7 +5452,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=MPL_BUBBLEGUM_ID"
+								]
 							},
 							{
 								"name": "log_wrapper",
@@ -5071,7 +5463,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=SPL_NOOP_ID"
+								]
 							},
 							{
 								"name": "compression_program",
@@ -5079,7 +5474,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=SPL_ACCOUNT_COMPRESSION_ID"
+								]
 							},
 							{
 								"name": "system_program",
@@ -5102,7 +5500,7 @@
 							}
 						]
 					},
-					"processSha256": "39d4067ec7e1b6d255f4f074b583c77d40887bd82b1b50da691cea04ae2a782f",
+					"processSha256": "b82f75910fc0bfa78167bf6a047298ae7fec34ea77577edd6e5fb81805a00cbb",
 					"transition": null
 				}
 			]
@@ -5240,7 +5638,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=MPL_BUBBLEGUM_ID"
+								]
 							},
 							{
 								"name": "log_wrapper",
@@ -5248,7 +5649,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=SPL_NOOP_ID"
+								]
 							},
 							{
 								"name": "compression_program",
@@ -5256,7 +5660,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=SPL_ACCOUNT_COMPRESSION_ID"
+								]
 							},
 							{
 								"name": "system_program",
@@ -5279,7 +5686,7 @@
 							}
 						]
 					},
-					"processSha256": "ea7952bb7f8fb4da6ca19cf0e472e16398d4d71d4a81f6d24c90478b66ba09ca",
+					"processSha256": "69429ddc1fcca50a3c88ac34e32a7f839e00c9536a174a967337c26226409532",
 					"transition": null
 				}
 			]
@@ -5420,7 +5827,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=MPL_BUBBLEGUM_ID"
+								]
 							},
 							{
 								"name": "log_wrapper",
@@ -5428,7 +5838,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=SPL_NOOP_ID"
+								]
 							},
 							{
 								"name": "compression_program",
@@ -5436,7 +5849,10 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"address=SPL_ACCOUNT_COMPRESSION_ID"
+								]
 							},
 							{
 								"name": "system_program",
@@ -5459,7 +5875,7 @@
 							}
 						]
 					},
-					"processSha256": "630eed8fa8fb1737782328ecd6455131e758d90a5d5e0f5ce3f955af13201533",
+					"processSha256": "d130f1162fbee2c99045e49f6eb5bf474dc914b9429bed6eb12131dc512dc913",
 					"transition": null
 				}
 			]
@@ -5585,10 +6001,13 @@
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": false,
+								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -5652,7 +6071,7 @@
 							}
 						]
 					},
-					"processSha256": "d3708e16c448cec518e6e6e254a4b2878a882a2bdc7bd3e75cb8a70eb3214b5e",
+					"processSha256": "a67493f3e54cb6d760555922125ef51bb078e52f5c486edde20a48b09c2d334e",
 					"transition": null
 				}
 			]
@@ -5770,10 +6189,13 @@
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": false,
+								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -5804,7 +6226,7 @@
 							}
 						]
 					},
-					"processSha256": "bb18223a44f22a24e34434575dc134913240b4a97e90857994948fe03309f8b3",
+					"processSha256": "38a717e8f0e4073c3a39031072cbcaa4b85e1257f98f2e5f60b6926f369fe883",
 					"transition": null
 				}
 			]
@@ -5846,10 +6268,13 @@
 							{
 								"name": "authority",
 								"writable": false,
-								"signer": false,
+								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -5901,7 +6326,7 @@
 							}
 						]
 					},
-					"processSha256": "94023ad55af48b31ce02ab57f87a271fb6e6e48aabedf2a2d09ba2ea7425ef20",
+					"processSha256": "b85c472dc6635cb959a25021796af2600b81f39842a5f35414fe1ef5e936fd11",
 					"transition": null
 				}
 			]
@@ -5932,10 +6357,13 @@
 							{
 								"name": "authority",
 								"writable": false,
-								"signer": false,
+								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -5971,7 +6399,7 @@
 							}
 						]
 					},
-					"processSha256": "d2575cef16edd0a3d3e4d2785183ebb209fc9635e7e448384957608eb6a29fd0",
+					"processSha256": "3f5d32d37d4a09752c85707cc5c6134dfd797adf097ea63252494a3363bd6263",
 					"transition": null
 				}
 			]
@@ -6110,10 +6538,13 @@
 							{
 								"name": "authority",
 								"writable": false,
-								"signer": false,
+								"signer": true,
 								"optional": false,
 								"defaultValue": null,
-								"pda": null
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
 							},
 							{
 								"name": "template",
@@ -6157,7 +6588,1193 @@
 							}
 						]
 					},
-					"processSha256": "80d3ebc4d9d70eb3a8bdec37f7d643d9edc817c863886c254836a4b9475d7405",
+					"processSha256": "59cbc61670dcf034e63fbded29e9ec30595691fc8d49e08fefd1e5a64ba8cc80",
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:2c": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "2c"
+			},
+			"rustName": "CreatePrizePoolInstruction",
+			"versions": [
+				{
+					"version": 0,
+					"schemaSha256": "9c392182b357493f4f8e3f5f95def783ae4172c8a2b9588f9168aab597200960",
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "asset_index",
+								"rustType": "u8"
+							},
+							{
+								"name": "bump",
+								"rustType": "u8"
+							}
+						],
+						"codec": "pinaPodV2",
+						"physical": {
+							"kind": "fixed",
+							"size": 2,
+							"fields": [
+								{
+									"name": "asset_index",
+									"offset": 0,
+									"size": 1
+								},
+								{
+									"name": "bump",
+									"offset": 1,
+									"size": 1
+								}
+							]
+						}
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
+							},
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bundle",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "prize_pool",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": "prize_pool",
+								"constraints": [
+									"empty"
+								]
+							},
+							{
+								"name": "merkle_tree",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "system_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:11111111111111111111111111111111",
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
+							}
+						]
+					},
+					"processSha256": "59096425350ecc032547bc55c47c60e9077b917c5cbff13ddbf9b54da17ddf94",
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:2d": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "2d"
+			},
+			"rustName": "DepositPrizePoolItemInstruction",
+			"versions": [
+				{
+					"version": 0,
+					"schemaSha256": "1f30c1b213a682b40e62f5f81ce7ed040da91f7e2916abd20b0d04ab6c4da21d",
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "root",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "data_hash",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "creator_hash",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "nonce",
+								"rustType": "u64"
+							},
+							{
+								"name": "index",
+								"rustType": "u32"
+							}
+						],
+						"codec": "pinaPodV2",
+						"physical": {
+							"kind": "fixed",
+							"size": 108,
+							"fields": [
+								{
+									"name": "root",
+									"offset": 0,
+									"size": 32
+								},
+								{
+									"name": "data_hash",
+									"offset": 32,
+									"size": 32
+								},
+								{
+									"name": "creator_hash",
+									"offset": 64,
+									"size": 32
+								},
+								{
+									"name": "nonce",
+									"offset": 96,
+									"size": 8
+								},
+								{
+									"name": "index",
+									"offset": 104,
+									"size": 4
+								}
+							]
+						}
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
+							},
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bundle",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "prize_pool",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "prize_pool_item",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "tree_config",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "merkle_tree",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bubblegum_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"address=MPL_BUBBLEGUM_ID"
+								]
+							},
+							{
+								"name": "log_wrapper",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"address=SPL_NOOP_ID"
+								]
+							},
+							{
+								"name": "compression_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"address=SPL_ACCOUNT_COMPRESSION_ID"
+								]
+							},
+							{
+								"name": "system_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:11111111111111111111111111111111",
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
+							},
+							{
+								"name": "proof_accounts",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"remaining"
+								]
+							}
+						]
+					},
+					"processSha256": "e659c914c5213c5a67bc96e35c9b7af0a07378ab7c5aa398e038e9d171efbd16",
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:2e": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "2e"
+			},
+			"rustName": "SealPrizePoolInstruction",
+			"versions": [
+				{
+					"version": 0,
+					"schemaSha256": "0964b5ff00a94fb98f2536839ca6abc68a04f31d844cbac2a3aa627a73eeca5a",
+					"schema": {
+						"layout": "fixed",
+						"fields": [],
+						"codec": "pinaPodV2",
+						"physical": {
+							"kind": "fixed",
+							"size": 0,
+							"fields": []
+						}
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "authority",
+								"writable": false,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
+							},
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bundle",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "prize_pool",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							}
+						]
+					},
+					"processSha256": "961686705fff5c97dcc1700afc23632f84935e16bdced9398604350d77eef537",
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:2f": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "2f"
+			},
+			"rustName": "AllocatePrizePoolOpenInstruction",
+			"versions": [
+				{
+					"version": 0,
+					"schemaSha256": "b8c496f0fee2a03a7a8cd0874c8ba2cb9c18b3df9e1d927582b7411d07df79e5",
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "result_receipt_bump",
+								"rustType": "u8"
+							}
+						],
+						"codec": "pinaPodV2",
+						"physical": {
+							"kind": "fixed",
+							"size": 1,
+							"fields": [
+								{
+									"name": "result_receipt_bump",
+									"offset": 0,
+									"size": 1
+								}
+							]
+						}
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "template",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "opening",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bundle",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "prize_pool",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "service_vault",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "result_receipt",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"empty"
+								]
+							},
+							{
+								"name": "system_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:11111111111111111111111111111111",
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
+							}
+						]
+					},
+					"processSha256": "e2d828bd2ab477d4a67e66cce2f971e4a5f7d441f736762990b9597a7a9a8a20",
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:30": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "30"
+			},
+			"rustName": "ClaimPrizePoolItemInstruction",
+			"versions": [
+				{
+					"version": 0,
+					"schemaSha256": "c9091fff73e6df8a7ac8c13b54a0946c62f493a041d733e57c07963fae385159",
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "asset_index",
+								"rustType": "u8"
+							},
+							{
+								"name": "root",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "data_hash",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "creator_hash",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "nonce",
+								"rustType": "u64"
+							},
+							{
+								"name": "index",
+								"rustType": "u32"
+							},
+							{
+								"name": "metadata",
+								"rustType": "Vec<u8, 512>"
+							}
+						],
+						"codec": "pinaPodV2",
+						"physical": {
+							"kind": "fixed",
+							"size": 623,
+							"fields": [
+								{
+									"name": "asset_index",
+									"offset": 0,
+									"size": 1
+								},
+								{
+									"name": "root",
+									"offset": 1,
+									"size": 32
+								},
+								{
+									"name": "data_hash",
+									"offset": 33,
+									"size": 32
+								},
+								{
+									"name": "creator_hash",
+									"offset": 65,
+									"size": 32
+								},
+								{
+									"name": "nonce",
+									"offset": 97,
+									"size": 8
+								},
+								{
+									"name": "index",
+									"offset": 105,
+									"size": 4
+								},
+								{
+									"name": "metadata",
+									"offset": 109,
+									"size": 514
+								}
+							]
+						}
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "opening",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bundle",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "prize_pool",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "prize_pool_item",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "recipient",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "rent_refund",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "tree_config",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "merkle_tree",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bubblegum_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"address=MPL_BUBBLEGUM_ID"
+								]
+							},
+							{
+								"name": "log_wrapper",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"address=SPL_NOOP_ID"
+								]
+							},
+							{
+								"name": "compression_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"address=SPL_ACCOUNT_COMPRESSION_ID"
+								]
+							},
+							{
+								"name": "system_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:11111111111111111111111111111111",
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
+							},
+							{
+								"name": "proof_accounts",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"remaining"
+								]
+							}
+						]
+					},
+					"processSha256": "dba2ff649024a6d63a7ce42bf1cedbd04b181250164a791222f8be14b143997b",
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:31": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "31"
+			},
+			"rustName": "ReclaimPrizePoolItemInstruction",
+			"versions": [
+				{
+					"version": 0,
+					"schemaSha256": "f68541766159f05ad4feb723a2ad153e72826b3ebde882ff22eb87a22b10ca88",
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "pool_index",
+								"rustType": "u32"
+							},
+							{
+								"name": "root",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "data_hash",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "creator_hash",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "nonce",
+								"rustType": "u64"
+							},
+							{
+								"name": "index",
+								"rustType": "u32"
+							},
+							{
+								"name": "metadata",
+								"rustType": "Vec<u8, 512>"
+							}
+						],
+						"codec": "pinaPodV2",
+						"physical": {
+							"kind": "fixed",
+							"size": 626,
+							"fields": [
+								{
+									"name": "pool_index",
+									"offset": 0,
+									"size": 4
+								},
+								{
+									"name": "root",
+									"offset": 4,
+									"size": 32
+								},
+								{
+									"name": "data_hash",
+									"offset": 36,
+									"size": 32
+								},
+								{
+									"name": "creator_hash",
+									"offset": 68,
+									"size": 32
+								},
+								{
+									"name": "nonce",
+									"offset": 100,
+									"size": 8
+								},
+								{
+									"name": "index",
+									"offset": 108,
+									"size": 4
+								},
+								{
+									"name": "metadata",
+									"offset": 112,
+									"size": 514
+								}
+							]
+						}
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
+							},
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "box_mint",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bundle",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "prize_pool",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "prize_pool_item",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "tree_config",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "merkle_tree",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bubblegum_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"address=MPL_BUBBLEGUM_ID"
+								]
+							},
+							{
+								"name": "log_wrapper",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"address=SPL_NOOP_ID"
+								]
+							},
+							{
+								"name": "compression_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"address=SPL_ACCOUNT_COMPRESSION_ID"
+								]
+							},
+							{
+								"name": "system_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:11111111111111111111111111111111",
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
+							},
+							{
+								"name": "proof_accounts",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"remaining"
+								]
+							}
+						]
+					},
+					"processSha256": "2ed00eb0952c9abdc420b057dad05d9af832c96280da6a969e6254e2c51f3d36",
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:32": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "32"
+			},
+			"rustName": "ClosePrizePoolInstruction",
+			"versions": [
+				{
+					"version": 0,
+					"schemaSha256": "0964b5ff00a94fb98f2536839ca6abc68a04f31d844cbac2a3aa627a73eeca5a",
+					"schema": {
+						"layout": "fixed",
+						"fields": [],
+						"codec": "pinaPodV2",
+						"physical": {
+							"kind": "fixed",
+							"size": 0,
+							"fields": []
+						}
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
+							},
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bundle",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "prize_pool",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							}
+						]
+					},
+					"processSha256": "98ce2b5c5ead6c027ea7a47d267d29a5408240b26bdc4ac28c07997c4a412d21",
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:33": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "33"
+			},
+			"rustName": "PreparePrizePoolItemInstruction",
+			"versions": [
+				{
+					"version": 0,
+					"schemaSha256": "a4cd042b8cc2c0ddf49dc049f668eda1a4d73700ada429c11e342f0cba7d4f72",
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "item_bump",
+								"rustType": "u8"
+							},
+							{
+								"name": "data_hash",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "creator_hash",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "nonce",
+								"rustType": "u64"
+							},
+							{
+								"name": "index",
+								"rustType": "u32"
+							},
+							{
+								"name": "metadata",
+								"rustType": "Vec<u8, 512>"
+							}
+						],
+						"codec": "pinaPodV2",
+						"physical": {
+							"kind": "fixed",
+							"size": 591,
+							"fields": [
+								{
+									"name": "item_bump",
+									"offset": 0,
+									"size": 1
+								},
+								{
+									"name": "data_hash",
+									"offset": 1,
+									"size": 32
+								},
+								{
+									"name": "creator_hash",
+									"offset": 33,
+									"size": 32
+								},
+								{
+									"name": "nonce",
+									"offset": 65,
+									"size": 8
+								},
+								{
+									"name": "index",
+									"offset": 73,
+									"size": 4
+								},
+								{
+									"name": "metadata",
+									"offset": 77,
+									"size": 514
+								}
+							]
+						}
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
+							},
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bundle",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "prize_pool",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "prize_pool_item",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": "prize_pool_item",
+								"constraints": [
+									"empty"
+								]
+							},
+							{
+								"name": "system_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:11111111111111111111111111111111",
+								"pda": null,
+								"constraints": [
+									"address=system::ID"
+								]
+							}
+						]
+					},
+					"processSha256": "67985fe43fe9fdb08e4c08a9a3b871db96f5e2aabc372670733ed7dce92a2c32",
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:34": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "34"
+			},
+			"rustName": "CancelPrizePoolItemInstruction",
+			"versions": [
+				{
+					"version": 0,
+					"schemaSha256": "0964b5ff00a94fb98f2536839ca6abc68a04f31d844cbac2a3aa627a73eeca5a",
+					"schema": {
+						"layout": "fixed",
+						"fields": [],
+						"codec": "pinaPodV2",
+						"physical": {
+							"kind": "fixed",
+							"size": 0,
+							"fields": []
+						}
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null,
+								"constraints": [
+									"signer"
+								]
+							},
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bundle",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "prize_pool",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "prize_pool_item",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							}
+						]
+					},
+					"processSha256": "68ad64b66c973c857efbd268a6707fc2b9d3f7b216485759d2772df587d227ec",
 					"transition": null
 				}
 			]

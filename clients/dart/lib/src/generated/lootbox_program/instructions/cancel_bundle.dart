@@ -101,7 +101,7 @@ Instruction getCancelBundleInstruction({
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.writable),
+      AccountMeta(address: authority, role: AccountRole.writableSigner),
       AccountMeta(address: template, role: AccountRole.readonly),
       AccountMeta(address: bundle, role: AccountRole.writable),
     ],

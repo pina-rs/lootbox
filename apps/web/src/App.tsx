@@ -19,6 +19,7 @@ import {
 	Copy,
 	Gift,
 	Hammer,
+	Layers3,
 	Plus,
 	RefreshCw,
 	ShieldCheck,
@@ -32,12 +33,14 @@ import { MarketDesk } from "./lootbox/MarketDesk.js";
 import {
 	appendDrop,
 	cancelSavedDraft,
+	claimOpening,
 	connectPlayground,
 	createDrop,
 	creatorErrors,
 	type CreatorInput,
 	type DraftAsset,
 	formatUnits,
+	hasSavedDraft,
 	initialInput,
 	makeAsset,
 	makeBundle,
@@ -98,7 +101,13 @@ const statusName = (status: number, lockedAt = 0n) =>
 
 function prizeName(bundle: ChainBundle) {
 	const assets = bundleAssets(bundle.data);
-	const uniqueKinds = new Set(["nft", "metadataNft", "core", "compressedNft"]);
+	const uniqueKinds = new Set([
+		"nft",
+		"metadataNft",
+		"core",
+		"compressedNft",
+		"prizePool",
+	]);
 	const nfts =
 		assets.filter((asset) => uniqueKinds.has(asset.kind ?? "")).length;
 	return [
@@ -109,7 +118,11 @@ function prizeName(bundle: ChainBundle) {
 				formatUnits(asset.amount, asset.kind === "sol" ? 9 : asset.decimals)
 			} ${asset.kind === "sol" ? "SOL" : "tokens"}`
 		),
-		...(nfts ? [`${nfts} exclusive NFT${nfts > 1 ? "s" : ""}`] : []),
+		...(assets.some((asset) => asset.kind === "prizePool")
+			? ["1 entropy-selected NFT"]
+			: nfts
+			? [`${nfts} exclusive NFT${nfts > 1 ? "s" : ""}`]
+			: []),
 	].join(" + ");
 }
 
@@ -121,6 +134,7 @@ export default function App() {
 	const [creatorMode, setCreatorMode] = useState<"create" | "append">("create");
 	const [pickerFor, setPickerFor] = useState<number | null>(null);
 	const [hasDraft, setHasDraft] = useState(false);
+	const [draftResumable, setDraftResumable] = useState(false);
 	const [busy, setBusy] = useState(false);
 	const [connecting, setConnecting] = useState(true);
 	const [error, setError] = useState("");
@@ -135,9 +149,11 @@ export default function App() {
 	>([]);
 	const selectedId = useRef<Address | undefined>(undefined);
 	const pendingAction = useRef(false);
+	const refreshGeneration = useRef(0);
 
 	const refresh = useCallback(
 		async (session: Playground, selection = selectedId.current) => {
+			const generation = ++refreshGeneration.current;
 			const client = session.client("recipient");
 			const { templates, openings } = await client.inventory();
 			const selected = templates.find((item) => item.address === selection) ??
@@ -168,6 +184,7 @@ export default function App() {
 					client.rpc.getSlot({ commitment: "processed" }).send(),
 				]);
 			const chainTime = await client.rpc.getBlockTime(slot).send();
+			if (generation !== refreshGeneration.current) return;
 			selectedId.current = selected?.address;
 			if (selected) {
 				localStorage.setItem(
@@ -198,17 +215,24 @@ export default function App() {
 			const session = await connectPlayground();
 			setSandbox(session);
 			setDestination(session.recipient.address);
-			const saved = localStorage.getItem(
+			const savedSelection = localStorage.getItem(
 				`lootbox:selected:${session.config.instanceId}`,
 			);
-			selectedId.current = saved ? address(saved) : undefined;
+			selectedId.current = savedSelection ? address(savedSelection) : undefined;
 			const draft = savedDraftInfo(session);
+			const draftExists = hasSavedDraft(session);
+			setHasDraft(draftExists);
+			setDraftResumable(Boolean(draft && previewInput(draft.input)));
 			if (draft) {
 				setInput(draft.input);
 				setCreatorMode(draft.mode);
 				if (draft.template) selectedId.current = address(draft.template);
-				setHasDraft(true);
 				setTab("create");
+			} else if (draftExists) {
+				setTab("create");
+				setError(
+					"A saved funding manifest needs recovery but cannot be resumed by this client. Keep it until staged assets are reclaimed.",
+				);
 			}
 			await refresh(session);
 		} catch (reason) {
@@ -254,7 +278,9 @@ export default function App() {
 		} finally {
 			try {
 				await refresh(sandbox);
-				setHasDraft(savedDraftInfo(sandbox) !== null);
+				const draft = savedDraftInfo(sandbox);
+				setHasDraft(hasSavedDraft(sandbox));
+				setDraftResumable(Boolean(draft && previewInput(draft.input)));
 			} catch (reason) {
 				setError(errorMessage(reason));
 			}
@@ -285,9 +311,21 @@ export default function App() {
 	const receipts = workspace.openings.filter((item) =>
 		item.data.template === selected?.address &&
 		item.data.beneficiary === sandbox?.recipient.address
-	).sort((a, b) => a.data.sequence > b.data.sequence ? -1 : 1);
-	const receipt = receipts.find((item) => item.data.status < 3) ?? receipts[0];
+	).sort((a, b) => a.data.sequence < b.data.sequence ? -1 : 1);
+	const receipt = receipts.find((item) => item.data.status < 3) ??
+		receipts.at(-1);
+	const fifoHead = selected
+		? workspace.openings.find((item) =>
+			item.data.template === selected.address && item.data.status === 0 &&
+			item.data.sequence === selected.data.nextAllocation
+		)
+		: undefined;
+	const blockedHeadForfeitable = Boolean(
+		fifoHead && fifoHead.address !== receipt?.address &&
+			fifoHead.data.seedSlot + 300n <= workspace.chainSlot,
+	);
 	const delivered = receipt?.data.status === 3;
+	const closable = delivered || receipt?.data.status === 4;
 	const visiblePrize = receipt && receipt.data.status >= 2 &&
 		(revealed.has(receipt.address) || delivered);
 	const prize = visiblePrize
@@ -690,6 +728,30 @@ export default function App() {
 												</button>
 											</>
 										)
+										: blockedHeadForfeitable && fifoHead
+										? (
+											<>
+												<p>
+													An earlier recipient&apos;s oracle window expired.
+													Anyone can forfeit that burned opening to unblock the
+													fair FIFO queue; no prize inventory is consumed.
+												</p>
+												<button
+													className="primary-button"
+													disabled={busy}
+													onClick={() =>
+														void run(async (session) => {
+															await session.client("recipient", progress)
+																.forfeitTemplateOpen(selected, fifoHead);
+															setNotice(
+																"Expired FIFO head forfeited. Later openings can now settle.",
+															);
+														})}
+												>
+													Forfeit expired FIFO head<RefreshCw size={18} />
+												</button>
+											</>
+										)
 										: receipt && receipt.data.status < 2
 										? (
 											<>
@@ -748,8 +810,10 @@ export default function App() {
 												onClick={() =>
 													visiblePrize
 														? void run(async (session) => {
-															await session.client("recipient", progress).claim(
+															await claimOpening(
+																session,
 																receipt.address,
+																progress,
 															);
 															setNotice(
 																"All prize assets delivered to your test wallet",
@@ -835,7 +899,7 @@ export default function App() {
 											: ""}
 									</p>
 								)}
-								{selected && receipt && delivered && (
+								{selected && receipt && closable && (
 									<button
 										type="button"
 										className="receipt-close"
@@ -1446,7 +1510,8 @@ export default function App() {
 															max="1000000"
 															required
 															disabled={row.assets.some((asset) =>
-																asset.kind === "nft"
+																asset.kind === "nft" ||
+																asset.kind === "prizePool"
 															)}
 															value={row.quantity}
 															onChange={(event) =>
@@ -1487,6 +1552,8 @@ export default function App() {
 																	? <Gift size={18} />
 																	: asset.kind === "token"
 																	? <Tag size={18} />
+																	: asset.kind === "prizePool"
+																	? <Layers3 size={18} />
 																	: <span>◎</span>}
 															</div>
 															<div className="asset-identity">
@@ -1503,7 +1570,8 @@ export default function App() {
 																	</code>
 																)}
 															</div>
-															{asset.kind !== "nft" && (
+															{asset.kind !== "nft" &&
+																asset.kind !== "prizePool" && (
 																<label className="field asset-amount">
 																	Amount per win<input
 																		aria-label={`${asset.label} amount per win`}
@@ -1521,6 +1589,14 @@ export default function App() {
 																		`row-${index}-asset-${assetIndex}-amount`,
 																	)}
 																</label>
+															)}
+															{asset.kind === "prizePool" && (
+																<div className="pool-asset-count">
+																	<strong>
+																		{asset.poolItems?.length ?? 0}
+																	</strong>
+																	<span>escrow transfers</span>
+																</div>
 															)}
 															{fieldError(
 																`row-${index}-asset-${assetIndex}-mint`,
@@ -1639,9 +1715,9 @@ export default function App() {
 								{hasDraft && (
 									<div className="draft-actions">
 										<p className="draft-note">
-											An unfinished funding manifest is locked to its saved
-											assets. Resume it, or reclaim only its unpublished tail
-											bundle. Already published bundles stay immutable.
+											{draftResumable
+												? "An unfinished funding manifest is locked to its saved assets. Resume it, or reclaim only its unpublished tail bundle. Already published bundles stay immutable."
+												: "This manifest is recovery-only because it is expired or unreadable. Reclaim its unpublished tail; the client will not publish stale terms."}
 										</p>
 										<button
 											type="button"
@@ -1676,13 +1752,16 @@ export default function App() {
 										: undefined}
 									className="primary-button"
 									disabled={!sandbox || busy || !preview ||
+										(hasDraft && !draftResumable) ||
 										exceedsBundleBudget ||
 										(creatorMode === "append" && !selected)}
 								>
 									{busy
 										? "Funding the manifest…"
-										: hasDraft
+										: hasDraft && draftResumable
 										? "Resume funding"
+										: hasDraft
+										? "Recovery only"
 										: creatorMode === "append"
 										? "Fund & publish addition"
 										: "Fund & publish treasury"}
@@ -1746,8 +1825,9 @@ export default function App() {
 							A creator stages a complete bundle of one to four assets, funds
 							every copy, and activates it. One bundle copy is one
 							equal-probability ticket. SOL, classic SPL, safe Token-2022
-							tokens, standard Token Metadata NFTs, plain Core assets, and
-							compressed NFTs each have a typed transfer path.
+							tokens, standard Token Metadata NFTs, plain Core assets,
+							compressed NFTs, and entropy-selected PrizePools each have a typed
+							transfer path.
 						</p>
 						<h2>The treasury only grows.</h2>
 						<p>
@@ -1836,7 +1916,11 @@ export default function App() {
 							if (!row || row.assets.length >= 4) return;
 							updateRow(pickerFor, {
 								assets: [...row.assets, asset],
-								...(asset.kind === "nft" ? { quantity: "1" } : {}),
+								...(asset.kind === "nft"
+									? { quantity: "1" }
+									: asset.kind === "prizePool"
+									? { quantity: String(asset.poolItems?.length ?? 0) }
+									: {}),
 							});
 						}}
 					/>

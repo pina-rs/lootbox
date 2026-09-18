@@ -25,6 +25,8 @@ enum LootboxProgramAccount {
   bundleState,
   templateOpeningState,
   resultReceiptState,
+  prizePoolState,
+  prizePoolItemState,
 }
 
 /// Known instructions for the LootboxProgram program.
@@ -73,6 +75,15 @@ enum LootboxProgramInstruction {
   fundMintPrize,
   claimMintPrize,
   reclaimMintPrize,
+  createPrizePool,
+  preparePrizePoolItem,
+  depositPrizePoolItem,
+  cancelPrizePoolItem,
+  sealPrizePool,
+  allocatePrizePoolOpen,
+  claimPrizePoolItem,
+  reclaimPrizePoolItem,
+  closePrizePool,
 }
 
 /// Identifies the type of a LootboxProgram instruction.
@@ -252,6 +263,42 @@ LootboxProgramInstruction identifyLootboxProgramInstruction(Uint8List data) {
   if (containsBytes(data, getU8Encoder().encode(43), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.reclaimMintPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(44), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.createPrizePool;
+  }
+  if (containsBytes(data, getU8Encoder().encode(51), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.preparePrizePoolItem;
+  }
+  if (containsBytes(data, getU8Encoder().encode(45), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.depositPrizePoolItem;
+  }
+  if (containsBytes(data, getU8Encoder().encode(52), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.cancelPrizePoolItem;
+  }
+  if (containsBytes(data, getU8Encoder().encode(46), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.sealPrizePool;
+  }
+  if (containsBytes(data, getU8Encoder().encode(47), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.allocatePrizePoolOpen;
+  }
+  if (containsBytes(data, getU8Encoder().encode(48), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.claimPrizePoolItem;
+  }
+  if (containsBytes(data, getU8Encoder().encode(49), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.reclaimPrizePoolItem;
+  }
+  if (containsBytes(data, getU8Encoder().encode(50), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.closePrizePool;
   }
 
   throw SolanaError(SolanaErrorCode.programClientsFailedToIdentifyInstruction, {
@@ -625,6 +672,79 @@ final class ParsedReclaimMintPrize extends ParsedLootboxProgramInstruction {
   final ReclaimMintPrizeInstructionData data;
 }
 
+/// A parsed CreatePrizePool instruction.
+final class ParsedCreatePrizePool extends ParsedLootboxProgramInstruction {
+  const ParsedCreatePrizePool({required this.data})
+    : super(LootboxProgramInstruction.createPrizePool);
+
+  final CreatePrizePoolInstructionData data;
+}
+
+/// A parsed PreparePrizePoolItem instruction.
+final class ParsedPreparePrizePoolItem extends ParsedLootboxProgramInstruction {
+  const ParsedPreparePrizePoolItem({required this.data})
+    : super(LootboxProgramInstruction.preparePrizePoolItem);
+
+  final PreparePrizePoolItemInstructionData data;
+}
+
+/// A parsed DepositPrizePoolItem instruction.
+final class ParsedDepositPrizePoolItem extends ParsedLootboxProgramInstruction {
+  const ParsedDepositPrizePoolItem({required this.data})
+    : super(LootboxProgramInstruction.depositPrizePoolItem);
+
+  final DepositPrizePoolItemInstructionData data;
+}
+
+/// A parsed CancelPrizePoolItem instruction.
+final class ParsedCancelPrizePoolItem extends ParsedLootboxProgramInstruction {
+  const ParsedCancelPrizePoolItem({required this.data})
+    : super(LootboxProgramInstruction.cancelPrizePoolItem);
+
+  final CancelPrizePoolItemInstructionData data;
+}
+
+/// A parsed SealPrizePool instruction.
+final class ParsedSealPrizePool extends ParsedLootboxProgramInstruction {
+  const ParsedSealPrizePool({required this.data})
+    : super(LootboxProgramInstruction.sealPrizePool);
+
+  final SealPrizePoolInstructionData data;
+}
+
+/// A parsed AllocatePrizePoolOpen instruction.
+final class ParsedAllocatePrizePoolOpen
+    extends ParsedLootboxProgramInstruction {
+  const ParsedAllocatePrizePoolOpen({required this.data})
+    : super(LootboxProgramInstruction.allocatePrizePoolOpen);
+
+  final AllocatePrizePoolOpenInstructionData data;
+}
+
+/// A parsed ClaimPrizePoolItem instruction.
+final class ParsedClaimPrizePoolItem extends ParsedLootboxProgramInstruction {
+  const ParsedClaimPrizePoolItem({required this.data})
+    : super(LootboxProgramInstruction.claimPrizePoolItem);
+
+  final ClaimPrizePoolItemInstructionData data;
+}
+
+/// A parsed ReclaimPrizePoolItem instruction.
+final class ParsedReclaimPrizePoolItem extends ParsedLootboxProgramInstruction {
+  const ParsedReclaimPrizePoolItem({required this.data})
+    : super(LootboxProgramInstruction.reclaimPrizePoolItem);
+
+  final ReclaimPrizePoolItemInstructionData data;
+}
+
+/// A parsed ClosePrizePool instruction.
+final class ParsedClosePrizePool extends ParsedLootboxProgramInstruction {
+  const ParsedClosePrizePool({required this.data})
+    : super(LootboxProgramInstruction.closePrizePool);
+
+  final ClosePrizePoolInstructionData data;
+}
+
 /// Parses a LootboxProgram instruction.
 ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
   Instruction instruction,
@@ -772,6 +892,37 @@ ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
     ),
     LootboxProgramInstruction.reclaimMintPrize => ParsedReclaimMintPrize(
       data: parseReclaimMintPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.createPrizePool => ParsedCreatePrizePool(
+      data: parseCreatePrizePoolInstruction(instruction),
+    ),
+    LootboxProgramInstruction.preparePrizePoolItem =>
+      ParsedPreparePrizePoolItem(
+        data: parsePreparePrizePoolItemInstruction(instruction),
+      ),
+    LootboxProgramInstruction.depositPrizePoolItem =>
+      ParsedDepositPrizePoolItem(
+        data: parseDepositPrizePoolItemInstruction(instruction),
+      ),
+    LootboxProgramInstruction.cancelPrizePoolItem => ParsedCancelPrizePoolItem(
+      data: parseCancelPrizePoolItemInstruction(instruction),
+    ),
+    LootboxProgramInstruction.sealPrizePool => ParsedSealPrizePool(
+      data: parseSealPrizePoolInstruction(instruction),
+    ),
+    LootboxProgramInstruction.allocatePrizePoolOpen =>
+      ParsedAllocatePrizePoolOpen(
+        data: parseAllocatePrizePoolOpenInstruction(instruction),
+      ),
+    LootboxProgramInstruction.claimPrizePoolItem => ParsedClaimPrizePoolItem(
+      data: parseClaimPrizePoolItemInstruction(instruction),
+    ),
+    LootboxProgramInstruction.reclaimPrizePoolItem =>
+      ParsedReclaimPrizePoolItem(
+        data: parseReclaimPrizePoolItemInstruction(instruction),
+      ),
+    LootboxProgramInstruction.closePrizePool => ParsedClosePrizePool(
+      data: parseClosePrizePoolInstruction(instruction),
     ),
   };
 }

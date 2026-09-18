@@ -622,6 +622,8 @@ fn allocate_template_open_builds() {
 		PK3,
 		"--service-vault",
 		PK1,
+		"--sequence",
+		"0",
 		"--result-receipt",
 		PK2,
 	])
@@ -1482,7 +1484,7 @@ fn clap_lists_every_instruction_subcommand() {
 		.map(|sub| sub.get_name().to_string())
 		.collect();
 
-	assert_eq!(subcommand_names.len(), 38);
+	assert_eq!(subcommand_names.len(), 47);
 }
 
 #[test]
@@ -1737,6 +1739,8 @@ fn allocate_template_open_with_default_bump() {
 		PK3,
 		"--service-vault",
 		PK1,
+		"--sequence",
+		"0",
 		"--result-receipt",
 		PK2,
 	])
@@ -1757,12 +1761,14 @@ fn allocate_template_open_defaults_receipt_to_canonical_pda() {
 		PK3,
 		"--service-vault",
 		PK1,
+		"--sequence",
+		"7",
 	])
 	.expect("builds");
 
 	let opening: Pubkey = PK2.parse().expect("valid pubkey");
 	let (receipt, _) = Pubkey::find_program_address(
-		&[b"result-receipt", opening.as_ref()],
+		&[b"result-receipt", opening.as_ref(), &7_u64.to_le_bytes()],
 		&lootbox_program_client::generated::programs::LOOTBOX_PROGRAM_ID,
 	);
 
@@ -1818,4 +1824,275 @@ fn create_template_bump_defaults_to_pda_bump() {
 
 	// The derived bump must differ from 0 (the PDA bump for this seed).
 	assert_ne!(without_bump.data, with_bump.data);
+}
+
+#[test]
+fn prize_pool_cli_builds_the_complete_lifecycle() {
+	let create = build_from(&[
+		"create-prize-pool",
+		"--authority",
+		PK1,
+		"--template",
+		PK2,
+		"--bundle",
+		PK3,
+		"--prize-pool",
+		PK1,
+		"--merkle-tree",
+		PK2,
+		"--asset-index",
+		"1",
+		"--bump",
+		"7",
+	])
+	.expect("create pool");
+	assert_eq!((create.data[0], create.accounts.len()), (44, 6));
+
+	let prepare = build_from(&[
+		"prepare-prize-pool-item",
+		"--authority",
+		PK1,
+		"--template",
+		PK2,
+		"--bundle",
+		PK3,
+		"--prize-pool",
+		PK1,
+		"--prize-pool-item",
+		PK2,
+		"--item-bump",
+		"8",
+		"--data-hash",
+		HASH32,
+		"--creator-hash",
+		HASH32,
+		"--nonce",
+		"9",
+		"--index",
+		"10",
+		"--metadata-borsh-hex",
+		"00",
+	])
+	.expect("prepare item");
+	assert_eq!((prepare.data[0], prepare.accounts.len()), (51, 6));
+
+	let deposit = build_from(&[
+		"deposit-prize-pool-item",
+		"--authority",
+		PK1,
+		"--template",
+		PK2,
+		"--bundle",
+		PK3,
+		"--prize-pool",
+		PK1,
+		"--prize-pool-item",
+		PK2,
+		"--tree-config",
+		PK3,
+		"--merkle-tree",
+		PK1,
+		"--bubblegum-program",
+		PK2,
+		"--log-wrapper",
+		PK3,
+		"--compression-program",
+		PROGRAM,
+		"--proof-account",
+		PK1,
+		"--proof-account",
+		PK2,
+		"--root",
+		HASH32,
+		"--data-hash",
+		HASH32,
+		"--creator-hash",
+		HASH32,
+		"--nonce",
+		"9",
+		"--index",
+		"10",
+	])
+	.expect("deposit item");
+	assert_eq!((deposit.data[0], deposit.accounts.len()), (45, 13));
+	assert_eq!(deposit.accounts[11].pubkey, pubkey(PK1));
+	assert_eq!(deposit.accounts[12].pubkey, pubkey(PK2));
+
+	let cancel = build_from(&[
+		"cancel-prize-pool-item",
+		"--authority",
+		PK1,
+		"--template",
+		PK2,
+		"--bundle",
+		PK3,
+		"--prize-pool",
+		PK1,
+		"--prize-pool-item",
+		PK2,
+	])
+	.expect("cancel prepared item");
+	assert_eq!((cancel.data[0], cancel.accounts.len()), (52, 5));
+
+	let seal = build_from(&[
+		"seal-prize-pool",
+		"--authority",
+		PK1,
+		"--template",
+		PK2,
+		"--bundle",
+		PK3,
+		"--prize-pool",
+		PK1,
+	])
+	.expect("seal pool");
+	assert_eq!((seal.data[0], seal.accounts.len()), (46, 4));
+
+	let allocate = build_from(&[
+		"allocate-prize-pool-open",
+		"--template",
+		PK1,
+		"--opening",
+		PK2,
+		"--bundle",
+		PK3,
+		"--prize-pool",
+		PK1,
+		"--service-vault",
+		PK2,
+		"--sequence",
+		"17",
+	])
+	.expect("allocate pool");
+	assert_eq!((allocate.data[0], allocate.accounts.len()), (47, 7));
+
+	let claim = build_from(&[
+		"claim-prize-pool-item",
+		"--template",
+		PK1,
+		"--opening",
+		PK2,
+		"--bundle",
+		PK3,
+		"--prize-pool",
+		PK1,
+		"--prize-pool-item",
+		PK2,
+		"--recipient",
+		PK3,
+		"--rent-refund",
+		PK1,
+		"--tree-config",
+		PK2,
+		"--merkle-tree",
+		PK3,
+		"--bubblegum-program",
+		PK1,
+		"--log-wrapper",
+		PK2,
+		"--compression-program",
+		PK3,
+		"--proof-account",
+		PK1,
+		"--asset-index",
+		"0",
+		"--root",
+		HASH32,
+		"--data-hash",
+		HASH32,
+		"--creator-hash",
+		HASH32,
+		"--nonce",
+		"9",
+		"--index",
+		"10",
+		"--metadata-borsh-hex",
+		"00",
+	])
+	.expect("claim item");
+	assert_eq!((claim.data[0], claim.accounts.len()), (48, 14));
+
+	let reclaim = build_from(&[
+		"reclaim-prize-pool-item",
+		"--authority",
+		PK1,
+		"--template",
+		PK2,
+		"--box-mint",
+		PK3,
+		"--bundle",
+		PK1,
+		"--prize-pool",
+		PK2,
+		"--prize-pool-item",
+		PK3,
+		"--tree-config",
+		PK1,
+		"--merkle-tree",
+		PK2,
+		"--bubblegum-program",
+		PK3,
+		"--log-wrapper",
+		PK1,
+		"--compression-program",
+		PK2,
+		"--pool-index",
+		"1",
+		"--root",
+		HASH32,
+		"--data-hash",
+		HASH32,
+		"--creator-hash",
+		HASH32,
+		"--nonce",
+		"9",
+		"--index",
+		"10",
+		"--metadata-borsh-hex",
+		"00",
+	])
+	.expect("reclaim item");
+	assert_eq!((reclaim.data[0], reclaim.accounts.len()), (49, 12));
+
+	let close = build_from(&[
+		"close-prize-pool",
+		"--authority",
+		PK1,
+		"--template",
+		PK2,
+		"--bundle",
+		PK3,
+		"--prize-pool",
+		PK1,
+	])
+	.expect("close pool");
+	assert_eq!((close.data[0], close.accounts.len()), (50, 4));
+}
+
+#[test]
+fn prize_pool_cli_rejects_oversized_proof_lists() {
+	use crate::InstructionBuilder;
+	let key = pubkey(PK1);
+	let args = crate::build::DepositPrizePoolItemArgs {
+		authority: key,
+		template: key,
+		bundle: key,
+		prize_pool: key,
+		prize_pool_item: key,
+		tree_config: key,
+		merkle_tree: key,
+		bubblegum_program: key,
+		log_wrapper: key,
+		compression_program: key,
+		proof_accounts: vec![key; 33],
+		root: HASH32.to_owned(),
+		data_hash: HASH32.to_owned(),
+		creator_hash: HASH32.to_owned(),
+		nonce: 0,
+		index: 0,
+	};
+	assert!(matches!(
+		args.build(),
+		Err(CliError::ProofAccountCount { actual: 33 })
+	));
 }

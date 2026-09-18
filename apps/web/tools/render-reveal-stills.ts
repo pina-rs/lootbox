@@ -1,6 +1,5 @@
 import { chromium } from "@playwright/test";
 import { readFileSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 
 declare global {
 	interface Window {
@@ -8,7 +7,6 @@ declare global {
 	}
 }
 
-const require = createRequire(import.meta.url);
 const output = new URL("../public/animations/ink-chest/", import.meta.url);
 const resources: Record<
 	string,
@@ -21,11 +19,13 @@ const resources: Record<
 	},
 	"/rive.js": {
 		contentType: "text/javascript",
-		body: readFileSync(require.resolve("@rive-app/canvas")),
+		body: readFileSync(new URL(import.meta.resolve("@rive-app/canvas"))),
 	},
 	"/rive.wasm": {
 		contentType: "application/wasm",
-		body: readFileSync(require.resolve("@rive-app/canvas/rive.wasm")),
+		body: readFileSync(
+			new URL(import.meta.resolve("@rive-app/canvas/rive.wasm")),
+		),
 	},
 	"/chest.riv": {
 		contentType: "application/octet-stream",

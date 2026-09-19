@@ -13,14 +13,12 @@ void main() {
     Address('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'),
     Address('DezXAZ8z7PnrnRJjz3wXBoRgixCa6XKj7D3WpqkDmzPK'),
   ];
-  final serviceBudgetVector =
-      jsonDecode(
-            File('../../tests/vectors/service-budget.json').readAsStringSync(),
-          )
-          as Map<String, dynamic>;
-  final prizePoolVector =
-      jsonDecode(File('../../tests/vectors/prize-pool.json').readAsStringSync())
-          as Map<String, dynamic>;
+  final serviceBudgetVector = jsonDecode(
+    File('../../tests/vectors/service-budget.json').readAsStringSync(),
+  ) as Map<String, dynamic>;
+  final prizePoolVector = jsonDecode(
+    File('../../tests/vectors/prize-pool.json').readAsStringSync(),
+  ) as Map<String, dynamic>;
   PrizePoolItem poolItem(
     Address asset, {
     bool metadataMutable = false,

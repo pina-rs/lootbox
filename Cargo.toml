@@ -15,7 +15,7 @@ exclude = [
 ]
 
 [workspace.package]
-version = "0.0.1-alpha.0"
+version = "0.0.2"
 edition = "2024"
 homepage = "https://github.com/pina-rs/lootbox"
 license = "Apache-2.0"
@@ -23,7 +23,7 @@ repository = "https://github.com/pina-rs/lootbox"
 rust-version = "1.89.0"
 
 [workspace.dependencies]
-lootbox_program_client = { path = "clients/rust/lootbox_program", version = "0.0.1-alpha.0" }
+lootbox_program_client = { path = "clients/rust/lootbox_program", version = "0.0.2" }
 num-derive = { default-features = false, version = "0.5" }
 num-traits = { default-features = false, version = "0.2" }
 pina = { default-features = false, features = ["compact"], version = "0.19" }
@@ -37,7 +37,7 @@ solana-keccak-hasher = { default-features = false, version = "3.1" }
 solana-program-error = { default-features = false, version = "3.0" }
 solana-pubkey = { default-features = false, version = "4", features = ["bytemuck"] }
 solana-sha256-hasher = { default-features = false, version = "3.1.0" }
-switchboard_randomness_cpi = { path = "crates/switchboard_randomness_cpi", version = "0.0.1-alpha.0" }
+switchboard_randomness_cpi = { path = "crates/switchboard_randomness_cpi", version = "0.0.2" }
 thiserror = { default-features = false, version = "2" }
 
 [workspace.lints.rust]

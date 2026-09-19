@@ -695,7 +695,12 @@ fn chain_timestamp(program: &Harness) -> i64 {
 	i64::from_le_bytes(clock.data[32..40].try_into().expect("timestamp"))
 }
 
-fn lock_treasury(program: &Harness, template: Pubkey, mint: Pubkey, bundle_count: u32) {
+fn try_lock_treasury(
+	program: &Harness,
+	template: Pubkey,
+	mint: Pubkey,
+	bundle_count: u32,
+) -> Result<(), String> {
 	let next_bundle = Pubkey::find_program_address(
 		&[b"bundle", template.as_ref(), &bundle_count.to_le_bytes()],
 		&program.program_id,
@@ -707,23 +712,27 @@ fn lock_treasury(program: &Harness, template: Pubkey, mint: Pubkey, bundle_count
 	LockTreasuryInstruction::initialize(&mut data, |_| Ok(()))
 		.expect("lock data")
 		.service_vault_bump = service_vault_bump;
-	program
-		.send(
-			&data,
-			vec![
-				AccountMeta::new(program.payer(), true),
-				AccountMeta::new(template, false),
-				AccountMeta::new(mint, false),
-				AccountMeta::new_readonly(next_bundle, false),
-				AccountMeta::new(service_vault, false),
-				AccountMeta::new_readonly(Pubkey::default(), false),
-				AccountMeta::new_readonly(token_2022(), false),
-			],
-		)
-		.expect("lock exact treasury supply");
+	program.send(
+		&data,
+		vec![
+			AccountMeta::new(program.payer(), true),
+			AccountMeta::new(template, false),
+			AccountMeta::new(mint, false),
+			AccountMeta::new_readonly(next_bundle, false),
+			AccountMeta::new(service_vault, false),
+			AccountMeta::new_readonly(Pubkey::default(), false),
+			AccountMeta::new_readonly(token_2022(), false),
+		],
+	)?;
 
-	let mint_account = program.account(&mint).expect("locked mint");
+	let mint_account = program.account(&mint)?;
 	assert_eq!(&mint_account.data[..4], &[0; 4], "mint authority revoked");
+
+	Ok(())
+}
+
+fn lock_treasury(program: &Harness, template: Pubkey, mint: Pubkey, bundle_count: u32) {
+	try_lock_treasury(program, template, mint, bundle_count).expect("lock exact treasury supply");
 }
 
 fn template_request_data(bump: u8, beneficiary: Pubkey) -> Vec<u8> {
@@ -906,6 +915,80 @@ fn allocate_any(
 		"no bundle can be allocated: {}",
 		failures.join("; ")
 	))
+}
+
+#[test]
+#[ignore = "run with `devenv shell -- test:surfpool`"]
+fn prefunding_the_service_vault_cannot_block_treasury_lock() {
+	pina_test::run(async {
+		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
+			.await
+			.expect("Surfpool");
+		let payer = program.payer();
+		let (template, bump) = Pubkey::find_program_address(
+			&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
+			&program.program_id,
+		);
+		let mint = mint_with_metadata(&program, &template);
+		let creator_ata = box_ata(&program, &payer, &mint);
+		let opens_at = chain_timestamp(&program) + 3_600;
+		program
+			.send(
+				&create_template_data(Pubkey::new_unique(), bump, opens_at, true),
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new_readonly(mint, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("create template");
+
+		let bundle = add_bundle(&program, template, 0, 1, 1);
+		fund_sol(&program, template, bundle, 100_000).expect("fund SOL prize");
+		activate_bundle(&program, template, bundle);
+		program
+			.send(
+				&[LootboxInstruction::SealTemplate as u8, 0],
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+				],
+			)
+			.expect("seal template");
+		program
+			.send(
+				&template_mint_data(1),
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new(mint, false),
+					AccountMeta::new(creator_ata, false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("mint box");
+
+		let service_vault = Pubkey::find_program_address(
+			&[b"service-vault", template.as_ref()],
+			&program.program_id,
+		)
+		.0;
+		program
+			.fund(&service_vault, rent_minimum(0))
+			.expect("attacker pre-funds canonical PDA");
+
+		try_lock_treasury(&program, template, mint, 1)
+			.expect("an unsolicited lamport must not block treasury lock");
+		assert_eq!(
+			program.balance(&service_vault).expect("service balance"),
+			rent_minimum(0) + rent_minimum(ResultReceiptState::SIZE as u64) + 1_000,
+			"the creator only tops the service vault up to its required reserve",
+		);
+
+		program.stop().expect("stop Surfpool");
+	});
 }
 
 #[test]

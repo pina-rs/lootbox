@@ -1634,6 +1634,51 @@ mod tests {
 		assert_eq!(result, Err(lootbox_error(LootboxError::InvalidWeight)));
 	}
 
+	#[test]
+	fn fixed_wire_types_reject_trailing_bytes() {
+		let mut account = alloc::vec![0; LootboxState::SIZE];
+		LootboxState::initialize(&mut account, |_| Ok(())).expect("lootbox state");
+		account.push(0);
+		assert_eq!(
+			LootboxState::try_from_bytes(&account).err(),
+			Some(PinaProgramError::InvalidAccountSize.into()),
+		);
+
+		let mut instruction = alloc::vec![0; DepositInstruction::SIZE];
+		DepositInstruction::initialize(&mut instruction, |_| Ok(())).expect("deposit");
+		instruction.push(0);
+		assert!(DepositInstruction::try_from_bytes(&instruction).is_err());
+	}
+
+	#[test]
+	fn future_schema_versions_fail_closed() {
+		let mut account = alloc::vec![0; LootboxState::SIZE];
+		LootboxState::initialize(&mut account, |_| Ok(())).expect("lootbox state");
+		account[1] = 1;
+		assert_eq!(
+			LootboxState::try_from_bytes(&account).err(),
+			Some(PinaProgramError::InvalidMigrationVersion.into()),
+		);
+		assert_eq!(
+			LootboxState::try_from_bytes_versioned(&account).err(),
+			Some(PinaProgramError::InvalidMigrationVersion.into()),
+		);
+
+		let mut instruction = alloc::vec![0; DepositInstruction::SIZE];
+		DepositInstruction::initialize(&mut instruction, |_| Ok(())).expect("deposit");
+		instruction[1] = 1;
+		assert_eq!(
+			DepositInstruction::try_from_bytes(&instruction).err(),
+			Some(PinaProgramError::InvalidMigrationVersion.into()),
+		);
+	}
+
+	#[test]
+	fn reserved_migration_discriminator_requires_an_exact_envelope() {
+		assert!(is_migrate_instruction(&[MIGRATE_DISCRIMINATOR_U8]));
+		assert!(!is_migrate_instruction(&[MIGRATE_DISCRIMINATOR_U8, 0,]));
+	}
+
 	proptest! {
 		#[test]
 		fn selection_is_always_inside_the_weight_domain(

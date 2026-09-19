@@ -69,7 +69,12 @@ const BUNDLE_FUNDING: u8 = 0;
 const BUNDLE_ACTIVE: u8 = 1;
 
 /// Immutable template terms and the live finite inventory.
-#[account(discriminator = LootboxAccountType, compact, migrations)]
+#[account(
+	discriminator = LootboxAccountType,
+	compact,
+	migrations,
+	validate(with = validate_template_state)
+)]
 #[pda(seeds = [SEED_TEMPLATE, authority: Address, id: u64], bump = bump)]
 pub struct TemplateState {
 	pub authority: Address,
@@ -118,6 +123,16 @@ pub struct TemplateState {
 	/// Undrawn inventory per append-only bundle. Only activated slots occupy
 	/// account bytes; slots are never removed because openings snapshot indices.
 	pub remaining: Vec<u64, 1024>,
+}
+
+fn validate_template_state(state: &TemplateStateRef<'_>) -> ProgramResult {
+	let bundle_count =
+		usize::try_from(state.bundle_count.get()).map_err(|_| ProgramError::InvalidAccountData)?;
+	if state.remaining().len() != bundle_count || state.encoded_len() != state.storage_len() {
+		return Err(lootbox_error(LootboxError::InvalidState));
+	}
+
+	Ok(())
 }
 
 /// A complete prize outcome and its escrow authority, shared across all boxes.
@@ -287,6 +302,7 @@ fn validate_prize_pool_state(state: &PrizePoolStateRef<'_>) -> ProgramResult {
 			> deposited
 		|| state.unavailable().len() != deposited.div_ceil(8)
 		|| state.unavailable().len() > MAX_PRIZE_POOL_BITMAP_BYTES
+		|| state.encoded_len() != state.storage_len()
 		|| state.status > 1
 		|| (state.has_prepared_item.get() && (state.status != 0 || deposited >= quantity))
 		|| (state.status == 1 && state.has_prepared_item.get())
@@ -350,6 +366,40 @@ mod layout_tests {
 	}
 
 	#[test]
+	fn template_rejects_inventory_bytes_not_committed_by_bundle_count() {
+		let mut bytes = alloc::vec![0; TemplateState::HEADER_SIZE];
+		TemplateState::initialize(&mut bytes, &TemplateStatePatch::new())
+			.expect("canonical empty template");
+		bytes.extend_from_slice(&u64::MAX.to_le_bytes());
+
+		assert!(
+			TemplateState::try_from_bytes(&bytes).is_err(),
+			"an aligned tail must not silently create an uncommitted inventory slot",
+		);
+		assert!(
+			<TemplateState as MigratableAccount>::validate_current_migration(&bytes).is_err(),
+			"migration validation must reject the same hidden tail",
+		);
+	}
+
+	#[test]
+	fn prize_pool_rejects_bytes_outside_the_committed_bitmap() {
+		let mut bytes = alloc::vec![0; PrizePoolState::HEADER_SIZE];
+		PrizePoolState::initialize(&mut bytes, &PrizePoolStatePatch::new().quantity(1))
+			.expect("canonical empty prize pool");
+		bytes.push(0xa5);
+
+		assert!(
+			PrizePoolState::try_from_bytes(&bytes).is_err(),
+			"an unused byte must not survive outside the committed bitmap",
+		);
+		assert!(
+			<PrizePoolState as MigratableAccount>::validate_current_migration(&bytes).is_err(),
+			"migration validation must reject the same hidden byte",
+		);
+	}
+
+	#[test]
 	fn manifest_commits_to_bundle_and_service_terms() {
 		let mut bundle_bytes = [0; BundleState::SIZE];
 		let bundle = BundleState::initialize(&mut bundle_bytes, |_| Ok(())).expect("bundle");
@@ -364,12 +414,10 @@ mod layout_tests {
 		bundle.commitments[..32].copy_from_slice(&[7; 32]);
 		assert_ne!(first, next_manifest_accumulator(&[0; 32], bundle));
 
-		let mut template = initialized_template_header(
-			&TemplateStatePatch::new()
-				.total_bundles(7)
-				.bundle_count(1)
-				.manifest_accumulator(first),
-		);
+		let mut template = initialized_template_header(&TemplateStatePatch::new());
+		template.total_bundles.set(7);
+		template.bundle_count.set(1);
+		template.manifest_accumulator = first;
 		let address = Address::new_from_array([9; 32]);
 		let without_receipts = locked_manifest_hash(&address, &template);
 		template.result_receipts_enabled.set(true);
@@ -640,7 +688,8 @@ pub struct LockTreasuryAccounts<'a> {
 	/// The first unused bundle PDA proves that no funded tail was omitted.
 	#[pina(validate(empty))]
 	pub bundle: &'a AccountView,
-	/// Created and creator-funded only when receipts or crank bounties are enabled.
+	/// Creator-funded only when receipts or crank bounties are enabled.
+	/// Unsolicited lamports are accepted and reduce the required top-up.
 	#[pina(validate(empty))]
 	pub service_vault: &'a mut AccountView,
 	#[pina(validate(address = system::ID))]
@@ -1591,20 +1640,16 @@ impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 		let bump = state.bump;
 
 		if service_budget != 0 {
-			let service_vault_bump = [args.service_vault_bump];
-			let service_vault_signer = PdaSigner::from_slices([
-				SEED_SERVICE_VAULT,
-				template_address.as_ref(),
-				service_vault_bump.as_slice(),
-			]);
-			system::instructions::CreateAccount {
-				from: self.authority,
-				to: self.service_vault,
-				lamports: service_budget,
-				space: 0,
-				owner: &system::ID,
+			self.service_vault.assert_owner(&system::ID)?;
+			let top_up = service_budget.saturating_sub(self.service_vault.lamports());
+			if top_up != 0 {
+				system::instructions::Transfer {
+					from: self.authority,
+					to: self.service_vault,
+					lamports: top_up,
+				}
+				.invoke()?;
 			}
-			.invoke_signed(&[service_vault_signer.as_signer()])?;
 		}
 
 		let seeds = TemplateState::seeds(&authority, id).with_bump(bump);

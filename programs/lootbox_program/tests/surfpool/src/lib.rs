@@ -558,6 +558,27 @@ fn reserved_migrate_instruction_noops_on_placeholder_slots() {
 
 #[test]
 #[ignore = "run with `devenv shell -- test:surfpool`"]
+fn reserved_migrate_instruction_rejects_trailing_bytes() {
+	pina_test::run(async {
+		let program_id = Pubkey::new_from_array(ID.to_bytes());
+		let program = Harness::start(program_id)
+			.await
+			.expect("start isolated Surfpool test");
+
+		program
+			.send(
+				&[255, 0],
+				vec![
+					AccountMeta::new(program_id, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+				],
+			)
+			.expect_err("the reserved migration route rejects an appended byte");
+	});
+}
+
+#[test]
+#[ignore = "run with `devenv shell -- test:surfpool`"]
 fn reserved_migrate_instruction_rejects_foreign_accounts() {
 	pina_test::run(async {
 		let program_id = Pubkey::new_from_array(ID.to_bytes());
@@ -646,6 +667,28 @@ fn commit_burn_reveal_and_payout_round_trip() {
 				],
 			)
 			.expect("create lootbox");
+		let before_duplicate_migration =
+			program.account(&lootbox).expect("lootbox before migration");
+		program
+			.send(
+				&[255],
+				vec![
+					AccountMeta::new(program_id, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+					AccountMeta::new(lootbox, false),
+					AccountMeta::new(lootbox, false),
+				],
+			)
+			.expect_err("one account cannot occupy two migration slots");
+		let after_duplicate_migration = program.account(&lootbox).expect("lootbox after migration");
+		assert_eq!(
+			after_duplicate_migration.data, before_duplicate_migration.data,
+			"duplicate migration slots cannot partially mutate account data",
+		);
+		assert_eq!(
+			after_duplicate_migration.lamports, before_duplicate_migration.lamports,
+			"duplicate migration slots cannot move rent",
+		);
 
 		for (weight, reward) in OUTCOMES {
 			program
@@ -1266,6 +1309,37 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		assert!(
 			program.account(&refund_randomness.pubkey()).is_err(),
 			"refunded randomness account is closed"
+		);
+
+		let attacker_before = program
+			.balance(&recipient.pubkey())
+			.expect("attacker balance before withdrawal");
+		let vault_before_theft = program.balance(&vault).expect("vault before theft attempt");
+		program
+			.send_with_signers(
+				program.instruction(
+					&withdraw_data(1),
+					vec![
+						AccountMeta::new(recipient.pubkey(), true),
+						AccountMeta::new_readonly(lootbox, false),
+						AccountMeta::new(vault, false),
+						AccountMeta::new_readonly(mint, false),
+					],
+				),
+				&[&recipient],
+			)
+			.expect_err("a non-authority signer cannot steal vault surplus");
+		assert_eq!(
+			program
+				.balance(&recipient.pubkey())
+				.expect("attacker balance after withdrawal"),
+			attacker_before,
+			"the rejected withdrawal cannot pay the attacker",
+		);
+		assert_eq!(
+			program.balance(&vault).expect("vault after theft attempt"),
+			vault_before_theft,
+			"the rejected withdrawal cannot debit the vault",
 		);
 
 		program.stop().expect("stop isolated Surfpool test");

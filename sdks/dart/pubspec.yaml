@@ -1,6 +1,6 @@
 name: lootbox
 description: Ergonomic Dart SDK for the Pina lootbox primitive.
-version: 0.0.2
+version: 0.0.1-alpha.0
 repository: https://github.com/pina-rs/lootbox/tree/main/sdks/dart
 
 environment:
@@ -8,7 +8,7 @@ environment:
 
 dependencies:
   solana_kit_addresses: ^0.8.0
-  lootbox_program_client: ^0.0.2
+  lootbox_program_client: ^0.0.1-alpha.0
 
 dependency_overrides:
   lootbox_program_client:

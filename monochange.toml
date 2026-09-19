@@ -122,11 +122,6 @@ enabled = true
 mode = "builtin"
 trusted_publishing = { enabled = true, repository = "pina-rs/lootbox", workflow = "publish.yml", environment = "publisher" }
 
-[ecosystems.dart]
-lockfile_commands = [
-	{ command = "dart pub get", cwd = "sdks/dart", shell = "bash" },
-]
-
 [group.lootbox]
 packages = [
 	"switchboard_randomness_cpi",

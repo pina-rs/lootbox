@@ -183,7 +183,7 @@ packages:
       path: "../../clients/dart"
       relative: true
     source: path
-    version: "0.0.2"
+    version: "0.0.1-alpha.0"
   matcher:
     dependency: transitive
     description:

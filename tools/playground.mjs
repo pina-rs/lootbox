@@ -46,7 +46,6 @@ const oracle = Object.fromEntries(
 	[
 		"queue",
 		"oracle",
-		"rewardEscrow",
 		"programState",
 		"lutSigner",
 		"lut",
@@ -54,7 +53,19 @@ const oracle = Object.fromEntries(
 	].map((name) => [name, Surfnet.newKeypair().publicKey]),
 );
 surfnet.fundSolMany(
-	Object.values(oracle).map((address) => ({ address, lamports: 1_000_000 })),
+	Object.entries(oracle)
+		.filter(([name]) => name !== "oracle")
+		.map(([, address]) => ({ address, lamports: 1_000_000 })),
+);
+// The deployed oracle program owns its oracle accounts; mirror that so the
+// lootbox commit-time ownership check sees the real shape. The reward escrow
+// is not configured here at all: clients derive it per randomness account as
+// the canonical wrapped-SOL ATA.
+surfnet.setAccount(
+	oracle.oracle,
+	1_000_000,
+	new Uint8Array(0),
+	oracleProgram,
 );
 const config = Object.freeze({
 	network: "surfpool",

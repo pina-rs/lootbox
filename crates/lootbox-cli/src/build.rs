@@ -1069,6 +1069,9 @@ pub struct ForfeitTemplateOpenArgs {
 	/// Any signer advancing an expired FIFO head.
 	#[arg(long)]
 	pub caller: Pubkey,
+	/// Bound beneficiary receiving the forfeit bounty.
+	#[arg(long)]
+	pub beneficiary: Pubkey,
 	/// Template whose opening is forfeited.
 	#[arg(long)]
 	pub template: Pubkey,
@@ -1087,6 +1090,7 @@ impl InstructionBuilder for ForfeitTemplateOpenArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
 		let accounts = generated::ForfeitTemplateOpen::new(
 			self.caller,
+			self.beneficiary,
 			self.template,
 			self.service_vault,
 			self.opening,

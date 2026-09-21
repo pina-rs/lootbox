@@ -89,6 +89,8 @@ fn process_commit(accounts: &mut [AccountView]) -> ProgramResult {
 	};
 	authority.assert_signer()?;
 	randomness.assert_owner(&ID)?.assert_writable()?;
+	// Mirror the deployed program: an oracle account belongs to Switchboard.
+	oracle.assert_owner(&ID)?;
 	let seed_slot = sysvars::clock::Clock::get()?.slot;
 	let mut bytes = randomness.try_borrow_mut()?;
 

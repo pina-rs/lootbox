@@ -25,9 +25,10 @@ pub enum LootboxProgramError {
 	/// 2 - The configured outcome does not exist or is out of range.
 	#[error("The configured outcome does not exist or is out of range.")]
 	InvalidOutcome = 0x2,
-	/// An outcome weight must be non-zero and keep total weight within the bound.
-	/// 3 - An outcome weight must be non-zero and keep total weight within the bound.
-	#[error("An outcome weight must be non-zero and keep total weight within the bound.")]
+	/// An outcome weight must be non-zero, every outcome must promise a
+	/// positive reward, and total weight must stay within the bound.
+	/// 3 - An outcome weight must be non-zero, every outcome must promise a
+	#[error("An outcome weight must be non-zero, every outcome must promise a")]
 	InvalidWeight = 0x3,
 	/// The lootbox cannot be sealed until at least one outcome exists.
 	/// 4 - The lootbox cannot be sealed until at least one outcome exists.
@@ -145,6 +146,14 @@ pub enum LootboxProgramError {
 	/// 32 - Every bounded rejection-sampling round landed outside the uniform range.
 	#[error("Every bounded rejection-sampling round landed outside the uniform range.")]
 	EntropyRejectionExhausted = 0x20,
+	/// A prize's advertised identity is still mutable after escrow.
+	/// 33 - A prize's advertised identity is still mutable after escrow.
+	#[error("A prize's advertised identity is still mutable after escrow.")]
+	MutablePrize = 0x21,
+	/// The reserved migration route only validates already-current accounts.
+	/// 34 - The reserved migration route only validates already-current accounts.
+	#[error("The reserved migration route only validates already-current accounts.")]
+	MigrationLocked = 0x22,
 }
 
 impl From<LootboxProgramError> for solana_program_error::ProgramError {

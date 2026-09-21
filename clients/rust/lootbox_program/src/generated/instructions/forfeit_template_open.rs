@@ -17,6 +17,9 @@ pub struct ForfeitTemplateOpen {
 	/// Any signer may advance an expired FIFO head; the stored beneficiary and
 	/// their exclusive claim rights are never changed.
 	pub caller: solana_pubkey::Pubkey,
+	/// Bound destination of the forfeit bounty: the creator-funded service
+	/// budget compensates the beneficiary whose box burned, never the crank.
+	pub beneficiary: solana_pubkey::Pubkey,
 	pub template: solana_pubkey::Pubkey,
 	pub service_vault: solana_pubkey::Pubkey,
 	pub opening: solana_pubkey::Pubkey,
@@ -25,9 +28,10 @@ pub struct ForfeitTemplateOpen {
 }
 
 impl ForfeitTemplateOpen {
-	pub fn new(caller: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, service_vault: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey) -> Self {
+	pub fn new(caller: solana_pubkey::Pubkey, beneficiary: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, service_vault: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey) -> Self {
 		Self {
 			caller,
+			beneficiary,
 			template,
 			service_vault,
 			opening,
@@ -46,8 +50,9 @@ impl ForfeitTemplateOpen {
 		data: ForfeitTemplateOpenInstructionData,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
+		let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.caller, true));
+		accounts.push(solana_instruction::AccountMeta::new(self.beneficiary, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.service_vault, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));

@@ -13,6 +13,21 @@ pub(super) const SPL_ACCOUNT_COMPRESSION_ID: Address =
 pub(super) const SPL_NOOP_ID: Address = address!("noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV");
 const INSTRUCTIONS_SYSVAR_ID: Address = address!("Sysvar1nstructions1111111111111111111111111");
 
+/// Metaplex Core `Key::AssetV1` discriminant at the pinned upstream commit.
+const CORE_ASSET_V1_KEY: u8 = 1;
+/// `UpdateAuthority::Address` discriminant inside a Core asset account.
+const CORE_UPDATE_AUTHORITY_ADDRESS_TAG: u8 = 1;
+/// Byte offset where the update authority enum begins in `AssetV1`.
+const CORE_UPDATE_AUTHORITY_OFFSET: usize = 33;
+/// `AssetV1::BASE_LENGTH` at the pinned upstream commit: key, owner, the
+/// fixed-width update authority, two string length prefixes, and the seq tag.
+const CORE_ASSET_BASE_LENGTH: usize = 75;
+
+/// Metaplex Token Metadata `Key::MetadataV1` discriminant.
+const METADATA_V1_KEY: u8 = 4;
+/// Serialized size of one Metadata `Creator`: address, verified flag, share.
+const METADATA_CREATOR_LENGTH: usize = 34;
+
 #[instruction(discriminator = LootboxInstruction::FundMetadataNftPrize, migrations)]
 pub struct FundMetadataNftPrizeInstruction {}
 
@@ -356,6 +371,139 @@ fn metadata_authority_is_safe(authority: Option<&Address>, edition: &Address) ->
 	authority.is_none_or(|address| address == edition)
 }
 
+/// Require a plugin-free Core asset whose update authority already belongs to
+/// `bundle`.
+///
+/// Core stores plugins in a header and registry appended after the base
+/// `AssetV1` serialization, and permanent transfer delegates — which
+/// force-approve transfers by their authority without the owner — are minted
+/// with the asset itself and can never be removed. The only admissible escrow
+/// shape is therefore the exact base serialization: no trailing registry
+/// bytes, with the update authority already transferred to the bundle PDA so
+/// the creator retains no plugin, freeze, or transfer power over the prize.
+fn validate_core_asset_data(data: &[u8], bundle: &Address) -> ProgramResult {
+	if data.first() != Some(&CORE_ASSET_V1_KEY)
+		|| data.get(CORE_UPDATE_AUTHORITY_OFFSET) != Some(&CORE_UPDATE_AUTHORITY_ADDRESS_TAG)
+	{
+		return Err(lootbox_error(LootboxError::InvalidPrize));
+	}
+	let update_authority = data
+		.get(CORE_UPDATE_AUTHORITY_OFFSET + 1..CORE_UPDATE_AUTHORITY_OFFSET + 33)
+		.ok_or(ProgramError::InvalidAccountData)?;
+	if update_authority != bundle.as_ref() {
+		return Err(lootbox_error(LootboxError::InvalidPrize));
+	}
+
+	let mut cursor = CORE_UPDATE_AUTHORITY_OFFSET + 33;
+	let mut strings = 0usize;
+	for _ in 0..2 {
+		let length = metadata_string_length(data, &mut cursor)?;
+		strings = strings
+			.checked_add(length)
+			.ok_or(ProgramError::InvalidAccountData)?;
+		cursor = cursor
+			.checked_add(length)
+			.ok_or(ProgramError::InvalidAccountData)?;
+		if cursor > data.len() {
+			return Err(ProgramError::InvalidAccountData);
+		}
+	}
+
+	let seq = data
+		.get(cursor)
+		.copied()
+		.ok_or(ProgramError::InvalidAccountData)?;
+	let seq_payload = match seq {
+		0 => 0,
+		1 => 8,
+		_ => return Err(ProgramError::InvalidAccountData),
+	};
+
+	// Mirror Core's own `AssetV1::get_size` boundary: a longer account means a
+	// plugin header and registry are appended to the base serialization.
+	let expected = CORE_ASSET_BASE_LENGTH
+		.checked_add(strings)
+		.and_then(|value| value.checked_add(seq_payload))
+		.ok_or(ProgramError::InvalidAccountData)?;
+	if data.len() != expected {
+		return Err(lootbox_error(LootboxError::InvalidPrize));
+	}
+
+	Ok(())
+}
+
+/// Read one Borsh string length and advance the cursor past its prefix.
+fn metadata_string_length(data: &[u8], cursor: &mut usize) -> Result<usize, ProgramError> {
+	let prefix: [u8; 4] = data
+		.get(*cursor..*cursor + 4)
+		.and_then(|bytes| bytes.try_into().ok())
+		.ok_or(ProgramError::InvalidAccountData)?;
+	*cursor = (*cursor)
+		.checked_add(4)
+		.ok_or(ProgramError::InvalidAccountData)?;
+	if *cursor > data.len() {
+		return Err(ProgramError::InvalidAccountData);
+	}
+
+	usize::try_from(u32::from_le_bytes(prefix)).map_err(|_| ProgramError::InvalidAccountData)
+}
+
+/// Require a Metadata account whose update authority is revoked and whose data
+/// is immutable, so a funded prize cannot have its advertised identity
+/// rewritten after escrow.
+fn validate_metadata_lock(data: &[u8]) -> ProgramResult {
+	if data.first() != Some(&METADATA_V1_KEY) || data.get(1..33) != Some([0u8; 32].as_slice()) {
+		return Err(lootbox_error(LootboxError::InvalidPrize));
+	}
+
+	// Skip the mint, then the Data block: three strings, the sale fee, and the
+	// optional creator list.
+	let mut cursor = 33usize
+		.checked_add(32)
+		.ok_or(ProgramError::InvalidAccountData)?;
+	for _ in 0..3 {
+		let length = metadata_string_length(data, &mut cursor)?;
+		cursor = cursor
+			.checked_add(length)
+			.ok_or(ProgramError::InvalidAccountData)?;
+		if cursor > data.len() {
+			return Err(ProgramError::InvalidAccountData);
+		}
+	}
+	cursor = cursor
+		.checked_add(2)
+		.ok_or(ProgramError::InvalidAccountData)?;
+	match data.get(cursor) {
+		Some(0) => cursor += 1,
+		Some(1) => {
+			cursor = cursor
+				.checked_add(1)
+				.ok_or(ProgramError::InvalidAccountData)?;
+			let count = metadata_string_length(data, &mut cursor)?;
+			let creators = count
+				.checked_mul(METADATA_CREATOR_LENGTH)
+				.ok_or(ProgramError::InvalidAccountData)?;
+			cursor = cursor
+				.checked_add(creators)
+				.ok_or(ProgramError::InvalidAccountData)?;
+		}
+		_ => return Err(ProgramError::InvalidAccountData),
+	}
+	if cursor > data.len() {
+		return Err(ProgramError::InvalidAccountData);
+	}
+	// Skip `primary_sale_happened`; the next byte is `is_mutable`.
+	cursor = cursor
+		.checked_add(1)
+		.ok_or(ProgramError::InvalidAccountData)?;
+
+	if data.get(cursor) != Some(&0) {
+		return Err(lootbox_error(LootboxError::MutablePrize));
+	}
+
+	Ok(())
+}
+
 fn validate_metadata_accounts(
 	accounts: &MetadataValidation<'_>,
 	optional_accounts: &[AccountView],
@@ -425,6 +573,9 @@ fn validate_metadata_accounts(
 		.assert_address(&expected_metadata)?
 		.assert_owner(&MPL_TOKEN_METADATA_ID)?;
 
+	let metadata_data = accounts.metadata.try_borrow()?;
+	validate_metadata_lock(&metadata_data)?;
+
 	Ok(())
 }
 
@@ -490,6 +641,7 @@ fn validate_core_accounts(
 	core_program: &AccountView,
 	system_program: &AccountView,
 	log_wrapper: &AccountView,
+	bundle: &Address,
 ) -> ProgramResult {
 	core_program.assert_program(&MPL_CORE_ID)?;
 	asset.assert_owner(&MPL_CORE_ID)?;
@@ -502,6 +654,9 @@ fn validate_core_accounts(
 	}
 	system_program.assert_address(&system::ID)?;
 	log_wrapper.assert_address(&SPL_NOOP_ID)?;
+
+	let asset_data = asset.try_borrow()?;
+	validate_core_asset_data(&asset_data, bundle)?;
 
 	Ok(())
 }
@@ -840,6 +995,7 @@ impl<'a> ProcessAccountInfos<'a> for FundCoreAssetPrizeAccounts<'a> {
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, self.template.address())?;
+		let bundle_address = *self.bundle.address();
 		validate_core_accounts(
 			self.asset,
 			self.collection,
@@ -847,6 +1003,7 @@ impl<'a> ProcessAccountInfos<'a> for FundCoreAssetPrizeAccounts<'a> {
 			self.core_program,
 			self.system_program,
 			self.log_wrapper,
+			&bundle_address,
 		)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		if bundle.status != BUNDLE_FUNDING || bundle.quantity.get() != 1 {
@@ -878,6 +1035,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimCoreAssetPrizeAccounts<'a> {
 		let state = as_template(self.template)?;
 		assert_template(self.template.address(), &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
+		let bundle_address = *self.bundle.address();
 		validate_core_accounts(
 			self.asset,
 			self.collection,
@@ -885,6 +1043,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimCoreAssetPrizeAccounts<'a> {
 			self.core_program,
 			self.system_program,
 			self.log_wrapper,
+			&bundle_address,
 		)?;
 		let opening_address = *self.opening.address();
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
@@ -934,6 +1093,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCoreAssetPrizeAccounts<'a> {
 		assert_template(self.template.address(), &state)?;
 		assert_template_authority(self.authority, &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
+		let bundle_address = *self.bundle.address();
 		validate_core_accounts(
 			self.asset,
 			self.collection,
@@ -941,6 +1101,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCoreAssetPrizeAccounts<'a> {
 			self.core_program,
 			self.system_program,
 			self.log_wrapper,
+			&bundle_address,
 		)?;
 		let supply = assert_template_mint(
 			self.box_mint,
@@ -1191,5 +1352,178 @@ mod tests {
 			validate_bubblegum_proof_count(17),
 			Err(ProgramError::InvalidArgument),
 		);
+	}
+
+	fn core_asset(owner: &Address, bundle: &Address, seq: Option<u64>) -> Vec<u8> {
+		let mut data = alloc::vec![CORE_ASSET_V1_KEY];
+		data.extend_from_slice(owner.as_ref());
+		data.push(CORE_UPDATE_AUTHORITY_ADDRESS_TAG);
+		data.extend_from_slice(bundle.as_ref());
+		for value in ["Prize", "https://example.com/prize.json"] {
+			data.extend_from_slice(&(value.len() as u32).to_le_bytes());
+			data.extend_from_slice(value.as_bytes());
+		}
+		match seq {
+			Some(sequence) => {
+				data.push(1);
+				data.extend_from_slice(&sequence.to_le_bytes());
+			}
+			None => data.push(0),
+		}
+		data
+	}
+
+	#[test]
+	fn plugin_free_core_assets_with_bundle_update_authority_are_admitted() {
+		let owner = Address::new_from_array([3; 32]);
+		let bundle = Address::new_from_array([4; 32]);
+		for seq in [None, Some(7)] {
+			assert_eq!(
+				validate_core_asset_data(&core_asset(&owner, &bundle, seq), &bundle),
+				Ok(()),
+			);
+		}
+	}
+
+	#[test]
+	fn core_assets_with_permanent_delegate_plugins_are_rejected() {
+		let owner = Address::new_from_array([3; 32]);
+		let bundle = Address::new_from_array([4; 32]);
+		let mut booby_trapped = core_asset(&owner, &bundle, None);
+		// A plugin header (key 3) plus registry (key 4) appended after the base
+		// serialization is exactly how Core stores PermanentTransferDelegate.
+		booby_trapped.extend_from_slice(&[3, 0, 0, 0, 4, 1]);
+
+		assert_eq!(
+			validate_core_asset_data(&booby_trapped, &bundle),
+			Err(lootbox_error(LootboxError::InvalidPrize)),
+		);
+	}
+
+	#[test]
+	fn core_assets_with_retained_creator_authorities_are_rejected() {
+		let owner = Address::new_from_array([3; 32]);
+		let bundle = Address::new_from_array([4; 32]);
+		let creator = Address::new_from_array([5; 32]);
+
+		assert_eq!(
+			validate_core_asset_data(&core_asset(&owner, &creator, None), &bundle),
+			Err(lootbox_error(LootboxError::InvalidPrize)),
+		);
+
+		// UpdateAuthority::None (tag 0) and ::Collection (tag 2) are equally
+		// inadmissible: only the bundle PDA may hold plugin powers.
+		for tag in [0u8, 2] {
+			let mut unset = core_asset(&owner, &bundle, None);
+			unset[CORE_UPDATE_AUTHORITY_OFFSET] = tag;
+			assert_eq!(
+				validate_core_asset_data(&unset, &bundle),
+				Err(lootbox_error(LootboxError::InvalidPrize)),
+			);
+		}
+	}
+
+	#[test]
+	fn core_assets_with_wrong_keys_or_corrupt_strings_are_rejected() {
+		let owner = Address::new_from_array([3; 32]);
+		let bundle = Address::new_from_array([4; 32]);
+
+		let mut collection = core_asset(&owner, &bundle, None);
+		collection[0] = 5; // Key::CollectionV1
+		assert_eq!(
+			validate_core_asset_data(&collection, &bundle),
+			Err(lootbox_error(LootboxError::InvalidPrize)),
+		);
+
+		let mut lying_name = core_asset(&owner, &bundle, None);
+		lying_name[66..70].copy_from_slice(&u32::MAX.to_le_bytes());
+		assert!(validate_core_asset_data(&lying_name, &bundle).is_err());
+
+		let mut lying_uri = core_asset(&owner, &bundle, None);
+		let uri_length_offset = 66 + 4 + "Prize".len();
+		lying_uri[uri_length_offset..uri_length_offset + 4]
+			.copy_from_slice(&u32::MAX.to_le_bytes());
+		assert!(validate_core_asset_data(&lying_uri, &bundle).is_err());
+
+		let mut bad_seq = core_asset(&owner, &bundle, None);
+		let seq_offset = bad_seq.len() - 1;
+		bad_seq[seq_offset] = 2;
+		assert!(validate_core_asset_data(&bad_seq, &bundle).is_err());
+
+		let truncated = &core_asset(&owner, &bundle, None)[..40];
+		assert!(validate_core_asset_data(truncated, &bundle).is_err());
+	}
+
+	fn metadata_account(update_authority: &Address, is_mutable: bool) -> Vec<u8> {
+		let mut data = alloc::vec![METADATA_V1_KEY];
+		data.extend_from_slice(update_authority.as_ref());
+		data.extend_from_slice(&[9; 32]); // mint
+		for value in ["Rare Prize", "RPRZ", "https://example.com/prize.json"] {
+			data.extend_from_slice(&(value.len() as u32).to_le_bytes());
+			data.extend_from_slice(value.as_bytes());
+		}
+		data.extend_from_slice(&500u16.to_le_bytes());
+		data.push(0); // no creators
+		data.push(0); // primary sale has not happened
+		data.push(u8::from(is_mutable));
+		data
+	}
+
+	#[test]
+	fn locked_metadata_accounts_are_admitted() {
+		assert_eq!(
+			validate_metadata_lock(&metadata_account(&Address::default(), false)),
+			Ok(()),
+		);
+
+		let mut with_creators = metadata_account(&Address::default(), false);
+		let creator_tag = with_creators.len() - 3;
+		let mut creators = 2u32.to_le_bytes().to_vec();
+		creators.extend_from_slice(&[7u8; 32]);
+		creators.push(1);
+		creators.push(100);
+		creators.extend_from_slice(&[8u8; 32]);
+		creators.push(0);
+		creators.push(50);
+		with_creators.insert(creator_tag, 1);
+		with_creators.splice((creator_tag + 1)..=creator_tag, creators);
+		assert_eq!(validate_metadata_lock(&with_creators), Ok(()));
+	}
+
+	#[test]
+	fn mutable_metadata_accounts_are_rejected() {
+		assert_eq!(
+			validate_metadata_lock(&metadata_account(&Address::default(), true)),
+			Err(lootbox_error(LootboxError::MutablePrize)),
+		);
+	}
+
+	#[test]
+	fn metadata_accounts_with_retained_update_authorities_are_rejected() {
+		let creator = Address::new_from_array([6; 32]);
+		assert_eq!(
+			validate_metadata_lock(&metadata_account(&creator, false)),
+			Err(lootbox_error(LootboxError::InvalidPrize)),
+		);
+
+		let mut wrong_key = metadata_account(&Address::default(), false);
+		wrong_key[0] = 1; // Key::EditionV1
+		assert_eq!(
+			validate_metadata_lock(&wrong_key),
+			Err(lootbox_error(LootboxError::InvalidPrize)),
+		);
+
+		let truncated = &metadata_account(&Address::default(), false)
+			[..metadata_account(&Address::default(), false).len() - 1];
+		assert!(validate_metadata_lock(truncated).is_err());
+
+		let mut lying_creators = metadata_account(&Address::default(), false);
+		let creator_tag = lying_creators.len() - 3;
+		lying_creators.insert(creator_tag, 1);
+		lying_creators.splice(
+			(creator_tag + 1)..=creator_tag,
+			[u32::MAX.to_le_bytes()].concat(),
+		);
+		assert!(validate_metadata_lock(&lying_creators).is_err());
 	}
 }

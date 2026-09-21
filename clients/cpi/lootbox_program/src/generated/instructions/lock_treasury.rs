@@ -40,7 +40,8 @@ pub struct LockTreasury<'account> {
 	pub bundle: &'account AccountView,
 
 	/// CPI account `serviceVault`.
-	/// Created and creator-funded only when receipts or crank bounties are enabled.
+	/// Creator-funded only when receipts or crank bounties are enabled.
+	/// Unsolicited lamports are accepted and reduce the required top-up.
 	/// Required privileges: writable.
 	pub service_vault: &'account AccountView,
 

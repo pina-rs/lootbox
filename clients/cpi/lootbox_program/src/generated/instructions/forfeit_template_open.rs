@@ -28,6 +28,12 @@ pub struct ForfeitTemplateOpen<'account> {
 	/// Required privileges: writable and signer.
 	pub caller: &'account AccountView,
 
+	/// CPI account `beneficiary`.
+	/// Bound destination of the forfeit bounty: the creator-funded service
+	/// budget compensates the beneficiary whose box burned, never the crank.
+	/// Required privileges: writable.
+	pub beneficiary: &'account AccountView,
+
 	/// CPI account `template`.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
@@ -84,8 +90,9 @@ impl<'account> ForfeitTemplateOpen<'account> {
 		program: &ProgramAccount<'_>,
 		signers: &[Signer<'_, '_>],
 	) -> ProgramResult {
-		let accounts: [CpiHandle<'_>; 6] = [
+		let accounts: [CpiHandle<'_>; 7] = [
 			CpiHandle::writable_signer(self.caller)?,
+			CpiHandle::writable(self.beneficiary)?,
 			CpiHandle::writable(self.template)?,
 			CpiHandle::writable(self.service_vault)?,
 			CpiHandle::writable(self.opening)?,

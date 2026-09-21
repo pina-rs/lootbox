@@ -69,6 +69,7 @@ impl<'a> ProcessAccountInfos<'a> for CloseTemplateOpeningAccounts<'a> {
 		if expected_opening != opening_address {
 			return Err(ProgramError::InvalidSeeds);
 		}
+		assert_reward_escrow(self.reward_escrow, &randomness_address)?;
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 
 		if randomness.authority != opening_address || randomness.queue != state.oracle_queue {

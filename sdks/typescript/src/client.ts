@@ -99,7 +99,6 @@ export type ChainBundle = Readonly<
 export type OracleAccounts = Readonly<{
 	queue: Address;
 	oracle: Address;
-	rewardEscrow: Address;
 	programState: Address;
 	lutSigner: Address;
 	lut: Address;
@@ -822,6 +821,18 @@ export class LootboxClient {
 	}
 	async resultReceiptAddress(opening: Address, sequence: bigint) {
 		return generated.findResultReceiptPda({ opening, sequence });
+	}
+	/** The reward escrow the oracle program derives for one randomness
+	 * account: its canonical wrapped-SOL associated token account. The
+	 * on-chain instructions pin this derivation, so it is computed here
+	 * rather than configured per deployment.
+	 */
+	async rewardEscrowAddress(randomness: Address) {
+		return (await token.findAssociatedTokenPda({
+			owner: randomness,
+			mint: WRAPPED_SOL,
+			tokenProgram: CLASSIC_TOKEN_PROGRAM,
+		}))[0];
 	}
 	async ata(
 		owner: Address,
@@ -2476,7 +2487,7 @@ export class LootboxClient {
 			),
 			opening,
 			randomness,
-			rewardEscrow: oracle.rewardEscrow,
+			rewardEscrow: await this.rewardEscrowAddress(randomness.address),
 			oracleQueue: template.data.oracleQueue,
 			oracle: oracle.oracle,
 			recentSlotHashes: SLOT_HASHES,
@@ -2497,8 +2508,9 @@ export class LootboxClient {
 		});
 	}
 	/** Forfeit the head receipt after the on-chain oracle timeout. This
-	 * permissionless liveness path never changes the bound recipient and does
-	 * not return a box or consume prize inventory.
+	 * permissionless liveness path never changes the bound recipient, does not
+	 * return a box or consume prize inventory, and pays any creator-funded
+	 * settlement bounty to the bound beneficiary rather than the crank.
 	 */
 	async forfeitTemplateOpen(template: ChainTemplate, opening: ChainOpening) {
 		if (opening.data.status !== 0) {
@@ -2506,6 +2518,7 @@ export class LootboxClient {
 		}
 		return this.send([generated.getForfeitTemplateOpenInstruction({
 			caller: this.payer,
+			beneficiary: opening.data.beneficiary,
 			template: template.address,
 			serviceVault: (await this.serviceVaultAddress(template.address))[0],
 			opening: opening.address,
@@ -2526,7 +2539,9 @@ export class LootboxClient {
 			template: template.address,
 			opening: opening.address,
 			randomness: opening.data.randomness,
-			rewardEscrow: oracle.rewardEscrow,
+			rewardEscrow: await this.rewardEscrowAddress(
+				opening.data.randomness,
+			),
 			oracleProgram: template.data.oracleProgram,
 			oracleProgramState: oracle.programState,
 			oracleLut: oracle.lut,
@@ -2552,7 +2567,9 @@ export class LootboxClient {
 			oracleStats: oracle.stats,
 			recentSlotHashes: SLOT_HASHES,
 			oracleProgram: template.data.oracleProgram,
-			rewardEscrow: oracle.rewardEscrow,
+			rewardEscrow: await this.rewardEscrowAddress(
+				opening.data.randomness,
+			),
 			oracleProgramState: oracle.programState,
 			wrappedSolMint: WRAPPED_SOL,
 			...proof,
@@ -2620,7 +2637,9 @@ export class LootboxClient {
 				oracleStats: oracle.stats,
 				recentSlotHashes: SLOT_HASHES,
 				oracleProgram: template.data.oracleProgram,
-				rewardEscrow: oracle.rewardEscrow,
+				rewardEscrow: await this.rewardEscrowAddress(
+					opening.data.randomness,
+				),
 				oracleProgramState: oracle.programState,
 				wrappedSolMint: WRAPPED_SOL,
 				...proof,

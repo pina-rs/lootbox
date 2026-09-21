@@ -98,6 +98,7 @@ getForfeitTemplateOpenInstructionDataCodec() {
 Instruction getForfeitTemplateOpenInstruction({
   required Address programAddress,
   required Address caller,
+  required Address beneficiary,
   required Address template,
   required Address serviceVault,
   required Address opening,
@@ -110,6 +111,7 @@ Instruction getForfeitTemplateOpenInstruction({
     programAddress: programAddress,
     accounts: [
       AccountMeta(address: caller, role: AccountRole.writableSigner),
+      AccountMeta(address: beneficiary, role: AccountRole.writable),
       AccountMeta(address: template, role: AccountRole.writable),
       AccountMeta(address: serviceVault, role: AccountRole.writable),
       AccountMeta(address: opening, role: AccountRole.writable),

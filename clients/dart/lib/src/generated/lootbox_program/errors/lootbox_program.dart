@@ -15,8 +15,9 @@ const int lootboxProgramErrorInvalidState = 0x1; // 1
 /// Message: "The configured outcome does not exist or is out of range."
 const int lootboxProgramErrorInvalidOutcome = 0x2; // 2
 
-/// An outcome weight must be non-zero and keep total weight within the bound.
-/// Message: "An outcome weight must be non-zero and keep total weight within the bound."
+/// An outcome weight must be non-zero, every outcome must promise a
+/// positive reward, and total weight must stay within the bound.
+/// Message: "An outcome weight must be non-zero, every outcome must promise a"
 const int lootboxProgramErrorInvalidWeight = 0x3; // 3
 
 /// The lootbox cannot be sealed until at least one outcome exists.
@@ -135,6 +136,14 @@ const int lootboxProgramErrorMutablePrizePoolItem = 0x1f; // 31
 /// Message: "Every bounded rejection-sampling round landed outside the uniform range."
 const int lootboxProgramErrorEntropyRejectionExhausted = 0x20; // 32
 
+/// A prize's advertised identity is still mutable after escrow.
+/// Message: "A prize's advertised identity is still mutable after escrow."
+const int lootboxProgramErrorMutablePrize = 0x21; // 33
+
+/// The reserved migration route only validates already-current accounts.
+/// Message: "The reserved migration route only validates already-current accounts."
+const int lootboxProgramErrorMigrationLocked = 0x22; // 34
+
 /// Map of error codes to human-readable messages.
 const Map<int, String> _lootboxProgramErrorMessages = {
   lootboxProgramErrorUnauthorized:
@@ -143,7 +152,8 @@ const Map<int, String> _lootboxProgramErrorMessages = {
       'The account or lootbox is not in the required state.',
   lootboxProgramErrorInvalidOutcome:
       'The configured outcome does not exist or is out of range.',
-  lootboxProgramErrorInvalidWeight: 'An outcome weight must be non-zero and keep total weight within the bound.',
+  lootboxProgramErrorInvalidWeight:
+      'An outcome weight must be non-zero, every outcome must promise a',
   lootboxProgramErrorIncompleteConfiguration:
       'The lootbox cannot be sealed until at least one outcome exists.',
   lootboxProgramErrorInsolvent:
@@ -197,6 +207,10 @@ const Map<int, String> _lootboxProgramErrorMessages = {
   lootboxProgramErrorInvalidPrizePoolMetadata: 'The Bubblegum metadata preimage is malformed or does not match the leaf.',
   lootboxProgramErrorMutablePrizePoolItem: '`PrizePool` custody accepts only permanently immutable Bubblegum metadata.',
   lootboxProgramErrorEntropyRejectionExhausted: 'Every bounded rejection-sampling round landed outside the uniform range.',
+  lootboxProgramErrorMutablePrize:
+      'A prize\'s advertised identity is still mutable after escrow.',
+  lootboxProgramErrorMigrationLocked:
+      'The reserved migration route only validates already-current accounts.',
 };
 
 /// Get the error message for a LootboxProgram program error code.

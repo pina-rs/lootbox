@@ -19,7 +19,8 @@ pub struct LockTreasury {
 	pub box_mint: solana_pubkey::Pubkey,
 	/// The first unused bundle PDA proves that no funded tail was omitted.
 	pub bundle: solana_pubkey::Pubkey,
-	/// Created and creator-funded only when receipts or crank bounties are enabled.
+	/// Creator-funded only when receipts or crank bounties are enabled.
+	/// Unsolicited lamports are accepted and reduce the required top-up.
 	pub service_vault: solana_pubkey::Pubkey,
 	pub system_program: solana_pubkey::Pubkey,
 	pub box_token_program: solana_pubkey::Pubkey,

@@ -987,9 +987,17 @@ fn assert_template_mint(
 }
 
 fn metadata_bytes(data: &[u8]) -> Result<&[u8], ProgramError> {
+	find_metadata_bytes(data)?.ok_or(lootbox_error(LootboxError::InvalidMint))
+}
+
+/// Return the on-mint Token-2022 metadata payload when the mint carries one.
+fn find_metadata_bytes(data: &[u8]) -> Result<Option<&[u8]>, ProgramError> {
 	// Token-2022 extended mints pad the base to 165 bytes, followed by the
-	// account-type byte and (u16 type, u16 length, value) TLV entries.
-	let mut entries = data.get(166..).ok_or(ProgramError::InvalidAccountData)?;
+	// account-type byte and (u16 type, u16 length, value) TLV entries. A
+	// shorter account is a plain mint with no extensions at all.
+	let Some(mut entries) = data.get(166..) else {
+		return Ok(None);
+	};
 	// The mint allowlist permits only MetadataPointer and TokenMetadata.
 	for _ in 0..2 {
 		if entries.len() < 4 {
@@ -1001,14 +1009,14 @@ fn metadata_bytes(data: &[u8]) -> Result<&[u8], ProgramError> {
 			.get(4..4 + length)
 			.ok_or(ProgramError::InvalidAccountData)?;
 		if kind == token_2022::state::ExtensionType::TokenMetadata as u16 {
-			return Ok(value);
+			return Ok(Some(value));
 		}
 		entries = entries
 			.get(4 + length..)
 			.ok_or(ProgramError::InvalidAccountData)?;
 	}
 
-	Err(lootbox_error(LootboxError::InvalidMint))
+	Ok(None)
 }
 
 fn take_metadata_string<'a>(data: &mut &'a [u8]) -> Result<&'a [u8], ProgramError> {
@@ -1498,6 +1506,18 @@ impl<'a> ProcessAccountInfos<'a> for FundMintPrizeAccounts<'a> {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 		drop(mint);
+
+		// Badge metadata is optional; when the mint carries any it must already
+		// be immutable, so the advertised identity cannot change after escrow.
+		// The borrow is scoped so the data guard never outlives local checks.
+		{
+			let mint_data = self.mint.try_borrow()?;
+			if let Some(metadata) = find_metadata_bytes(&mint_data)?
+				&& metadata.get(..32) != Some([0u8; 32].as_slice())
+			{
+				return Err(lootbox_error(LootboxError::MutablePrize));
+			}
+		}
 
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		if bundle.status != BUNDLE_FUNDING {

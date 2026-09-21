@@ -637,6 +637,8 @@ fn forfeit_template_open_builds() {
 		"forfeit-template-open",
 		"--caller",
 		PK1,
+		"--beneficiary",
+		PK2,
 		"--template",
 		PK2,
 		"--service-vault",
@@ -650,6 +652,10 @@ fn forfeit_template_open_builds() {
 
 	assert_eq!(instruction.data[0], 36);
 	assert_eq!(instruction.data.len(), 2);
+	// The bound beneficiary must occupy the second account slot so the
+	// creator-funded bounty compensates the box holder, never the crank.
+	assert_eq!(instruction.accounts[1].pubkey.to_string(), PK2);
+	assert!(instruction.accounts[1].is_writable);
 }
 
 #[test]

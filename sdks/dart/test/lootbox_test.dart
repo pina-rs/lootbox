@@ -50,6 +50,28 @@ void main() {
       );
     });
 
+    test('rejects outcomes that promise no reward', () {
+      expect(
+        () => LootboxPlan(
+          maxSupply: BigInt.one,
+          outcomes: [
+            LootboxOutcome(
+              label: 'Nothing',
+              weight: BigInt.one,
+              rewardLamports: BigInt.zero,
+            ),
+          ],
+        ),
+        throwsA(
+          isA<LootboxPlanException>().having(
+            (error) => error.code,
+            'code',
+            'ZERO_REWARD',
+          ),
+        ),
+      );
+    });
+
     test('rejects values that overflow on-chain integers', () {
       expect(
         () => LootboxPlan(

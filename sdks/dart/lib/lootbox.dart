@@ -110,6 +110,12 @@ final class LootboxPlan {
           'outcome $index has a negative reward',
         );
       }
+      if (outcome.rewardLamports == BigInt.zero) {
+        throw LootboxPlanException(
+          'ZERO_REWARD',
+          'outcome $index must promise a positive reward so the timeout floor stays positive',
+        );
+      }
       if (outcome.weight > _maxU64 || outcome.rewardLamports > _maxU64) {
         throw LootboxPlanException(
           'OUT_OF_RANGE',

@@ -75,6 +75,7 @@ export type PlanErrorCode =
 	| "NO_OUTCOMES"
 	| "TOO_MANY_OUTCOMES"
 	| "ZERO_WEIGHT"
+	| "ZERO_REWARD"
 	| "WEIGHT_LIMIT_EXCEEDED"
 	| "NEGATIVE_REWARD"
 	| "OUT_OF_RANGE"
@@ -157,6 +158,12 @@ export function createLootboxPlan(input: {
 			throw new LootboxPlanError(
 				"NEGATIVE_REWARD",
 				`outcome ${index} has a negative reward`,
+			);
+		}
+		if (rewardLamports === 0n) {
+			throw new LootboxPlanError(
+				"ZERO_REWARD",
+				`outcome ${index} must promise a positive reward so the timeout floor stays positive`,
 			);
 		}
 		assertU64(weight, `outcomes[${index}].weight`);

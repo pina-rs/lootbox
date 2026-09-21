@@ -44,6 +44,7 @@ pub enum PlanError {
 	ZeroSupply,
 	NoOutcomes,
 	ZeroWeight,
+	ZeroReward,
 	WeightLimitExceeded,
 	TooManyOutcomes,
 	ArithmeticOverflow,
@@ -55,6 +56,9 @@ impl core::fmt::Display for PlanError {
 			Self::ZeroSupply => "maximum supply must be greater than zero",
 			Self::NoOutcomes => "at least one outcome is required",
 			Self::ZeroWeight => "outcome weight must be greater than zero",
+			Self::ZeroReward => {
+				"outcome reward must be greater than zero so the timeout floor stays positive"
+			}
 			Self::WeightLimitExceeded => "total outcome weight exceeds u32::MAX",
 			Self::TooManyOutcomes => "single-reward protocol supports at most eight outcomes",
 			Self::ArithmeticOverflow => "lootbox plan exceeds the on-chain u64 range",
@@ -143,8 +147,10 @@ impl LootboxPlan {
 	///
 	/// # Errors
 	///
-	/// Returns [`PlanError::ZeroWeight`] for a zero weight or
-	/// [`PlanError::TooManyOutcomes`] after the eighth outcome.
+	/// Returns [`PlanError::ZeroWeight`] for a zero weight,
+	/// [`PlanError::ZeroReward`] for a zero reward — the on-chain floor must
+	/// stay positive — or [`PlanError::TooManyOutcomes`] after the eighth
+	/// outcome.
 	pub const fn with_outcome(
 		mut self,
 		weight: u64,
@@ -152,6 +158,9 @@ impl LootboxPlan {
 	) -> Result<Self, PlanError> {
 		if weight == 0 {
 			return Err(PlanError::ZeroWeight);
+		}
+		if reward_lamports == 0 {
+			return Err(PlanError::ZeroReward);
 		}
 
 		let index = self.len as usize;
@@ -272,6 +281,13 @@ mod tests {
 		let result = LootboxPlan::new(1).and_then(|plan| plan.with_outcome(0, 10));
 
 		assert_eq!(result, Err(PlanError::ZeroWeight));
+	}
+
+	#[test]
+	fn plan_rejects_zero_rewards() {
+		let result = LootboxPlan::new(1).and_then(|plan| plan.with_outcome(70, 0));
+
+		assert_eq!(result, Err(PlanError::ZeroReward));
 	}
 
 	#[test]

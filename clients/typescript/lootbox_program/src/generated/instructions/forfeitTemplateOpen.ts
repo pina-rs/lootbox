@@ -19,8 +19,8 @@ export const FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR2 = 0;
 
 export function getForfeitTemplateOpenDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR2); }
 
-export type ForfeitTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountCaller extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountServiceVault extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountRandomness extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
-Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountCaller extends string ? WritableSignerAccount<TAccountCaller> & AccountSignerMeta<TAccountCaller> : TAccountCaller, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountServiceVault extends string ? WritableAccount<TAccountServiceVault> : TAccountServiceVault, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountRandomness extends string ? ReadonlyAccount<TAccountRandomness> : TAccountRandomness, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
+export type ForfeitTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountCaller extends string | AccountMeta<string> = string, TAccountBeneficiary extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountServiceVault extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountRandomness extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountCaller extends string ? WritableSignerAccount<TAccountCaller> & AccountSignerMeta<TAccountCaller> : TAccountCaller, TAccountBeneficiary extends string ? WritableAccount<TAccountBeneficiary> : TAccountBeneficiary, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountServiceVault extends string ? WritableAccount<TAccountServiceVault> : TAccountServiceVault, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountRandomness extends string ? ReadonlyAccount<TAccountRandomness> : TAccountRandomness, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
 export type ForfeitTemplateOpenInstructionData = { discriminator: number; migrationVersion: number;  };
 
@@ -38,12 +38,17 @@ export function getForfeitTemplateOpenInstructionDataCodec(): FixedSizeCodec<For
     return combineCodec(getForfeitTemplateOpenInstructionDataEncoder(), getForfeitTemplateOpenInstructionDataDecoder());
 }
 
-export type ForfeitTemplateOpenInput<TAccountCaller extends string = string, TAccountTemplate extends string = string, TAccountServiceVault extends string = string, TAccountOpening extends string = string, TAccountRandomness extends string = string, TAccountSystemProgram extends string = string> =  {
+export type ForfeitTemplateOpenInput<TAccountCaller extends string = string, TAccountBeneficiary extends string = string, TAccountTemplate extends string = string, TAccountServiceVault extends string = string, TAccountOpening extends string = string, TAccountRandomness extends string = string, TAccountSystemProgram extends string = string> =  {
   /**
  * Any signer may advance an expired FIFO head; the stored beneficiary and
  * their exclusive claim rights are never changed.
  */
 caller: TransactionSigner<TAccountCaller>;
+/**
+ * Bound destination of the forfeit bounty: the creator-funded service
+ * budget compensates the beneficiary whose box burned, never the crank.
+ */
+beneficiary: Address<TAccountBeneficiary>;
 template: Address<TAccountTemplate>;
 serviceVault: Address<TAccountServiceVault>;
 opening: Address<TAccountOpening>;
@@ -51,12 +56,12 @@ randomness: Address<TAccountRandomness>;
 systemProgram?: Address<TAccountSystemProgram>;
 }
 
-export function getForfeitTemplateOpenInstruction<TAccountCaller extends string, TAccountTemplate extends string, TAccountServiceVault extends string, TAccountOpening extends string, TAccountRandomness extends string, TAccountSystemProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: ForfeitTemplateOpenInput<TAccountCaller, TAccountTemplate, TAccountServiceVault, TAccountOpening, TAccountRandomness, TAccountSystemProgram>, config?: { programAddress?: TProgramAddress } ): ForfeitTemplateOpenInstruction<TProgramAddress, TAccountCaller, TAccountTemplate, TAccountServiceVault, TAccountOpening, TAccountRandomness, TAccountSystemProgram> {
+export function getForfeitTemplateOpenInstruction<TAccountCaller extends string, TAccountBeneficiary extends string, TAccountTemplate extends string, TAccountServiceVault extends string, TAccountOpening extends string, TAccountRandomness extends string, TAccountSystemProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: ForfeitTemplateOpenInput<TAccountCaller, TAccountBeneficiary, TAccountTemplate, TAccountServiceVault, TAccountOpening, TAccountRandomness, TAccountSystemProgram>, config?: { programAddress?: TProgramAddress } ): ForfeitTemplateOpenInstruction<TProgramAddress, TAccountCaller, TAccountBeneficiary, TAccountTemplate, TAccountServiceVault, TAccountOpening, TAccountRandomness, TAccountSystemProgram> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
  // Original accounts.
-const originalAccounts = { caller: { value: input.caller ?? null, isWritable: true }, template: { value: input.template ?? null, isWritable: true }, serviceVault: { value: input.serviceVault ?? null, isWritable: true }, opening: { value: input.opening ?? null, isWritable: true }, randomness: { value: input.randomness ?? null, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isWritable: false } }
+const originalAccounts = { caller: { value: input.caller ?? null, isWritable: true }, beneficiary: { value: input.beneficiary ?? null, isWritable: true }, template: { value: input.template ?? null, isWritable: true }, serviceVault: { value: input.serviceVault ?? null, isWritable: true }, opening: { value: input.opening ?? null, isWritable: true }, randomness: { value: input.randomness ?? null, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -66,7 +71,7 @@ accounts.systemProgram.value = '11111111111111111111111111111111' as Address<'11
 }
 
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("caller", accounts.caller), getAccountMeta("template", accounts.template), getAccountMeta("serviceVault", accounts.serviceVault), getAccountMeta("opening", accounts.opening), getAccountMeta("randomness", accounts.randomness), getAccountMeta("systemProgram", accounts.systemProgram)], data: getForfeitTemplateOpenInstructionDataEncoder().encode({}), programAddress } as ForfeitTemplateOpenInstruction<TProgramAddress, TAccountCaller, TAccountTemplate, TAccountServiceVault, TAccountOpening, TAccountRandomness, TAccountSystemProgram>);
+return Object.freeze({ accounts: [getAccountMeta("caller", accounts.caller), getAccountMeta("beneficiary", accounts.beneficiary), getAccountMeta("template", accounts.template), getAccountMeta("serviceVault", accounts.serviceVault), getAccountMeta("opening", accounts.opening), getAccountMeta("randomness", accounts.randomness), getAccountMeta("systemProgram", accounts.systemProgram)], data: getForfeitTemplateOpenInstructionDataEncoder().encode({}), programAddress } as ForfeitTemplateOpenInstruction<TProgramAddress, TAccountCaller, TAccountBeneficiary, TAccountTemplate, TAccountServiceVault, TAccountOpening, TAccountRandomness, TAccountSystemProgram>);
 }
 
 export type ParsedForfeitTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
@@ -76,17 +81,22 @@ accounts: {
  * their exclusive claim rights are never changed.
  */
 caller: TAccountMetas[0];
-template: TAccountMetas[1];
-serviceVault: TAccountMetas[2];
-opening: TAccountMetas[3];
-randomness: TAccountMetas[4];
-systemProgram: TAccountMetas[5];
+/**
+ * Bound destination of the forfeit bounty: the creator-funded service
+ * budget compensates the beneficiary whose box burned, never the crank.
+ */
+beneficiary: TAccountMetas[1];
+template: TAccountMetas[2];
+serviceVault: TAccountMetas[3];
+opening: TAccountMetas[4];
+randomness: TAccountMetas[5];
+systemProgram: TAccountMetas[6];
 };
 data: ForfeitTemplateOpenInstructionData; };
 
 export function parseForfeitTemplateOpenInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(instruction: Instruction<TProgram> & InstructionWithAccounts<TAccountMetas> & InstructionWithData<ReadonlyUint8Array>): ParsedForfeitTemplateOpenInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 6) {
-  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 6 });
+  if (instruction.accounts.length < 7) {
+  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 7 });
 }
 let accountIndex = 0;
 const getNextAccount = () => {
@@ -94,5 +104,5 @@ const getNextAccount = () => {
   accountIndex += 1;
   return accountMeta;
 }
-  return { programAddress: instruction.programAddress, accounts: { caller: getNextAccount(), template: getNextAccount(), serviceVault: getNextAccount(), opening: getNextAccount(), randomness: getNextAccount(), systemProgram: getNextAccount() }, data: getForfeitTemplateOpenInstructionDataDecoder().decode(instruction.data) };
+  return { programAddress: instruction.programAddress, accounts: { caller: getNextAccount(), beneficiary: getNextAccount(), template: getNextAccount(), serviceVault: getNextAccount(), opening: getNextAccount(), randomness: getNextAccount(), systemProgram: getNextAccount() }, data: getForfeitTemplateOpenInstructionDataDecoder().decode(instruction.data) };
 }

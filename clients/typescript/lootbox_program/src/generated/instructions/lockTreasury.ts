@@ -44,7 +44,10 @@ template: Address<TAccountTemplate>;
 boxMint: Address<TAccountBoxMint>;
 /** The first unused bundle PDA proves that no funded tail was omitted. */
 bundle: Address<TAccountBundle>;
-/** Created and creator-funded only when receipts or crank bounties are enabled. */
+/**
+ * Creator-funded only when receipts or crank bounties are enabled.
+ * Unsolicited lamports are accepted and reduce the required top-up.
+ */
 serviceVault: Address<TAccountServiceVault>;
 systemProgram?: Address<TAccountSystemProgram>;
 boxTokenProgram?: Address<TAccountBoxTokenProgram>;
@@ -83,7 +86,10 @@ template: TAccountMetas[1];
 boxMint: TAccountMetas[2];
 /** The first unused bundle PDA proves that no funded tail was omitted. */
 bundle: TAccountMetas[3];
-/** Created and creator-funded only when receipts or crank bounties are enabled. */
+/**
+ * Creator-funded only when receipts or crank bounties are enabled.
+ * Unsolicited lamports are accepted and reduce the required top-up.
+ */
 serviceVault: TAccountMetas[4];
 systemProgram: TAccountMetas[5];
 boxTokenProgram: TAccountMetas[6];

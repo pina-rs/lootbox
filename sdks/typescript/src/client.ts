@@ -2497,8 +2497,9 @@ export class LootboxClient {
 		});
 	}
 	/** Forfeit the head receipt after the on-chain oracle timeout. This
-	 * permissionless liveness path never changes the bound recipient and does
-	 * not return a box or consume prize inventory.
+	 * permissionless liveness path never changes the bound recipient, does not
+	 * return a box or consume prize inventory, and pays any creator-funded
+	 * settlement bounty to the bound beneficiary rather than the crank.
 	 */
 	async forfeitTemplateOpen(template: ChainTemplate, opening: ChainOpening) {
 		if (opening.data.status !== 0) {
@@ -2506,6 +2507,7 @@ export class LootboxClient {
 		}
 		return this.send([generated.getForfeitTemplateOpenInstruction({
 			caller: this.payer,
+			beneficiary: opening.data.beneficiary,
 			template: template.address,
 			serviceVault: (await this.serviceVaultAddress(template.address))[0],
 			opening: opening.address,

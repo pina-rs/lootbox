@@ -45,6 +45,16 @@ describe("createLootboxPlan", () => {
 			expect((error as LootboxPlanError).code).toBe("ZERO_WEIGHT");
 		}
 
+		try {
+			createLootboxPlan({
+				maxSupply: 1,
+				outcomes: [{ label: "Nothing", weight: 1, rewardLamports: 0 }],
+			});
+		} catch (error: unknown) {
+			expect(error).toBeInstanceOf(LootboxPlanError);
+			expect((error as LootboxPlanError).code).toBe("ZERO_REWARD");
+		}
+
 		expect(() =>
 			createLootboxPlan({
 				maxSupply: -1n,

@@ -237,7 +237,6 @@ export function connectPlayground(): Promise<Playground> {
 			oracle: {
 				queue: address(string(oracle.queue)),
 				oracle: address(string(oracle.oracle)),
-				rewardEscrow: address(string(oracle.rewardEscrow)),
 				programState: address(string(oracle.programState)),
 				lutSigner: address(string(oracle.lutSigner)),
 				lut: address(string(oracle.lut)),

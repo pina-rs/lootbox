@@ -76,7 +76,8 @@ pub enum LootboxError {
 	InvalidState = 1,
 	/// The configured outcome does not exist or is out of range.
 	InvalidOutcome = 2,
-	/// An outcome weight must be non-zero and keep total weight within the bound.
+	/// An outcome weight must be non-zero, every outcome must promise a
+	/// positive reward, and total weight must stay within the bound.
 	InvalidWeight = 3,
 	/// The lootbox cannot be sealed until at least one outcome exists.
 	IncompleteConfiguration = 4,
@@ -136,6 +137,10 @@ pub enum LootboxError {
 	MutablePrizePoolItem = 31,
 	/// Every bounded rejection-sampling round landed outside the uniform range.
 	EntropyRejectionExhausted = 32,
+	/// A prize's advertised identity is still mutable after escrow.
+	MutablePrize = 33,
+	/// The reserved migration route only validates already-current accounts.
+	MigrationLocked = 34,
 }
 
 #[discriminator]
@@ -596,6 +601,25 @@ fn parse_randomness(
 	parse_randomness_account(&data).map_err(|_| lootbox_error(LootboxError::InvalidRandomness))
 }
 
+/// Require the Switchboard reward escrow for one randomness account.
+///
+/// The oracle derives this escrow as the wrapped-SOL associated token account
+/// of the randomness account itself; pinning the derivation keeps a client
+/// from substituting an arbitrary writable token account into the CPI.
+fn assert_reward_escrow(escrow: &AccountView, randomness: &Address) -> ProgramResult {
+	escrow
+		.assert_associated_token_address(randomness, &WRAPPED_SOL_MINT_ID, &token::ID)
+		.map(|_| ())
+}
+
+/// Require a commit-time oracle account owned by the oracle program itself.
+///
+/// Switchboard's own commit validates queue membership; this ownership check
+/// fails a substituted foreign account closed before the CPI runs.
+fn assert_commit_oracle(oracle: &AccountView, oracle_program: &Address) -> ProgramResult {
+	oracle.assert_owner(oracle_program).map(|_| ())
+}
+
 fn required_liability(
 	state: &LootboxStateZc,
 	mint_supply: u64,
@@ -789,7 +813,7 @@ impl<'a> ProcessAccountInfos<'a> for AddOutcomeAccounts<'a> {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
 
-		if args.weight.get() == 0 {
+		if args.weight.get() == 0 || args.reward_lamports.get() == 0 {
 			return Err(lootbox_error(LootboxError::InvalidWeight));
 		}
 
@@ -975,6 +999,9 @@ impl<'a> ProcessAccountInfos<'a> for RequestOpenAccounts<'a> {
 		self.opening
 			.assert_seeds_with_bump(&opening_seeds_with_bump.as_slices(), &ID)?;
 
+		assert_reward_escrow(self.reward_escrow, &randomness_address)?;
+		assert_commit_oracle(self.oracle, self.oracle_program.address())?;
+
 		let pending = state
 			.pending_openings
 			.get()
@@ -1053,6 +1080,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestOpenAccounts<'a> {
 			|| committed.queue != *self.oracle_queue.address()
 			|| committed.seed_slot == 0
 			|| committed.reveal_slot != 0
+			|| committed.oracle != *self.oracle.address()
 		{
 			return Err(lootbox_error(LootboxError::InvalidRandomness));
 		}
@@ -1100,6 +1128,7 @@ impl<'a> ProcessAccountInfos<'a> for SettleOpenAccounts<'a> {
 		if expected_opening != opening_address {
 			return Err(ProgramError::InvalidSeeds);
 		}
+		assert_reward_escrow(self.reward_escrow, &randomness_address)?;
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 
 		if randomness.authority != opening_address
@@ -1320,6 +1349,7 @@ impl<'a> ProcessAccountInfos<'a> for CloseOpeningAccounts<'a> {
 		if expected_opening != opening_address {
 			return Err(ProgramError::InvalidSeeds);
 		}
+		assert_reward_escrow(self.reward_escrow, &randomness_address)?;
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 
 		if randomness.authority != opening_address || randomness.queue != state.oracle_queue {
@@ -1380,6 +1410,34 @@ impl<'a> ProcessAccountInfos<'a> for WithdrawSurplusAccounts<'a> {
 /// its payer across every account slot in one invocation.
 const MAX_MIGRATION_LAMPORTS: u64 = 1_000_000;
 
+/// Fail closed unless one reserved-route slot is already at the current
+/// schema version.
+///
+/// The reserved `Migrate` instruction is permissionless, so any third party
+/// could otherwise force a future schema transition onto live accounts at a
+/// time of their choosing. Until a maintainer deliberately replaces this
+/// tripwire with an authority-checked migration entry point, the route may
+/// only validate accounts that have nothing to migrate.
+fn assert_migration_slot_is_current<T: MigratableAccount>(
+	program_id: &Address,
+	accounts: &[AccountView],
+	index: usize,
+) -> ProgramResult {
+	let Some(account) = accounts.get(index) else {
+		return Ok(());
+	};
+	if account.address() == program_id {
+		return Ok(());
+	}
+
+	let data = account.try_borrow()?;
+	if !T::matches_discriminator(&data) || T::require_current_migration_version(&data).is_err() {
+		return Err(lootbox_error(LootboxError::MigrationLocked));
+	}
+
+	Ok(())
+}
+
 /// Runs the reserved framework `Migrate` instruction.
 ///
 /// Accounts are `[payer, systemProgram, lootbox, vault, opening, template,
@@ -1387,6 +1445,16 @@ const MAX_MIGRATION_LAMPORTS: u64 = 1_000_000;
 /// state slot is optional and skipped when it holds the program-address
 /// placeholder.
 fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> ProgramResult {
+	assert_migration_slot_is_current::<LootboxState>(program_id, accounts, 2)?;
+	assert_migration_slot_is_current::<VaultState>(program_id, accounts, 3)?;
+	assert_migration_slot_is_current::<OpeningState>(program_id, accounts, 4)?;
+	assert_migration_slot_is_current::<TemplateState>(program_id, accounts, 5)?;
+	assert_migration_slot_is_current::<BundleState>(program_id, accounts, 6)?;
+	assert_migration_slot_is_current::<TemplateOpeningState>(program_id, accounts, 7)?;
+	assert_migration_slot_is_current::<ResultReceiptState>(program_id, accounts, 8)?;
+	assert_migration_slot_is_current::<PrizePoolState>(program_id, accounts, 9)?;
+	assert_migration_slot_is_current::<PrizePoolItemState>(program_id, accounts, 10)?;
+
 	let mut context = MigrateContext::new(program_id, accounts, Some(MAX_MIGRATION_LAMPORTS))?;
 	context.run_optional::<LootboxState>(2)?;
 	context.run_optional::<VaultState>(3)?;

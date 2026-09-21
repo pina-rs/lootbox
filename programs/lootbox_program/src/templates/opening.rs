@@ -97,6 +97,9 @@ pub struct ForfeitTemplateOpenAccounts<'a> {
 	/// their exclusive claim rights are never changed.
 	#[pina(validate(signer))]
 	pub caller: &'a mut AccountView,
+	/// Bound destination of the forfeit bounty: the creator-funded service
+	/// budget compensates the beneficiary whose box burned, never the crank.
+	pub beneficiary: &'a mut AccountView,
 	pub template: &'a mut AccountView,
 	pub service_vault: &'a mut AccountView,
 	pub opening: &'a mut AccountView,
@@ -270,6 +273,9 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		self.opening
 			.assert_seeds_with_bump(&opening_seeds_with_bump.as_slices(), &ID)?;
 
+		assert_reward_escrow(self.reward_escrow, &randomness_address)?;
+		assert_commit_oracle(self.oracle, self.oracle_program.address())?;
+
 		let pending = state
 			.pending_openings
 			.get()
@@ -370,6 +376,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 			|| committed.queue != *self.oracle_queue.address()
 			|| committed.seed_slot == 0
 			|| committed.reveal_slot != 0
+			|| committed.oracle != *self.oracle.address()
 		{
 			return Err(lootbox_error(LootboxError::InvalidRandomness));
 		}
@@ -412,6 +419,7 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 		if expected_opening != opening_address {
 			return Err(ProgramError::InvalidSeeds);
 		}
+		assert_reward_escrow(self.reward_escrow, &randomness_address)?;
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 
 		if randomness.authority != opening_address
@@ -494,8 +502,10 @@ impl<'a> ProcessAccountInfos<'a> for ForfeitTemplateOpenAccounts<'a> {
 		assert_service_vault(self.service_vault, &template_address, &state)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&opening_address, &opening, &template_address)?;
-		if opening.randomness != *self.randomness.address() {
-			return Err(lootbox_error(LootboxError::InvalidRandomness));
+		if opening.randomness != *self.randomness.address()
+			|| opening.beneficiary != *self.beneficiary.address()
+		{
+			return Err(lootbox_error(LootboxError::InvalidRecipient));
 		}
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 		if randomness.authority != opening_address
@@ -520,7 +530,7 @@ impl<'a> ProcessAccountInfos<'a> for ForfeitTemplateOpenAccounts<'a> {
 			&template_address,
 			&mut state,
 			self.service_vault,
-			self.caller,
+			self.beneficiary,
 			self.system_program,
 		)?;
 		update_template(

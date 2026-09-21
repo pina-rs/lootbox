@@ -5915,6 +5915,14 @@
 								]
 							},
 							{
+								"name": "beneficiary",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
 								"name": "template",
 								"writable": true,
 								"signer": false,
@@ -5959,7 +5967,7 @@
 							}
 						]
 					},
-					"processSha256": "41f5ada22bc8a66d027e61c8be9c6c0281bd4f4a0fabf67e94f157b3853d140c",
+					"processSha256": "ab2895fcd58baa7a84246d8a187de40ed361ccfdda361cb10a45b9f4a83fdb78",
 					"transition": null
 				}
 			]

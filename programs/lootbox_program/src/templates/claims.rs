@@ -960,6 +960,42 @@ mod tests {
 	}
 
 	#[test]
+	fn badge_metadata_must_be_absent_or_locked() {
+		// A plain mint shorter than the extended-mint base carries no metadata.
+		assert_eq!(find_metadata_bytes(&[0; 82]), Ok(None));
+
+		let token_metadata = 19u16;
+		let payload = |update_authority: [u8; 32]| {
+			let mut metadata = update_authority.to_vec();
+			metadata.extend_from_slice(&[9u8; 32]); // mint
+			metadata.extend_from_slice(&1u32.to_le_bytes());
+			metadata.push(b'B');
+			metadata.extend_from_slice(&1u32.to_le_bytes());
+			metadata.push(b'B');
+			metadata.extend_from_slice(&1u32.to_le_bytes());
+			metadata.push(b'U');
+			metadata.extend_from_slice(&0u32.to_le_bytes());
+			let mut account = alloc::vec![0; 165];
+			account.push(1); // account type byte
+			account.extend_from_slice(&token_metadata.to_le_bytes());
+			account.extend_from_slice(&(metadata.len() as u16).to_le_bytes());
+			account.extend_from_slice(&metadata);
+			account
+		};
+
+		let locked = payload([0u8; 32]);
+		assert_eq!(
+			find_metadata_bytes(&locked).map(|found| found.is_some()),
+			Ok(true),
+		);
+		assert_eq!(find_metadata_bytes(&locked), Ok(Some(&locked[170..])));
+
+		let mutable = payload([7u8; 32]);
+		let found = find_metadata_bytes(&mutable).expect("mutable metadata parses");
+		assert_eq!(found.map(|metadata| &metadata[..32]), Some(&[7u8; 32][..]));
+	}
+
+	#[test]
 	fn all_1024_append_slots_are_addressable_and_snapshots_exclude_later_bundles() {
 		let remaining = alloc::vec![PodU64::from(1); MAX_TEMPLATE_BUNDLES];
 		let mut bytes = [0; TemplateState::MAX_SIZE];

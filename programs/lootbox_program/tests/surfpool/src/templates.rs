@@ -785,9 +785,10 @@ fn oracle_fixture(program: &mut Harness) -> (Pubkey, Pubkey, OracleCpiAccounts) 
 		.deploy_program(oracle_program_id(), Path::new(&artifact))
 		.expect("oracle emulator");
 	let queue = Pubkey::new_unique();
-	let oracle = Pubkey::new_unique();
+	// The deployed oracle program owns its oracle accounts; mirror that so the
+	// lootbox commit-time ownership check exercises the real shape.
+	let oracle = Keypair::new();
 	let cpi = OracleCpiAccounts {
-		reward_escrow: Pubkey::new_unique(),
 		program_state: Pubkey::new_unique(),
 		lut_signer: Pubkey::new_unique(),
 		lut: Pubkey::new_unique(),
@@ -795,19 +796,23 @@ fn oracle_fixture(program: &mut Harness) -> (Pubkey, Pubkey, OracleCpiAccounts) 
 	};
 	program
 		.fund_many(
-			&[
-				queue,
-				oracle,
-				cpi.reward_escrow,
-				cpi.program_state,
-				cpi.lut_signer,
-				cpi.lut,
-				cpi.stats,
-			],
+			&[queue, cpi.program_state, cpi.lut_signer, cpi.lut, cpi.stats],
 			rent_minimum(0),
 		)
 		.expect("oracle infrastructure");
-	(queue, oracle, cpi)
+	program
+		.send_with_signers(
+			create_account_instruction(
+				&program.payer(),
+				&oracle.pubkey(),
+				rent_minimum(0),
+				0,
+				&oracle_program_id(),
+			),
+			&[&oracle],
+		)
+		.expect("program-owned oracle account");
+	(queue, oracle.pubkey(), cpi)
 }
 
 struct FulfillContext<'a> {
@@ -2041,20 +2046,55 @@ fn expired_fifo_head_can_be_forfeited_by_an_unrelated_signer() {
 			&program.program_id,
 		)
 		.0;
+		let beneficiary_before = program
+			.balance(&recipient.pubkey())
+			.expect("beneficiary balance before forfeit");
+		let caller_before = program
+			.balance(&payer)
+			.expect("crank caller balance before forfeit");
 		let forfeit_accounts = vec![
 			AccountMeta::new(payer, true),
+			AccountMeta::new(recipient.pubkey(), false),
 			AccountMeta::new(template, false),
 			AccountMeta::new(service_vault, false),
 			AccountMeta::new(opening, false),
 			AccountMeta::new_readonly(randomness.pubkey(), false),
 			AccountMeta::new_readonly(Pubkey::default(), false),
 		];
+		// The bounty is bound to the beneficiary: routing it anywhere else is
+		// rejected, so a front-runner cannot monetize another holder's timeout.
+		let mut hijacked_accounts = forfeit_accounts.clone();
+		*hijacked_accounts.get_mut(1).expect("beneficiary slot") = AccountMeta::new(payer, false);
+		assert!(
+			program
+				.send(
+					&[LootboxInstruction::ForfeitTemplateOpen as u8, 0],
+					hijacked_accounts,
+				)
+				.is_err(),
+			"the forfeit bounty cannot be redirected to the crank",
+		);
 		program
 			.send(
 				&[LootboxInstruction::ForfeitTemplateOpen as u8, 0],
 				forfeit_accounts.clone(),
 			)
 			.expect("unrelated signer unblocks expired FIFO head");
+		assert_eq!(
+			program
+				.balance(&recipient.pubkey())
+				.expect("beneficiary balance after forfeit")
+				- beneficiary_before,
+			1_000,
+			"the forfeit bounty compensates the bound beneficiary",
+		);
+		assert!(
+			program
+				.balance(&payer)
+				.expect("caller balance after forfeit")
+				<= caller_before,
+			"the forfeit crank itself earns no bounty beyond paying its own fees",
+		);
 		program.advance_one_slot().expect("new blockhash");
 		assert!(
 			program
@@ -2123,6 +2163,175 @@ fn expired_fifo_head_can_be_forfeited_by_an_unrelated_signer() {
 			before - program.balance(&bundle).expect("rent retained"),
 			200_000,
 			"forfeiture consumes no prize inventory",
+		);
+		program.stop().expect("stop Surfpool");
+	});
+}
+
+#[test]
+#[ignore = "run with `devenv shell -- test:surfpool`"]
+fn adversarial_opening_inputs_cannot_substitute_escrow_or_oracle() {
+	pina_test::run(async {
+		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
+			.await
+			.expect("Surfpool");
+		let (queue, oracle, cpi) = oracle_fixture(&mut program);
+		let payer = program.payer();
+		let recipient = Keypair::new();
+		program
+			.fund(&recipient.pubkey(), 100_000_000)
+			.expect("recipient fee funds");
+		let (template, bump) = Pubkey::find_program_address(
+			&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
+			&program.program_id,
+		);
+		let mint = mint_with_metadata(&program, &template);
+		let recipient_ata = box_ata(&program, &recipient.pubkey(), &mint);
+		let opens_at = chain_timestamp(&program) + 60;
+		program
+			.send(
+				&create_template_data(queue, bump, opens_at, false),
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new_readonly(mint, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("create template");
+		let bundle = add_bundle(&program, template, 0, 1, 1);
+		fund_sol(&program, template, bundle, 100_000).expect("fund prize");
+		activate_bundle(&program, template, bundle);
+		program
+			.send(
+				&[LootboxInstruction::SealTemplate as u8, 0],
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+				],
+			)
+			.expect("seal");
+		program
+			.send(
+				&template_mint_data(1),
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new(mint, false),
+					AccountMeta::new(recipient_ata, false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("issue one box");
+		lock_treasury(&program, template, mint, 1);
+		program
+			.surfnet
+			.cheatcodes()
+			.time_travel_to_timestamp(u64::try_from(opens_at + 1).expect("timestamp") * 1000)
+			.expect("reveal date");
+
+		let randomness = Keypair::new();
+		let (opening, opening_bump) = Pubkey::find_program_address(
+			&[
+				b"template-opening",
+				template.as_ref(),
+				randomness.pubkey().as_ref(),
+			],
+			&program.program_id,
+		);
+		let valid_accounts = template_request_accounts(&TemplateRequestContext {
+			owner: recipient.pubkey(),
+			template,
+			mint,
+			ata: recipient_ata,
+			opening,
+			randomness: randomness.pubkey(),
+			queue,
+			oracle,
+			cpi: &cpi,
+		});
+
+		// A foreign writable account in the reward-escrow slot is rejected
+		// before any oracle CPI or box burn happens.
+		let foreign_escrow = Keypair::new();
+		program
+			.fund(&foreign_escrow.pubkey(), rent_minimum(0))
+			.expect("fund foreign escrow substitute");
+		let mut substituted_escrow = valid_accounts.clone();
+		*substituted_escrow.get_mut(6).expect("escrow slot") =
+			AccountMeta::new(foreign_escrow.pubkey(), false);
+		assert!(
+			program
+				.send_with_signers(
+					program.instruction(
+						&template_request_data(opening_bump, recipient.pubkey()),
+						substituted_escrow,
+					),
+					&[&recipient, &randomness],
+				)
+				.is_err(),
+			"a substituted reward escrow cannot reach the oracle CPI"
+		);
+		assert!(
+			program.account(&randomness.pubkey()).is_err(),
+			"the rejected escrow leaves no randomness account behind"
+		);
+
+		// A system-owned account in the oracle slot fails the commit-time
+		// ownership check instead of being recorded as the answering oracle.
+		let foreign_oracle = Keypair::new();
+		program
+			.fund(&foreign_oracle.pubkey(), rent_minimum(0))
+			.expect("fund foreign oracle substitute");
+		let mut substituted_oracle = valid_accounts;
+		*substituted_oracle.get_mut(8).expect("oracle slot") =
+			AccountMeta::new(foreign_oracle.pubkey(), false);
+		assert!(
+			program
+				.send_with_signers(
+					program.instruction(
+						&template_request_data(opening_bump, recipient.pubkey()),
+						substituted_oracle,
+					),
+					&[&recipient, &randomness],
+				)
+				.is_err(),
+			"a foreign oracle account cannot be recorded as the answering oracle"
+		);
+		assert!(
+			program.account(&randomness.pubkey()).is_err(),
+			"the rejected oracle leaves no randomness account behind"
+		);
+		assert_eq!(
+			token_amount(&program.account(&recipient_ata).expect("box ATA")),
+			1,
+			"rejected openings never burn the box"
+		);
+
+		program
+			.send_with_signers(
+				program.instruction(
+					&template_request_data(opening_bump, recipient.pubkey()),
+					template_request_accounts(&TemplateRequestContext {
+						owner: recipient.pubkey(),
+						template,
+						mint,
+						ata: recipient_ata,
+						opening,
+						randomness: randomness.pubkey(),
+						queue,
+						oracle,
+						cpi: &cpi,
+					}),
+				),
+				&[&recipient, &randomness],
+			)
+			.expect("the canonical accounts open after the substitutions fail");
+		assert_eq!(
+			token_amount(&program.account(&recipient_ata).expect("box ATA")),
+			0,
+			"the valid request burns the box exactly once"
 		);
 		program.stop().expect("stop Surfpool");
 	});

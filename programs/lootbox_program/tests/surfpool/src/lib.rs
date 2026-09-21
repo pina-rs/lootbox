@@ -395,11 +395,15 @@ fn request_data(recent_slot: u64, bump: u8) -> Vec<u8> {
 }
 
 struct OracleCpiAccounts {
-	reward_escrow: Pubkey,
 	program_state: Pubkey,
 	lut_signer: Pubkey,
 	lut: Pubkey,
 	stats: Pubkey,
+}
+
+/// The reward escrow the oracle program derives for one randomness account.
+fn reward_escrow_of(randomness: &Pubkey) -> Pubkey {
+	ata_of(randomness, &wrapped_sol_mint_id())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -423,7 +427,7 @@ fn request_accounts(
 		AccountMeta::new(*owner_ata, false),
 		AccountMeta::new(*opening, false),
 		AccountMeta::new(*randomness, true),
-		AccountMeta::new(oracle_cpi.reward_escrow, false),
+		AccountMeta::new(reward_escrow_of(randomness), false),
 		AccountMeta::new(*queue, false),
 		AccountMeta::new(*oracle, false),
 		AccountMeta::new_readonly(slot_hashes_sysvar_id(), false),
@@ -474,7 +478,7 @@ fn settle_accounts(
 		AccountMeta::new(oracle_cpi.stats, false),
 		AccountMeta::new_readonly(slot_hashes_sysvar_id(), false),
 		AccountMeta::new_readonly(oracle_program_id(), false),
-		AccountMeta::new(oracle_cpi.reward_escrow, false),
+		AccountMeta::new(reward_escrow_of(randomness), false),
 		AccountMeta::new_readonly(oracle_cpi.program_state, false),
 		AccountMeta::new_readonly(Pubkey::default(), false),
 		AccountMeta::new_readonly(token_program_id(), false),
@@ -494,7 +498,7 @@ fn close_accounts(
 		AccountMeta::new_readonly(*lootbox, false),
 		AccountMeta::new(*opening, false),
 		AccountMeta::new(*randomness, false),
-		AccountMeta::new(oracle_cpi.reward_escrow, false),
+		AccountMeta::new(reward_escrow_of(randomness), false),
 		AccountMeta::new_readonly(oracle_program_id(), false),
 		AccountMeta::new_readonly(oracle_cpi.program_state, false),
 		AccountMeta::new(oracle_cpi.lut, false),
@@ -625,10 +629,9 @@ fn commit_burn_reveal_and_payout_round_trip() {
 
 		let id = 7u64;
 		let queue = Pubkey::new_from_array([7u8; 32]);
-		let oracle = Pubkey::new_from_array([8u8; 32]);
+		let oracle = Keypair::new();
 		let empty_account_rent = rent_minimum(0);
 		let oracle_cpi = OracleCpiAccounts {
-			reward_escrow: Pubkey::new_from_array([9u8; 32]),
 			program_state: Pubkey::new_from_array([10u8; 32]),
 			lut_signer: Pubkey::new_from_array([11u8; 32]),
 			lut: Pubkey::new_from_array([12u8; 32]),
@@ -638,16 +641,27 @@ fn commit_burn_reveal_and_payout_round_trip() {
 			.fund_many(
 				&[
 					queue,
-					oracle,
-					oracle_cpi.reward_escrow,
 					oracle_cpi.program_state,
 					oracle_cpi.lut_signer,
 					oracle_cpi.lut,
-					oracle_cpi.stats,
 				],
 				empty_account_rent,
 			)
 			.expect("fund mock Switchboard CPI accounts");
+		// The deployed oracle program owns its oracle accounts; mirror that so
+		// the lootbox commit-time ownership check exercises the real shape.
+		program
+			.send_with_signers(
+				create_account_instruction(
+					&authority,
+					&oracle.pubkey(),
+					empty_account_rent,
+					0,
+					&oracle_program_id(),
+				),
+				&[&oracle],
+			)
+			.expect("create program-owned oracle account");
 		let (lootbox, bump) = lootbox_pda(&program_id, &authority, id);
 		let (vault, vault_bump) = vault_pda(&program_id, &lootbox);
 		let mint = provision_mint(&program, &authority, &lootbox).expect("provision box mint");
@@ -712,6 +726,18 @@ fn commit_burn_reveal_and_payout_round_trip() {
 				)
 				.is_err(),
 			"the on-chain total-weight bound rejects pathological tables"
+		);
+		assert!(
+			program
+				.send(
+					&add_outcome_data(50, 0),
+					vec![
+						AccountMeta::new_readonly(authority, true),
+						AccountMeta::new(lootbox, false),
+					],
+				)
+				.is_err(),
+			"a zero-reward outcome cannot remove the timeout floor"
 		);
 
 		program
@@ -818,7 +844,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 							&invalid_opening,
 							&invalid_randomness.pubkey(),
 							&queue,
-							&oracle,
+							&oracle.pubkey(),
 							&oracle_cpi,
 						),
 					),
@@ -848,7 +874,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 				&opening,
 				&randomness.pubkey(),
 				&queue,
-				&oracle,
+				&oracle.pubkey(),
 				&oracle_cpi,
 			),
 		);
@@ -863,7 +889,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 				&opening,
 				&randomness.pubkey(),
 				&queue,
-				&oracle,
+				&oracle.pubkey(),
 				&oracle_cpi,
 			),
 		);
@@ -909,7 +935,10 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		let committed_randomness = randomness_snapshot(&committed);
 		assert_eq!(committed_randomness.authority.as_ref(), opening.as_ref());
 		assert_eq!(committed_randomness.queue.as_ref(), queue.as_ref());
-		assert_eq!(committed_randomness.oracle.as_ref(), oracle.as_ref());
+		assert_eq!(
+			committed_randomness.oracle.as_ref(),
+			oracle.pubkey().as_ref()
+		);
 		assert_eq!(committed_randomness.seed_slot, seed_slot);
 		assert_eq!(committed_randomness.reveal_slot, 0);
 		assert_eq!(committed_randomness.value, [0; 32]);
@@ -944,7 +973,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 						vec![
 							AccountMeta::new(randomness.pubkey(), false),
 							AccountMeta::new_readonly(queue, false),
-							AccountMeta::new(oracle, false),
+							AccountMeta::new(oracle.pubkey(), false),
 							AccountMeta::new_readonly(slot_hashes_sysvar_id(), false),
 							AccountMeta::new_readonly(recipient.pubkey(), true),
 						],
@@ -998,14 +1027,14 @@ fn commit_burn_reveal_and_payout_round_trip() {
 					&direct_reveal_data,
 					vec![
 						AccountMeta::new(randomness.pubkey(), false),
-						AccountMeta::new_readonly(oracle, false),
+						AccountMeta::new_readonly(oracle.pubkey(), false),
 						AccountMeta::new_readonly(queue, false),
 						AccountMeta::new(oracle_cpi.stats, false),
 						AccountMeta::new_readonly(opening, true),
 						AccountMeta::new(authority, true),
 						AccountMeta::new_readonly(slot_hashes_sysvar_id(), false),
 						AccountMeta::new_readonly(Pubkey::default(), false),
-						AccountMeta::new(oracle_cpi.reward_escrow, false),
+						AccountMeta::new(reward_escrow_of(&randomness.pubkey()), false),
 						AccountMeta::new_readonly(token_program_id(), false),
 						AccountMeta::new_readonly(wrapped_sol_mint_id(), false),
 						AccountMeta::new_readonly(oracle_cpi.program_state, false),
@@ -1032,7 +1061,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 						&opening,
 						&randomness.pubkey(),
 						&queue,
-						&oracle,
+						&oracle.pubkey(),
 						&oracle_cpi,
 					),
 				)
@@ -1062,7 +1091,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 					&opening,
 					&randomness.pubkey(),
 					&queue,
-					&oracle,
+					&oracle.pubkey(),
 					&oracle_cpi,
 				),
 			)
@@ -1073,7 +1102,10 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		let revealed_randomness = randomness_snapshot(&revealed_account);
 		assert_eq!(revealed_randomness.authority.as_ref(), opening.as_ref());
 		assert_eq!(revealed_randomness.queue.as_ref(), queue.as_ref());
-		assert_eq!(revealed_randomness.oracle.as_ref(), oracle.as_ref());
+		assert_eq!(
+			revealed_randomness.oracle.as_ref(),
+			oracle.pubkey().as_ref()
+		);
 		assert!(revealed_randomness.reveal_slot > revealed_randomness.seed_slot);
 		assert_eq!(revealed_randomness.value, revealed_value);
 
@@ -1125,7 +1157,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 						&opening,
 						&randomness.pubkey(),
 						&queue,
-						&oracle,
+						&oracle.pubkey(),
 						&oracle_cpi,
 					),
 				)
@@ -1172,7 +1204,6 @@ fn commit_burn_reveal_and_payout_round_trip() {
 
 		let refund_randomness = Keypair::new();
 		let refund_oracle_cpi = OracleCpiAccounts {
-			reward_escrow: Pubkey::new_from_array([14u8; 32]),
 			program_state: oracle_cpi.program_state,
 			lut_signer: Pubkey::new_from_array([15u8; 32]),
 			lut: Pubkey::new_from_array([16u8; 32]),
@@ -1180,11 +1211,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		};
 		program
 			.fund_many(
-				&[
-					refund_oracle_cpi.reward_escrow,
-					refund_oracle_cpi.lut_signer,
-					refund_oracle_cpi.lut,
-				],
+				&[refund_oracle_cpi.lut_signer, refund_oracle_cpi.lut],
 				empty_account_rent,
 			)
 			.expect("fund refund-path Switchboard CPI accounts");
@@ -1210,7 +1237,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 						&refund_opening,
 						&refund_randomness.pubkey(),
 						&queue,
-						&oracle,
+						&oracle.pubkey(),
 						&refund_oracle_cpi,
 					),
 				),

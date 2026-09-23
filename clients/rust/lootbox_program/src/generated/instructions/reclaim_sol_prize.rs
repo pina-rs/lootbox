@@ -21,7 +21,12 @@ pub struct ReclaimSolPrize {
 }
 
 impl ReclaimSolPrize {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		authority: solana_pubkey::Pubkey,
+		template: solana_pubkey::Pubkey,
+		box_mint: solana_pubkey::Pubkey,
+		bundle: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			authority,
 			template,
@@ -30,7 +35,10 @@ impl ReclaimSolPrize {
 		}
 	}
 
-	pub fn instruction(&self, data: ReclaimSolPrizeInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: ReclaimSolPrizeInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -42,8 +50,14 @@ impl ReclaimSolPrize {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.template,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.box_mint,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
@@ -60,7 +74,9 @@ pub struct ReclaimSolPrizeInstructionData {
 }
 
 impl ReclaimSolPrizeInstructionData {
-	pub fn new(configure: impl FnOnce(&mut ReclaimSolPrizeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut ReclaimSolPrizeInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<ReclaimSolPrizeInstructionWireZc>()];
 		<ReclaimSolPrizeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
@@ -68,7 +84,7 @@ impl ReclaimSolPrizeInstructionData {
 			data.migration_version = RECLAIM_SOL_PRIZE_MIGRATION_VERSION;
 			Ok(())
 		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

@@ -12,7 +12,7 @@
 #[derive(pina::PinaPod)]
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct BundleState {
-/// A complete prize outcome and its escrow authority, shared across all boxes.
+	/// A complete prize outcome and its escrow authority, shared across all boxes.
 	pub discriminator: u8,
 	pub migration_version: u8,
 	pub template: solana_pubkey::Pubkey,
@@ -74,7 +74,9 @@ impl BundleState {
 		Ok(account)
 	}
 
-	pub fn from_bytes_mut(data: &mut [u8]) -> Result<&mut BundleStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes_mut(
+		data: &mut [u8],
+	) -> Result<&mut BundleStateZc, solana_program_error::ProgramError> {
 		let account = <Self as pina::PinaPodFixed>::read_exact_mut(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != BUNDLE_STATE_DISCRIMINATOR {
@@ -90,16 +92,16 @@ impl BundleState {
 impl BundleState {
 	pub fn find_pda(template: &solana_pubkey::Pubkey, index: u32) -> (solana_pubkey::Pubkey, u8) {
 		solana_pubkey::Pubkey::find_program_address(
-			&[
-				"bundle".as_bytes(),
-				template.as_ref(),
-				&index.to_le_bytes(),
-			],
+			&["bundle".as_bytes(), template.as_ref(), &index.to_le_bytes()],
 			&crate::LOOTBOX_PROGRAM_ID,
 		)
 	}
 
-	pub fn create_pda(template: &solana_pubkey::Pubkey, index: u32, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(
+		template: &solana_pubkey::Pubkey,
+		index: u32,
+		bump: u8,
+	) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
 			&[
 				"bundle".as_bytes(),
@@ -112,7 +114,6 @@ impl BundleState {
 	}
 }
 
-
 /// Whether raw account bytes are stale for this contract: the envelope names this account's discriminator and carries a version older than
 /// [`BUNDLE_STATE_MIGRATION_VERSION`]. Current or foreign bytes return false; decoding explains the difference.
 ///
@@ -120,7 +121,6 @@ impl BundleState {
 pub fn bundle_state_needs_migration(_data: &[u8]) -> bool {
 	false
 }
-
 
 /// Why `BundleState::try_from_bytes` rejected account bytes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -137,30 +137,37 @@ impl core::fmt::Display for BundleStateVersionError {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		match self {
 			Self::InvalidData => write!(f, "invalid BundleState account data"),
-			Self::Stale { stored } => write!(
-				f,
-				"migration version mismatch: expected 0, received {stored} (the data predates this client; migrate it by sending a transaction to the program, or decode it with a client generated from an older IDL)"
-			),
-			Self::Future { stored } => write!(
-				f,
-				"migration version mismatch: expected 0, received {stored} (the data was written by a newer program; upgrade this client)"
-			),
+			Self::Stale { stored } => {
+				write!(
+					f,
+					"migration version mismatch: expected 0, received {stored} (the data predates \
+					 this client; migrate it by sending a transaction to the program, or decode \
+					 it with a client generated from an older IDL)"
+				)
+			}
+			Self::Future { stored } => {
+				write!(
+					f,
+					"migration version mismatch: expected 0, received {stored} (the data was \
+					 written by a newer program; upgrade this client)"
+				)
+			}
 		}
 	}
 }
 
 impl BundleState {
 	/// Decodes current-version bytes and tells stale envelopes (migrate the account) apart from future ones (upgrade this client). The failure message mirrors the generated JavaScript decoder. For the strict current-only convenience returning `ProgramError`, see [`BundleState::from_bytes`].
-	pub fn try_from_bytes(
-		data: &[u8],
-	) -> Result<&BundleStateZc, BundleStateVersionError> {
+	pub fn try_from_bytes(data: &[u8]) -> Result<&BundleStateZc, BundleStateVersionError> {
 		let account = <Self as pina::PinaPodFixed>::read_exact(data)
 			.map_err(|_| BundleStateVersionError::InvalidData)?;
 		if account.discriminator != BUNDLE_STATE_DISCRIMINATOR {
 			return Err(BundleStateVersionError::InvalidData);
 		}
 		if account.migration_version > BUNDLE_STATE_MIGRATION_VERSION {
-			return Err(BundleStateVersionError::Future { stored: account.migration_version });
+			return Err(BundleStateVersionError::Future {
+				stored: account.migration_version,
+			});
 		}
 		Ok(account)
 	}
@@ -179,9 +186,15 @@ mod bundle_state_version_error_tests {
 
 	#[test]
 	fn stale_and_future_versions_are_distinguishable() {
-		let error = BundleState::try_from_bytes(&envelope(1_u8)).err().expect("a future envelope must fail");
+		let error = BundleState::try_from_bytes(&envelope(1_u8))
+			.err()
+			.expect("a future envelope must fail");
 		assert_eq!(error, BundleStateVersionError::Future { stored: 1 });
-		assert_eq!(BundleStateVersionError::Future { stored: 1 }.to_string(), "migration version mismatch: expected 0, received 1 (the data was written by a newer program; upgrade this client)");
+		assert_eq!(
+			BundleStateVersionError::Future { stored: 1 }.to_string(),
+			"migration version mismatch: expected 0, received 1 (the data was written by a newer \
+			 program; upgrade this client)"
+		);
 		assert!(
 			BundleState::try_from_bytes(&envelope(0_u8)).is_ok(),
 			"the current version must decode",

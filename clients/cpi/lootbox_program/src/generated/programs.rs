@@ -11,7 +11,8 @@ use pina::Address;
 use pina::CpiProgramId;
 use pina::Program;
 
-pub const LOOTBOX_PROGRAM_ID: Address = pina::address!("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
+pub const LOOTBOX_PROGRAM_ID: Address =
+	pina::address!("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
 
 /// Marker for the `lootboxProgram` program used by generated CPI builders.
 #[derive(Clone, Copy, Debug)]
@@ -45,7 +46,10 @@ mod tests {
 	/// full rather than only through the constant.
 	#[test]
 	fn binds_the_expected_program_id() {
-		assert_eq!(LOOTBOX_PROGRAM_ID, pina::address!("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op"));
+		assert_eq!(
+			LOOTBOX_PROGRAM_ID,
+			pina::address!("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op")
+		);
 		assert_eq!(LootboxProgram::ID, LOOTBOX_PROGRAM_ID);
 		assert!(is_expected_program(&LOOTBOX_PROGRAM_ID));
 	}

@@ -1232,7 +1232,8 @@ fn has_released_assets(bundle: &BundleStateZc) -> Result<bool, ProgramError> {
 
 fn has_reserved_slot(bundle: &BundleStateZc) -> Result<bool, ProgramError> {
 	let funded = usize::from(bundle.funded_assets);
-	Ok(funded < usize::from(bundle.asset_count) && (bundle.kinds[funded] != 0
+	Ok(funded < usize::from(bundle.asset_count)
+		&& (bundle.kinds[funded] != 0
 			|| mint_at(bundle, funded)? != Address::default()
 			|| bundle.commitments[funded * 32..(funded + 1) * 32] != [0; 32]
 			|| read_slot(&bundle.amounts, funded)? != 0

@@ -108,7 +108,9 @@ fn bounded_hex_arg(value: &str, field: &'static str, limit: usize) -> Result<Vec
 	}
 	digits
 		.as_bytes()
-		.as_chunks::<2>().0.iter()
+		.as_chunks::<2>()
+		.0
+		.iter()
 		.map(|pair| {
 			std::str::from_utf8(pair)
 				.ok()

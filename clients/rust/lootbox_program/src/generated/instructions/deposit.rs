@@ -21,7 +21,11 @@ pub struct Deposit {
 }
 
 impl Deposit {
-	pub fn new(depositor: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		depositor: solana_pubkey::Pubkey,
+		lootbox: solana_pubkey::Pubkey,
+		vault: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			depositor,
 			lootbox,
@@ -42,9 +46,15 @@ impl Deposit {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.depositor, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.lootbox, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.lootbox,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.vault, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.system_program,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -60,7 +70,9 @@ pub struct DepositInstructionData {
 }
 
 impl DepositInstructionData {
-	pub fn new(configure: impl FnOnce(&mut DepositInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut DepositInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<DepositInstructionWireZc>()];
 		<DepositInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
@@ -68,7 +80,7 @@ impl DepositInstructionData {
 			data.migration_version = DEPOSIT_MIGRATION_VERSION;
 			Ok(())
 		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

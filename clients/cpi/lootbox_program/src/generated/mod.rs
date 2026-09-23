@@ -8,10 +8,11 @@
 )]
 
 mod instructions;
+pub(crate) mod generated_types {}
+pub mod accounts;
 mod programs;
 
 pub use instructions::*;
-
 pub use programs::*;
 
 /// Number of instructions rendered for the `lootboxProgram` program.

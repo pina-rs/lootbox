@@ -24,7 +24,14 @@ pub struct FundTokenPrize {
 }
 
 impl FundTokenPrize {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, mint: solana_pubkey::Pubkey, source: solana_pubkey::Pubkey, escrow: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		authority: solana_pubkey::Pubkey,
+		template: solana_pubkey::Pubkey,
+		bundle: solana_pubkey::Pubkey,
+		mint: solana_pubkey::Pubkey,
+		source: solana_pubkey::Pubkey,
+		escrow: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			authority,
 			template,
@@ -36,7 +43,10 @@ impl FundTokenPrize {
 		}
 	}
 
-	pub fn instruction(&self, data: FundTokenPrizeInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: FundTokenPrizeInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -47,13 +57,21 @@ impl FundTokenPrize {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.authority, true));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.authority,
+			true,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.mint, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.mint, false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.source, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.escrow, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.token_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.token_program,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -69,7 +87,9 @@ pub struct FundTokenPrizeInstructionData {
 }
 
 impl FundTokenPrizeInstructionData {
-	pub fn new(configure: impl FnOnce(&mut FundTokenPrizeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut FundTokenPrizeInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<FundTokenPrizeInstructionWireZc>()];
 		<FundTokenPrizeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
@@ -77,7 +97,7 @@ impl FundTokenPrizeInstructionData {
 			data.migration_version = FUND_TOKEN_PRIZE_MIGRATION_VERSION;
 			Ok(())
 		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

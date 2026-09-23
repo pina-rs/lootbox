@@ -182,6 +182,10 @@ in
       if [ "$(uname -s)-$(uname -m)" = "Darwin-x86_64" ]; then
         echo "Skipping Pina security lints: Pina 0.18 does not publish an Intel macOS lint driver."
       else
+        # The lint driver is built per compiler revision, so make sure the
+        # toolchain rust-toolchain.toml pins is installed before pina lint
+        # probes the active nightly for a matching driver.
+        rustup toolchain install --profile minimal
         pina lint --project programs/lootbox_program
       fi
       cargo clippy --workspace --all-features --all-targets --locked -- -D warnings

@@ -24,7 +24,14 @@ pub struct ClaimMintPrize {
 }
 
 impl ClaimMintPrize {
-	pub fn new(template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, recipient: solana_pubkey::Pubkey, mint: solana_pubkey::Pubkey, destination: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		template: solana_pubkey::Pubkey,
+		opening: solana_pubkey::Pubkey,
+		bundle: solana_pubkey::Pubkey,
+		recipient: solana_pubkey::Pubkey,
+		mint: solana_pubkey::Pubkey,
+		destination: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			template,
 			opening,
@@ -36,7 +43,10 @@ impl ClaimMintPrize {
 		}
 	}
 
-	pub fn instruction(&self, data: ClaimMintPrizeInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: ClaimMintPrizeInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -47,13 +57,25 @@ impl ClaimMintPrize {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.template,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.recipient, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.recipient,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.mint, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.destination, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.token_program, false));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.destination,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.token_program,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -69,7 +91,9 @@ pub struct ClaimMintPrizeInstructionData {
 }
 
 impl ClaimMintPrizeInstructionData {
-	pub fn new(configure: impl FnOnce(&mut ClaimMintPrizeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut ClaimMintPrizeInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<ClaimMintPrizeInstructionWireZc>()];
 		<ClaimMintPrizeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
@@ -77,7 +101,7 @@ impl ClaimMintPrizeInstructionData {
 			data.migration_version = CLAIM_MINT_PRIZE_MIGRATION_VERSION;
 			Ok(())
 		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

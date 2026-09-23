@@ -20,7 +20,11 @@ pub struct CancelBundle {
 }
 
 impl CancelBundle {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		authority: solana_pubkey::Pubkey,
+		template: solana_pubkey::Pubkey,
+		bundle: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			authority,
 			template,
@@ -28,7 +32,10 @@ impl CancelBundle {
 		}
 	}
 
-	pub fn instruction(&self, data: CancelBundleInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: CancelBundleInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -40,7 +47,10 @@ impl CancelBundle {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(3 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.template,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
@@ -57,7 +67,9 @@ pub struct CancelBundleInstructionData {
 }
 
 impl CancelBundleInstructionData {
-	pub fn new(configure: impl FnOnce(&mut CancelBundleInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut CancelBundleInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<CancelBundleInstructionWireZc>()];
 		<CancelBundleInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
@@ -65,7 +77,7 @@ impl CancelBundleInstructionData {
 			data.migration_version = CANCEL_BUNDLE_MIGRATION_VERSION;
 			Ok(())
 		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

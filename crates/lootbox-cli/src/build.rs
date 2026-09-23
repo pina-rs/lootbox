@@ -74,7 +74,7 @@ fn hex_arg<const N: usize>(value: &str, field: &'static str) -> Result<[u8; N], 
 	}
 
 	let mut out = [0u8; N];
-	for (index, pair) in digits.as_bytes().chunks_exact(2).enumerate() {
+	for (index, pair) in digits.as_bytes().as_chunks::<2>().0.iter().enumerate() {
 		let byte = std::str::from_utf8(pair)
 			.ok()
 			.and_then(|pair| u8::from_str_radix(pair, 16).ok())
@@ -108,7 +108,7 @@ fn bounded_hex_arg(value: &str, field: &'static str, limit: usize) -> Result<Vec
 	}
 	digits
 		.as_bytes()
-		.chunks_exact(2)
+		.as_chunks::<2>().0.iter()
 		.map(|pair| {
 			std::str::from_utf8(pair)
 				.ok()

@@ -604,8 +604,13 @@ fn update_pool(account: &mut AccountView, patch: &PrizePoolStatePatch<'_>) -> Pr
 
 fn pool_asset_index(bundle: &BundleStateZc) -> Result<Option<u8>, ProgramError> {
 	let mut found = None;
-	for index in 0..usize::from(bundle.asset_count) {
-		if bundle.kinds[index] == PRIZE_POOL {
+	for (index, kind) in bundle
+		.kinds
+		.iter()
+		.enumerate()
+		.take(usize::from(bundle.asset_count))
+	{
+		if *kind == PRIZE_POOL {
 			if found.is_some() {
 				return Err(lootbox_error(LootboxError::InvalidPrizePool));
 			}

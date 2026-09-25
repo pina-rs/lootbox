@@ -8,45 +8,50 @@ web
 
 ## Users
 
-Solana developers and project creators configure, fund, lock, and distribute reward series. Recipients receive transferable boxes, inspect current prizes and odds, trade before the reveal date, then open and claim their winnings. The first working environment is a local developer playground.
+Primary: recipients of a free launch giveaway, most on phones, many new to Solana. They receive a transferable box token, check what is inside and their current odds, send boxes to friends, and on reveal day open theirs and claim a PreStocks exposure token to their wallet. Secondary: Solana developers and creators, who use the `/playground` workshop on a local Surfpool network to fund, lock, and distribute series.
 
 ## Product Purpose
 
-Make randomized gifts a reusable Solana primitive, with a small API and a playful, tangible opening experience. Success means a developer can create a template and a recipient can receive, open, and redeem a real on-chain test box from the UI.
+**Unlisted** (working name; `BRAND` in `src/launch/config.ts`) is a free, fixed-supply series of Solana boxes whose escrowed prizes are real tokenized pre-IPO stocks (PreStocks: SpaceX, OpenAI, Anthropic, Kalshi, Neuralink, Anduril, Figure AI, Polymarket), about £200 split into two £50 and five £20 slices. Success means a recipient can connect a wallet, see their boxes, pass one on, and after the reveal date open one with a press-and-hold chest, watch the recorded result, and claim the stock token.
 
 ## Positioning
 
-A fixed-supply, treasury-backed market primitive, not a separately funded account per gift. Discrete bundles can contain SOL, tokens, and multiple NFTs. An irreversible lock makes total box issuance equal total funded bundle copies and prevents later dilution. Remaining inventory changes current odds and can remove a jackpot from future draws.
+A giveaway, never a sale: there is no purchase or checkout flow, and copy never says "buy", "bet", or "gamble". Before the reveal date a box is an ordinary token to hold, send, or trade. After it, every holder opens independently: burn box, Switchboard randomness commit, oracle reveal, FIFO allocation, claim. The difference from a generic mint page is the physical opening: holding the chest is the anticipation beat that honestly covers oracle latency.
 
 ## Operating Context
 
-React web playground, Pina program, Codama-generated Rust/TypeScript/Dart clients, Devenv tooling, and an offline Surfpool runtime. The user approved extending the existing UI directly in code and delegated further design decisions to the implementation agent.
+Static Vite + React + TypeScript build. `/` is the recipient site; `/playground` is the local creator workshop. Wallets connect through Wallet Standard (Phantom, Solflare, Backpack) and sign through a kit `TransactionSigner`; the app never holds keys. `VITE_SOLANA_CLUSTER`, `VITE_RPC_URL`, and `VITE_TREASURY` choose the network and series. Localnet uses the Surfpool control plane's mock oracle; devnet and mainnet use the SDK's Switchboard On-Demand transport (`createSwitchboardOracle`). The series is 7 PreStocks bundles plus an "Empty box ×13" consolation bundle (a mint-on-claim badge and 0.001 SOL), 20 boxes in all. The static site deploys to GitHub Pages at `/lootbox/`, which also hosts the box and badge metadata under `/lootbox/metadata/`.
 
 ## Capabilities and Constraints
 
-- Fully funded finite inventory is the first usable mode. Probabilistic backing remains explicitly in scope as a separate reserve policy; its settlement policy and on-chain implementation are not complete.
-- Transferable, zero-decimal Token-2022 units represent unopened boxes; units from one locked template are interchangeable, not individually unique NFTs.
-- Before lock, additions are append-only. Lock atomically issues every missing box, revokes mint authority, freezes the treasury, and requires a future reveal date with pristine inventory.
-- Fixed prize terms and reveal date after lock; no early opening and no result rerolls on a failed delivery.
-- The market desk computes exact remaining-inventory EV from explicit user valuations and integer-only constant-product previews. Production Raydium deployment remains an external wallet/network operation, represented by a checked export manifest.
-- Local wallets, balances, and oracle proofs must be visibly labeled test-only. No mainnet funding or production randomness claims.
-- Creator setup, gifting, receipt recovery, and claims must survive ordinary navigation and reloads where the local network still exists.
-- Local-wallet signing is a test convenience, not production wallet custody. Public deployment and real-oracle readiness are separate release gates.
+- The animation plays the already-recorded on-chain result. It never chooses the outcome, and the prize card, receipt link, and live region never wait on it.
+- Live odds are each bundle's share of remaining boxes read from the locked treasury; depleted bundles stay visible at 0%.
+- Prize values are estimates from PreStocks prices. The API is not CORS-enabled, so the browser never calls it: the Pages workflow refreshes a snapshot at build time (`tools/snapshot-prestocks.ts`, keeping the committed one if the API is down) and the page shows its capture date.
+- Required disclosures stay on the page: issuer-controlled tokens (freeze/pause, PreStocks issuer transfer fee on claim), geo-restrictions on the underlying tokens, not investment advice, and verifiable Switchboard randomness with explorer links to the opening receipt and transactions.
+- An interrupted opening is recovered from chain (unfinished openings bound to the wallet) and never burns a second box.
+- Localnet balances, stand-in prize mints, and oracle proofs are test-only and labeled as such.
+
+## Legal Commitments
+
+- Prizes are described as PreStocks tokens that track SPV exposure to a company: not shares, with no ownership, voting or dividend rights, and not affiliated with or endorsed by the company. Copy never says "shares", "invest", or implies returns.
+- No company logos; ticker monograms only. A visible non-affiliation line names every tracked company.
+- `/rules` carries the official rules (promoter, free entry, eligibility, dates, on-chain inventory and odds, allocation, delivery, forfeiture, taxes, risk, public verification) and is linked from the header, footer, manifest and the chest.
+- Claiming a token prize requires an in-app self-certification (18+, not a US person, not in a restricted jurisdiction, not sanctioned). Nothing is stored. The empty box has no gate.
 
 ## Brand Commitments
 
-Lootbox by Pina. Fun, visually distinctive, and simple to use. Preserve the existing mechanical crate identity while extending the product.
+Unlisted, built on Lootbox by Pina. Playful, tactile, warm. The cartoon chest is the signature object on the public site; the dark mechanical workbench remains the creator playground's identity.
 
 ## Evidence on Hand
 
-The protocol and three SDKs are implemented. Real-SBF Surfpool tests exercise funding, transfer, delayed opening, allocation, claims, and retirement. The existing CSS crate and animations are code-native assets. No independent audit or real-network oracle soak has completed.
+The protocol and three SDKs are implemented. Playwright drives the full recipient flow (connect, balance, send, pre-reveal lock, hold-to-open, keyboard hold, reduced motion, skip, oracle outage recovery, claim to a token balance) against local Surfpool on desktop and Pixel viewports, with axe checks. No independent audit or real-network oracle soak has completed.
 
 ## Product Principles
 
 - Reveal the treasury and the rules, not only the spectacle.
-- Keep creation and receiving understandable without knowing account layouts.
+- The hold is honest anticipation: it starts the real transaction and covers real latency.
 - Animation presents a recorded result; it never determines the reward.
-- Clearly separate implemented features, valuation experiments, and production guarantees.
+- Clearly separate test-network stand-ins, planned lineups, and production guarantees.
 
 ## Accessibility & Inclusion
 

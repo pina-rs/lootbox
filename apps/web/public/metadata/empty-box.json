@@ -1,0 +1,7 @@
+{
+	"name": "Empty Box",
+	"symbol": "EMPTYBOX",
+	"description": "You opened an Unlisted box and it was empty, but you kept the chest. This badge is minted to everyone who draws an empty box.",
+	"image": "https://pina-rs.github.io/lootbox/metadata/empty-box.png",
+	"external_url": "https://pina-rs.github.io/lootbox/"
+}

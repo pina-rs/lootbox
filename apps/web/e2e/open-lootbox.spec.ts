@@ -11,7 +11,7 @@ test("funds a real Surfpool treasury, gifts boxes, and delivers every bundle", a
 	if (test.info().project.name === "mobile") {
 		await page.emulateMedia({ reducedMotion: "reduce" });
 	}
-	await page.goto("/");
+	await page.goto("/playground");
 	await expect(page.getByText("SURFPOOL · LOCAL", { exact: true }))
 		.toBeVisible();
 	await page.getByRole("button", { name: "Workshop", exact: true }).click();
@@ -163,7 +163,7 @@ test("funds a real Surfpool treasury, gifts boxes, and delivers every bundle", a
 test("resumes partially funded drafts and transfers a time-locked gift", async ({ page }) => {
 	test.setTimeout(120_000);
 	await page.emulateMedia({ reducedMotion: "reduce" });
-	await page.goto("/");
+	await page.goto("/playground");
 	await expect(page.getByText("SURFPOOL · LOCAL", { exact: true }))
 		.toBeVisible();
 	await page.getByRole("button", { name: "Workshop", exact: true }).click();
@@ -248,7 +248,7 @@ test("resumes partially funded drafts and transfers a time-locked gift", async (
 });
 
 test("explains creator validation beside the affected fields", async ({ page }) => {
-	await page.goto("/");
+	await page.goto("/playground");
 	await expect(page.getByText("SURFPOOL · LOCAL", { exact: true }))
 		.toBeVisible();
 	await page.getByRole("button", { name: "Workshop", exact: true }).click();
@@ -284,7 +284,7 @@ test("explains creator validation beside the affected fields", async ({ page }) 
 
 test("shows an actionable offline state instead of simulated balances", async ({ page }) => {
 	await page.route("http://127.0.0.1:8898/config", (route) => route.abort());
-	await page.goto("/");
+	await page.goto("/playground");
 	await expect(page.getByRole("alert")).toBeVisible();
 	await expect(page.getByRole("button", { name: "Retry connection" }))
 		.toBeEnabled();

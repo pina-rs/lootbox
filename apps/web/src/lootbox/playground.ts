@@ -14,12 +14,14 @@ import {
 	MAX_PRIZE_POOL_ITEMS,
 	MAX_TEMPLATE_BUNDLES,
 	type OracleAccounts,
+	type OracleProof,
 	type PrizeAsset,
 	type PrizeBundleInput,
 	type PrizePoolItem,
 } from "@pina-rs/lootbox";
 import {
 	AccountRole,
+	type Address,
 	address,
 	createKeyPairSignerFromPrivateKeyBytes,
 	getAddressEncoder,
@@ -31,6 +33,7 @@ import {
 	type Instruction,
 	type TransactionSigner,
 } from "@solana/kit";
+import type { OracleTransport } from "../launch/oracle.js";
 
 const CONTROL = "http://127.0.0.1:8898";
 const ORACLE = "Aio4gaXjXzJNVLtzwtNVmSqGKpANtXhybbkhtAC94ji2";
@@ -213,36 +216,40 @@ async function wallet(instance: string, role: string) {
 	if (!stored) localStorage.setItem(key, JSON.stringify(bytes));
 	return signer(bytes);
 }
+async function readControlConfig(): Promise<Config> {
+	assertLoopback(location.origin);
+	const raw = await control("/config");
+	if (
+		raw.testOnly !== true || raw.network !== "surfpool" ||
+		raw.programId !== LOOTBOX_PROGRAM_PROGRAM_ADDRESS ||
+		raw.oracleProgram !== ORACLE
+	) {
+		throw new Error(
+			"Unexpected network. Refusing to sign test transactions.",
+		);
+	}
+	const rpcUrl = string(raw.rpcUrl);
+	assertLoopback(rpcUrl);
+	const oracle = record(raw.oracle);
+	return {
+		instanceId: string(raw.instanceId),
+		rpcUrl,
+		oracle: {
+			queue: address(string(oracle.queue)),
+			oracle: address(string(oracle.oracle)),
+			programState: address(string(oracle.programState)),
+			lutSigner: address(string(oracle.lutSigner)),
+			lut: address(string(oracle.lut)),
+			stats: address(string(oracle.stats)),
+		},
+	};
+}
 let connection: Promise<Playground> | undefined;
 export function connectPlayground(): Promise<Playground> {
 	if (connection) return connection;
 	connection = (async () => {
-		assertLoopback(location.origin);
-		const raw = await control("/config");
-		if (
-			raw.testOnly !== true || raw.network !== "surfpool" ||
-			raw.programId !== LOOTBOX_PROGRAM_PROGRAM_ADDRESS ||
-			raw.oracleProgram !== ORACLE
-		) {
-			throw new Error(
-				"Unexpected network. Refusing to sign test transactions.",
-			);
-		}
-		const rpcUrl = string(raw.rpcUrl);
-		assertLoopback(rpcUrl);
-		const oracle = record(raw.oracle);
-		const config: Config = {
-			instanceId: string(raw.instanceId),
-			rpcUrl,
-			oracle: {
-				queue: address(string(oracle.queue)),
-				oracle: address(string(oracle.oracle)),
-				programState: address(string(oracle.programState)),
-				lutSigner: address(string(oracle.lutSigner)),
-				lut: address(string(oracle.lut)),
-				stats: address(string(oracle.stats)),
-			},
-		};
+		const config = await readControlConfig();
+		const rpcUrl = config.rpcUrl;
 		const creator = await wallet(config.instanceId, "creator");
 		const recipient = await wallet(config.instanceId, "recipient");
 		const result: Playground = {
@@ -1097,6 +1104,62 @@ export async function cancelSavedDraft(
 	};
 }
 
+function proofBytes(value: unknown, length: number): Uint8Array {
+	if (
+		!Array.isArray(value) || value.length !== length ||
+		!value.every((byte: unknown) =>
+			typeof byte === "number" && Number.isInteger(byte) && byte >= 0 &&
+			byte <= 255
+		)
+	) throw new Error("Invalid oracle proof");
+	return Uint8Array.from(value);
+}
+
+/** The local Surfpool RPC and mock oracle, for the recipient site on localnet.
+ * Refuses anything other than the loopback test control plane.
+ */
+export async function connectLocalNetwork(): Promise<
+	Readonly<{ rpcUrl: string; oracle: OracleTransport }>
+> {
+	const config = await readControlConfig();
+	return { rpcUrl: config.rpcUrl, oracle: localOracle(config) };
+}
+
+/** Fund `wallet` with test SOL from the local control plane's faucet. */
+export async function requestLocalFaucet(wallet: Address): Promise<void> {
+	assertLoopback(location.origin);
+	await control("/faucet", { address: wallet });
+}
+
+/** Ask the local control plane's emulator to sign a reveal for `randomness`. */
+async function fetchMockProof(randomness: Address): Promise<OracleProof> {
+	const proof = await control(`/proof?randomness=${randomness}`);
+	if (proof.testOnly !== true || typeof proof.recoveryId !== "number") {
+		throw new Error("Expected an emulator proof");
+	}
+	return {
+		signature: proofBytes(proof.signature, 64),
+		recoveryId: proof.recoveryId,
+		value: proofBytes(proof.value, 32),
+	};
+}
+
+/** The Surfpool mock oracle behind the launch site's `OracleTransport`
+ * contract. Localnet only: every proof is signed by a test emulator.
+ */
+export function localOracle(
+	config: Pick<Config, "oracle">,
+): OracleTransport {
+	const accounts = config.oracle;
+	return Object.freeze({
+		programId: address(ORACLE),
+		queue: accounts.queue,
+		selectAccounts: () => Promise.resolve(accounts),
+		accountsFor: () => Promise.resolve(accounts),
+		fetchProof: fetchMockProof,
+	});
+}
+
 export async function settleOpenings(
 	sandbox: Playground,
 	template: ChainTemplate,
@@ -1128,31 +1191,12 @@ export async function settleOpenings(
 		if (!opening || opening.data.status >= 2) continue;
 		try {
 			if (opening.data.status === 0) {
-				const proof = await control(
-					`/proof?randomness=${opening.data.randomness}`,
-				);
-				const bytes = (value: unknown, length: number) => {
-					if (
-						!Array.isArray(value) || value.length !== length ||
-						!value.every((byte: unknown) =>
-							typeof byte === "number" && Number.isInteger(byte) && byte >= 0 &&
-							byte <= 255
-						)
-					) throw new Error("Invalid oracle proof");
-					return Uint8Array.from(value);
-				};
-				if (proof.testOnly !== true || typeof proof.recoveryId !== "number") {
-					throw new Error("Expected an emulator proof");
-				}
+				const proof = await fetchMockProof(opening.data.randomness);
 				await client.settle(
 					await client.template(template.address),
 					opening,
 					sandbox.config.oracle,
-					{
-						signature: bytes(proof.signature, 64),
-						recoveryId: proof.recoveryId,
-						value: bytes(proof.value, 32),
-					},
+					proof,
 				);
 			} else {
 				await client.allocate(await client.template(template.address), opening);

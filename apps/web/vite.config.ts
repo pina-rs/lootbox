@@ -1,7 +1,11 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+/** Public base path: `/` locally, `/lootbox/` on GitHub Pages. */
+const base = process.env.LOOTBOX_WEB_BASE?.trim() || "/";
+
 export default defineConfig(({ mode }) => ({
+	base,
 	define: {
 		"process.env.NODE_ENV": JSON.stringify(
 			mode === "production" ? "production" : "development",

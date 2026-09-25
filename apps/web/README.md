@@ -1,4 +1,31 @@
-# Lootbox Playground
+# Lootbox web
+
+Two surfaces share one static Vite build:
+
+- `/` is **Unlisted**, the public recipient site: a free series of Solana boxes with PreStocks exposure tokens inside (not shares). `/rules` is the official rules page, with dates, inventory and odds read from the treasury. Connect a Wallet Standard wallet, see your boxes and live odds, send a box to a friend, and after the reveal date press and hold the cartoon chest to open one and claim the prize.
+- `/playground` is the local creator workshop described below.
+
+Static hosts must rewrite unknown paths to `index.html` so `/playground` resolves (Vite's dev and preview servers already do).
+
+## Recipient site
+
+Configure it with Vite environment variables at build time:
+
+| Variable              | Meaning                                                                                            |
+| --------------------- | -------------------------------------------------------------------------------------------------- |
+| `VITE_SOLANA_CLUSTER` | `localnet` (default), `devnet`, or `mainnet`.                                                      |
+| `VITE_RPC_URL`        | RPC for devnet/mainnet. Defaults to the public endpoint. Localnet reads it from the control plane. |
+| `VITE_TREASURY`       | The locked series (template) address. Without it the page shows the planned lineup.                |
+
+On localnet, `?treasury=<address>` overrides `VITE_TREASURY` so a series made in `/playground` can be opened from `/`. Public clusters ignore the query string.
+
+Opening burns one box and commits Switchboard randomness, waits for the oracle's reveal, settles the FIFO queue up to that opening, then plays the reaction for the recorded result. The flow is written against `OracleTransport` in `src/launch/oracle.ts`. Localnet injects the Surfpool mock oracle (`localOracle` in `src/lootbox/playground.ts`). Devnet and mainnet use `createSwitchboardOracle` from the SDK: `requestOpen` resolves per-randomness oracle accounts, and the reveal proof is fetched with a bounded abort signal so an outage leaves a resumable opening instead of a stuck page. A bundle holding only a mint-on-claim badge and at most 0.01 SOL is an empty box: it gets its own manifest row and the `disappointed` reaction. Prize mints the PreStocks catalog does not know show their Token-2022 metadata name and symbol.
+
+`.github/workflows/pages.yml` deploys this app to GitHub Pages at `/lootbox/` on every push to `main`, reading `VITE_SOLANA_CLUSTER`, `VITE_RPC_URL`, and `VITE_TREASURY` from repository variables. Set `LOOTBOX_WEB_BASE=/lootbox/` to reproduce that build locally; the `pages` Playwright project checks that every asset, clip, and metadata file resolves under the base path. `public/metadata/` holds the Metaplex-style JSON and images for the box token and the Empty Box badge.
+
+Prize logos and prices come from PreStocks. The API sends no CORS headers, so the browser never calls it. Prices ship in `src/launch/prestocks-snapshot.json`, which the Pages workflow refreshes before each build with `node tools/snapshot-prestocks.ts` (keeping the committed snapshot if the API is down); the manifest shows the capture date. The cartoon chest clips in `public/animations/cartoon-chest/` are derived from `assets/lootbox-reveals/build/cartoon-chest/` (720 px VP9 WebM with alpha, H.264 MP4 fallback, WebP stills).
+
+## Creator playground
 
 A browser-to-Surfpool workshop for fixed-supply reward treasuries, transferable whole boxes, pre-reveal market analysis, and animated openings. The React app sends real local transactions through `LootboxClient`; it does not fabricate balances or outcomes.
 
@@ -20,7 +47,7 @@ Leave that process running. In a second terminal:
 devenv shell -- pnpm --dir apps/web dev
 ```
 
-Open `http://127.0.0.1:5173`. The control plane defaults to port 8898. The UI fails visibly if the service is missing; it never swaps in fake client state.
+Open `http://127.0.0.1:5173/playground` for the workshop, or `http://127.0.0.1:5173/?treasury=<address>` for the recipient site. The control plane defaults to port 8898. The UI fails visibly if the service is missing; it never swaps in fake client state.
 
 For live catalog results, set these only on the server process:
 
@@ -80,4 +107,4 @@ devenv shell -- pnpm --dir apps/web build
 devenv shell -- pnpm --dir apps/web test:e2e
 ```
 
-Playwright covers desktop and Pixel-sized layouts, mixed prize delivery to real local balances, reload and recovery, partial funding, time locks, transfers, offline state, and reduced motion. Component tests cover PrizePool tree locking, immutable admission, ownership refresh, proof refresh, and transfer-plan presentation. See the [treasury protocol](../../docs/treasury-templates.md), [PrizePool reference](../../docs/prize-pools.md), and [security notes](../../docs/security-templates.md).
+Playwright covers desktop and Pixel-sized layouts. `e2e/launch.spec.ts` drives the recipient site with an injected Wallet Standard test wallet (a fresh local keypair that signs in the test process) and local stand-ins at the real PreStocks mint addresses: landing and disclosures, live odds, balance, sending, the pre-reveal lock, hold-to-open, keyboard hold with reduced motion, skip, oracle outage recovery without a second burn, and claims checked against token balances, with axe checks and no console errors. `e2e/open-lootbox.spec.ts` covers the playground: mixed prize delivery to real local balances, reload and recovery, partial funding, time locks, transfers, offline state, and reduced motion. Component tests cover PrizePool tree locking, immutable admission, ownership refresh, proof refresh, and transfer-plan presentation. See the [treasury protocol](../../docs/treasury-templates.md), [PrizePool reference](../../docs/prize-pools.md), and [security notes](../../docs/security-templates.md).

@@ -7,6 +7,10 @@
 	},
 	"description": "Solana transaction SDK for provably backed Pina reward packs",
 	"devDependencies": {
+		"@metaplex-foundation/mpl-bubblegum": "^5.1.0",
+		"@metaplex-foundation/spl-account-compression": "0.0.1",
+		"@metaplex-foundation/umi": "^1.6.0",
+		"@metaplex-foundation/umi-bundle-defaults": "^1.6.0",
 		"@types/node": "^26.6.2",
 		"tsx": "4.23.13",
 		"typescript": "^7.0.2",
@@ -31,6 +35,7 @@
 		"create:stock-mint": "tsx scripts/create-stock-mint.ts",
 		"e2e:devnet": "tsx scripts/devnet-e2e.ts",
 		"launch:treasury": "tsx scripts/launch-treasury.ts",
+		"mint:empty-chests": "tsx scripts/mint-empty-chests.ts",
 		"relayer": "tsx scripts/relayer.ts",
 		"test": "vitest run"
 	},

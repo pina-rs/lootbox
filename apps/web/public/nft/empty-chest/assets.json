@@ -1,0 +1,58 @@
+{
+	"cluster": "devnet",
+	"tree": "DD68T1hcDXauKuUgANhPugFC2etjxW26M1k3CBoHdjou",
+	"assets": {
+		"2sCmcpuDcfPAjjERzNm8YNAxybZ5h72yHSxo8crkfAvG": {
+			"variant": 0,
+			"leafIndex": 0
+		},
+		"HYSsNZK1KUshKKUukdtrVLaWQMxmgPY56qdjcDaam4pd": {
+			"variant": 1,
+			"leafIndex": 1
+		},
+		"HF27aaYpYEKiL52uaoaomH87dz4QW6kAeBPEKnnSGFnq": {
+			"variant": 2,
+			"leafIndex": 2
+		},
+		"3XB3SNi8m9MVvKFQHKo4ycXYZjZdknvCRQnB7YSURiyn": {
+			"variant": 3,
+			"leafIndex": 3
+		},
+		"2XmhNktFqxETqTSjNsibTofwjr2cQfR6eiuhqTKqs28R": {
+			"variant": 4,
+			"leafIndex": 4
+		},
+		"7pWiZKNaQj9HsC8Vf8ckrucxQzs17CDzzRyHZhwfhshW": {
+			"variant": 5,
+			"leafIndex": 5
+		},
+		"7HiyPXuvgPSojuSALU9V3Aks1r3UiCpXdKDRAhLsscNr": {
+			"variant": 6,
+			"leafIndex": 6
+		},
+		"F6zrDiG76GtZjQQqiefBpvowzHVXtnPihXLHfjCrUjnG": {
+			"variant": 7,
+			"leafIndex": 7
+		},
+		"54LhX98BN12vDpzznvsgr1AqtRtbTJpXQe5VECZ8pSwA": {
+			"variant": 8,
+			"leafIndex": 8
+		},
+		"BCoBis3cB1u3SzJBsBXb6BvUJQ8GwxaV54goh2PndL3M": {
+			"variant": 9,
+			"leafIndex": 9
+		},
+		"Ei2WDZntwCpepYx8fmqnUYMhkKAe2EFDrvCVGpNDtAZk": {
+			"variant": 10,
+			"leafIndex": 10
+		},
+		"CkNa1zvZJZanF5GJKZMh7NcQQfMnZQvZcEcGorZaYbP9": {
+			"variant": 11,
+			"leafIndex": 11
+		},
+		"4igZdcyi7e2rNQse3hAnznBrpxeDgxnta9DMPJpPqRzM": {
+			"variant": 12,
+			"leafIndex": 12
+		}
+	}
+}

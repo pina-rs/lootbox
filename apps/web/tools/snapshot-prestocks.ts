@@ -1,10 +1,11 @@
 /**
  * Snapshot the public PreStocks catalog into the static launch site.
  *
- * The PreStocks API does not send CORS headers, so a static build cannot rely
- * on reading it from the browser. This tool records the catalog (symbol, mint,
- * logo, token price) with its capture time and copies each logo locally so the
- * prize manifest renders offline. The app still tries the live API first.
+ * The PreStocks API does not send CORS headers, so the browser never calls it.
+ * This tool records the catalog (symbol, mint, logo, token price) with its
+ * capture time and copies each logo locally so the prize manifest renders
+ * offline. The Pages workflow runs it before every build and keeps the
+ * committed snapshot if it fails; the page shows the capture date.
  *
  * Run from `apps/web`: `node tools/snapshot-prestocks.ts`
  */
@@ -38,7 +39,7 @@ function isRawStock(value: unknown): value is RawStock {
 		typeof entry.tokenPrice === "number";
 }
 
-const response = await fetch(API);
+const response = await fetch(API, { signal: AbortSignal.timeout(15_000) });
 
 if (!response.ok) {
 	throw new Error(`PreStocks API responded ${response.status}`);
@@ -56,7 +57,9 @@ const stocks = [];
 
 for (const stock of body) {
 	const file = `${stock.symbol.toLowerCase()}.png`;
-	const logo = await fetch(stock.image);
+	const logo = await fetch(stock.image, {
+		signal: AbortSignal.timeout(15_000),
+	});
 
 	if (!logo.ok) throw new Error(`logo for ${stock.symbol} is unavailable`);
 

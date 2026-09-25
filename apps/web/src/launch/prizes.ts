@@ -3,8 +3,6 @@ import { templateInventory } from "@pina-rs/lootbox";
 import { assetUrl } from "./assets.js";
 import snapshot from "./prestocks-snapshot.json";
 
-const PRESTOCKS_API = "https://prestocks.com/api/prestocks";
-
 /** One PreStocks pre-IPO token as the manifest displays it. */
 export type StockListing = Readonly<{
 	symbol: string;
@@ -16,21 +14,18 @@ export type StockListing = Readonly<{
 }>;
 
 /**
- * Stock metadata and prices keyed by mint.
- *
- * `live` prices come from the PreStocks API at runtime. That API sends no CORS
- * headers today, so most browsers fall back to the bundled `snapshot`, which
- * carries its capture time so the UI can say how old the prices are.
+ * Stock metadata and prices keyed by mint, from the PreStocks catalog
+ * snapshot bundled at build time (`tools/snapshot-prestocks.ts`, refreshed by
+ * the Pages workflow). The PreStocks API sends no CORS headers, so the browser
+ * never calls it; the UI shows `capturedAt` so readers know the price date.
  */
 export type PriceBook = Readonly<{
-	source: "live" | "snapshot";
 	capturedAt: string;
 	stocks: ReadonlyMap<string, StockListing>;
 }>;
 
 export function snapshotPriceBook(): PriceBook {
 	return Object.freeze({
-		source: "snapshot",
 		capturedAt: snapshot.capturedAt,
 		stocks: new Map(
 			snapshot.stocks.map((stock) => [stock.mint, {
@@ -39,57 +34,6 @@ export function snapshotPriceBook(): PriceBook {
 			}]),
 		),
 	});
-}
-
-/** Merge a live PreStocks payload over the snapshot. Unknown shapes are ignored. */
-export function applyLivePrices(book: PriceBook, body: unknown): PriceBook {
-	if (!Array.isArray(body)) return book;
-
-	const stocks = new Map(book.stocks);
-	let updated = 0;
-
-	for (const entry of body) {
-		if (typeof entry !== "object" || entry === null) continue;
-
-		const mint: unknown = Reflect.get(entry, "contract_address");
-		const price: unknown = Reflect.get(entry, "tokenPrice");
-		const known = typeof mint === "string" ? stocks.get(mint) : undefined;
-
-		if (!known || typeof price !== "number" || !Number.isFinite(price)) {
-			continue;
-		}
-
-		stocks.set(known.mint, { ...known, usdPrice: price });
-		updated += 1;
-	}
-
-	if (updated === 0) return book;
-
-	return Object.freeze({
-		source: "live",
-		capturedAt: new Date().toISOString(),
-		stocks,
-	});
-}
-
-export async function loadPriceBook(
-	fetcher: typeof fetch = fetch,
-): Promise<PriceBook> {
-	const book = snapshotPriceBook();
-
-	try {
-		const response = await fetcher(PRESTOCKS_API, {
-			signal: AbortSignal.timeout(5_000),
-		});
-
-		if (!response.ok) return book;
-
-		return applyLivePrices(book, await response.json());
-	} catch {
-		// Expected in browsers: the API is not CORS-enabled. The snapshot is the
-		// documented fallback and the UI labels its capture date.
-		return book;
-	}
 }
 
 export type PrizeLine =

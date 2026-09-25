@@ -2,9 +2,6 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { generateKeyPairSigner } from "@solana/kit";
 
-import snapshot from "../src/launch/prestocks-snapshot.json" with {
-	type: "json",
-};
 import {
 	CONTROL,
 	createSeries,
@@ -16,13 +13,18 @@ import {
 	tokenBalance,
 } from "./support/localnet.js";
 
-const PRESTOCKS_API = "https://prestocks.com/api/prestocks";
-
 /** Collect page errors and console errors; `allow` filters expected noise. */
 function watchErrors(page: Page, allow: readonly RegExp[] = []) {
 	const errors: string[] = [];
 
 	page.on("pageerror", (error) => errors.push(error.message));
+	// Prices ship in the build; the non-CORS PreStocks API must never be
+	// called from the browser.
+	page.on("request", (request) => {
+		if (new URL(request.url()).hostname.endsWith("prestocks.com")) {
+			errors.push(`unexpected request to ${request.url()}`);
+		}
+	});
 	page.on("console", (message) => {
 		if (message.type() !== "error") return;
 
@@ -32,23 +34,6 @@ function watchErrors(page: Page, allow: readonly RegExp[] = []) {
 	});
 
 	return errors;
-}
-
-/** Serve the PreStocks API deterministically, with CORS, from the snapshot. */
-async function stubPrices(page: Page) {
-	await page.route(PRESTOCKS_API, (route) =>
-		route.fulfill({
-			status: 200,
-			contentType: "application/json",
-			headers: { "access-control-allow-origin": "*" },
-			body: JSON.stringify(
-				snapshot.stocks.map((stock) => ({
-					contract_address: stock.mint,
-					tokenPrice: stock.usdPrice,
-					symbol: stock.symbol,
-				})),
-			),
-		}));
 }
 
 async function expectAccessible(page: Page) {
@@ -95,8 +80,6 @@ async function openSeries(
 	page: Page,
 	options: { revealed: boolean; kind?: "stocks" | "empty" },
 ) {
-	await stubPrices(page);
-
 	const wallet = await injectTestWallet(page);
 	const series = await createSeries({
 		holder: wallet.address,
@@ -142,7 +125,6 @@ async function claimAndVerify(
 test("landing explains the series before a treasury is configured", async ({ page }) => {
 	const errors = watchErrors(page);
 
-	await stubPrices(page);
 	await page.goto("/");
 	await expect(page.getByRole("heading", { level: 1 })).toContainText(
 		"pre-IPO stock",

@@ -36,7 +36,6 @@ import {
 	formatUnits,
 	formatUsd,
 	lineTitle,
-	loadPriceBook,
 	type ManifestRow,
 	PLANNED_EMPTY_COPIES,
 	plannedLineup,
@@ -236,15 +235,13 @@ function ManifestTable(
 			<li className="manifest-foot">
 				Odds are each bundle's share of the boxes still unopened, read from the
 				treasury account. They change after every opening.{" "}
-				{book.source === "snapshot"
-					? `Values use PreStocks prices captured ${
-						new Date(book.capturedAt).toLocaleDateString("en-GB", {
-							day: "numeric",
-							month: "short",
-							year: "numeric",
-						})
-					}.`
-					: "Values use live PreStocks prices."}
+				{`Values use PreStocks prices captured ${
+					new Date(book.capturedAt).toLocaleDateString("en-GB", {
+						day: "numeric",
+						month: "short",
+						year: "numeric",
+					})
+				}.`}
 			</li>
 		</ol>
 	);
@@ -514,7 +511,7 @@ export default function LaunchApp() {
 	);
 	const reducedMotion = useReducedMotion();
 	const now = useNow();
-	const [book, setBook] = useState<PriceBook>(snapshotPriceBook);
+	const book = useMemo<PriceBook>(snapshotPriceBook, []);
 	const [network, setNetwork] = useState<Load<Network>>({ status: "loading" });
 	const [series, setSeries] = useState<Load<SeriesSnapshot> | null>(null);
 	const [options, setOptions] = useState<readonly WalletOption[]>([]);
@@ -529,10 +526,6 @@ export default function LaunchApp() {
 	const [sendState, setSendState] = useState<Load<string> | null>(null);
 	const inFlight = useRef(false);
 	const signatures = useRef<Map<string, string>>(new Map());
-
-	useEffect(() => {
-		void loadPriceBook().then(setBook);
-	}, []);
 
 	useEffect(() => {
 		connectNetwork(config).then(

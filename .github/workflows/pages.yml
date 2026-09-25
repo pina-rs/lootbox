@@ -46,6 +46,16 @@ jobs:
         id: pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
+      - name: Refresh PreStocks price snapshot
+        # Fail-soft: if the PreStocks API is down, keep the committed snapshot.
+        # The site always shows the snapshot's capture date.
+        working-directory: apps/web
+        run: |
+          if ! node tools/snapshot-prestocks.ts; then
+            echo "::warning title=PreStocks snapshot::API unavailable; building with the committed price snapshot."
+            git checkout -- src/launch/prestocks-snapshot.json public/logos/prestocks
+          fi
+
       - name: Build site
         env:
           LOOTBOX_WEB_BASE: ${{ steps.pages.outputs.base_path }}/

@@ -1,7 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
-	applyLivePrices,
 	assignTiers,
 	buildManifest,
 	type BundleSummary,
@@ -9,7 +8,6 @@ import {
 	formatOdds,
 	formatUnits,
 	isEmptyBundle,
-	loadPriceBook,
 	plannedLineup,
 	rowContents,
 	rowTitle,
@@ -184,30 +182,9 @@ describe("prize manifest", () => {
 });
 
 describe("price book", () => {
-	it("merges live prices for known mints only", () => {
-		const live = applyLivePrices(book, [
-			{ contract_address: OPENAI, tokenPrice: 2_000 },
-			{ contract_address: "unknown", tokenPrice: 1 },
-			"garbage",
-		]);
-
-		expect(live.source).toBe("live");
-		expect(live.stocks.get(OPENAI)?.usdPrice).toBe(2_000);
-		expect(live.stocks.size).toBe(book.stocks.size);
-	});
-
-	it("keeps the snapshot when the payload is unusable", () => {
-		expect(applyLivePrices(book, { error: true })).toBe(book);
-		expect(applyLivePrices(book, [{ contract_address: OPENAI }])).toBe(book);
-	});
-
-	it("falls back to the snapshot when the API is blocked by CORS", async () => {
-		const blocked = vi.fn<typeof fetch>().mockRejectedValue(
-			new TypeError("Failed to fetch"),
-		);
-		const result = await loadPriceBook(blocked);
-
-		expect(result.source).toBe("snapshot");
-		expect(blocked).toHaveBeenCalledOnce();
+	it("serves the bundled snapshot with base-path logos and its capture date", () => {
+		expect(Number.isNaN(Date.parse(book.capturedAt))).toBe(false);
+		expect(book.stocks.get(OPENAI)?.logo).toBe("/logos/prestocks/openai.png");
+		expect(book.stocks.size).toBe(8);
 	});
 });

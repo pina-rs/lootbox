@@ -23,7 +23,7 @@ Opening burns one box and commits Switchboard randomness, waits for the oracle's
 
 `.github/workflows/pages.yml` deploys this app to GitHub Pages at `/lootbox/` on every push to `main`, reading `VITE_SOLANA_CLUSTER`, `VITE_RPC_URL`, and `VITE_TREASURY` from repository variables. Set `LOOTBOX_WEB_BASE=/lootbox/` to reproduce that build locally; the `pages` Playwright project checks that every asset, clip, and metadata file resolves under the base path. `public/metadata/` holds the Metaplex-style JSON and images for the box token and the Empty Box badge.
 
-Prize logos and prices come from PreStocks. The API sends no CORS headers, so the app tries it and falls back to `src/launch/prestocks-snapshot.json`, refreshed with `node tools/snapshot-prestocks.ts`. The cartoon chest clips in `public/animations/cartoon-chest/` are derived from `assets/lootbox-reveals/build/cartoon-chest/` (720 px VP9 WebM with alpha, H.264 MP4 fallback, WebP stills).
+Prize logos and prices come from PreStocks. The API sends no CORS headers, so the browser never calls it. Prices ship in `src/launch/prestocks-snapshot.json`, which the Pages workflow refreshes before each build with `node tools/snapshot-prestocks.ts` (keeping the committed snapshot if the API is down); the manifest shows the capture date. The cartoon chest clips in `public/animations/cartoon-chest/` are derived from `assets/lootbox-reveals/build/cartoon-chest/` (720 px VP9 WebM with alpha, H.264 MP4 fallback, WebP stills).
 
 ## Creator playground
 

@@ -4,20 +4,24 @@ import { expect, test } from "@playwright/test";
  * The GitHub Pages build lives under `/lootbox/`. Every script, stylesheet,
  * image, clip, and metadata file must resolve under that base path.
  */
+/** Only the static site's own files count; the playground may probe its
+ * local control plane, which is not part of the Pages build. */
+const SITE_PORT = "4174";
+
 test("a base-path build resolves every asset and route", async ({ page, request }) => {
 	const failures: string[] = [];
 
 	page.on("response", (response) => {
 		const url = new URL(response.url());
 
-		if (url.hostname === "127.0.0.1" && response.status() >= 400) {
+		if (url.port === SITE_PORT && response.status() >= 400) {
 			failures.push(`${response.status()} ${url.pathname}`);
 		}
 	});
 	page.on("requestfailed", (failed) => {
 		const url = new URL(failed.url());
 
-		if (url.hostname === "127.0.0.1") failures.push(`failed ${url.pathname}`);
+		if (url.port === SITE_PORT) failures.push(`failed ${url.pathname}`);
 	});
 
 	await page.goto("./");

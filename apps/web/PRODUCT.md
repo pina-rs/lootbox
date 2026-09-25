@@ -26,7 +26,7 @@ Static Vite + React + TypeScript build. `/` is the recipient site; `/playground`
 
 - The animation plays the already-recorded on-chain result. It never chooses the outcome, and the prize card, receipt link, and live region never wait on it.
 - Live odds are each bundle's share of remaining boxes read from the locked treasury; depleted bundles stay visible at 0%.
-- Prize values are estimates from PreStocks prices. The API is not CORS-enabled, so browsers fall back to a dated snapshot bundled at build time (`tools/snapshot-prestocks.ts`).
+- Prize values are estimates from PreStocks prices. The API is not CORS-enabled, so the browser never calls it: the Pages workflow refreshes a snapshot at build time (`tools/snapshot-prestocks.ts`, keeping the committed one if the API is down) and the page shows its capture date.
 - Required disclosures stay on the page: issuer-controlled tokens (freeze/pause, PreStocks issuer transfer fee on claim), geo-restrictions on the underlying tokens, not investment advice, and verifiable Switchboard randomness with explorer links to the opening receipt and transactions.
 - An interrupted opening is recovered from chain (unfinished openings bound to the wallet) and never burns a second box.
 - Localnet balances, stand-in prize mints, and oracle proofs are test-only and labeled as such.

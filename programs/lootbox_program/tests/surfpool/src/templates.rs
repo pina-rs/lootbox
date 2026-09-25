@@ -2523,3 +2523,259 @@ fn retirement_recovers_inventory_only_after_all_claims_are_gone() {
 		program.stop().expect("stop Surfpool");
 	});
 }
+
+/// Create a Token-2022 mint with the mainnet `PreStocks` extension set: a
+/// permanent delegate, initialized default account state, a 1% uncapped
+/// transfer fee, confidential-transfer config, a null transfer hook, scaled UI
+/// amounts, and a pausable config. The payer holds every other authority.
+fn issuer_stock_mint(program: &Harness, delegate: &Pubkey) -> Pubkey {
+	use solana_zk_sdk_pod::encryption::elgamal::PodElGamalPubkey;
+	use spl_token_2022_interface::extension::ExtensionType;
+	use spl_token_2022_interface::extension::confidential_transfer;
+	use spl_token_2022_interface::extension::confidential_transfer_fee;
+	use spl_token_2022_interface::extension::default_account_state;
+	use spl_token_2022_interface::extension::pausable;
+	use spl_token_2022_interface::extension::scaled_ui_amount;
+	use spl_token_2022_interface::extension::transfer_fee;
+	use spl_token_2022_interface::extension::transfer_hook;
+	use spl_token_2022_interface::state::AccountState;
+	use spl_token_2022_interface::state::Mint;
+
+	let mint = Keypair::new();
+	let payer = program.payer();
+	let address = mint.pubkey();
+	let space = ExtensionType::try_calculate_account_len::<Mint>(&[
+		ExtensionType::PermanentDelegate,
+		ExtensionType::DefaultAccountState,
+		ExtensionType::TransferFeeConfig,
+		ExtensionType::ConfidentialTransferMint,
+		ExtensionType::ConfidentialTransferFeeConfig,
+		ExtensionType::TransferHook,
+		ExtensionType::ScaledUiAmount,
+		ExtensionType::Pausable,
+	])
+	.expect("stock mint size");
+	let space = u64::try_from(space).expect("space");
+	let instructions = [
+		create_account_instruction(&payer, &address, rent_minimum(space), space, &token_2022()),
+		token_ix::initialize_permanent_delegate(&token_2022(), &address, delegate)
+			.expect("permanent delegate"),
+		default_account_state::instruction::initialize_default_account_state(
+			&token_2022(),
+			&address,
+			&AccountState::Initialized,
+		)
+		.expect("default account state"),
+		transfer_fee::instruction::initialize_transfer_fee_config(
+			&token_2022(),
+			&address,
+			Some(&payer),
+			Some(&payer),
+			100,
+			u64::MAX,
+		)
+		.expect("transfer fee"),
+		confidential_transfer::instruction::initialize_mint(
+			&token_2022(),
+			&address,
+			Some(payer),
+			false,
+			None,
+		)
+		.expect("confidential transfer mint"),
+		confidential_transfer_fee::instruction::initialize_confidential_transfer_fee_config(
+			&token_2022(),
+			&address,
+			Some(payer),
+			&PodElGamalPubkey::default(),
+		)
+		.expect("confidential transfer fee"),
+		transfer_hook::instruction::initialize(&token_2022(), &address, Some(payer), None)
+			.expect("null transfer hook"),
+		scaled_ui_amount::instruction::initialize(&token_2022(), &address, Some(payer), 1.0)
+			.expect("scaled ui amount"),
+		pausable::instruction::initialize(&token_2022(), &address, &payer).expect("pausable"),
+		token_ix::initialize_mint2(&token_2022(), &address, &payer, Some(&payer), 9).expect("mint"),
+	];
+	program
+		.send_instructions_with_signers(&instructions, &[&mint])
+		.expect("create issuer-controlled stock mint");
+	address
+}
+
+fn token_balance(program: &Harness, address: &Pubkey) -> u64 {
+	token_amount(&program.account(address).expect("token account"))
+}
+
+fn fund_token_2022(
+	program: &Harness,
+	(template, bundle): (Pubkey, Pubkey),
+	(mint, source, escrow): (Pubkey, Pubkey, Pubkey),
+	amount_per_win: u64,
+) -> Result<(), String> {
+	let payer = program.payer();
+	let mut data = vec![0; FundTokenPrizeInstruction::SIZE];
+	FundTokenPrizeInstruction::initialize(&mut data, |_| Ok(()))
+		.expect("fund token data")
+		.amount_per_win
+		.set(amount_per_win);
+	program.send(
+		&data,
+		vec![
+			AccountMeta::new_readonly(payer, true),
+			AccountMeta::new(template, false),
+			AccountMeta::new(bundle, false),
+			AccountMeta::new_readonly(mint, false),
+			AccountMeta::new(source, false),
+			AccountMeta::new(escrow, false),
+			AccountMeta::new_readonly(token_2022(), false),
+		],
+	)
+}
+
+fn assert_invalid_prize(result: Result<(), String>, reason: &str) {
+	let error = result.expect_err(reason);
+	assert!(
+		error.contains(&format!(
+			"custom program error: {:#x}",
+			LootboxError::InvalidPrize as u32
+		)),
+		"{reason}: {error}",
+	);
+}
+
+#[test]
+#[ignore = "run with `devenv shell -- test:surfpool`"]
+fn issuer_controlled_stock_escrows_exactly_the_recorded_amount() {
+	use spl_token_2022_interface::extension::pausable;
+
+	pina_test::run(async {
+		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
+			.await
+			.expect("Surfpool");
+		let payer = program.payer();
+		let (template, bump) = Pubkey::find_program_address(
+			&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
+			&program.program_id,
+		);
+		let box_mint = mint_with_metadata(&program, &template);
+		program
+			.send(
+				&create_template_data(
+					Pubkey::new_unique(),
+					bump,
+					chain_timestamp(&program) + 60,
+					false,
+				),
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new_readonly(box_mint, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("template");
+
+		// The same extension set behind an unknown issuer stays rejected.
+		let bundle = add_bundle(&program, template, 0, 2, 1);
+		let unknown = issuer_stock_mint(&program, &payer);
+		let unknown_source = box_ata(&program, &payer, &unknown);
+		program
+			.send_instruction(
+				token_ix::mint_to(
+					&token_2022(),
+					&unknown,
+					&unknown_source,
+					&payer,
+					&[],
+					10_000,
+				)
+				.expect("mint unknown stock"),
+			)
+			.expect("fund unknown source");
+		let unknown_escrow = box_ata(&program, &bundle, &unknown);
+		assert_invalid_prize(
+			fund_token_2022(
+				&program,
+				(template, bundle),
+				(unknown, unknown_source, unknown_escrow),
+				1_000,
+			),
+			"only allow-listed issuers unlock the stock extension set",
+		);
+
+		let stock = issuer_stock_mint(
+			&program,
+			&Pubkey::new_from_array(PRESTOCKS_ISSUER.to_bytes()),
+		);
+		let source = box_ata(&program, &payer, &stock);
+		let escrow = box_ata(&program, &bundle, &stock);
+		program
+			.send_instruction(
+				token_ix::mint_to(&token_2022(), &stock, &source, &payer, &[], 3_000_000_000)
+					.expect("mint stock"),
+			)
+			.expect("fund stock source");
+		let per_win = 1_000_000_000;
+		let deposit = 2 * per_win;
+
+		// A paused stock cannot be escrowed until the issuer resumes it.
+		program
+			.send_instruction(
+				pausable::instruction::pause(&token_2022(), &stock, &payer, &[]).expect("pause"),
+			)
+			.expect("issuer pauses the stock");
+		let accounts = (stock, source, escrow);
+		assert_invalid_prize(
+			fund_token_2022(&program, (template, bundle), accounts, per_win),
+			"paused stock is rejected at funding",
+		);
+		program
+			.send_instruction(
+				pausable::instruction::resume(&token_2022(), &stock, &payer, &[]).expect("resume"),
+			)
+			.expect("issuer resumes the stock");
+		program.advance_one_slot().expect("new blockhash");
+		fund_token_2022(&program, (template, bundle), accounts, per_win)
+			.expect("escrow an issuer-controlled stock");
+		let debit = 3_000_000_000 - token_balance(&program, &source);
+		assert_eq!(
+			token_balance(&program, &escrow),
+			deposit,
+			"escrow holds exactly the recorded inventory after the issuer fee",
+		);
+		assert_eq!(debit, 2_020_202_021, "funder pays the minimal 1% gross-up");
+		assert_eq!(
+			debit - deposit,
+			(debit * 100).div_ceil(10_000),
+			"the grossed-up fee is Token-2022's own fee on the gross",
+		);
+
+		// Reclaiming the staged inventory moves the recorded amount; the
+		// issuer withholds its disclosed fee from the recipient's credit.
+		let before = token_balance(&program, &source);
+		program
+			.send(
+				&[LootboxInstruction::ReclaimTokenPrize as u8, 0, 0],
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new_readonly(box_mint, false),
+					AccountMeta::new(bundle, false),
+					AccountMeta::new_readonly(stock, false),
+					AccountMeta::new(escrow, false),
+					AccountMeta::new(source, false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("reclaim staged stock inventory");
+		assert_eq!(token_balance(&program, &escrow), 0);
+		assert_eq!(
+			token_balance(&program, &source) - before,
+			deposit - deposit / 100,
+			"recipient receives the recorded amount minus the issuer fee",
+		);
+		program.stop().expect("stop Surfpool");
+	});
+}

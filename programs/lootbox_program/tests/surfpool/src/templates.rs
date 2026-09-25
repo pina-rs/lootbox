@@ -859,9 +859,10 @@ fn fulfill(context: &FulfillContext<'_>, value: u8) -> Result<(), String> {
 	)?;
 	let account = context.program.account(&context.randomness)?;
 	let snapshot = randomness_snapshot(&account);
+	// Switchboard On-Demand clears the bound oracle once it records a reveal.
 	if snapshot.authority.as_ref() != context.opening.as_ref()
 		|| snapshot.queue.as_ref() != context.queue.as_ref()
-		|| snapshot.oracle.as_ref() != context.oracle.as_ref()
+		|| snapshot.oracle.as_ref() != [0u8; 32].as_slice()
 		|| snapshot.reveal_slot <= snapshot.seed_slot
 		|| snapshot.value != [value; 32]
 	{

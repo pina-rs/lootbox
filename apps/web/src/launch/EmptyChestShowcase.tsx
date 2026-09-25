@@ -32,7 +32,10 @@ const base = assetUrl("nft/empty-chest");
 async function loadManifest(): Promise<EmptyChestManifest | null> {
 	const response = await fetch(`${base}/assets.json`);
 
-	if (!response.ok) return null;
+	// A dev server answers a missing file with the SPA page, so require JSON.
+	if (!response.ok || !response.headers.get("content-type")?.includes("json")) {
+		return null;
+	}
 
 	return parseEmptyChestManifest(await response.json());
 }
@@ -122,7 +125,7 @@ export default function EmptyChestShowcase(
 				canvas: target,
 				src: `${base}/empty-chest.riv`,
 				artboard: "Empty chest",
-				stateMachines: "Empty chest",
+				stateMachine: "Empty chest",
 				autoplay: true,
 				autoBind: true,
 				layout: new Layout({ fit: Fit.Contain, alignment: Alignment.Center }),

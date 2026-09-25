@@ -9,7 +9,10 @@ const ASSET = "BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY";
 
 function serveManifest(status: number, body: unknown = {}) {
 	const fetch = vi.fn(async () =>
-		new Response(JSON.stringify(body), { status })
+		new Response(JSON.stringify(body), {
+			status,
+			headers: { "content-type": "application/json" },
+		})
 	);
 
 	vi.stubGlobal("fetch", fetch);

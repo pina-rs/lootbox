@@ -1102,10 +1102,8 @@ fn commit_burn_reveal_and_payout_round_trip() {
 		let revealed_randomness = randomness_snapshot(&revealed_account);
 		assert_eq!(revealed_randomness.authority.as_ref(), opening.as_ref());
 		assert_eq!(revealed_randomness.queue.as_ref(), queue.as_ref());
-		assert_eq!(
-			revealed_randomness.oracle.as_ref(),
-			oracle.pubkey().as_ref()
-		);
+		// Switchboard On-Demand clears the bound oracle once it records a reveal.
+		assert_eq!(revealed_randomness.oracle.as_ref(), [0u8; 32].as_slice());
 		assert!(revealed_randomness.reveal_slot > revealed_randomness.seed_slot);
 		assert_eq!(revealed_randomness.value, revealed_value);
 

@@ -1,0 +1,31 @@
+{
+	"name": "Empty Chest #13 — An Echo",
+	"symbol": "EMPTY",
+	"description": "…hello? …hello? …hello? An empty Unlisted box. Randomness by Switchboard; allocation recorded on-chain.",
+	"image": "https://pina-rs.github.io/lootbox/nft/empty-chest/12.png",
+	"animation_url": "https://pina-rs.github.io/lootbox/nft/empty-chest/play.html?v=12",
+	"external_url": "https://pina-rs.github.io/lootbox/",
+	"attributes": [
+		{
+			"trait_type": "Contents",
+			"value": "An Echo"
+		},
+		{
+			"trait_type": "Series",
+			"value": "Unlisted Empty Chest"
+		}
+	],
+	"properties": {
+		"files": [
+			{
+				"uri": "https://pina-rs.github.io/lootbox/nft/empty-chest/12.png",
+				"type": "image/png"
+			},
+			{
+				"uri": "https://pina-rs.github.io/lootbox/nft/empty-chest/play.html?v=12",
+				"type": "text/html"
+			}
+		],
+		"category": "html"
+	}
+}

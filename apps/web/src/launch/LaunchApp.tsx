@@ -2,7 +2,9 @@ import { LootboxClient } from "@pina-rs/lootbox";
 import { type Address, address, isAddress } from "@solana/kit";
 import {
 	type FormEvent,
+	lazy,
 	type ReactNode,
+	Suspense,
 	useCallback,
 	useEffect,
 	useMemo,
@@ -24,6 +26,7 @@ import {
 	NOT_AFFILIATED,
 	prestocksDisclaimer,
 } from "./copy.js";
+import type { ResolveEmptyChestAsset } from "./EmptyChestShowcase.js";
 import { Monogram } from "./Monogram.js";
 import {
 	initialOpening,
@@ -56,6 +59,7 @@ import { RulesLink } from "./RulesLink.js";
 import {
 	commitOpen,
 	loadSeries,
+	prizePoolAssetOf,
 	readClient,
 	recordedResult,
 	type SeriesSnapshot,
@@ -78,6 +82,9 @@ type Load<T> =
 
 /** The SDK's progress label for prize delivery transactions. */
 const CLAIM_LABEL = "Deliver prize bundle batch";
+
+// The Empty Chest collectible and its Rive runtime load only for empty boxes.
+const EmptyChestShowcase = lazy(() => import("./EmptyChestShowcase.js"));
 
 function message(reason: unknown): string {
 	return reason instanceof Error ? reason.message : String(reason);
@@ -318,6 +325,8 @@ function PrizeCard(
 		claimSignature: string | null;
 		config: LaunchConfig;
 		rpcUrl: string;
+		reducedMotion: boolean;
+		resolveEmptyChestAsset: ResolveEmptyChestAsset | null;
 		onClaim(): void;
 		onDone(): void;
 	}>,
@@ -357,6 +366,15 @@ function PrizeCard(
 					? rowTitle(row)
 					: "Your prize"}
 			</h2>
+			{result.tier === "empty" && (
+				<Suspense fallback={<div className="empty-chest" aria-hidden="true" />}>
+					<EmptyChestShowcase
+						opening={result.opening}
+						reducedMotion={props.reducedMotion}
+						resolveAsset={props.resolveEmptyChestAsset}
+					/>
+				</Suspense>
+			)}
 			<ul className="prize-lines">
 				{row?.lines.map((line, index) => (
 					<li key={index}>
@@ -593,6 +611,15 @@ export default function LaunchApp() {
 			void refreshSeries();
 		}
 	}, [refreshSeries, rpcUrl, treasury]);
+
+	const resolveEmptyChestAsset = useMemo<ResolveEmptyChestAsset | null>(
+		() =>
+			rpcUrl && treasury
+				? (opening) =>
+					prizePoolAssetOf(readClient(rpcUrl, treasury), address(opening))
+				: null,
+		[rpcUrl, treasury],
+	);
 
 	const snapshot = series?.status === "ready" ? series.value : null;
 	const boxMint = snapshot?.template.data.boxMint ?? null;
@@ -1024,6 +1051,8 @@ export default function LaunchApp() {
 								claimSignature={claimSignature}
 								config={config}
 								rpcUrl={explorer.rpcUrl}
+								reducedMotion={reducedMotion}
+								resolveEmptyChestAsset={resolveEmptyChestAsset}
 								onClaim={() => void claim()}
 								onDone={() => dispatch({ type: "reset" })}
 							/>

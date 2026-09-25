@@ -1,0 +1,6 @@
+name: empty_chest
+main: Empty chest
+output:
+  dir: build
+exclude:
+  - build/**

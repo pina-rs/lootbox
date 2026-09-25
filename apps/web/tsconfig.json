@@ -16,6 +16,7 @@
 		"noEmit": true,
 		"jsx": "react-jsx",
 		"noUncheckedIndexedAccess": true,
+		"allowImportingTsExtensions": true,
 		"exactOptionalPropertyTypes": true,
 		"types": ["vitest/globals", "@testing-library/jest-dom"]
 	},

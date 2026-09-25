@@ -137,6 +137,18 @@ importers:
         specifier: ^8.3.0
         version: 8.3.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6)
     devDependencies:
+      '@metaplex-foundation/mpl-bubblegum':
+        specifier: ^5.1.0
+        version: 5.1.0(@metaplex-foundation/umi@1.6.0)
+      '@metaplex-foundation/spl-account-compression':
+        specifier: 0.0.1
+        version: 0.0.1(@metaplex-foundation/umi@1.6.0)
+      '@metaplex-foundation/umi':
+        specifier: ^1.6.0
+        version: 1.6.0
+      '@metaplex-foundation/umi-bundle-defaults':
+        specifier: ^1.6.0
+        version: 1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6))
       '@types/node':
         specifier: ^26.6.2
         version: 26.6.2
@@ -2544,6 +2556,21 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  '@metaplex-foundation/umi-bundle-defaults@1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6))':
+    dependencies:
+      '@metaplex-foundation/umi': 1.6.0
+      '@metaplex-foundation/umi-downloader-http': 1.6.0(@metaplex-foundation/umi@1.6.0)
+      '@metaplex-foundation/umi-eddsa-web3js': 1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6))
+      '@metaplex-foundation/umi-http-fetch': 1.6.0(@metaplex-foundation/umi@1.6.0)
+      '@metaplex-foundation/umi-program-repository': 1.6.0(@metaplex-foundation/umi@1.6.0)
+      '@metaplex-foundation/umi-rpc-chunk-get-accounts': 1.6.0(@metaplex-foundation/umi@1.6.0)
+      '@metaplex-foundation/umi-rpc-web3js': 1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6))
+      '@metaplex-foundation/umi-serializer-data-view': 1.6.0(@metaplex-foundation/umi@1.6.0)
+      '@metaplex-foundation/umi-transaction-factory-web3js': 1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6))
+      '@solana/web3.js': 1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6)
+    transitivePeerDependencies:
+      - encoding
+
   '@metaplex-foundation/umi-downloader-http@1.6.0(@metaplex-foundation/umi@1.6.0)':
     dependencies:
       '@metaplex-foundation/umi': 1.6.0
@@ -2554,6 +2581,14 @@ snapshots:
       '@metaplex-foundation/umi-web3js-adapters': 1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))
       '@noble/curves': 1.9.7
       '@solana/web3.js': 1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      yaml: 2.9.1
+
+  '@metaplex-foundation/umi-eddsa-web3js@1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6))':
+    dependencies:
+      '@metaplex-foundation/umi': 1.6.0
+      '@metaplex-foundation/umi-web3js-adapters': 1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6))
+      '@noble/curves': 1.9.7
+      '@solana/web3.js': 1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6)
       yaml: 2.9.1
 
   '@metaplex-foundation/umi-http-fetch@1.6.0(@metaplex-foundation/umi@1.6.0)':
@@ -2583,6 +2618,12 @@ snapshots:
       '@metaplex-foundation/umi-web3js-adapters': 1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))
       '@solana/web3.js': 1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
 
+  '@metaplex-foundation/umi-rpc-web3js@1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6))':
+    dependencies:
+      '@metaplex-foundation/umi': 1.6.0
+      '@metaplex-foundation/umi-web3js-adapters': 1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6))
+      '@solana/web3.js': 1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6)
+
   '@metaplex-foundation/umi-serializer-data-view@1.6.0(@metaplex-foundation/umi@1.6.0)':
     dependencies:
       '@metaplex-foundation/umi': 1.6.0
@@ -2611,10 +2652,22 @@ snapshots:
       '@metaplex-foundation/umi-web3js-adapters': 1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))
       '@solana/web3.js': 1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
 
+  '@metaplex-foundation/umi-transaction-factory-web3js@1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6))':
+    dependencies:
+      '@metaplex-foundation/umi': 1.6.0
+      '@metaplex-foundation/umi-web3js-adapters': 1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6))
+      '@solana/web3.js': 1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6)
+
   '@metaplex-foundation/umi-web3js-adapters@1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))':
     dependencies:
       '@metaplex-foundation/umi': 1.6.0
       '@solana/web3.js': 1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
+      buffer: 6.0.3
+
+  '@metaplex-foundation/umi-web3js-adapters@1.6.0(@metaplex-foundation/umi@1.6.0)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6))':
+    dependencies:
+      '@metaplex-foundation/umi': 1.6.0
+      '@solana/web3.js': 1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6)
       buffer: 6.0.3
 
   '@metaplex-foundation/umi@1.6.0':
@@ -2811,6 +2864,12 @@ snapshots:
     optionalDependencies:
       typescript: 5.9.3
 
+  '@solana/codecs-core@5.5.1(typescript@7.0.2)':
+    dependencies:
+      '@solana/errors': 5.5.1(typescript@7.0.2)
+    optionalDependencies:
+      typescript: 7.0.2
+
   '@solana/codecs-core@8.3.0(typescript@5.9.3)':
     dependencies:
       '@solana/errors': 8.3.0(typescript@5.9.3)
@@ -2846,6 +2905,13 @@ snapshots:
       '@solana/errors': 5.5.1(typescript@5.9.3)
     optionalDependencies:
       typescript: 5.9.3
+
+  '@solana/codecs-numbers@5.5.1(typescript@7.0.2)':
+    dependencies:
+      '@solana/codecs-core': 5.5.1(typescript@7.0.2)
+      '@solana/errors': 5.5.1(typescript@7.0.2)
+    optionalDependencies:
+      typescript: 7.0.2
 
   '@solana/codecs-numbers@8.3.0(typescript@5.9.3)':
     dependencies:
@@ -2910,6 +2976,13 @@ snapshots:
       commander: 14.0.2
     optionalDependencies:
       typescript: 5.9.3
+
+  '@solana/errors@5.5.1(typescript@7.0.2)':
+    dependencies:
+      chalk: 5.6.2
+      commander: 14.0.2
+    optionalDependencies:
+      typescript: 7.0.2
 
   '@solana/errors@8.3.0(typescript@5.9.3)':
     dependencies:
@@ -3811,6 +3884,29 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@solana/buffer-layout': 4.0.1
       '@solana/codecs-numbers': 5.5.1(typescript@5.9.3)
+      agentkeepalive: 4.6.0
+      bn.js: 5.2.5
+      borsh: 0.7.0
+      bs58: 4.0.1
+      buffer: 6.0.3
+      fast-stable-stringify: 1.0.0
+      jayson: 4.3.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)
+      node-fetch: 2.7.0
+      rpc-websockets: 9.3.9
+      superstruct: 2.0.2
+    transitivePeerDependencies:
+      - bufferutil
+      - encoding
+      - typescript
+      - utf-8-validate
+
+  '@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@7.0.2)(utf-8-validate@6.0.6)':
+    dependencies:
+      '@babel/runtime': 7.29.7
+      '@noble/curves': 1.9.7
+      '@noble/hashes': 1.8.0
+      '@solana/buffer-layout': 4.0.1
+      '@solana/codecs-numbers': 5.5.1(typescript@7.0.2)
       agentkeepalive: 4.6.0
       bn.js: 5.2.5
       borsh: 0.7.0

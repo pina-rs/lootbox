@@ -1,0 +1,31 @@
+{
+	"name": "Empty Chest #9 — A Paper Crown",
+	"symbol": "EMPTY",
+	"description": "Ruler of one empty box. Long may you reign. An empty Unlisted box. Randomness by Switchboard; allocation recorded on-chain.",
+	"image": "https://pina-rs.github.io/lootbox/nft/empty-chest/8.png",
+	"animation_url": "https://pina-rs.github.io/lootbox/nft/empty-chest/play.html?v=8",
+	"external_url": "https://pina-rs.github.io/lootbox/",
+	"attributes": [
+		{
+			"trait_type": "Contents",
+			"value": "A Paper Crown"
+		},
+		{
+			"trait_type": "Series",
+			"value": "Unlisted Empty Chest"
+		}
+	],
+	"properties": {
+		"files": [
+			{
+				"uri": "https://pina-rs.github.io/lootbox/nft/empty-chest/8.png",
+				"type": "image/png"
+			},
+			{
+				"uri": "https://pina-rs.github.io/lootbox/nft/empty-chest/play.html?v=8",
+				"type": "text/html"
+			}
+		],
+		"category": "html"
+	}
+}

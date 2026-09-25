@@ -186,7 +186,15 @@ in
         # toolchain rust-toolchain.toml pins is installed before pina lint
         # probes the active nightly for a matching driver.
         rustup toolchain install --profile minimal
-        pina lint --project programs/lootbox_program
+        if [ "$(uname -s)" = "Darwin" ]; then
+          # Pina's lint driver puts the rustup toolchain's libLLVM on the dyld
+          # path, which the Nix clang linker then loads and aborts on. Link
+          # host build scripts with the system linker for this call only.
+          CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER=/usr/bin/cc \
+            pina lint --project programs/lootbox_program
+        else
+          pina lint --project programs/lootbox_program
+        fi
       fi
       cargo clippy --workspace --all-features --all-targets --locked -- -D warnings
       cargo clippy \

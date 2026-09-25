@@ -7,8 +7,8 @@ environment:
   sdk: ">=3.10.0 <4.0.0"
 
 dependencies:
-  solana_kit_addresses: ^0.8.0
   lootbox_program_client: ^0.0.1-alpha.0
+  solana_kit_addresses: ^0.8.0
 
 dependency_overrides:
   lootbox_program_client:

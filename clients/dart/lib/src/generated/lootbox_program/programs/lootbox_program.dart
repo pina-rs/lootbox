@@ -13,7 +13,7 @@ import '../instructions/instructions.dart';
 
 /// The address of the LootboxProgram program.
 const lootboxProgramProgramAddress = Address(
-  'Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op',
+  'LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E',
 );
 
 /// Known accounts for the LootboxProgram program.

@@ -148,6 +148,6 @@ apps/web/                       animated interaction sandbox
 docs/                           protocol and audit documentation
 ```
 
-Program ID: `Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op`
+Program ID: `LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E`
 
 Licensed under Apache-2.0.

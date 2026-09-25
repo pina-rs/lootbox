@@ -11,7 +11,7 @@ import {
 	TemplatePlanError,
 } from "./templates.js";
 
-const nft: Address = address("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
+const nft: Address = address("LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E");
 const poolTree: Address = address(
 	"7RmhTYBS7Uv9PSNmJGX6tM8BjSn7HVbGdVgV6EtCNKLm",
 );

@@ -12,4 +12,4 @@ test:surfpool
 lint:all
 ```
 
-The standalone program ID is `Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op`. Protocol architecture, instructions, and security assumptions are documented in the root [`docs`](../../docs) directory.
+The standalone program ID is `LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E`. Protocol architecture, instructions, and security assumptions are documented in the root [`docs`](../../docs) directory.

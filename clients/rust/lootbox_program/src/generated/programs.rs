@@ -10,4 +10,4 @@
 
 use solana_pubkey::{pubkey, Pubkey};
 
-pub const LOOTBOX_PROGRAM_ID: Pubkey = pubkey!("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
+pub const LOOTBOX_PROGRAM_ID: Pubkey = pubkey!("LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E");

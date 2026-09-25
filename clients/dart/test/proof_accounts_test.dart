@@ -6,7 +6,7 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 import 'package:test/test.dart';
 
 const program = Address('11111111111111111111111111111111');
-const fixed = Address('Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op');
+const fixed = Address('LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E');
 const placeholder = Address('7RmhMqtG3kB4JqQKkTQNdMhPDox4ErAoXPiNiPtwJ1hV');
 
 Instruction instruction(List<AccountMeta>? accounts) => Instruction(

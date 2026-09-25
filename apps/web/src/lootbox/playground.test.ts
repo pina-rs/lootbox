@@ -102,7 +102,7 @@ describe("test wallet and creator safety", () => {
 	it("fails closed when a PrizePool manifest changes tree, count, or identity", () => {
 		const tree = "7RmhTYBS7Uv9PSNmJGX6tM8BjSn7HVbGdVgV6EtCNKLm";
 		const item = {
-			asset: "Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op",
+			asset: "LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E",
 			name: "Pinned leaf",
 			tree,
 			treeConfig: tree,

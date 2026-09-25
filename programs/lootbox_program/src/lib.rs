@@ -39,7 +39,7 @@ use switchboard_randomness_cpi::parse_randomness_account;
 mod templates;
 pub use templates::*;
 
-declare_id!("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
+declare_id!("LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E");
 
 /// Maximum number of weighted outcomes in the single-reward model.
 pub const MAX_OUTCOMES: usize = 8;

@@ -1,0 +1,324 @@
+/**
+ * Devnet end-to-end run against real Switchboard On-Demand randomness.
+ *
+ * Creates a small SOL + SPL treasury, locks it with a reveal date a couple of
+ * minutes ahead, opens one box, fetches the live oracle's reveal proof,
+ * settles, claims, and closes the receipt. Every transaction's fee and the
+ * payer's lamport delta are printed as a cost table, which doubles as the
+ * per-open cost measurement.
+ *
+ * Usage (from the repository root):
+ *
+ *   LOOTBOX_DEVNET_KEYPAIR=target/devnet/payer.json \
+ *     pnpm --dir sdks/typescript e2e:devnet
+ *
+ * Optional: LOOTBOX_DEVNET_RPC_URL (default https://api.devnet.solana.com),
+ * LOOTBOX_REVEAL_DELAY_SECONDS (default 120), LOOTBOX_E2E_TEMPLATE (resume with
+ * an already locked template), LOOTBOX_E2E_OPENING (resume a pending opening).
+ *
+ * The script refuses to run against any cluster whose genesis hash is not
+ * devnet's, so a mainnet RPC URL can never spend real funds.
+ */
+import {
+	type Address,
+	address,
+	createSolanaRpc,
+	generateKeyPairSigner,
+	type Signature,
+} from "@solana/kit";
+import {
+	CLASSIC_TOKEN_PROGRAM,
+	createSwitchboardOracle,
+	createTemplatePlan,
+	fetchTemplateOpeningState,
+	LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
+	LootboxClient,
+	SWITCHBOARD_PROGRAM,
+} from "../src/index.js";
+import { installPatientFetch, loadKeypair, verifiedRpcUrl } from "./cli.js";
+
+const LAMPORTS_PER_SOL = 1_000_000_000n;
+
+type Step = Readonly<{
+	phase: "setup" | "open";
+	label: string;
+	signature: Signature;
+	fee: bigint;
+	payerDelta: bigint;
+}>;
+
+const keypairPath = process.env.LOOTBOX_DEVNET_KEYPAIR;
+const rpcUrl = process.env.LOOTBOX_DEVNET_RPC_URL ??
+	"https://api.devnet.solana.com";
+const revealDelay = BigInt(process.env.LOOTBOX_REVEAL_DELAY_SECONDS ?? "120");
+
+if (!keypairPath) {
+	throw new Error("set LOOTBOX_DEVNET_KEYPAIR to a devnet-only keypair file");
+}
+
+installPatientFetch();
+
+const verifiedUrl = await verifiedRpcUrl("devnet", rpcUrl);
+const rpc = createSolanaRpc(verifiedUrl);
+const program = await rpc.getAccountInfo(LOOTBOX_PROGRAM_PROGRAM_ADDRESS, {
+	encoding: "base64",
+}).send();
+
+if (!program.value?.executable) {
+	throw new Error(
+		`lootbox program ${LOOTBOX_PROGRAM_PROGRAM_ADDRESS} is not deployed on devnet; run deploy:devnet first`,
+	);
+}
+
+const payer = await loadKeypair(keypairPath);
+const sent: Array<Pick<Step, "phase" | "label" | "signature">> = [];
+let phase: Step["phase"] = "setup";
+
+async function measure(
+	{ phase, label, signature }: Pick<Step, "phase" | "label" | "signature">,
+): Promise<Step> {
+	for (let attempt = 0; attempt < 30; attempt++) {
+		const transaction = await rpc.getTransaction(signature, {
+			commitment: "confirmed",
+			encoding: "json",
+			maxSupportedTransactionVersion: 0,
+		}).send();
+
+		if (transaction?.meta) {
+			const index = transaction.transaction.message.accountKeys.indexOf(
+				payer.address,
+			);
+			const before = transaction.meta.preBalances[index] ?? 0n;
+			const after = transaction.meta.postBalances[index] ?? 0n;
+
+			return {
+				phase,
+				label,
+				signature,
+				fee: transaction.meta.fee,
+				payerDelta: after - before,
+			};
+		}
+
+		await new Promise((done) => setTimeout(done, 1_000));
+	}
+
+	throw new Error(`transaction ${signature} never reached confirmed`);
+}
+
+const client = new LootboxClient(verifiedUrl, payer, (message, signature) => {
+	if (!signature) {
+		console.log(`… ${message}`);
+		return;
+	}
+
+	console.log(`✓ ${message}  ${signature}`);
+	sent.push({ phase, label: message, signature: signature as Signature });
+});
+const oracle = createSwitchboardOracle({
+	rpcUrl: verifiedUrl,
+	cluster: "devnet",
+});
+const balance = async () =>
+	(await rpc.getBalance(payer.address, { commitment: "confirmed" }).send())
+		.value;
+
+console.log(`payer ${payer.address} · ${await balance()} lamports`);
+
+/** Create a small SOL + SPL treasury and lock it with a near reveal date. */
+async function createLockedTemplate() {
+	const prizeMint = await generateKeyPairSigner();
+	const templateMint = await generateKeyPairSigner();
+	const templateId = BigInt(Date.now());
+	const tokenPrize = await client.createFixedSupplyMint(prizeMint, 1_000n, 0);
+	const slot = await rpc.getSlot({ commitment: "confirmed" }).send();
+	const chainTime = await rpc.getBlockTime(slot).send();
+	const plan = createTemplatePlan({
+		name: "Switchboard devnet e2e",
+		uri: "https://example.com/lootbox-e2e.json",
+		opensAt: chainTime + revealDelay,
+		bundles: [
+			{
+				label: "SOL",
+				quantity: 1n,
+				assets: [{ kind: "sol", lamports: 1_000_000n }],
+			},
+			{
+				label: "Token",
+				quantity: 1n,
+				assets: [{
+					kind: "token",
+					mint: tokenPrize,
+					amount: 500n,
+					tokenProgram: CLASSIC_TOKEN_PROGRAM,
+					decimals: 0,
+				}],
+			},
+		],
+	});
+	let template = await client.createTemplate(
+		plan,
+		templateId,
+		templateMint,
+		SWITCHBOARD_PROGRAM.devnet,
+		oracle.queue,
+	);
+
+	template = await client.lockTreasury(template);
+	console.log(`template ${template.address} locked; reveal at ${plan.opensAt}`);
+
+	return template;
+}
+
+// LOOTBOX_E2E_TEMPLATE resumes with an already locked template whose boxes
+// the payer holds, so an interrupted run does not repeat the setup.
+const resumeTemplate = process.env.LOOTBOX_E2E_TEMPLATE;
+let template = resumeTemplate
+	? await client.template(address(resumeTemplate))
+	: await createLockedTemplate();
+
+// Openings are only accepted after the reveal date.
+for (;;) {
+	const now = await rpc.getBlockTime(
+		await rpc.getSlot({ commitment: "confirmed" }).send(),
+	).send();
+
+	if (now >= template.data.opensAt) break;
+
+	console.log(
+		`… waiting ${template.data.opensAt - now}s for the reveal date`,
+	);
+	await new Promise((done) => setTimeout(done, 10_000));
+}
+
+phase = "open";
+
+const openStart = await balance();
+// LOOTBOX_E2E_OPENING resumes a pending opening instead of burning a box.
+const resumeOpening = process.env.LOOTBOX_E2E_OPENING;
+const opening = resumeOpening
+	? await fetchTemplateOpeningState(client.rpc, address(resumeOpening), {
+		commitment: "confirmed",
+	})
+	: await client.requestOpen(template, oracle.selectAccounts);
+
+console.log(`opening ${opening.address}`);
+const randomness: Address = opening.data.randomness;
+const accounts = await oracle.accountsFor(randomness);
+
+console.log(`randomness ${randomness} bound to oracle ${accounts.oracle}`);
+
+const [resultReceipt] = await client.resultReceiptAddress(
+	opening.address,
+	opening.data.sequence,
+);
+const tracked: ReadonlyArray<readonly [string, Address]> = [
+	["opening receipt (lootbox)", opening.address],
+	["randomness (switchboard)", randomness],
+	["reward escrow wSOL ATA", await client.rewardEscrowAddress(randomness)],
+	["randomness lookup table", accounts.lut],
+	["result receipt (lootbox)", resultReceipt],
+];
+const lamportsOf = async () =>
+	(await rpc.getMultipleAccounts(tracked.map(([, key]) => key), {
+		commitment: "confirmed",
+		encoding: "base64",
+	}).send()).value.map((account) => account?.lamports ?? 0n);
+const afterOpen = await lamportsOf();
+
+const proofStarted = Date.now();
+const proof = await oracle.fetchProof(randomness);
+
+console.log(`proof after ${Date.now() - proofStarted}ms`);
+
+template = await client.template(template.address);
+await client.settle(template, opening, accounts, proof);
+await client.claim(opening.address);
+
+// The client confirms at `processed`, so read the claim at the same level;
+// a `confirmed` read can still see the pre-claim status.
+const claimed = await fetchTemplateOpeningState(
+	client.rpc,
+	opening.address,
+	{ commitment: "processed" },
+);
+
+let closeError: unknown;
+
+try {
+	await client.closeTemplateOpening(template, claimed, accounts);
+} catch (error) {
+	closeError = error;
+	console.error("close failed:", error);
+}
+
+const afterClose = await lamportsOf();
+
+const openEnd = await balance();
+const steps: Step[] = [];
+
+// Measured sequentially after the run to stay inside public RPC limits.
+for (const transaction of sent) {
+	steps.push(await measure(transaction));
+}
+const format = (lamports: bigint) =>
+	`${lamports < 0n ? "-" : ""}${(lamports < 0n ? -lamports : lamports)}`
+		.padStart(
+			12,
+		);
+
+console.log("\nPer-transaction cost (payer lamports)");
+console.log(
+	`${"phase".padEnd(6)} ${"step".padEnd(42)} ${"fee".padStart(12)} ${
+		"payer Δ".padStart(12)
+	} ${"rent Δ".padStart(12)}  signature`,
+);
+
+for (const step of steps) {
+	// Rent Δ is the balance change not explained by the fee: negative when
+	// rent is locked into new accounts, positive when a close refunds it.
+	console.log(
+		`${step.phase.padEnd(6)} ${step.label.padEnd(42)} ${format(step.fee)} ${
+			format(step.payerDelta)
+		} ${format(step.payerDelta + step.fee)}  ${step.signature}`,
+	);
+}
+
+const openSteps = steps.filter((step) => step.phase === "open");
+const openFees = openSteps.reduce((sum, step) => sum + step.fee, 0n);
+const openNet = openEnd - openStart;
+
+console.log("\nOne open → reveal → claim → close");
+console.log(`  transaction fees      ${openFees} lamports`);
+console.log(
+	`  net payer change      ${openNet} lamports (includes prize received)`,
+);
+console.log(
+	`  net excluding fees    ${
+		openNet + openFees
+	} lamports (rent kept + prize - rent refunded)`,
+);
+console.log(
+	`  ≈ ${
+		(Number(-openNet) / Number(LAMPORTS_PER_SOL)).toFixed(6)
+	} SOL spent net`,
+);
+
+console.log("\nAccount lamports (rent locked by one open)");
+console.log(
+	`${"account".padEnd(28)} ${"after open".padStart(12)} ${
+		"after close".padStart(12)
+	}  address`,
+);
+
+for (const [index, [label, key]] of tracked.entries()) {
+	console.log(
+		`${label.padEnd(28)} ${format(afterOpen[index] ?? 0n)} ${
+			format(afterClose[index] ?? 0n)
+		}  ${key}`,
+	);
+}
+
+if (closeError !== undefined) {
+	process.exitCode = 1;
+}

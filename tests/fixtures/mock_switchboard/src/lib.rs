@@ -161,6 +161,8 @@ fn process_reveal(accounts: &mut [AccountView], data: &[u8]) -> ProgramResult {
 		return Err(ProgramError::InvalidArgument);
 	}
 
+	// Mirror Switchboard On-Demand: a reveal clears the bound oracle.
+	bytes[112..144].fill(0);
 	bytes[144..152].copy_from_slice(&reveal_slot.to_le_bytes());
 	bytes[152..184].copy_from_slice(value);
 

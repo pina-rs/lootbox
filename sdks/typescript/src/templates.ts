@@ -563,3 +563,55 @@ export function templateMintCapacity(
 		: lifetimeCapacity;
 	return capacity > 0n ? capacity : 0n;
 }
+
+/** One Token-2022 transfer-fee schedule, as read from `TransferFeeConfig`. */
+export type TransferFeeSchedule = Readonly<{
+	basisPoints: number;
+	maximumFee: bigint;
+}>;
+
+const ONE_IN_BASIS_POINTS = 10_000n;
+const MAX_TRANSFER = (1n << 64n) - 1n;
+
+/** The fee Token-2022 withholds from a transfer of `amount`: the ceiling of
+ * `amount * basisPoints / 10_000`, capped at `maximumFee`.
+ */
+export function transferFeeFor(
+	amount: bigint,
+	schedule: TransferFeeSchedule,
+): bigint {
+	if (schedule.basisPoints === 0 || amount === 0n) return 0n;
+
+	const raw = (amount * BigInt(schedule.basisPoints) + ONE_IN_BASIS_POINTS -
+		1n) / ONE_IN_BASIS_POINTS;
+
+	return raw < schedule.maximumFee ? raw : schedule.maximumFee;
+}
+
+/** The smallest gross transfer that credits exactly `net`, or `undefined`
+ * when no `u64` transfer can. Mirrors the program's funding gross-up
+ * (`TransferFee::gross_for_net`) so a creator can quote the balance a
+ * fee-bearing prize needs before funding it.
+ */
+export function grossForNetTransfer(
+	net: bigint,
+	schedule: TransferFeeSchedule,
+): bigint | undefined {
+	const basisPoints = BigInt(schedule.basisPoints);
+	let gross: bigint;
+
+	if (basisPoints === 0n || net === 0n) {
+		gross = net;
+	} else if (basisPoints >= ONE_IN_BASIS_POINTS) {
+		gross = net + schedule.maximumFee;
+	} else {
+		const denominator = ONE_IN_BASIS_POINTS - basisPoints;
+		const raw = (net * ONE_IN_BASIS_POINTS + denominator - 1n) / denominator;
+
+		gross = raw - net >= schedule.maximumFee ? net + schedule.maximumFee : raw;
+	}
+
+	if (gross > MAX_TRANSFER) return undefined;
+
+	return gross - transferFeeFor(gross, schedule) === net ? gross : undefined;
+}

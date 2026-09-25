@@ -462,10 +462,12 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 
+		// Switchboard clears the bound oracle when it records a reveal, so the
+		// oracle is checked only before the CPI; the reveal itself verifies the
+		// proof against that oracle.
 		if randomness.authority != opening_address
 			|| randomness.queue != state.oracle_queue
 			|| randomness.seed_slot != opening.seed_slot.get()
-			|| randomness.oracle != *self.oracle.address()
 			|| randomness.reveal_slot <= randomness.seed_slot
 			|| randomness.value != args.value
 		{

@@ -104,6 +104,18 @@ export type OracleAccounts = Readonly<{
 	lut: Address;
 	stats: Address;
 }>;
+/** The fresh randomness account and the `recent_slot` its Switchboard
+ * lookup table is created at. Real Switchboard derives the LUT accounts from
+ * both, so they are only known once `requestOpen` has chosen them.
+ */
+export type RandomnessBinding = Readonly<{
+	randomness: Address;
+	recentSlot: bigint;
+}>;
+/** Resolves oracle accounts for one opening, e.g. `SwitchboardOracle.selectAccounts`. */
+export type OracleAccountsResolver = (
+	binding: RandomnessBinding,
+) => Promise<OracleAccounts>;
 export type OracleProof = Readonly<
 	{
 		signature: ReadonlyUint8Array;
@@ -144,6 +156,8 @@ export type CompressedNftProofResolver = (
 	Pick<Extract<PrizeAsset, { kind: "compressedNft" }>, "asset" | "proof">
 >;
 export type TemplateFundingOptions = Readonly<{
+	/** Box mint metadata symbol; defaults to `LOOT`. */
+	symbol?: string;
 	/** Fetch a fresh DAS proof after each previous tree mutation. */
 	resolvePrizePoolProof?: PrizePoolProofResolver;
 	/** Fetch a fresh DAS proof immediately before a standalone cNFT transfer. */
@@ -1429,6 +1443,8 @@ export class LootboxClient {
 		options: TemplateFundingOptions = {},
 	) {
 		plan = createTemplatePlan(plan);
+		const symbol = options.symbol ?? "LOOT";
+		encodeTemplateText(symbol, 10);
 		await validatePrizePoolPlanIdentities(plan);
 		if (planContainsPrizePool(plan) && !options.resolvePrizePoolProof) {
 			throw new Error("PrizePool creation requires a fresh-proof resolver");
@@ -1441,9 +1457,11 @@ export class LootboxClient {
 		}).send();
 		if (!exists.value) {
 			// 234 = base mint + account type/padding + MetadataPointer TLV.
-			// TokenMetadata grows the allocation; prepay its exact encoded size.
-			const finalSize = 234 + 4 + 64 + 16 + utf8.encode(plan.name).length + 4 +
-				utf8.encode(plan.uri).length;
+			// TokenMetadata grows the allocation; prepay its exact encoded size:
+			// TLV header, authorities, then length-prefixed name, symbol, and
+			// uri, and an empty additional-metadata vector.
+			const finalSize = 234 + 4 + 64 + 4 + utf8.encode(plan.name).length + 4 +
+				utf8.encode(symbol).length + 4 + utf8.encode(plan.uri).length + 4;
 			const rent = await this.rpc.getMinimumBalanceForRentExemption(
 				BigInt(finalSize),
 			).send();
@@ -1472,7 +1490,7 @@ export class LootboxClient {
 					mint: mint.address,
 					mintAuthority: this.payer,
 					name: plan.name,
-					symbol: "LOOT",
+					symbol,
 					uri: plan.uri,
 				}),
 				token.getUpdateTokenMetadataUpdateAuthorityInstruction({
@@ -2380,6 +2398,90 @@ export class LootboxClient {
 		], "Create empty badge mint");
 		return mint.address;
 	}
+	/** Create a zero-decimal Token-2022 mint-on-claim badge with on-mint
+	 * metadata whose update authority is revoked, as `FundMintPrize`
+	 * requires. An existing mint is validated so a saved launch can resume,
+	 * including after funding moved its mint authority to `fundedBundle`.
+	 */
+	async createMetadataBadgeMint(
+		mint: TransactionSigner,
+		metadata: Readonly<{ name: string; symbol: string; uri: string }>,
+		fundedBundle?: Address,
+	): Promise<Address> {
+		const existing = await this.rpc.getAccountInfo(mint.address, {
+			encoding: "base64",
+			commitment,
+		}).send();
+		if (existing.value) {
+			if (existing.value.owner !== BOX_TOKEN_PROGRAM) {
+				throw new Error("badge mint has unexpected owner");
+			}
+			const data = token.getMintDecoder().decode(
+				getBase64Encoder().encode(existing.value.data[0]),
+			);
+			const mintAuthority = data.mintAuthority;
+			const authorityMatches = mintAuthority.__option === "Some" &&
+				(mintAuthority.value === this.payer.address ||
+					mintAuthority.value === fundedBundle);
+			const tokenMetadata = data.extensions.__option === "Some"
+				? data.extensions.value.find((entry) =>
+					entry.__kind === "TokenMetadata"
+				)
+				: undefined;
+			if (
+				data.decimals !== 0 || !authorityMatches ||
+				data.freezeAuthority.__option !== "None" ||
+				tokenMetadata?.__kind !== "TokenMetadata" ||
+				tokenMetadata.updateAuthority.__option !== "None" ||
+				tokenMetadata.name !== metadata.name ||
+				tokenMetadata.symbol !== metadata.symbol ||
+				tokenMetadata.uri !== metadata.uri
+			) throw new Error("badge mint differs from saved draft");
+			return mint.address;
+		}
+		// Base mint plus MetadataPointer; TokenMetadata grows the account, so
+		// prepay its exact encoded size (see createTemplate).
+		const finalSize = 234 + 4 + 64 + 4 + utf8.encode(metadata.name).length +
+			4 + utf8.encode(metadata.symbol).length + 4 +
+			utf8.encode(metadata.uri).length + 4;
+		await this.send([
+			getCreateAccountInstruction({
+				payer: this.payer,
+				newAccount: mint,
+				lamports: await this.rpc.getMinimumBalanceForRentExemption(
+					BigInt(finalSize),
+				).send(),
+				space: 234n,
+				programAddress: BOX_TOKEN_PROGRAM,
+			}),
+			token.getInitializeMetadataPointerInstruction({
+				mint: mint.address,
+				authority: null,
+				metadataAddress: mint.address,
+			}),
+			token.getInitializeMint2Instruction({
+				mint: mint.address,
+				decimals: 0,
+				mintAuthority: this.payer.address,
+				freezeAuthority: null,
+			}),
+			token.getInitializeTokenMetadataInstruction({
+				metadata: mint.address,
+				updateAuthority: this.payer.address,
+				mint: mint.address,
+				mintAuthority: this.payer,
+				name: metadata.name,
+				symbol: metadata.symbol,
+				uri: metadata.uri,
+			}),
+			token.getUpdateTokenMetadataUpdateAuthorityInstruction({
+				metadata: mint.address,
+				updateAuthority: this.payer,
+				newUpdateAuthority: null,
+			}),
+		], "Create immutable badge mint");
+		return mint.address;
+	}
 	/** Create a fixed-supply classic token, including a basic one-of-one NFT.
 	 * Existing mints are validated so a saved creation workflow can resume.
 	 */
@@ -2458,12 +2560,24 @@ export class LootboxClient {
 			}),
 		], "Transfer sealed gift");
 	}
+	/** Burn one box and commit Switchboard randomness. Pass fixed accounts
+	 * for an emulator, or a resolver (`SwitchboardOracle.selectAccounts`) for
+	 * a real cluster where the lookup-table accounts depend on the fresh
+	 * randomness address and slot.
+	 */
 	async requestOpen(
 		template: ChainTemplate,
-		oracle: OracleAccounts,
+		oracleAccounts: OracleAccounts | OracleAccountsResolver,
 		request: OpenRequest = {},
 	) {
 		const randomness = await generateKeyPairSigner();
+		// The lookup-table program requires `recent_slot` to be in the
+		// SlotHashes sysvar of the executing bank; a finalized slot always is.
+		const recentSlot = await this.rpc.getSlot({ commitment: "finalized" })
+			.send();
+		const oracle = typeof oracleAccounts === "function"
+			? await oracleAccounts({ randomness: randomness.address, recentSlot })
+			: oracleAccounts;
 		const consumerContext = request.consumerContext ?? new Uint8Array(32);
 		if (consumerContext.length !== 32) {
 			throw new RangeError("consumer context must contain exactly 32 bytes");
@@ -2497,7 +2611,7 @@ export class LootboxClient {
 			oracleLut: oracle.lut,
 			wrappedSolMint: WRAPPED_SOL,
 			addressLookupTableProgram: LOOKUP_TABLE,
-			recentSlot: await this.rpc.getSlot({ commitment }).send(),
+			recentSlot,
 			beneficiary: request.beneficiary ?? this.payer.address,
 			consumerProgram: request.consumerProgram ?? SYSTEM_PROGRAM,
 			consumerContext,

@@ -5,10 +5,12 @@ import {
 	createTemplatePlan,
 	decodeTemplateText,
 	encodeTemplateText,
+	grossForNetTransfer,
 	remainingTemplateBundleCapacity,
 	requiredServiceBudget,
 	templateInventory,
 	TemplatePlanError,
+	transferFeeFor,
 } from "./templates.js";
 
 const nft: Address = address("LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E");
@@ -414,5 +416,40 @@ describe("finite template plans", () => {
 				890_880n,
 			),
 		).toBe(0n);
+	});
+});
+
+describe("transfer-fee gross-up", () => {
+	// Vectors shared with `gross_up_matches_token_2022_edge_cases` in
+	// programs/lootbox_program/src/templates/issuer_stock.rs.
+	const maxU64 = (1n << 64n) - 1n;
+	const onePercent = { basisPoints: 100, maximumFee: maxU64 };
+
+	it("matches the program's Token-2022 edge cases", () => {
+		expect(grossForNetTransfer(99n, onePercent)).toBe(100n);
+		expect(grossForNetTransfer(1n, onePercent)).toBe(2n);
+		expect(grossForNetTransfer(0n, onePercent)).toBe(0n);
+		expect(
+			grossForNetTransfer(1_000_000n, { basisPoints: 100, maximumFee: 3n }),
+		).toBe(1_000_003n);
+		expect(
+			grossForNetTransfer(maxU64, { basisPoints: 0, maximumFee: 0n }),
+		).toBe(maxU64);
+		expect(
+			grossForNetTransfer(10n, { basisPoints: 10_000, maximumFee: 5n }),
+		).toBe(15n);
+		expect(grossForNetTransfer(maxU64, onePercent)).toBeUndefined();
+	});
+
+	it("credits exactly the requested net", () => {
+		for (const net of [1n, 7n, 999n, 1_000_000n, 123_456_789n]) {
+			for (const basisPoints of [1, 50, 100, 250, 9_999]) {
+				const schedule = { basisPoints, maximumFee: 10_000n };
+				const gross = grossForNetTransfer(net, schedule);
+
+				expect(gross).toBeDefined();
+				expect((gross ?? 0n) - transferFeeFor(gross ?? 0n, schedule)).toBe(net);
+			}
+		}
 	});
 });

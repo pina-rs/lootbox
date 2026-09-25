@@ -103,6 +103,24 @@ pnpm --dir sdks/typescript launch:treasury -- --plan treasury.json --cluster dev
 
 Execution is resumable: a state file next to the plan (`treasury.launch.json`) pins the template id and box mint key, and the SDK continues from on-chain state. The run ends by locking the treasury, which mints the exact box supply to `supplyRecipient`, and prints `VITE_TREASURY=<template>` for the web app. For devnet tests, `pnpm --dir sdks/typescript create:stock-mint` creates a Token-2022 mint shaped like a PreStocks stock (PreStocks issuer as permanent delegate and freeze authority, a 100 bps transfer fee, on-mint metadata).
 
+## Running the settlement relayer
+
+A holder who closes the tab after `requestOpen` has burned their box but not revealed it. `sdks/typescript/scripts/relayer.ts` finishes those openings so the 300-slot timeout never forfeits them:
+
+```bash
+pnpm --dir sdks/typescript relayer -- --treasury <template> --cluster devnet --keypair relayer.json [--rpc <url>] [--claim] [--once]
+```
+
+Every two seconds it lists the treasury's openings with `getProgramAccounts` (filtered by account type and template), walks them in FIFO order, and:
+
+- reveals and allocates a committed opening in one transaction once its seed slot has passed, using the bound oracle's gateway proof;
+- allocates an opening that was revealed but not allocated;
+- with `--claim`, delivers allocated prizes. Claims are permissionless and always go to the opening's bound beneficiary, so the relayer cannot redirect them, but it pays any missing beneficiary token-account rent.
+
+It never forfeits. If a transaction fails because the browser or another relayer advanced the opening first, it re-reads the opening and logs `settled_elsewhere`. Any other failure stops that poll at the stuck FIFO head and retries on the next one. Logs are one JSON object per line, and SIGINT stops it after the current step. The relayer keypair pays about 5,000 lamports per transaction and receives any settlement bounty the creator funded.
+
+On devnet, the relayer settled and claimed an opening whose e2e run was killed right after the commit: reveal `3Myi3mxf…` (60,114 compute units) and delivery `LtKRPvwA…`, 5,000 lamports each.
+
 ## Upgrade-authority custody
 
 - Use a dedicated upgrade authority, never the fee payer or a hot wallet. For mainnet, transfer it to a multisig (for example Squads) right after the first deploy: `solana program set-upgrade-authority <program> --new-upgrade-authority <multisig vault>`.

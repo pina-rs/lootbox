@@ -31,6 +31,7 @@
 		"create:stock-mint": "tsx scripts/create-stock-mint.ts",
 		"e2e:devnet": "tsx scripts/devnet-e2e.ts",
 		"launch:treasury": "tsx scripts/launch-treasury.ts",
+		"relayer": "tsx scripts/relayer.ts",
 		"test": "vitest run"
 	},
 	"type": "module",

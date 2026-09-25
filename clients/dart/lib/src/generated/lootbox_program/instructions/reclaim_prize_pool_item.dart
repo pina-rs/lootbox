@@ -52,7 +52,7 @@ getReclaimPrizePoolItemInstructionDataEncoder() {
     (
       'metadata',
       fixEncoderSize(
-        getArrayEncoder<int>(
+        getArrayEncoder(
           transformEncoder(getU8Encoder(), (int value) => value),
           size: PrefixedArraySize(getU16Encoder()),
         ),

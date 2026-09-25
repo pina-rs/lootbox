@@ -7,8 +7,8 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getAddressDecoder, getAddressEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, getAddressDecoder, getAddressEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
+import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { findVaultPda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
@@ -39,13 +39,13 @@ export function getCreateLootboxInstructionDataCodec(): FixedSizeCodec<CreateLoo
     return combineCodec(getCreateLootboxInstructionDataEncoder(), getCreateLootboxInstructionDataDecoder());
 }
 
-export type CreateLootboxAsyncInput<TAccountAuthority extends string = string, TAccountBoxMint extends string = string, TAccountLootbox extends string = string, TAccountVault extends string = string, TAccountSystemProgram extends string = string, TAccountTokenProgram extends string = string> =  {
-  authority: TransactionSigner<TAccountAuthority>;
-boxMint: Address<TAccountBoxMint>;
-lootbox: Address<TAccountLootbox>;
-vault?: Address<TAccountVault>;
-systemProgram?: Address<TAccountSystemProgram>;
-tokenProgram?: Address<TAccountTokenProgram>;
+export type CreateLootboxAsyncInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
+  authority: TAccountAuthority;
+boxMint: TAccountBoxMint;
+lootbox: TAccountLootbox;
+vault?: TAccountVault;
+systemProgram?: TAccountSystemProgram;
+tokenProgram?: TAccountTokenProgram;
 id: CreateLootboxInstructionDataArgs["id"];
 maxSupply: CreateLootboxInstructionDataArgs["maxSupply"];
 oracleProgram: CreateLootboxInstructionDataArgs["oracleProgram"];
@@ -54,12 +54,15 @@ bump: CreateLootboxInstructionDataArgs["bump"];
 vaultBump: CreateLootboxInstructionDataArgs["vaultBump"];
 }
 
-export async function getCreateLootboxInstructionAsync<TAccountAuthority extends string, TAccountBoxMint extends string, TAccountLootbox extends string, TAccountVault extends string, TAccountSystemProgram extends string, TAccountTokenProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: CreateLootboxAsyncInput<TAccountAuthority, TAccountBoxMint, TAccountLootbox, TAccountVault, TAccountSystemProgram, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): Promise<CreateLootboxInstruction<TProgramAddress, TAccountAuthority, TAccountBoxMint, TAccountLootbox, TAccountVault, TAccountSystemProgram, TAccountTokenProgram>> {
+export async function getCreateLootboxInstructionAsync<TAccountAuthority extends InstructionSignerInput, TAccountBoxMint extends InstructionAccountInput, TAccountLootbox extends InstructionAccountInput, TAccountVault extends InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: CreateLootboxAsyncInput<TAccountAuthority, TAccountBoxMint, TAccountLootbox, TAccountVault, TAccountSystemProgram, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): Promise<CreateLootboxInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>, ResolvedInstructionAccountMeta<TAccountTokenProgram, InstructionAccountInputAddress<TAccountTokenProgram>>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isWritable: true }, boxMint: { value: input.boxMint ?? null, isWritable: false }, lootbox: { value: input.lootbox ?? null, isWritable: true }, vault: { value: input.vault ?? null, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isWritable: false }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: true }, boxMint: { value: input.boxMint ?? null, isSigner: false, isWritable: false }, lootbox: { value: input.lootbox ?? null, isSigner: false, isWritable: true }, vault: { value: input.vault ?? null, isSigner: false, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isSigner: false, isWritable: false }, tokenProgram: { value: input.tokenProgram ?? null, isSigner: false, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -78,17 +81,16 @@ if (!accounts.tokenProgram.value) {
 accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
 }
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("lootbox", accounts.lootbox), getAccountMeta("vault", accounts.vault), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getCreateLootboxInstructionDataEncoder().encode(args as CreateLootboxInstructionDataArgs), programAddress } as CreateLootboxInstruction<TProgramAddress, TAccountAuthority, TAccountBoxMint, TAccountLootbox, TAccountVault, TAccountSystemProgram, TAccountTokenProgram>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("lootbox", accounts.lootbox), getAccountMeta("vault", accounts.vault), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getCreateLootboxInstructionDataEncoder().encode(args as CreateLootboxInstructionDataArgs), programAddress } as CreateLootboxInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>, ResolvedInstructionAccountMeta<TAccountTokenProgram, InstructionAccountInputAddress<TAccountTokenProgram>>>);
 }
 
-export type CreateLootboxInput<TAccountAuthority extends string = string, TAccountBoxMint extends string = string, TAccountLootbox extends string = string, TAccountVault extends string = string, TAccountSystemProgram extends string = string, TAccountTokenProgram extends string = string> =  {
-  authority: TransactionSigner<TAccountAuthority>;
-boxMint: Address<TAccountBoxMint>;
-lootbox: Address<TAccountLootbox>;
-vault: Address<TAccountVault>;
-systemProgram?: Address<TAccountSystemProgram>;
-tokenProgram?: Address<TAccountTokenProgram>;
+export type CreateLootboxInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
+  authority: TAccountAuthority;
+boxMint: TAccountBoxMint;
+lootbox: TAccountLootbox;
+vault: TAccountVault;
+systemProgram?: TAccountSystemProgram;
+tokenProgram?: TAccountTokenProgram;
 id: CreateLootboxInstructionDataArgs["id"];
 maxSupply: CreateLootboxInstructionDataArgs["maxSupply"];
 oracleProgram: CreateLootboxInstructionDataArgs["oracleProgram"];
@@ -97,12 +99,15 @@ bump: CreateLootboxInstructionDataArgs["bump"];
 vaultBump: CreateLootboxInstructionDataArgs["vaultBump"];
 }
 
-export function getCreateLootboxInstruction<TAccountAuthority extends string, TAccountBoxMint extends string, TAccountLootbox extends string, TAccountVault extends string, TAccountSystemProgram extends string, TAccountTokenProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: CreateLootboxInput<TAccountAuthority, TAccountBoxMint, TAccountLootbox, TAccountVault, TAccountSystemProgram, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): CreateLootboxInstruction<TProgramAddress, TAccountAuthority, TAccountBoxMint, TAccountLootbox, TAccountVault, TAccountSystemProgram, TAccountTokenProgram> {
+export function getCreateLootboxInstruction<TAccountAuthority extends InstructionSignerInput, TAccountBoxMint extends InstructionAccountInput, TAccountLootbox extends InstructionAccountInput, TAccountVault extends InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: CreateLootboxInput<TAccountAuthority, TAccountBoxMint, TAccountLootbox, TAccountVault, TAccountSystemProgram, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): CreateLootboxInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>, ResolvedInstructionAccountMeta<TAccountTokenProgram, InstructionAccountInputAddress<TAccountTokenProgram>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isWritable: true }, boxMint: { value: input.boxMint ?? null, isWritable: false }, lootbox: { value: input.lootbox ?? null, isWritable: true }, vault: { value: input.vault ?? null, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isWritable: false }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: true }, boxMint: { value: input.boxMint ?? null, isSigner: false, isWritable: false }, lootbox: { value: input.lootbox ?? null, isSigner: false, isWritable: true }, vault: { value: input.vault ?? null, isSigner: false, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isSigner: false, isWritable: false }, tokenProgram: { value: input.tokenProgram ?? null, isSigner: false, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -118,8 +123,7 @@ if (!accounts.tokenProgram.value) {
 accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
 }
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("lootbox", accounts.lootbox), getAccountMeta("vault", accounts.vault), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getCreateLootboxInstructionDataEncoder().encode(args as CreateLootboxInstructionDataArgs), programAddress } as CreateLootboxInstruction<TProgramAddress, TAccountAuthority, TAccountBoxMint, TAccountLootbox, TAccountVault, TAccountSystemProgram, TAccountTokenProgram>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("lootbox", accounts.lootbox), getAccountMeta("vault", accounts.vault), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getCreateLootboxInstructionDataEncoder().encode(args as CreateLootboxInstructionDataArgs), programAddress } as CreateLootboxInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>, ResolvedInstructionAccountMeta<TAccountTokenProgram, InstructionAccountInputAddress<TAccountTokenProgram>>>);
 }
 
 export type ParsedCreateLootboxInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

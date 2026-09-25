@@ -12,7 +12,7 @@
 #[derive(pina::PinaPod)]
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct OpeningState {
-	/// Receipt binding a burned box to one unrevealed randomness commitment.
+/// Receipt binding a burned box to one unrevealed randomness commitment.
 	pub discriminator: u8,
 	pub migration_version: u8,
 	pub lootbox: solana_pubkey::Pubkey,
@@ -60,9 +60,7 @@ impl OpeningState {
 		Ok(account)
 	}
 
-	pub fn from_bytes_mut(
-		data: &mut [u8],
-	) -> Result<&mut OpeningStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes_mut(data: &mut [u8]) -> Result<&mut OpeningStateZc, solana_program_error::ProgramError> {
 		let account = <Self as pina::PinaPodFixed>::read_exact_mut(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != OPENING_STATE_DISCRIMINATOR {
@@ -76,21 +74,18 @@ impl OpeningState {
 }
 
 impl OpeningState {
-	pub fn find_pda(
-		lootbox: &solana_pubkey::Pubkey,
-		randomness: &solana_pubkey::Pubkey,
-	) -> (solana_pubkey::Pubkey, u8) {
+	pub fn find_pda(lootbox: &solana_pubkey::Pubkey, randomness: &solana_pubkey::Pubkey) -> (solana_pubkey::Pubkey, u8) {
 		solana_pubkey::Pubkey::find_program_address(
-			&["opening".as_bytes(), lootbox.as_ref(), randomness.as_ref()],
+			&[
+				"opening".as_bytes(),
+				lootbox.as_ref(),
+				randomness.as_ref(),
+			],
 			&crate::LOOTBOX_PROGRAM_ID,
 		)
 	}
 
-	pub fn create_pda(
-		lootbox: &solana_pubkey::Pubkey,
-		randomness: &solana_pubkey::Pubkey,
-		bump: u8,
-	) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(lootbox: &solana_pubkey::Pubkey, randomness: &solana_pubkey::Pubkey, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
 			&[
 				"opening".as_bytes(),
@@ -103,6 +98,7 @@ impl OpeningState {
 	}
 }
 
+
 /// Whether raw account bytes are stale for this contract: the envelope names this account's discriminator and carries a version older than
 /// [`OPENING_STATE_MIGRATION_VERSION`]. Current or foreign bytes return false; decoding explains the difference.
 ///
@@ -110,6 +106,7 @@ impl OpeningState {
 pub fn opening_state_needs_migration(_data: &[u8]) -> bool {
 	false
 }
+
 
 /// Why `OpeningState::try_from_bytes` rejected account bytes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -126,37 +123,30 @@ impl core::fmt::Display for OpeningStateVersionError {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		match self {
 			Self::InvalidData => write!(f, "invalid OpeningState account data"),
-			Self::Stale { stored } => {
-				write!(
-					f,
-					"migration version mismatch: expected 0, received {stored} (the data predates \
-					 this client; migrate it by sending a transaction to the program, or decode \
-					 it with a client generated from an older IDL)"
-				)
-			}
-			Self::Future { stored } => {
-				write!(
-					f,
-					"migration version mismatch: expected 0, received {stored} (the data was \
-					 written by a newer program; upgrade this client)"
-				)
-			}
+			Self::Stale { stored } => write!(
+				f,
+				"migration version mismatch: expected 0, received {stored} (the data predates this client; migrate it by sending a transaction to the program, or decode it with a client generated from an older IDL)"
+			),
+			Self::Future { stored } => write!(
+				f,
+				"migration version mismatch: expected 0, received {stored} (the data was written by a newer program; upgrade this client)"
+			),
 		}
 	}
 }
 
 impl OpeningState {
 	/// Decodes current-version bytes and tells stale envelopes (migrate the account) apart from future ones (upgrade this client). The failure message mirrors the generated JavaScript decoder. For the strict current-only convenience returning `ProgramError`, see [`OpeningState::from_bytes`].
-	pub fn try_from_bytes(data: &[u8]) -> Result<&OpeningStateZc, OpeningStateVersionError> {
+	pub fn try_from_bytes(
+		data: &[u8],
+	) -> Result<&OpeningStateZc, OpeningStateVersionError> {
 		let account = <Self as pina::PinaPodFixed>::read_exact(data)
 			.map_err(|_| OpeningStateVersionError::InvalidData)?;
 		if account.discriminator != OPENING_STATE_DISCRIMINATOR {
 			return Err(OpeningStateVersionError::InvalidData);
 		}
 		if account.migration_version > OPENING_STATE_MIGRATION_VERSION {
-			return Err(OpeningStateVersionError::Future {
-				stored: account.migration_version,
-			});
+			return Err(OpeningStateVersionError::Future { stored: account.migration_version });
 		}
 		Ok(account)
 	}
@@ -175,15 +165,9 @@ mod opening_state_version_error_tests {
 
 	#[test]
 	fn stale_and_future_versions_are_distinguishable() {
-		let error = OpeningState::try_from_bytes(&envelope(1_u8))
-			.err()
-			.expect("a future envelope must fail");
+		let error = OpeningState::try_from_bytes(&envelope(1_u8)).err().expect("a future envelope must fail");
 		assert_eq!(error, OpeningStateVersionError::Future { stored: 1 });
-		assert_eq!(
-			OpeningStateVersionError::Future { stored: 1 }.to_string(),
-			"migration version mismatch: expected 0, received 1 (the data was written by a newer \
-			 program; upgrade this client)"
-		);
+		assert_eq!(OpeningStateVersionError::Future { stored: 1 }.to_string(), "migration version mismatch: expected 0, received 1 (the data was written by a newer program; upgrade this client)");
 		assert!(
 			OpeningState::try_from_bytes(&envelope(0_u8)).is_ok(),
 			"the current version must decode",

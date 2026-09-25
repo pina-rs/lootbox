@@ -32,21 +32,7 @@ pub struct FulfillTemplateOpen {
 }
 
 impl FulfillTemplateOpen {
-	pub fn new(
-		payer: solana_pubkey::Pubkey,
-		template: solana_pubkey::Pubkey,
-		service_vault: solana_pubkey::Pubkey,
-		opening: solana_pubkey::Pubkey,
-		randomness: solana_pubkey::Pubkey,
-		oracle_queue: solana_pubkey::Pubkey,
-		oracle: solana_pubkey::Pubkey,
-		oracle_stats: solana_pubkey::Pubkey,
-		recent_slot_hashes: solana_pubkey::Pubkey,
-		oracle_program: solana_pubkey::Pubkey,
-		reward_escrow: solana_pubkey::Pubkey,
-		oracle_program_state: solana_pubkey::Pubkey,
-		wrapped_sol_mint: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(payer: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, service_vault: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, oracle_stats: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey) -> Self {
 		Self {
 			payer,
 			template,
@@ -66,10 +52,7 @@ impl FulfillTemplateOpen {
 		}
 	}
 
-	pub fn instruction(
-		&self,
-		data: FulfillTemplateOpenInstructionData,
-	) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: FulfillTemplateOpenInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -82,52 +65,19 @@ impl FulfillTemplateOpen {
 		let mut accounts = Vec::with_capacity(15 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.payer, true));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.service_vault,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new(self.service_vault, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.randomness, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.oracle_queue,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.oracle,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.oracle_stats,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.recent_slot_hashes,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.oracle_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.reward_escrow,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.oracle_program_state,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.system_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.token_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.wrapped_sol_mint,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_queue, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.oracle_stats, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.recent_slot_hashes, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_program, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.reward_escrow, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_program_state, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.token_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.wrapped_sol_mint, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -143,20 +93,15 @@ pub struct FulfillTemplateOpenInstructionData {
 }
 
 impl FulfillTemplateOpenInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut FulfillTemplateOpenInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(configure: impl FnOnce(&mut FulfillTemplateOpenInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<FulfillTemplateOpenInstructionWireZc>()];
-		<FulfillTemplateOpenInstructionWire as pina::PinaPodFixed>::initialize(
-			&mut bytes,
-			|data| {
-				configure(data);
-				data.discriminator = FULFILL_TEMPLATE_OPEN_DISCRIMINATOR;
-				data.migration_version = FULFILL_TEMPLATE_OPEN_MIGRATION_VERSION;
-				Ok(())
-			},
-		)
-		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		<FulfillTemplateOpenInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
+			configure(data);
+			data.discriminator = FULFILL_TEMPLATE_OPEN_DISCRIMINATOR;
+			data.migration_version = FULFILL_TEMPLATE_OPEN_MIGRATION_VERSION;
+			Ok(())
+		})
+			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

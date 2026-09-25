@@ -124,9 +124,12 @@ Encoder<PrizePoolState> getPrizePoolStateEncoder() {
     ('bump', getU8Encoder()),
     (
       'unavailable',
-      getArrayEncoder<int>(
-        transformEncoder(getU8Encoder(), (int value) => value),
-        size: PrefixedArraySize(getU16Encoder()),
+      getPinaPodBoundedArrayEncoder(
+        getArrayEncoder(
+          transformEncoder(getU8Encoder(), (int value) => value),
+          size: PrefixedArraySize(getU16Encoder()),
+        ),
+        512,
       ),
     ),
   ]);

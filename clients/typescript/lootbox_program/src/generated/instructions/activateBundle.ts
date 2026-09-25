@@ -7,8 +7,8 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const ACTIVATE_BUNDLE_DISCRIMINATOR = 25;
@@ -38,19 +38,22 @@ export function getActivateBundleInstructionDataCodec(): FixedSizeCodec<Activate
     return combineCodec(getActivateBundleInstructionDataEncoder(), getActivateBundleInstructionDataDecoder());
 }
 
-export type ActivateBundleInput<TAccountAuthority extends string = string, TAccountTemplate extends string = string, TAccountBundle extends string = string, TAccountSystemProgram extends string = string> =  {
-  authority: TransactionSigner<TAccountAuthority>;
-template: Address<TAccountTemplate>;
-bundle: Address<TAccountBundle>;
-systemProgram?: Address<TAccountSystemProgram>;
+export type ActivateBundleInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
+  authority: TAccountAuthority;
+template: TAccountTemplate;
+bundle: TAccountBundle;
+systemProgram?: TAccountSystemProgram;
 }
 
-export function getActivateBundleInstruction<TAccountAuthority extends string, TAccountTemplate extends string, TAccountBundle extends string, TAccountSystemProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: ActivateBundleInput<TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountSystemProgram>, config?: { programAddress?: TProgramAddress } ): ActivateBundleInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountSystemProgram> {
+export function getActivateBundleInstruction<TAccountAuthority extends InstructionSignerInput, TAccountTemplate extends InstructionAccountInput, TAccountBundle extends InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: ActivateBundleInput<TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountSystemProgram>, config?: { programAddress?: TProgramAddress } ): ActivateBundleInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isWritable: true }, template: { value: input.template ?? null, isWritable: true }, bundle: { value: input.bundle ?? null, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isWritable: false } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: true }, template: { value: input.template ?? null, isSigner: false, isWritable: true }, bundle: { value: input.bundle ?? null, isSigner: false, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isSigner: false, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -59,8 +62,7 @@ if (!accounts.systemProgram.value) {
 accounts.systemProgram.value = '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
 }
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("bundle", accounts.bundle), getAccountMeta("systemProgram", accounts.systemProgram)], data: getActivateBundleInstructionDataEncoder().encode({}), programAddress } as ActivateBundleInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountSystemProgram>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("bundle", accounts.bundle), getAccountMeta("systemProgram", accounts.systemProgram)], data: getActivateBundleInstructionDataEncoder().encode({}), programAddress } as ActivateBundleInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>>);
 }
 
 export type ParsedActivateBundleInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

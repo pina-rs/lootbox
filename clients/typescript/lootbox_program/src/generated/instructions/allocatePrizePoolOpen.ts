@@ -8,7 +8,7 @@
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const ALLOCATE_PRIZE_POOL_OPEN_DISCRIMINATOR = 47;
@@ -38,25 +38,28 @@ export function getAllocatePrizePoolOpenInstructionDataCodec(): FixedSizeCodec<A
     return combineCodec(getAllocatePrizePoolOpenInstructionDataEncoder(), getAllocatePrizePoolOpenInstructionDataDecoder());
 }
 
-export type AllocatePrizePoolOpenInput<TAccountTemplate extends string = string, TAccountOpening extends string = string, TAccountBundle extends string = string, TAccountPrizePool extends string = string, TAccountServiceVault extends string = string, TAccountResultReceipt extends string = string, TAccountSystemProgram extends string = string> =  {
-  template: Address<TAccountTemplate>;
-opening: Address<TAccountOpening>;
-bundle: Address<TAccountBundle>;
-prizePool: Address<TAccountPrizePool>;
+export type AllocatePrizePoolOpenInput<TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput = InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput = InstructionAccountInput, TAccountResultReceipt extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
+  template: TAccountTemplate;
+opening: TAccountOpening;
+bundle: TAccountBundle;
+prizePool: TAccountPrizePool;
 /** Creator-funded when permanent result receipts are enabled. */
-serviceVault: Address<TAccountServiceVault>;
+serviceVault: TAccountServiceVault;
 /** Created only when enabled in the locked treasury configuration. */
-resultReceipt: Address<TAccountResultReceipt>;
-systemProgram?: Address<TAccountSystemProgram>;
+resultReceipt: TAccountResultReceipt;
+systemProgram?: TAccountSystemProgram;
 resultReceiptBump: AllocatePrizePoolOpenInstructionDataArgs["resultReceiptBump"];
 }
 
-export function getAllocatePrizePoolOpenInstruction<TAccountTemplate extends string, TAccountOpening extends string, TAccountBundle extends string, TAccountPrizePool extends string, TAccountServiceVault extends string, TAccountResultReceipt extends string, TAccountSystemProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: AllocatePrizePoolOpenInput<TAccountTemplate, TAccountOpening, TAccountBundle, TAccountPrizePool, TAccountServiceVault, TAccountResultReceipt, TAccountSystemProgram>, config?: { programAddress?: TProgramAddress } ): AllocatePrizePoolOpenInstruction<TProgramAddress, TAccountTemplate, TAccountOpening, TAccountBundle, TAccountPrizePool, TAccountServiceVault, TAccountResultReceipt, TAccountSystemProgram> {
+export function getAllocatePrizePoolOpenInstruction<TAccountTemplate extends InstructionAccountInput, TAccountOpening extends InstructionAccountInput, TAccountBundle extends InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput, TAccountResultReceipt extends InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: AllocatePrizePoolOpenInput<TAccountTemplate, TAccountOpening, TAccountBundle, TAccountPrizePool, TAccountServiceVault, TAccountResultReceipt, TAccountSystemProgram>, config?: { programAddress?: TProgramAddress } ): AllocatePrizePoolOpenInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountOpening, InstructionAccountInputAddress<TAccountOpening>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountPrizePool, InstructionAccountInputAddress<TAccountPrizePool>>, ResolvedInstructionAccountMeta<TAccountServiceVault, InstructionAccountInputAddress<TAccountServiceVault>>, ResolvedInstructionAccountMeta<TAccountResultReceipt, InstructionAccountInputAddress<TAccountResultReceipt>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { template: { value: input.template ?? null, isWritable: true }, opening: { value: input.opening ?? null, isWritable: true }, bundle: { value: input.bundle ?? null, isWritable: false }, prizePool: { value: input.prizePool ?? null, isWritable: true }, serviceVault: { value: input.serviceVault ?? null, isWritable: true }, resultReceipt: { value: input.resultReceipt ?? null, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isWritable: false } }
+const originalAccounts = { template: { value: input.template ?? null, isSigner: false, isWritable: true }, opening: { value: input.opening ?? null, isSigner: false, isWritable: true }, bundle: { value: input.bundle ?? null, isSigner: false, isWritable: false }, prizePool: { value: input.prizePool ?? null, isSigner: false, isWritable: true }, serviceVault: { value: input.serviceVault ?? null, isSigner: false, isWritable: true }, resultReceipt: { value: input.resultReceipt ?? null, isSigner: false, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isSigner: false, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -69,8 +72,7 @@ if (!accounts.systemProgram.value) {
 accounts.systemProgram.value = '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
 }
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("template", accounts.template), getAccountMeta("opening", accounts.opening), getAccountMeta("bundle", accounts.bundle), getAccountMeta("prizePool", accounts.prizePool), getAccountMeta("serviceVault", accounts.serviceVault), getAccountMeta("resultReceipt", accounts.resultReceipt), getAccountMeta("systemProgram", accounts.systemProgram)], data: getAllocatePrizePoolOpenInstructionDataEncoder().encode(args as AllocatePrizePoolOpenInstructionDataArgs), programAddress } as AllocatePrizePoolOpenInstruction<TProgramAddress, TAccountTemplate, TAccountOpening, TAccountBundle, TAccountPrizePool, TAccountServiceVault, TAccountResultReceipt, TAccountSystemProgram>);
+return Object.freeze({ accounts: [getAccountMeta("template", accounts.template), getAccountMeta("opening", accounts.opening), getAccountMeta("bundle", accounts.bundle), getAccountMeta("prizePool", accounts.prizePool), getAccountMeta("serviceVault", accounts.serviceVault), getAccountMeta("resultReceipt", accounts.resultReceipt), getAccountMeta("systemProgram", accounts.systemProgram)], data: getAllocatePrizePoolOpenInstructionDataEncoder().encode(args as AllocatePrizePoolOpenInstructionDataArgs), programAddress } as AllocatePrizePoolOpenInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountOpening, InstructionAccountInputAddress<TAccountOpening>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountPrizePool, InstructionAccountInputAddress<TAccountPrizePool>>, ResolvedInstructionAccountMeta<TAccountServiceVault, InstructionAccountInputAddress<TAccountServiceVault>>, ResolvedInstructionAccountMeta<TAccountResultReceipt, InstructionAccountInputAddress<TAccountResultReceipt>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>>);
 }
 
 export type ParsedAllocatePrizePoolOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

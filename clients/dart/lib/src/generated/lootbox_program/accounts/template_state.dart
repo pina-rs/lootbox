@@ -192,9 +192,12 @@ Encoder<TemplateState> getTemplateStateEncoder() {
     ('serviceVaultBump', getU8Encoder()),
     (
       'remaining',
-      getArrayEncoder<BigInt>(
-        transformEncoder(getU64Encoder(), (BigInt value) => value),
-        size: PrefixedArraySize(getU16Encoder()),
+      getPinaPodBoundedArrayEncoder(
+        getArrayEncoder(
+          transformEncoder(getU64Encoder(), (BigInt value) => value),
+          size: PrefixedArraySize(getU16Encoder()),
+        ),
+        1024,
       ),
     ),
   ]);

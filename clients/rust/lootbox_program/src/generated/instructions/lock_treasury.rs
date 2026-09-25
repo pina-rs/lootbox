@@ -27,13 +27,7 @@ pub struct LockTreasury {
 }
 
 impl LockTreasury {
-	pub fn new(
-		authority: solana_pubkey::Pubkey,
-		template: solana_pubkey::Pubkey,
-		box_mint: solana_pubkey::Pubkey,
-		bundle: solana_pubkey::Pubkey,
-		service_vault: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, service_vault: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			template,
@@ -41,16 +35,11 @@ impl LockTreasury {
 			bundle,
 			service_vault,
 			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
-			box_token_program: solana_pubkey::pubkey!(
-				"TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
-			),
+			box_token_program: solana_pubkey::pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
 		}
 	}
 
-	pub fn instruction(
-		&self,
-		data: LockTreasuryInstructionData,
-	) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: LockTreasuryInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -64,22 +53,10 @@ impl LockTreasury {
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.box_mint, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.bundle,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.service_vault,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.system_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.box_token_program,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.bundle, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.service_vault, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_token_program, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -95,9 +72,7 @@ pub struct LockTreasuryInstructionData {
 }
 
 impl LockTreasuryInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut LockTreasuryInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(configure: impl FnOnce(&mut LockTreasuryInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<LockTreasuryInstructionWireZc>()];
 		<LockTreasuryInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
@@ -105,7 +80,7 @@ impl LockTreasuryInstructionData {
 			data.migration_version = LOCK_TREASURY_MIGRATION_VERSION;
 			Ok(())
 		})
-		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

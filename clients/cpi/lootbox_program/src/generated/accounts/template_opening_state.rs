@@ -6,6 +6,7 @@
 	clippy::empty_line_after_doc_comments,
 	clippy::too_many_arguments
 )]
+
 #![allow(rustdoc::broken_intra_doc_links)]
 
 use pina::Address;
@@ -47,7 +48,8 @@ impl TemplateOpeningState {
 	/// Whether `data` carries this account's discriminator.
 	#[inline(always)]
 	pub fn matches(data: &[u8]) -> bool {
-		data.len() >= 2 && data[..2] == TEMPLATE_OPENING_STATE_DISCRIMINATOR
+		data.len() >= 2
+			&& data[..2] == TEMPLATE_OPENING_STATE_DISCRIMINATOR
 	}
 
 	/// Reads this account's fields from the account's data.
@@ -62,50 +64,61 @@ impl TemplateOpeningState {
 		let mut cursor = 0usize;
 		cursor += 2;
 
-		let template = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let template = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let box_authority =
-			Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let box_authority = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let beneficiary = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let beneficiary = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let rent_refund = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let rent_refund = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let consumer_program =
-			Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let consumer_program = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let consumer_context: [u8; 32] = data.get(cursor..cursor + 32)?.try_into().ok()?;
+		let consumer_context: [u8; 32] = data.get(cursor..cursor + 32)?
+		.try_into().ok()?;
 		cursor += 32;
-		let randomness = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let randomness = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let sequence: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let sequence: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let seed_slot: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let seed_slot: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let entropy: [u8; 32] = data.get(cursor..cursor + 32)?.try_into().ok()?;
+		let entropy: [u8; 32] = data.get(cursor..cursor + 32)?
+		.try_into().ok()?;
 		cursor += 32;
-		let treasury_revision: u64 =
-			u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let treasury_revision: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let eligible_bundle_count: u32 =
-			u32::from_le_bytes(data.get(cursor..cursor + 4)?.try_into().ok()?);
+		let eligible_bundle_count: u32 = u32::from_le_bytes(data.get(cursor..cursor + 4)?
+		.try_into().ok()?);
 		cursor += 4;
-		let status: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
+		let status: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
+		.try_into().ok()?);
 		cursor += 1;
-		let selected_bundle: u32 =
-			u32::from_le_bytes(data.get(cursor..cursor + 4)?.try_into().ok()?);
+		let selected_bundle: u32 = u32::from_le_bytes(data.get(cursor..cursor + 4)?
+		.try_into().ok()?);
 		cursor += 4;
-		let selected_pool_item: u32 =
-			u32::from_le_bytes(data.get(cursor..cursor + 4)?.try_into().ok()?);
+		let selected_pool_item: u32 = u32::from_le_bytes(data.get(cursor..cursor + 4)?
+		.try_into().ok()?);
 		cursor += 4;
-		let selected_pool_asset: u8 =
-			u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
+		let selected_pool_asset: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
+		.try_into().ok()?);
 		cursor += 1;
 		let has_pool_assignment = data.get(cursor).copied()? != 0;
 		cursor += 1;
-		let claimed_mask: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
+		let claimed_mask: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
+		.try_into().ok()?);
 		cursor += 1;
-		let bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
+		let bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
+		.try_into().ok()?);
 
 		Some(TemplateOpeningState {
 			template,

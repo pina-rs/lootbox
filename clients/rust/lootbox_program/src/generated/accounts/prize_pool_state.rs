@@ -13,11 +13,11 @@
 #[pinapod(crate = pina::pinapod, no_inherent)]
 #[pinapod(compact)]
 pub struct PrizePoolState {
-	/// Compact, append-only Bubblegum inventory for one bundle manifest slot.
-	///
-	/// The account pays only for deposited bitmap bytes: one byte for every eight
-	/// items. Per-item PDAs retain deposit snapshots while the sealed accumulator
-	/// commits the ordered inventory into the parent treasury manifest.
+/// Compact, append-only Bubblegum inventory for one bundle manifest slot.
+///
+/// The account pays only for deposited bitmap bytes: one byte for every eight
+/// items. Per-item PDAs retain deposit snapshots while the sealed accumulator
+/// commits the ordered inventory into the parent treasury manifest.
 	pub discriminator: u8,
 	pub migration_version: u8,
 	pub authority: solana_pubkey::Pubkey,
@@ -48,20 +48,12 @@ pub const PRIZE_POOL_STATE_MIGRATION_VERSION: u8 = 0u8;
 impl PrizePoolState {
 	pub const HEADER_SIZE: usize = <Self as pina::PinaPodCompact>::HEADER_SIZE;
 
-	pub fn initialize(
-		data: &mut [u8],
-		patch: PrizePoolStatePatch<'_>,
-	) -> Result<usize, solana_program_error::ProgramError> {
-		patch
-			.discriminator(PRIZE_POOL_STATE_DISCRIMINATOR)
-			.migration_version(PRIZE_POOL_STATE_MIGRATION_VERSION)
-			.initialize(data)
+	pub fn initialize(data: &mut [u8], patch: PrizePoolStatePatch<'_>) -> Result<usize, solana_program_error::ProgramError> {
+		patch.discriminator(PRIZE_POOL_STATE_DISCRIMINATOR).migration_version(PRIZE_POOL_STATE_MIGRATION_VERSION).initialize(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)
 	}
 
-	pub fn from_bytes(
-		data: &[u8],
-	) -> Result<PrizePoolStateRef<'_>, solana_program_error::ProgramError> {
+	pub fn from_bytes(data: &[u8]) -> Result<PrizePoolStateRef<'_>, solana_program_error::ProgramError> {
 		let account = PrizePoolStateRef::new(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != PRIZE_POOL_STATE_DISCRIMINATOR {
@@ -75,10 +67,7 @@ impl PrizePoolState {
 }
 
 impl PrizePoolState {
-	pub fn find_pda(
-		bundle: &solana_pubkey::Pubkey,
-		asset_index: u8,
-	) -> (solana_pubkey::Pubkey, u8) {
+	pub fn find_pda(bundle: &solana_pubkey::Pubkey, asset_index: u8) -> (solana_pubkey::Pubkey, u8) {
 		solana_pubkey::Pubkey::find_program_address(
 			&[
 				"prize-pool".as_bytes(),
@@ -89,11 +78,7 @@ impl PrizePoolState {
 		)
 	}
 
-	pub fn create_pda(
-		bundle: &solana_pubkey::Pubkey,
-		asset_index: u8,
-		bump: u8,
-	) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(bundle: &solana_pubkey::Pubkey, asset_index: u8, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
 			&[
 				"prize-pool".as_bytes(),
@@ -105,6 +90,7 @@ impl PrizePoolState {
 		)
 	}
 }
+
 
 /// Whether raw account bytes are stale for this contract: the envelope names this account's discriminator and carries a version older than
 /// [`PRIZE_POOL_STATE_MIGRATION_VERSION`]. Current or foreign bytes return false; decoding explains the difference.

@@ -12,10 +12,10 @@
 #[derive(pina::PinaPod)]
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct PrizePoolItemState {
-	/// Immutable identity and normalized metadata commitment for one Bubblegum leaf.
-	///
-	/// Bubblegum authorities may change verification flags after custody, so claims
-	/// re-prove the current metadata while pinning every semantic field.
+/// Immutable identity and normalized metadata commitment for one Bubblegum leaf.
+///
+/// Bubblegum authorities may change verification flags after custody, so claims
+/// re-prove the current metadata while pinning every semantic field.
 	pub discriminator: u8,
 	pub migration_version: u8,
 	pub pool: solana_pubkey::Pubkey,
@@ -56,9 +56,7 @@ impl PrizePoolItemState {
 		.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)
 	}
 
-	pub fn from_bytes(
-		data: &[u8],
-	) -> Result<&PrizePoolItemStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes(data: &[u8]) -> Result<&PrizePoolItemStateZc, solana_program_error::ProgramError> {
 		let account = <Self as pina::PinaPodFixed>::read_exact(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != PRIZE_POOL_ITEM_STATE_DISCRIMINATOR {
@@ -70,9 +68,7 @@ impl PrizePoolItemState {
 		Ok(account)
 	}
 
-	pub fn from_bytes_mut(
-		data: &mut [u8],
-	) -> Result<&mut PrizePoolItemStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes_mut(data: &mut [u8]) -> Result<&mut PrizePoolItemStateZc, solana_program_error::ProgramError> {
 		let account = <Self as pina::PinaPodFixed>::read_exact_mut(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != PRIZE_POOL_ITEM_STATE_DISCRIMINATOR {
@@ -97,11 +93,7 @@ impl PrizePoolItemState {
 		)
 	}
 
-	pub fn create_pda(
-		pool: &solana_pubkey::Pubkey,
-		pool_index: u32,
-		bump: u8,
-	) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(pool: &solana_pubkey::Pubkey, pool_index: u32, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
 			&[
 				"prize-pool-item".as_bytes(),
@@ -114,6 +106,7 @@ impl PrizePoolItemState {
 	}
 }
 
+
 /// Whether raw account bytes are stale for this contract: the envelope names this account's discriminator and carries a version older than
 /// [`PRIZE_POOL_ITEM_STATE_MIGRATION_VERSION`]. Current or foreign bytes return false; decoding explains the difference.
 ///
@@ -121,6 +114,7 @@ impl PrizePoolItemState {
 pub fn prize_pool_item_state_needs_migration(_data: &[u8]) -> bool {
 	false
 }
+
 
 /// Why `PrizePoolItemState::try_from_bytes` rejected account bytes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -137,21 +131,14 @@ impl core::fmt::Display for PrizePoolItemStateVersionError {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		match self {
 			Self::InvalidData => write!(f, "invalid PrizePoolItemState account data"),
-			Self::Stale { stored } => {
-				write!(
-					f,
-					"migration version mismatch: expected 0, received {stored} (the data predates \
-					 this client; migrate it by sending a transaction to the program, or decode \
-					 it with a client generated from an older IDL)"
-				)
-			}
-			Self::Future { stored } => {
-				write!(
-					f,
-					"migration version mismatch: expected 0, received {stored} (the data was \
-					 written by a newer program; upgrade this client)"
-				)
-			}
+			Self::Stale { stored } => write!(
+				f,
+				"migration version mismatch: expected 0, received {stored} (the data predates this client; migrate it by sending a transaction to the program, or decode it with a client generated from an older IDL)"
+			),
+			Self::Future { stored } => write!(
+				f,
+				"migration version mismatch: expected 0, received {stored} (the data was written by a newer program; upgrade this client)"
+			),
 		}
 	}
 }
@@ -167,9 +154,7 @@ impl PrizePoolItemState {
 			return Err(PrizePoolItemStateVersionError::InvalidData);
 		}
 		if account.migration_version > PRIZE_POOL_ITEM_STATE_MIGRATION_VERSION {
-			return Err(PrizePoolItemStateVersionError::Future {
-				stored: account.migration_version,
-			});
+			return Err(PrizePoolItemStateVersionError::Future { stored: account.migration_version });
 		}
 		Ok(account)
 	}
@@ -188,15 +173,9 @@ mod prize_pool_item_state_version_error_tests {
 
 	#[test]
 	fn stale_and_future_versions_are_distinguishable() {
-		let error = PrizePoolItemState::try_from_bytes(&envelope(1_u8))
-			.err()
-			.expect("a future envelope must fail");
+		let error = PrizePoolItemState::try_from_bytes(&envelope(1_u8)).err().expect("a future envelope must fail");
 		assert_eq!(error, PrizePoolItemStateVersionError::Future { stored: 1 });
-		assert_eq!(
-			PrizePoolItemStateVersionError::Future { stored: 1 }.to_string(),
-			"migration version mismatch: expected 0, received 1 (the data was written by a newer \
-			 program; upgrade this client)"
-		);
+		assert_eq!(PrizePoolItemStateVersionError::Future { stored: 1 }.to_string(), "migration version mismatch: expected 0, received 1 (the data was written by a newer program; upgrade this client)");
 		assert!(
 			PrizePoolItemState::try_from_bytes(&envelope(0_u8)).is_ok(),
 			"the current version must decode",

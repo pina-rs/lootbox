@@ -7,8 +7,8 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlySignerAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlySignerAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const ADD_OUTCOME_DISCRIMINATOR = 1;
@@ -38,19 +38,22 @@ export function getAddOutcomeInstructionDataCodec(): FixedSizeCodec<AddOutcomeIn
     return combineCodec(getAddOutcomeInstructionDataEncoder(), getAddOutcomeInstructionDataDecoder());
 }
 
-export type AddOutcomeInput<TAccountAuthority extends string = string, TAccountLootbox extends string = string> =  {
-  authority: TransactionSigner<TAccountAuthority>;
-lootbox: Address<TAccountLootbox>;
+export type AddOutcomeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput> =  {
+  authority: TAccountAuthority;
+lootbox: TAccountLootbox;
 weight: AddOutcomeInstructionDataArgs["weight"];
 rewardLamports: AddOutcomeInstructionDataArgs["rewardLamports"];
 }
 
-export function getAddOutcomeInstruction<TAccountAuthority extends string, TAccountLootbox extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: AddOutcomeInput<TAccountAuthority, TAccountLootbox>, config?: { programAddress?: TProgramAddress } ): AddOutcomeInstruction<TProgramAddress, TAccountAuthority, TAccountLootbox> {
+export function getAddOutcomeInstruction<TAccountAuthority extends InstructionSignerInput, TAccountLootbox extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: AddOutcomeInput<TAccountAuthority, TAccountLootbox>, config?: { programAddress?: TProgramAddress } ): AddOutcomeInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isWritable: false }, lootbox: { value: input.lootbox ?? null, isWritable: true } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: false }, lootbox: { value: input.lootbox ?? null, isSigner: false, isWritable: true } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -60,8 +63,7 @@ const args = { ...input,  };
 
 
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("lootbox", accounts.lootbox)], data: getAddOutcomeInstructionDataEncoder().encode(args as AddOutcomeInstructionDataArgs), programAddress } as AddOutcomeInstruction<TProgramAddress, TAccountAuthority, TAccountLootbox>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("lootbox", accounts.lootbox)], data: getAddOutcomeInstructionDataEncoder().encode(args as AddOutcomeInstructionDataArgs), programAddress } as AddOutcomeInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>>);
 }
 
 export type ParsedAddOutcomeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

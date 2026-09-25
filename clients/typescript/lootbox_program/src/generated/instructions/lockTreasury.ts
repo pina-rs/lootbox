@@ -7,8 +7,8 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const LOCK_TREASURY_DISCRIMINATOR = 37;
@@ -38,28 +38,31 @@ export function getLockTreasuryInstructionDataCodec(): FixedSizeCodec<LockTreasu
     return combineCodec(getLockTreasuryInstructionDataEncoder(), getLockTreasuryInstructionDataDecoder());
 }
 
-export type LockTreasuryInput<TAccountAuthority extends string = string, TAccountTemplate extends string = string, TAccountBoxMint extends string = string, TAccountBundle extends string = string, TAccountServiceVault extends string = string, TAccountSystemProgram extends string = string, TAccountBoxTokenProgram extends string = string> =  {
-  authority: TransactionSigner<TAccountAuthority>;
-template: Address<TAccountTemplate>;
-boxMint: Address<TAccountBoxMint>;
+export type LockTreasuryInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountBoxTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
+  authority: TAccountAuthority;
+template: TAccountTemplate;
+boxMint: TAccountBoxMint;
 /** The first unused bundle PDA proves that no funded tail was omitted. */
-bundle: Address<TAccountBundle>;
+bundle: TAccountBundle;
 /**
  * Creator-funded only when receipts or crank bounties are enabled.
  * Unsolicited lamports are accepted and reduce the required top-up.
  */
-serviceVault: Address<TAccountServiceVault>;
-systemProgram?: Address<TAccountSystemProgram>;
-boxTokenProgram?: Address<TAccountBoxTokenProgram>;
+serviceVault: TAccountServiceVault;
+systemProgram?: TAccountSystemProgram;
+boxTokenProgram?: TAccountBoxTokenProgram;
 serviceVaultBump: LockTreasuryInstructionDataArgs["serviceVaultBump"];
 }
 
-export function getLockTreasuryInstruction<TAccountAuthority extends string, TAccountTemplate extends string, TAccountBoxMint extends string, TAccountBundle extends string, TAccountServiceVault extends string, TAccountSystemProgram extends string, TAccountBoxTokenProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: LockTreasuryInput<TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountBundle, TAccountServiceVault, TAccountSystemProgram, TAccountBoxTokenProgram>, config?: { programAddress?: TProgramAddress } ): LockTreasuryInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountBundle, TAccountServiceVault, TAccountSystemProgram, TAccountBoxTokenProgram> {
+export function getLockTreasuryInstruction<TAccountAuthority extends InstructionSignerInput, TAccountTemplate extends InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput, TAccountBundle extends InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput, TAccountBoxTokenProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: LockTreasuryInput<TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountBundle, TAccountServiceVault, TAccountSystemProgram, TAccountBoxTokenProgram>, config?: { programAddress?: TProgramAddress } ): LockTreasuryInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountServiceVault, InstructionAccountInputAddress<TAccountServiceVault>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>, ResolvedInstructionAccountMeta<TAccountBoxTokenProgram, InstructionAccountInputAddress<TAccountBoxTokenProgram>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isWritable: true }, template: { value: input.template ?? null, isWritable: true }, boxMint: { value: input.boxMint ?? null, isWritable: true }, bundle: { value: input.bundle ?? null, isWritable: false }, serviceVault: { value: input.serviceVault ?? null, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isWritable: false }, boxTokenProgram: { value: input.boxTokenProgram ?? null, isWritable: false } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: true }, template: { value: input.template ?? null, isSigner: false, isWritable: true }, boxMint: { value: input.boxMint ?? null, isSigner: false, isWritable: true }, bundle: { value: input.bundle ?? null, isSigner: false, isWritable: false }, serviceVault: { value: input.serviceVault ?? null, isSigner: false, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isSigner: false, isWritable: false }, boxTokenProgram: { value: input.boxTokenProgram ?? null, isSigner: false, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -75,8 +78,7 @@ if (!accounts.boxTokenProgram.value) {
 accounts.boxTokenProgram.value = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address<'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'>;
 }
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("bundle", accounts.bundle), getAccountMeta("serviceVault", accounts.serviceVault), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("boxTokenProgram", accounts.boxTokenProgram)], data: getLockTreasuryInstructionDataEncoder().encode(args as LockTreasuryInstructionDataArgs), programAddress } as LockTreasuryInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountBundle, TAccountServiceVault, TAccountSystemProgram, TAccountBoxTokenProgram>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("bundle", accounts.bundle), getAccountMeta("serviceVault", accounts.serviceVault), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("boxTokenProgram", accounts.boxTokenProgram)], data: getLockTreasuryInstructionDataEncoder().encode(args as LockTreasuryInstructionDataArgs), programAddress } as LockTreasuryInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountServiceVault, InstructionAccountInputAddress<TAccountServiceVault>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>, ResolvedInstructionAccountMeta<TAccountBoxTokenProgram, InstructionAccountInputAddress<TAccountBoxTokenProgram>>>);
 }
 
 export type ParsedLockTreasuryInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

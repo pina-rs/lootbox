@@ -7,8 +7,8 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const RECLAIM_SOL_PRIZE_DISCRIMINATOR = 22;
@@ -38,20 +38,23 @@ export function getReclaimSolPrizeInstructionDataCodec(): FixedSizeCodec<Reclaim
     return combineCodec(getReclaimSolPrizeInstructionDataEncoder(), getReclaimSolPrizeInstructionDataDecoder());
 }
 
-export type ReclaimSolPrizeInput<TAccountAuthority extends string = string, TAccountTemplate extends string = string, TAccountBoxMint extends string = string, TAccountBundle extends string = string> =  {
-  authority: TransactionSigner<TAccountAuthority>;
-template: Address<TAccountTemplate>;
-boxMint: Address<TAccountBoxMint>;
-bundle: Address<TAccountBundle>;
+export type ReclaimSolPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput> =  {
+  authority: TAccountAuthority;
+template: TAccountTemplate;
+boxMint: TAccountBoxMint;
+bundle: TAccountBundle;
 assetIndex: ReclaimSolPrizeInstructionDataArgs["assetIndex"];
 }
 
-export function getReclaimSolPrizeInstruction<TAccountAuthority extends string, TAccountTemplate extends string, TAccountBoxMint extends string, TAccountBundle extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: ReclaimSolPrizeInput<TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountBundle>, config?: { programAddress?: TProgramAddress } ): ReclaimSolPrizeInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountBundle> {
+export function getReclaimSolPrizeInstruction<TAccountAuthority extends InstructionSignerInput, TAccountTemplate extends InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput, TAccountBundle extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: ReclaimSolPrizeInput<TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountBundle>, config?: { programAddress?: TProgramAddress } ): ReclaimSolPrizeInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isWritable: true }, template: { value: input.template ?? null, isWritable: false }, boxMint: { value: input.boxMint ?? null, isWritable: false }, bundle: { value: input.bundle ?? null, isWritable: true } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: true }, template: { value: input.template ?? null, isSigner: false, isWritable: false }, boxMint: { value: input.boxMint ?? null, isSigner: false, isWritable: false }, bundle: { value: input.bundle ?? null, isSigner: false, isWritable: true } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -61,8 +64,7 @@ const args = { ...input,  };
 
 
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("bundle", accounts.bundle)], data: getReclaimSolPrizeInstructionDataEncoder().encode(args as ReclaimSolPrizeInstructionDataArgs), programAddress } as ReclaimSolPrizeInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountBundle>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("bundle", accounts.bundle)], data: getReclaimSolPrizeInstructionDataEncoder().encode(args as ReclaimSolPrizeInstructionDataArgs), programAddress } as ReclaimSolPrizeInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>>);
 }
 
 export type ParsedReclaimSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

@@ -1,4 +1,29 @@
-# Lootbox Playground
+# Lootbox web
+
+Two surfaces share one static Vite build:
+
+- `/` is **Unlisted**, the public recipient site: a free series of Solana boxes with tokenized pre-IPO stock inside. Connect a Wallet Standard wallet, see your boxes and live odds, send a box to a friend, and after the reveal date press and hold the cartoon chest to open one and claim the prize.
+- `/playground` is the local creator workshop described below.
+
+Static hosts must rewrite unknown paths to `index.html` so `/playground` resolves (Vite's dev and preview servers already do).
+
+## Recipient site
+
+Configure it with Vite environment variables at build time:
+
+| Variable              | Meaning                                                                                            |
+| --------------------- | -------------------------------------------------------------------------------------------------- |
+| `VITE_SOLANA_CLUSTER` | `localnet` (default), `devnet`, or `mainnet`.                                                      |
+| `VITE_RPC_URL`        | RPC for devnet/mainnet. Defaults to the public endpoint. Localnet reads it from the control plane. |
+| `VITE_TREASURY`       | The locked series (template) address. Without it the page shows the planned lineup.                |
+
+On localnet, `?treasury=<address>` overrides `VITE_TREASURY` so a series made in `/playground` can be opened from `/`. Public clusters ignore the query string.
+
+Opening burns one box and commits Switchboard randomness, waits for the oracle's reveal, settles the FIFO queue up to that opening, then plays the reaction for the recorded result. The flow is written against `OracleTransport` in `src/launch/oracle.ts`. Localnet injects the Surfpool mock oracle (`localOracle` in `src/lootbox/playground.ts`). Devnet and mainnet use `createPublicOracle`, the single wiring point to replace with `createSwitchboardOracle` from the SDK once `feat/switchboard-gateway` merges; until then public clusters explain that opening is not wired yet and never burn a box.
+
+Prize logos and prices come from PreStocks. The API sends no CORS headers, so the app tries it and falls back to `src/launch/prestocks-snapshot.json`, refreshed with `node tools/snapshot-prestocks.ts`. The cartoon chest clips in `public/animations/cartoon-chest/` are derived from `assets/lootbox-reveals/build/cartoon-chest/` (720 px VP9 WebM with alpha, H.264 MP4 fallback, WebP stills).
+
+## Creator playground
 
 A browser-to-Surfpool workshop for fixed-supply reward treasuries, transferable whole boxes, pre-reveal market analysis, and animated openings. The React app sends real local transactions through `LootboxClient`; it does not fabricate balances or outcomes.
 
@@ -20,7 +45,7 @@ Leave that process running. In a second terminal:
 devenv shell -- pnpm --dir apps/web dev
 ```
 
-Open `http://127.0.0.1:5173`. The control plane defaults to port 8898. The UI fails visibly if the service is missing; it never swaps in fake client state.
+Open `http://127.0.0.1:5173/playground` for the workshop, or `http://127.0.0.1:5173/?treasury=<address>` for the recipient site. The control plane defaults to port 8898. The UI fails visibly if the service is missing; it never swaps in fake client state.
 
 For live catalog results, set these only on the server process:
 
@@ -80,4 +105,4 @@ devenv shell -- pnpm --dir apps/web build
 devenv shell -- pnpm --dir apps/web test:e2e
 ```
 
-Playwright covers desktop and Pixel-sized layouts, mixed prize delivery to real local balances, reload and recovery, partial funding, time locks, transfers, offline state, and reduced motion. Component tests cover PrizePool tree locking, immutable admission, ownership refresh, proof refresh, and transfer-plan presentation. See the [treasury protocol](../../docs/treasury-templates.md), [PrizePool reference](../../docs/prize-pools.md), and [security notes](../../docs/security-templates.md).
+Playwright covers desktop and Pixel-sized layouts. `e2e/launch.spec.ts` drives the recipient site with an injected Wallet Standard test wallet (a fresh local keypair that signs in the test process) and local stand-ins at the real PreStocks mint addresses: landing and disclosures, live odds, balance, sending, the pre-reveal lock, hold-to-open, keyboard hold with reduced motion, skip, oracle outage recovery without a second burn, and claims checked against token balances, with axe checks and no console errors. `e2e/open-lootbox.spec.ts` covers the playground: mixed prize delivery to real local balances, reload and recovery, partial funding, time locks, transfers, offline state, and reduced motion. Component tests cover PrizePool tree locking, immutable admission, ownership refresh, proof refresh, and transfer-plan presentation. See the [treasury protocol](../../docs/treasury-templates.md), [PrizePool reference](../../docs/prize-pools.md), and [security notes](../../docs/security-templates.md).

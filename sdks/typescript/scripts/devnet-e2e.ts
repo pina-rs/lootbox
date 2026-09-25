@@ -235,10 +235,12 @@ template = await client.template(template.address);
 await client.settle(template, opening, accounts, proof);
 await client.claim(opening.address);
 
+// The client confirms at `processed`, so read the claim at the same level;
+// a `confirmed` read can still see the pre-claim status.
 const claimed = await fetchTemplateOpeningState(
 	client.rpc,
 	opening.address,
-	{ commitment: "confirmed" },
+	{ commitment: "processed" },
 );
 
 let closeError: unknown;

@@ -417,6 +417,22 @@ describe("createSwitchboardOracle", () => {
 		expect(error.code).toBe("wrongQueue");
 	});
 
+	it("still derives close accounts after the reveal clears the oracle", async () => {
+		const { options } = harness(
+			randomnessPayload({
+				oracle: address("11111111111111111111111111111111"),
+				revealSlot: 504_035_180n,
+				lutSlot: 42n,
+			}),
+		);
+		const accounts = await createSwitchboardOracle(options).accountsFor(
+			randomness,
+		);
+		const lutSigner = await switchboardLutSignerAddress(program, randomness);
+
+		expect(accounts.lut).toBe(await lookupTableAddress(lutSigner, 42n));
+	});
+
 	it("refuses to re-reveal", async () => {
 		const { options } = harness(
 			randomnessPayload({ revealSlot: 504_035_180n }),

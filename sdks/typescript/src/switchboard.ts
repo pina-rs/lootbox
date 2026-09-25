@@ -171,7 +171,10 @@ export type SwitchboardOracle = Readonly<{
 	selectAccounts(binding: RandomnessBinding): Promise<OracleAccounts>;
 	/** Accounts for the oracle a committed randomness account is bound to,
 	 * for `fulfill`, `settle`, and `closeTemplateOpening`. Retries while
-	 * the commit is not yet visible at `confirmed` commitment.
+	 * the commit is not yet visible at `confirmed` commitment. After a
+	 * reveal Switchboard clears the oracle, so `oracle` and `stats` are
+	 * placeholders; the lookup-table and program-state accounts that
+	 * `closeTemplateOpening` needs stay exact.
 	 */
 	accountsFor(
 		randomness: Address,
@@ -634,7 +637,12 @@ export function createSwitchboardOracle(
 			);
 		}
 
-		if (state.seedSlot === 0n || state.oracle === DEFAULT_ADDRESS) {
+		// A reveal clears the bound oracle, so only an unrevealed account with
+		// no oracle is uncommitted.
+		if (
+			state.seedSlot === 0n ||
+			(state.revealSlot === 0n && state.oracle === DEFAULT_ADDRESS)
+		) {
 			throw new SwitchboardError(
 				"notCommitted",
 				`randomness ${randomness} has not been committed`,

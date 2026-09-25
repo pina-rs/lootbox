@@ -21,12 +21,12 @@ import {
 	type LaunchConfig,
 	readLaunchConfig,
 } from "./config.js";
-import type { ResolveEmptyChestAsset } from "./EmptyChestShowcase.js";
 import {
 	ELIGIBILITY_STATEMENT,
 	NOT_AFFILIATED,
 	prestocksDisclaimer,
 } from "./copy.js";
+import type { ResolveEmptyChestAsset } from "./EmptyChestShowcase.js";
 import { Monogram } from "./Monogram.js";
 import {
 	initialOpening,

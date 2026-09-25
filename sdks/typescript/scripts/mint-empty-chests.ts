@@ -115,7 +115,9 @@ function treeSigner(
 	if (existsSync(statePath)) {
 		const state: unknown = JSON.parse(readFileSync(statePath, "utf8"));
 
-		if (!isMintState(state)) throw new Error(`${statePath} is not a mint state file`);
+		if (!isMintState(state)) {
+			throw new Error(`${statePath} is not a mint state file`);
+		}
 
 		if (state.cluster !== cluster) {
 			throw new Error(

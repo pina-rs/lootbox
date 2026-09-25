@@ -13,13 +13,15 @@
  *     pnpm --dir sdks/typescript e2e:devnet
  *
  * Optional: LOOTBOX_DEVNET_RPC_URL (default https://api.devnet.solana.com),
- * LOOTBOX_REVEAL_DELAY_SECONDS (default 120).
+ * LOOTBOX_REVEAL_DELAY_SECONDS (default 120), LOOTBOX_E2E_TEMPLATE (resume with
+ * an already locked template), LOOTBOX_E2E_OPENING (resume a pending opening).
  *
  * The script refuses to run against any cluster whose genesis hash is not
  * devnet's, so a mainnet RPC URL can never spend real funds.
  */
 import {
 	type Address,
+	address,
 	createKeyPairSignerFromBytes,
 	createSolanaRpc,
 	generateKeyPairSigner,
@@ -57,6 +59,37 @@ if (!keypairPath) {
 	throw new Error("set LOOTBOX_DEVNET_KEYPAIR to a devnet-only keypair file");
 }
 
+// Public devnet RPC answers bursts with HTTP 429 and occasionally drops
+// connections. Resending the identical request body is safe: reads are
+// idempotent and a re-sent signed transaction keeps its signature, so it
+// can land at most once. Every RPC and gateway call in this script,
+// including the SDK's, goes through global fetch.
+const unthrottledFetch = globalThis.fetch.bind(globalThis);
+
+globalThis.fetch = async (input, init) => {
+	for (let attempt = 0;; attempt++) {
+		let response: Response;
+
+		try {
+			response = await unthrottledFetch(input, init);
+		} catch (error) {
+			if (attempt === 8) throw error;
+
+			await new Promise((done) => setTimeout(done, 2_000));
+			continue;
+		}
+
+		if (response.status !== 429 || attempt === 8) return response;
+
+		const retryAfter = Number(response.headers.get("retry-after"));
+		const delay = Number.isFinite(retryAfter) && retryAfter > 0
+			? retryAfter * 1_000
+			: 500 * 2 ** Math.min(attempt, 4);
+
+		await new Promise((done) => setTimeout(done, delay));
+	}
+};
+
 const rpc = createSolanaRpc(rpcUrl);
 const genesis = await rpc.getGenesisHash().send();
 
@@ -79,11 +112,12 @@ const payer = await createKeyPairSignerFromBytes(
 		JSON.parse(readFileSync(resolve(process.cwd(), keypairPath), "utf8")),
 	),
 );
-const steps: Step[] = [];
+const sent: Array<Pick<Step, "phase" | "label" | "signature">> = [];
 let phase: Step["phase"] = "setup";
-const pending: Promise<void>[] = [];
 
-async function record(label: string, signature: Signature) {
+async function measure(
+	{ phase, label, signature }: Pick<Step, "phase" | "label" | "signature">,
+): Promise<Step> {
 	for (let attempt = 0; attempt < 30; attempt++) {
 		const transaction = await rpc.getTransaction(signature, {
 			commitment: "confirmed",
@@ -98,14 +132,13 @@ async function record(label: string, signature: Signature) {
 			const before = transaction.meta.preBalances[index] ?? 0n;
 			const after = transaction.meta.postBalances[index] ?? 0n;
 
-			steps.push({
+			return {
 				phase,
 				label,
 				signature,
 				fee: transaction.meta.fee,
 				payerDelta: after - before,
-			});
-			return;
+			};
 		}
 
 		await new Promise((done) => setTimeout(done, 1_000));
@@ -121,7 +154,7 @@ const client = new LootboxClient(rpcUrl, payer, (message, signature) => {
 	}
 
 	console.log(`✓ ${message}  ${signature}`);
-	pending.push(record(message, signature as Signature));
+	sent.push({ phase, label: message, signature: signature as Signature });
 });
 const oracle = createSwitchboardOracle({ rpcUrl, cluster: "devnet" });
 const balance = async () =>
@@ -130,46 +163,57 @@ const balance = async () =>
 
 console.log(`payer ${payer.address} · ${await balance()} lamports`);
 
-// Setup: a test SPL prize and a two-bundle treasury.
-const prizeMint = await generateKeyPairSigner();
-const templateMint = await generateKeyPairSigner();
-const templateId = BigInt(Date.now());
-const tokenPrize = await client.createFixedSupplyMint(prizeMint, 1_000n, 0);
-const slot = await rpc.getSlot({ commitment: "confirmed" }).send();
-const chainTime = await rpc.getBlockTime(slot).send();
-const plan = createTemplatePlan({
-	name: "Switchboard devnet e2e",
-	uri: "https://example.com/lootbox-e2e.json",
-	opensAt: chainTime + revealDelay,
-	bundles: [
-		{
-			label: "SOL",
-			quantity: 1n,
-			assets: [{ kind: "sol", lamports: 1_000_000n }],
-		},
-		{
-			label: "Token",
-			quantity: 1n,
-			assets: [{
-				kind: "token",
-				mint: tokenPrize,
-				amount: 500n,
-				tokenProgram: CLASSIC_TOKEN_PROGRAM,
-				decimals: 0,
-			}],
-		},
-	],
-});
-let template = await client.createTemplate(
-	plan,
-	templateId,
-	templateMint,
-	SWITCHBOARD_PROGRAM.devnet,
-	oracle.queue,
-);
+/** Create a small SOL + SPL treasury and lock it with a near reveal date. */
+async function createLockedTemplate() {
+	const prizeMint = await generateKeyPairSigner();
+	const templateMint = await generateKeyPairSigner();
+	const templateId = BigInt(Date.now());
+	const tokenPrize = await client.createFixedSupplyMint(prizeMint, 1_000n, 0);
+	const slot = await rpc.getSlot({ commitment: "confirmed" }).send();
+	const chainTime = await rpc.getBlockTime(slot).send();
+	const plan = createTemplatePlan({
+		name: "Switchboard devnet e2e",
+		uri: "https://example.com/lootbox-e2e.json",
+		opensAt: chainTime + revealDelay,
+		bundles: [
+			{
+				label: "SOL",
+				quantity: 1n,
+				assets: [{ kind: "sol", lamports: 1_000_000n }],
+			},
+			{
+				label: "Token",
+				quantity: 1n,
+				assets: [{
+					kind: "token",
+					mint: tokenPrize,
+					amount: 500n,
+					tokenProgram: CLASSIC_TOKEN_PROGRAM,
+					decimals: 0,
+				}],
+			},
+		],
+	});
+	let template = await client.createTemplate(
+		plan,
+		templateId,
+		templateMint,
+		SWITCHBOARD_PROGRAM.devnet,
+		oracle.queue,
+	);
 
-template = await client.lockTreasury(template);
-console.log(`template ${template.address} locked; reveal at ${plan.opensAt}`);
+	template = await client.lockTreasury(template);
+	console.log(`template ${template.address} locked; reveal at ${plan.opensAt}`);
+
+	return template;
+}
+
+// LOOTBOX_E2E_TEMPLATE resumes with an already locked template whose boxes
+// the payer holds, so an interrupted run does not repeat the setup.
+const resumeTemplate = process.env.LOOTBOX_E2E_TEMPLATE;
+let template = resumeTemplate
+	? await client.template(address(resumeTemplate))
+	: await createLockedTemplate();
 
 // Openings are only accepted after the reveal date.
 for (;;) {
@@ -177,17 +221,26 @@ for (;;) {
 		await rpc.getSlot({ commitment: "confirmed" }).send(),
 	).send();
 
-	if (now >= plan.opensAt) break;
+	if (now >= template.data.opensAt) break;
 
-	console.log(`… waiting ${plan.opensAt - now}s for the reveal date`);
+	console.log(
+		`… waiting ${template.data.opensAt - now}s for the reveal date`,
+	);
 	await new Promise((done) => setTimeout(done, 10_000));
 }
 
-await Promise.all(pending);
 phase = "open";
 
 const openStart = await balance();
-const opening = await client.requestOpen(template, oracle.selectAccounts);
+// LOOTBOX_E2E_OPENING resumes a pending opening instead of burning a box.
+const resumeOpening = process.env.LOOTBOX_E2E_OPENING;
+const opening = resumeOpening
+	? await fetchTemplateOpeningState(client.rpc, address(resumeOpening), {
+		commitment: "confirmed",
+	})
+	: await client.requestOpen(template, oracle.selectAccounts);
+
+console.log(`opening ${opening.address}`);
 const randomness: Address = opening.data.randomness;
 const accounts = await oracle.accountsFor(randomness);
 
@@ -235,11 +288,15 @@ try {
 	console.error("close failed:", error);
 }
 
-await Promise.all(pending);
-
 const afterClose = await lamportsOf();
 
 const openEnd = await balance();
+const steps: Step[] = [];
+
+// Measured sequentially after the run to stay inside public RPC limits.
+for (const transaction of sent) {
+	steps.push(await measure(transaction));
+}
 const format = (lamports: bigint) =>
 	`${lamports < 0n ? "-" : ""}${(lamports < 0n ? -lamports : lamports)}`
 		.padStart(

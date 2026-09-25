@@ -155,7 +155,7 @@ export type SwitchboardRetry = Readonly<{
 	maxDelayMs: number;
 }>;
 
-export type FetchProofOptions = Readonly<{
+export type SwitchboardRequestOptions = Readonly<{
 	retry?: SwitchboardRetry;
 	signal?: AbortSignal;
 }>;
@@ -170,15 +170,19 @@ export type SwitchboardOracle = Readonly<{
 	 */
 	selectAccounts(binding: RandomnessBinding): Promise<OracleAccounts>;
 	/** Accounts for the oracle a committed randomness account is bound to,
-	 * for `fulfill`, `settle`, and `closeTemplateOpening`.
+	 * for `fulfill`, `settle`, and `closeTemplateOpening`. Retries while
+	 * the commit is not yet visible at `confirmed` commitment.
 	 */
-	accountsFor(randomness: Address): Promise<OracleAccounts>;
+	accountsFor(
+		randomness: Address,
+		options?: SwitchboardRequestOptions,
+	): Promise<OracleAccounts>;
 	/** Ask the bound oracle's gateway for the reveal proof, retrying with
 	 * exponential backoff while the commit or seed slot is not yet visible.
 	 */
 	fetchProof(
 		randomness: Address,
-		options?: FetchProofOptions,
+		options?: SwitchboardRequestOptions,
 	): Promise<OracleProof>;
 }>;
 
@@ -732,6 +736,40 @@ export function createSwitchboardOracle(
 		return requestReveal(await boundGateway(state), randomness, state, signal);
 	}
 
+	async function retrying<T>(
+		failure: string,
+		requestOptions: SwitchboardRequestOptions,
+		operation: () => Promise<T>,
+	): Promise<T> {
+		const retry = requestOptions.retry ?? DEFAULT_PROOF_RETRY;
+		let delay = retry.initialDelayMs;
+		let lastError: SwitchboardError | undefined;
+
+		for (let attempt = 1; attempt <= retry.attempts; attempt++) {
+			try {
+				return await operation();
+			} catch (error) {
+				if (!(error instanceof SwitchboardError) || !error.retryable) {
+					throw error;
+				}
+
+				lastError = error;
+			}
+
+			if (attempt < retry.attempts) {
+				await sleep(delay, requestOptions.signal);
+				delay = Math.min(delay * 2, retry.maxDelayMs);
+			}
+		}
+
+		throw new SwitchboardError(
+			"timeout",
+			`${failure} after ${retry.attempts} attempts: ${
+				lastError?.message ?? "unknown failure"
+			}`,
+		);
+	}
+
 	return {
 		programId,
 		queue,
@@ -780,45 +818,29 @@ export function createSwitchboardOracle(
 			);
 		},
 
-		async accountsFor(randomness) {
-			const state = await committedRandomness(randomness);
+		accountsFor(randomness, requestOptions = {}) {
+			return retrying(
+				`no committed randomness at ${randomness}`,
+				requestOptions,
+				async () => {
+					const state = await committedRandomness(randomness);
 
-			return switchboardOracleAccounts(
-				programId,
-				state.queue,
-				state.oracle,
-				randomness,
-				state.lutSlot,
+					return switchboardOracleAccounts(
+						programId,
+						state.queue,
+						state.oracle,
+						randomness,
+						state.lutSlot,
+					);
+				},
 			);
 		},
 
-		async fetchProof(randomness, proofOptions = {}) {
-			const retry = proofOptions.retry ?? DEFAULT_PROOF_RETRY;
-			let delay = retry.initialDelayMs;
-			let lastError: SwitchboardError | undefined;
-
-			for (let attempt = 1; attempt <= retry.attempts; attempt++) {
-				try {
-					return await revealOnce(randomness, proofOptions.signal);
-				} catch (error) {
-					if (!(error instanceof SwitchboardError) || !error.retryable) {
-						throw error;
-					}
-
-					lastError = error;
-				}
-
-				if (attempt < retry.attempts) {
-					await sleep(delay, proofOptions.signal);
-					delay = Math.min(delay * 2, retry.maxDelayMs);
-				}
-			}
-
-			throw new SwitchboardError(
-				"timeout",
-				`no reveal proof for ${randomness} after ${retry.attempts} attempts: ${
-					lastError?.message ?? "unknown failure"
-				}`,
+		fetchProof(randomness, requestOptions = {}) {
+			return retrying(
+				`no reveal proof for ${randomness}`,
+				requestOptions,
+				() => revealOnce(randomness, requestOptions.signal),
 			);
 		},
 	};

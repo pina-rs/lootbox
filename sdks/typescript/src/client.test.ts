@@ -30,7 +30,7 @@ import {
 	validateCompressedNftIdentity,
 } from "./client.js";
 
-const payer = address("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
+const payer = address("LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E");
 
 function bubblegumMetadata(
 	input: Readonly<{
@@ -178,7 +178,7 @@ describe("chain prize decoding", () => {
 	});
 
 	it("uses the program's zero-based SOL/token/NFT tags", () => {
-		const mint = address("Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op");
+		const mint = address("LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E");
 		const mints = new Uint8Array(128);
 		mints.set(getAddressEncoder().encode(mint), 32);
 		mints.set(getAddressEncoder().encode(mint), 64);
@@ -226,7 +226,7 @@ describe("chain prize decoding", () => {
 	});
 	it("requires the bound winner to sign an appended quote route", () => {
 		const program = address(
-			"Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op",
+			"LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E",
 		);
 		const winner = createNoopSigner(program);
 		const base = {
@@ -357,7 +357,7 @@ describe("chain prize decoding", () => {
 	});
 	it("rejects a changed asset when append funding resumes", () => {
 		const storedMint = address(
-			"Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op",
+			"LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E",
 		);
 		const changedMint = address("11111111111111111111111111111111");
 		const mints = new Uint8Array(128);

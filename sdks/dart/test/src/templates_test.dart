@@ -6,10 +6,10 @@ import 'package:solana_kit_addresses/solana_kit_addresses.dart';
 import 'package:test/test.dart';
 
 void main() {
-  const nft = Address('Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op');
+  const nft = Address('LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E');
   const tree = Address('7RmhTYBS7Uv9PSNmJGX6tM8BjSn7HVbGdVgV6EtCNKLm');
   const poolAssets = [
-    Address('Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op'),
+    Address('LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E'),
     Address('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'),
     Address('DezXAZ8z7PnrnRJjz3wXBoRgixCa6XKj7D3WpqkDmzPK'),
   ];

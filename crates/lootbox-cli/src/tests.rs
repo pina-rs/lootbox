@@ -10,7 +10,7 @@ use crate::Submit;
 use crate::SubmitOutcome;
 use crate::error::CliError;
 
-const PROGRAM: &str = "Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op";
+const PROGRAM: &str = "LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E";
 const PK1: &str = "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM";
 const PK2: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 const PK3: &str = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";

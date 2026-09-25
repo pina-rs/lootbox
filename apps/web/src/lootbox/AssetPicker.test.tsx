@@ -7,7 +7,7 @@ import type { DraftAsset } from "./playground.js";
 const owner = "9xQeWvG816bUx9EPfEZ1Wq6uH3jZpH9x6J4f5P2m3N7a";
 const tree = "7RmhTYBS7Uv9PSNmJGX6tM8BjSn7HVbGdVgV6EtCNKLm";
 const otherTree = "So11111111111111111111111111111111111111112";
-const alpha = "Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op";
+const alpha = "LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E";
 const beta = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 const mutable = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6XKj7D3WpqkDmzPK";
 const delegated = "4Nd1mYUc7QbTEnYUNQhTxYRYgP5gN9Z8RzBf8nGvXw4X";

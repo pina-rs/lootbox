@@ -13,7 +13,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const programId = "Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op";
+const programId = "LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E";
 const oracleProgram = "Aio4gaXjXzJNVLtzwtNVmSqGKpANtXhybbkhtAC94ji2";
 const bubblegumProgram = "BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY";
 const compressionProgram = "cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK";

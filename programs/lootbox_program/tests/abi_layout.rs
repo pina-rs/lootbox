@@ -6,15 +6,15 @@
 //! check` fails when this file no longer matches the manifest. A layout
 //! change that forgets an offset fails `cargo test` in the same change.
 
-// manifest-sha256: f100d8f3c6edf0101208cac1af09cddc89dca729615999671f86136b016dc888
-// program-id: Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op
+// manifest-sha256: 1a13661b0981001716b13d056ceea0c07fbb1e057d990a2743283cd484302487
+// program-id: LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E
 // version_type: u8
 
 #![allow(clippy::identity_op, clippy::eq_op)]
 #![allow(clippy::unreadable_literal)]
 
 /// Program id recorded in the manifest.
-pub const PROGRAM_ID: &str = "Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op";
+pub const PROGRAM_ID: &str = "LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E";
 
 /// ABI layout for the `LootboxState` account.
 pub mod account_1_01 {

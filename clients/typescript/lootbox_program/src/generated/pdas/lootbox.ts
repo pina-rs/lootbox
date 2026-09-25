@@ -14,6 +14,6 @@ id: number | bigint;
 };
 
 export async function findLootboxPda(seeds: LootboxSeeds, config: { programAddress?: Address | undefined } = {}): Promise<ProgramDerivedAddress> {
-  const { programAddress = 'Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op' as Address<'Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op'> } = config;
+  const { programAddress = 'LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E' as Address<'LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E'> } = config;
   return await getProgramDerivedAddress({ programAddress, seeds: [getUtf8Encoder().encode("lootbox"), getAddressEncoder().encode(seeds.authority), getU64Encoder().encode(seeds.id)]});
 }

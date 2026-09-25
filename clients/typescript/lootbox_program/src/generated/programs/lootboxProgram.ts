@@ -14,7 +14,7 @@ import { getMigrateInstruction, type MigrateInput } from "../instructions";
 
 import { findBundlePda, findLootboxPda, findOpeningPda, findPrizePoolItemPda, findPrizePoolPda, findResultReceiptPda, findTemplateOpeningPda, findTemplatePda, findVaultPda } from '../pdas';
 
-export const LOOTBOX_PROGRAM_PROGRAM_ADDRESS = 'Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op' as Address<'Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op'>;
+export const LOOTBOX_PROGRAM_PROGRAM_ADDRESS = 'LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E' as Address<'LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E'>;
 
 export enum LootboxProgramAccount { LootboxState, VaultState, OpeningState, TemplateState, BundleState, TemplateOpeningState, ResultReceiptState, PrizePoolState, PrizePoolItemState }
 
@@ -92,7 +92,7 @@ if (containsBytes(data, getU8Encoder().encode(50), 0) && containsBytes(data, get
     throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION, { instructionData: data, programName: "lootboxProgram" });
 }
 
-export type ParsedLootboxProgramInstruction<TProgram extends string = 'Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op'> =
+export type ParsedLootboxProgramInstruction<TProgram extends string = 'LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E'> =
 | { instructionType: LootboxProgramInstruction.CreateLootbox } & ParsedCreateLootboxInstruction<TProgram>
 | { instructionType: LootboxProgramInstruction.AddOutcome } & ParsedAddOutcomeInstruction<TProgram>
 | { instructionType: LootboxProgramInstruction.Deposit } & ParsedDepositInstruction<TProgram>

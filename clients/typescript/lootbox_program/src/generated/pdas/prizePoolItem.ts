@@ -14,6 +14,6 @@ poolIndex: number;
 };
 
 export async function findPrizePoolItemPda(seeds: PrizePoolItemSeeds, config: { programAddress?: Address | undefined } = {}): Promise<ProgramDerivedAddress> {
-  const { programAddress = 'Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op' as Address<'Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op'> } = config;
+  const { programAddress = 'LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E' as Address<'LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E'> } = config;
   return await getProgramDerivedAddress({ programAddress, seeds: [getUtf8Encoder().encode("prize-pool-item"), getAddressEncoder().encode(seeds.pool), getU32Encoder().encode(seeds.poolIndex)]});
 }

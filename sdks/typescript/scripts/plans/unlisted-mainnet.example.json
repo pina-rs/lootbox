@@ -1,0 +1,105 @@
+{
+	"$comment": "Token amounts: GBP value × 1.3244 USD/GBP ÷ PreStocks tokenPrice (https://prestocks.com/api/prestocks, 2026-09-25T16:39:41.504Z), truncated to 6 decimals, in raw units (9 decimals). Refresh before launch. Set revealAt and supplyRecipient.",
+	"name": "Unlisted Box",
+	"symbol": "UNLSTD",
+	"uri": "https://pina-rs.github.io/lootbox/metadata/box.json",
+	"revealAt": "REPLACE_WITH_ISO_8601_REVEAL_TIME",
+	"supplyRecipient": "REPLACE_WITH_SUPPLY_RECIPIENT_ADDRESS",
+	"bundles": [
+		{
+			"label": "£50 of SpaceX",
+			"quantity": 1,
+			"assets": [
+				{
+					"kind": "token",
+					"mint": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
+					"amount": "559223000"
+				}
+			]
+		},
+		{
+			"label": "£50 of OpenAI",
+			"quantity": 1,
+			"assets": [
+				{
+					"kind": "token",
+					"mint": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+					"amount": "50569000"
+				}
+			]
+		},
+		{
+			"label": "£20 of Anthropic",
+			"quantity": 1,
+			"assets": [
+				{
+					"kind": "token",
+					"mint": "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw",
+					"amount": "25157000"
+				}
+			]
+		},
+		{
+			"label": "£20 of Kalshi",
+			"quantity": 1,
+			"assets": [
+				{
+					"kind": "token",
+					"mint": "PreLWGkkeqG1s4HEfFZSy9moCrJ7btsHuUtfcCeoRua",
+					"amount": "30024000"
+				}
+			]
+		},
+		{
+			"label": "£20 of Neuralink",
+			"quantity": 1,
+			"assets": [
+				{
+					"kind": "token",
+					"mint": "PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S",
+					"amount": "59313000"
+				}
+			]
+		},
+		{
+			"label": "£20 of Anduril",
+			"quantity": 1,
+			"assets": [
+				{
+					"kind": "token",
+					"mint": "PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB",
+					"amount": "162349000"
+				}
+			]
+		},
+		{
+			"label": "£20 of Figure AI",
+			"quantity": 1,
+			"assets": [
+				{
+					"kind": "token",
+					"mint": "PreZad18qfPtbxNpMtMuAuX2zVpvkEU8DnJx56faCWd",
+					"amount": "151119000"
+				}
+			]
+		},
+		{
+			"label": "Empty box",
+			"quantity": 13,
+			"assets": [
+				{
+					"kind": "mintBadge",
+					"create": {
+						"name": "Empty Box",
+						"symbol": "EMPTY",
+						"uri": "https://pina-rs.github.io/lootbox/metadata/empty-box.json"
+					}
+				},
+				{
+					"kind": "sol",
+					"lamports": "1000000"
+				}
+			]
+		}
+	]
+}

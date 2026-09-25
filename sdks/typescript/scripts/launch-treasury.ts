@@ -13,8 +13,8 @@
  *
  * The state file (default: the plan path with `.launch.json`) pins the
  * template id and the box mint key so every run targets the same treasury.
- * It holds a throwaway mint key whose authority moves to the template on
- * creation; keep it out of version control anyway.
+ * It holds throwaway mint keys whose authority moves to the treasury on
+ * creation; `*.launch.json` is gitignored.
  *
  * Plan file:
  *
@@ -26,12 +26,19 @@
  *     "supplyRecipient": "<address>",
  *     "bundles": [
  *       { "label": "PreStock X", "quantity": 3,
- *         "assets": [{ "kind": "token", "mint": "<mint>", "amount": "1000000" }] }
+ *         "assets": [{ "kind": "token", "mint": "<mint>", "amount": "1000000" }] },
+ *       { "label": "Empty box", "quantity": 13, "assets": [
+ *         { "kind": "mintBadge", "create": { "name": "Empty Box", "symbol": "EMPTY", "uri": "<uri>" } },
+ *         { "kind": "sol", "lamports": "1000000" } ] }
  *     ]
  *   }
  *
- * `amount` is in raw base units per win. Issuer transfer fees are grossed up
- * on-chain at funding; the summary shows the gross the creator must hold.
+ * Assets: `token` (`amount` in raw base units per win; issuer transfer fees
+ * are grossed up on-chain at funding, and the summary shows the gross the
+ * creator must hold), `sol` (`lamports` per win), and `mintBadge` (one badge
+ * minted per claim), either an existing `mint` or `create`, which makes a
+ * zero-decimal Token-2022 mint whose on-mint metadata is immutable. See
+ * `plans/unlisted-mainnet.example.json`.
  */
 import {
 	fetchMaybeToken,
@@ -45,6 +52,7 @@ import {
 	address,
 	createKeyPairSignerFromPrivateKeyBytes,
 	createSolanaRpc,
+	type KeyPairSigner,
 } from "@solana/kit";
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -56,6 +64,7 @@ import {
 	getResultReceiptStateEncoder,
 	grossForNetTransfer,
 	LootboxClient,
+	type PrizeAsset,
 	type PrizeBundleInput,
 	requiredServiceBudget,
 	SWITCHBOARD_PROGRAM,
@@ -69,13 +78,16 @@ import {
 	verifiedRpcUrl,
 } from "./cli.js";
 
-type TokenAssetInput = Readonly<
-	{ kind: "token"; mint: string; amount: string }
->;
+type BadgeMetadata = Readonly<{ name: string; symbol: string; uri: string }>;
+type AssetInput =
+	| Readonly<{ kind: "token"; mint: string; amount: string }>
+	| Readonly<{ kind: "sol"; lamports: string }>
+	| Readonly<{ kind: "mintBadge"; mint: string }>
+	| Readonly<{ kind: "mintBadge"; create: BadgeMetadata }>;
 type BundleInput = Readonly<{
 	label: string;
 	quantity: number | string;
-	assets: readonly TokenAssetInput[];
+	assets: readonly AssetInput[];
 }>;
 type PlanFile = Readonly<{
 	name: string;
@@ -87,7 +99,12 @@ type PlanFile = Readonly<{
 	resultReceiptsEnabled?: boolean;
 	bundles: readonly BundleInput[];
 }>;
-type LaunchState = Readonly<{ templateId: string; boxMintSeed: number[] }>;
+type LaunchState = Readonly<{
+	templateId: string;
+	boxMintSeed: number[];
+	/** Badge mint keys by `bundle:asset` index, for `mintBadge.create`. */
+	badgeMintSeeds: Readonly<Record<string, number[]>>;
+}>;
 type MintInfo = Readonly<{
 	address: Address;
 	program: Address;
@@ -110,7 +127,7 @@ function readPlan(path: string): PlanFile {
 
 	for (const bundle of plan.bundles) {
 		for (const asset of bundle.assets) {
-			if (asset.kind !== "token") {
+			if (!["token", "sol", "mintBadge"].includes(asset.kind)) {
 				throw new Error(`unsupported asset kind ${String(asset.kind)}`);
 			}
 		}
@@ -131,17 +148,41 @@ function revealTimestamp(value: string | number) {
 	return BigInt(seconds);
 }
 
-function readOrCreateState(path: string): LaunchState {
-	if (existsSync(path)) return JSON.parse(readFileSync(path, "utf8"));
+/** Load the launch state, adding a key for every badge the plan creates.
+ * Keys are generated once and persisted before any transaction, so a
+ * resumed launch reuses the same mints.
+ */
+function readOrCreateState(path: string, plan: PlanFile): LaunchState {
+	const saved: Partial<LaunchState> = existsSync(path)
+		? JSON.parse(readFileSync(path, "utf8"))
+		: {};
+	const badgeMintSeeds = { ...saved.badgeMintSeeds };
+
+	for (const [bundleIndex, bundle] of plan.bundles.entries()) {
+		for (const [assetIndex, asset] of bundle.assets.entries()) {
+			const key = `${bundleIndex}:${assetIndex}`;
+
+			if ("create" in asset && !badgeMintSeeds[key]) {
+				badgeMintSeeds[key] = Array.from(randomBytes(32));
+			}
+		}
+	}
 
 	const state: LaunchState = {
-		templateId: BigInt(Date.now()).toString(),
-		boxMintSeed: Array.from(randomBytes(32)),
+		templateId: saved.templateId ?? BigInt(Date.now()).toString(),
+		boxMintSeed: saved.boxMintSeed ?? Array.from(randomBytes(32)),
+		badgeMintSeeds,
 	};
 
 	writeFileSync(path, `${JSON.stringify(state)}\n`, { mode: 0o600 });
 
 	return state;
+}
+
+function signerFromSeed(seed: readonly number[] | undefined) {
+	if (!seed) throw new Error("launch state is missing a mint key");
+
+	return createKeyPairSignerFromPrivateKeyBytes(Uint8Array.from(seed));
 }
 
 installPatientFetch();
@@ -156,7 +197,7 @@ const payer = await loadKeypair(args.required("keypair"));
 const file = readPlan(planPath);
 const statePath = args.optional("state") ??
 	planPath.replace(/\.json$/, "") + ".launch.json";
-const state = readOrCreateState(statePath);
+const state = readOrCreateState(statePath, file);
 const boxMint = await createKeyPairSignerFromPrivateKeyBytes(
 	Uint8Array.from(state.boxMintSeed),
 );
@@ -168,6 +209,8 @@ const mints = new Map<Address, MintInfo>();
 
 for (const bundle of file.bundles) {
 	for (const asset of bundle.assets) {
+		if (asset.kind !== "token") continue;
+
 		const key = address(asset.mint);
 
 		if (mints.has(key)) continue;
@@ -204,23 +247,74 @@ for (const bundle of file.bundles) {
 	}
 }
 
-const bundles: PrizeBundleInput[] = file.bundles.map((bundle) => ({
-	label: bundle.label,
-	quantity: BigInt(bundle.quantity),
-	assets: bundle.assets.map((asset) => {
-		const mint = mints.get(address(asset.mint));
+const badgesToCreate: Array<
+	Readonly<
+		{ bundleIndex: number; signer: KeyPairSigner; metadata: BadgeMetadata }
+	>
+> = [];
 
-		if (!mint) throw new Error(`mint ${asset.mint} was not loaded`);
+async function prizeAsset(
+	asset: AssetInput,
+	bundleIndex: number,
+	assetIndex: number,
+): Promise<PrizeAsset> {
+	if (asset.kind === "sol") {
+		return { kind: "sol", lamports: BigInt(asset.lamports) };
+	}
+
+	if (asset.kind === "mintBadge" && "create" in asset) {
+		const signer = await signerFromSeed(
+			state.badgeMintSeeds[`${bundleIndex}:${assetIndex}`],
+		);
+
+		badgesToCreate.push({ bundleIndex, signer, metadata: asset.create });
 
 		return {
-			kind: "token",
-			mint: mint.address,
-			amount: BigInt(asset.amount),
-			tokenProgram: mint.program,
-			decimals: mint.decimals,
+			kind: "mintBadge",
+			mint: signer.address,
+			tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
+			name: asset.create.name,
 		};
-	}),
-}));
+	}
+
+	if (asset.kind === "mintBadge") {
+		const mint = await fetchMint(rpc, address(asset.mint));
+
+		return {
+			kind: "mintBadge",
+			mint: mint.address,
+			tokenProgram: mint.programAddress,
+		};
+	}
+
+	const mint = mints.get(address(asset.mint));
+
+	if (!mint) throw new Error(`mint ${asset.mint} was not loaded`);
+
+	return {
+		kind: "token",
+		mint: mint.address,
+		amount: BigInt(asset.amount),
+		tokenProgram: mint.program,
+		decimals: mint.decimals,
+	};
+}
+
+const bundles: PrizeBundleInput[] = [];
+
+for (const [bundleIndex, bundle] of file.bundles.entries()) {
+	const assets: PrizeAsset[] = [];
+
+	for (const [assetIndex, asset] of bundle.assets.entries()) {
+		assets.push(await prizeAsset(asset, bundleIndex, assetIndex));
+	}
+
+	bundles.push({
+		label: bundle.label,
+		quantity: BigInt(bundle.quantity),
+		assets,
+	});
+}
 const plan = createTemplatePlan({
 	name: file.name,
 	uri: file.uri,
@@ -235,6 +329,7 @@ const [template] = await client.templateAddress(templateId);
 // Dry-run summary.
 const gross = new Map<Address, bigint>();
 const net = new Map<Address, bigint>();
+let solPrizes = 0n;
 
 console.log(`cluster          ${cluster} (${rpcUrl})`);
 console.log(`creator          ${payer.address}`);
@@ -260,6 +355,25 @@ for (const [index, bundle] of plan.bundles.entries()) {
 	);
 
 	for (const asset of bundle.assets) {
+		if (asset.kind === "sol") {
+			solPrizes += asset.lamports * bundle.quantity;
+			console.log(
+				`       ${asset.lamports} lamports per win; escrow ${
+					asset.lamports * bundle.quantity
+				}`,
+			);
+			continue;
+		}
+
+		if (asset.kind === "mintBadge") {
+			console.log(
+				`       1 ${
+					asset.name ?? "badge"
+				} per win, minted on claim from ${asset.mint}`,
+			);
+			continue;
+		}
+
 		if (asset.kind !== "token") continue;
 
 		const mint = mints.get(asset.mint);
@@ -311,16 +425,26 @@ const rent = async (bytes: number) =>
 	rpc.getMinimumBalanceForRentExemption(BigInt(bytes)).send();
 const escrowRent = await Promise.all(
 	plan.bundles.flatMap((bundle) =>
-		bundle.assets.map((asset) =>
-			asset.kind === "token" && asset.tokenProgram !== CLASSIC_TOKEN_PROGRAM
-				? rent(getTokenSize([
+		bundle.assets.flatMap((asset) =>
+			asset.kind !== "token"
+				? []
+				: asset.tokenProgram !== CLASSIC_TOKEN_PROGRAM
+				? [rent(getTokenSize([
 					{ __kind: "TransferFeeAmount", withheldAmount: 0n },
 					{ __kind: "ImmutableOwner" },
-				]))
-				: rent(165)
+				]))]
+				: [rent(165)]
 		)
 	),
 );
+const badgeMintRent = (await Promise.all(
+	badgesToCreate.map(({ metadata }) =>
+		rent(
+			322 + metadata.name.length + metadata.symbol.length +
+				metadata.uri.length,
+		)
+	),
+)).reduce((sum, value) => sum + value, 0n);
 // 548-byte header plus one u64 of remaining inventory per bundle.
 const templateRent = await rent(548 + 8 * plan.bundles.length);
 const bundleRent = (await rent(getBundleStateEncoder().fixedSize)) *
@@ -339,7 +463,8 @@ const serviceBudget = requiredServiceBudget(
 );
 const recipientAtaRent = await rent(170);
 const fees = 5_000n * BigInt(8 + plan.bundles.length * 3);
-const solTotal = templateRent + bundleRent + boxMintRent +
+const solTotal = templateRent + bundleRent + boxMintRent + badgeMintRent +
+	solPrizes +
 	escrowRent.reduce((sum, value) => sum + value, 0n) + serviceBudget +
 	recipientAtaRent + fees;
 const { value: solBalance } = await rpc.getBalance(payer.address).send();
@@ -348,6 +473,8 @@ console.log("\nSOL (lamports, ≈ upper bound)");
 console.log(`  template state        ${templateRent}`);
 console.log(`  bundle states         ${bundleRent}`);
 console.log(`  box mint + metadata   ${boxMintRent}`);
+console.log(`  badge mints           ${badgeMintRent}`);
+console.log(`  SOL prizes            ${solPrizes}`);
 console.log(
 	`  prize escrows         ${
 		escrowRent.reduce((sum, value) => sum + value, 0n)
@@ -383,6 +510,12 @@ const now = BigInt(Math.floor(Date.now() / 1000));
 
 if (plan.opensAt <= now + 60n) {
 	throw new Error("revealAt must be at least a minute in the future to lock");
+}
+
+for (const { bundleIndex, signer, metadata } of badgesToCreate) {
+	const [bundle] = await client.bundleAddress(template, bundleIndex);
+
+	await client.createMetadataBadgeMint(signer, metadata, bundle);
 }
 
 const created = await client.createTemplate(

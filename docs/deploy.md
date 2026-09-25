@@ -94,7 +94,7 @@ The lookup table is the one cost that does not come back. `randomness_close` dea
 
 ## Launching a token treasury
 
-`sdks/typescript/scripts/launch-treasury.ts` launches a token-prize treasury from a JSON plan (name, symbol, uri, `revealAt`, `supplyRecipient`, and bundles of raw-unit token prizes). It prints a dry run first: bundles, per-mint escrow and issuer-fee gross-up from the mint's current `TransferFeeConfig`, creator balances, estimated SOL, and box supply. It sends nothing without `--execute`:
+`sdks/typescript/scripts/launch-treasury.ts` launches a treasury from a JSON plan (name, symbol, uri, `revealAt`, `supplyRecipient`, and bundles of `token`, `sol`, and `mintBadge` prizes; a badge can be created with immutable on-mint metadata). `sdks/typescript/scripts/plans/unlisted-mainnet.example.json` is the launch series: seven PreStocks prizes and a 13-copy empty box that pays an "Empty Box" badge plus 0.001 SOL. It prints a dry run first: bundles, per-mint escrow and issuer-fee gross-up from the mint's current `TransferFeeConfig`, creator balances, estimated SOL, and box supply. It sends nothing without `--execute`:
 
 ```bash
 pnpm --dir sdks/typescript launch:treasury -- --plan treasury.json --cluster devnet --keypair ~/devnet.json

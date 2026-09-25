@@ -33,3 +33,6 @@ apps/web/.impeccable/review/
 .env
 .env.*
 !.env.example
+
+# Launch state holds throwaway mint keys
+*.launch.json

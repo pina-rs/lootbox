@@ -193,6 +193,24 @@ const accounts = await oracle.accountsFor(randomness);
 
 console.log(`randomness ${randomness} bound to oracle ${accounts.oracle}`);
 
+const [resultReceipt] = await client.resultReceiptAddress(
+	opening.address,
+	opening.data.sequence,
+);
+const tracked: ReadonlyArray<readonly [string, Address]> = [
+	["opening receipt (lootbox)", opening.address],
+	["randomness (switchboard)", randomness],
+	["reward escrow wSOL ATA", await client.rewardEscrowAddress(randomness)],
+	["randomness lookup table", accounts.lut],
+	["result receipt (lootbox)", resultReceipt],
+];
+const lamportsOf = async () =>
+	(await rpc.getMultipleAccounts(tracked.map(([, key]) => key), {
+		commitment: "confirmed",
+		encoding: "base64",
+	}).send()).value.map((account) => account?.lamports ?? 0n);
+const afterOpen = await lamportsOf();
+
 const proofStarted = Date.now();
 const proof = await oracle.fetchProof(randomness);
 
@@ -208,8 +226,18 @@ const claimed = await fetchTemplateOpeningState(
 	{ commitment: "confirmed" },
 );
 
-await client.closeTemplateOpening(template, claimed, accounts);
+let closeError: unknown;
+
+try {
+	await client.closeTemplateOpening(template, claimed, accounts);
+} catch (error) {
+	closeError = error;
+	console.error("close failed:", error);
+}
+
 await Promise.all(pending);
+
+const afterClose = await lamportsOf();
 
 const openEnd = await balance();
 const format = (lamports: bigint) =>
@@ -254,3 +282,22 @@ console.log(
 		(Number(-openNet) / Number(LAMPORTS_PER_SOL)).toFixed(6)
 	} SOL spent net`,
 );
+
+console.log("\nAccount lamports (rent locked by one open)");
+console.log(
+	`${"account".padEnd(28)} ${"after open".padStart(12)} ${
+		"after close".padStart(12)
+	}  address`,
+);
+
+for (const [index, [label, key]] of tracked.entries()) {
+	console.log(
+		`${label.padEnd(28)} ${format(afterOpen[index] ?? 0n)} ${
+			format(afterClose[index] ?? 0n)
+		}  ${key}`,
+	);
+}
+
+if (closeError !== undefined) {
+	process.exitCode = 1;
+}

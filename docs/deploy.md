@@ -10,7 +10,7 @@ devenv shell deploy:mainnet
 Both scripts build with `build:program` and then run `solana program deploy` with an explicit `--url`, `--keypair`, `--program-id`, and `--upgrade-authority`. Before building they check that:
 
 - the RPC endpoint's genesis hash belongs to the requested cluster, so a devnet run can never reach mainnet and the reverse;
-- the program keypair's address equals the program's `declare_id!` (`Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op`), because every PDA and ownership check is compiled against that id.
+- the program keypair's address equals the `declare_id!` in `programs/lootbox_program/src/lib.rs`, because every PDA and ownership check is compiled against that id.
 
 `deploy:mainnet` also requires an interactive terminal and the exact phrase `deploy <program id> to mainnet` before it sends anything.
 
@@ -19,7 +19,7 @@ Both scripts build with `build:program` and then run `solana program deploy` wit
 | Variable                            | Purpose                                                                         |
 | ----------------------------------- | ------------------------------------------------------------------------------- |
 | `LOOTBOX_DEPLOY_KEYPAIR`            | Fee payer keypair file. It also funds the program rent.                         |
-| `LOOTBOX_PROGRAM_KEYPAIR`           | Program-id keypair file for `Bp6AJD3Q…`. Needed only for the first deploy.      |
+| `LOOTBOX_PROGRAM_KEYPAIR`           | Program-id keypair file matching `declare_id!`. Keep it outside the repository. |
 | `LOOTBOX_UPGRADE_AUTHORITY`         | Upgrade-authority keypair file. It signs the first deploy and every upgrade.    |
 | `LOOTBOX_DEVNET_RPC_URL`            | Optional devnet RPC (default `https://api.devnet.solana.com`).                  |
 | `LOOTBOX_MAINNET_RPC_URL`           | Required mainnet RPC. Use a dedicated provider; public RPC drops deploy writes. |

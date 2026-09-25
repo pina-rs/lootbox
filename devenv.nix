@@ -141,7 +141,11 @@ in
       payer="''${LOOTBOX_DEPLOY_KEYPAIR:?set LOOTBOX_DEPLOY_KEYPAIR to the fee-payer keypair file}"
       program_keypair="''${LOOTBOX_PROGRAM_KEYPAIR:?set LOOTBOX_PROGRAM_KEYPAIR to the program-id keypair file}"
       upgrade_authority="''${LOOTBOX_UPGRADE_AUTHORITY:?set LOOTBOX_UPGRADE_AUTHORITY to the upgrade-authority keypair file}"
-      declared_id="Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op"
+      declared_id="$(sed -nE 's/^declare_id!\("([^"]+)"\);$/\1/p' programs/lootbox_program/src/lib.rs)"
+      if [ -z "$declared_id" ]; then
+        echo "could not read declare_id! from programs/lootbox_program/src/lib.rs" >&2
+        exit 1
+      fi
 
       actual_genesis="$(curl -fsS -X POST -H 'Content-Type: application/json' \
         -d '{"jsonrpc":"2.0","id":1,"method":"getGenesisHash"}' "$url" \

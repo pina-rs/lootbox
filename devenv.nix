@@ -12,6 +12,7 @@ in
     cargo-audit
     cargo-deny
     cargo-llvm-cov
+    curl
     custom.agave
     kani
     custom.monochange
@@ -117,6 +118,85 @@ in
       mkdir -p target/deploy target/idl
       cp "$sbf_target/deploy/lootbox_program.so" target/deploy/
       cp "$sbf_target/idl/lootbox_program.json" target/idl/
+    '';
+    # Manual release step: never call from another script, hook, or CI job.
+    # See docs/deploy.md for the runbook and SOL requirements.
+    "deploy:program".exec = ''
+      set -euo pipefail
+      cluster="''${1:?usage: deploy:program <devnet|mainnet>}"
+      case "$cluster" in
+        devnet)
+          url="''${LOOTBOX_DEVNET_RPC_URL:-https://api.devnet.solana.com}"
+          genesis="EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG"
+          ;;
+        mainnet)
+          url="''${LOOTBOX_MAINNET_RPC_URL:?set LOOTBOX_MAINNET_RPC_URL}"
+          genesis="5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"
+          ;;
+        *)
+          echo "unknown cluster: $cluster" >&2
+          exit 2
+          ;;
+      esac
+      payer="''${LOOTBOX_DEPLOY_KEYPAIR:?set LOOTBOX_DEPLOY_KEYPAIR to the fee-payer keypair file}"
+      program_keypair="''${LOOTBOX_PROGRAM_KEYPAIR:?set LOOTBOX_PROGRAM_KEYPAIR to the program-id keypair file}"
+      upgrade_authority="''${LOOTBOX_UPGRADE_AUTHORITY:?set LOOTBOX_UPGRADE_AUTHORITY to the upgrade-authority keypair file}"
+      declared_id="Bp6AJD3QQ64kZVfc1YnhP7GN5UBYEHsDXpGUc1xzg4op"
+
+      actual_genesis="$(curl -fsS -X POST -H 'Content-Type: application/json' \
+        -d '{"jsonrpc":"2.0","id":1,"method":"getGenesisHash"}' "$url" \
+        | sed -E 's/.*"result":"([^"]+)".*/\1/')"
+      if [ "$actual_genesis" != "$genesis" ]; then
+        echo "RPC $url is not $cluster (genesis $actual_genesis)" >&2
+        exit 1
+      fi
+
+      program_id="$(solana-keygen pubkey "$program_keypair")"
+      if [ "$program_id" != "$declared_id" ]; then
+        echo "program keypair $program_id does not match declare_id $declared_id" >&2
+        exit 1
+      fi
+
+      build:program
+      so_path="$PWD/target/deploy/lootbox_program.so"
+      so_size="$(wc -c < "$so_path" | tr -d ' ')"
+      payer_address="$(solana-keygen pubkey "$payer")"
+      authority_address="$(solana-keygen pubkey "$upgrade_authority")"
+      echo "cluster            $cluster ($url)"
+      echo "program id         $program_id"
+      echo "fee payer          $payer_address ($(solana balance --url "$url" "$payer_address"))"
+      echo "upgrade authority  $authority_address"
+      echo "program size       $so_size bytes"
+      echo "programdata rent   $(solana rent --url "$url" "$((so_size + 45))" | head -1)"
+      echo "buffer (refunded)  $(solana rent --url "$url" "$((so_size + 37))" | head -1)"
+
+      if [ "$cluster" = "mainnet" ]; then
+        if [ ! -t 0 ]; then
+          echo "mainnet deploys require an interactive terminal" >&2
+          exit 1
+        fi
+        printf 'Type "deploy %s to mainnet" to continue: ' "$program_id"
+        read -r answer
+        if [ "$answer" != "deploy $program_id to mainnet" ]; then
+          echo "aborted" >&2
+          exit 1
+        fi
+      fi
+
+      solana program deploy "$so_path" \
+        --url "$url" \
+        --keypair "$payer" \
+        --program-id "$program_keypair" \
+        --upgrade-authority "$upgrade_authority" \
+        ''${LOOTBOX_DEPLOY_COMPUTE_UNIT_PRICE:+--with-compute-unit-price "$LOOTBOX_DEPLOY_COMPUTE_UNIT_PRICE"}
+    '';
+    "deploy:devnet".exec = ''
+      set -euo pipefail
+      deploy:program devnet
+    '';
+    "deploy:mainnet".exec = ''
+      set -euo pipefail
+      deploy:program mainnet
     '';
     "build:test-programs".exec = ''
       set -euo pipefail

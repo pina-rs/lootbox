@@ -104,6 +104,18 @@ export type OracleAccounts = Readonly<{
 	lut: Address;
 	stats: Address;
 }>;
+/** The fresh randomness account and the `recent_slot` its Switchboard
+ * lookup table is created at. Real Switchboard derives the LUT accounts from
+ * both, so they are only known once `requestOpen` has chosen them.
+ */
+export type RandomnessBinding = Readonly<{
+	randomness: Address;
+	recentSlot: bigint;
+}>;
+/** Resolves oracle accounts for one opening, e.g. `SwitchboardOracle.selectAccounts`. */
+export type OracleAccountsResolver = (
+	binding: RandomnessBinding,
+) => Promise<OracleAccounts>;
 export type OracleProof = Readonly<
 	{
 		signature: ReadonlyUint8Array;
@@ -2458,12 +2470,24 @@ export class LootboxClient {
 			}),
 		], "Transfer sealed gift");
 	}
+	/** Burn one box and commit Switchboard randomness. Pass fixed accounts
+	 * for an emulator, or a resolver (`SwitchboardOracle.selectAccounts`) for
+	 * a real cluster where the lookup-table accounts depend on the fresh
+	 * randomness address and slot.
+	 */
 	async requestOpen(
 		template: ChainTemplate,
-		oracle: OracleAccounts,
+		oracleAccounts: OracleAccounts | OracleAccountsResolver,
 		request: OpenRequest = {},
 	) {
 		const randomness = await generateKeyPairSigner();
+		// The lookup-table program requires `recent_slot` to be in the
+		// SlotHashes sysvar of the executing bank; a finalized slot always is.
+		const recentSlot = await this.rpc.getSlot({ commitment: "finalized" })
+			.send();
+		const oracle = typeof oracleAccounts === "function"
+			? await oracleAccounts({ randomness: randomness.address, recentSlot })
+			: oracleAccounts;
 		const consumerContext = request.consumerContext ?? new Uint8Array(32);
 		if (consumerContext.length !== 32) {
 			throw new RangeError("consumer context must contain exactly 32 bytes");
@@ -2497,7 +2521,7 @@ export class LootboxClient {
 			oracleLut: oracle.lut,
 			wrappedSolMint: WRAPPED_SOL,
 			addressLookupTableProgram: LOOKUP_TABLE,
-			recentSlot: await this.rpc.getSlot({ commitment }).send(),
+			recentSlot,
 			beneficiary: request.beneficiary ?? this.payer.address,
 			consumerProgram: request.consumerProgram ?? SYSTEM_PROGRAM,
 			consumerContext,

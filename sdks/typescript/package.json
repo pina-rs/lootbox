@@ -8,6 +8,7 @@
 	"description": "Solana transaction SDK for provably backed Pina reward packs",
 	"devDependencies": {
 		"@types/node": "^26.6.2",
+		"tsx": "4.23.13",
 		"typescript": "^7.0.2",
 		"vitest": "^5.0.2"
 	},
@@ -27,6 +28,7 @@
 	"scripts": {
 		"build": "tsc --noEmit",
 		"check": "tsc --noEmit",
+		"e2e:devnet": "tsx scripts/devnet-e2e.ts",
 		"test": "vitest run"
 	},
 	"type": "module",

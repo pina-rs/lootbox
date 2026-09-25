@@ -74,7 +74,34 @@ The gateway response is not trusted: `randomness_reveal` verifies the oracle sig
 LOOTBOX_DEVNET_KEYPAIR=/path/to/devnet-only.json pnpm --dir sdks/typescript e2e:devnet
 ```
 
-It refuses to run when the RPC genesis hash is not devnet's or the program is not deployed.
+It refuses to run when the RPC genesis hash is not devnet's or the program is not deployed. `LOOTBOX_E2E_TEMPLATE` opens a box from an existing locked treasury instead of creating one, and `LOOTBOX_E2E_OPENING` resumes a pending opening.
+
+### Measured cost of one open (devnet, 2026-09-25)
+
+Payer lamports for one open of a SOL prize, with no settlement bounty or result receipt, against program `LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E` and live Switchboard devnet:
+
+| Step                               | Fee    | Rent locked (−) / refunded (+) | Notes                                                                                   |
+| ---------------------------------- | ------ | ------------------------------ | --------------------------------------------------------------------------------------- |
+| Burn box and commit randomness     | 10,000 | −8,168,640                     | Two signatures (payer and randomness key); 150,487 of the default 200,000 compute units |
+| Verify randomness and record prize | 5,000  | 0                              | Switchboard reveal plus allocation in one transaction                                   |
+| Claim                              | 5,000  | 0                              | Prize delivered (+1,000,000 lamports here)                                              |
+| Close receipt                      | 5,000  | +6,746,240                     | Opening, randomness, and reward escrow closed                                           |
+| **Net, excluding the prize**       | 25,000 | −1,422,400                     | **1,447,400 lamports ≈ 0.00145 SOL per open**                                           |
+
+The rent locked by the commit is the opening receipt (2,169,160), the Switchboard randomness account (480 bytes, 3,088,640), its wrapped-SOL reward escrow (1,488,440), and a Switchboard address lookup table (1,422,400). The devnet queue charged no oracle fee: the escrow held exactly its rent.
+
+The lookup table is the one cost that does not come back. `randomness_close` deactivates it, and Switchboard's separate `randomness_close_lut` can reclaim it only after the deactivation cooldown and only when signed by the randomness key, which `requestOpen` generates and discards. Keeping that key for a later sweep would recover about 0.0014 SOL per open.
+
+## Launching a token treasury
+
+`sdks/typescript/scripts/launch-treasury.ts` launches a token-prize treasury from a JSON plan (name, symbol, uri, `revealAt`, `supplyRecipient`, and bundles of raw-unit token prizes). It prints a dry run first: bundles, per-mint escrow and issuer-fee gross-up from the mint's current `TransferFeeConfig`, creator balances, estimated SOL, and box supply. It sends nothing without `--execute`:
+
+```bash
+pnpm --dir sdks/typescript launch:treasury -- --plan treasury.json --cluster devnet --keypair ~/devnet.json
+pnpm --dir sdks/typescript launch:treasury -- --plan treasury.json --cluster devnet --keypair ~/devnet.json --execute
+```
+
+Execution is resumable: a state file next to the plan (`treasury.launch.json`) pins the template id and box mint key, and the SDK continues from on-chain state. The run ends by locking the treasury, which mints the exact box supply to `supplyRecipient`, and prints `VITE_TREASURY=<template>` for the web app. For devnet tests, `pnpm --dir sdks/typescript create:stock-mint` creates a Token-2022 mint shaped like a PreStocks stock (PreStocks issuer as permanent delegate and freeze authority, a 100 bps transfer fee, on-mint metadata).
 
 ## Upgrade-authority custody
 

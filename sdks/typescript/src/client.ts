@@ -156,6 +156,8 @@ export type CompressedNftProofResolver = (
 	Pick<Extract<PrizeAsset, { kind: "compressedNft" }>, "asset" | "proof">
 >;
 export type TemplateFundingOptions = Readonly<{
+	/** Box mint metadata symbol; defaults to `LOOT`. */
+	symbol?: string;
 	/** Fetch a fresh DAS proof after each previous tree mutation. */
 	resolvePrizePoolProof?: PrizePoolProofResolver;
 	/** Fetch a fresh DAS proof immediately before a standalone cNFT transfer. */
@@ -1441,6 +1443,8 @@ export class LootboxClient {
 		options: TemplateFundingOptions = {},
 	) {
 		plan = createTemplatePlan(plan);
+		const symbol = options.symbol ?? "LOOT";
+		encodeTemplateText(symbol, 10);
 		await validatePrizePoolPlanIdentities(plan);
 		if (planContainsPrizePool(plan) && !options.resolvePrizePoolProof) {
 			throw new Error("PrizePool creation requires a fresh-proof resolver");
@@ -1453,9 +1457,11 @@ export class LootboxClient {
 		}).send();
 		if (!exists.value) {
 			// 234 = base mint + account type/padding + MetadataPointer TLV.
-			// TokenMetadata grows the allocation; prepay its exact encoded size.
-			const finalSize = 234 + 4 + 64 + 16 + utf8.encode(plan.name).length + 4 +
-				utf8.encode(plan.uri).length;
+			// TokenMetadata grows the allocation; prepay its exact encoded size:
+			// TLV header, authorities, then length-prefixed name, symbol, and
+			// uri, and an empty additional-metadata vector.
+			const finalSize = 234 + 4 + 64 + 4 + utf8.encode(plan.name).length + 4 +
+				utf8.encode(symbol).length + 4 + utf8.encode(plan.uri).length + 4;
 			const rent = await this.rpc.getMinimumBalanceForRentExemption(
 				BigInt(finalSize),
 			).send();
@@ -1484,7 +1490,7 @@ export class LootboxClient {
 					mint: mint.address,
 					mintAuthority: this.payer,
 					name: plan.name,
-					symbol: "LOOT",
+					symbol,
 					uri: plan.uri,
 				}),
 				token.getUpdateTokenMetadataUpdateAuthorityInstruction({

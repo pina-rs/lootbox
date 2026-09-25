@@ -313,6 +313,19 @@ describe("createSwitchboardOracle", () => {
 		expect(accounts.lut).toBe(await lookupTableAddress(lutSigner, 42n));
 	});
 
+	it("waits for a fresh commit to become visible", async () => {
+		const { options, accounts } = harness(undefined);
+		const oracle = createSwitchboardOracle({
+			...options,
+			sleep: async () => {
+				accounts.set(randomness, { owner: program, data: randomnessPayload() });
+			},
+		});
+		const resolved = await oracle.accountsFor(randomness);
+
+		expect(resolved.oracle).toBe(freshOracle);
+	});
+
 	it("fetches the proof from the bound oracle's gateway", async () => {
 		const { options, gatewayBodies } = harness();
 		const proof = await createSwitchboardOracle(options).fetchProof(randomness);

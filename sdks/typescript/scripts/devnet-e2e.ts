@@ -22,13 +22,10 @@
 import {
 	type Address,
 	address,
-	createKeyPairSignerFromBytes,
 	createSolanaRpc,
 	generateKeyPairSigner,
 	type Signature,
 } from "@solana/kit";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import {
 	CLASSIC_TOKEN_PROGRAM,
 	createSwitchboardOracle,
@@ -38,8 +35,8 @@ import {
 	LootboxClient,
 	SWITCHBOARD_PROGRAM,
 } from "../src/index.js";
+import { installPatientFetch, loadKeypair, verifiedRpcUrl } from "./cli.js";
 
-const DEVNET_GENESIS = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
 const LAMPORTS_PER_SOL = 1_000_000_000n;
 
 type Step = Readonly<{
@@ -59,44 +56,10 @@ if (!keypairPath) {
 	throw new Error("set LOOTBOX_DEVNET_KEYPAIR to a devnet-only keypair file");
 }
 
-// Public devnet RPC answers bursts with HTTP 429 and occasionally drops
-// connections. Resending the identical request body is safe: reads are
-// idempotent and a re-sent signed transaction keeps its signature, so it
-// can land at most once. Every RPC and gateway call in this script,
-// including the SDK's, goes through global fetch.
-const unthrottledFetch = globalThis.fetch.bind(globalThis);
+installPatientFetch();
 
-globalThis.fetch = async (input, init) => {
-	for (let attempt = 0;; attempt++) {
-		let response: Response;
-
-		try {
-			response = await unthrottledFetch(input, init);
-		} catch (error) {
-			if (attempt === 8) throw error;
-
-			await new Promise((done) => setTimeout(done, 2_000));
-			continue;
-		}
-
-		if (response.status !== 429 || attempt === 8) return response;
-
-		const retryAfter = Number(response.headers.get("retry-after"));
-		const delay = Number.isFinite(retryAfter) && retryAfter > 0
-			? retryAfter * 1_000
-			: 500 * 2 ** Math.min(attempt, 4);
-
-		await new Promise((done) => setTimeout(done, delay));
-	}
-};
-
-const rpc = createSolanaRpc(rpcUrl);
-const genesis = await rpc.getGenesisHash().send();
-
-if (genesis !== DEVNET_GENESIS) {
-	throw new Error(`refusing to run: ${rpcUrl} is not Solana devnet`);
-}
-
+const verifiedUrl = await verifiedRpcUrl("devnet", rpcUrl);
+const rpc = createSolanaRpc(verifiedUrl);
 const program = await rpc.getAccountInfo(LOOTBOX_PROGRAM_PROGRAM_ADDRESS, {
 	encoding: "base64",
 }).send();
@@ -107,11 +70,7 @@ if (!program.value?.executable) {
 	);
 }
 
-const payer = await createKeyPairSignerFromBytes(
-	Uint8Array.from(
-		JSON.parse(readFileSync(resolve(process.cwd(), keypairPath), "utf8")),
-	),
-);
+const payer = await loadKeypair(keypairPath);
 const sent: Array<Pick<Step, "phase" | "label" | "signature">> = [];
 let phase: Step["phase"] = "setup";
 
@@ -147,7 +106,7 @@ async function measure(
 	throw new Error(`transaction ${signature} never reached confirmed`);
 }
 
-const client = new LootboxClient(rpcUrl, payer, (message, signature) => {
+const client = new LootboxClient(verifiedUrl, payer, (message, signature) => {
 	if (!signature) {
 		console.log(`… ${message}`);
 		return;
@@ -156,7 +115,10 @@ const client = new LootboxClient(rpcUrl, payer, (message, signature) => {
 	console.log(`✓ ${message}  ${signature}`);
 	sent.push({ phase, label: message, signature: signature as Signature });
 });
-const oracle = createSwitchboardOracle({ rpcUrl, cluster: "devnet" });
+const oracle = createSwitchboardOracle({
+	rpcUrl: verifiedUrl,
+	cluster: "devnet",
+});
 const balance = async () =>
 	(await rpc.getBalance(payer.address, { commitment: "confirmed" }).send())
 		.value;

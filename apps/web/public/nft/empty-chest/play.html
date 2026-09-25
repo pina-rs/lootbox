@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Empty Chest</title>
+		<meta
+			name="description"
+			content="An Unlisted Empty Chest collectible. Tap the chest to peek inside."
+		/>
+		<style>
+			:root {
+				color-scheme: light;
+				background: #f3edda;
+			}
+			html,
+			body {
+				margin: 0;
+				block-size: 100%;
+				background: #f3edda;
+				overflow: hidden;
+			}
+			main {
+				position: relative;
+				display: grid;
+				place-items: center;
+				block-size: 100%;
+			}
+			img,
+			canvas {
+				position: absolute;
+				inset: 0;
+				inline-size: 100%;
+				block-size: 100%;
+				object-fit: contain;
+			}
+			canvas {
+				opacity: 0;
+				cursor: pointer;
+				transition: opacity 160ms ease-out;
+			}
+			canvas.is-playing {
+				opacity: 1;
+			}
+			canvas.is-playing + img {
+				visibility: hidden;
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<canvas aria-hidden="true"></canvas>
+			<img alt="" />
+		</main>
+		<!-- Pinned runtime with Subresource Integrity; the WASM is fetched from the same pinned version. -->
+		<script
+			src="https://cdn.jsdelivr.net/npm/@rive-app/canvas@2.43.1/rive.js"
+			integrity="sha384-sJDSA/vrCqZDWPWBfz06ygq8soEj1BjyTnwGxOGsOdcSP9IJOhngm43L9jjPqIDb"
+			crossorigin="anonymous"
+		></script>
+		<script>
+			"use strict";
+
+			// Every path is relative so the page works under any base, including /lootbox/.
+			const COUNT = 13;
+			const requested = Number(new URLSearchParams(location.search).get("v"));
+			const variant = Number.isInteger(requested) && requested >= 0 && requested < COUNT
+				? requested
+				: 0;
+			const canvas = document.querySelector("canvas");
+			const poster = document.querySelector("img");
+
+			poster.src = `./${variant}.png`;
+			poster.alt = `Empty Chest #${variant + 1}`;
+
+			const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+			// Reduced motion, or a runtime that failed to load, keeps the static poster.
+			if (!reducedMotion && window.rive) {
+				const { Rive, RuntimeLoader, Layout, Fit, Alignment } = window.rive;
+
+				RuntimeLoader.setWasmUrl(
+					"https://cdn.jsdelivr.net/npm/@rive-app/canvas@2.43.1/rive.wasm",
+				);
+				RuntimeLoader.setWasmFallbackUrl(null);
+
+				const player = new Rive({
+					canvas,
+					src: "./empty-chest.riv",
+					artboard: "Empty chest",
+					stateMachines: "Empty chest",
+					autoplay: true,
+					autoBind: true,
+					layout: new Layout({ fit: Fit.Contain, alignment: Alignment.Center }),
+					onLoad: () => {
+						player.resizeDrawingSurfaceToCanvas();
+						const data = player.viewModelInstance;
+						const number = data && data.number("variant");
+
+						if (!number) return;
+
+						number.value = variant;
+						canvas.classList.add("is-playing");
+						canvas.addEventListener("click", () => {
+							const reveal = data.trigger("reveal");
+							if (reveal) reveal.trigger();
+						});
+					},
+				});
+
+				addEventListener("resize", () => player.resizeDrawingSurfaceToCanvas());
+			}
+		</script>
+	</body>
+</html>

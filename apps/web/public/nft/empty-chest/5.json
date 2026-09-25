@@ -1,0 +1,31 @@
+{
+	"name": "Empty Chest #6 — A Rubber Duck",
+	"symbol": "EMPTY",
+	"description": "Squeaks once per viewing. Debugs nothing. An empty Unlisted box. Randomness by Switchboard; allocation recorded on-chain.",
+	"image": "https://pina-rs.github.io/lootbox/nft/empty-chest/5.png",
+	"animation_url": "https://pina-rs.github.io/lootbox/nft/empty-chest/play.html?v=5",
+	"external_url": "https://pina-rs.github.io/lootbox/",
+	"attributes": [
+		{
+			"trait_type": "Contents",
+			"value": "A Rubber Duck"
+		},
+		{
+			"trait_type": "Series",
+			"value": "Unlisted Empty Chest"
+		}
+	],
+	"properties": {
+		"files": [
+			{
+				"uri": "https://pina-rs.github.io/lootbox/nft/empty-chest/5.png",
+				"type": "image/png"
+			},
+			{
+				"uri": "https://pina-rs.github.io/lootbox/nft/empty-chest/play.html?v=5",
+				"type": "text/html"
+			}
+		],
+		"category": "html"
+	}
+}

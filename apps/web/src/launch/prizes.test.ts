@@ -182,9 +182,9 @@ describe("prize manifest", () => {
 });
 
 describe("price book", () => {
-	it("serves the bundled snapshot with base-path logos and its capture date", () => {
+	it("serves the bundled snapshot with its capture date", () => {
 		expect(Number.isNaN(Date.parse(book.capturedAt))).toBe(false);
-		expect(book.stocks.get(OPENAI)?.logo).toBe("/logos/prestocks/openai.png");
+		expect(book.stocks.get(OPENAI)?.symbol).toBe("OPENAI");
 		expect(book.stocks.size).toBe(8);
 	});
 });

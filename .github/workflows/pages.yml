@@ -53,7 +53,7 @@ jobs:
         run: |
           if ! node tools/snapshot-prestocks.ts; then
             echo "::warning title=PreStocks snapshot::API unavailable; building with the committed price snapshot."
-            git checkout -- src/launch/prestocks-snapshot.json public/logos/prestocks
+            git checkout -- src/launch/prestocks-snapshot.json
           fi
 
       - name: Build site

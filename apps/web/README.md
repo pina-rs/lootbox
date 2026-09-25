@@ -2,7 +2,7 @@
 
 Two surfaces share one static Vite build:
 
-- `/` is **Unlisted**, the public recipient site: a free series of Solana boxes with tokenized pre-IPO stock inside. Connect a Wallet Standard wallet, see your boxes and live odds, send a box to a friend, and after the reveal date press and hold the cartoon chest to open one and claim the prize.
+- `/` is **Unlisted**, the public recipient site: a free series of Solana boxes with PreStocks exposure tokens inside (not shares). `/rules` is the official rules page, with dates, inventory and odds read from the treasury. Connect a Wallet Standard wallet, see your boxes and live odds, send a box to a friend, and after the reveal date press and hold the cartoon chest to open one and claim the prize.
 - `/playground` is the local creator workshop described below.
 
 Static hosts must rewrite unknown paths to `index.html` so `/playground` resolves (Vite's dev and preview servers already do).

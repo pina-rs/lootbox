@@ -893,3 +893,122 @@ a:hover {
 		transform: none;
 	}
 }
+
+/* Ticker monograms: neutral roundels instead of company logos. */
+
+.monogram {
+	flex: none;
+	grid-area: logo;
+}
+
+.monogram-ring {
+	fill: var(--gold);
+	stroke: var(--ink);
+	stroke-width: 2;
+}
+
+.monogram-core {
+	fill: var(--teal-deep);
+}
+
+.monogram-text {
+	fill: var(--paper);
+	font-family: var(--display);
+	letter-spacing: -0.02em;
+}
+
+.manifest-row[data-tier="headline"] > .monogram .monogram-ring {
+	fill: var(--gold-soft);
+}
+
+.prize-lines li {
+	grid-template-areas:
+		"logo name value"
+		"note note note";
+}
+
+.prize-disclaimer {
+	grid-column: 1 / -1;
+	color: var(--muted);
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.stage-rules {
+	margin: 0;
+	color: var(--muted);
+	font-size: 13px;
+	text-align: center;
+}
+
+/* Eligibility gate before claiming a token prize. */
+
+.eligibility {
+	display: grid;
+	gap: 8px;
+	margin: 0 0 12px;
+	padding: 12px;
+	border: 2px dashed var(--ink);
+	border-radius: 12px;
+	background: #fff;
+}
+
+.eligibility label {
+	display: grid;
+	grid-template-columns: 24px 1fr;
+	gap: 10px;
+	align-items: start;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.eligibility input {
+	inline-size: 22px;
+	block-size: 22px;
+	margin: 0;
+	accent-color: var(--teal);
+}
+
+.eligibility-help {
+	margin: 0;
+	color: var(--ink-soft);
+	font-size: 13px;
+}
+
+/* Official rules page. */
+
+.rules-body {
+	display: block;
+	max-inline-size: 760px;
+}
+
+.rules-body h1 {
+	margin: 8px 0 12px;
+	font-family: var(--display);
+	font-size: clamp(30px, 6vw, 44px);
+	font-weight: 400;
+	line-height: 1.1;
+}
+
+.rules-section {
+	padding: 20px 0;
+	border-block-start: 2px solid var(--ink);
+}
+
+.rules-section h2 {
+	margin: 0 0 10px;
+	font-family: var(--display);
+	font-size: 20px;
+	font-weight: 400;
+}
+
+.rules-section p,
+.rules-section li {
+	color: var(--ink-soft);
+	overflow-wrap: anywhere;
+}
+
+.launch-header > a:not(.brand):not(.skip-link) {
+	font-weight: 700;
+}

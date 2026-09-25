@@ -26,7 +26,7 @@ test("a base-path build resolves every asset and route", async ({ page, request 
 
 	await page.goto("./");
 	await expect(page.getByRole("heading", { level: 1 })).toContainText(
-		"pre-IPO stock",
+		"pre-IPO exposure",
 	);
 	await expect(page.getByRole("list", { name: "Planned prizes" }))
 		.toBeVisible();
@@ -77,6 +77,13 @@ test("a base-path build resolves every asset and route", async ({ page, request 
 			external_url: "https://pina-rs.github.io/lootbox/",
 		});
 	}
+
+	await page.goto("./rules");
+	await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+		"Official rules",
+	);
+	await expect(page.getByRole("link", { name: "Back to Unlisted" }))
+		.toHaveAttribute("href", "/lootbox/");
 
 	await page.goto("./playground");
 	await expect(page.getByRole("navigation", { name: "Workspace" }))

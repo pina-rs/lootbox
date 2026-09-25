@@ -11,12 +11,14 @@ if (!root) {
 	throw new Error("missing application root");
 }
 
-if (routeOf(location.pathname) === "/playground") {
+const route = routeOf(location.pathname);
+
+if (route === "/playground") {
 	const { mountPlayground } = await import("./playground-entry.js");
 
 	mountPlayground(root);
 } else {
 	const { mountLaunch } = await import("./launch/entry.js");
 
-	mountLaunch(root);
+	mountLaunch(root, route);
 }

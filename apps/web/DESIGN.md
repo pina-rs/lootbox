@@ -92,7 +92,7 @@ Reaction clips are 720 px VP9 WebM with alpha, with an H.264 MP4 fallback on the
 
 ### Prize card
 
-Rises beneath the chest with a short overshoot. It shows the stock logo, exact token amount, approximate USD value, a gold "Claim to wallet" action, and explorer links to the opening receipt, the randomness transaction, and the claim transaction. It appears on reveal end, on skip, or immediately under reduced motion.
+Rises beneath the chest with a short overshoot. It shows a neutral ticker monogram (never a company logo), exact token amount, approximate USD value, the PreStocks disclaimer (not shares; not affiliated), an eligibility self-certification for token prizes, a gold "Claim to wallet" action, and explorer links to the opening receipt, the randomness transaction, and the claim transaction. It appears on reveal end, on skip, or immediately under reduced motion.
 
 ### Manifest
 

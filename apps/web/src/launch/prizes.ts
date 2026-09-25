@@ -1,6 +1,5 @@
 import { templateInventory } from "@pina-rs/lootbox";
 
-import { assetUrl } from "./assets.js";
 import snapshot from "./prestocks-snapshot.json";
 
 /** One PreStocks pre-IPO token as the manifest displays it. */
@@ -8,7 +7,6 @@ export type StockListing = Readonly<{
 	symbol: string;
 	name: string;
 	mint: string;
-	logo: string;
 	url: string;
 	usdPrice: number;
 }>;
@@ -27,12 +25,7 @@ export type PriceBook = Readonly<{
 export function snapshotPriceBook(): PriceBook {
 	return Object.freeze({
 		capturedAt: snapshot.capturedAt,
-		stocks: new Map(
-			snapshot.stocks.map((stock) => [stock.mint, {
-				...stock,
-				logo: assetUrl(stock.logo),
-			}]),
-		),
+		stocks: new Map(snapshot.stocks.map((stock) => [stock.mint, stock])),
 	});
 }
 

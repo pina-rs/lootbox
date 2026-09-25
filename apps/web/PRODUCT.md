@@ -8,7 +8,7 @@ web
 
 ## Users
 
-Primary: recipients of a free launch giveaway, most on phones, many new to Solana. They receive a transferable box token, check what is inside and their current odds, send boxes to friends, and on reveal day open theirs and claim a real tokenized stock to their wallet. Secondary: Solana developers and creators, who use the `/playground` workshop on a local Surfpool network to fund, lock, and distribute series.
+Primary: recipients of a free launch giveaway, most on phones, many new to Solana. They receive a transferable box token, check what is inside and their current odds, send boxes to friends, and on reveal day open theirs and claim a PreStocks exposure token to their wallet. Secondary: Solana developers and creators, who use the `/playground` workshop on a local Surfpool network to fund, lock, and distribute series.
 
 ## Product Purpose
 
@@ -20,7 +20,7 @@ A giveaway, never a sale: there is no purchase or checkout flow, and copy never 
 
 ## Operating Context
 
-Static Vite + React + TypeScript build. `/` is the recipient site; `/playground` is the local creator workshop. Wallets connect through Wallet Standard (Phantom, Solflare, Backpack) and sign through a kit `TransactionSigner`; the app never holds keys. `VITE_SOLANA_CLUSTER`, `VITE_RPC_URL`, and `VITE_TREASURY` choose the network and series. Localnet uses the Surfpool control plane's mock oracle; devnet and mainnet use the SDK's Switchboard On-Demand transport (`createSwitchboardOracle`). The series is 7 stock bundles plus an "Empty box ×13" consolation bundle (a mint-on-claim badge and 0.001 SOL), 20 boxes in all. The static site deploys to GitHub Pages at `/lootbox/`, which also hosts the box and badge metadata under `/lootbox/metadata/`.
+Static Vite + React + TypeScript build. `/` is the recipient site; `/playground` is the local creator workshop. Wallets connect through Wallet Standard (Phantom, Solflare, Backpack) and sign through a kit `TransactionSigner`; the app never holds keys. `VITE_SOLANA_CLUSTER`, `VITE_RPC_URL`, and `VITE_TREASURY` choose the network and series. Localnet uses the Surfpool control plane's mock oracle; devnet and mainnet use the SDK's Switchboard On-Demand transport (`createSwitchboardOracle`). The series is 7 PreStocks bundles plus an "Empty box ×13" consolation bundle (a mint-on-claim badge and 0.001 SOL), 20 boxes in all. The static site deploys to GitHub Pages at `/lootbox/`, which also hosts the box and badge metadata under `/lootbox/metadata/`.
 
 ## Capabilities and Constraints
 
@@ -30,6 +30,13 @@ Static Vite + React + TypeScript build. `/` is the recipient site; `/playground`
 - Required disclosures stay on the page: issuer-controlled tokens (freeze/pause, PreStocks issuer transfer fee on claim), geo-restrictions on the underlying tokens, not investment advice, and verifiable Switchboard randomness with explorer links to the opening receipt and transactions.
 - An interrupted opening is recovered from chain (unfinished openings bound to the wallet) and never burns a second box.
 - Localnet balances, stand-in prize mints, and oracle proofs are test-only and labeled as such.
+
+## Legal Commitments
+
+- Prizes are described as PreStocks tokens that track SPV exposure to a company: not shares, with no ownership, voting or dividend rights, and not affiliated with or endorsed by the company. Copy never says "shares", "invest", or implies returns.
+- No company logos; ticker monograms only. A visible non-affiliation line names every tracked company.
+- `/rules` carries the official rules (promoter, free entry, eligibility, dates, on-chain inventory and odds, allocation, delivery, forfeiture, taxes, risk, public verification) and is linked from the header, footer, manifest and the chest.
+- Claiming a token prize requires an in-app self-certification (18+, not a US person, not in a restricted jurisdiction, not sanctioned). Nothing is stored. The empty box has no gate.
 
 ## Brand Commitments
 

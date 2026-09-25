@@ -20,6 +20,12 @@ import {
 	readLaunchConfig,
 } from "./config.js";
 import {
+	ELIGIBILITY_STATEMENT,
+	NOT_AFFILIATED,
+	prestocksDisclaimer,
+} from "./copy.js";
+import { Monogram } from "./Monogram.js";
+import {
 	initialOpening,
 	openingAnnouncement,
 	openingReducer,
@@ -46,6 +52,7 @@ import {
 	shortAddress,
 	snapshotPriceBook,
 } from "./prizes.js";
+import { RulesLink } from "./RulesLink.js";
 import {
 	commitOpen,
 	loadSeries,
@@ -61,7 +68,9 @@ import {
 	watchWallets,
 } from "./wallet.js";
 
-type Network = Readonly<{ rpcUrl: string; oracle: OracleTransport | null }>;
+export type Network = Readonly<
+	{ rpcUrl: string; oracle: OracleTransport | null }
+>;
 type Load<T> =
 	| Readonly<{ status: "loading" }>
 	| Readonly<{ status: "ready"; value: T }>
@@ -102,7 +111,7 @@ function useNow(intervalMs = 1_000): number {
 	return now;
 }
 
-async function connectNetwork(config: LaunchConfig): Promise<Network> {
+export async function connectNetwork(config: LaunchConfig): Promise<Network> {
 	if (config.cluster === "localnet") {
 		// Localnet only: the Surfpool control plane and mock oracle stay out of
 		// the public bundle's critical path.
@@ -137,18 +146,7 @@ export function countdownParts(ms: number): string {
 }
 
 function PrizeLogo({ line }: Readonly<{ line: PrizeLine }>) {
-	if (line.kind === "stock") {
-		return (
-			<img
-				className="prize-logo"
-				src={line.stock.logo}
-				alt=""
-				width={40}
-				height={40}
-				loading="lazy"
-			/>
-		);
-	}
+	if (line.kind === "stock") return <Monogram symbol={line.stock.symbol} />;
 
 	if (line.kind === "badge") {
 		return (
@@ -173,7 +171,7 @@ function PrizeLogo({ line }: Readonly<{ line: PrizeLine }>) {
 function lineName(line: PrizeLine): string {
 	switch (line.kind) {
 		case "stock":
-			return line.stock.name;
+			return `${line.stock.symbol} · tracks ${line.stock.name}`;
 		case "sol":
 			return "Solana";
 		case "token":
@@ -185,7 +183,7 @@ function lineName(line: PrizeLine): string {
 	}
 }
 
-function ManifestTable(
+export function ManifestTable(
 	{ rows, book }: Readonly<{ rows: readonly ManifestRow[]; book: PriceBook }>,
 ) {
 	return (
@@ -235,6 +233,7 @@ function ManifestTable(
 			<li className="manifest-foot">
 				Odds are each bundle's share of the boxes still unopened, read from the
 				treasury account. They change after every opening.{" "}
+				<RulesLink>Official rules</RulesLink>.{" "}
 				{`Values use PreStocks prices captured ${
 					new Date(book.capturedAt).toLocaleDateString("en-GB", {
 						day: "numeric",
@@ -247,7 +246,7 @@ function ManifestTable(
 	);
 }
 
-function PlannedTable({ book }: Readonly<{ book: PriceBook }>) {
+export function PlannedTable({ book }: Readonly<{ book: PriceBook }>) {
 	const lineup = plannedLineup(book);
 	const total = lineup.reduce((sum, slice) => sum + slice.copies, 0) +
 		PLANNED_EMPTY_COPIES;
@@ -261,17 +260,10 @@ function PlannedTable({ book }: Readonly<{ book: PriceBook }>) {
 					className="manifest-row"
 					data-tier={slice.gbp >= 50 ? "headline" : "standard"}
 				>
-					<img
-						className="prize-logo"
-						src={slice.stock.logo}
-						alt=""
-						width={40}
-						height={40}
-						loading="lazy"
-					/>
+					<Monogram symbol={slice.stock.symbol} />
 					<div className="manifest-name">
-						<strong>{slice.stock.name}</strong>
-						<span>{slice.stock.symbol} pre-IPO token</span>
+						<strong>{slice.stock.symbol} · tracks {slice.stock.name}</strong>
+						<span>PreStocks exposure token</span>
 					</div>
 					<div className="manifest-value">£{slice.gbp}</div>
 					<div className="manifest-copies">{slice.copies} box</div>
@@ -333,6 +325,10 @@ function PrizeCard(
 	const { row, result, phase, config } = props;
 	const explorer = { cluster: config.cluster, rpcUrl: props.rpcUrl };
 	const card = useRef<HTMLElement>(null);
+	// Token prizes need an eligibility self-certification. It lives only in
+	// component state: nothing about the viewer is stored or sent anywhere.
+	const [certified, setCertified] = useState(false);
+	const gated = result.tier !== "empty" && phase !== "claimed";
 
 	useEffect(() => {
 		// On phones the card lands below the chest; bring the claim into view.
@@ -374,9 +370,41 @@ function PrizeCard(
 						{line.kind === "stock" && (
 							<span className="prize-usd">≈ {formatUsd(line.usdValue)}</span>
 						)}
+						{line.kind === "stock" && (
+							<small className="prize-disclaimer">
+								{prestocksDisclaimer(line.stock.name)}
+							</small>
+						)}
 					</li>
 				))}
 			</ul>
+			{gated && (
+				<div className="eligibility">
+					<label>
+						<input
+							type="checkbox"
+							checked={certified}
+							onChange={(event) => setCertified(event.target.checked)}
+						/>
+						<span>{ELIGIBILITY_STATEMENT}</span>
+					</label>
+					<p id="eligibility-help" className="eligibility-help">
+						{certified
+							? (
+								<>
+									Thanks. See the <RulesLink>official rules</RulesLink>.
+								</>
+							)
+							: (
+								<>
+									Required to claim a token prize. If you can't confirm all of
+									this, you can't claim it; the prize stays in escrow bound to
+									this opening. See the <RulesLink>official rules</RulesLink>.
+								</>
+							)}
+					</p>
+				</div>
+			)}
 			{phase === "claimed"
 				? (
 					<p className="prize-state" data-testid="prize-state">
@@ -388,7 +416,8 @@ function PrizeCard(
 						type="button"
 						className="action action-primary"
 						onClick={props.onClaim}
-						disabled={phase === "claiming"}
+						disabled={phase === "claiming" || (gated && !certified)}
+						aria-describedby={gated ? "eligibility-help" : undefined}
 					>
 						{phase === "claiming" ? "Claiming…" : "Claim to wallet"}
 					</button>
@@ -442,21 +471,27 @@ function Disclosures() {
 			<h2 id="disclosures-title">Read before you open</h2>
 			<ul>
 				<li>
-					<strong>Prizes are issuer-controlled tokens.</strong>{" "}
-					PreStocks and xStocks issuers can freeze or pause their tokens.
-					PreStocks charge an issuer transfer fee, so the amount that lands in
-					your wallet on claim can be slightly lower than the bundle amount.
+					<strong>Prizes are PreStocks tokens, not shares.</strong>{" "}
+					Each tracks SPV exposure to a private company. They carry no
+					ownership, voting or dividend rights. {NOT_AFFILIATED}
 				</li>
 				<li>
-					<strong>Geo-restrictions apply.</strong>{" "}
-					The underlying tokens are not available to everyone, including US
-					persons and other restricted jurisdictions. Check the issuer's terms
-					before claiming.
+					<strong>Prizes are issuer-controlled tokens.</strong>{" "}
+					Issuers can freeze, pause or claw back their tokens. PreStocks charge
+					an issuer transfer fee, so the amount that lands in your wallet on
+					claim can be slightly lower than the bundle amount.
+				</li>
+				<li>
+					<strong>Eligibility and geo-restrictions apply.</strong>{" "}
+					To claim a token prize you must be 18 or older, not a US person, not
+					in a jurisdiction where the tokens are restricted, and not a
+					sanctioned person. See the <RulesLink>official rules</RulesLink>.
 				</li>
 				<li>
 					<strong>Not investment advice.</strong>{" "}
-					Boxes are a free giveaway. Values are estimates from issuer prices and
-					can go to zero. Nothing here is an offer or a recommendation.
+					Boxes are a free giveaway; no purchase is necessary. Values are
+					estimates from issuer prices and can go to zero. Nothing here is an
+					offer or a recommendation, and nothing implies a return.
 				</li>
 				<li>
 					<strong>Randomness is verifiable.</strong>{" "}
@@ -491,14 +526,14 @@ function HowItWorks() {
 					pick your prize.
 				</li>
 				<li>
-					<strong>Claim real stock tokens.</strong>{" "}
+					<strong>Claim your tokens.</strong>{" "}
 					Your prize is delivered from escrow straight to your wallet.
 				</li>
 			</ol>
 			<p className="how-why">
 				Why Solana: a box, its escrowed prize, the randomness proof, and the
-				claim settle in seconds for fractions of a cent, and the stock tokens
-				already live here.
+				claim settle in seconds for fractions of a cent, and the PreStocks
+				tokens already live here.
 			</p>
 		</section>
 	);
@@ -865,6 +900,7 @@ export default function LaunchApp() {
 					<span className="brand-mark" aria-hidden="true" />
 					{BRAND}
 				</a>
+				<RulesLink>Rules</RulesLink>
 				<span className="cluster" data-cluster={config.cluster}>
 					{config.cluster === "localnet" ? "Localnet" : config.cluster}
 				</span>
@@ -891,7 +927,7 @@ export default function LaunchApp() {
 							boxes · Solana
 						</p>
 						<h1 id="hero-title">
-							A free chest of <em>pre-IPO stock.</em>
+							A free chest of <em>pre-IPO exposure.</em>
 						</h1>
 					</div>
 
@@ -921,6 +957,11 @@ export default function LaunchApp() {
 							data-testid="announcer"
 						>
 							{announcement}
+						</p>
+						<p className="stage-rules">
+							Free to open, no purchase necessary. Opening means you accept the
+							{" "}
+							<RulesLink>official rules</RulesLink>.
 						</p>
 						<div className="stage-actions">
 							{opening.phase === "idle" && armed && (
@@ -990,9 +1031,9 @@ export default function LaunchApp() {
 					</div>
 					<div className="hero-detail">
 						<p className="lede">
-							Every box holds real tokenized shares of companies like SpaceX,
-							OpenAI and Anthropic, escrowed on-chain. On reveal day, hold the
-							chest to crack yours open.
+							Win PreStocks tokens tracking SpaceX, OpenAI, Anthropic and more,
+							escrowed on-chain. On reveal day, hold the chest to crack yours
+							open. Tokens, not shares.
 						</p>
 						<div className="countdown" aria-live="off">
 							<span className="countdown-label">
@@ -1157,8 +1198,10 @@ export default function LaunchApp() {
 			<footer className="launch-footer">
 				<p>
 					{BRAND} is built on the open-source Lootbox by Pina program.{" "}
+					<RulesLink>Official rules</RulesLink> ·{" "}
 					<a href={assetUrl("playground")}>Creator playground</a>
 				</p>
+				<p className="muted" data-testid="not-affiliated">{NOT_AFFILIATED}</p>
 				{snapshot && (
 					<p className="muted">
 						Remaining prizes{" "}

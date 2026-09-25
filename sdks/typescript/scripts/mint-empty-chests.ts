@@ -203,8 +203,6 @@ async function main() {
 		return;
 	}
 
-	if (balance < total) throw new Error(`payer needs at least ${sol(total)}`);
-
 	const statePath = resolve(
 		process.cwd(),
 		`empty-chests.${cluster}.launch.json`,
@@ -213,6 +211,16 @@ async function main() {
 	const existing = await safeFetchTreeConfigFromSeeds(umi, {
 		merkleTree: tree.publicKey,
 	});
+	// A resumed run has already paid the tree rent and earlier mints, so it
+	// needs fees only for the leaves still to mint.
+	const remaining = existing
+		? Math.max(EMPTY_CHESTS.length - Number(existing.numMinted), 0)
+		: EMPTY_CHESTS.length;
+	const required = existing ? SIGNATURE_FEE * BigInt(remaining) : total;
+
+	if (balance < required) {
+		throw new Error(`payer needs at least ${sol(required)}`);
+	}
 
 	if (!existing) {
 		const builder = await createTree(umi, {

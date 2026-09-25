@@ -429,6 +429,27 @@ test("an empty box plays the disappointed reaction and still delivers the badge 
 	await expect(card).toContainText("Empty Box badge");
 	await expect(card).toContainText("0.001 SOL");
 
+	// The won Empty Chest plays its Rive reveal. This badge series has no minted
+	// chests, so the opening address picks a stable stand-in variant.
+	const emptyChest = card.getByTestId("empty-chest");
+
+	await expect(emptyChest).toHaveAttribute("data-playback", "playing", {
+		timeout: 15_000,
+	});
+	await expect(emptyChest).toContainText(/Empty Chest #\d+ — /);
+	await expect(emptyChest.getByTestId("empty-chest-canvas")).toBeVisible();
+	expect(
+		await emptyChest.getByTestId("empty-chest-canvas").evaluate((node) => {
+			const canvas = node as HTMLCanvasElement;
+			const blank = document.createElement("canvas");
+
+			blank.width = canvas.width;
+			blank.height = canvas.height;
+
+			return canvas.width > 0 && canvas.toDataURL() !== blank.toDataURL();
+		}),
+	).toBe(true);
+
 	const badge = series.badge;
 
 	if (!badge) throw new Error("empty series has no badge");
@@ -452,6 +473,12 @@ test("an empty box plays the disappointed reaction and still delivers the badge 
 	// the 0.001 SOL asset the change would be below -0.002 SOL.
 	expect(lamportsAfter - lamportsBefore).toBeGreaterThan(-1_500_000n);
 	await expect(chest(page)).toHaveAttribute("data-reaction", "disappointed");
+
+	// Reduced motion swaps the playing chest for its static poster.
+	await page.emulateMedia({ reducedMotion: "reduce" });
+	await expect(emptyChest).toHaveAttribute("data-playback", "poster");
+	await expect(emptyChest.getByTestId("empty-chest-canvas")).toHaveCount(0);
+	await expect(emptyChest.getByTestId("empty-chest-poster")).toBeVisible();
 	await expectAccessible(page);
 	expect(errors).toEqual([]);
 });

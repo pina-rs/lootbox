@@ -3,6 +3,7 @@ import {
 	type ChainOpening,
 	type ChainTemplate,
 	decodeTemplateText,
+	fetchMaybePrizePoolItemState,
 	fetchTemplateOpeningState,
 	isTreasuryLocked,
 	LootboxClient,
@@ -240,4 +241,39 @@ export async function loadTokenLabels(
 	}
 
 	return labels;
+}
+
+/**
+ * The compressed NFT a PrizePool assigned to an opening, or null when the
+ * opening's bundle has no pool (the badge-based empty box).
+ *
+ * The item account closes once its leaf is claimed, so this reads it while the
+ * prize card is showing, before the claim. A closed item also returns null and
+ * the caller falls back to a stand-in presentation.
+ */
+export async function prizePoolAssetOf(
+	client: LootboxClient,
+	opening: Address,
+): Promise<Address | null> {
+	const current = await readOpening(client, opening);
+
+	if (!current.data.hasPoolAssignment) return null;
+
+	const [bundle] = await client.bundleAddress(
+		current.data.template,
+		current.data.selectedBundle,
+	);
+	const [pool] = await client.prizePoolAddress(
+		bundle,
+		current.data.selectedPoolAsset,
+	);
+	const [itemAddress] = await client.prizePoolItemAddress(
+		pool,
+		current.data.selectedPoolItem,
+	);
+	const item = await fetchMaybePrizePoolItemState(client.rpc, itemAddress, {
+		commitment: "processed",
+	});
+
+	return item.exists ? item.data.asset : null;
 }

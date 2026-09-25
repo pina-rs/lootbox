@@ -21,7 +21,10 @@ const SIZE = 1024;
 const IVORY = "#f3edda";
 /** Seconds into the idle loop where every thing is fully out of the chest. */
 const PEEK_SECONDS = 1.9;
-const resources: Record<string, { contentType: string; body: string | Buffer }> = {
+const resources: Record<
+	string,
+	{ contentType: string; body: string | Buffer }
+> = {
 	"/": {
 		contentType: "text/html",
 		body:

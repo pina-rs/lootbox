@@ -62,9 +62,28 @@ test("a base-path build resolves every asset and route", async ({ page, request 
 			"animations/cartoon-chest/disappointed-final.webp",
 			"metadata/box.png",
 			"metadata/empty-box.png",
+			"nft/empty-chest/0.png",
+			"nft/empty-chest/12.png",
+			"nft/empty-chest/empty-chest.riv",
+			"nft/empty-chest/play.html",
 		]
 	) {
 		expect((await request.get(file)).status(), file).toBe(200);
+	}
+
+	for (let variant = 0; variant < 13; variant++) {
+		const body: unknown = await (
+			await request.get(`nft/empty-chest/${variant}.json`)
+		).json();
+
+		expect(body).toMatchObject({
+			name: expect.stringMatching(/^Empty Chest #\d+ — /),
+			symbol: "EMPTY",
+			image: `https://pina-rs.github.io/lootbox/nft/empty-chest/${variant}.png`,
+			animation_url:
+				`https://pina-rs.github.io/lootbox/nft/empty-chest/play.html?v=${variant}`,
+			properties: { category: "html" },
+		});
 	}
 
 	for (const file of ["metadata/box.json", "metadata/empty-box.json"]) {

@@ -11,7 +11,10 @@ import "./generate.ts";
 
 const SITE = "https://pina-rs.github.io/lootbox/";
 const project = fileURLToPath(new URL(".", import.meta.url));
-const output = new URL("../../../../apps/web/public/nft/empty-chest/", import.meta.url);
+const output = new URL(
+	"../../../../apps/web/public/nft/empty-chest/",
+	import.meta.url,
+);
 
 mkdirSync(output, { recursive: true });
 execFileSync("rive", [project, "--verify"], { stdio: "inherit" });

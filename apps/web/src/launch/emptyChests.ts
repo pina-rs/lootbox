@@ -11,6 +11,8 @@
 
 export type EmptyChest = Readonly<{
 	variant: number;
+	/** Fits the 32-byte Bubblegum name as `Empty Chest #N — <short>`. */
+	short: string;
 	/** What is inside, used as the `Contents` trait. */
 	thing: string;
 	/** One witty line for the metadata description and the prize card. */
@@ -18,19 +20,84 @@ export type EmptyChest = Readonly<{
 }>;
 
 export const EMPTY_CHESTS: readonly EmptyChest[] = Object.freeze([
-	{ variant: 0, thing: "A Moth", line: "Something lived in here once. It is leaving now." },
-	{ variant: 1, thing: "One Odd Sock", line: "Its partner is in another chest. Probably." },
-	{ variant: 2, thing: "An IOU for 0 Shares", line: "Legally cheerful. Financially zero." },
-	{ variant: 3, thing: "A Cobweb, Tenant Included", line: "The spider pays no rent and considers this a win." },
-	{ variant: 4, thing: "A Dust Bunny", line: "Rare breed. Sneezes on cue. Does not multiply. Yet." },
-	{ variant: 5, thing: "A Rubber Duck", line: "Squeaks once per viewing. Debugs nothing." },
-	{ variant: 6, thing: "A Sold Out Tag", line: "Proof you were early to something already gone." },
-	{ variant: 7, thing: "A Lost Button", line: "From a coat nobody remembers owning." },
-	{ variant: 8, thing: "A Paper Crown", line: "Ruler of one empty box. Long may you reign." },
-	{ variant: 9, thing: "A Snail", line: "Got here before you. Will leave after you." },
-	{ variant: 10, thing: "A Crumpled Receipt", line: "Total: 0.00. Keep for your records." },
-	{ variant: 11, thing: "The Ghost of a Share Certificate", line: "Haunts portfolios. Harmless. Mostly." },
-	{ variant: 12, thing: "An Echo", line: "…hello? …hello? …hello?" },
+	{
+		variant: 0,
+		short: "Moth",
+		thing: "A Moth",
+		line: "Something lived in here once. It is leaving now.",
+	},
+	{
+		variant: 1,
+		short: "Odd Sock",
+		thing: "One Odd Sock",
+		line: "Its partner is in another chest. Probably.",
+	},
+	{
+		variant: 2,
+		short: "IOU",
+		thing: "An IOU for 0 Shares",
+		line: "Legally cheerful. Financially zero.",
+	},
+	{
+		variant: 3,
+		short: "Cobweb",
+		thing: "A Cobweb, Tenant Included",
+		line: "The spider pays no rent and considers this a win.",
+	},
+	{
+		variant: 4,
+		short: "Dust Bunny",
+		thing: "A Dust Bunny",
+		line: "Rare breed. Sneezes on cue. Does not multiply. Yet.",
+	},
+	{
+		variant: 5,
+		short: "Rubber Duck",
+		thing: "A Rubber Duck",
+		line: "Squeaks once per viewing. Debugs nothing.",
+	},
+	{
+		variant: 6,
+		short: "Sold Out Tag",
+		thing: "A Sold Out Tag",
+		line: "Proof you were early to something already gone.",
+	},
+	{
+		variant: 7,
+		short: "Lost Button",
+		thing: "A Lost Button",
+		line: "From a coat nobody remembers owning.",
+	},
+	{
+		variant: 8,
+		short: "Paper Crown",
+		thing: "A Paper Crown",
+		line: "Ruler of one empty box. Long may you reign.",
+	},
+	{
+		variant: 9,
+		short: "Snail",
+		thing: "A Snail",
+		line: "Got here before you. Will leave after you.",
+	},
+	{
+		variant: 10,
+		short: "Receipt",
+		thing: "A Crumpled Receipt",
+		line: "Total: 0.00. Keep for your records.",
+	},
+	{
+		variant: 11,
+		short: "Ghost Share",
+		thing: "The Ghost of a Share Certificate",
+		line: "Haunts portfolios. Harmless. Mostly.",
+	},
+	{
+		variant: 12,
+		short: "Echo",
+		thing: "An Echo",
+		line: "…hello? …hello? …hello?",
+	},
 ]);
 
 export const EMPTY_CHEST_COUNT = EMPTY_CHESTS.length;
@@ -41,6 +108,14 @@ export const EMPTY_CHEST_DISCLOSURE =
 /** The collectible's on-chain name, e.g. `Empty Chest #5 — A Dust Bunny`. */
 export function emptyChestName(chest: EmptyChest): string {
 	return `Empty Chest #${chest.variant + 1} — ${chest.thing}`;
+}
+
+/**
+ * The on-chain leaf name. Bubblegum V1 caps names at 32 bytes, so the leaf
+ * carries the short form and the hosted JSON carries the full name.
+ */
+export function emptyChestLeafName(chest: EmptyChest): string {
+	return `Empty Chest #${chest.variant + 1} — ${chest.short}`;
 }
 
 /** One minted leaf, as written by `mint-empty-chests.ts`. */

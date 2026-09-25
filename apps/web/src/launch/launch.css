@@ -508,6 +508,63 @@ a:hover {
 	font-variant-numeric: tabular-nums;
 }
 
+/* Empty Chest collectible: the chest sits on its own ivory ground, labelled like a gallery piece. */
+
+.empty-chest {
+	display: grid;
+	gap: 10px;
+	margin: 0 0 16px;
+}
+
+.empty-chest:empty,
+.empty-chest__art {
+	position: relative;
+	inline-size: min(100%, 300px);
+	aspect-ratio: 1;
+	margin-inline: auto;
+	border: 2px solid var(--ink);
+	border-radius: 14px;
+	background: var(--ivory);
+	overflow: hidden;
+}
+
+.empty-chest__art img,
+.empty-chest__art canvas {
+	position: absolute;
+	inset: 0;
+	inline-size: 100%;
+	block-size: 100%;
+}
+
+.empty-chest__art canvas {
+	opacity: 0;
+	transition: opacity 160ms ease-out;
+}
+
+.empty-chest__art canvas.is-playing {
+	opacity: 1;
+}
+
+.empty-chest figcaption {
+	display: grid;
+	gap: 2px;
+	padding-block-start: 8px;
+	border-block-start: 2px dashed var(--line);
+	text-align: center;
+}
+
+.empty-chest figcaption strong {
+	font-family: var(--display);
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 1.25;
+}
+
+.empty-chest figcaption span {
+	color: var(--ink-soft);
+	font-size: 14px;
+}
+
 .prize-card .action {
 	inline-size: 100%;
 }

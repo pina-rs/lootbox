@@ -23,6 +23,9 @@ pub use prize_pool::*;
 mod close;
 pub use close::*;
 
+mod issuer_stock;
+pub use issuer_stock::*;
+
 const SEED_TEMPLATE: &[u8] = b"template";
 const SEED_BUNDLE: &[u8] = b"bundle";
 const SEED_TEMPLATE_OPENING: &[u8] = b"template-opening";
@@ -1316,19 +1319,25 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 		if token_program != token::ID && token_program != token_2022::ID {
 			return Err(ProgramError::IncorrectProgramId);
 		}
+		// The outer allowlist is the widest prize policy. `admit_token_2022_prize`
+		// then keeps a mint strict unless an allow-listed issuer controls it.
 		let mint = self
 			.mint
 			.as_token_mint_for_program(&token_program)?
-			.assert_extensions_allowed(&[
-				token_2022::state::ExtensionType::MetadataPointer,
-				token_2022::state::ExtensionType::TokenMetadata,
-			])?;
+			.assert_extensions_allowed(&ISSUER_STOCK_EXTENSIONS)?;
+		let transfer_fee = if mint.token_2022().is_some() {
+			admit_token_2022_prize(&self.mint.try_borrow()?)?
+		} else if mint.freeze_authority().is_some() {
+			return Err(lootbox_error(LootboxError::InvalidPrize));
+		} else {
+			None
+		};
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		if bundle.status != BUNDLE_FUNDING {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
 
-		if mint.freeze_authority().is_some() || self.mint.address() == &WRAPPED_SOL_MINT_ID {
+		if self.mint.address() == &WRAPPED_SOL_MINT_ID {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 
@@ -1354,6 +1363,7 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 		if escrow.delegate().is_some() || escrow.close_authority().is_some() || escrow.is_frozen() {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
+		let escrow_before = escrow.amount();
 		drop(escrow);
 		let kind = if args.is_nft.get() {
 			PRIZE_NFT
@@ -1371,7 +1381,29 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 		)?;
 		drop(bundle);
 
-		if token_program == token_2022::ID {
+		if let Some(config) = transfer_fee {
+			// The issuer withholds its fee from the escrow's credit, so the
+			// funder sends the gross that leaves exactly `deposit` in escrow.
+			let schedule = config.epoch_fee(sysvars::clock::Clock::get()?.epoch);
+			let gross = schedule
+				.gross_for_net(deposit)
+				.ok_or(ProgramError::ArithmeticOverflow)?;
+			let fee = gross
+				.checked_sub(deposit)
+				.ok_or(ProgramError::ArithmeticOverflow)?;
+			self.token_program.assert_address(&token_2022::ID)?;
+			token_2022::instructions::transfer_fee::TransferCheckedWithFee::<&AccountView>::new(
+				&token_2022::ID,
+				self.source,
+				self.mint,
+				self.escrow,
+				self.authority,
+				gross,
+				decimals,
+				fee,
+			)
+			.invoke()?;
+		} else if token_program == token_2022::ID {
 			self.token_program.assert_address(&token_2022::ID)?;
 			token_2022::instructions::TransferChecked::new(
 				self.source,
@@ -1381,7 +1413,7 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 				deposit,
 				decimals,
 			)
-			.invoke()
+			.invoke()?;
 		} else {
 			self.token_program.assert_address(&token::ID)?;
 			token::instructions::TransferChecked::new(
@@ -1392,8 +1424,20 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 				deposit,
 				decimals,
 			)
-			.invoke()
+			.invoke()?;
 		}
+
+		// The escrow must hold exactly the recorded inventory, whatever the
+		// mint's fee schedule did to the transfer.
+		let escrow_after = self
+			.escrow
+			.as_token_account_for_program(&token_program)?
+			.amount();
+		if escrow_after.checked_sub(escrow_before) != Some(deposit) {
+			return Err(PinaProgramError::UnverifiedTransfer.into());
+		}
+
+		Ok(())
 	}
 }
 

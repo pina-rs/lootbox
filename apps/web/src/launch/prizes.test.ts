@@ -5,10 +5,13 @@ import {
 	assignTiers,
 	buildManifest,
 	type BundleSummary,
+	EMPTY_SOL_LAMPORTS,
 	formatOdds,
 	formatUnits,
+	isEmptyBundle,
 	loadPriceBook,
 	plannedLineup,
+	rowContents,
 	rowTitle,
 	snapshotPriceBook,
 } from "./prizes.js";
@@ -56,14 +59,70 @@ describe("prize manifest", () => {
 
 	it("falls back to rarity for unpriced prizes and never crowns ties", () => {
 		expect(
-			assignTiers([{ usdValue: null, copies: 1n }, {
-				usdValue: null,
-				copies: 5n,
-			}]),
+			assignTiers([
+				{ usdValue: null, copies: 1n, empty: false },
+				{ usdValue: null, copies: 5n, empty: false },
+			]),
 		).toEqual(["headline", "standard"]);
 		expect(
-			assignTiers([{ usdValue: 20, copies: 1n }, { usdValue: 20, copies: 1n }]),
+			assignTiers([
+				{ usdValue: 20, copies: 1n, empty: false },
+				{ usdValue: 20, copies: 1n, empty: false },
+			]),
 		).toEqual(["standard", "standard"]);
+	});
+
+	it("classifies a badge plus pocket-change SOL as the empty tier", () => {
+		const badge = "Badge111111111111111111111111111111111111111";
+		const rows = buildManifest(
+			[
+				...bundles,
+				{
+					index: 2,
+					quantity: 13n,
+					assets: [
+						{ kind: "mintBadge", mint: badge, amount: 1n, decimals: 0 },
+						{
+							kind: "sol",
+							mint: "11111111111111111111111111111111",
+							amount: 1_000_000n,
+							decimals: 9,
+						},
+					],
+				},
+			],
+			[1n, 2n, 13n],
+			book,
+		);
+		const empty = rows[2];
+
+		expect(rows.map((row) => row.tier)).toEqual([
+			"headline",
+			"standard",
+			"empty",
+		]);
+		expect(empty?.oddsPercent).toBe(81.25);
+		expect(rowTitle(empty ?? { lines: [] })).toBe("Empty box");
+		expect(rowContents(empty ?? { lines: [] })).toBe(
+			"Empty Box badge + 0.001 SOL",
+		);
+	});
+
+	it("keeps real SOL prizes out of the empty tier", () => {
+		const sol = (lamports: bigint) => ({
+			kind: "sol" as const,
+			lamports,
+		});
+
+		expect(isEmptyBundle([sol(EMPTY_SOL_LAMPORTS)])).toBe(true);
+		expect(isEmptyBundle([sol(EMPTY_SOL_LAMPORTS + 1n)])).toBe(false);
+		expect(isEmptyBundle([])).toBe(false);
+		expect(
+			assignTiers([
+				{ usdValue: 10, copies: 1n, empty: false },
+				{ usdValue: null, copies: 13n, empty: true },
+			]),
+		).toEqual(["standard", "empty"]);
 	});
 
 	it("labels SOL and unknown tokens without inventing a value", () => {

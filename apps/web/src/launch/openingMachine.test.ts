@@ -118,6 +118,15 @@ describe("opening machine", () => {
 	it("maps tiers to reactions and announces text-first status", () => {
 		expect(reactionFor("headline")).toBe("big-prize");
 		expect(reactionFor("standard")).toBe("small-prize");
+		expect(reactionFor("empty")).toBe("disappointed");
+		expect(
+			openingAnnouncement(
+				run({ type: "recorded", result: { ...result, tier: "empty" } }),
+				() => "a badge",
+			),
+		).toBe(
+			"Recorded on-chain: an empty box. You still get a badge. Not yet claimed.",
+		);
 		expect(
 			openingAnnouncement(run({ type: "recorded", result }), () => "1 OPENAI"),
 		).toBe("Recorded on-chain: you won 1 OPENAI. Not yet claimed.");

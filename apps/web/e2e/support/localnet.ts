@@ -7,7 +7,11 @@
  * cheatcode) so the manifest resolves logos and prices exactly as it would on
  * mainnet. No real key or real-network account is ever touched.
  */
-import { createTemplatePlan, LootboxClient } from "@pina-rs/lootbox";
+import {
+	createTemplatePlan,
+	LootboxClient,
+	type PrizeBundleInput,
+} from "@pina-rs/lootbox";
 import type { Page } from "@playwright/test";
 import {
 	findAssociatedTokenPda,
@@ -156,6 +160,7 @@ async function standInMint(
 export type LocalSeries = Readonly<{
 	treasury: Address;
 	boxMint: Address;
+	badge: Address | null;
 	revealAt: bigint;
 	rpcUrl: string;
 	client: LootboxClient;
@@ -165,27 +170,38 @@ export type LocalSeries = Readonly<{
 export const OPENAI_AMOUNT = 47_900_000n;
 export const SPACEX_AMOUNT = 217_000_000n;
 
-export async function createSeries(
-	options: Readonly<{ holder: Address; revealInSeconds?: bigint }>,
-): Promise<LocalSeries> {
-	const { rpcUrl, oracle } = await controlConfig();
-	const creator = await generateKeyPairSigner();
+/** Lamports in each empty box, alongside its mint-on-claim badge. */
+export const EMPTY_BOX_LAMPORTS = 1_000_000n;
 
-	await faucet(creator.address);
+type SeriesKind = "stocks" | "empty";
 
-	const client = new LootboxClient(rpcUrl, creator);
+async function seriesBundles(
+	kind: SeriesKind,
+	client: LootboxClient,
+	rpcUrl: string,
+	creator: KeyPairSigner,
+): Promise<{ bundles: PrizeBundleInput[]; badge: Address | null }> {
+	if (kind === "empty") {
+		const badge = await client.createBadgeMint(await generateKeyPairSigner());
+
+		return {
+			badge,
+			bundles: [{
+				label: "Empty box",
+				quantity: 3n,
+				assets: [
+					{ kind: "mintBadge", mint: badge, name: "Empty Box" },
+					{ kind: "sol", lamports: EMPTY_BOX_LAMPORTS },
+				],
+			}],
+		};
+	}
 
 	await standInMint(client, rpcUrl, STOCKS.OPENAI, creator, OPENAI_AMOUNT);
 	await standInMint(client, rpcUrl, STOCKS.SPACEX, creator, SPACEX_AMOUNT * 2n);
 
-	const revealAt = await chainTime(client) +
-		(options.revealInSeconds ?? 3_600n);
-	const plan = createTemplatePlan({
-		name: "Unlisted E2E",
-		uri: "",
-		opensAt: revealAt,
-		resultReceiptsEnabled: false,
-		settlementBountyLamports: 0n,
+	return {
+		badge: null,
 		bundles: [{
 			label: "OpenAI",
 			quantity: 1n,
@@ -207,6 +223,43 @@ export async function createSeries(
 				tokenProgram: CLASSIC_TOKEN,
 			}],
 		}],
+	};
+}
+
+/**
+ * Fund, lock, and hand three boxes to `holder`.
+ *
+ * `stocks` (default): one OpenAI slice and two SpaceX slices.
+ * `empty`: three empty boxes, each a mint-on-claim badge plus 0.001 SOL.
+ */
+export async function createSeries(
+	options: Readonly<{
+		holder: Address;
+		revealInSeconds?: bigint;
+		kind?: SeriesKind;
+	}>,
+): Promise<LocalSeries> {
+	const { rpcUrl, oracle } = await controlConfig();
+	const creator = await generateKeyPairSigner();
+
+	await faucet(creator.address);
+
+	const client = new LootboxClient(rpcUrl, creator);
+	const { bundles, badge } = await seriesBundles(
+		options.kind ?? "stocks",
+		client,
+		rpcUrl,
+		creator,
+	);
+	const revealAt = await chainTime(client) +
+		(options.revealInSeconds ?? 3_600n);
+	const plan = createTemplatePlan({
+		name: "Unlisted E2E",
+		uri: "",
+		opensAt: revealAt,
+		resultReceiptsEnabled: false,
+		settlementBountyLamports: 0n,
+		bundles,
 	});
 	const id = BigInt(Math.floor(Math.random() * 2 ** 48));
 	const created = await client.createTemplate(
@@ -223,6 +276,7 @@ export async function createSeries(
 	return {
 		treasury: locked.address,
 		boxMint: locked.data.boxMint,
+		badge,
 		revealAt,
 		rpcUrl,
 		client,

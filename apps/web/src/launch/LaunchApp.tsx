@@ -11,6 +11,7 @@ import {
 	useState,
 } from "react";
 
+import { assetUrl } from "./assets.js";
 import { Chest } from "./Chest.js";
 import {
 	BRAND,
@@ -33,9 +34,11 @@ import {
 	lineTitle,
 	loadPriceBook,
 	type ManifestRow,
+	PLANNED_EMPTY_COPIES,
 	plannedLineup,
 	type PriceBook,
 	type PrizeLine,
+	rowContents,
 	rowTitle,
 	shortAddress,
 	snapshotPriceBook,
@@ -145,6 +148,19 @@ function PrizeLogo({ line }: Readonly<{ line: PrizeLine }>) {
 		);
 	}
 
+	if (line.kind === "badge") {
+		return (
+			<img
+				className="prize-logo"
+				src={assetUrl("metadata/empty-box.png")}
+				alt=""
+				width={40}
+				height={40}
+				loading="lazy"
+			/>
+		);
+	}
+
 	return (
 		<span className="prize-logo prize-logo-fallback" aria-hidden="true">
 			{line.kind === "sol" ? "◎" : "✦"}
@@ -160,6 +176,8 @@ function lineName(line: PrizeLine): string {
 			return "Solana";
 		case "token":
 			return `Token ${shortAddress(line.mint)}`;
+		case "badge":
+			return "Empty Box badge";
 		case "collectible":
 			return `Collectible ${shortAddress(line.mint)}`;
 	}
@@ -183,8 +201,12 @@ function ManifestTable(
 					>
 						{first && <PrizeLogo line={first} />}
 						<div className="manifest-name">
-							<strong>{row.lines.map(lineName).join(" + ")}</strong>
-							<span>{rowTitle(row)}</span>
+							<strong>
+								{row.tier === "empty"
+									? `Empty box ×${row.copies.toString()}`
+									: row.lines.map(lineName).join(" + ")}
+							</strong>
+							<span>{rowContents(row)}</span>
 						</div>
 						<div className="manifest-value">
 							{row.usdValue === null ? "—" : `≈ ${formatUsd(row.usdValue)}`}
@@ -227,7 +249,9 @@ function ManifestTable(
 
 function PlannedTable({ book }: Readonly<{ book: PriceBook }>) {
 	const lineup = plannedLineup(book);
-	const total = lineup.reduce((sum, slice) => sum + slice.copies, 0);
+	const total = lineup.reduce((sum, slice) => sum + slice.copies, 0) +
+		PLANNED_EMPTY_COPIES;
+	const emptyOdds = PLANNED_EMPTY_COPIES / total * 100;
 
 	return (
 		<ol className="manifest" aria-label="Planned prizes">
@@ -261,9 +285,34 @@ function PlannedTable({ book }: Readonly<{ book: PriceBook }>) {
 					</div>
 				</li>
 			))}
+			<li className="manifest-row" data-tier="empty">
+				<img
+					className="prize-logo"
+					src={assetUrl("metadata/empty-box.png")}
+					alt=""
+					width={40}
+					height={40}
+					loading="lazy"
+				/>
+				<div className="manifest-name">
+					<strong>Empty box ×{PLANNED_EMPTY_COPIES}</strong>
+					<span>Empty Box badge + 0.001 SOL</span>
+				</div>
+				<div className="manifest-value">—</div>
+				<div className="manifest-copies">{PLANNED_EMPTY_COPIES} boxes</div>
+				<div className="manifest-odds">
+					<span>{formatOdds(emptyOdds)}</span>
+					<span
+						className="odds-bar"
+						style={{ inlineSize: `${emptyOdds}%` }}
+						aria-hidden="true"
+					/>
+				</div>
+			</li>
 			<li className="manifest-foot">
-				Planned lineup of about £200. The live manifest replaces this once the
-				treasury is funded and locked on-chain.
+				Planned lineup of about £200 across {total}{" "}
+				boxes. The live manifest replaces this once the treasury is funded and
+				locked on-chain.
 			</li>
 		</ol>
 	);
@@ -299,9 +348,19 @@ function PrizeCard(
 			data-tier={result.tier}
 		>
 			<p className="prize-kicker">
-				{result.tier === "headline" ? "Jackpot bundle" : "You won"}
+				{result.tier === "headline"
+					? "Jackpot bundle"
+					: result.tier === "empty"
+					? "Empty box"
+					: "You won"}
 			</p>
-			<h2 id="prize-card-title">{row ? rowTitle(row) : "Your prize"}</h2>
+			<h2 id="prize-card-title">
+				{result.tier === "empty"
+					? "Empty box — you kept the chest"
+					: row
+					? rowTitle(row)
+					: "Your prize"}
+			</h2>
 			<ul className="prize-lines">
 				{row?.lines.map((line, index) => (
 					<li key={index}>
@@ -541,7 +600,9 @@ export default function LaunchApp() {
 				candidate.index === result.bundleIndex
 			);
 
-			return row ? rowTitle(row) : "a prize";
+			if (!row) return "a prize";
+
+			return row.tier === "empty" ? rowContents(row) : rowTitle(row);
 		},
 		[rows],
 	);
@@ -795,7 +856,7 @@ export default function LaunchApp() {
 	return (
 		<div className="launch">
 			<header className="launch-header">
-				<a className="brand" href="/">
+				<a className="brand" href={assetUrl("")}>
 					<span className="brand-mark" aria-hidden="true" />
 					{BRAND}
 				</a>
@@ -1091,7 +1152,7 @@ export default function LaunchApp() {
 			<footer className="launch-footer">
 				<p>
 					{BRAND} is built on the open-source Lootbox by Pina program.{" "}
-					<a href="/playground">Creator playground</a>
+					<a href={assetUrl("playground")}>Creator playground</a>
 				</p>
 				{snapshot && (
 					<p className="muted">

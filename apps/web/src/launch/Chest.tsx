@@ -6,6 +6,7 @@ import {
 	useState,
 } from "react";
 
+import { assetUrl } from "./assets.js";
 import {
 	chargeLevel,
 	HOLD_TO_OPEN_MS,
@@ -13,7 +14,7 @@ import {
 	reactionFor,
 } from "./openingMachine.js";
 
-const ASSETS = "/animations/cartoon-chest";
+const ASSETS = assetUrl("animations/cartoon-chest");
 
 export type ChestProps = Readonly<{
 	state: OpeningState;

@@ -1,5 +1,6 @@
 import { StrictMode, useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { assetUrl } from "./launch/assets.js";
 import { LootboxMachine } from "./lootbox/Machine.js";
 import type { RevealOutcome } from "./lootbox/reveal.js";
 import "./reveal-preview.css";
@@ -68,7 +69,7 @@ function Preview() {
 			</p>
 			<footer>
 				Animation preview only. No prize is selected or awarded.<br />
-				<a href="/">Back to the lootbox workshop</a>
+				<a href={assetUrl("playground")}>Back to the lootbox workshop</a>
 			</footer>
 		</main>
 	);

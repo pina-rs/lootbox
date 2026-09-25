@@ -4,7 +4,7 @@ import type { PrizeTier } from "./prizes.js";
 export const HOLD_TO_OPEN_MS = 1_200;
 
 /** The chest reaction clip that plays once the recorded result is known. */
-export type Reaction = "big-prize" | "small-prize";
+export type Reaction = "big-prize" | "small-prize" | "disappointed";
 
 /** The on-chain result, read back after allocation. */
 export type RecordedResult = Readonly<{
@@ -132,7 +132,14 @@ export function chargeLevel(startedAt: number, now: number): number {
 }
 
 export function reactionFor(tier: PrizeTier): Reaction {
-	return tier === "headline" ? "big-prize" : "small-prize";
+	switch (tier) {
+		case "headline":
+			return "big-prize";
+		case "standard":
+			return "small-prize";
+		case "empty":
+			return "disappointed";
+	}
 }
 
 /** One sentence for the polite live region. Never depends on the animation. */
@@ -151,9 +158,13 @@ export function openingAnnouncement(
 			return "Box burned. Waiting for the Switchboard oracle to reveal the randomness.";
 		case "revealing":
 		case "revealed":
-			return `Recorded on-chain: you won ${
-				prizeTitle(state.result)
-			}. Not yet claimed.`;
+			return state.result.tier === "empty"
+				? `Recorded on-chain: an empty box. You still get ${
+					prizeTitle(state.result)
+				}. Not yet claimed.`
+				: `Recorded on-chain: you won ${
+					prizeTitle(state.result)
+				}. Not yet claimed.`;
 		case "claiming":
 			return `Claiming ${prizeTitle(state.result)} to your wallet.`;
 		case "claimed":

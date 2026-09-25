@@ -1,5 +1,6 @@
 import { templateInventory } from "@pina-rs/lootbox";
 
+import { assetUrl } from "./assets.js";
 import snapshot from "./prestocks-snapshot.json";
 
 const PRESTOCKS_API = "https://prestocks.com/api/prestocks";
@@ -31,7 +32,12 @@ export function snapshotPriceBook(): PriceBook {
 	return Object.freeze({
 		source: "snapshot",
 		capturedAt: snapshot.capturedAt,
-		stocks: new Map(snapshot.stocks.map((stock) => [stock.mint, stock])),
+		stocks: new Map(
+			snapshot.stocks.map((stock) => [stock.mint, {
+				...stock,
+				logo: assetUrl(stock.logo),
+			}]),
+		),
 	});
 }
 
@@ -96,6 +102,7 @@ export type PrizeLine =
 	}>
 	| Readonly<{ kind: "sol"; lamports: bigint }>
 	| Readonly<{ kind: "token"; mint: string; amount: bigint; decimals: number }>
+	| Readonly<{ kind: "badge"; mint: string }>
 	| Readonly<{ kind: "collectible"; mint: string }>;
 
 /** The subset of a decoded on-chain bundle the manifest needs. */
@@ -110,7 +117,11 @@ export type BundleSummary = Readonly<{
 	}>[];
 }>;
 
-export type PrizeTier = "headline" | "standard";
+/**
+ * `headline` earns the big celebration, `standard` the lesser one, and
+ * `empty` is the consolation bundle (a badge and pocket-change SOL).
+ */
+export type PrizeTier = "headline" | "standard" | "empty";
 
 export type ManifestRow = Readonly<{
 	index: number;
@@ -125,6 +136,20 @@ export type ManifestRow = Readonly<{
 const FUNGIBLE_KINDS = new Set(["token", "token2022", "quoteToken"]);
 const SOL_KINDS = new Set(["sol", "quoteSol"]);
 
+/** SOL at or below this is pocket change, not a prize (0.01 SOL). */
+export const EMPTY_SOL_LAMPORTS = 10_000_000n;
+
+/**
+ * An empty box holds no real prize: only a mint-on-claim badge and/or a tiny
+ * amount of SOL. Any stock, token, NFT, or meaningful SOL makes it a prize.
+ */
+export function isEmptyBundle(lines: readonly PrizeLine[]): boolean {
+	return lines.length > 0 && lines.every((line) =>
+		line.kind === "badge" ||
+		(line.kind === "sol" && line.lamports <= EMPTY_SOL_LAMPORTS)
+	);
+}
+
 function unitsToNumber(amount: bigint, decimals: number): number {
 	return Number(amount) / 10 ** decimals;
 }
@@ -135,6 +160,10 @@ export function prizeLine(
 ): PrizeLine {
 	if (SOL_KINDS.has(asset.kind)) {
 		return { kind: "sol", lamports: asset.amount };
+	}
+
+	if (asset.kind === "mintBadge") {
+		return { kind: "badge", mint: asset.mint };
 	}
 
 	if (!FUNGIBLE_KINDS.has(asset.kind)) {
@@ -176,36 +205,48 @@ function rowValue(lines: readonly PrizeLine[]): number | null {
 /**
  * Decide which bundles earn the big celebration.
  *
- * The headline tier is the highest-valued bundle when prices are known, or the
- * rarest bundle by original copies otherwise. When every bundle ties there is
- * no headline: nobody should get a "you won big" moment for an average prize.
+ * Empty bundles are always `empty`. Among the rest, the headline tier is the
+ * highest-valued bundle when prices are known, or the rarest bundle by
+ * original copies otherwise. When every prize ties there is no headline:
+ * nobody should get a "you won big" moment for an average prize.
  */
 export function assignTiers(
-	rows: readonly Readonly<{ usdValue: number | null; copies: bigint }>[],
+	rows: readonly Readonly<{
+		usdValue: number | null;
+		copies: bigint;
+		empty: boolean;
+	}>[],
 ): PrizeTier[] {
-	const values = rows.map((row) => row.usdValue);
-	const allValued = values.every((value) => value !== null);
+	const prizes = rows.filter((row) => !row.empty);
+	const headline = headlineTest(prizes);
 
-	if (allValued && rows.length > 1) {
+	return rows.map((row) =>
+		row.empty ? "empty" : headline(row) ? "headline" : "standard"
+	);
+}
+
+function headlineTest(
+	prizes: readonly Readonly<{ usdValue: number | null; copies: bigint }>[],
+): (row: Readonly<{ usdValue: number | null; copies: bigint }>) => boolean {
+	if (prizes.length < 2) return () => false;
+
+	const values = prizes.map((row) => row.usdValue);
+
+	if (values.every((value) => value !== null)) {
 		const numeric = values.filter((value): value is number => value !== null);
 		const top = Math.max(...numeric);
 		const distinct = numeric.some((value) => value < top * 0.999);
 
-		return numeric.map((value) =>
-			distinct && value >= top * 0.999 ? "headline" : "standard"
-		);
+		return (row) => distinct && (row.usdValue ?? 0) >= top * 0.999;
 	}
 
-	const rarest = rows.reduce<bigint | null>(
-		(minimum, row) =>
-			minimum === null || row.copies < minimum ? row.copies : minimum,
-		null,
+	const rarest = prizes.reduce(
+		(minimum, row) => row.copies < minimum ? row.copies : minimum,
+		prizes[0]?.copies ?? 0n,
 	);
-	const distinct = rows.some((row) => row.copies !== rarest);
+	const distinct = prizes.some((row) => row.copies !== rarest);
 
-	return rows.map((row) =>
-		distinct && row.copies === rarest ? "headline" : "standard"
-	);
+	return (row) => distinct && row.copies === rarest;
 }
 
 /** Build the live manifest: prizes, copies left, and odds from remaining inventory. */
@@ -228,11 +269,12 @@ export function buildManifest(
 			remaining: remaining[bundle.index] ?? 0n,
 			oddsPercent: odds[bundle.index]?.probabilityPercent ?? 0,
 			usdValue: rowValue(lines),
+			empty: isEmptyBundle(lines),
 		};
 	});
 	const tiers = assignTiers(drafts);
 
-	return drafts.map((row, index) => ({
+	return drafts.map(({ empty: _empty, ...row }, index) => ({
 		...row,
 		tier: tiers[index] ?? "standard",
 	}));
@@ -254,6 +296,9 @@ const PLAN: readonly Readonly<{ symbol: string; gbp: number }>[] = [
 	{ symbol: "NEURALINK", gbp: 20 },
 	{ symbol: "POLYMARKET", gbp: 20 },
 ];
+
+/** Copies of the planned consolation bundle (badge + 0.001 SOL). */
+export const PLANNED_EMPTY_COPIES = 13;
 
 export function plannedLineup(book: PriceBook): PlannedSlice[] {
 	const bySymbol = new Map(
@@ -308,11 +353,19 @@ export function lineTitle(line: PrizeLine): string {
 			return `${formatUnits(line.lamports, 9)} SOL`;
 		case "token":
 			return `${formatUnits(line.amount, line.decimals)} tokens`;
+		case "badge":
+			return "Empty Box badge";
 		case "collectible":
 			return "Collectible";
 	}
 }
 
-export function rowTitle(row: Pick<ManifestRow, "lines">): string {
+/** What the bundle contains, e.g. "0.0479 OPENAI" or "Empty Box badge + 0.001 SOL". */
+export function rowContents(row: Pick<ManifestRow, "lines">): string {
 	return row.lines.map(lineTitle).join(" + ");
+}
+
+/** The headline for a bundle: its contents, or "Empty box" for the consolation. */
+export function rowTitle(row: Pick<ManifestRow, "lines">): string {
+	return isEmptyBundle(row.lines) ? "Empty box" : rowContents(row);
 }

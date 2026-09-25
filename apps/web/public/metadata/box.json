@@ -1,0 +1,7 @@
+{
+	"name": "Unlisted Box",
+	"symbol": "UNLISTED",
+	"description": "A sealed Unlisted box. After the reveal date, open it at pina-rs.github.io/lootbox to claim the tokenized pre-IPO stock escrowed inside, or an empty box. Before then it is an ordinary token you can hold or send.",
+	"image": "https://pina-rs.github.io/lootbox/metadata/box.png",
+	"external_url": "https://pina-rs.github.io/lootbox/"
+}

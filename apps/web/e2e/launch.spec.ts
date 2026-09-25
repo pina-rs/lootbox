@@ -91,11 +91,17 @@ async function holdChest(page: Page) {
 	await page.mouse.up();
 }
 
-async function openSeries(page: Page, options: { revealed: boolean }) {
+async function openSeries(
+	page: Page,
+	options: { revealed: boolean; kind?: "stocks" | "empty" },
+) {
 	await stubPrices(page);
 
 	const wallet = await injectTestWallet(page);
-	const series = await createSeries({ holder: wallet.address });
+	const series = await createSeries({
+		holder: wallet.address,
+		...(options.kind ? { kind: options.kind } : {}),
+	});
 
 	// Travel well past the reveal so the next produced block is unambiguous.
 	if (options.revealed) await timeTravel(series.revealAt + 60n);
@@ -145,7 +151,8 @@ test("landing explains the series before a treasury is configured", async ({ pag
 		page.getByRole("list", { name: "Planned prizes" }).getByRole(
 			"listitem",
 		),
-	).toHaveCount(8);
+	).toHaveCount(9);
+	await expect(page.getByText("Empty box ×13")).toBeVisible();
 	await expect(page.getByTestId("countdown")).toHaveText(
 		"Date to be announced",
 	);
@@ -347,5 +354,61 @@ test("an oracle outage is recoverable and never burns a second box", async ({ pa
 	await expect(page.getByTestId("prize-card")).toBeVisible();
 	await expect(page.getByTestId("box-balance")).toHaveText("2");
 	await claimAndVerify(page, series, wallet.address);
+	expect(errors).toEqual([]);
+});
+
+test("an empty box plays the disappointed reaction and still delivers the badge and SOL", async ({ page }) => {
+	test.setTimeout(180_000);
+
+	const errors = watchErrors(page);
+	const { wallet, series } = await openSeries(page, {
+		revealed: true,
+		kind: "empty",
+	});
+
+	await expect(page.getByText("Empty box ×3")).toBeVisible();
+	await expect(page.getByTestId("odds-0")).toHaveText("100%");
+	await connect(page);
+	await expect(page.getByTestId("box-balance")).toHaveText("3");
+	await holdChest(page);
+	await expect(page.getByTestId("announcer")).toContainText(
+		"an empty box",
+		{ timeout: 30_000 },
+	);
+	await expect(chest(page)).toHaveAttribute("data-reaction", "disappointed");
+	await page.getByRole("button", { name: "Skip animation" }).click();
+
+	const card = page.getByTestId("prize-card");
+
+	await expect(card.getByRole("heading")).toHaveText(
+		"Empty box — you kept the chest",
+	);
+	await expect(card).toContainText("Empty Box badge");
+	await expect(card).toContainText("0.001 SOL");
+
+	const badge = series.badge;
+
+	if (!badge) throw new Error("empty series has no badge");
+
+	const lamportsBefore = (await series.client.rpc.getBalance(wallet.address, {
+		commitment: "processed",
+	}).send()).value;
+
+	await card.getByRole("button", { name: "Claim to wallet" }).click();
+	await expect(page.getByTestId("prize-state")).toHaveText(
+		"Delivered to your wallet.",
+		{ timeout: 30_000 },
+	);
+	expect(await tokenBalance(series.client, wallet.address, badge)).toBe(1n);
+
+	const lamportsAfter = (await series.client.rpc.getBalance(wallet.address, {
+		commitment: "processed",
+	}).send()).value;
+
+	// The claimer pays about 0.00204 SOL badge-account rent plus fees. Without
+	// the 0.001 SOL asset the change would be below -0.002 SOL.
+	expect(lamportsAfter - lamportsBefore).toBeGreaterThan(-1_500_000n);
+	await expect(chest(page)).toHaveAttribute("data-reaction", "disappointed");
+	await expectAccessible(page);
 	expect(errors).toEqual([]);
 });

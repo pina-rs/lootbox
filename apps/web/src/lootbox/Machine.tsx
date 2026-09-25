@@ -1,5 +1,6 @@
 import type { Rive } from "@rive-app/canvas";
 import { useEffect, useRef, useState } from "react";
+import { assetUrl } from "../launch/assets.js";
 import { revealAnimations, type RevealOutcome } from "./reveal.js";
 import "./machine.css";
 
@@ -18,7 +19,7 @@ type Props = {
 	playReveal?: boolean;
 	onRevealComplete?: () => void;
 };
-const assetPath = "/animations/ink-chest";
+const assetPath = assetUrl("animations/ink-chest");
 
 export function LootboxMachine(
 	{ phase, outcome = "small-prize", playReveal = false, onRevealComplete }:

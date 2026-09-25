@@ -7,8 +7,8 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const REFUND_OPEN_DISCRIMINATOR = 7;
@@ -38,29 +38,31 @@ export function getRefundOpenInstructionDataCodec(): FixedSizeCodec<RefundOpenIn
     return combineCodec(getRefundOpenInstructionDataEncoder(), getRefundOpenInstructionDataDecoder());
 }
 
-export type RefundOpenInput<TAccountRecipient extends string = string, TAccountLootbox extends string = string, TAccountVault extends string = string, TAccountBoxMint extends string = string, TAccountOpening extends string = string, TAccountRandomness extends string = string, TAccountClock extends string = string> =  {
-  recipient: TransactionSigner<TAccountRecipient>;
-lootbox: Address<TAccountLootbox>;
-vault: Address<TAccountVault>;
-boxMint: Address<TAccountBoxMint>;
-opening: Address<TAccountOpening>;
-randomness: Address<TAccountRandomness>;
-clock: Address<TAccountClock>;
+export type RefundOpenInput<TAccountRecipient extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountRandomness extends InstructionAccountInput = InstructionAccountInput, TAccountClock extends InstructionAccountInput = InstructionAccountInput> =  {
+  recipient: TAccountRecipient;
+lootbox: TAccountLootbox;
+vault: TAccountVault;
+boxMint: TAccountBoxMint;
+opening: TAccountOpening;
+randomness: TAccountRandomness;
+clock: TAccountClock;
 }
 
-export function getRefundOpenInstruction<TAccountRecipient extends string, TAccountLootbox extends string, TAccountVault extends string, TAccountBoxMint extends string, TAccountOpening extends string, TAccountRandomness extends string, TAccountClock extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: RefundOpenInput<TAccountRecipient, TAccountLootbox, TAccountVault, TAccountBoxMint, TAccountOpening, TAccountRandomness, TAccountClock>, config?: { programAddress?: TProgramAddress } ): RefundOpenInstruction<TProgramAddress, TAccountRecipient, TAccountLootbox, TAccountVault, TAccountBoxMint, TAccountOpening, TAccountRandomness, TAccountClock> {
+export function getRefundOpenInstruction<TAccountRecipient extends InstructionSignerInput, TAccountLootbox extends InstructionAccountInput, TAccountVault extends InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput, TAccountOpening extends InstructionAccountInput, TAccountRandomness extends InstructionAccountInput, TAccountClock extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: RefundOpenInput<TAccountRecipient, TAccountLootbox, TAccountVault, TAccountBoxMint, TAccountOpening, TAccountRandomness, TAccountClock>, config?: { programAddress?: TProgramAddress } ): RefundOpenInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountRecipient, InstructionAccountInputAddress<TAccountRecipient>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountOpening, InstructionAccountInputAddress<TAccountOpening>>, ResolvedInstructionAccountMeta<TAccountRandomness, InstructionAccountInputAddress<TAccountRandomness>>, ResolvedInstructionAccountMeta<TAccountClock, InstructionAccountInputAddress<TAccountClock>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { recipient: { value: input.recipient ?? null, isWritable: true }, lootbox: { value: input.lootbox ?? null, isWritable: true }, vault: { value: input.vault ?? null, isWritable: true }, boxMint: { value: input.boxMint ?? null, isWritable: false }, opening: { value: input.opening ?? null, isWritable: true }, randomness: { value: input.randomness ?? null, isWritable: false }, clock: { value: input.clock ?? null, isWritable: false } }
+const originalAccounts = { recipient: { value: input.recipient ?? null, isSigner: true, isWritable: true }, lootbox: { value: input.lootbox ?? null, isSigner: false, isWritable: true }, vault: { value: input.vault ?? null, isSigner: false, isWritable: true }, boxMint: { value: input.boxMint ?? null, isSigner: false, isWritable: false }, opening: { value: input.opening ?? null, isSigner: false, isWritable: true }, randomness: { value: input.randomness ?? null, isSigner: false, isWritable: false }, clock: { value: input.clock ?? null, isSigner: false, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
 
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("recipient", accounts.recipient), getAccountMeta("lootbox", accounts.lootbox), getAccountMeta("vault", accounts.vault), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("opening", accounts.opening), getAccountMeta("randomness", accounts.randomness), getAccountMeta("clock", accounts.clock)], data: getRefundOpenInstructionDataEncoder().encode({}), programAddress } as RefundOpenInstruction<TProgramAddress, TAccountRecipient, TAccountLootbox, TAccountVault, TAccountBoxMint, TAccountOpening, TAccountRandomness, TAccountClock>);
+return Object.freeze({ accounts: [getAccountMeta("recipient", accounts.recipient), getAccountMeta("lootbox", accounts.lootbox), getAccountMeta("vault", accounts.vault), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("opening", accounts.opening), getAccountMeta("randomness", accounts.randomness), getAccountMeta("clock", accounts.clock)], data: getRefundOpenInstructionDataEncoder().encode({}), programAddress } as RefundOpenInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountRecipient, InstructionAccountInputAddress<TAccountRecipient>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountOpening, InstructionAccountInputAddress<TAccountOpening>>, ResolvedInstructionAccountMeta<TAccountRandomness, InstructionAccountInputAddress<TAccountRandomness>>, ResolvedInstructionAccountMeta<TAccountClock, InstructionAccountInputAddress<TAccountClock>>>);
 }
 
 export type ParsedRefundOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

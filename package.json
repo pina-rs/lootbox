@@ -11,15 +11,15 @@
 		"test": "pnpm --recursive --if-present test"
 	},
 	"dependencies": {
-		"@codama/renderers-js": "^2.4.0",
+		"@codama/renderers-js": "^2.5.0",
 		"@metaplex-foundation/digital-asset-standard-api": "^2.1.1",
 		"@metaplex-foundation/mpl-bubblegum": "^5.1.0",
 		"@metaplex-foundation/umi": "^1.6.0",
 		"@metaplex-foundation/umi-bundle-defaults": "^1.6.0",
-		"codama": "^1.10.2",
-		"codama-renderers-dart": "0.5.1"
+		"codama": "^1.11.0",
+		"codama-renderers-dart": "0.5.6"
 	},
 	"devDependencies": {
-		"@solana/surfpool": "1.5.0"
+		"@solana/surfpool": "1.6.0"
 	}
 }

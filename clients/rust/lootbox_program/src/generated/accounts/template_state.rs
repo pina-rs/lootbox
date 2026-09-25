@@ -13,7 +13,7 @@
 #[pinapod(crate = pina::pinapod, no_inherent)]
 #[pinapod(compact)]
 pub struct TemplateState {
-	/// Immutable template terms and the live finite inventory.
+/// Immutable template terms and the live finite inventory.
 	pub discriminator: u8,
 	pub migration_version: u8,
 	pub authority: solana_pubkey::Pubkey,
@@ -71,20 +71,12 @@ pub const TEMPLATE_STATE_MIGRATION_VERSION: u8 = 0u8;
 impl TemplateState {
 	pub const HEADER_SIZE: usize = <Self as pina::PinaPodCompact>::HEADER_SIZE;
 
-	pub fn initialize(
-		data: &mut [u8],
-		patch: TemplateStatePatch<'_>,
-	) -> Result<usize, solana_program_error::ProgramError> {
-		patch
-			.discriminator(TEMPLATE_STATE_DISCRIMINATOR)
-			.migration_version(TEMPLATE_STATE_MIGRATION_VERSION)
-			.initialize(data)
+	pub fn initialize(data: &mut [u8], patch: TemplateStatePatch<'_>) -> Result<usize, solana_program_error::ProgramError> {
+		patch.discriminator(TEMPLATE_STATE_DISCRIMINATOR).migration_version(TEMPLATE_STATE_MIGRATION_VERSION).initialize(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)
 	}
 
-	pub fn from_bytes(
-		data: &[u8],
-	) -> Result<TemplateStateRef<'_>, solana_program_error::ProgramError> {
+	pub fn from_bytes(data: &[u8]) -> Result<TemplateStateRef<'_>, solana_program_error::ProgramError> {
 		let account = TemplateStateRef::new(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != TEMPLATE_STATE_DISCRIMINATOR {
@@ -100,16 +92,16 @@ impl TemplateState {
 impl TemplateState {
 	pub fn find_pda(authority: &solana_pubkey::Pubkey, id: u64) -> (solana_pubkey::Pubkey, u8) {
 		solana_pubkey::Pubkey::find_program_address(
-			&["template".as_bytes(), authority.as_ref(), &id.to_le_bytes()],
+			&[
+				"template".as_bytes(),
+				authority.as_ref(),
+				&id.to_le_bytes(),
+			],
 			&crate::LOOTBOX_PROGRAM_ID,
 		)
 	}
 
-	pub fn create_pda(
-		authority: &solana_pubkey::Pubkey,
-		id: u64,
-		bump: u8,
-	) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(authority: &solana_pubkey::Pubkey, id: u64, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
 			&[
 				"template".as_bytes(),
@@ -121,6 +113,7 @@ impl TemplateState {
 		)
 	}
 }
+
 
 /// Whether raw account bytes are stale for this contract: the envelope names this account's discriminator and carries a version older than
 /// [`TEMPLATE_STATE_MIGRATION_VERSION`]. Current or foreign bytes return false; decoding explains the difference.

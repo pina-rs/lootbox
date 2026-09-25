@@ -7,8 +7,8 @@
  */
 
 import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlySignerAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlySignerAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const FUND_COMPRESSED_NFT_PRIZE_DISCRIMINATOR = 33;
@@ -38,18 +38,18 @@ export function getFundCompressedNftPrizeInstructionDataCodec(): FixedSizeCodec<
     return combineCodec(getFundCompressedNftPrizeInstructionDataEncoder(), getFundCompressedNftPrizeInstructionDataDecoder());
 }
 
-export type FundCompressedNftPrizeInput<TAccountAuthority extends string = string, TAccountTemplate extends string = string, TAccountBundle extends string = string, TAccountTreeConfig extends string = string, TAccountMerkleTree extends string = string, TAccountBubblegumProgram extends string = string, TAccountLogWrapper extends string = string, TAccountCompressionProgram extends string = string, TAccountSystemProgram extends string = string, TAccountProofAccounts extends string = string> =  {
-  authority: TransactionSigner<TAccountAuthority>;
-template: Address<TAccountTemplate>;
-bundle: Address<TAccountBundle>;
-treeConfig: Address<TAccountTreeConfig>;
-merkleTree: Address<TAccountMerkleTree>;
-bubblegumProgram: Address<TAccountBubblegumProgram>;
-logWrapper: Address<TAccountLogWrapper>;
-compressionProgram: Address<TAccountCompressionProgram>;
-systemProgram: Address<TAccountSystemProgram>;
+export type FundCompressedNftPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountTreeConfig extends InstructionAccountInput = InstructionAccountInput, TAccountMerkleTree extends InstructionAccountInput = InstructionAccountInput, TAccountBubblegumProgram extends InstructionAccountInput = InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput = InstructionAccountInput, TAccountCompressionProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountProofAccounts extends InstructionAccountInput = InstructionAccountInput> =  {
+  authority: TAccountAuthority;
+template: TAccountTemplate;
+bundle: TAccountBundle;
+treeConfig: TAccountTreeConfig;
+merkleTree: TAccountMerkleTree;
+bubblegumProgram: TAccountBubblegumProgram;
+logWrapper: TAccountLogWrapper;
+compressionProgram: TAccountCompressionProgram;
+systemProgram: TAccountSystemProgram;
 /** Merkle proof nodes in leaf-to-root order. */
-proofAccounts: Address<TAccountProofAccounts>;
+proofAccounts: TAccountProofAccounts;
 root: FundCompressedNftPrizeInstructionDataArgs["root"];
 dataHash: FundCompressedNftPrizeInstructionDataArgs["dataHash"];
 creatorHash: FundCompressedNftPrizeInstructionDataArgs["creatorHash"];
@@ -57,12 +57,15 @@ nonce: FundCompressedNftPrizeInstructionDataArgs["nonce"];
 index: FundCompressedNftPrizeInstructionDataArgs["index"];
 }
 
-export function getFundCompressedNftPrizeInstruction<TAccountAuthority extends string, TAccountTemplate extends string, TAccountBundle extends string, TAccountTreeConfig extends string, TAccountMerkleTree extends string, TAccountBubblegumProgram extends string, TAccountLogWrapper extends string, TAccountCompressionProgram extends string, TAccountSystemProgram extends string, TAccountProofAccounts extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: FundCompressedNftPrizeInput<TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountTreeConfig, TAccountMerkleTree, TAccountBubblegumProgram, TAccountLogWrapper, TAccountCompressionProgram, TAccountSystemProgram, TAccountProofAccounts>, config?: { programAddress?: TProgramAddress } ): FundCompressedNftPrizeInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountTreeConfig, TAccountMerkleTree, TAccountBubblegumProgram, TAccountLogWrapper, TAccountCompressionProgram, TAccountSystemProgram, TAccountProofAccounts> {
+export function getFundCompressedNftPrizeInstruction<TAccountAuthority extends InstructionSignerInput, TAccountTemplate extends InstructionAccountInput, TAccountBundle extends InstructionAccountInput, TAccountTreeConfig extends InstructionAccountInput, TAccountMerkleTree extends InstructionAccountInput, TAccountBubblegumProgram extends InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput, TAccountCompressionProgram extends InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput, TAccountProofAccounts extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: FundCompressedNftPrizeInput<TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountTreeConfig, TAccountMerkleTree, TAccountBubblegumProgram, TAccountLogWrapper, TAccountCompressionProgram, TAccountSystemProgram, TAccountProofAccounts>, config?: { programAddress?: TProgramAddress } ): FundCompressedNftPrizeInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountTreeConfig, InstructionAccountInputAddress<TAccountTreeConfig>>, ResolvedInstructionAccountMeta<TAccountMerkleTree, InstructionAccountInputAddress<TAccountMerkleTree>>, ResolvedInstructionAccountMeta<TAccountBubblegumProgram, InstructionAccountInputAddress<TAccountBubblegumProgram>>, ResolvedInstructionAccountMeta<TAccountLogWrapper, InstructionAccountInputAddress<TAccountLogWrapper>>, ResolvedInstructionAccountMeta<TAccountCompressionProgram, InstructionAccountInputAddress<TAccountCompressionProgram>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>, ResolvedInstructionAccountMeta<TAccountProofAccounts, InstructionAccountInputAddress<TAccountProofAccounts>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isWritable: false }, template: { value: input.template ?? null, isWritable: false }, bundle: { value: input.bundle ?? null, isWritable: true }, treeConfig: { value: input.treeConfig ?? null, isWritable: false }, merkleTree: { value: input.merkleTree ?? null, isWritable: true }, bubblegumProgram: { value: input.bubblegumProgram ?? null, isWritable: false }, logWrapper: { value: input.logWrapper ?? null, isWritable: false }, compressionProgram: { value: input.compressionProgram ?? null, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isWritable: false }, proofAccounts: { value: input.proofAccounts ?? null, isWritable: false } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: false }, template: { value: input.template ?? null, isSigner: false, isWritable: false }, bundle: { value: input.bundle ?? null, isSigner: false, isWritable: true }, treeConfig: { value: input.treeConfig ?? null, isSigner: false, isWritable: false }, merkleTree: { value: input.merkleTree ?? null, isSigner: false, isWritable: true }, bubblegumProgram: { value: input.bubblegumProgram ?? null, isSigner: false, isWritable: false }, logWrapper: { value: input.logWrapper ?? null, isSigner: false, isWritable: false }, compressionProgram: { value: input.compressionProgram ?? null, isSigner: false, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isSigner: false, isWritable: false }, proofAccounts: { value: input.proofAccounts ?? null, isSigner: false, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -72,8 +75,7 @@ const args = { ...input,  };
 
 
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("bundle", accounts.bundle), getAccountMeta("treeConfig", accounts.treeConfig), getAccountMeta("merkleTree", accounts.merkleTree), getAccountMeta("bubblegumProgram", accounts.bubblegumProgram), getAccountMeta("logWrapper", accounts.logWrapper), getAccountMeta("compressionProgram", accounts.compressionProgram), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("proofAccounts", accounts.proofAccounts)], data: getFundCompressedNftPrizeInstructionDataEncoder().encode(args as FundCompressedNftPrizeInstructionDataArgs), programAddress } as FundCompressedNftPrizeInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountTreeConfig, TAccountMerkleTree, TAccountBubblegumProgram, TAccountLogWrapper, TAccountCompressionProgram, TAccountSystemProgram, TAccountProofAccounts>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("bundle", accounts.bundle), getAccountMeta("treeConfig", accounts.treeConfig), getAccountMeta("merkleTree", accounts.merkleTree), getAccountMeta("bubblegumProgram", accounts.bubblegumProgram), getAccountMeta("logWrapper", accounts.logWrapper), getAccountMeta("compressionProgram", accounts.compressionProgram), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("proofAccounts", accounts.proofAccounts)], data: getFundCompressedNftPrizeInstructionDataEncoder().encode(args as FundCompressedNftPrizeInstructionDataArgs), programAddress } as FundCompressedNftPrizeInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountTreeConfig, InstructionAccountInputAddress<TAccountTreeConfig>>, ResolvedInstructionAccountMeta<TAccountMerkleTree, InstructionAccountInputAddress<TAccountMerkleTree>>, ResolvedInstructionAccountMeta<TAccountBubblegumProgram, InstructionAccountInputAddress<TAccountBubblegumProgram>>, ResolvedInstructionAccountMeta<TAccountLogWrapper, InstructionAccountInputAddress<TAccountLogWrapper>>, ResolvedInstructionAccountMeta<TAccountCompressionProgram, InstructionAccountInputAddress<TAccountCompressionProgram>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>, ResolvedInstructionAccountMeta<TAccountProofAccounts, InstructionAccountInputAddress<TAccountProofAccounts>>>);
 }
 
 export type ParsedFundCompressedNftPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

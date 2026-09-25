@@ -29,7 +29,7 @@ class LootboxState {
     required this.outcomeWeights,
     required this.outcomeLamports,
     required this.outcomeCount,
-    required this.sealed,
+    required this.sealed_,
     required this.bump,
     required this.vaultBump,
   }) : discriminator = 1,
@@ -52,7 +52,7 @@ class LootboxState {
   final Uint8List outcomeWeights;
   final Uint8List outcomeLamports;
   final int outcomeCount;
-  final bool sealed;
+  final bool sealed_;
   final int bump;
   final int vaultBump;
 
@@ -78,7 +78,7 @@ class LootboxState {
           outcomeWeights == other.outcomeWeights &&
           outcomeLamports == other.outcomeLamports &&
           outcomeCount == other.outcomeCount &&
-          sealed == other.sealed &&
+          sealed_ == other.sealed_ &&
           bump == other.bump &&
           vaultBump == other.vaultBump;
 
@@ -101,14 +101,14 @@ class LootboxState {
     outcomeWeights,
     outcomeLamports,
     outcomeCount,
-    sealed,
+    sealed_,
     bump,
     vaultBump,
   );
 
   @override
   String toString() =>
-      'LootboxState(discriminator: $discriminator, migrationVersion: $migrationVersion, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, maxSupply: $maxSupply, totalMinted: $totalMinted, pendingOpenings: $pendingOpenings, opened: $opened, refunded: $refunded, totalWeight: $totalWeight, maxRewardLamports: $maxRewardLamports, outcomeWeights: $outcomeWeights, outcomeLamports: $outcomeLamports, outcomeCount: $outcomeCount, sealed: $sealed, bump: $bump, vaultBump: $vaultBump)';
+      'LootboxState(discriminator: $discriminator, migrationVersion: $migrationVersion, authority: $authority, boxMint: $boxMint, oracleProgram: $oracleProgram, oracleQueue: $oracleQueue, id: $id, maxSupply: $maxSupply, totalMinted: $totalMinted, pendingOpenings: $pendingOpenings, opened: $opened, refunded: $refunded, totalWeight: $totalWeight, maxRewardLamports: $maxRewardLamports, outcomeWeights: $outcomeWeights, outcomeLamports: $outcomeLamports, outcomeCount: $outcomeCount, sealed_: $sealed_, bump: $bump, vaultBump: $vaultBump)';
 }
 
 Encoder<LootboxState> getLootboxStateEncoder() {
@@ -161,7 +161,7 @@ Encoder<LootboxState> getLootboxStateEncoder() {
       'outcomeWeights': value.outcomeWeights,
       'outcomeLamports': value.outcomeLamports,
       'outcomeCount': value.outcomeCount,
-      'sealed': value.sealed,
+      'sealed': value.sealed_,
       'bump': value.bump,
       'vaultBump': value.vaultBump,
     },
@@ -229,7 +229,7 @@ Decoder<LootboxState> getLootboxStateDecoder() {
         outcomeWeights: map['outcomeWeights']! as Uint8List,
         outcomeLamports: map['outcomeLamports']! as Uint8List,
         outcomeCount: map['outcomeCount']! as int,
-        sealed: map['sealed']! as bool,
+        sealed_: map['sealed']! as bool,
         bump: map['bump']! as int,
         vaultBump: map['vaultBump']! as int,
       ),

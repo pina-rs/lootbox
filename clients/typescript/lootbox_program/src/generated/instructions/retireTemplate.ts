@@ -7,8 +7,8 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlySignerAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlySignerAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const RETIRE_TEMPLATE_DISCRIMINATOR = 21;
@@ -38,24 +38,26 @@ export function getRetireTemplateInstructionDataCodec(): FixedSizeCodec<RetireTe
     return combineCodec(getRetireTemplateInstructionDataEncoder(), getRetireTemplateInstructionDataDecoder());
 }
 
-export type RetireTemplateInput<TAccountAuthority extends string = string, TAccountTemplate extends string = string> =  {
-  authority: TransactionSigner<TAccountAuthority>;
-template: Address<TAccountTemplate>;
+export type RetireTemplateInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput> =  {
+  authority: TAccountAuthority;
+template: TAccountTemplate;
 }
 
-export function getRetireTemplateInstruction<TAccountAuthority extends string, TAccountTemplate extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: RetireTemplateInput<TAccountAuthority, TAccountTemplate>, config?: { programAddress?: TProgramAddress } ): RetireTemplateInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate> {
+export function getRetireTemplateInstruction<TAccountAuthority extends InstructionSignerInput, TAccountTemplate extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: RetireTemplateInput<TAccountAuthority, TAccountTemplate>, config?: { programAddress?: TProgramAddress } ): RetireTemplateInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isWritable: false }, template: { value: input.template ?? null, isWritable: true } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: false }, template: { value: input.template ?? null, isSigner: false, isWritable: true } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
 
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template)], data: getRetireTemplateInstructionDataEncoder().encode({}), programAddress } as RetireTemplateInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template)], data: getRetireTemplateInstructionDataEncoder().encode({}), programAddress } as RetireTemplateInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>>);
 }
 
 export type ParsedRetireTemplateInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

@@ -7,8 +7,8 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const CLOSE_SERVICE_VAULT_DISCRIMINATOR = 38;
@@ -38,20 +38,23 @@ export function getCloseServiceVaultInstructionDataCodec(): FixedSizeCodec<Close
     return combineCodec(getCloseServiceVaultInstructionDataEncoder(), getCloseServiceVaultInstructionDataDecoder());
 }
 
-export type CloseServiceVaultInput<TAccountAuthority extends string = string, TAccountTemplate extends string = string, TAccountBoxMint extends string = string, TAccountServiceVault extends string = string, TAccountSystemProgram extends string = string> =  {
-  authority: TransactionSigner<TAccountAuthority>;
-template: Address<TAccountTemplate>;
-boxMint: Address<TAccountBoxMint>;
-serviceVault: Address<TAccountServiceVault>;
-systemProgram?: Address<TAccountSystemProgram>;
+export type CloseServiceVaultInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
+  authority: TAccountAuthority;
+template: TAccountTemplate;
+boxMint: TAccountBoxMint;
+serviceVault: TAccountServiceVault;
+systemProgram?: TAccountSystemProgram;
 }
 
-export function getCloseServiceVaultInstruction<TAccountAuthority extends string, TAccountTemplate extends string, TAccountBoxMint extends string, TAccountServiceVault extends string, TAccountSystemProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: CloseServiceVaultInput<TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountServiceVault, TAccountSystemProgram>, config?: { programAddress?: TProgramAddress } ): CloseServiceVaultInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountServiceVault, TAccountSystemProgram> {
+export function getCloseServiceVaultInstruction<TAccountAuthority extends InstructionSignerInput, TAccountTemplate extends InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: CloseServiceVaultInput<TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountServiceVault, TAccountSystemProgram>, config?: { programAddress?: TProgramAddress } ): CloseServiceVaultInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountServiceVault, InstructionAccountInputAddress<TAccountServiceVault>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isWritable: true }, template: { value: input.template ?? null, isWritable: false }, boxMint: { value: input.boxMint ?? null, isWritable: false }, serviceVault: { value: input.serviceVault ?? null, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isWritable: false } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: true }, template: { value: input.template ?? null, isSigner: false, isWritable: false }, boxMint: { value: input.boxMint ?? null, isSigner: false, isWritable: false }, serviceVault: { value: input.serviceVault ?? null, isSigner: false, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isSigner: false, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -60,8 +63,7 @@ if (!accounts.systemProgram.value) {
 accounts.systemProgram.value = '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
 }
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("serviceVault", accounts.serviceVault), getAccountMeta("systemProgram", accounts.systemProgram)], data: getCloseServiceVaultInstructionDataEncoder().encode({}), programAddress } as CloseServiceVaultInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountServiceVault, TAccountSystemProgram>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("serviceVault", accounts.serviceVault), getAccountMeta("systemProgram", accounts.systemProgram)], data: getCloseServiceVaultInstructionDataEncoder().encode({}), programAddress } as CloseServiceVaultInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountServiceVault, InstructionAccountInputAddress<TAccountServiceVault>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>>);
 }
 
 export type ParsedCloseServiceVaultInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

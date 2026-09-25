@@ -37,24 +37,7 @@ pub struct RequestOpen {
 }
 
 impl RequestOpen {
-	pub fn new(
-		owner: solana_pubkey::Pubkey,
-		lootbox: solana_pubkey::Pubkey,
-		vault: solana_pubkey::Pubkey,
-		box_mint: solana_pubkey::Pubkey,
-		owner_box_account: solana_pubkey::Pubkey,
-		randomness: solana_pubkey::Pubkey,
-		reward_escrow: solana_pubkey::Pubkey,
-		oracle_queue: solana_pubkey::Pubkey,
-		oracle: solana_pubkey::Pubkey,
-		recent_slot_hashes: solana_pubkey::Pubkey,
-		oracle_program: solana_pubkey::Pubkey,
-		oracle_program_state: solana_pubkey::Pubkey,
-		oracle_lut_signer: solana_pubkey::Pubkey,
-		oracle_lut: solana_pubkey::Pubkey,
-		wrapped_sol_mint: solana_pubkey::Pubkey,
-		address_lookup_table_program: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(owner: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, owner_box_account: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, oracle_lut_signer: solana_pubkey::Pubkey, oracle_lut: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey, address_lookup_table_program: solana_pubkey::Pubkey) -> Self {
 		Self {
 			owner,
 			lootbox,
@@ -64,8 +47,7 @@ impl RequestOpen {
 			opening: solana_pubkey::Pubkey::find_program_address(
 				&["opening".as_bytes(), lootbox.as_ref(), randomness.as_ref()],
 				&crate::LOOTBOX_PROGRAM_ID,
-			)
-			.0,
+			).0,
 			randomness,
 			reward_escrow,
 			oracle_queue,
@@ -75,9 +57,7 @@ impl RequestOpen {
 			oracle_program_state,
 			oracle_lut_signer,
 			oracle_lut,
-			associated_token_program: solana_pubkey::pubkey!(
-				"ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-			),
+			associated_token_program: solana_pubkey::pubkey!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
 			wrapped_sol_mint,
 			address_lookup_table_program,
 			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
@@ -98,62 +78,24 @@ impl RequestOpen {
 		let mut accounts = Vec::with_capacity(20 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.owner, true));
 		accounts.push(solana_instruction::AccountMeta::new(self.lootbox, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.vault, false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.vault, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.box_mint, false));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.owner_box_account,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new(self.owner_box_account, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.randomness, true));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.reward_escrow,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.oracle_queue,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new(self.reward_escrow, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.oracle_queue, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.oracle, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.recent_slot_hashes,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.oracle_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.oracle_program_state,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.oracle_lut_signer,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.recent_slot_hashes, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_program_state, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.oracle_lut_signer, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.oracle_lut, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.associated_token_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.wrapped_sol_mint,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.address_lookup_table_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.system_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.token_program,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.associated_token_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.wrapped_sol_mint, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.address_lookup_table_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.token_program, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -169,9 +111,7 @@ pub struct RequestOpenInstructionData {
 }
 
 impl RequestOpenInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut RequestOpenInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(configure: impl FnOnce(&mut RequestOpenInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<RequestOpenInstructionWireZc>()];
 		<RequestOpenInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
@@ -179,7 +119,7 @@ impl RequestOpenInstructionData {
 			data.migration_version = REQUEST_OPEN_MIGRATION_VERSION;
 			Ok(())
 		})
-		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

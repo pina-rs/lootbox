@@ -6,6 +6,7 @@
 	clippy::empty_line_after_doc_comments,
 	clippy::too_many_arguments
 )]
+
 #![allow(rustdoc::broken_intra_doc_links)]
 
 use pina::Address;
@@ -46,7 +47,8 @@ impl LootboxState {
 	/// Whether `data` carries this account's discriminator.
 	#[inline(always)]
 	pub fn matches(data: &[u8]) -> bool {
-		data.len() >= 2 && data[..2] == LOOTBOX_STATE_DISCRIMINATOR
+		data.len() >= 2
+			&& data[..2] == LOOTBOX_STATE_DISCRIMINATOR
 	}
 
 	/// Reads this account's fields from the account's data.
@@ -61,44 +63,58 @@ impl LootboxState {
 		let mut cursor = 0usize;
 		cursor += 2;
 
-		let authority = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let authority = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let box_mint = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let box_mint = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let oracle_program =
-			Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let oracle_program = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let oracle_queue = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let oracle_queue = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let id: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let id: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let max_supply: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let max_supply: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let total_minted: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let total_minted: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let pending_openings: u64 =
-			u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let pending_openings: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let opened: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let opened: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let refunded: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let refunded: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let total_weight: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let total_weight: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let max_reward_lamports: u64 =
-			u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let max_reward_lamports: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let outcome_weights: [u8; 64] = data.get(cursor..cursor + 64)?.try_into().ok()?;
+		let outcome_weights: [u8; 64] = data.get(cursor..cursor + 64)?
+		.try_into().ok()?;
 		cursor += 64;
-		let outcome_lamports: [u8; 64] = data.get(cursor..cursor + 64)?.try_into().ok()?;
+		let outcome_lamports: [u8; 64] = data.get(cursor..cursor + 64)?
+		.try_into().ok()?;
 		cursor += 64;
-		let outcome_count: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
+		let outcome_count: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
+		.try_into().ok()?);
 		cursor += 1;
 		let sealed = data.get(cursor).copied()? != 0;
 		cursor += 1;
-		let bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
+		let bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
+		.try_into().ok()?);
 		cursor += 1;
-		let vault_bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
+		let vault_bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
+		.try_into().ok()?);
 
 		Some(LootboxState {
 			authority,

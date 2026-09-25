@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@solana/program-client-core": "^7.0.0"
+    "@solana/program-client-core": "^8.3.0"
   },
   "description": "Generated TypeScript interface for the Pina Lootbox program",
   "exports": {
@@ -12,7 +12,7 @@
   "license": "Apache-2.0",
   "name": "@pina-rs/lootbox-program-client",
   "peerDependencies": {
-    "@solana/kit": "^7.0.0"
+    "@solana/kit": "^8.3.0"
   },
   "private": true,
   "publishConfig": {

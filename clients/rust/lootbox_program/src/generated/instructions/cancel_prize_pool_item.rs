@@ -22,13 +22,7 @@ pub struct CancelPrizePoolItem {
 }
 
 impl CancelPrizePoolItem {
-	pub fn new(
-		authority: solana_pubkey::Pubkey,
-		template: solana_pubkey::Pubkey,
-		bundle: solana_pubkey::Pubkey,
-		prize_pool: solana_pubkey::Pubkey,
-		prize_pool_item: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, prize_pool: solana_pubkey::Pubkey, prize_pool_item: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			template,
@@ -38,10 +32,7 @@ impl CancelPrizePoolItem {
 		}
 	}
 
-	pub fn instruction(
-		&self,
-		data: CancelPrizePoolItemInstructionData,
-	) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: CancelPrizePoolItemInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -53,19 +44,10 @@ impl CancelPrizePoolItem {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.template,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.bundle,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.bundle, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.prize_pool, false));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.prize_pool_item,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new(self.prize_pool_item, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -81,20 +63,15 @@ pub struct CancelPrizePoolItemInstructionData {
 }
 
 impl CancelPrizePoolItemInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut CancelPrizePoolItemInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(configure: impl FnOnce(&mut CancelPrizePoolItemInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<CancelPrizePoolItemInstructionWireZc>()];
-		<CancelPrizePoolItemInstructionWire as pina::PinaPodFixed>::initialize(
-			&mut bytes,
-			|data| {
-				configure(data);
-				data.discriminator = CANCEL_PRIZE_POOL_ITEM_DISCRIMINATOR;
-				data.migration_version = CANCEL_PRIZE_POOL_ITEM_MIGRATION_VERSION;
-				Ok(())
-			},
-		)
-		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		<CancelPrizePoolItemInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
+			configure(data);
+			data.discriminator = CANCEL_PRIZE_POOL_ITEM_DISCRIMINATOR;
+			data.migration_version = CANCEL_PRIZE_POOL_ITEM_MIGRATION_VERSION;
+			Ok(())
+		})
+			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

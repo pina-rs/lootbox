@@ -123,10 +123,7 @@ impl Migrate {
 			));
 		}
 		if let Some(template_opening_state) = self.template_opening_state {
-			accounts.push(solana_instruction::AccountMeta::new(
-				template_opening_state,
-				false,
-			));
+			accounts.push(solana_instruction::AccountMeta::new(template_opening_state, false));
 		} else {
 			accounts.push(solana_instruction::AccountMeta::new_readonly(
 				crate::LOOTBOX_PROGRAM_ID,
@@ -134,10 +131,7 @@ impl Migrate {
 			));
 		}
 		if let Some(result_receipt_state) = self.result_receipt_state {
-			accounts.push(solana_instruction::AccountMeta::new(
-				result_receipt_state,
-				false,
-			));
+			accounts.push(solana_instruction::AccountMeta::new(result_receipt_state, false));
 		} else {
 			accounts.push(solana_instruction::AccountMeta::new_readonly(
 				crate::LOOTBOX_PROGRAM_ID,
@@ -145,10 +139,7 @@ impl Migrate {
 			));
 		}
 		if let Some(prize_pool_state) = self.prize_pool_state {
-			accounts.push(solana_instruction::AccountMeta::new(
-				prize_pool_state,
-				false,
-			));
+			accounts.push(solana_instruction::AccountMeta::new(prize_pool_state, false));
 		} else {
 			accounts.push(solana_instruction::AccountMeta::new_readonly(
 				crate::LOOTBOX_PROGRAM_ID,
@@ -156,10 +147,7 @@ impl Migrate {
 			));
 		}
 		if let Some(prize_pool_item_state) = self.prize_pool_item_state {
-			accounts.push(solana_instruction::AccountMeta::new(
-				prize_pool_item_state,
-				false,
-			));
+			accounts.push(solana_instruction::AccountMeta::new(prize_pool_item_state, false));
 		} else {
 			accounts.push(solana_instruction::AccountMeta::new_readonly(
 				crate::LOOTBOX_PROGRAM_ID,

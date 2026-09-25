@@ -7,8 +7,8 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlySignerAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlySignerAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const FUND_QUOTE_TOKEN_PRIZE_DISCRIMINATOR = 40;
@@ -38,23 +38,26 @@ export function getFundQuoteTokenPrizeInstructionDataCodec(): FixedSizeCodec<Fun
     return combineCodec(getFundQuoteTokenPrizeInstructionDataEncoder(), getFundQuoteTokenPrizeInstructionDataDecoder());
 }
 
-export type FundQuoteTokenPrizeInput<TAccountAuthority extends string = string, TAccountTemplate extends string = string, TAccountBundle extends string = string, TAccountMint extends string = string, TAccountSource extends string = string, TAccountEscrow extends string = string, TAccountTokenProgram extends string = string> =  {
-  authority: TransactionSigner<TAccountAuthority>;
-template: Address<TAccountTemplate>;
-bundle: Address<TAccountBundle>;
-mint: Address<TAccountMint>;
-source: Address<TAccountSource>;
-escrow: Address<TAccountEscrow>;
-tokenProgram?: Address<TAccountTokenProgram>;
+export type FundQuoteTokenPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountSource extends InstructionAccountInput = InstructionAccountInput, TAccountEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
+  authority: TAccountAuthority;
+template: TAccountTemplate;
+bundle: TAccountBundle;
+mint: TAccountMint;
+source: TAccountSource;
+escrow: TAccountEscrow;
+tokenProgram?: TAccountTokenProgram;
 amountPerWin: FundQuoteTokenPrizeInstructionDataArgs["amountPerWin"];
 }
 
-export function getFundQuoteTokenPrizeInstruction<TAccountAuthority extends string, TAccountTemplate extends string, TAccountBundle extends string, TAccountMint extends string, TAccountSource extends string, TAccountEscrow extends string, TAccountTokenProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: FundQuoteTokenPrizeInput<TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountMint, TAccountSource, TAccountEscrow, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): FundQuoteTokenPrizeInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountMint, TAccountSource, TAccountEscrow, TAccountTokenProgram> {
+export function getFundQuoteTokenPrizeInstruction<TAccountAuthority extends InstructionSignerInput, TAccountTemplate extends InstructionAccountInput, TAccountBundle extends InstructionAccountInput, TAccountMint extends InstructionAccountInput, TAccountSource extends InstructionAccountInput, TAccountEscrow extends InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: FundQuoteTokenPrizeInput<TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountMint, TAccountSource, TAccountEscrow, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): FundQuoteTokenPrizeInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountMint, InstructionAccountInputAddress<TAccountMint>>, ResolvedInstructionAccountMeta<TAccountSource, InstructionAccountInputAddress<TAccountSource>>, ResolvedInstructionAccountMeta<TAccountEscrow, InstructionAccountInputAddress<TAccountEscrow>>, ResolvedInstructionAccountMeta<TAccountTokenProgram, InstructionAccountInputAddress<TAccountTokenProgram>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isWritable: false }, template: { value: input.template ?? null, isWritable: true }, bundle: { value: input.bundle ?? null, isWritable: true }, mint: { value: input.mint ?? null, isWritable: false }, source: { value: input.source ?? null, isWritable: true }, escrow: { value: input.escrow ?? null, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isWritable: false } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: false }, template: { value: input.template ?? null, isSigner: false, isWritable: true }, bundle: { value: input.bundle ?? null, isSigner: false, isWritable: true }, mint: { value: input.mint ?? null, isSigner: false, isWritable: false }, source: { value: input.source ?? null, isSigner: false, isWritable: true }, escrow: { value: input.escrow ?? null, isSigner: false, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isSigner: false, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -67,8 +70,7 @@ if (!accounts.tokenProgram.value) {
 accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
 }
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("bundle", accounts.bundle), getAccountMeta("mint", accounts.mint), getAccountMeta("source", accounts.source), getAccountMeta("escrow", accounts.escrow), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getFundQuoteTokenPrizeInstructionDataEncoder().encode(args as FundQuoteTokenPrizeInstructionDataArgs), programAddress } as FundQuoteTokenPrizeInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountMint, TAccountSource, TAccountEscrow, TAccountTokenProgram>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("bundle", accounts.bundle), getAccountMeta("mint", accounts.mint), getAccountMeta("source", accounts.source), getAccountMeta("escrow", accounts.escrow), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getFundQuoteTokenPrizeInstructionDataEncoder().encode(args as FundQuoteTokenPrizeInstructionDataArgs), programAddress } as FundQuoteTokenPrizeInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountMint, InstructionAccountInputAddress<TAccountMint>>, ResolvedInstructionAccountMeta<TAccountSource, InstructionAccountInputAddress<TAccountSource>>, ResolvedInstructionAccountMeta<TAccountEscrow, InstructionAccountInputAddress<TAccountEscrow>>, ResolvedInstructionAccountMeta<TAccountTokenProgram, InstructionAccountInputAddress<TAccountTokenProgram>>>);
 }
 
 export type ParsedFundQuoteTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

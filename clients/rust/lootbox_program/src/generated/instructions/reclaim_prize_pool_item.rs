@@ -31,20 +31,7 @@ pub struct ReclaimPrizePoolItem {
 }
 
 impl ReclaimPrizePoolItem {
-	pub fn new(
-		authority: solana_pubkey::Pubkey,
-		template: solana_pubkey::Pubkey,
-		box_mint: solana_pubkey::Pubkey,
-		bundle: solana_pubkey::Pubkey,
-		prize_pool: solana_pubkey::Pubkey,
-		prize_pool_item: solana_pubkey::Pubkey,
-		tree_config: solana_pubkey::Pubkey,
-		merkle_tree: solana_pubkey::Pubkey,
-		bubblegum_program: solana_pubkey::Pubkey,
-		log_wrapper: solana_pubkey::Pubkey,
-		compression_program: solana_pubkey::Pubkey,
-		proof_accounts: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, prize_pool: solana_pubkey::Pubkey, prize_pool_item: solana_pubkey::Pubkey, tree_config: solana_pubkey::Pubkey, merkle_tree: solana_pubkey::Pubkey, bubblegum_program: solana_pubkey::Pubkey, log_wrapper: solana_pubkey::Pubkey, compression_program: solana_pubkey::Pubkey, proof_accounts: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			template,
@@ -62,10 +49,7 @@ impl ReclaimPrizePoolItem {
 		}
 	}
 
-	pub fn instruction(
-		&self,
-		data: ReclaimPrizePoolItemInstructionData,
-	) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: ReclaimPrizePoolItemInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -77,48 +61,18 @@ impl ReclaimPrizePoolItem {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(13 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.template,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.box_mint,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.prize_pool, false));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.prize_pool_item,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.tree_config,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.merkle_tree,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.bubblegum_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.log_wrapper,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.compression_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.system_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.proof_accounts,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new(self.prize_pool_item, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.tree_config, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.merkle_tree, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.bubblegum_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.log_wrapper, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.compression_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.proof_accounts, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -134,20 +88,15 @@ pub struct ReclaimPrizePoolItemInstructionData {
 }
 
 impl ReclaimPrizePoolItemInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut ReclaimPrizePoolItemInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(configure: impl FnOnce(&mut ReclaimPrizePoolItemInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<ReclaimPrizePoolItemInstructionWireZc>()];
-		<ReclaimPrizePoolItemInstructionWire as pina::PinaPodFixed>::initialize(
-			&mut bytes,
-			|data| {
-				configure(data);
-				data.discriminator = RECLAIM_PRIZE_POOL_ITEM_DISCRIMINATOR;
-				data.migration_version = RECLAIM_PRIZE_POOL_ITEM_MIGRATION_VERSION;
-				Ok(())
-			},
-		)
-		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		<ReclaimPrizePoolItemInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
+			configure(data);
+			data.discriminator = RECLAIM_PRIZE_POOL_ITEM_DISCRIMINATOR;
+			data.migration_version = RECLAIM_PRIZE_POOL_ITEM_MIGRATION_VERSION;
+			Ok(())
+		})
+			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

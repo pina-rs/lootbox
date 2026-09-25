@@ -21,12 +21,7 @@ pub struct WithdrawSurplus {
 }
 
 impl WithdrawSurplus {
-	pub fn new(
-		authority: solana_pubkey::Pubkey,
-		lootbox: solana_pubkey::Pubkey,
-		vault: solana_pubkey::Pubkey,
-		box_mint: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(authority: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			lootbox,
@@ -35,10 +30,7 @@ impl WithdrawSurplus {
 		}
 	}
 
-	pub fn instruction(
-		&self,
-		data: WithdrawSurplusInstructionData,
-	) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: WithdrawSurplusInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -50,15 +42,9 @@ impl WithdrawSurplus {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.lootbox,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.lootbox, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.vault, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.box_mint,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -74,9 +60,7 @@ pub struct WithdrawSurplusInstructionData {
 }
 
 impl WithdrawSurplusInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut WithdrawSurplusInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(configure: impl FnOnce(&mut WithdrawSurplusInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<WithdrawSurplusInstructionWireZc>()];
 		<WithdrawSurplusInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
@@ -84,7 +68,7 @@ impl WithdrawSurplusInstructionData {
 			data.migration_version = WITHDRAW_SURPLUS_MIGRATION_VERSION;
 			Ok(())
 		})
-		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

@@ -7,8 +7,8 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlySignerAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlySignerAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const SEAL_PRIZE_POOL_DISCRIMINATOR = 46;
@@ -38,26 +38,28 @@ export function getSealPrizePoolInstructionDataCodec(): FixedSizeCodec<SealPrize
     return combineCodec(getSealPrizePoolInstructionDataEncoder(), getSealPrizePoolInstructionDataDecoder());
 }
 
-export type SealPrizePoolInput<TAccountAuthority extends string = string, TAccountTemplate extends string = string, TAccountBundle extends string = string, TAccountPrizePool extends string = string> =  {
-  authority: TransactionSigner<TAccountAuthority>;
-template: Address<TAccountTemplate>;
-bundle: Address<TAccountBundle>;
-prizePool: Address<TAccountPrizePool>;
+export type SealPrizePoolInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput = InstructionAccountInput> =  {
+  authority: TAccountAuthority;
+template: TAccountTemplate;
+bundle: TAccountBundle;
+prizePool: TAccountPrizePool;
 }
 
-export function getSealPrizePoolInstruction<TAccountAuthority extends string, TAccountTemplate extends string, TAccountBundle extends string, TAccountPrizePool extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: SealPrizePoolInput<TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountPrizePool>, config?: { programAddress?: TProgramAddress } ): SealPrizePoolInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountPrizePool> {
+export function getSealPrizePoolInstruction<TAccountAuthority extends InstructionSignerInput, TAccountTemplate extends InstructionAccountInput, TAccountBundle extends InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: SealPrizePoolInput<TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountPrizePool>, config?: { programAddress?: TProgramAddress } ): SealPrizePoolInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountPrizePool, InstructionAccountInputAddress<TAccountPrizePool>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isWritable: false }, template: { value: input.template ?? null, isWritable: false }, bundle: { value: input.bundle ?? null, isWritable: true }, prizePool: { value: input.prizePool ?? null, isWritable: true } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: false }, template: { value: input.template ?? null, isSigner: false, isWritable: false }, bundle: { value: input.bundle ?? null, isSigner: false, isWritable: true }, prizePool: { value: input.prizePool ?? null, isSigner: false, isWritable: true } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
 
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("bundle", accounts.bundle), getAccountMeta("prizePool", accounts.prizePool)], data: getSealPrizePoolInstructionDataEncoder().encode({}), programAddress } as SealPrizePoolInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountPrizePool>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("bundle", accounts.bundle), getAccountMeta("prizePool", accounts.prizePool)], data: getSealPrizePoolInstructionDataEncoder().encode({}), programAddress } as SealPrizePoolInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountPrizePool, InstructionAccountInputAddress<TAccountPrizePool>>>);
 }
 
 export type ParsedSealPrizePoolInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

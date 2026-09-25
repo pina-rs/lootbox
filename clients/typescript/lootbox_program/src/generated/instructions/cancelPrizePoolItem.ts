@@ -7,8 +7,8 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const CANCEL_PRIZE_POOL_ITEM_DISCRIMINATOR = 52;
@@ -38,27 +38,29 @@ export function getCancelPrizePoolItemInstructionDataCodec(): FixedSizeCodec<Can
     return combineCodec(getCancelPrizePoolItemInstructionDataEncoder(), getCancelPrizePoolItemInstructionDataDecoder());
 }
 
-export type CancelPrizePoolItemInput<TAccountAuthority extends string = string, TAccountTemplate extends string = string, TAccountBundle extends string = string, TAccountPrizePool extends string = string, TAccountPrizePoolItem extends string = string> =  {
-  authority: TransactionSigner<TAccountAuthority>;
-template: Address<TAccountTemplate>;
-bundle: Address<TAccountBundle>;
-prizePool: Address<TAccountPrizePool>;
-prizePoolItem: Address<TAccountPrizePoolItem>;
+export type CancelPrizePoolItemInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePoolItem extends InstructionAccountInput = InstructionAccountInput> =  {
+  authority: TAccountAuthority;
+template: TAccountTemplate;
+bundle: TAccountBundle;
+prizePool: TAccountPrizePool;
+prizePoolItem: TAccountPrizePoolItem;
 }
 
-export function getCancelPrizePoolItemInstruction<TAccountAuthority extends string, TAccountTemplate extends string, TAccountBundle extends string, TAccountPrizePool extends string, TAccountPrizePoolItem extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: CancelPrizePoolItemInput<TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountPrizePool, TAccountPrizePoolItem>, config?: { programAddress?: TProgramAddress } ): CancelPrizePoolItemInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountPrizePool, TAccountPrizePoolItem> {
+export function getCancelPrizePoolItemInstruction<TAccountAuthority extends InstructionSignerInput, TAccountTemplate extends InstructionAccountInput, TAccountBundle extends InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput, TAccountPrizePoolItem extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: CancelPrizePoolItemInput<TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountPrizePool, TAccountPrizePoolItem>, config?: { programAddress?: TProgramAddress } ): CancelPrizePoolItemInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountPrizePool, InstructionAccountInputAddress<TAccountPrizePool>>, ResolvedInstructionAccountMeta<TAccountPrizePoolItem, InstructionAccountInputAddress<TAccountPrizePoolItem>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isWritable: true }, template: { value: input.template ?? null, isWritable: false }, bundle: { value: input.bundle ?? null, isWritable: false }, prizePool: { value: input.prizePool ?? null, isWritable: true }, prizePoolItem: { value: input.prizePoolItem ?? null, isWritable: true } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: true }, template: { value: input.template ?? null, isSigner: false, isWritable: false }, bundle: { value: input.bundle ?? null, isSigner: false, isWritable: false }, prizePool: { value: input.prizePool ?? null, isSigner: false, isWritable: true }, prizePoolItem: { value: input.prizePoolItem ?? null, isSigner: false, isWritable: true } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
 
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("bundle", accounts.bundle), getAccountMeta("prizePool", accounts.prizePool), getAccountMeta("prizePoolItem", accounts.prizePoolItem)], data: getCancelPrizePoolItemInstructionDataEncoder().encode({}), programAddress } as CancelPrizePoolItemInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountPrizePool, TAccountPrizePoolItem>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("bundle", accounts.bundle), getAccountMeta("prizePool", accounts.prizePool), getAccountMeta("prizePoolItem", accounts.prizePoolItem)], data: getCancelPrizePoolItemInstructionDataEncoder().encode({}), programAddress } as CancelPrizePoolItemInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountPrizePool, InstructionAccountInputAddress<TAccountPrizePool>>, ResolvedInstructionAccountMeta<TAccountPrizePoolItem, InstructionAccountInputAddress<TAccountPrizePoolItem>>>);
 }
 
 export type ParsedCancelPrizePoolItemInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

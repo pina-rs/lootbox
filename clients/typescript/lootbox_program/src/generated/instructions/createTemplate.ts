@@ -7,8 +7,8 @@
  */
 
 import { fixPinaPodEncoderSize, getPinaPodBooleanDecoder, getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBooleanDecoder, getBooleanEncoder, getBytesDecoder, getBytesEncoder, getI64Decoder, getI64Encoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBooleanDecoder, getBooleanEncoder, getBytesDecoder, getBytesEncoder, getI64Decoder, getI64Encoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const CREATE_TEMPLATE_DISCRIMINATOR = 10;
@@ -38,12 +38,12 @@ export function getCreateTemplateInstructionDataCodec(): FixedSizeCodec<CreateTe
     return combineCodec(getCreateTemplateInstructionDataEncoder(), getCreateTemplateInstructionDataDecoder());
 }
 
-export type CreateTemplateInput<TAccountAuthority extends string = string, TAccountTemplate extends string = string, TAccountBoxMint extends string = string, TAccountSystemProgram extends string = string, TAccountBoxTokenProgram extends string = string> =  {
-  authority: TransactionSigner<TAccountAuthority>;
-template: Address<TAccountTemplate>;
-boxMint: Address<TAccountBoxMint>;
-systemProgram?: Address<TAccountSystemProgram>;
-boxTokenProgram?: Address<TAccountBoxTokenProgram>;
+export type CreateTemplateInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountBoxTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
+  authority: TAccountAuthority;
+template: TAccountTemplate;
+boxMint: TAccountBoxMint;
+systemProgram?: TAccountSystemProgram;
+boxTokenProgram?: TAccountBoxTokenProgram;
 id: CreateTemplateInstructionDataArgs["id"];
 opensAt: CreateTemplateInstructionDataArgs["opensAt"];
 oracleProgram: CreateTemplateInstructionDataArgs["oracleProgram"];
@@ -55,12 +55,15 @@ resultReceiptsEnabled: CreateTemplateInstructionDataArgs["resultReceiptsEnabled"
 bump: CreateTemplateInstructionDataArgs["bump"];
 }
 
-export function getCreateTemplateInstruction<TAccountAuthority extends string, TAccountTemplate extends string, TAccountBoxMint extends string, TAccountSystemProgram extends string, TAccountBoxTokenProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: CreateTemplateInput<TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountSystemProgram, TAccountBoxTokenProgram>, config?: { programAddress?: TProgramAddress } ): CreateTemplateInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountSystemProgram, TAccountBoxTokenProgram> {
+export function getCreateTemplateInstruction<TAccountAuthority extends InstructionSignerInput, TAccountTemplate extends InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput, TAccountBoxTokenProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: CreateTemplateInput<TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountSystemProgram, TAccountBoxTokenProgram>, config?: { programAddress?: TProgramAddress } ): CreateTemplateInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>, ResolvedInstructionAccountMeta<TAccountBoxTokenProgram, InstructionAccountInputAddress<TAccountBoxTokenProgram>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isWritable: true }, template: { value: input.template ?? null, isWritable: true }, boxMint: { value: input.boxMint ?? null, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isWritable: false }, boxTokenProgram: { value: input.boxTokenProgram ?? null, isWritable: false } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: true }, template: { value: input.template ?? null, isSigner: false, isWritable: true }, boxMint: { value: input.boxMint ?? null, isSigner: false, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isSigner: false, isWritable: false }, boxTokenProgram: { value: input.boxTokenProgram ?? null, isSigner: false, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -76,8 +79,7 @@ if (!accounts.boxTokenProgram.value) {
 accounts.boxTokenProgram.value = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address<'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'>;
 }
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("boxTokenProgram", accounts.boxTokenProgram)], data: getCreateTemplateInstructionDataEncoder().encode(args as CreateTemplateInstructionDataArgs), programAddress } as CreateTemplateInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountSystemProgram, TAccountBoxTokenProgram>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("boxTokenProgram", accounts.boxTokenProgram)], data: getCreateTemplateInstructionDataEncoder().encode(args as CreateTemplateInstructionDataArgs), programAddress } as CreateTemplateInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>, ResolvedInstructionAccountMeta<TAccountBoxTokenProgram, InstructionAccountInputAddress<TAccountBoxTokenProgram>>>);
 }
 
 export type ParsedCreateTemplateInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

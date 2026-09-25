@@ -25,15 +25,7 @@ pub struct ReclaimTokenPrize {
 }
 
 impl ReclaimTokenPrize {
-	pub fn new(
-		authority: solana_pubkey::Pubkey,
-		template: solana_pubkey::Pubkey,
-		box_mint: solana_pubkey::Pubkey,
-		bundle: solana_pubkey::Pubkey,
-		mint: solana_pubkey::Pubkey,
-		escrow: solana_pubkey::Pubkey,
-		destination: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, mint: solana_pubkey::Pubkey, escrow: solana_pubkey::Pubkey, destination: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			template,
@@ -46,10 +38,7 @@ impl ReclaimTokenPrize {
 		}
 	}
 
-	pub fn instruction(
-		&self,
-		data: ReclaimTokenPrizeInstructionData,
-	) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: ReclaimTokenPrizeInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -60,31 +49,14 @@ impl ReclaimTokenPrize {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.authority,
-			true,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.template,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.box_mint,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.authority, true));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.mint, false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.mint, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.escrow, false));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.destination,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.token_program,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new(self.destination, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.token_program, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -100,9 +72,7 @@ pub struct ReclaimTokenPrizeInstructionData {
 }
 
 impl ReclaimTokenPrizeInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut ReclaimTokenPrizeInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(configure: impl FnOnce(&mut ReclaimTokenPrizeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<ReclaimTokenPrizeInstructionWireZc>()];
 		<ReclaimTokenPrizeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
@@ -110,7 +80,7 @@ impl ReclaimTokenPrizeInstructionData {
 			data.migration_version = RECLAIM_TOKEN_PRIZE_MIGRATION_VERSION;
 			Ok(())
 		})
-		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

@@ -7,8 +7,8 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const CREATE_PRIZE_POOL_DISCRIMINATOR = 44;
@@ -38,23 +38,26 @@ export function getCreatePrizePoolInstructionDataCodec(): FixedSizeCodec<CreateP
     return combineCodec(getCreatePrizePoolInstructionDataEncoder(), getCreatePrizePoolInstructionDataDecoder());
 }
 
-export type CreatePrizePoolInput<TAccountAuthority extends string = string, TAccountTemplate extends string = string, TAccountBundle extends string = string, TAccountPrizePool extends string = string, TAccountMerkleTree extends string = string, TAccountSystemProgram extends string = string> =  {
-  authority: TransactionSigner<TAccountAuthority>;
-template: Address<TAccountTemplate>;
-bundle: Address<TAccountBundle>;
-prizePool: Address<TAccountPrizePool>;
-merkleTree: Address<TAccountMerkleTree>;
-systemProgram?: Address<TAccountSystemProgram>;
+export type CreatePrizePoolInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput = InstructionAccountInput, TAccountMerkleTree extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
+  authority: TAccountAuthority;
+template: TAccountTemplate;
+bundle: TAccountBundle;
+prizePool: TAccountPrizePool;
+merkleTree: TAccountMerkleTree;
+systemProgram?: TAccountSystemProgram;
 assetIndex: CreatePrizePoolInstructionDataArgs["assetIndex"];
 bump: CreatePrizePoolInstructionDataArgs["bump"];
 }
 
-export function getCreatePrizePoolInstruction<TAccountAuthority extends string, TAccountTemplate extends string, TAccountBundle extends string, TAccountPrizePool extends string, TAccountMerkleTree extends string, TAccountSystemProgram extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: CreatePrizePoolInput<TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountPrizePool, TAccountMerkleTree, TAccountSystemProgram>, config?: { programAddress?: TProgramAddress } ): CreatePrizePoolInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountPrizePool, TAccountMerkleTree, TAccountSystemProgram> {
+export function getCreatePrizePoolInstruction<TAccountAuthority extends InstructionSignerInput, TAccountTemplate extends InstructionAccountInput, TAccountBundle extends InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput, TAccountMerkleTree extends InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: CreatePrizePoolInput<TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountPrizePool, TAccountMerkleTree, TAccountSystemProgram>, config?: { programAddress?: TProgramAddress } ): CreatePrizePoolInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountPrizePool, InstructionAccountInputAddress<TAccountPrizePool>>, ResolvedInstructionAccountMeta<TAccountMerkleTree, InstructionAccountInputAddress<TAccountMerkleTree>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isWritable: true }, template: { value: input.template ?? null, isWritable: false }, bundle: { value: input.bundle ?? null, isWritable: true }, prizePool: { value: input.prizePool ?? null, isWritable: true }, merkleTree: { value: input.merkleTree ?? null, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isWritable: false } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: true }, template: { value: input.template ?? null, isSigner: false, isWritable: false }, bundle: { value: input.bundle ?? null, isSigner: false, isWritable: true }, prizePool: { value: input.prizePool ?? null, isSigner: false, isWritable: true }, merkleTree: { value: input.merkleTree ?? null, isSigner: false, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isSigner: false, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -67,8 +70,7 @@ if (!accounts.systemProgram.value) {
 accounts.systemProgram.value = '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
 }
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("bundle", accounts.bundle), getAccountMeta("prizePool", accounts.prizePool), getAccountMeta("merkleTree", accounts.merkleTree), getAccountMeta("systemProgram", accounts.systemProgram)], data: getCreatePrizePoolInstructionDataEncoder().encode(args as CreatePrizePoolInstructionDataArgs), programAddress } as CreatePrizePoolInstruction<TProgramAddress, TAccountAuthority, TAccountTemplate, TAccountBundle, TAccountPrizePool, TAccountMerkleTree, TAccountSystemProgram>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("bundle", accounts.bundle), getAccountMeta("prizePool", accounts.prizePool), getAccountMeta("merkleTree", accounts.merkleTree), getAccountMeta("systemProgram", accounts.systemProgram)], data: getCreatePrizePoolInstructionDataEncoder().encode(args as CreatePrizePoolInstructionDataArgs), programAddress } as CreatePrizePoolInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountPrizePool, InstructionAccountInputAddress<TAccountPrizePool>>, ResolvedInstructionAccountMeta<TAccountMerkleTree, InstructionAccountInputAddress<TAccountMerkleTree>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>>);
 }
 
 export type ParsedCreatePrizePoolInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

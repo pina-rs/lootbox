@@ -7,8 +7,8 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const WITHDRAW_SURPLUS_DISCRIMINATOR = 9;
@@ -38,20 +38,23 @@ export function getWithdrawSurplusInstructionDataCodec(): FixedSizeCodec<Withdra
     return combineCodec(getWithdrawSurplusInstructionDataEncoder(), getWithdrawSurplusInstructionDataDecoder());
 }
 
-export type WithdrawSurplusInput<TAccountAuthority extends string = string, TAccountLootbox extends string = string, TAccountVault extends string = string, TAccountBoxMint extends string = string> =  {
-  authority: TransactionSigner<TAccountAuthority>;
-lootbox: Address<TAccountLootbox>;
-vault: Address<TAccountVault>;
-boxMint: Address<TAccountBoxMint>;
+export type WithdrawSurplusInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput> =  {
+  authority: TAccountAuthority;
+lootbox: TAccountLootbox;
+vault: TAccountVault;
+boxMint: TAccountBoxMint;
 lamports: WithdrawSurplusInstructionDataArgs["lamports"];
 }
 
-export function getWithdrawSurplusInstruction<TAccountAuthority extends string, TAccountLootbox extends string, TAccountVault extends string, TAccountBoxMint extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: WithdrawSurplusInput<TAccountAuthority, TAccountLootbox, TAccountVault, TAccountBoxMint>, config?: { programAddress?: TProgramAddress } ): WithdrawSurplusInstruction<TProgramAddress, TAccountAuthority, TAccountLootbox, TAccountVault, TAccountBoxMint> {
+export function getWithdrawSurplusInstruction<TAccountAuthority extends InstructionSignerInput, TAccountLootbox extends InstructionAccountInput, TAccountVault extends InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: WithdrawSurplusInput<TAccountAuthority, TAccountLootbox, TAccountVault, TAccountBoxMint>, config?: { programAddress?: TProgramAddress } ): WithdrawSurplusInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isWritable: true }, lootbox: { value: input.lootbox ?? null, isWritable: false }, vault: { value: input.vault ?? null, isWritable: true }, boxMint: { value: input.boxMint ?? null, isWritable: false } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: true }, lootbox: { value: input.lootbox ?? null, isSigner: false, isWritable: false }, vault: { value: input.vault ?? null, isSigner: false, isWritable: true }, boxMint: { value: input.boxMint ?? null, isSigner: false, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -61,8 +64,7 @@ const args = { ...input,  };
 
 
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("lootbox", accounts.lootbox), getAccountMeta("vault", accounts.vault), getAccountMeta("boxMint", accounts.boxMint)], data: getWithdrawSurplusInstructionDataEncoder().encode(args as WithdrawSurplusInstructionDataArgs), programAddress } as WithdrawSurplusInstruction<TProgramAddress, TAccountAuthority, TAccountLootbox, TAccountVault, TAccountBoxMint>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("lootbox", accounts.lootbox), getAccountMeta("vault", accounts.vault), getAccountMeta("boxMint", accounts.boxMint)], data: getWithdrawSurplusInstructionDataEncoder().encode(args as WithdrawSurplusInstructionDataArgs), programAddress } as WithdrawSurplusInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>>);
 }
 
 export type ParsedWithdrawSurplusInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

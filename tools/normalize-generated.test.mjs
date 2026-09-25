@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import {
 	assertWorkspaceVersions,
@@ -8,6 +11,7 @@ import {
 	normalizeRustVersionEnvelopeGuards,
 	normalizeRustVersionEnvelopeTests,
 	normalizeTypeScriptTypeArguments,
+	sdkKitRange,
 } from "./normalize-generated.mjs";
 
 test("requires every handwritten client to use the workspace version", () => {
@@ -189,4 +193,17 @@ test("drops trailing commas before closing type-argument brackets", () => {
 		"MigrateInput<\n\tA\n>",
 		"untouched when no trailing comma",
 	);
+});
+
+test("pins the generated client to the SDK's Kit range", () => {
+	const root = mkdtempSync(join(tmpdir(), "lootbox-kit-range-"));
+	mkdirSync(join(root, "sdks/typescript"), { recursive: true });
+	const manifest = join(root, "sdks/typescript/package.json");
+	writeFileSync(
+		manifest,
+		JSON.stringify({ dependencies: { "@solana/kit": "^8.3.0" } }),
+	);
+	assert.equal(sdkKitRange(root), "^8.3.0");
+	writeFileSync(manifest, JSON.stringify({ dependencies: {} }));
+	assert.throws(() => sdkKitRange(root), /must depend on @solana\/kit/);
 });

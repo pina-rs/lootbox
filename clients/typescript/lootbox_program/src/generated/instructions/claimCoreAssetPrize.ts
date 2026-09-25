@@ -7,8 +7,8 @@
  */
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
-import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type TransactionSigner, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR = 31;
@@ -38,28 +38,31 @@ export function getClaimCoreAssetPrizeInstructionDataCodec(): FixedSizeCodec<Cla
     return combineCodec(getClaimCoreAssetPrizeInstructionDataEncoder(), getClaimCoreAssetPrizeInstructionDataDecoder());
 }
 
-export type ClaimCoreAssetPrizeInput<TAccountPayer extends string = string, TAccountTemplate extends string = string, TAccountOpening extends string = string, TAccountBundle extends string = string, TAccountRecipient extends string = string, TAccountAsset extends string = string, TAccountCollection extends string = string, TAccountCoreProgram extends string = string, TAccountSystemProgram extends string = string, TAccountLogWrapper extends string = string, TAccountPluginAccounts extends string = string> =  {
-  payer: TransactionSigner<TAccountPayer>;
-template: Address<TAccountTemplate>;
-opening: Address<TAccountOpening>;
-bundle: Address<TAccountBundle>;
-recipient: Address<TAccountRecipient>;
-asset: Address<TAccountAsset>;
-collection: Address<TAccountCollection>;
-coreProgram: Address<TAccountCoreProgram>;
-systemProgram: Address<TAccountSystemProgram>;
-logWrapper: Address<TAccountLogWrapper>;
+export type ClaimCoreAssetPrizeInput<TAccountPayer extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountRecipient extends InstructionAccountInput = InstructionAccountInput, TAccountAsset extends InstructionAccountInput = InstructionAccountInput, TAccountCollection extends InstructionAccountInput = InstructionAccountInput, TAccountCoreProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput = InstructionAccountInput, TAccountPluginAccounts extends InstructionAccountInput = InstructionAccountInput> =  {
+  payer: TAccountPayer;
+template: TAccountTemplate;
+opening: TAccountOpening;
+bundle: TAccountBundle;
+recipient: TAccountRecipient;
+asset: TAccountAsset;
+collection: TAccountCollection;
+coreProgram: TAccountCoreProgram;
+systemProgram: TAccountSystemProgram;
+logWrapper: TAccountLogWrapper;
 /** Core plugin and external-adapter accounts, preserving client flags. */
-pluginAccounts: Address<TAccountPluginAccounts>;
+pluginAccounts: TAccountPluginAccounts;
 assetIndex: ClaimCoreAssetPrizeInstructionDataArgs["assetIndex"];
 }
 
-export function getClaimCoreAssetPrizeInstruction<TAccountPayer extends string, TAccountTemplate extends string, TAccountOpening extends string, TAccountBundle extends string, TAccountRecipient extends string, TAccountAsset extends string, TAccountCollection extends string, TAccountCoreProgram extends string, TAccountSystemProgram extends string, TAccountLogWrapper extends string, TAccountPluginAccounts extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: ClaimCoreAssetPrizeInput<TAccountPayer, TAccountTemplate, TAccountOpening, TAccountBundle, TAccountRecipient, TAccountAsset, TAccountCollection, TAccountCoreProgram, TAccountSystemProgram, TAccountLogWrapper, TAccountPluginAccounts>, config?: { programAddress?: TProgramAddress } ): ClaimCoreAssetPrizeInstruction<TProgramAddress, TAccountPayer, TAccountTemplate, TAccountOpening, TAccountBundle, TAccountRecipient, TAccountAsset, TAccountCollection, TAccountCoreProgram, TAccountSystemProgram, TAccountLogWrapper, TAccountPluginAccounts> {
+export function getClaimCoreAssetPrizeInstruction<TAccountPayer extends InstructionSignerInput, TAccountTemplate extends InstructionAccountInput, TAccountOpening extends InstructionAccountInput, TAccountBundle extends InstructionAccountInput, TAccountRecipient extends InstructionAccountInput, TAccountAsset extends InstructionAccountInput, TAccountCollection extends InstructionAccountInput, TAccountCoreProgram extends InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput, TAccountPluginAccounts extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: ClaimCoreAssetPrizeInput<TAccountPayer, TAccountTemplate, TAccountOpening, TAccountBundle, TAccountRecipient, TAccountAsset, TAccountCollection, TAccountCoreProgram, TAccountSystemProgram, TAccountLogWrapper, TAccountPluginAccounts>, config?: { programAddress?: TProgramAddress } ): ClaimCoreAssetPrizeInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountPayer, InstructionAccountInputAddress<TAccountPayer>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountOpening, InstructionAccountInputAddress<TAccountOpening>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountRecipient, InstructionAccountInputAddress<TAccountRecipient>>, ResolvedInstructionAccountMeta<TAccountAsset, InstructionAccountInputAddress<TAccountAsset>>, ResolvedInstructionAccountMeta<TAccountCollection, InstructionAccountInputAddress<TAccountCollection>>, ResolvedInstructionAccountMeta<TAccountCoreProgram, InstructionAccountInputAddress<TAccountCoreProgram>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>, ResolvedInstructionAccountMeta<TAccountLogWrapper, InstructionAccountInputAddress<TAccountLogWrapper>>, ResolvedInstructionAccountMeta<TAccountPluginAccounts, InstructionAccountInputAddress<TAccountPluginAccounts>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { payer: { value: input.payer ?? null, isWritable: true }, template: { value: input.template ?? null, isWritable: false }, opening: { value: input.opening ?? null, isWritable: true }, bundle: { value: input.bundle ?? null, isWritable: true }, recipient: { value: input.recipient ?? null, isWritable: false }, asset: { value: input.asset ?? null, isWritable: true }, collection: { value: input.collection ?? null, isWritable: false }, coreProgram: { value: input.coreProgram ?? null, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isWritable: false }, logWrapper: { value: input.logWrapper ?? null, isWritable: false }, pluginAccounts: { value: input.pluginAccounts ?? null, isWritable: false } }
+const originalAccounts = { payer: { value: input.payer ?? null, isSigner: true, isWritable: true }, template: { value: input.template ?? null, isSigner: false, isWritable: false }, opening: { value: input.opening ?? null, isSigner: false, isWritable: true }, bundle: { value: input.bundle ?? null, isSigner: false, isWritable: true }, recipient: { value: input.recipient ?? null, isSigner: false, isWritable: false }, asset: { value: input.asset ?? null, isSigner: false, isWritable: true }, collection: { value: input.collection ?? null, isSigner: false, isWritable: false }, coreProgram: { value: input.coreProgram ?? null, isSigner: false, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isSigner: false, isWritable: false }, logWrapper: { value: input.logWrapper ?? null, isSigner: false, isWritable: false }, pluginAccounts: { value: input.pluginAccounts ?? null, isSigner: false, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -69,8 +72,7 @@ const args = { ...input,  };
 
 
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("payer", accounts.payer), getAccountMeta("template", accounts.template), getAccountMeta("opening", accounts.opening), getAccountMeta("bundle", accounts.bundle), getAccountMeta("recipient", accounts.recipient), getAccountMeta("asset", accounts.asset), getAccountMeta("collection", accounts.collection), getAccountMeta("coreProgram", accounts.coreProgram), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("logWrapper", accounts.logWrapper), getAccountMeta("pluginAccounts", accounts.pluginAccounts)], data: getClaimCoreAssetPrizeInstructionDataEncoder().encode(args as ClaimCoreAssetPrizeInstructionDataArgs), programAddress } as ClaimCoreAssetPrizeInstruction<TProgramAddress, TAccountPayer, TAccountTemplate, TAccountOpening, TAccountBundle, TAccountRecipient, TAccountAsset, TAccountCollection, TAccountCoreProgram, TAccountSystemProgram, TAccountLogWrapper, TAccountPluginAccounts>);
+return Object.freeze({ accounts: [getAccountMeta("payer", accounts.payer), getAccountMeta("template", accounts.template), getAccountMeta("opening", accounts.opening), getAccountMeta("bundle", accounts.bundle), getAccountMeta("recipient", accounts.recipient), getAccountMeta("asset", accounts.asset), getAccountMeta("collection", accounts.collection), getAccountMeta("coreProgram", accounts.coreProgram), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("logWrapper", accounts.logWrapper), getAccountMeta("pluginAccounts", accounts.pluginAccounts)], data: getClaimCoreAssetPrizeInstructionDataEncoder().encode(args as ClaimCoreAssetPrizeInstructionDataArgs), programAddress } as ClaimCoreAssetPrizeInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountPayer, InstructionAccountInputAddress<TAccountPayer>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountOpening, InstructionAccountInputAddress<TAccountOpening>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountRecipient, InstructionAccountInputAddress<TAccountRecipient>>, ResolvedInstructionAccountMeta<TAccountAsset, InstructionAccountInputAddress<TAccountAsset>>, ResolvedInstructionAccountMeta<TAccountCollection, InstructionAccountInputAddress<TAccountCollection>>, ResolvedInstructionAccountMeta<TAccountCoreProgram, InstructionAccountInputAddress<TAccountCoreProgram>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>, ResolvedInstructionAccountMeta<TAccountLogWrapper, InstructionAccountInputAddress<TAccountLogWrapper>>, ResolvedInstructionAccountMeta<TAccountPluginAccounts, InstructionAccountInputAddress<TAccountPluginAccounts>>>);
 }
 
 export type ParsedClaimCoreAssetPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

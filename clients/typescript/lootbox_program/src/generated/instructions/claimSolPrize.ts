@@ -8,7 +8,7 @@
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
-import { getAccountMetaFactory, type ResolvedInstructionAccount } from '@solana/program-client-core';
+import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const CLAIM_SOL_PRIZE_DISCRIMINATOR = 19;
@@ -38,20 +38,23 @@ export function getClaimSolPrizeInstructionDataCodec(): FixedSizeCodec<ClaimSolP
     return combineCodec(getClaimSolPrizeInstructionDataEncoder(), getClaimSolPrizeInstructionDataDecoder());
 }
 
-export type ClaimSolPrizeInput<TAccountTemplate extends string = string, TAccountOpening extends string = string, TAccountBundle extends string = string, TAccountRecipient extends string = string> =  {
-  template: Address<TAccountTemplate>;
-opening: Address<TAccountOpening>;
-bundle: Address<TAccountBundle>;
-recipient: Address<TAccountRecipient>;
+export type ClaimSolPrizeInput<TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountRecipient extends InstructionAccountInput = InstructionAccountInput> =  {
+  template: TAccountTemplate;
+opening: TAccountOpening;
+bundle: TAccountBundle;
+recipient: TAccountRecipient;
 assetIndex: ClaimSolPrizeInstructionDataArgs["assetIndex"];
 }
 
-export function getClaimSolPrizeInstruction<TAccountTemplate extends string, TAccountOpening extends string, TAccountBundle extends string, TAccountRecipient extends string, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: ClaimSolPrizeInput<TAccountTemplate, TAccountOpening, TAccountBundle, TAccountRecipient>, config?: { programAddress?: TProgramAddress } ): ClaimSolPrizeInstruction<TProgramAddress, TAccountTemplate, TAccountOpening, TAccountBundle, TAccountRecipient> {
+export function getClaimSolPrizeInstruction<TAccountTemplate extends InstructionAccountInput, TAccountOpening extends InstructionAccountInput, TAccountBundle extends InstructionAccountInput, TAccountRecipient extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: ClaimSolPrizeInput<TAccountTemplate, TAccountOpening, TAccountBundle, TAccountRecipient>, config?: { programAddress?: TProgramAddress } ): ClaimSolPrizeInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountOpening, InstructionAccountInputAddress<TAccountOpening>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountRecipient, InstructionAccountInputAddress<TAccountRecipient>>> {
   // Program address.
 const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
 
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
  // Original accounts.
-const originalAccounts = { template: { value: input.template ?? null, isWritable: false }, opening: { value: input.opening ?? null, isWritable: true }, bundle: { value: input.bundle ?? null, isWritable: true }, recipient: { value: input.recipient ?? null, isWritable: true } }
+const originalAccounts = { template: { value: input.template ?? null, isSigner: false, isWritable: false }, opening: { value: input.opening ?? null, isSigner: false, isWritable: true }, bundle: { value: input.bundle ?? null, isSigner: false, isWritable: true }, recipient: { value: input.recipient ?? null, isSigner: false, isWritable: true } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
@@ -61,8 +64,7 @@ const args = { ...input,  };
 
 
 
-const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
-return Object.freeze({ accounts: [getAccountMeta("template", accounts.template), getAccountMeta("opening", accounts.opening), getAccountMeta("bundle", accounts.bundle), getAccountMeta("recipient", accounts.recipient)], data: getClaimSolPrizeInstructionDataEncoder().encode(args as ClaimSolPrizeInstructionDataArgs), programAddress } as ClaimSolPrizeInstruction<TProgramAddress, TAccountTemplate, TAccountOpening, TAccountBundle, TAccountRecipient>);
+return Object.freeze({ accounts: [getAccountMeta("template", accounts.template), getAccountMeta("opening", accounts.opening), getAccountMeta("bundle", accounts.bundle), getAccountMeta("recipient", accounts.recipient)], data: getClaimSolPrizeInstructionDataEncoder().encode(args as ClaimSolPrizeInstructionDataArgs), programAddress } as ClaimSolPrizeInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountOpening, InstructionAccountInputAddress<TAccountOpening>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountRecipient, InstructionAccountInputAddress<TAccountRecipient>>>);
 }
 
 export type ParsedClaimSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;

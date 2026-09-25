@@ -86,9 +86,9 @@ Mobile first, one column with a 16px gutter: title, chest, hint, then the lede a
 
 A single `button` covers the chest. Pointer down or Space/Enter down starts the charge; release before 1.2s drains it. The charge is a CSS custom property (`--charge`) written per animation frame, driving squash, shake amplitude, glow, and the ring's dash offset. Phases are exposed as `data-phase` (`idle`, `charging`, `burning`, `rolling`, `revealing`, `revealed`, `claiming`, `claimed`, `failed`) and the tier as `data-reaction`.
 
-When the chest cannot open (before the reveal date, no wallet, no boxes, oracle not wired), a press rattles it once and a status message explains why. "Open without holding" is always offered beside an armed chest.
+When the chest cannot open (before the reveal date, no wallet, or no boxes), a press rattles it once and a status message explains why. "Open without holding" is always offered beside an armed chest.
 
-Reaction clips are 720 px VP9 WebM with alpha, with an H.264 MP4 fallback on the ivory background. `mix-blend-mode: darken` makes the MP4 background disappear on the matching page colour. The closed-chest still is the poster; each reaction's final pose is the resting image after the reveal. `big-prize` plays for the headline tier (highest value, or rarest when unpriced); everything else plays `small-prize`. `disappointed` is not shipped.
+Reaction clips are 720 px VP9 WebM with alpha, with an H.264 MP4 fallback on the ivory background. `mix-blend-mode: darken` makes the MP4 background disappear on the matching page colour. The closed-chest still is the poster; each reaction's final pose is the resting image after the reveal. `big-prize` plays for the headline tier (highest value, or rarest when unpriced), `small-prize` for other prizes, and `disappointed` for an empty box (badge plus pocket-change SOL), whose card reads "Empty box — you kept the chest".
 
 ### Prize card
 

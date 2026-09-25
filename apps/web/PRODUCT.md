@@ -20,7 +20,7 @@ A giveaway, never a sale: there is no purchase or checkout flow, and copy never 
 
 ## Operating Context
 
-Static Vite + React + TypeScript build. `/` is the recipient site; `/playground` is the local creator workshop. Wallets connect through Wallet Standard (Phantom, Solflare, Backpack) and sign through a kit `TransactionSigner`; the app never holds keys. `VITE_SOLANA_CLUSTER`, `VITE_RPC_URL`, and `VITE_TREASURY` choose the network and series. Localnet uses the Surfpool control plane's mock oracle; devnet and mainnet use the Switchboard gateway once it is wired at the single `createPublicOracle` wiring point.
+Static Vite + React + TypeScript build. `/` is the recipient site; `/playground` is the local creator workshop. Wallets connect through Wallet Standard (Phantom, Solflare, Backpack) and sign through a kit `TransactionSigner`; the app never holds keys. `VITE_SOLANA_CLUSTER`, `VITE_RPC_URL`, and `VITE_TREASURY` choose the network and series. Localnet uses the Surfpool control plane's mock oracle; devnet and mainnet use the SDK's Switchboard On-Demand transport (`createSwitchboardOracle`). The series is 7 stock bundles plus an "Empty box ×13" consolation bundle (a mint-on-claim badge and 0.001 SOL), 20 boxes in all. The static site deploys to GitHub Pages at `/lootbox/`, which also hosts the box and badge metadata under `/lootbox/metadata/`.
 
 ## Capabilities and Constraints
 

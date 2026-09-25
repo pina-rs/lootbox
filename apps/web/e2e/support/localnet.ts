@@ -307,12 +307,15 @@ export async function tokenBalance(
  * keypair. Signing happens in the test process through an exposed binding, so
  * the secret key never enters the page.
  */
-export async function injectTestWallet(page: Page): Promise<KeyPairSigner> {
-	const signer = await generateKeyPairSigner();
+export async function injectTestWallet(
+	page: Page,
+	existing?: KeyPairSigner,
+): Promise<KeyPairSigner> {
+	const signer = existing ?? await generateKeyPairSigner();
 	const decoder = getTransactionDecoder();
 	const encoder = getTransactionEncoder();
 
-	await faucet(signer.address);
+	if (!existing) await faucet(signer.address);
 	await page.exposeBinding("__e2eSign", async (_source, bytes: number[]) => {
 		const transaction = decoder.decode(Uint8Array.from(bytes));
 		const signed = await partiallySignTransaction(

@@ -25,7 +25,11 @@ import {
 	openingReducer,
 	type RecordedResult,
 } from "./openingMachine.js";
-import { createPublicOracle, type OracleTransport } from "./oracle.js";
+import {
+	createPublicOracle,
+	type OracleTransport,
+	PROOF_TIMEOUT_MS,
+} from "./oracle.js";
 import {
 	buildManifest,
 	formatOdds,
@@ -66,7 +70,6 @@ type Load<T> =
 
 /** The SDK's progress label for prize delivery transactions. */
 const CLAIM_LABEL = "Deliver prize bundle batch";
-const PROOF_ATTEMPTS = { localnet: 3, devnet: 40, mainnet: 40 } as const;
 
 function message(reason: unknown): string {
 	return reason instanceof Error ? reason.message : String(reason);
@@ -175,7 +178,7 @@ function lineName(line: PrizeLine): string {
 		case "sol":
 			return "Solana";
 		case "token":
-			return `Token ${shortAddress(line.mint)}`;
+			return line.label?.name ?? `Token ${shortAddress(line.mint)}`;
 		case "badge":
 			return "Empty Box badge";
 		case "collectible":
@@ -367,7 +370,9 @@ function PrizeCard(
 						<PrizeLogo line={line} />
 						<span>
 							<strong>{lineName(line)}</strong>
-							{lineTitle(line)}
+							{line.kind === "badge"
+								? "Minted to you on claim"
+								: lineTitle(line)}
 						</span>
 						{line.kind === "stock" && (
 							<span className="prize-usd">≈ {formatUsd(line.usdValue)}</span>
@@ -586,7 +591,14 @@ export default function LaunchApp() {
 
 	const rows = useMemo(
 		() =>
-			snapshot ? buildManifest(snapshot.bundles, snapshot.remaining, book) : [],
+			snapshot
+				? buildManifest(
+					snapshot.bundles,
+					snapshot.remaining,
+					book,
+					snapshot.labels,
+				)
+				: [],
 		[snapshot, book],
 	);
 	const tierOf = useCallback(
@@ -634,7 +646,7 @@ export default function LaunchApp() {
 		}
 
 		if (!oracle) {
-			return `Switchboard randomness isn't wired for ${config.cluster} in this build yet. Your boxes are safe.`;
+			return "The randomness oracle is unavailable right now. Your boxes are safe.";
 		}
 
 		return null;
@@ -656,7 +668,7 @@ export default function LaunchApp() {
 			client,
 			oracle,
 			target,
-			PROOF_ATTEMPTS[config.cluster],
+			PROOF_TIMEOUT_MS[config.cluster],
 		);
 		const signature =
 			signatures.current.get("Verify randomness & record prize") ??

@@ -101,7 +101,13 @@ export type PrizeLine =
 		usdValue: number;
 	}>
 	| Readonly<{ kind: "sol"; lamports: bigint }>
-	| Readonly<{ kind: "token"; mint: string; amount: bigint; decimals: number }>
+	| Readonly<{
+		kind: "token";
+		mint: string;
+		amount: bigint;
+		decimals: number;
+		label: TokenLabel | null;
+	}>
 	| Readonly<{ kind: "badge"; mint: string }>
 	| Readonly<{ kind: "collectible"; mint: string }>;
 
@@ -154,9 +160,13 @@ function unitsToNumber(amount: bigint, decimals: number): number {
 	return Number(amount) / 10 ** decimals;
 }
 
+/** A mint's own display name and symbol, from Token-2022 metadata. */
+export type TokenLabel = Readonly<{ name: string; symbol: string }>;
+
 export function prizeLine(
 	asset: BundleSummary["assets"][number],
 	book: PriceBook,
+	labels: ReadonlyMap<string, TokenLabel> = new Map(),
 ): PrizeLine {
 	if (SOL_KINDS.has(asset.kind)) {
 		return { kind: "sol", lamports: asset.amount };
@@ -178,6 +188,7 @@ export function prizeLine(
 			mint: asset.mint,
 			amount: asset.amount,
 			decimals: asset.decimals,
+			label: labels.get(asset.mint) ?? null,
 		};
 	}
 
@@ -254,13 +265,14 @@ export function buildManifest(
 	bundles: readonly BundleSummary[],
 	remaining: readonly bigint[],
 	book: PriceBook,
+	labels: ReadonlyMap<string, TokenLabel> = new Map(),
 ): ManifestRow[] {
 	const odds = templateInventory({
 		remaining: [...remaining],
 		bundleCount: remaining.length,
 	});
 	const drafts = bundles.map((bundle) => {
-		const lines = bundle.assets.map((asset) => prizeLine(asset, book));
+		const lines = bundle.assets.map((asset) => prizeLine(asset, book, labels));
 
 		return {
 			index: bundle.index,
@@ -352,7 +364,9 @@ export function lineTitle(line: PrizeLine): string {
 		case "sol":
 			return `${formatUnits(line.lamports, 9)} SOL`;
 		case "token":
-			return `${formatUnits(line.amount, line.decimals)} tokens`;
+			return `${formatUnits(line.amount, line.decimals)} ${
+				line.label?.symbol || "tokens"
+			}`;
 		case "badge":
 			return "Empty Box badge";
 		case "collectible":

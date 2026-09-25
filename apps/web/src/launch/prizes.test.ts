@@ -150,6 +150,22 @@ describe("prize manifest", () => {
 		expect(rowTitle(rows[0] ?? { lines: [] })).toBe("0.1 SOL + 5 tokens");
 	});
 
+	it("names unknown tokens from their on-mint metadata", () => {
+		const mint = "So11111111111111111111111111111111111111112";
+		const rows = buildManifest(
+			[{
+				index: 0,
+				quantity: 1n,
+				assets: [{ kind: "token2022", mint, amount: 25n, decimals: 1 }],
+			}],
+			[1n],
+			book,
+			new Map([[mint, { name: "Test SpaceX", symbol: "tSPACEX" }]]),
+		);
+
+		expect(rowTitle(rows[0] ?? { lines: [] })).toBe("2.5 tSPACEX");
+	});
+
 	it("formats units and odds precisely", () => {
 		expect(formatUnits(1_500_000_000n, 9)).toBe("1.5");
 		expect(formatUnits(1_234_000n, 0)).toBe("1,234,000");

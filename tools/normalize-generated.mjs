@@ -261,8 +261,8 @@ if (
 		resolve(root, "clients/typescript/lootbox_program/src/index.ts"),
 		'export * from "./proofAccounts.js";',
 	);
-	// Keep generated and ergonomic clients on the same Kit major as the token
-	// instruction builders. Codama's default package versions currently lag it.
+	// Keep the generated client on the ergonomic SDK's Kit range, which follows
+	// the token instruction builders. Codama's default package versions lag it.
 	const manifestPath = resolve(
 		root,
 		"clients/typescript/lootbox_program/package.json",
@@ -278,12 +278,27 @@ if (
 		"https://github.com/pina-rs/lootbox/tree/main/clients/typescript/lootbox_program";
 	manifest.publishConfig = { access: "public" };
 	manifest.files = ["src"];
-	manifest.dependencies["@solana/program-client-core"] = "^7.0.0";
-	manifest.peerDependencies["@solana/kit"] = "^7.0.0";
+	const kitRange = sdkKitRange(root);
+	manifest.dependencies["@solana/program-client-core"] = kitRange;
+	manifest.peerDependencies["@solana/kit"] = kitRange;
 	const sortedManifest = Object.fromEntries(
 		Object.entries(manifest).sort(([left], [right]) =>
 			left.localeCompare(right)
 		),
 	);
 	writeFileSync(manifestPath, `${JSON.stringify(sortedManifest, null, 2)}\n`);
+}
+
+/** The ergonomic SDK owns the workspace's `@solana/kit` range; the generated
+ * client and its `@solana/program-client-core` companion follow it.
+ */
+export function sdkKitRange(root) {
+	const sdk = JSON.parse(
+		readFileSync(resolve(root, "sdks/typescript/package.json"), "utf8"),
+	);
+	const range = sdk.dependencies?.["@solana/kit"];
+	if (typeof range !== "string" || range.length === 0) {
+		throw new Error("sdks/typescript/package.json must depend on @solana/kit");
+	}
+	return range;
 }

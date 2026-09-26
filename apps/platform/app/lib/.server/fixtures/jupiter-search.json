@@ -1,0 +1,94 @@
+[
+	{
+		"id": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6XKj7D3WpqkDmzPK",
+		"name": "Bonk",
+		"symbol": "Bonk",
+		"icon": "https://arweave.net/hQiPZOsRZXGXBJd_82PhVdlM_hACsT_q6wqwf5cSY7I",
+		"decimals": 5,
+		"tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+		"isVerified": true,
+		"tags": ["verified", "community", "strict"],
+		"organicScore": 98.2,
+		"organicScoreLabel": "high",
+		"usdPrice": 0.0000213,
+		"liquidity": 18420000,
+		"mcap": 1640000000,
+		"audit": {
+			"mintAuthorityDisabled": true,
+			"freezeAuthorityDisabled": true,
+			"topHoldersPercentage": 21.4
+		},
+		"stats24h": {
+			"priceChange": -2.1,
+			"buyVolume": 9120000,
+			"sellVolume": 8870000,
+			"numBuys": 41000,
+			"numSells": 39000
+		}
+	},
+	{
+		"id": "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
+		"name": "dogwifhat",
+		"symbol": "$WIF",
+		"icon": "https://bafkreibk3covs5ltyqxa272uodhculbr6kea6betidfwy3ajsav2vjzyum.ipfs.nftstorage.link",
+		"decimals": 6,
+		"tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+		"isVerified": true,
+		"tags": ["verified", "strict"],
+		"organicScore": 91.5,
+		"organicScoreLabel": "high",
+		"usdPrice": 0.84,
+		"liquidity": 9320000,
+		"audit": { "mintAuthorityDisabled": true, "freezeAuthorityDisabled": true },
+		"stats24h": { "buyVolume": 21000000, "sellVolume": 20500000 }
+	},
+	{
+		"id": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+		"name": "USD Coin",
+		"symbol": "USDC",
+		"icon": null,
+		"decimals": 6,
+		"tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+		"isVerified": true,
+		"tags": ["verified", "strict"],
+		"organicScore": 99.1,
+		"organicScoreLabel": "high",
+		"usdPrice": 1,
+		"liquidity": 420000000,
+		"audit": {
+			"mintAuthorityDisabled": false,
+			"freezeAuthorityDisabled": false
+		},
+		"stats24h": { "buyVolume": 510000000, "sellVolume": 505000000 }
+	},
+	{
+		"id": "XsensupeZBdHxZtdnLptf1UfWpVyancWcit7qWFYZrJ",
+		"name": "Xerox xStock",
+		"symbol": "XRXx",
+		"icon": "https://xstocks-metadata.backed.fi/logos/tokens/XRXx.png",
+		"decimals": 8,
+		"tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+		"isVerified": true,
+		"tags": ["verified", "xstocks"],
+		"organicScore": 40.2,
+		"organicScoreLabel": "medium",
+		"usdPrice": 4.12,
+		"liquidity": 81000,
+		"stats24h": { "buyVolume": 12000, "sellVolume": 9000 }
+	},
+	{
+		"id": "kgERWXbLfq6MHcWLd86a5dpmSvM86QhQrQjL2gGPbnD",
+		"name": "Bonk Inu Moon",
+		"symbol": "BONKM",
+		"icon": null,
+		"decimals": 6,
+		"tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+		"isVerified": false,
+		"tags": [],
+		"organicScore": 3.1,
+		"organicScoreLabel": "low",
+		"usdPrice": 0.00000041,
+		"liquidity": 1200,
+		"stats24h": { "buyVolume": 310, "sellVolume": 290 }
+	}
+]

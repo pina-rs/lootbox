@@ -1,0 +1,58 @@
+/**
+ * lootbox.so Worker configuration.
+ *
+ * Local development runs entirely in Miniflare (`pnpm dev`); nothing here is
+ * deployed until the owner runs `wrangler deploy`. Replace the placeholder
+ * D1 `database_id` with the id printed by `wrangler d1 create lootbox` before
+ * the first deploy. See README.md for the full checklist.
+ */
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "lootbox-platform",
+	"main": "./workers/app.ts",
+	"compatibility_date": "2026-09-20",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": { "enabled": true },
+	"upload_source_maps": true,
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "lootbox",
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "migrations"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "MEDIA",
+			"bucket_name": "lootbox-media"
+		}
+	],
+	"triggers": {
+		// The settlement relayer finishes abandoned openings every minute.
+		"crons": ["* * * * *"]
+	},
+	"vars": {
+		// Canonical public origin. Empty means "the request's own origin".
+		"PUBLIC_ORIGIN": "",
+		"DEFAULT_CLUSTER": "devnet",
+		// Comma-separated clusters creators may choose: devnet, mainnet, localnet.
+		"ENABLED_CLUSTERS": "devnet",
+		"RPC_URL_DEVNET": "https://api.devnet.solana.com",
+		"RPC_URL_MAINNET": "",
+		// Loopback Surfpool control plane (`pnpm playground:rpc`); localnet only.
+		"LOCALNET_CONTROL_URL": "",
+		// Clusters the cron relayer serves. Keep mainnet out until audited.
+		"RELAYER_CLUSTERS": "devnet",
+		// Also deliver allocated prizes (the relayer then pays token-account rent).
+		"RELAYER_CLAIM": "false",
+		// Exclusive Lootbox NFTs; enable once the SDK ships them.
+		"FEATURE_EXCLUSIVE_NFTS": "false",
+		// NFT prizes from other projects in the bundle builder.
+		"FEATURE_NFT_PRIZES": "false",
+		// The Introductory Exclusive Lootbox NFT collection PDA per cluster,
+		// printed by `pnpm exclusive:collection -- --execute`.
+		"EXCLUSIVE_COLLECTION_DEVNET": "",
+		"EXCLUSIVE_COLLECTION_MAINNET": ""
+	}
+}

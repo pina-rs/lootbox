@@ -36,11 +36,33 @@ surfnet.deploy({
 	programId: oracleProgram,
 	soPath: resolve(root, "target/deploy/mock_switchboard.so"),
 });
-for (const fixtureId of [bubblegumProgram, compressionProgram, noopProgram]) {
+// With LOOTBOX_METAPLEX_PROGRAMS_DIR (from `fetch:metaplex-programs`), deploy
+// the pinned mainnet Bubblegum V2, Core, MPL Account Compression, and MPL
+// Noop images so Exclusive Lootbox NFTs mint for real. Otherwise the mock
+// Bubblegum fixture stands in for PrizePool journeys.
+const metaplexDirectory = process.env.LOOTBOX_METAPLEX_PROGRAMS_DIR;
+const metaplexPrograms = [
+	bubblegumProgram,
+	"CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
+	"mcmt6YrQEMKw8Mw43FmpRLmf7BqRnFMKmAcbxE3xkAW",
+	"mnoopTCrg4p8ry25e4bcWA9XZjbNjMTfgYVGGEdRsf3",
+];
+const mockedPrograms = metaplexDirectory
+	? [compressionProgram, noopProgram]
+	: [bubblegumProgram, compressionProgram, noopProgram];
+for (const fixtureId of mockedPrograms) {
 	surfnet.deploy({
 		programId: fixtureId,
 		soPath: resolve(root, "target/deploy/mock_bubblegum.so"),
 	});
+}
+if (metaplexDirectory) {
+	for (const programId of metaplexPrograms) {
+		surfnet.deploy({
+			programId,
+			soPath: resolve(metaplexDirectory, `${programId}.so`),
+		});
+	}
 }
 const oracle = Object.fromEntries(
 	[
@@ -76,6 +98,7 @@ const config = Object.freeze({
 	rpcUrl: surfnet.rpcUrl,
 	wsUrl: surfnet.wsUrl,
 	oracle,
+	metaplex: Boolean(metaplexDirectory),
 });
 const proofs = new Map();
 const observer = setInterval(() => surfnet.drainEvents(), 100);

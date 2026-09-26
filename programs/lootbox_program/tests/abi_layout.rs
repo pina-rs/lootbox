@@ -6,7 +6,7 @@
 //! check` fails when this file no longer matches the manifest. A layout
 //! change that forgets an offset fails `cargo test` in the same change.
 
-// manifest-sha256: 1a13661b0981001716b13d056ceea0c07fbb1e057d990a2743283cd484302487
+// manifest-sha256: 2eff1d4d3fde1ff05a2586987cb41488d656e7eab5f24c55419aad38cf8b899d
 // program-id: LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E
 // version_type: u8
 
@@ -361,6 +361,102 @@ pub mod account_1_09 {
 		("pool_index", MIGRATION_HEADER_SIZE + 204, 4),
 		("status", MIGRATION_HEADER_SIZE + 208, 1),
 		("bump", MIGRATION_HEADER_SIZE + 209, 1),
+	];
+}
+
+/// ABI layout for the `ExclusiveSeriesState` account.
+pub mod account_1_0a {
+	/// Manifest contract key.
+	pub const KEY: &str = "account:1:0a";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "ExclusiveSeriesState";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str = "feb3a0027aeb2c8526a729d92e4db99e3ffb0334e1e236642890aaab203e2f34";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 726;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 726;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("authority", MIGRATION_HEADER_SIZE + 0, 32),
+		("template", MIGRATION_HEADER_SIZE + 32, 32),
+		("bundle", MIGRATION_HEADER_SIZE + 64, 32),
+		("collection", MIGRATION_HEADER_SIZE + 96, 32),
+		("merkle_tree", MIGRATION_HEADER_SIZE + 128, 32),
+		("quantity", MIGRATION_HEADER_SIZE + 160, 8),
+		("minted", MIGRATION_HEADER_SIZE + 168, 8),
+		("rent_reserve", MIGRATION_HEADER_SIZE + 176, 8),
+		("mint_fee_lamports", MIGRATION_HEADER_SIZE + 184, 8),
+		("weights", MIGRATION_HEADER_SIZE + 192, 64),
+		("bonus_lamports", MIGRATION_HEADER_SIZE + 256, 128),
+		("bonus_counts", MIGRATION_HEADER_SIZE + 384, 64),
+		("bonus_remaining", MIGRATION_HEADER_SIZE + 448, 64),
+		("tier_minted", MIGRATION_HEADER_SIZE + 512, 64),
+		("name_prefix", MIGRATION_HEADER_SIZE + 576, 32),
+		("symbol", MIGRATION_HEADER_SIZE + 608, 10),
+		("base_uri", MIGRATION_HEADER_SIZE + 618, 96),
+		("max_buffer_size", MIGRATION_HEADER_SIZE + 714, 4),
+		("asset_index", MIGRATION_HEADER_SIZE + 718, 1),
+		("contents_count", MIGRATION_HEADER_SIZE + 719, 1),
+		("background_count", MIGRATION_HEADER_SIZE + 720, 1),
+		("pattern_count", MIGRATION_HEADER_SIZE + 721, 1),
+		("max_depth", MIGRATION_HEADER_SIZE + 722, 1),
+		("status", MIGRATION_HEADER_SIZE + 723, 1),
+		("bump", MIGRATION_HEADER_SIZE + 724, 1),
+		("fee_vault_bump", MIGRATION_HEADER_SIZE + 725, 1),
+	];
+}
+
+/// ABI layout for the `ExclusiveNftMintedEvent` event.
+pub mod event_1_01 {
+	/// Manifest contract key.
+	pub const KEY: &str = "event:1:01";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "ExclusiveNftMintedEvent";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str = "6c9ac39fccc26a221c31710a6d238de6c8927954f1a9e9d7d1de6d521ada0a32";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 212;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 212;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("template", MIGRATION_HEADER_SIZE + 0, 32),
+		("opening", MIGRATION_HEADER_SIZE + 32, 32),
+		("series", MIGRATION_HEADER_SIZE + 64, 32),
+		("beneficiary", MIGRATION_HEADER_SIZE + 96, 32),
+		("asset", MIGRATION_HEADER_SIZE + 128, 32),
+		("seed", MIGRATION_HEADER_SIZE + 160, 32),
+		("serial", MIGRATION_HEADER_SIZE + 192, 8),
+		("bonus_lamports", MIGRATION_HEADER_SIZE + 200, 8),
+		("tier", MIGRATION_HEADER_SIZE + 208, 1),
+		("contents", MIGRATION_HEADER_SIZE + 209, 1),
+		("background", MIGRATION_HEADER_SIZE + 210, 1),
+		("pattern", MIGRATION_HEADER_SIZE + 211, 1),
 	];
 }
 
@@ -1997,6 +2093,138 @@ pub mod instruction_1_34 {
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
 	pub const FIELDS: &[(&str, usize, usize)] = &[
+	];
+}
+
+/// ABI layout for the `CreateExclusiveSeriesInstruction` instruction.
+pub mod instruction_1_35 {
+	/// Manifest contract key.
+	pub const KEY: &str = "instruction:1:35";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "CreateExclusiveSeriesInstruction";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str = "c2ce6c879f0bab8e13ad1ea40ea1a12a6364ead5cdd4da717d6ea34eae135914";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 400;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 400;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
+		("bump", MIGRATION_HEADER_SIZE + 1, 1),
+		("fee_vault_bump", MIGRATION_HEADER_SIZE + 2, 1),
+		("contents_count", MIGRATION_HEADER_SIZE + 3, 1),
+		("background_count", MIGRATION_HEADER_SIZE + 4, 1),
+		("pattern_count", MIGRATION_HEADER_SIZE + 5, 1),
+		("weights", MIGRATION_HEADER_SIZE + 6, 64),
+		("bonus_lamports", MIGRATION_HEADER_SIZE + 70, 128),
+		("bonus_counts", MIGRATION_HEADER_SIZE + 198, 64),
+		("name_prefix", MIGRATION_HEADER_SIZE + 262, 32),
+		("symbol", MIGRATION_HEADER_SIZE + 294, 10),
+		("base_uri", MIGRATION_HEADER_SIZE + 304, 96),
+	];
+}
+
+/// ABI layout for the `InitializeExclusiveSeriesInstruction` instruction.
+pub mod instruction_1_36 {
+	/// Manifest contract key.
+	pub const KEY: &str = "instruction:1:36";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "InitializeExclusiveSeriesInstruction";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str = "c448547cc47d43dd89a8ad01976f8b798f553457bd7ac90fdb8a0ac45b9d3241";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 5;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 5;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("max_depth", MIGRATION_HEADER_SIZE + 0, 1),
+		("max_buffer_size", MIGRATION_HEADER_SIZE + 1, 4),
+	];
+}
+
+/// ABI layout for the `ClaimExclusiveNftInstruction` instruction.
+pub mod instruction_1_37 {
+	/// Manifest contract key.
+	pub const KEY: &str = "instruction:1:37";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "ClaimExclusiveNftInstruction";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 1;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
+	];
+}
+
+/// ABI layout for the `ReclaimExclusiveReserveInstruction` instruction.
+pub mod instruction_1_38 {
+	/// Manifest contract key.
+	pub const KEY: &str = "instruction:1:38";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "ReclaimExclusiveReserveInstruction";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 1;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
 	];
 }
 

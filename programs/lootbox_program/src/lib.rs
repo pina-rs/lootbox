@@ -141,6 +141,8 @@ pub enum LootboxError {
 	MutablePrize = 33,
 	/// The reserved migration route only validates already-current accounts.
 	MigrationLocked = 34,
+	/// The exclusive NFT series configuration, account, or binding is invalid.
+	InvalidExclusiveSeries = 35,
 }
 
 #[discriminator]
@@ -198,6 +200,10 @@ pub enum LootboxInstruction {
 	ClosePrizePool = 50,
 	PreparePrizePoolItem = 51,
 	CancelPrizePoolItem = 52,
+	CreateExclusiveSeries = 53,
+	InitializeExclusiveSeries = 54,
+	ClaimExclusiveNft = 55,
+	ReclaimExclusiveReserve = 56,
 }
 
 #[discriminator]
@@ -211,6 +217,12 @@ pub enum LootboxAccountType {
 	ResultReceiptState = 7,
 	PrizePoolState = 8,
 	PrizePoolItemState = 9,
+	ExclusiveSeriesState = 10,
+}
+
+#[discriminator]
+pub enum LootboxEventType {
+	ExclusiveNftMinted = 1,
 }
 
 /// Immutable definition and live accounting for one lootbox mint.
@@ -646,6 +658,30 @@ fn assert_solvency(vault: &AccountView, rent_reserve: u64, required: u64) -> Pro
 	Ok(())
 }
 
+/// Map one uniformly distributed 64-bit candidate onto `0..bound` without
+/// modulo bias.
+///
+/// The low band `0..(2^64 mod bound)` is rejected so every accepted residue has
+/// exactly the same number of preimages. Callers draw a fresh candidate after
+/// a rejection. `bound` must be nonzero.
+const fn accept_uniform_candidate(candidate: u64, bound: u64) -> Option<u64> {
+	let rejection_threshold = bound.wrapping_neg() % bound;
+
+	if candidate < rejection_threshold {
+		return None;
+	}
+
+	Some(candidate % bound)
+}
+
+/// Read the first eight bytes of a digest as a little-endian sample.
+fn digest_candidate(digest: &[u8]) -> u64 {
+	let mut candidate_bytes = [0u8; 8];
+	candidate_bytes.copy_from_slice(&digest[..8]);
+
+	u64::from_le_bytes(candidate_bytes)
+}
+
 fn select_outcome(
 	randomness: &[u8; 32],
 	lootbox: &Address,
@@ -656,7 +692,6 @@ fn select_outcome(
 		return Err(lootbox_error(LootboxError::InvalidWeight));
 	}
 
-	let rejection_threshold = total_weight.wrapping_neg() % total_weight;
 	for counter in 0u8..8 {
 		let counter_bytes = [counter];
 		let hash = hashv(&[
@@ -666,11 +701,11 @@ fn select_outcome(
 			opening.as_ref(),
 			&counter_bytes,
 		]);
-		let mut candidate_bytes = [0u8; 8];
-		candidate_bytes.copy_from_slice(&hash.as_ref()[..8]);
-		let candidate = u64::from_le_bytes(candidate_bytes);
-		if candidate >= rejection_threshold {
-			return Ok(candidate % total_weight);
+
+		if let Some(target) =
+			accept_uniform_candidate(digest_candidate(hash.as_ref()), total_weight)
+		{
+			return Ok(target);
 		}
 	}
 
@@ -1443,7 +1478,8 @@ fn assert_migration_slot_is_current<T: MigratableAccount>(
 /// Runs the reserved framework `Migrate` instruction.
 ///
 /// Accounts are `[payer, systemProgram, lootbox, vault, opening, template,
-/// bundle, templateOpening, resultReceipt, prizePool, prizePoolItem]`; every
+/// bundle, templateOpening, resultReceipt, prizePool, prizePoolItem,
+/// exclusiveSeries]`; every
 /// state slot is optional and skipped when it holds the program-address
 /// placeholder.
 fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> ProgramResult {
@@ -1456,6 +1492,7 @@ fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> Progra
 	assert_migration_slot_is_current::<ResultReceiptState>(program_id, accounts, 8)?;
 	assert_migration_slot_is_current::<PrizePoolState>(program_id, accounts, 9)?;
 	assert_migration_slot_is_current::<PrizePoolItemState>(program_id, accounts, 10)?;
+	assert_migration_slot_is_current::<ExclusiveSeriesState>(program_id, accounts, 11)?;
 
 	let mut context = MigrateContext::new(program_id, accounts, Some(MAX_MIGRATION_LAMPORTS))?;
 	context.run_optional::<LootboxState>(2)?;
@@ -1467,6 +1504,7 @@ fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> Progra
 	context.run_optional::<ResultReceiptState>(8)?;
 	context.run_optional::<PrizePoolState>(9)?;
 	context.run_optional::<PrizePoolItemState>(10)?;
+	context.run_optional::<ExclusiveSeriesState>(11)?;
 	Ok(())
 }
 
@@ -1644,6 +1682,18 @@ pub fn process_instruction(
 		}
 		LootboxInstruction::ClosePrizePool => {
 			ClosePrizePoolAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::CreateExclusiveSeries => {
+			CreateExclusiveSeriesAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::InitializeExclusiveSeries => {
+			InitializeExclusiveSeriesAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ClaimExclusiveNft => {
+			ClaimExclusiveNftAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::ReclaimExclusiveReserve => {
+			ReclaimExclusiveReserveAccounts::try_from((program_id, accounts))?.process(data)
 		}
 	}
 }

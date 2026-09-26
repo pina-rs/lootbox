@@ -707,6 +707,196 @@
 				}
 			]
 		},
+		"account:1:0a": {
+			"identity": {
+				"kind": "account",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "0a"
+			},
+			"rustName": "ExclusiveSeriesState",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "authority",
+								"rustType": "Address"
+							},
+							{
+								"name": "template",
+								"rustType": "Address"
+							},
+							{
+								"name": "bundle",
+								"rustType": "Address"
+							},
+							{
+								"name": "collection",
+								"rustType": "Address"
+							},
+							{
+								"name": "merkle_tree",
+								"rustType": "Address"
+							},
+							{
+								"name": "quantity",
+								"rustType": "u64"
+							},
+							{
+								"name": "minted",
+								"rustType": "u64"
+							},
+							{
+								"name": "rent_reserve",
+								"rustType": "u64"
+							},
+							{
+								"name": "mint_fee_lamports",
+								"rustType": "u64"
+							},
+							{
+								"name": "weights",
+								"rustType": "[u8; 64]"
+							},
+							{
+								"name": "bonus_lamports",
+								"rustType": "[u8; 128]"
+							},
+							{
+								"name": "bonus_counts",
+								"rustType": "[u8; 64]"
+							},
+							{
+								"name": "bonus_remaining",
+								"rustType": "[u8; 64]"
+							},
+							{
+								"name": "tier_minted",
+								"rustType": "[u8; 64]"
+							},
+							{
+								"name": "name_prefix",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "symbol",
+								"rustType": "[u8; 10]"
+							},
+							{
+								"name": "base_uri",
+								"rustType": "[u8; 96]"
+							},
+							{
+								"name": "max_buffer_size",
+								"rustType": "u32"
+							},
+							{
+								"name": "asset_index",
+								"rustType": "u8"
+							},
+							{
+								"name": "contents_count",
+								"rustType": "u8"
+							},
+							{
+								"name": "background_count",
+								"rustType": "u8"
+							},
+							{
+								"name": "pattern_count",
+								"rustType": "u8"
+							},
+							{
+								"name": "max_depth",
+								"rustType": "u8"
+							},
+							{
+								"name": "status",
+								"rustType": "u8"
+							},
+							{
+								"name": "bump",
+								"rustType": "u8"
+							},
+							{
+								"name": "fee_vault_bump",
+								"rustType": "u8"
+							}
+						],
+						"codec": "pinaPodV2"
+					},
+					"transition": null
+				}
+			]
+		},
+		"event:1:01": {
+			"identity": {
+				"kind": "event",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "01"
+			},
+			"rustName": "ExclusiveNftMintedEvent",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "template",
+								"rustType": "Address"
+							},
+							{
+								"name": "opening",
+								"rustType": "Address"
+							},
+							{
+								"name": "series",
+								"rustType": "Address"
+							},
+							{
+								"name": "beneficiary",
+								"rustType": "Address"
+							},
+							{
+								"name": "asset",
+								"rustType": "Address"
+							},
+							{
+								"name": "seed",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "serial",
+								"rustType": "u64"
+							},
+							{
+								"name": "bonus_lamports",
+								"rustType": "u64"
+							},
+							{
+								"name": "tier",
+								"rustType": "u8"
+							},
+							{
+								"name": "contents",
+								"rustType": "u8"
+							},
+							{
+								"name": "background",
+								"rustType": "u8"
+							},
+							{
+								"name": "pattern",
+								"rustType": "u8"
+							}
+						],
+						"codec": "pinaPodV2"
+					},
+					"transition": null
+				}
+			]
+		},
 		"instruction:1:00": {
 			"identity": {
 				"kind": "instruction",
@@ -5650,6 +5840,482 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
+								"pda": null
+							}
+						]
+					},
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:35": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "35"
+			},
+			"rustName": "CreateExclusiveSeriesInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "asset_index",
+								"rustType": "u8"
+							},
+							{
+								"name": "bump",
+								"rustType": "u8"
+							},
+							{
+								"name": "fee_vault_bump",
+								"rustType": "u8"
+							},
+							{
+								"name": "contents_count",
+								"rustType": "u8"
+							},
+							{
+								"name": "background_count",
+								"rustType": "u8"
+							},
+							{
+								"name": "pattern_count",
+								"rustType": "u8"
+							},
+							{
+								"name": "weights",
+								"rustType": "[u8; 64]"
+							},
+							{
+								"name": "bonus_lamports",
+								"rustType": "[u8; 128]"
+							},
+							{
+								"name": "bonus_counts",
+								"rustType": "[u8; 64]"
+							},
+							{
+								"name": "name_prefix",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "symbol",
+								"rustType": "[u8; 10]"
+							},
+							{
+								"name": "base_uri",
+								"rustType": "[u8; 96]"
+							}
+						],
+						"codec": "pinaPodV2"
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bundle",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "exclusive_series",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": "exclusive_series"
+							},
+							{
+								"name": "fee_vault",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "system_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:11111111111111111111111111111111",
+								"pda": null
+							}
+						]
+					},
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:36": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "36"
+			},
+			"rustName": "InitializeExclusiveSeriesInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "max_depth",
+								"rustType": "u8"
+							},
+							{
+								"name": "max_buffer_size",
+								"rustType": "u32"
+							}
+						],
+						"codec": "pinaPodV2"
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bundle",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "exclusive_series",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "collection",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "tree_config",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "merkle_tree",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "core_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bubblegum_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "log_wrapper",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "compression_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "system_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:11111111111111111111111111111111",
+								"pda": null
+							}
+						]
+					},
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:37": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "37"
+			},
+			"rustName": "ClaimExclusiveNftInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "asset_index",
+								"rustType": "u8"
+							}
+						],
+						"codec": "pinaPodV2"
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "opening",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bundle",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "exclusive_series",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "fee_vault",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "recipient",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "tree_config",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "merkle_tree",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "collection",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "core_cpi_signer",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bubblegum_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "core_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "log_wrapper",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "compression_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "system_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:11111111111111111111111111111111",
+								"pda": null
+							}
+						]
+					},
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:38": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "38"
+			},
+			"rustName": "ReclaimExclusiveReserveInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "asset_index",
+								"rustType": "u8"
+							}
+						],
+						"codec": "pinaPodV2"
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "box_mint",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bundle",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "exclusive_series",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "fee_vault",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "system_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:11111111111111111111111111111111",
 								"pda": null
 							}
 						]

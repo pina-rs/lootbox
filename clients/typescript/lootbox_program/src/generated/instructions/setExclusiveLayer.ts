@@ -39,7 +39,9 @@ export function getSetExclusiveLayerInstructionDataCodec(): FixedSizeCodec<SetEx
 }
 
 export type SetExclusiveLayerInput<TAccountAdmin extends InstructionSignerInput = InstructionSignerInput, TAccountExclusiveCollection extends InstructionAccountInput = InstructionAccountInput> =  {
-  admin: TAccountAdmin;
+  /** Collection admin; signs. */
+admin: TAccountAdmin;
+/** Draft collection PDA whose layer table is overwritten. */
 exclusiveCollection: TAccountExclusiveCollection;
 layerIndex: SetExclusiveLayerInstructionDataArgs["layerIndex"];
 traitCount: SetExclusiveLayerInstructionDataArgs["traitCount"];
@@ -69,7 +71,9 @@ return Object.freeze({ accounts: [getAccountMeta("admin", accounts.admin), getAc
 
 export type ParsedSetExclusiveLayerInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Collection admin; signs. */
 admin: TAccountMetas[0];
+/** Draft collection PDA whose layer table is overwritten. */
 exclusiveCollection: TAccountMetas[1];
 };
 data: SetExclusiveLayerInstructionData; };

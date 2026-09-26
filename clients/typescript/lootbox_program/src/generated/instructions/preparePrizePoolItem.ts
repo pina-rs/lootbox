@@ -39,11 +39,20 @@ export function getPreparePrizePoolItemInstructionDataCodec(): FixedSizeCodec<Pr
 }
 
 export type PreparePrizePoolItemInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePoolItem extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs and pays the item rent. */
+authority: TAccountAuthority;
+/** Template PDA; its treasury must be unlocked and not retired. */
 template: TAccountTemplate;
+/** Funding bundle PDA whose current slot holds `prize_pool`. */
 bundle: TAccountBundle;
+/** Funding `PrizePoolState` PDA; `has_prepared_item` is set. */
 prizePool: TAccountPrizePool;
+/**
+ * Empty item PDA `["prize-pool-item", prize_pool, deposit_cursor]`,
+ * created here in the prepared state.
+ */
 prizePoolItem: TAccountPrizePoolItem;
+/** System program, invoked to create the item account. */
 systemProgram?: TAccountSystemProgram;
 itemBump: PreparePrizePoolItemInstructionDataArgs["itemBump"];
 dataHash: PreparePrizePoolItemInstructionDataArgs["dataHash"];
@@ -79,11 +88,20 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedPreparePrizePoolItemInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs and pays the item rent. */
 authority: TAccountMetas[0];
+/** Template PDA; its treasury must be unlocked and not retired. */
 template: TAccountMetas[1];
+/** Funding bundle PDA whose current slot holds `prize_pool`. */
 bundle: TAccountMetas[2];
+/** Funding `PrizePoolState` PDA; `has_prepared_item` is set. */
 prizePool: TAccountMetas[3];
+/**
+ * Empty item PDA `["prize-pool-item", prize_pool, deposit_cursor]`,
+ * created here in the prepared state.
+ */
 prizePoolItem: TAccountMetas[4];
+/** System program, invoked to create the item account. */
 systemProgram: TAccountMetas[5];
 };
 data: PreparePrizePoolItemInstructionData; };

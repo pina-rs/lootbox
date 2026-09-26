@@ -8,22 +8,42 @@
 	clippy::too_many_arguments
 )]
 
+/// Returns an undrawn Metaplex Core asset from bundle escrow to the template
+/// authority.
+///
+/// The template authority signs. A funding bundle is always reclaimable; an
+/// active bundle is reclaimable only after the template is retired, the box
+/// supply is zero, no openings are pending, and its copy was never drawn. Sets
+/// the slot's reclaimed bit so it cannot be reclaimed twice.
 pub const RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR: u8 = 32u8;
 pub const RECLAIM_CORE_ASSET_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ReclaimCoreAssetPrize {
+	/// Template authority. Receives the asset and pays for the Core transfer.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA of this program.
 	pub template: solana_pubkey::Pubkey,
+	/// The template's Token-2022 box mint; its supply must be zero to reclaim
+	/// from an active bundle.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// Bundle PDA of `template` that owns the asset, signs the transfer, and
+	/// records the reclaim.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Core asset stored in the reclaimed slot; revalidated as plugin-free with
+	/// `bundle` as update authority.
 	pub asset: solana_pubkey::Pubkey,
+	/// Must be the Core program address, Core's placeholder for no collection.
 	pub collection: solana_pubkey::Pubkey,
+	/// Metaplex Core program, invoked to transfer the asset.
 	pub core_program: solana_pubkey::Pubkey,
+	/// System program, forwarded to Core.
 	pub system_program: solana_pubkey::Pubkey,
+	/// SPL Noop program, forwarded to Core as its log wrapper.
 	pub log_wrapper: solana_pubkey::Pubkey,
-	/// Core plugin and external-adapter accounts, preserving client flags.
+	/// Core plugin and external-adapter accounts, forwarded with their client
+	/// flags. Must be empty: any account here fails with `InvalidPrize`.
 	pub plugin_accounts: solana_pubkey::Pubkey,
 }
 

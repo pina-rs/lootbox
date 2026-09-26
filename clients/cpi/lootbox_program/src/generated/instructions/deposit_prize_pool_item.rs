@@ -18,56 +18,79 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Transfer the prepared compressed NFT into prize pool custody.
+///
+/// The template authority signs as the current leaf owner while the treasury
+/// is unlocked and not retired, the bundle is funding, and the pool has a
+/// prepared item at `deposit_cursor`. The arguments must match that item.
+/// Bubblegum moves the leaf to the pool PDA; the item becomes deposited, and
+/// the pool advances its cursor, manifest accumulator, and bitmap.
 /// CPI call for the `deposit_prize_pool_item` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct DepositPrizePoolItem<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs as the current leaf owner and pays rent for
+	/// bitmap growth.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA; its treasury must be unlocked and not retired.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Funding bundle PDA whose current slot holds `prize_pool`.
 	/// Required privileges: read-only.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `prizePool`.
+	/// Funding `PrizePoolState` PDA that receives the leaf; its cursor,
+	/// accumulator, and bitmap advance.
 	/// Required privileges: writable.
 	pub prize_pool: &'account AccountView,
 
 	/// CPI account `prizePoolItem`.
+	/// Prepared item PDA at the pool's `deposit_cursor`; marked deposited.
 	/// Required privileges: writable.
 	pub prize_pool_item: &'account AccountView,
 
 	/// CPI account `treeConfig`.
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	/// Required privileges: read-only.
 	pub tree_config: &'account AccountView,
 
 	/// CPI account `merkleTree`.
+	/// Pool's pinned tree that holds the leaf; Bubblegum rewrites it.
 	/// Required privileges: writable.
 	pub merkle_tree: &'account AccountView,
 
 	/// CPI account `bubblegumProgram`.
+	/// Bubblegum program, invoked to transfer the compressed NFT.
 	/// Required privileges: read-only.
 	pub bubblegum_program: &'account AccountView,
 
 	/// CPI account `logWrapper`.
+	/// SPL Noop program used by Bubblegum as its log wrapper.
 	/// Required privileges: read-only.
 	pub log_wrapper: &'account AccountView,
 
 	/// CPI account `compressionProgram`.
+	/// SPL Account Compression program that owns `merkle_tree`.
 	/// Required privileges: read-only.
 	pub compression_program: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, passed to Bubblegum.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
 	/// CPI account `proofAccounts`.
 	/// Merkle proof nodes in leaf-to-root order.
+	///
+	/// Passed as zero through 16 readonly remaining accounts; the tree's canopy
+	/// supplies the rest of the path.
 	/// Required privileges: read-only.
 	pub proof_accounts: &'account AccountView,
 

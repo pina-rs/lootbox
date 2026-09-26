@@ -39,10 +39,14 @@ export function getRequestTemplateOpenInstructionDataCodec(): FixedSizeCodec<Req
 }
 
 export type RequestTemplateOpenInput<TAccountBoxAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountPayer extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountBoxAccount extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountRandomness extends InstructionSignerInput = InstructionSignerInput, TAccountRewardEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountOracleQueue extends InstructionAccountInput = InstructionAccountInput, TAccountOracle extends InstructionAccountInput = InstructionAccountInput, TAccountRecentSlotHashes extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgram extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgramState extends InstructionAccountInput = InstructionAccountInput, TAccountOracleLutSigner extends InstructionAccountInput = InstructionAccountInput, TAccountOracleLut extends InstructionAccountInput = InstructionAccountInput, TAccountAssociatedTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountWrappedSolMint extends InstructionAccountInput = InstructionAccountInput, TAccountAddressLookupTableProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountBoxTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  /** Owns the box token account and authorizes burning exactly one box. */
+  /**
+ * Owns the box token account and authorizes burning exactly one box.
+ * Recorded on the opening as `box_authority`.
+ */
 boxAuthority: TAccountBoxAuthority;
 /**
  * Pays for the opening and oracle initialization; may be a sponsor.
+ * Recorded as the opening's `rent_refund` address.
  *
  * The immutable authority intentionally precedes the mutable payer so the
  * same signer may fill both roles after Solana promotes duplicate metas to
@@ -50,24 +54,74 @@ boxAuthority: TAccountBoxAuthority;
  * checks while supporting the common self-paid opening flow.
  */
 payer: TAccountPayer;
+/**
+ * Template treasury, validated by its PDA seeds; its request sequence and
+ * pending-opening count advance.
+ */
 template: TAccountTemplate;
+/**
+ * Template's Token-2022 box mint, validated against the template; one box
+ * is burned from it.
+ */
 boxMint: TAccountBoxMint;
+/**
+ * Box authority's Token-2022 associated token account for `box_mint`; must
+ * hold at least one box, and one is burned.
+ */
 boxAccount: TAccountBoxAccount;
+/**
+ * Opening PDA at `["template-opening", template, randomness]`; must be
+ * empty, is created here funded by `payer`, and signs as the randomness
+ * authority.
+ */
 opening: TAccountOpening;
+/**
+ * Fresh Switchboard randomness account; must sign and be empty because
+ * `randomness_init` creates it. Its address seeds the opening PDA.
+ */
 randomness: TAccountRandomness;
+/**
+ * Switchboard reward escrow for `randomness`; rejected unless it is the
+ * wrapped-SOL associated token account of `randomness`.
+ */
 rewardEscrow: TAccountRewardEscrow;
+/** Switchboard queue; must match the queue recorded on the template. */
 oracleQueue: TAccountOracleQueue;
+/**
+ * Oracle assigned to the commitment; must be owned by the oracle program,
+ * and Switchboard checks its queue membership. Recorded on `randomness`.
+ */
 oracle: TAccountOracle;
+/** Slot hashes sysvar, read by Switchboard `randomness_commit`. */
 recentSlotHashes: TAccountRecentSlotHashes;
+/**
+ * Switchboard On-Demand program; must match the oracle program recorded on
+ * the template.
+ */
 oracleProgram: TAccountOracleProgram;
+/** Switchboard program state, passed to `randomness_init`. */
 oracleProgramState: TAccountOracleProgramState;
+/** Switchboard lookup-table signer, passed to `randomness_init`. */
 oracleLutSigner: TAccountOracleLutSigner;
+/**
+ * Switchboard address lookup table for `randomness`, derived from
+ * `recent_slot` and passed to `randomness_init`.
+ */
 oracleLut: TAccountOracleLut;
+/**
+ * Associated Token Account program, used by Switchboard for the reward
+ * escrow.
+ */
 associatedTokenProgram?: TAccountAssociatedTokenProgram;
+/** Wrapped SOL mint backing the reward escrow. */
 wrappedSolMint: TAccountWrappedSolMint;
+/** Address Lookup Table program, used by Switchboard for `oracle_lut`. */
 addressLookupTableProgram: TAccountAddressLookupTableProgram;
+/** System program, used to create the opening and Switchboard accounts. */
 systemProgram?: TAccountSystemProgram;
+/** Token-2022 program, invoked to burn the box. */
 boxTokenProgram?: TAccountBoxTokenProgram;
+/** SPL Token program backing the wrapped-SOL reward escrow. */
 tokenProgram?: TAccountTokenProgram;
 recentSlot: RequestTemplateOpenInstructionDataArgs["recentSlot"];
 beneficiary: RequestTemplateOpenInstructionDataArgs["beneficiary"];
@@ -111,10 +165,14 @@ return Object.freeze({ accounts: [getAccountMeta("boxAuthority", accounts.boxAut
 
 export type ParsedRequestTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
-/** Owns the box token account and authorizes burning exactly one box. */
+/**
+ * Owns the box token account and authorizes burning exactly one box.
+ * Recorded on the opening as `box_authority`.
+ */
 boxAuthority: TAccountMetas[0];
 /**
  * Pays for the opening and oracle initialization; may be a sponsor.
+ * Recorded as the opening's `rent_refund` address.
  *
  * The immutable authority intentionally precedes the mutable payer so the
  * same signer may fill both roles after Solana promotes duplicate metas to
@@ -122,24 +180,74 @@ boxAuthority: TAccountMetas[0];
  * checks while supporting the common self-paid opening flow.
  */
 payer: TAccountMetas[1];
+/**
+ * Template treasury, validated by its PDA seeds; its request sequence and
+ * pending-opening count advance.
+ */
 template: TAccountMetas[2];
+/**
+ * Template's Token-2022 box mint, validated against the template; one box
+ * is burned from it.
+ */
 boxMint: TAccountMetas[3];
+/**
+ * Box authority's Token-2022 associated token account for `box_mint`; must
+ * hold at least one box, and one is burned.
+ */
 boxAccount: TAccountMetas[4];
+/**
+ * Opening PDA at `["template-opening", template, randomness]`; must be
+ * empty, is created here funded by `payer`, and signs as the randomness
+ * authority.
+ */
 opening: TAccountMetas[5];
+/**
+ * Fresh Switchboard randomness account; must sign and be empty because
+ * `randomness_init` creates it. Its address seeds the opening PDA.
+ */
 randomness: TAccountMetas[6];
+/**
+ * Switchboard reward escrow for `randomness`; rejected unless it is the
+ * wrapped-SOL associated token account of `randomness`.
+ */
 rewardEscrow: TAccountMetas[7];
+/** Switchboard queue; must match the queue recorded on the template. */
 oracleQueue: TAccountMetas[8];
+/**
+ * Oracle assigned to the commitment; must be owned by the oracle program,
+ * and Switchboard checks its queue membership. Recorded on `randomness`.
+ */
 oracle: TAccountMetas[9];
+/** Slot hashes sysvar, read by Switchboard `randomness_commit`. */
 recentSlotHashes: TAccountMetas[10];
+/**
+ * Switchboard On-Demand program; must match the oracle program recorded on
+ * the template.
+ */
 oracleProgram: TAccountMetas[11];
+/** Switchboard program state, passed to `randomness_init`. */
 oracleProgramState: TAccountMetas[12];
+/** Switchboard lookup-table signer, passed to `randomness_init`. */
 oracleLutSigner: TAccountMetas[13];
+/**
+ * Switchboard address lookup table for `randomness`, derived from
+ * `recent_slot` and passed to `randomness_init`.
+ */
 oracleLut: TAccountMetas[14];
+/**
+ * Associated Token Account program, used by Switchboard for the reward
+ * escrow.
+ */
 associatedTokenProgram: TAccountMetas[15];
+/** Wrapped SOL mint backing the reward escrow. */
 wrappedSolMint: TAccountMetas[16];
+/** Address Lookup Table program, used by Switchboard for `oracle_lut`. */
 addressLookupTableProgram: TAccountMetas[17];
+/** System program, used to create the opening and Switchboard accounts. */
 systemProgram: TAccountMetas[18];
+/** Token-2022 program, invoked to burn the box. */
 boxTokenProgram: TAccountMetas[19];
+/** SPL Token program backing the wrapped-SOL reward escrow. */
 tokenProgram: TAccountMetas[20];
 };
 data: RequestTemplateOpenInstructionData; };

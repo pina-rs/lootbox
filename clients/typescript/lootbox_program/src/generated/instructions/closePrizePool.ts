@@ -39,9 +39,16 @@ export function getClosePrizePoolInstructionDataCodec(): FixedSizeCodec<ClosePri
 }
 
 export type ClosePrizePoolInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs and receives the pool rent. */
+authority: TAccountAuthority;
+/** Template PDA that owns `bundle`. */
 template: TAccountTemplate;
+/**
+ * Bundle PDA; its pool slot is cleared unless the pool is terminal in an
+ * active bundle.
+ */
 bundle: TAccountBundle;
+/** `PrizePoolState` PDA, closed here. */
 prizePool: TAccountPrizePool;
 }
 
@@ -64,9 +71,16 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedClosePrizePoolInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs and receives the pool rent. */
 authority: TAccountMetas[0];
+/** Template PDA that owns `bundle`. */
 template: TAccountMetas[1];
+/**
+ * Bundle PDA; its pool slot is cleared unless the pool is terminal in an
+ * active bundle.
+ */
 bundle: TAccountMetas[2];
+/** `PrizePoolState` PDA, closed here. */
 prizePool: TAccountMetas[3];
 };
 data: ClosePrizePoolInstructionData; };

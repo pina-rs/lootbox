@@ -8,24 +8,44 @@
 	clippy::too_many_arguments
 )]
 
+/// Closes a settled or refunded opening. Permissionless. Closes the Switchboard
+/// randomness account and its reward escrow through a CPI signed by the opening
+/// PDA, then closes the receipt and returns its lamports to the recipient.
 pub const CLOSE_OPENING_DISCRIMINATOR: u8 = 8u8;
 pub const CLOSE_OPENING_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct CloseOpening {
+	/// Opening's stored recipient, which receives the receipt's lamports,
+	/// including the randomness rent Switchboard returns to the opening PDA.
 	pub recipient: solana_pubkey::Pubkey,
+	/// Lootbox of the opening, read to validate the oracle program and queue.
 	pub lootbox: solana_pubkey::Pubkey,
+	/// Settled or refunded opening PDA; signs the close CPI and is closed here.
 	pub opening: solana_pubkey::Pubkey,
+	/// Opening's Switchboard randomness account, closed by Switchboard.
 	pub randomness: solana_pubkey::Pubkey,
+	/// Wrapped-SOL associated token account of `randomness`, closed by
+	/// Switchboard.
 	pub reward_escrow: solana_pubkey::Pubkey,
+	/// Switchboard program; must equal the lootbox's stored oracle program.
 	pub oracle_program: solana_pubkey::Pubkey,
+	/// Switchboard program state, passed through to `randomness_close`.
 	pub oracle_program_state: solana_pubkey::Pubkey,
+	/// Switchboard lookup table of the randomness account, passed through to
+	/// `randomness_close`.
 	pub oracle_lut: solana_pubkey::Pubkey,
+	/// Switchboard lookup-table signer, passed through to `randomness_close`.
 	pub oracle_lut_signer: solana_pubkey::Pubkey,
+	/// System program, passed through to `randomness_close`.
 	pub system_program: solana_pubkey::Pubkey,
+	/// SPL Token program backing the reward escrow.
 	pub token_program: solana_pubkey::Pubkey,
+	/// Wrapped-SOL mint backing the reward escrow.
 	pub wrapped_sol_mint: solana_pubkey::Pubkey,
+	/// Address Lookup Table program, used by Switchboard to close its lookup
+	/// table.
 	pub address_lookup_table_program: solana_pubkey::Pubkey,
 }
 

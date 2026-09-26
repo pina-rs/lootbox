@@ -39,20 +39,59 @@ export function getFulfillTemplateOpenInstructionDataCodec(): FixedSizeCodec<Ful
 }
 
 export type FulfillTemplateOpenInput<TAccountPayer extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountRandomness extends InstructionAccountInput = InstructionAccountInput, TAccountOracleQueue extends InstructionAccountInput = InstructionAccountInput, TAccountOracle extends InstructionAccountInput = InstructionAccountInput, TAccountOracleStats extends InstructionAccountInput = InstructionAccountInput, TAccountRecentSlotHashes extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgram extends InstructionAccountInput = InstructionAccountInput, TAccountRewardEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgramState extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountWrappedSolMint extends InstructionAccountInput = InstructionAccountInput> =  {
-  payer: TAccountPayer;
+  /**
+ * Submits the proof and funds Switchboard's reveal bookkeeping; receives
+ * the settlement bounty when one is configured.
+ */
+payer: TAccountPayer;
+/**
+ * Template treasury, validated by its PDA seeds; its remaining
+ * settlement-bounty count is written back.
+ */
 template: TAccountTemplate;
+/**
+ * Service vault PDA at `["service-vault", template]`; validated only when
+ * receipts or bounties are enabled, and pays the settlement bounty.
+ */
 serviceVault: TAccountServiceVault;
+/**
+ * Pending opening PDA for `template` and `randomness`; signs the reveal as
+ * the randomness authority, then stores the entropy and becomes verified.
+ */
 opening: TAccountOpening;
+/**
+ * Switchboard randomness bound to the opening; must be committed at the
+ * opening's seed slot and not yet revealed.
+ */
 randomness: TAccountRandomness;
+/** Switchboard queue; must match the queue recorded on the template. */
 oracleQueue: TAccountOracleQueue;
+/**
+ * Oracle bound at commit time; rejected unless it matches the oracle
+ * recorded on `randomness`.
+ */
 oracle: TAccountOracle;
+/** Oracle stats account, updated by Switchboard `randomness_reveal`. */
 oracleStats: TAccountOracleStats;
+/** Slot hashes sysvar, read by Switchboard `randomness_reveal`. */
 recentSlotHashes: TAccountRecentSlotHashes;
+/**
+ * Switchboard On-Demand program; must match the oracle program recorded on
+ * the template.
+ */
 oracleProgram: TAccountOracleProgram;
+/**
+ * Switchboard reward escrow for `randomness`; rejected unless it is the
+ * wrapped-SOL associated token account of `randomness`.
+ */
 rewardEscrow: TAccountRewardEscrow;
+/** Switchboard program state, passed to `randomness_reveal`. */
 oracleProgramState: TAccountOracleProgramState;
+/** System program, used by Switchboard and for the bounty transfer. */
 systemProgram?: TAccountSystemProgram;
+/** SPL Token program backing the wrapped-SOL reward escrow. */
 tokenProgram?: TAccountTokenProgram;
+/** Wrapped SOL mint backing the reward escrow. */
 wrappedSolMint: TAccountWrappedSolMint;
 signature: FulfillTemplateOpenInstructionDataArgs["signature"];
 recoveryId: FulfillTemplateOpenInstructionDataArgs["recoveryId"];
@@ -88,20 +127,59 @@ return Object.freeze({ accounts: [getAccountMeta("payer", accounts.payer), getAc
 
 export type ParsedFulfillTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Submits the proof and funds Switchboard's reveal bookkeeping; receives
+ * the settlement bounty when one is configured.
+ */
 payer: TAccountMetas[0];
+/**
+ * Template treasury, validated by its PDA seeds; its remaining
+ * settlement-bounty count is written back.
+ */
 template: TAccountMetas[1];
+/**
+ * Service vault PDA at `["service-vault", template]`; validated only when
+ * receipts or bounties are enabled, and pays the settlement bounty.
+ */
 serviceVault: TAccountMetas[2];
+/**
+ * Pending opening PDA for `template` and `randomness`; signs the reveal as
+ * the randomness authority, then stores the entropy and becomes verified.
+ */
 opening: TAccountMetas[3];
+/**
+ * Switchboard randomness bound to the opening; must be committed at the
+ * opening's seed slot and not yet revealed.
+ */
 randomness: TAccountMetas[4];
+/** Switchboard queue; must match the queue recorded on the template. */
 oracleQueue: TAccountMetas[5];
+/**
+ * Oracle bound at commit time; rejected unless it matches the oracle
+ * recorded on `randomness`.
+ */
 oracle: TAccountMetas[6];
+/** Oracle stats account, updated by Switchboard `randomness_reveal`. */
 oracleStats: TAccountMetas[7];
+/** Slot hashes sysvar, read by Switchboard `randomness_reveal`. */
 recentSlotHashes: TAccountMetas[8];
+/**
+ * Switchboard On-Demand program; must match the oracle program recorded on
+ * the template.
+ */
 oracleProgram: TAccountMetas[9];
+/**
+ * Switchboard reward escrow for `randomness`; rejected unless it is the
+ * wrapped-SOL associated token account of `randomness`.
+ */
 rewardEscrow: TAccountMetas[10];
+/** Switchboard program state, passed to `randomness_reveal`. */
 oracleProgramState: TAccountMetas[11];
+/** System program, used by Switchboard and for the bounty transfer. */
 systemProgram: TAccountMetas[12];
+/** SPL Token program backing the wrapped-SOL reward escrow. */
 tokenProgram: TAccountMetas[13];
+/** Wrapped SOL mint backing the reward escrow. */
 wrappedSolMint: TAccountMetas[14];
 };
 data: FulfillTemplateOpenInstructionData; };

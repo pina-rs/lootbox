@@ -8,18 +8,39 @@
 	clippy::too_many_arguments
 )]
 
+/// Mints one mint-badge copy of an allocated bundle to the beneficiary's
+/// associated token account.
+///
+/// Permissionless and signer-free: anyone may crank the claim, but the badge
+/// goes only to the bound beneficiary. Each asset is claimable once per
+/// opening; the claim that releases the final copy revokes the bundle's mint
+/// authority.
 pub const CLAIM_MINT_PRIZE_DISCRIMINATOR: u8 = 42u8;
 pub const CLAIM_MINT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ClaimMintPrize {
+	/// Template treasury, validated by its PDA seeds; binds the bundle and the
+	/// opening.
 	pub template: solana_pubkey::Pubkey,
+	/// Allocated opening of this template, validated by its PDA seeds; records
+	/// the claimed asset.
 	pub opening: solana_pubkey::Pubkey,
+	/// Bundle PDA the opening selected; advances the asset's release count and
+	/// signs as mint authority.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Opening beneficiary; rejected unless it matches the stored beneficiary.
+	/// The badge goes to `destination`, not this account.
 	pub recipient: solana_pubkey::Pubkey,
+	/// Badge mint recorded in the bundle's asset slot; must have zero decimals,
+	/// the bundle as mint authority, no freeze authority, and only metadata
+	/// extensions. Its mint authority is revoked after the final copy.
 	pub mint: solana_pubkey::Pubkey,
+	/// Beneficiary's existing associated token account for `mint` under
+	/// `token_program`; receives one badge.
 	pub destination: solana_pubkey::Pubkey,
+	/// SPL Token or Token-2022 program that owns `mint`.
 	pub token_program: solana_pubkey::Pubkey,
 }
 

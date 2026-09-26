@@ -8,28 +8,55 @@
 	clippy::too_many_arguments
 )]
 
+/// Reveals a pending opening's randomness through a Switchboard CPI signed by
+/// the opening PDA, selects an outcome, and pays its reward from the vault to
+/// the opening's recipient. Permissionless: any signer may relay the proof and
+/// pay the reveal fees. The randomness must still be unrevealed.
 pub const SETTLE_OPEN_DISCRIMINATOR: u8 = 6u8;
 pub const SETTLE_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct SettleOpen {
+	/// Opening's stored recipient, which receives the reward lamports. Writable;
+	/// need not sign.
 	pub recipient: solana_pubkey::Pubkey,
+	/// Relayer that submits the proof. Writable signer; pays Switchboard's
+	/// reveal costs.
 	pub payer: solana_pubkey::Pubkey,
+	/// Lootbox of the opening; `pending_openings` falls and `opened` grows.
 	pub lootbox: solana_pubkey::Pubkey,
+	/// Vault PDA of `lootbox` that pays the reward; must keep its rent reserve
+	/// plus the remaining liability.
 	pub vault: solana_pubkey::Pubkey,
+	/// The lootbox's box mint, read for the live supply in the liability check.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// Pending opening PDA bound to `lootbox`, `randomness`, and `recipient`.
+	/// Signs the reveal CPI and records the result.
 	pub opening: solana_pubkey::Pubkey,
+	/// Opening's committed, unrevealed Switchboard randomness account, revealed
+	/// here.
 	pub randomness: solana_pubkey::Pubkey,
+	/// Switchboard queue; must equal the lootbox's stored queue.
 	pub oracle_queue: solana_pubkey::Pubkey,
+	/// Oracle recorded on the randomness at commit time.
 	pub oracle: solana_pubkey::Pubkey,
+	/// Oracle stats account updated by Switchboard's reveal.
 	pub oracle_stats: solana_pubkey::Pubkey,
+	/// Slot hashes sysvar, read by Switchboard's reveal.
 	pub recent_slot_hashes: solana_pubkey::Pubkey,
+	/// Switchboard program; must equal the lootbox's stored oracle program.
 	pub oracle_program: solana_pubkey::Pubkey,
+	/// Wrapped-SOL associated token account of `randomness`, used by
+	/// Switchboard as its reward escrow.
 	pub reward_escrow: solana_pubkey::Pubkey,
+	/// Switchboard program state, passed through to `randomness_reveal`.
 	pub oracle_program_state: solana_pubkey::Pubkey,
+	/// System program, passed through to `randomness_reveal`.
 	pub system_program: solana_pubkey::Pubkey,
+	/// SPL Token program backing the reward escrow.
 	pub token_program: solana_pubkey::Pubkey,
+	/// Wrapped-SOL mint backing the reward escrow.
 	pub wrapped_sol_mint: solana_pubkey::Pubkey,
 }
 

@@ -18,15 +18,22 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Load one trait layer's weight table into a draft collection.
+///
+/// The collection admin signs while the collection is a draft. Overwrites the
+/// layer's trait count and 64 weight slots; layers load one per instruction
+/// because every table does not fit one transaction.
 /// CPI call for the `set_exclusive_layer` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct SetExclusiveLayer<'account> {
 	/// CPI account `admin`.
+	/// Collection admin; signs.
 	/// Required privileges: read-only and signer.
 	pub admin: &'account AccountView,
 
 	/// CPI account `exclusiveCollection`.
+	/// Draft collection PDA whose layer table is overwritten.
 	/// Required privileges: writable.
 	pub exclusive_collection: &'account AccountView,
 

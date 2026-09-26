@@ -39,13 +39,43 @@ export function getClaimTokenPrizeInstructionDataCodec(): FixedSizeCodec<ClaimTo
 }
 
 export type ClaimTokenPrizeInput<TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountRecipient extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountDestination extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  template: TAccountTemplate;
+  /**
+ * Template treasury, validated by its PDA seeds; binds the bundle and the
+ * opening.
+ */
+template: TAccountTemplate;
+/**
+ * Allocated opening of this template, validated by its PDA seeds; records
+ * the claimed asset.
+ */
 opening: TAccountOpening;
+/**
+ * Bundle PDA the opening selected; advances the asset's release count and
+ * signs the transfer as escrow owner.
+ */
 bundle: TAccountBundle;
+/**
+ * Opening beneficiary; rejected unless it matches the stored beneficiary.
+ * Tokens go to `destination`, not this account.
+ */
 recipient: TAccountRecipient;
+/** Prize mint; must match the mint recorded in the bundle's asset slot. */
 mint: TAccountMint;
+/**
+ * Bundle's associated token account for `mint` under `token_program`;
+ * source of the transfer.
+ */
 escrow: TAccountEscrow;
+/**
+ * Beneficiary's existing associated token account for `mint` under
+ * `token_program`; receives the tokens.
+ */
 destination: TAccountDestination;
+/**
+ * SPL Token or Token-2022 program matching the asset kind: SPL Token for
+ * `PRIZE_TOKEN` and `PRIZE_NFT`, Token-2022 for `PRIZE_TOKEN_2022`, and
+ * either for `PRIZE_QUOTE_TOKEN`.
+ */
 tokenProgram?: TAccountTokenProgram;
 assetIndex: ClaimTokenPrizeInstructionDataArgs["assetIndex"];
 }
@@ -76,13 +106,43 @@ return Object.freeze({ accounts: [getAccountMeta("template", accounts.template),
 
 export type ParsedClaimTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template treasury, validated by its PDA seeds; binds the bundle and the
+ * opening.
+ */
 template: TAccountMetas[0];
+/**
+ * Allocated opening of this template, validated by its PDA seeds; records
+ * the claimed asset.
+ */
 opening: TAccountMetas[1];
+/**
+ * Bundle PDA the opening selected; advances the asset's release count and
+ * signs the transfer as escrow owner.
+ */
 bundle: TAccountMetas[2];
+/**
+ * Opening beneficiary; rejected unless it matches the stored beneficiary.
+ * Tokens go to `destination`, not this account.
+ */
 recipient: TAccountMetas[3];
+/** Prize mint; must match the mint recorded in the bundle's asset slot. */
 mint: TAccountMetas[4];
+/**
+ * Bundle's associated token account for `mint` under `token_program`;
+ * source of the transfer.
+ */
 escrow: TAccountMetas[5];
+/**
+ * Beneficiary's existing associated token account for `mint` under
+ * `token_program`; receives the tokens.
+ */
 destination: TAccountMetas[6];
+/**
+ * SPL Token or Token-2022 program matching the asset kind: SPL Token for
+ * `PRIZE_TOKEN` and `PRIZE_NFT`, Token-2022 for `PRIZE_TOKEN_2022`, and
+ * either for `PRIZE_QUOTE_TOKEN`.
+ */
 tokenProgram: TAccountMetas[7];
 };
 data: ClaimTokenPrizeInstructionData; };

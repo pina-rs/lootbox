@@ -20,34 +20,55 @@ pub struct ExclusiveCollectionState {
 	pub discriminator: u8,
 	pub migration_version: u8,
 	/// Loads layers, appends trees, and publishes; a multisig on mainnet.
+	///
+	/// Part of the PDA seeds, so it can never change.
 	pub admin: solana_pubkey::Pubkey,
 	/// Metaplex Core collection whose update authority is this PDA.
 	pub core_collection: solana_pubkey::Pubkey,
 	/// Bubblegum V2 tree that receives the next mint; zero until appended.
+	///
+	/// Each `appendExclusiveTree` replaces it, and claims must mint into it.
 	pub active_tree: solana_pubkey::Pubkey,
 	/// Commitment to every frozen term; zero until published.
 	pub layers_hash: [u8; 32],
+	/// Admin-chosen identifier that separates this admin's collections in the
+	/// PDA seeds; set at creation.
 	pub collection_id: u64,
 	/// Editions minted so far; the next global serial is `minted + 1`.
 	pub minted: u64,
 	/// Unix time from which bundles may attach.
+	///
+	/// Seconds, inclusive; set at creation and earlier than `attach_closes_at`.
 	pub attach_opens_at: i64,
 	/// Unix time from which bundles may no longer attach.
+	///
+	/// Seconds, exclusive; checked only when a bundle attaches.
 	pub attach_closes_at: i64,
+	/// Trees appended so far; incremented by each `appendExclusiveTree`.
 	pub tree_count: u32,
 	/// Trait count of each layer, bottom to top.
+	///
+	/// Each configured layer has 1 through 64 traits; entries at or above
+	/// `layer_count` must be zero at publication.
 	pub trait_counts: [u8; 12],
 	/// Twelve layers of sixty-four little-endian `u32` trait weights.
 	pub weights: [u8; 3072],
 	/// Null-padded UTF-8 name prefix; minted names are `{prefix} #{serial}`.
+	///
+	/// At most 20 bytes, so any ten-digit serial fits the 32-byte name cap.
 	pub name_prefix: [u8; 32],
 	/// Null-padded UTF-8 symbol.
 	pub symbol: [u8; 10],
 	/// Null-padded `https://` base of every metadata URI.
 	pub base_uri: [u8; 128],
+	/// Number of trait layers, from 1 through 12; fixed at creation.
 	pub layer_count: u8,
 	/// 0 draft, 1 published.
+	///
+	/// `publishExclusiveCollection` moves it from draft to published once.
 	pub status: u8,
+	/// Canonical bump of this PDA
+	/// `["exclusive-collection", admin, collection_id]`.
 	pub bump: u8,
 }
 

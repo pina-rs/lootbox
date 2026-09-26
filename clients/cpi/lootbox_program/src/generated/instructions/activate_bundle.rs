@@ -18,23 +18,34 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Appends a fully funded staged bundle to the template's live inventory.
+///
+/// The template authority signs and pays rent for one more eight-byte inventory
+/// slot. The treasury must be unlocked and not retired. It increments the
+/// revision, extends the manifest accumulator, and adds the bundle's copies to
+/// mint capacity.
 /// CPI call for the `activate_bundle` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct ActivateBundle<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs and pays rent for the template's larger size.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA that must be unlocked and not retired; grows by one
+	/// inventory slot here.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Fully funded staged bundle PDA at index `bundle_count`; becomes active.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked to fund the template's rent increase.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 

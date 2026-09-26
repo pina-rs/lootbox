@@ -8,15 +8,26 @@
 	clippy::too_many_arguments
 )]
 
+/// Stages a new funding bundle at the template's next bundle index.
+///
+/// The template authority signs and pays rent. The treasury must be unlocked
+/// and not retired, and at most one staged bundle can exist because its PDA
+/// index is the activated bundle count.
 pub const ADD_BUNDLE_DISCRIMINATOR: u8 = 11u8;
 pub const ADD_BUNDLE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct AddBundle {
+	/// Template authority; signs and pays the bundle rent.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA that must be unlocked and not retired; read only by the
+	/// handler.
 	pub template: solana_pubkey::Pubkey,
+	/// Bundle PDA created here from `["bundle", template, bundle_count]`; must
+	/// be empty.
 	pub bundle: solana_pubkey::Pubkey,
+	/// System program, invoked to create the bundle account.
 	pub system_program: solana_pubkey::Pubkey,
 }
 

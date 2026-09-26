@@ -8,6 +8,14 @@
 	clippy::too_many_arguments
 )]
 
+/// Burns one box and commits a fresh Switchboard randomness request for it,
+/// creating a pending opening at the tail of the template's FIFO queue.
+///
+/// Signed by the box holder and a payer, which may be a sponsor, plus the new
+/// randomness keypair. Requires a non-draft template that is market-locked or
+/// retired, a reached `opens_at`, and remaining inventory for every live and
+/// pending box. The beneficiary, consumer binding, request sequence, treasury
+/// revision, and eligible bundle prefix are fixed before any entropy exists.
 pub const REQUEST_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 16u8;
 pub const REQUEST_TEMPLATE_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
@@ -15,32 +23,64 @@ pub const REQUEST_TEMPLATE_OPEN_MIGRATION_VERSION: u8 = 0u8;
 #[derive(Clone, Debug)]
 pub struct RequestTemplateOpen {
 	/// Owns the box token account and authorizes burning exactly one box.
+	/// Recorded on the opening as `box_authority`.
 	pub box_authority: solana_pubkey::Pubkey,
 	/// Pays for the opening and oracle initialization; may be a sponsor.
+	/// Recorded as the opening's `rent_refund` address.
 	///
 	/// The immutable authority intentionally precedes the mutable payer so the
 	/// same signer may fill both roles after Solana promotes duplicate metas to
 	/// writable. Parsing the mutable alias last preserves the cursor's safety
 	/// checks while supporting the common self-paid opening flow.
 	pub payer: solana_pubkey::Pubkey,
+	/// Template treasury, validated by its PDA seeds; its request sequence and
+	/// pending-opening count advance.
 	pub template: solana_pubkey::Pubkey,
+	/// Template's Token-2022 box mint, validated against the template; one box
+	/// is burned from it.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// Box authority's Token-2022 associated token account for `box_mint`; must
+	/// hold at least one box, and one is burned.
 	pub box_account: solana_pubkey::Pubkey,
+	/// Opening PDA at `["template-opening", template, randomness]`; must be
+	/// empty, is created here funded by `payer`, and signs as the randomness
+	/// authority.
 	pub opening: solana_pubkey::Pubkey,
+	/// Fresh Switchboard randomness account; must sign and be empty because
+	/// `randomness_init` creates it. Its address seeds the opening PDA.
 	pub randomness: solana_pubkey::Pubkey,
+	/// Switchboard reward escrow for `randomness`; rejected unless it is the
+	/// wrapped-SOL associated token account of `randomness`.
 	pub reward_escrow: solana_pubkey::Pubkey,
+	/// Switchboard queue; must match the queue recorded on the template.
 	pub oracle_queue: solana_pubkey::Pubkey,
+	/// Oracle assigned to the commitment; must be owned by the oracle program,
+	/// and Switchboard checks its queue membership. Recorded on `randomness`.
 	pub oracle: solana_pubkey::Pubkey,
+	/// Slot hashes sysvar, read by Switchboard `randomness_commit`.
 	pub recent_slot_hashes: solana_pubkey::Pubkey,
+	/// Switchboard On-Demand program; must match the oracle program recorded on
+	/// the template.
 	pub oracle_program: solana_pubkey::Pubkey,
+	/// Switchboard program state, passed to `randomness_init`.
 	pub oracle_program_state: solana_pubkey::Pubkey,
+	/// Switchboard lookup-table signer, passed to `randomness_init`.
 	pub oracle_lut_signer: solana_pubkey::Pubkey,
+	/// Switchboard address lookup table for `randomness`, derived from
+	/// `recent_slot` and passed to `randomness_init`.
 	pub oracle_lut: solana_pubkey::Pubkey,
+	/// Associated Token Account program, used by Switchboard for the reward
+	/// escrow.
 	pub associated_token_program: solana_pubkey::Pubkey,
+	/// Wrapped SOL mint backing the reward escrow.
 	pub wrapped_sol_mint: solana_pubkey::Pubkey,
+	/// Address Lookup Table program, used by Switchboard for `oracle_lut`.
 	pub address_lookup_table_program: solana_pubkey::Pubkey,
+	/// System program, used to create the opening and Switchboard accounts.
 	pub system_program: solana_pubkey::Pubkey,
+	/// Token-2022 program, invoked to burn the box.
 	pub box_token_program: solana_pubkey::Pubkey,
+	/// SPL Token program backing the wrapped-SOL reward escrow.
 	pub token_program: solana_pubkey::Pubkey,
 }
 

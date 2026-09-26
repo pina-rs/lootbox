@@ -18,35 +18,52 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Return unused Exclusive NFT mint fees to the template authority.
+///
+/// The template authority signs. On first use for the slot, applies the
+/// standard recovery rules: a staged bundle releases every copy, an active one
+/// releases undrawn copies only after retirement with zero box supply and no
+/// pending openings. A staged bundle empties the vault and closes the
+/// attachment; otherwise only the surplus above unclaimed copies' fees leaves.
 /// CPI call for the `reclaim_exclusive_fees` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct ReclaimExclusiveFees<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs and receives released fees and, for a staged
+	/// bundle, the attachment rent.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA that owns `bundle`.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// Template's Token-2022 box mint; its supply must be zero to recover an
+	/// active bundle.
 	/// Required privileges: read-only.
 	pub box_mint: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Bundle PDA; the slot's undrawn copies are released on first recovery.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `exclusiveAttachment`.
+	/// Attachment PDA committed in the bundle slot; closed for a staged bundle.
 	/// Required privileges: writable.
 	pub exclusive_attachment: &'account AccountView,
 
 	/// CPI account `feeVault`.
+	/// Canonical zero-data `["exclusive-fee-vault", attachment]` PDA; signs
+	/// the withdrawal.
 	/// Required privileges: writable.
 	pub fee_vault: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked to withdraw from the fee vault.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 

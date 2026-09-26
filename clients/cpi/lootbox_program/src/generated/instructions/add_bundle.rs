@@ -18,23 +18,34 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Stages a new funding bundle at the template's next bundle index.
+///
+/// The template authority signs and pays rent. The treasury must be unlocked
+/// and not retired, and at most one staged bundle can exist because its PDA
+/// index is the activated bundle count.
 /// CPI call for the `add_bundle` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct AddBundle<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs and pays the bundle rent.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA that must be unlocked and not retired; read only by the
+	/// handler.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Bundle PDA created here from `["bundle", template, bundle_count]`; must
+	/// be empty.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked to create the bundle account.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 

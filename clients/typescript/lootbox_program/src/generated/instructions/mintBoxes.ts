@@ -39,11 +39,26 @@ export function getMintBoxesInstructionDataCodec(): FixedSizeCodec<MintBoxesInst
 }
 
 export type MintBoxesInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountRecipientBoxAccount extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Lootbox authority. Signer; must match the stored authority. */
+authority: TAccountAuthority;
+/**
+ * Sealed lootbox whose `total_minted` grows; its PDA signs the mint as
+ * mint authority.
+ */
 lootbox: TAccountLootbox;
+/**
+ * Vault PDA of `lootbox`, read to prove the new supply stays fully
+ * collateralized.
+ */
 vault: TAccountVault;
+/** The lootbox's box mint. Writable; its supply grows. */
 boxMint: TAccountBoxMint;
+/**
+ * Canonical associated token account of the recipient for the box mint,
+ * which receives the new boxes.
+ */
 recipientBoxAccount: TAccountRecipientBoxAccount;
+/** SPL Token program, invoked to mint the boxes. */
 tokenProgram?: TAccountTokenProgram;
 amount: MintBoxesInstructionDataArgs["amount"];
 }
@@ -74,11 +89,26 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedMintBoxesInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Lootbox authority. Signer; must match the stored authority. */
 authority: TAccountMetas[0];
+/**
+ * Sealed lootbox whose `total_minted` grows; its PDA signs the mint as
+ * mint authority.
+ */
 lootbox: TAccountMetas[1];
+/**
+ * Vault PDA of `lootbox`, read to prove the new supply stays fully
+ * collateralized.
+ */
 vault: TAccountMetas[2];
+/** The lootbox's box mint. Writable; its supply grows. */
 boxMint: TAccountMetas[3];
+/**
+ * Canonical associated token account of the recipient for the box mint,
+ * which receives the new boxes.
+ */
 recipientBoxAccount: TAccountMetas[4];
+/** SPL Token program, invoked to mint the boxes. */
 tokenProgram: TAccountMetas[5];
 };
 data: MintBoxesInstructionData; };

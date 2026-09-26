@@ -18,23 +18,39 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Pays one native SOL asset of an allocated bundle to the opening's
+/// beneficiary.
+///
+/// Permissionless and signer-free: anyone may crank the claim, but lamports
+/// move only to the bound beneficiary. Each asset is claimable once per
+/// opening, and the opening becomes delivered after its last asset is claimed.
+/// Fails if the bundle would drop below the asset's unreleased amount plus its
+/// rent reserve.
 /// CPI call for the `claim_sol_prize` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct ClaimSolPrize<'account> {
 	/// CPI account `template`.
+	/// Template treasury, validated by its PDA seeds; binds the bundle and the
+	/// opening.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `opening`.
+	/// Allocated opening of this template, validated by its PDA seeds; records
+	/// the claimed asset.
 	/// Required privileges: writable.
 	pub opening: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Bundle PDA the opening selected; advances the asset's release count and
+	/// pays the lamports directly.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `recipient`.
+	/// Opening beneficiary; rejected unless it matches the stored beneficiary.
+	/// Receives the lamports.
 	/// Required privileges: writable.
 	pub recipient: &'account AccountView,
 

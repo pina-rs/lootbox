@@ -18,52 +18,73 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Delivers an allocated Metaplex Core asset from bundle escrow to the
+/// opening's beneficiary.
+///
+/// Any signer may submit it. The opening must be allocated to `bundle`, and the
+/// slot must not be claimed yet. The asset is revalidated as plugin-free before
+/// the bundle PDA signs the transfer. Sets the slot's claim bit on the opening
+/// and marks the opening delivered once every slot is claimed.
 /// CPI call for the `claim_core_asset_prize` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct ClaimCoreAssetPrize<'account> {
 	/// CPI account `payer`.
+	/// Any signer; pays for the Core transfer.
 	/// Required privileges: writable and signer.
 	pub payer: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA owned by this program.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `opening`.
+	/// Allocated template opening PDA of `template` whose selected bundle is
+	/// `bundle`. Records the slot's claim bit.
 	/// Required privileges: writable.
 	pub opening: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Bundle PDA of `template` that owns the asset, signs the transfer, and
+	/// counts the claim.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `recipient`.
+	/// The opening's beneficiary and new owner of the asset.
 	/// Required privileges: read-only.
 	pub recipient: &'account AccountView,
 
 	/// CPI account `asset`.
+	/// Core asset stored in the claimed slot; revalidated as plugin-free with
+	/// `bundle` as update authority.
 	/// Required privileges: writable.
 	pub asset: &'account AccountView,
 
 	/// CPI account `collection`.
+	/// Must be the Core program address, Core's placeholder for no collection.
 	/// Required privileges: read-only.
 	pub collection: &'account AccountView,
 
 	/// CPI account `coreProgram`.
+	/// Metaplex Core program, invoked to transfer the asset.
 	/// Required privileges: read-only.
 	pub core_program: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, forwarded to Core.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
 	/// CPI account `logWrapper`.
+	/// SPL Noop program, forwarded to Core as its log wrapper.
 	/// Required privileges: read-only.
 	pub log_wrapper: &'account AccountView,
 
 	/// CPI account `pluginAccounts`.
-	/// Core plugin and external-adapter accounts, preserving client flags.
+	/// Core plugin and external-adapter accounts, forwarded with their client
+	/// flags. Must be empty: any account here fails with `InvalidPrize`.
 	/// Required privileges: read-only.
 	pub plugin_accounts: &'account AccountView,
 

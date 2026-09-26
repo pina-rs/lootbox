@@ -8,16 +8,29 @@
 	clippy::too_many_arguments
 )]
 
+/// Mints boxes to any Token-2022 associated token account before the market
+/// lock.
+///
+/// The template authority signs, and the template must be live, unlocked, and
+/// not retired. Lifetime mints may not exceed activated tickets, and box supply
+/// plus pending openings may not exceed undrawn tickets.
 pub const MINT_TEMPLATE_BOXES_DISCRIMINATOR: u8 = 15u8;
 pub const MINT_TEMPLATE_BOXES_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct MintTemplateBoxes {
+	/// Template authority; signs.
 	pub authority: solana_pubkey::Pubkey,
+	/// Live, unlocked template PDA; records the new lifetime mint total and
+	/// signs as mint authority.
 	pub template: solana_pubkey::Pubkey,
+	/// Template's box mint.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// Token-2022 associated token account of its owner for the box mint;
+	/// receives the new boxes.
 	pub recipient_box_account: solana_pubkey::Pubkey,
+	/// Token-2022 program, invoked to mint the boxes.
 	pub box_token_program: solana_pubkey::Pubkey,
 }
 

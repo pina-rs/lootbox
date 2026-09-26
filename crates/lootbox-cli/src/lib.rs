@@ -106,6 +106,7 @@ pub struct Cli {
 	#[arg(long, global = true)]
 	pub json: bool,
 
+	/// Instruction to build, with its accounts and arguments.
 	#[command(subcommand)]
 	pub command: Command,
 }

@@ -44,12 +44,20 @@ pub struct LootboxPlan {
 /// Invalid developer configuration rejected before transaction construction.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PlanError {
+	/// `LootboxPlan::new` received a maximum supply of zero.
 	ZeroSupply,
+	/// A total, minimum, or collateral query ran on a plan with no outcomes.
 	NoOutcomes,
+	/// `LootboxPlan::with_outcome` received a selection weight of zero.
 	ZeroWeight,
+	/// `LootboxPlan::with_outcome` received a zero-lamport reward, which would
+	/// make the oracle-timeout refund zero.
 	ZeroReward,
+	/// The summed outcome weights would exceed `MAX_TOTAL_WEIGHT`.
 	WeightLimitExceeded,
+	/// `LootboxPlan::with_outcome` was called after `MAX_OUTCOMES` outcomes.
 	TooManyOutcomes,
+	/// A weight sum or worst-case collateral product overflows `u64`.
 	ArithmeticOverflow,
 }
 
@@ -74,15 +82,23 @@ impl core::error::Error for PlanError {}
 /// Gateway proof fields accepted by `settle_open`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SwitchboardReveal {
+	/// Switchboard enclave signature returned by the randomness gateway, read
+	/// from bytes 8 through 71 of the reveal data.
 	pub signature: [u8; 64],
+	/// Secp256k1 recovery identifier returned by the randomness gateway, read
+	/// from byte 72 of the reveal data.
 	pub recovery_id: u8,
+	/// Revealed randomness value covered by `signature`, read from bytes 73
+	/// through 104 of the reveal data.
 	pub value: [u8; 32],
 }
 
 /// Invalid Switchboard reveal instruction data.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RevealDataError {
+	/// The instruction data is not exactly 105 bytes long.
 	InvalidLength,
+	/// The first eight bytes are not `SWITCHBOARD_REVEAL_DISCRIMINATOR`.
 	InvalidDiscriminator,
 }
 

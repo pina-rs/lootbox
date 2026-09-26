@@ -18,28 +18,43 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Create a draft Exclusive Lootbox NFT collection and its Core collection.
+///
+/// The admin signs and pays. Validates the text fields, a layer count from 1
+/// through 12, and an attach window that opens before it closes. Creates the
+/// `ExclusiveCollectionState` PDA and a Core collection, named after the
+/// prefix with the URI `{base_uri}collection.json`, whose update authority is
+/// that PDA.
 /// CPI call for the `create_exclusive_collection` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct CreateExclusiveCollection<'account> {
 	/// CPI account `admin`.
+	/// Collection admin; signs, pays both accounts' rent, and is recorded as
+	/// `admin`.
 	/// Required privileges: writable and signer.
 	pub admin: &'account AccountView,
 
 	/// CPI account `exclusiveCollection`.
+	/// Empty collection PDA `["exclusive-collection", admin, collection_id]`,
+	/// created here.
 	/// Required privileges: writable.
 	pub exclusive_collection: &'account AccountView,
 
 	/// CPI account `coreCollection`.
 	/// Fresh Core collection keypair; its update authority becomes the PDA.
+	///
+	/// Signs, and is created here by Core.
 	/// Required privileges: writable and signer.
 	pub core_collection: &'account AccountView,
 
 	/// CPI account `coreProgram`.
+	/// Metaplex Core program, invoked to create the collection.
 	/// Required privileges: read-only.
 	pub core_program: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked to create both accounts.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 

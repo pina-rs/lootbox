@@ -18,6 +18,13 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Forfeits the FIFO head opening after its reveal timed out, so later
+/// openings can allocate.
+///
+/// Permissionless: any signer may call once `RANDOMNESS_TIMEOUT_SLOTS` slots
+/// have passed since the committed seed slot and the randomness is still
+/// unrevealed. Consumes no inventory, never remints the box, and never changes
+/// the beneficiary; pays any configured settlement bounty to the beneficiary.
 /// CPI call for the `forfeit_template_open` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
@@ -31,26 +38,36 @@ pub struct ForfeitTemplateOpen<'account> {
 	/// CPI account `beneficiary`.
 	/// Bound destination of the forfeit bounty: the creator-funded service
 	/// budget compensates the beneficiary whose box burned, never the crank.
+	/// Must match the opening's stored beneficiary.
 	/// Required privileges: writable.
 	pub beneficiary: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template treasury, validated by its PDA seeds; its pending-opening count
+	/// falls and its FIFO allocation cursor advances.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
 
 	/// CPI account `serviceVault`.
+	/// Service vault PDA at `["service-vault", template]`; validated only when
+	/// receipts or bounties are enabled, and pays the settlement bounty.
 	/// Required privileges: writable.
 	pub service_vault: &'account AccountView,
 
 	/// CPI account `opening`.
+	/// Pending opening at the FIFO head, validated by its PDA seeds; moves to
+	/// the forfeited status and is not closed here.
 	/// Required privileges: writable.
 	pub opening: &'account AccountView,
 
 	/// CPI account `randomness`.
+	/// Switchboard randomness bound to the opening; must still be unrevealed at
+	/// the committed seed slot, which starts the timeout.
 	/// Required privileges: read-only.
 	pub randomness: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, used for the bounty transfer.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 

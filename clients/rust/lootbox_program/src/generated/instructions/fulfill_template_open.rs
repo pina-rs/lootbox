@@ -8,26 +8,57 @@
 	clippy::too_many_arguments
 )]
 
+/// Verifies the Switchboard reveal for a pending opening and records its
+/// entropy, moving the opening to the verified status.
+///
+/// Permissionless: any signer may submit the gateway proof, and openings may
+/// be verified out of FIFO order. Requires a pending opening whose randomness
+/// is still unrevealed; the program applies no deadline of its own, so only
+/// `forfeitTemplateOpen` ends the window. Pays any configured settlement
+/// bounty from the service vault to the payer.
 pub const FULFILL_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 17u8;
 pub const FULFILL_TEMPLATE_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct FulfillTemplateOpen {
+	/// Submits the proof and funds Switchboard's reveal bookkeeping; receives
+	/// the settlement bounty when one is configured.
 	pub payer: solana_pubkey::Pubkey,
+	/// Template treasury, validated by its PDA seeds; its remaining
+	/// settlement-bounty count is written back.
 	pub template: solana_pubkey::Pubkey,
+	/// Service vault PDA at `["service-vault", template]`; validated only when
+	/// receipts or bounties are enabled, and pays the settlement bounty.
 	pub service_vault: solana_pubkey::Pubkey,
+	/// Pending opening PDA for `template` and `randomness`; signs the reveal as
+	/// the randomness authority, then stores the entropy and becomes verified.
 	pub opening: solana_pubkey::Pubkey,
+	/// Switchboard randomness bound to the opening; must be committed at the
+	/// opening's seed slot and not yet revealed.
 	pub randomness: solana_pubkey::Pubkey,
+	/// Switchboard queue; must match the queue recorded on the template.
 	pub oracle_queue: solana_pubkey::Pubkey,
+	/// Oracle bound at commit time; rejected unless it matches the oracle
+	/// recorded on `randomness`.
 	pub oracle: solana_pubkey::Pubkey,
+	/// Oracle stats account, updated by Switchboard `randomness_reveal`.
 	pub oracle_stats: solana_pubkey::Pubkey,
+	/// Slot hashes sysvar, read by Switchboard `randomness_reveal`.
 	pub recent_slot_hashes: solana_pubkey::Pubkey,
+	/// Switchboard On-Demand program; must match the oracle program recorded on
+	/// the template.
 	pub oracle_program: solana_pubkey::Pubkey,
+	/// Switchboard reward escrow for `randomness`; rejected unless it is the
+	/// wrapped-SOL associated token account of `randomness`.
 	pub reward_escrow: solana_pubkey::Pubkey,
+	/// Switchboard program state, passed to `randomness_reveal`.
 	pub oracle_program_state: solana_pubkey::Pubkey,
+	/// System program, used by Switchboard and for the bounty transfer.
 	pub system_program: solana_pubkey::Pubkey,
+	/// SPL Token program backing the wrapped-SOL reward escrow.
 	pub token_program: solana_pubkey::Pubkey,
+	/// Wrapped SOL mint backing the reward escrow.
 	pub wrapped_sol_mint: solana_pubkey::Pubkey,
 }
 

@@ -27,208 +27,405 @@ const MAX_BUBBLEGUM_SYMBOL_BYTES: usize = 10;
 const MAX_BUBBLEGUM_URI_BYTES: usize = 200;
 const MAX_BUBBLEGUM_CREATORS: usize = 5;
 
+/// Create a funding prize pool for the bundle's next unfunded manifest slot.
+///
+/// The template authority signs while the treasury is unlocked and not
+/// retired, and the bundle is funding with a quantity from 1 through 4,096.
+/// Creates the compact `PrizePoolState` PDA, pins its tree and quantity, and
+/// reserves the slot as kind `PRIZE_POOL` with amount 1; a bundle holds at
+/// most one pool.
 #[instruction(discriminator = LootboxInstruction::CreatePrizePool, migrations)]
 pub struct CreatePrizePoolInstruction {
+	/// Manifest slot to reserve; must equal the bundle's `funded_assets` and be
+	/// below its `asset_count`.
 	pub asset_index: u8,
+	/// Canonical bump of the `PrizePoolState` PDA
+	/// `["prize-pool", bundle, asset_index]`; any other value fails.
 	pub bump: u8,
 }
 
+/// Transfer the prepared compressed NFT into prize pool custody.
+///
+/// The template authority signs as the current leaf owner while the treasury
+/// is unlocked and not retired, the bundle is funding, and the pool has a
+/// prepared item at `deposit_cursor`. The arguments must match that item.
+/// Bubblegum moves the leaf to the pool PDA; the item becomes deposited, and
+/// the pool advances its cursor, manifest accumulator, and bitmap.
 #[instruction(discriminator = LootboxInstruction::DepositPrizePoolItem, migrations)]
 pub struct DepositPrizePoolItemInstruction {
+	/// Merkle root that Bubblegum verifies the proof against.
 	pub root: [u8; 32],
+	/// Current leaf data hash; must equal the prepared item's snapshot.
 	pub data_hash: [u8; 32],
+	/// Current leaf creator hash; must equal the prepared item's snapshot.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce; with `merkle_tree` it must derive the prepared asset ID.
 	pub nonce: u64,
+	/// Leaf index in `merkle_tree`; must equal the prepared item's tree index.
 	pub index: u32,
 }
 
+/// Admit one immutable compressed NFT's metadata as the pool's next item.
+///
+/// The template authority signs while the treasury is unlocked and not
+/// retired, the bundle is funding with this pool as its current slot, and the
+/// pool is funding, below its quantity, and has no prepared item. Recomputes
+/// both leaf hashes from `metadata`, rejects mutable metadata, and creates the
+/// `PrizePoolItemState` PDA at `deposit_cursor` in the prepared state.
 #[instruction(discriminator = LootboxInstruction::PreparePrizePoolItem, migrations)]
 pub struct PreparePrizePoolItemInstruction {
+	/// Canonical bump of the item PDA
+	/// `["prize-pool-item", prize_pool, deposit_cursor]`; any other value fails.
 	pub item_bump: u8,
+	/// Leaf data hash; must equal `keccak(keccak(metadata) ||
+	/// seller_fee_basis_points)` recomputed from `metadata`.
 	pub data_hash: [u8; 32],
+	/// Leaf creator hash; must equal the keccak hash of the creators encoded
+	/// in `metadata`.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce; derives the asset ID `["asset", tree, nonce]` under
+	/// Bubblegum using the pool's pinned tree.
 	pub nonce: u64,
+	/// Leaf index in the pool's tree, stored for the later transfer.
 	pub index: u32,
 	/// Canonical Borsh serialization of Bubblegum V1 `MetadataArgs`.
 	pub metadata: Vec<u8, 512>,
 }
 
+/// Close the pool's prepared item before its leaf is transferred.
+///
+/// The template authority signs while the treasury is unlocked and the bundle
+/// is funding. The pool must be funding with a prepared item at
+/// `deposit_cursor`. Clears `has_prepared_item` and closes the item PDA,
+/// returning its rent to the authority; deposited items are never touched.
 #[instruction(discriminator = LootboxInstruction::CancelPrizePoolItem, migrations)]
 pub struct CancelPrizePoolItemInstruction {}
 
+/// Seal a fully deposited prize pool into its bundle slot.
+///
+/// The template authority signs while the treasury is unlocked and not
+/// retired. The pool must be funding with `deposit_cursor == quantity` and no
+/// prepared item. Writes the domain-separated pool commitment into the bundle
+/// slot, advances the bundle's `funded_assets`, and marks the pool sealed.
 #[instruction(discriminator = LootboxInstruction::SealPrizePool, migrations)]
 pub struct SealPrizePoolInstruction {}
 
+/// Allocate a verified opening whose drawn bundle contains a prize pool.
+///
+/// Permissionless. The opening must be verified and next in allocation order,
+/// and the bundle must be active and selected by the opening's entropy. Also
+/// reserves one entropy-selected unassigned pool item for the opening, then
+/// marks it allocated and optionally creates its result receipt.
 #[instruction(discriminator = LootboxInstruction::AllocatePrizePoolOpen, migrations)]
 pub struct AllocatePrizePoolOpenInstruction {
+	/// Canonical bump of the result receipt PDA
+	/// `["result-receipt", opening, sequence]`; checked even when result
+	/// receipts are disabled.
 	pub result_receipt_bump: u8,
 }
 
+/// Deliver an opening's reserved prize pool leaf to its beneficiary.
+///
+/// Permissionless to relay. The opening must be allocated to this bundle with
+/// a pool assignment for `asset_index`, and the current metadata must match
+/// the item's semantic commitment. The pool PDA signs a Bubblegum transfer to
+/// the recipient, the claim is recorded, and the item PDA closes to the pool
+/// authority.
 #[instruction(discriminator = LootboxInstruction::ClaimPrizePoolItem, migrations)]
 pub struct ClaimPrizePoolItemInstruction {
+	/// Manifest slot of the pool; must equal the opening's
+	/// `selected_pool_asset` and the pool's `asset_index`.
 	pub asset_index: u8,
+	/// Merkle root that Bubblegum verifies the proof against.
 	pub root: [u8; 32],
+	/// Current leaf data hash; must be recomputed from `metadata`.
 	pub data_hash: [u8; 32],
+	/// Current leaf creator hash; must be recomputed from `metadata`.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce; must equal the item's nonce and derive its asset ID.
 	pub nonce: u64,
+	/// Leaf index in the pool's tree; must equal the item's tree index.
 	pub index: u32,
 	/// Current canonical Bubblegum V1 `MetadataArgs` Borsh preimage.
 	pub metadata: Vec<u8, 512>,
 }
 
+/// Return an unassigned deposited leaf to the template authority.
+///
+/// The template authority signs. An unsealed pool, with an unlocked treasury,
+/// a funding bundle, and no prepared item, releases only its last deposit and
+/// restores the prior accumulator. A sealed pool releases an unassigned item
+/// while its bundle is funding with an unlocked treasury, or after the
+/// template retires with zero box supply and no pending openings. The pool PDA
+/// signs the Bubblegum transfer and the item PDA closes to the authority.
 #[instruction(discriminator = LootboxInstruction::ReclaimPrizePoolItem, migrations)]
 pub struct ReclaimPrizePoolItemInstruction {
+	/// Local index of the item within the pool; must be below
+	/// `deposit_cursor`, and equal `deposit_cursor - 1` while unsealed.
 	pub pool_index: u32,
+	/// Merkle root that Bubblegum verifies the proof against.
 	pub root: [u8; 32],
+	/// Current leaf data hash; must be recomputed from `metadata`.
 	pub data_hash: [u8; 32],
+	/// Current leaf creator hash; must be recomputed from `metadata`.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce; must equal the item's nonce and derive its asset ID.
 	pub nonce: u64,
+	/// Leaf index in the pool's tree; must equal the item's tree index.
 	pub index: u32,
 	/// Current canonical Bubblegum V1 `MetadataArgs` Borsh preimage.
 	pub metadata: Vec<u8, 512>,
 }
 
+/// Close a prize pool that holds no outstanding leaves.
+///
+/// The template authority signs. Accepts an empty unsealed pool, a sealed pool
+/// in a funding bundle whose every item was reclaimed, or a sealed pool in a
+/// retired active bundle whose every item was claimed or reclaimed. The first
+/// two require an unlocked treasury and clear the bundle slot. The pool
+/// account closes and its rent returns to the authority.
 #[instruction(discriminator = LootboxInstruction::ClosePrizePool, migrations)]
 pub struct ClosePrizePoolInstruction {}
 
+/// Accounts for `createPrizePool`.
 #[derive(Accounts, Debug)]
 pub struct CreatePrizePoolAccounts<'a> {
+	/// Template authority; signs, pays the pool rent, and is recorded as the
+	/// pool's `authority`.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	pub template: &'a AccountView,
+	/// Funding bundle PDA of `template` whose next slot the pool reserves.
 	pub bundle: &'a mut AccountView,
+	/// Empty `PrizePoolState` PDA `["prize-pool", bundle, asset_index]`,
+	/// created here.
 	#[pina(validate(empty))]
 	pub prize_pool: &'a mut AccountView,
+	/// Bubblegum tree that every pool leaf must come from; only its nonzero
+	/// address is recorded.
 	pub merkle_tree: &'a AccountView,
+	/// System program, invoked to create the pool account.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
+/// Accounts for `depositPrizePoolItem`.
 #[derive(Accounts, Debug)]
 pub struct DepositPrizePoolItemAccounts<'a> {
+	/// Template authority; signs as the current leaf owner and pays rent for
+	/// bitmap growth.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	pub template: &'a AccountView,
+	/// Funding bundle PDA whose current slot holds `prize_pool`.
 	pub bundle: &'a AccountView,
+	/// Funding `PrizePoolState` PDA that receives the leaf; its cursor,
+	/// accumulator, and bitmap advance.
 	pub prize_pool: &'a mut AccountView,
+	/// Prepared item PDA at the pool's `deposit_cursor`; marked deposited.
 	pub prize_pool_item: &'a mut AccountView,
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	pub tree_config: &'a AccountView,
+	/// Pool's pinned tree that holds the leaf; Bubblegum rewrites it.
 	pub merkle_tree: &'a mut AccountView,
+	/// Bubblegum program, invoked to transfer the compressed NFT.
 	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
 	pub bubblegum_program: &'a AccountView,
+	/// SPL Noop program used by Bubblegum as its log wrapper.
 	#[pina(validate(address = SPL_NOOP_ID))]
 	pub log_wrapper: &'a AccountView,
+	/// SPL Account Compression program that owns `merkle_tree`.
 	#[pina(validate(address = SPL_ACCOUNT_COMPRESSION_ID))]
 	pub compression_program: &'a AccountView,
+	/// System program, passed to Bubblegum.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 	/// Merkle proof nodes in leaf-to-root order.
+	///
+	/// Passed as zero through 16 readonly remaining accounts; the tree's canopy
+	/// supplies the rest of the path.
 	#[pina(remaining)]
 	pub proof_accounts: &'a [AccountView],
 }
 
+/// Accounts for `preparePrizePoolItem`.
 #[derive(Accounts, Debug)]
 pub struct PreparePrizePoolItemAccounts<'a> {
+	/// Template authority; signs and pays the item rent.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	pub template: &'a AccountView,
+	/// Funding bundle PDA whose current slot holds `prize_pool`.
 	pub bundle: &'a AccountView,
+	/// Funding `PrizePoolState` PDA; `has_prepared_item` is set.
 	pub prize_pool: &'a mut AccountView,
+	/// Empty item PDA `["prize-pool-item", prize_pool, deposit_cursor]`,
+	/// created here in the prepared state.
 	#[pina(validate(empty))]
 	pub prize_pool_item: &'a mut AccountView,
+	/// System program, invoked to create the item account.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
+/// Accounts for `cancelPrizePoolItem`.
 #[derive(Accounts, Debug)]
 pub struct CancelPrizePoolItemAccounts<'a> {
+	/// Template authority; signs and receives the closed item's rent.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA; its treasury must be unlocked.
 	pub template: &'a AccountView,
+	/// Funding bundle PDA of `template`.
 	pub bundle: &'a AccountView,
+	/// Funding `PrizePoolState` PDA; `has_prepared_item` is cleared.
 	pub prize_pool: &'a mut AccountView,
+	/// Prepared item PDA at the pool's `deposit_cursor`, closed here.
 	pub prize_pool_item: &'a mut AccountView,
 }
 
+/// Accounts for `sealPrizePool`.
 #[derive(Accounts, Debug)]
 pub struct SealPrizePoolAccounts<'a> {
+	/// Template authority; signs.
 	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	pub template: &'a AccountView,
+	/// Funding bundle PDA; receives the pool commitment and advances
+	/// `funded_assets`.
 	pub bundle: &'a mut AccountView,
+	/// Fully deposited `PrizePoolState` PDA; becomes sealed.
 	pub prize_pool: &'a mut AccountView,
 }
 
+/// Accounts for `allocatePrizePoolOpen`.
 #[derive(Accounts, Debug)]
 pub struct AllocatePrizePoolOpenAccounts<'a> {
+	/// Template PDA; its remaining inventory and allocation counters update.
 	pub template: &'a mut AccountView,
+	/// Verified `TemplateOpeningState` PDA next in allocation order; becomes
+	/// allocated and records the reserved pool item.
 	pub opening: &'a mut AccountView,
+	/// Active bundle PDA selected by the opening's entropy.
 	pub bundle: &'a AccountView,
+	/// Sealed `PrizePoolState` PDA in `bundle`; reserves one item.
 	pub prize_pool: &'a mut AccountView,
 	/// Creator-funded when permanent result receipts are enabled.
+	///
+	/// Template service vault PDA `["service-vault", template]`, validated when
+	/// receipts or settlement bounties are enabled; pays the receipt rent.
 	pub service_vault: &'a mut AccountView,
 	/// Created only when enabled in the locked treasury configuration.
+	///
+	/// Must be the empty PDA `["result-receipt", opening, sequence]`.
 	#[pina(validate(empty))]
 	pub result_receipt: &'a mut AccountView,
+	/// System program, invoked to fund and create the result receipt.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
+/// Accounts for `claimPrizePoolItem`.
 #[derive(Accounts, Debug)]
 pub struct ClaimPrizePoolItemAccounts<'a> {
+	/// Template PDA that owns the opening and bundle.
 	pub template: &'a AccountView,
+	/// Allocated opening PDA with a pool assignment; its claim bit is set.
 	pub opening: &'a mut AccountView,
+	/// Bundle PDA the opening was allocated to; its claimed count advances.
 	pub bundle: &'a mut AccountView,
+	/// Sealed `PrizePoolState` PDA; signs the transfer and counts the claim.
 	pub prize_pool: &'a mut AccountView,
+	/// Item PDA at the opening's `selected_pool_item`, closed here.
 	pub prize_pool_item: &'a mut AccountView,
+	/// Opening's bound beneficiary; becomes the leaf owner.
 	pub recipient: &'a AccountView,
 	/// Receives the closed per-item PDA rent; fixed to the pool creator.
 	pub rent_refund: &'a mut AccountView,
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	pub tree_config: &'a AccountView,
+	/// Pool's pinned tree that holds the leaf; Bubblegum rewrites it.
 	pub merkle_tree: &'a mut AccountView,
+	/// Bubblegum program, invoked to transfer the compressed NFT.
 	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
 	pub bubblegum_program: &'a AccountView,
+	/// SPL Noop program used by Bubblegum as its log wrapper.
 	#[pina(validate(address = SPL_NOOP_ID))]
 	pub log_wrapper: &'a AccountView,
+	/// SPL Account Compression program that owns `merkle_tree`.
 	#[pina(validate(address = SPL_ACCOUNT_COMPRESSION_ID))]
 	pub compression_program: &'a AccountView,
+	/// System program, passed to Bubblegum.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 	/// Merkle proof nodes in leaf-to-root order.
+	///
+	/// Passed as zero through 16 readonly remaining accounts; the tree's canopy
+	/// supplies the rest of the path.
 	#[pina(remaining)]
 	pub proof_accounts: &'a [AccountView],
 }
 
+/// Accounts for `reclaimPrizePoolItem`.
 #[derive(Accounts, Debug)]
 pub struct ReclaimPrizePoolItemAccounts<'a> {
+	/// Template authority; signs, receives the leaf and the item rent, and
+	/// receives rent freed by shrinking an unsealed pool.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA that owns `bundle`.
 	pub template: &'a AccountView,
+	/// Template's Token-2022 box mint; its supply must be zero for an active
+	/// bundle. Read only when the pool is sealed.
 	pub box_mint: &'a AccountView,
+	/// Bundle PDA; a sealed reclaim advances the slot's released count and
+	/// may set its reclaimed bit.
 	pub bundle: &'a mut AccountView,
+	/// `PrizePoolState` PDA that signs the transfer; its cursor rewinds or its
+	/// reclaimed count advances.
 	pub prize_pool: &'a mut AccountView,
+	/// Deposited item PDA at `pool_index`, closed here.
 	pub prize_pool_item: &'a mut AccountView,
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	pub tree_config: &'a AccountView,
+	/// Pool's pinned tree that holds the leaf; Bubblegum rewrites it.
 	pub merkle_tree: &'a mut AccountView,
+	/// Bubblegum program, invoked to transfer the compressed NFT.
 	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
 	pub bubblegum_program: &'a AccountView,
+	/// SPL Noop program used by Bubblegum as its log wrapper.
 	#[pina(validate(address = SPL_NOOP_ID))]
 	pub log_wrapper: &'a AccountView,
+	/// SPL Account Compression program that owns `merkle_tree`.
 	#[pina(validate(address = SPL_ACCOUNT_COMPRESSION_ID))]
 	pub compression_program: &'a AccountView,
+	/// System program, passed to Bubblegum.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 	/// Merkle proof nodes in leaf-to-root order.
+	///
+	/// Passed as zero through 16 readonly remaining accounts; the tree's canopy
+	/// supplies the rest of the path.
 	#[pina(remaining)]
 	pub proof_accounts: &'a [AccountView],
 }
 
+/// Accounts for `closePrizePool`.
 #[derive(Accounts, Debug)]
 pub struct ClosePrizePoolAccounts<'a> {
+	/// Template authority; signs and receives the pool rent.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA that owns `bundle`.
 	pub template: &'a AccountView,
+	/// Bundle PDA; its pool slot is cleared unless the pool is terminal in an
+	/// active bundle.
 	pub bundle: &'a mut AccountView,
+	/// `PrizePoolState` PDA, closed here.
 	pub prize_pool: &'a mut AccountView,
 }
 

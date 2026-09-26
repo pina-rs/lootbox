@@ -18,31 +18,50 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Releases undrawn copies of one mint-badge asset and revokes the bundle's
+/// mint authority once no copies remain claimable.
+///
+/// Signed by the template authority, under the same funding-or-retired rules
+/// as the other reclaims. Mints nothing; when allocated copies are still
+/// unclaimed, only the accounting changes and the final claim later revokes
+/// the authority.
 /// CPI call for the `reclaim_mint_prize` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct ReclaimMintPrize<'account> {
 	/// CPI account `authority`.
+	/// Template authority; must sign and match the authority recorded on the
+	/// template.
 	/// Required privileges: read-only and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template treasury, validated by its PDA seeds; supplies the status,
+	/// pending-opening count, and remaining inventory of the bundle.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// Template's box mint, validated against the template; its live supply
+	/// must be zero to reclaim from an active bundle.
 	/// Required privileges: read-only.
 	pub box_mint: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Bundle PDA of this template; records the asset as reclaimed and signs
+	/// the authority revocation.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `mint`.
+	/// Badge mint recorded in the bundle's asset slot; must have zero decimals,
+	/// the bundle as mint authority, no freeze authority, and only metadata
+	/// extensions. Its mint authority is revoked once every copy is released.
 	/// Required privileges: writable.
 	pub mint: &'account AccountView,
 
 	/// CPI account `tokenProgram`.
+	/// SPL Token or Token-2022 program that owns `mint`.
 	/// Required privileges: read-only.
 	pub token_program: &'account AccountView,
 

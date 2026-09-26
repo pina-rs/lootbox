@@ -8,20 +8,37 @@
 	clippy::too_many_arguments
 )]
 
+/// Allocate a verified opening whose drawn bundle contains a prize pool.
+///
+/// Permissionless. The opening must be verified and next in allocation order,
+/// and the bundle must be active and selected by the opening's entropy. Also
+/// reserves one entropy-selected unassigned pool item for the opening, then
+/// marks it allocated and optionally creates its result receipt.
 pub const ALLOCATE_PRIZE_POOL_OPEN_DISCRIMINATOR: u8 = 47u8;
 pub const ALLOCATE_PRIZE_POOL_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct AllocatePrizePoolOpen {
+	/// Template PDA; its remaining inventory and allocation counters update.
 	pub template: solana_pubkey::Pubkey,
+	/// Verified `TemplateOpeningState` PDA next in allocation order; becomes
+	/// allocated and records the reserved pool item.
 	pub opening: solana_pubkey::Pubkey,
+	/// Active bundle PDA selected by the opening's entropy.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Sealed `PrizePoolState` PDA in `bundle`; reserves one item.
 	pub prize_pool: solana_pubkey::Pubkey,
 	/// Creator-funded when permanent result receipts are enabled.
+	///
+	/// Template service vault PDA `["service-vault", template]`, validated when
+	/// receipts or settlement bounties are enabled; pays the receipt rent.
 	pub service_vault: solana_pubkey::Pubkey,
 	/// Created only when enabled in the locked treasury configuration.
+	///
+	/// Must be the empty PDA `["result-receipt", opening, sequence]`.
 	pub result_receipt: solana_pubkey::Pubkey,
+	/// System program, invoked to fund and create the result receipt.
 	pub system_program: solana_pubkey::Pubkey,
 }
 

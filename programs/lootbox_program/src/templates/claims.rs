@@ -2,36 +2,89 @@
 
 use super::*;
 
+/// Allocates the FIFO head opening's prize by drawing one bundle copy without
+/// replacement from its verified entropy.
+///
+/// Permissionless and signer-free. Requires a verified opening holding the
+/// next allocation sequence; the draw spans only the bundle prefix and treasury
+/// revision snapshotted at request. Consumes one inventory unit, advances the
+/// FIFO cursor, and creates a result receipt when receipts are enabled. Bundles
+/// holding a prize pool must use `AllocatePrizePoolOpen` instead.
 #[instruction(discriminator = LootboxInstruction::AllocateTemplateOpen, migrations)]
 pub struct AllocateTemplateOpenInstruction {
+	/// Canonical bump of the result receipt PDA; rejected unless it equals the
+	/// derived canonical bump, even when result receipts are disabled.
 	pub result_receipt_bump: u8,
 }
 
+/// Pays one native SOL asset of an allocated bundle to the opening's
+/// beneficiary.
+///
+/// Permissionless and signer-free: anyone may crank the claim, but lamports
+/// move only to the bound beneficiary. Each asset is claimable once per
+/// opening, and the opening becomes delivered after its last asset is claimed.
+/// Fails if the bundle would drop below the asset's unreleased amount plus its
+/// rent reserve.
 #[instruction(discriminator = LootboxInstruction::ClaimSolPrize, migrations)]
 pub struct ClaimSolPrizeInstruction {
+	/// Asset slot within the selected bundle; must be below its asset count,
+	/// hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and be unclaimed by this
+	/// opening.
 	pub asset_index: u8,
 }
 
+/// Transfers one fungible or NFT token asset of an allocated bundle from its
+/// escrow to the beneficiary's associated token account.
+///
+/// Permissionless and signer-free: anyone may crank the claim, but tokens move
+/// only to the bound beneficiary. Each asset is claimable once per opening, and
+/// the opening becomes delivered after its last asset is claimed.
 #[instruction(discriminator = LootboxInstruction::ClaimTokenPrize, migrations)]
 pub struct ClaimTokenPrizeInstruction {
+	/// Asset slot within the selected bundle; must be below its asset count,
+	/// hold a `PRIZE_TOKEN`, `PRIZE_NFT`, `PRIZE_TOKEN_2022`, or
+	/// `PRIZE_QUOTE_TOKEN` asset, and be unclaimed by this opening.
 	pub asset_index: u8,
 }
 
+/// Mints one mint-badge copy of an allocated bundle to the beneficiary's
+/// associated token account.
+///
+/// Permissionless and signer-free: anyone may crank the claim, but the badge
+/// goes only to the bound beneficiary. Each asset is claimable once per
+/// opening; the claim that releases the final copy revokes the bundle's mint
+/// authority.
 #[instruction(discriminator = LootboxInstruction::ClaimMintPrize, migrations)]
 pub struct ClaimMintPrizeInstruction {
+	/// Asset slot within the selected bundle; must be below its asset count,
+	/// hold a `PRIZE_MINT_BADGE` asset with an amount of one, and be unclaimed
+	/// by this opening.
 	pub asset_index: u8,
 }
 
+/// Accounts for `allocateTemplateOpen`.
 #[derive(Accounts, Debug)]
 pub struct AllocateTemplateOpenAccounts<'a> {
+	/// Template treasury, validated by its PDA seeds; its remaining inventory,
+	/// pending-opening count, FIFO cursor, and receipt budget are updated.
 	pub template: &'a mut AccountView,
+	/// Verified opening at the FIFO head, validated by its PDA seeds; records
+	/// the selected bundle and moves to the allocated status.
 	pub opening: &'a mut AccountView,
+	/// Active bundle at the index the opening's entropy selects; rejected
+	/// unless it belongs to the template and was active at the opening's
+	/// treasury revision.
 	pub bundle: &'a AccountView,
-	/// Creator-funded when permanent result receipts are enabled.
+	/// Creator-funded service vault PDA at `["service-vault", template]`;
+	/// validated only when receipts or bounties are enabled, and pays the
+	/// result receipt's rent.
 	pub service_vault: &'a mut AccountView,
+	/// Result receipt PDA at `["result-receipt", opening, sequence]`; must be
+	/// empty and match the canonical address even when receipts are disabled.
 	/// Created only when enabled in the locked treasury configuration.
 	#[pina(validate(empty))]
 	pub result_receipt: &'a mut AccountView,
+	/// System program, used to fund and create the result receipt.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
@@ -44,34 +97,75 @@ pub(super) struct TemplateAllocationAccounts<'a> {
 	pub result_receipt: &'a mut AccountView,
 }
 
+/// Accounts for `claimSolPrize`.
 #[derive(Accounts, Debug)]
 pub struct ClaimSolPrizeAccounts<'a> {
+	/// Template treasury, validated by its PDA seeds; binds the bundle and the
+	/// opening.
 	pub template: &'a AccountView,
+	/// Allocated opening of this template, validated by its PDA seeds; records
+	/// the claimed asset.
 	pub opening: &'a mut AccountView,
+	/// Bundle PDA the opening selected; advances the asset's release count and
+	/// pays the lamports directly.
 	pub bundle: &'a mut AccountView,
+	/// Opening beneficiary; rejected unless it matches the stored beneficiary.
+	/// Receives the lamports.
 	pub recipient: &'a mut AccountView,
 }
 
+/// Accounts for `claimTokenPrize`.
 #[derive(Accounts, Debug)]
 pub struct ClaimTokenPrizeAccounts<'a> {
+	/// Template treasury, validated by its PDA seeds; binds the bundle and the
+	/// opening.
 	pub template: &'a AccountView,
+	/// Allocated opening of this template, validated by its PDA seeds; records
+	/// the claimed asset.
 	pub opening: &'a mut AccountView,
+	/// Bundle PDA the opening selected; advances the asset's release count and
+	/// signs the transfer as escrow owner.
 	pub bundle: &'a mut AccountView,
+	/// Opening beneficiary; rejected unless it matches the stored beneficiary.
+	/// Tokens go to `destination`, not this account.
 	pub recipient: &'a AccountView,
+	/// Prize mint; must match the mint recorded in the bundle's asset slot.
 	pub mint: &'a AccountView,
+	/// Bundle's associated token account for `mint` under `token_program`;
+	/// source of the transfer.
 	pub escrow: &'a mut AccountView,
+	/// Beneficiary's existing associated token account for `mint` under
+	/// `token_program`; receives the tokens.
 	pub destination: &'a mut AccountView,
+	/// SPL Token or Token-2022 program matching the asset kind: SPL Token for
+	/// `PRIZE_TOKEN` and `PRIZE_NFT`, Token-2022 for `PRIZE_TOKEN_2022`, and
+	/// either for `PRIZE_QUOTE_TOKEN`.
 	pub token_program: &'a AccountView,
 }
 
+/// Accounts for `claimMintPrize`.
 #[derive(Accounts, Debug)]
 pub struct ClaimMintPrizeAccounts<'a> {
+	/// Template treasury, validated by its PDA seeds; binds the bundle and the
+	/// opening.
 	pub template: &'a AccountView,
+	/// Allocated opening of this template, validated by its PDA seeds; records
+	/// the claimed asset.
 	pub opening: &'a mut AccountView,
+	/// Bundle PDA the opening selected; advances the asset's release count and
+	/// signs as mint authority.
 	pub bundle: &'a mut AccountView,
+	/// Opening beneficiary; rejected unless it matches the stored beneficiary.
+	/// The badge goes to `destination`, not this account.
 	pub recipient: &'a AccountView,
+	/// Badge mint recorded in the bundle's asset slot; must have zero decimals,
+	/// the bundle as mint authority, no freeze authority, and only metadata
+	/// extensions. Its mint authority is revoked after the final copy.
 	pub mint: &'a mut AccountView,
+	/// Beneficiary's existing associated token account for `mint` under
+	/// `token_program`; receives one badge.
 	pub destination: &'a mut AccountView,
+	/// SPL Token or Token-2022 program that owns `mint`.
 	pub token_program: &'a AccountView,
 }
 

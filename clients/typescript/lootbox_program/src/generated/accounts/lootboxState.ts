@@ -19,17 +19,147 @@ export const LOOTBOX_STATE_DISCRIMINATOR2 = 0;
 export function getLootboxStateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(LOOTBOX_STATE_DISCRIMINATOR2); }
 
 /** Immutable definition and live accounting for one lootbox mint. */
-export type LootboxState = { discriminator: number; migrationVersion: number; authority: Address; boxMint: Address; oracleProgram: Address; oracleQueue: Address; id: bigint; maxSupply: bigint; totalMinted: bigint; pendingOpenings: bigint; opened: bigint; refunded: bigint; totalWeight: bigint; maxRewardLamports: bigint;
-/** Eight little-endian `u64` weight slots. */
+export type LootboxState = { discriminator: number; migrationVersion: number;
+/**
+ * Creator that pays for creation and alone may add outcomes, seal, mint
+ * boxes, and withdraw surplus. A PDA seed; never changes.
+ */
+authority: Address;
+/**
+ * Classic SPL Token mint whose tokens are unopened boxes. It has zero
+ * decimals, this PDA as mint authority, and no freeze authority.
+ */
+boxMint: Address;
+/**
+ * Switchboard On-Demand program, mainnet or devnet, that must own every
+ * opening's randomness account.
+ */
+oracleProgram: Address;
+/** Switchboard queue that every opening's randomness must be bound to. */
+oracleQueue: Address;
+/**
+ * Creator-chosen identifier that distinguishes this authority's lootboxes.
+ * A PDA seed.
+ */
+id: bigint;
+/** Lifetime cap on boxes minted; nonzero and fixed at creation. */
+maxSupply: bigint;
+/**
+ * Boxes ever minted. Never decreases when boxes burn; bounded by
+ * `max_supply`.
+ */
+totalMinted: bigint;
+/**
+ * Boxes burned by `RequestOpen` that are not yet settled or refunded.
+ * Each counts toward the vault's worst-case liability.
+ */
+pendingOpenings: bigint;
+/** Openings settled by `SettleOpen`. */
+opened: bigint;
+/** Openings finalized at the reward floor by `RefundOpen`. */
+refunded: bigint;
+/**
+ * Sum of all outcome weights; the uniform sampling domain. At most
+ * `MAX_TOTAL_WEIGHT`.
+ */
+totalWeight: bigint;
+/**
+ * Largest outcome reward, in lamports. Every live or pending box is
+ * collateralized at this amount.
+ */
+maxRewardLamports: bigint;
+/**
+ * Eight little-endian `u64` weight slots. Slot `i` holds outcome `i`'s
+ * positive weight; slots at or past `outcome_count` are zero.
+ */
 outcomeWeights: ReadonlyUint8Array;
-/** Eight little-endian `u64` reward slots. */
-outcomeLamports: ReadonlyUint8Array; outcomeCount: number; sealed: boolean; bump: number; vaultBump: number;  };
+/**
+ * Eight little-endian `u64` reward slots, in lamports. Slot `i` holds
+ * outcome `i`'s positive reward; slots at or past `outcome_count` are zero.
+ */
+outcomeLamports: ReadonlyUint8Array;
+/** Number of configured outcomes, from zero through `MAX_OUTCOMES`. */
+outcomeCount: number;
+/**
+ * Set once by `Seal`. A sealed lootbox has a frozen outcome table and may
+ * mint and open boxes.
+ */
+sealed: boolean;
+/** Canonical bump of this lootbox PDA. */
+bump: number;
+/** Canonical bump of this lootbox's vault PDA. */
+vaultBump: number;  };
 
-export type LootboxStateArgs = { authority: Address; boxMint: Address; oracleProgram: Address; oracleQueue: Address; id: number | bigint; maxSupply: number | bigint; totalMinted: number | bigint; pendingOpenings: number | bigint; opened: number | bigint; refunded: number | bigint; totalWeight: number | bigint; maxRewardLamports: number | bigint;
-/** Eight little-endian `u64` weight slots. */
+export type LootboxStateArgs = {
+/**
+ * Creator that pays for creation and alone may add outcomes, seal, mint
+ * boxes, and withdraw surplus. A PDA seed; never changes.
+ */
+authority: Address;
+/**
+ * Classic SPL Token mint whose tokens are unopened boxes. It has zero
+ * decimals, this PDA as mint authority, and no freeze authority.
+ */
+boxMint: Address;
+/**
+ * Switchboard On-Demand program, mainnet or devnet, that must own every
+ * opening's randomness account.
+ */
+oracleProgram: Address;
+/** Switchboard queue that every opening's randomness must be bound to. */
+oracleQueue: Address;
+/**
+ * Creator-chosen identifier that distinguishes this authority's lootboxes.
+ * A PDA seed.
+ */
+id: number | bigint;
+/** Lifetime cap on boxes minted; nonzero and fixed at creation. */
+maxSupply: number | bigint;
+/**
+ * Boxes ever minted. Never decreases when boxes burn; bounded by
+ * `max_supply`.
+ */
+totalMinted: number | bigint;
+/**
+ * Boxes burned by `RequestOpen` that are not yet settled or refunded.
+ * Each counts toward the vault's worst-case liability.
+ */
+pendingOpenings: number | bigint;
+/** Openings settled by `SettleOpen`. */
+opened: number | bigint;
+/** Openings finalized at the reward floor by `RefundOpen`. */
+refunded: number | bigint;
+/**
+ * Sum of all outcome weights; the uniform sampling domain. At most
+ * `MAX_TOTAL_WEIGHT`.
+ */
+totalWeight: number | bigint;
+/**
+ * Largest outcome reward, in lamports. Every live or pending box is
+ * collateralized at this amount.
+ */
+maxRewardLamports: number | bigint;
+/**
+ * Eight little-endian `u64` weight slots. Slot `i` holds outcome `i`'s
+ * positive weight; slots at or past `outcome_count` are zero.
+ */
 outcomeWeights: ReadonlyUint8Array;
-/** Eight little-endian `u64` reward slots. */
-outcomeLamports: ReadonlyUint8Array; outcomeCount: number; sealed: boolean; bump: number; vaultBump: number;  };
+/**
+ * Eight little-endian `u64` reward slots, in lamports. Slot `i` holds
+ * outcome `i`'s positive reward; slots at or past `outcome_count` are zero.
+ */
+outcomeLamports: ReadonlyUint8Array;
+/** Number of configured outcomes, from zero through `MAX_OUTCOMES`. */
+outcomeCount: number;
+/**
+ * Set once by `Seal`. A sealed lootbox has a frozen outcome table and may
+ * mint and open boxes.
+ */
+sealed: boolean;
+/** Canonical bump of this lootbox PDA. */
+bump: number;
+/** Canonical bump of this lootbox's vault PDA. */
+vaultBump: number;  };
 
 /** Gets the encoder for {@link LootboxStateArgs} account data. */
 export function getLootboxStateEncoder(): FixedSizeEncoder<LootboxStateArgs> {

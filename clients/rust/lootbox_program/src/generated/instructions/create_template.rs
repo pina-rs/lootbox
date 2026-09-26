@@ -8,16 +8,28 @@
 	clippy::too_many_arguments
 )]
 
+/// Creates a draft treasury template PDA bound to an empty Token-2022 box mint.
+///
+/// The creator signs and pays rent. The box mint must have zero supply and
+/// decimals, no freeze authority, this template PDA as mint authority, and
+/// immutable on-mint metadata whose name and URI match the arguments.
 pub const CREATE_TEMPLATE_DISCRIMINATOR: u8 = 10u8;
 pub const CREATE_TEMPLATE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct CreateTemplate {
+	/// Creator; signs, pays the template rent, and becomes its authority.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA created here from `["template", authority, id]`; must be
+	/// empty.
 	pub template: solana_pubkey::Pubkey,
+	/// Empty Token-2022 box mint whose mint authority is the template PDA and
+	/// whose metadata pointer and immutable metadata point at itself.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// System program, invoked to create the template account.
 	pub system_program: solana_pubkey::Pubkey,
+	/// Token-2022 program that must own the box mint.
 	pub box_token_program: solana_pubkey::Pubkey,
 }
 

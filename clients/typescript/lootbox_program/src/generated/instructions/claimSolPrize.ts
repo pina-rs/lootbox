@@ -39,9 +39,25 @@ export function getClaimSolPrizeInstructionDataCodec(): FixedSizeCodec<ClaimSolP
 }
 
 export type ClaimSolPrizeInput<TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountRecipient extends InstructionAccountInput = InstructionAccountInput> =  {
-  template: TAccountTemplate;
+  /**
+ * Template treasury, validated by its PDA seeds; binds the bundle and the
+ * opening.
+ */
+template: TAccountTemplate;
+/**
+ * Allocated opening of this template, validated by its PDA seeds; records
+ * the claimed asset.
+ */
 opening: TAccountOpening;
+/**
+ * Bundle PDA the opening selected; advances the asset's release count and
+ * pays the lamports directly.
+ */
 bundle: TAccountBundle;
+/**
+ * Opening beneficiary; rejected unless it matches the stored beneficiary.
+ * Receives the lamports.
+ */
 recipient: TAccountRecipient;
 assetIndex: ClaimSolPrizeInstructionDataArgs["assetIndex"];
 }
@@ -69,9 +85,25 @@ return Object.freeze({ accounts: [getAccountMeta("template", accounts.template),
 
 export type ParsedClaimSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template treasury, validated by its PDA seeds; binds the bundle and the
+ * opening.
+ */
 template: TAccountMetas[0];
+/**
+ * Allocated opening of this template, validated by its PDA seeds; records
+ * the claimed asset.
+ */
 opening: TAccountMetas[1];
+/**
+ * Bundle PDA the opening selected; advances the asset's release count and
+ * pays the lamports directly.
+ */
 bundle: TAccountMetas[2];
+/**
+ * Opening beneficiary; rejected unless it matches the stored beneficiary.
+ * Receives the lamports.
+ */
 recipient: TAccountMetas[3];
 };
 data: ClaimSolPrizeInstructionData; };

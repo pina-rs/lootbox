@@ -18,23 +18,33 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Escrows winner-routable native SOL in the next slot of a funding bundle.
+///
+/// The template authority signs and transfers `lamports_per_win` times the
+/// bundle quantity to the bundle PDA. The treasury must be unlocked and not
+/// retired.
 /// CPI call for the `fund_quote_sol_prize` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct FundQuoteSolPrize<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs and pays the escrowed lamports.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA that must be unlocked and not retired; read only by the
+	/// handler.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Funding bundle PDA of this template that receives the lamports.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked for the lamport transfer.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 

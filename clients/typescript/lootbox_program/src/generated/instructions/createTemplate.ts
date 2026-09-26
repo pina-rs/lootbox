@@ -39,10 +39,21 @@ export function getCreateTemplateInstructionDataCodec(): FixedSizeCodec<CreateTe
 }
 
 export type CreateTemplateInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountBoxTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Creator; signs, pays the template rent, and becomes its authority. */
+authority: TAccountAuthority;
+/**
+ * Template PDA created here from `["template", authority, id]`; must be
+ * empty.
+ */
 template: TAccountTemplate;
+/**
+ * Empty Token-2022 box mint whose mint authority is the template PDA and
+ * whose metadata pointer and immutable metadata point at itself.
+ */
 boxMint: TAccountBoxMint;
+/** System program, invoked to create the template account. */
 systemProgram?: TAccountSystemProgram;
+/** Token-2022 program that must own the box mint. */
 boxTokenProgram?: TAccountBoxTokenProgram;
 id: CreateTemplateInstructionDataArgs["id"];
 opensAt: CreateTemplateInstructionDataArgs["opensAt"];
@@ -84,10 +95,21 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedCreateTemplateInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Creator; signs, pays the template rent, and becomes its authority. */
 authority: TAccountMetas[0];
+/**
+ * Template PDA created here from `["template", authority, id]`; must be
+ * empty.
+ */
 template: TAccountMetas[1];
+/**
+ * Empty Token-2022 box mint whose mint authority is the template PDA and
+ * whose metadata pointer and immutable metadata point at itself.
+ */
 boxMint: TAccountMetas[2];
+/** System program, invoked to create the template account. */
 systemProgram: TAccountMetas[3];
+/** Token-2022 program that must own the box mint. */
 boxTokenProgram: TAccountMetas[4];
 };
 data: CreateTemplateInstructionData; };

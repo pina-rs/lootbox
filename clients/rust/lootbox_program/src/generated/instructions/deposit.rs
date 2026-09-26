@@ -8,15 +8,22 @@
 	clippy::too_many_arguments
 )]
 
+/// Transfers lamports from any signer into a lootbox's vault. Allowed at any
+/// point in the lootbox's life; deposits only add collateral.
 pub const DEPOSIT_DISCRIMINATOR: u8 = 2u8;
 pub const DEPOSIT_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct Deposit {
+	/// Any wallet funding the vault. Writable signer; the lamports come from
+	/// it.
 	pub depositor: solana_pubkey::Pubkey,
+	/// Lootbox whose vault receives the deposit; its PDA is revalidated.
 	pub lootbox: solana_pubkey::Pubkey,
+	/// Vault PDA of `lootbox` that receives the lamports. Writable.
 	pub vault: solana_pubkey::Pubkey,
+	/// System program, invoked for the transfer.
 	pub system_program: solana_pubkey::Pubkey,
 }
 

@@ -18,15 +18,22 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Appends one outcome to an unsealed lootbox's table, signed by the lootbox
+/// authority. At most `MAX_OUTCOMES` outcomes may exist, and the total weight
+/// must stay within `MAX_TOTAL_WEIGHT`. Raises `max_reward_lamports` when this
+/// reward is the largest so far.
 /// CPI call for the `add_outcome` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct AddOutcome<'account> {
 	/// CPI account `authority`.
+	/// Lootbox authority. Signer; must match the stored authority.
 	/// Required privileges: read-only and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `lootbox`.
+	/// Unsealed lootbox whose outcome table, total weight, and maximum reward
+	/// are updated.
 	/// Required privileges: writable.
 	pub lootbox: &'account AccountView,
 

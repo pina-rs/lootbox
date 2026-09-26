@@ -8,19 +8,39 @@
 	clippy::too_many_arguments
 )]
 
+/// Allocates the FIFO head opening's prize by drawing one bundle copy without
+/// replacement from its verified entropy.
+///
+/// Permissionless and signer-free. Requires a verified opening holding the
+/// next allocation sequence; the draw spans only the bundle prefix and treasury
+/// revision snapshotted at request. Consumes one inventory unit, advances the
+/// FIFO cursor, and creates a result receipt when receipts are enabled. Bundles
+/// holding a prize pool must use `AllocatePrizePoolOpen` instead.
 pub const ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 18u8;
 pub const ALLOCATE_TEMPLATE_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct AllocateTemplateOpen {
+	/// Template treasury, validated by its PDA seeds; its remaining inventory,
+	/// pending-opening count, FIFO cursor, and receipt budget are updated.
 	pub template: solana_pubkey::Pubkey,
+	/// Verified opening at the FIFO head, validated by its PDA seeds; records
+	/// the selected bundle and moves to the allocated status.
 	pub opening: solana_pubkey::Pubkey,
+	/// Active bundle at the index the opening's entropy selects; rejected
+	/// unless it belongs to the template and was active at the opening's
+	/// treasury revision.
 	pub bundle: solana_pubkey::Pubkey,
-	/// Creator-funded when permanent result receipts are enabled.
+	/// Creator-funded service vault PDA at `["service-vault", template]`;
+	/// validated only when receipts or bounties are enabled, and pays the
+	/// result receipt's rent.
 	pub service_vault: solana_pubkey::Pubkey,
+	/// Result receipt PDA at `["result-receipt", opening, sequence]`; must be
+	/// empty and match the canonical address even when receipts are disabled.
 	/// Created only when enabled in the locked treasury configuration.
 	pub result_receipt: solana_pubkey::Pubkey,
+	/// System program, used to fund and create the result receipt.
 	pub system_program: solana_pubkey::Pubkey,
 }
 

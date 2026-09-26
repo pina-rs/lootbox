@@ -8,17 +8,32 @@
 	clippy::too_many_arguments
 )]
 
+/// Create a draft Exclusive Lootbox NFT collection and its Core collection.
+///
+/// The admin signs and pays. Validates the text fields, a layer count from 1
+/// through 12, and an attach window that opens before it closes. Creates the
+/// `ExclusiveCollectionState` PDA and a Core collection, named after the
+/// prefix with the URI `{base_uri}collection.json`, whose update authority is
+/// that PDA.
 pub const CREATE_EXCLUSIVE_COLLECTION_DISCRIMINATOR: u8 = 53u8;
 pub const CREATE_EXCLUSIVE_COLLECTION_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct CreateExclusiveCollection {
+	/// Collection admin; signs, pays both accounts' rent, and is recorded as
+	/// `admin`.
 	pub admin: solana_pubkey::Pubkey,
+	/// Empty collection PDA `["exclusive-collection", admin, collection_id]`,
+	/// created here.
 	pub exclusive_collection: solana_pubkey::Pubkey,
 	/// Fresh Core collection keypair; its update authority becomes the PDA.
+	///
+	/// Signs, and is created here by Core.
 	pub core_collection: solana_pubkey::Pubkey,
+	/// Metaplex Core program, invoked to create the collection.
 	pub core_program: solana_pubkey::Pubkey,
+	/// System program, invoked to create both accounts.
 	pub system_program: solana_pubkey::Pubkey,
 }
 

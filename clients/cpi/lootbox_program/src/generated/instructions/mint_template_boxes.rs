@@ -18,27 +18,40 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Mints boxes to any Token-2022 associated token account before the market
+/// lock.
+///
+/// The template authority signs, and the template must be live, unlocked, and
+/// not retired. Lifetime mints may not exceed activated tickets, and box supply
+/// plus pending openings may not exceed undrawn tickets.
 /// CPI call for the `mint_template_boxes` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct MintTemplateBoxes<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs.
 	/// Required privileges: read-only and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Live, unlocked template PDA; records the new lifetime mint total and
+	/// signs as mint authority.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// Template's box mint.
 	/// Required privileges: writable.
 	pub box_mint: &'account AccountView,
 
 	/// CPI account `recipientBoxAccount`.
+	/// Token-2022 associated token account of its owner for the box mint;
+	/// receives the new boxes.
 	/// Required privileges: writable.
 	pub recipient_box_account: &'account AccountView,
 
 	/// CPI account `boxTokenProgram`.
+	/// Token-2022 program, invoked to mint the boxes.
 	/// Required privileges: read-only.
 	pub box_token_program: &'account AccountView,
 

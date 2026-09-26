@@ -8,17 +8,31 @@
 	clippy::too_many_arguments
 )]
 
+/// Admit one immutable compressed NFT's metadata as the pool's next item.
+///
+/// The template authority signs while the treasury is unlocked and not
+/// retired, the bundle is funding with this pool as its current slot, and the
+/// pool is funding, below its quantity, and has no prepared item. Recomputes
+/// both leaf hashes from `metadata`, rejects mutable metadata, and creates the
+/// `PrizePoolItemState` PDA at `deposit_cursor` in the prepared state.
 pub const PREPARE_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 51u8;
 pub const PREPARE_PRIZE_POOL_ITEM_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct PreparePrizePoolItem {
+	/// Template authority; signs and pays the item rent.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	pub template: solana_pubkey::Pubkey,
+	/// Funding bundle PDA whose current slot holds `prize_pool`.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Funding `PrizePoolState` PDA; `has_prepared_item` is set.
 	pub prize_pool: solana_pubkey::Pubkey,
+	/// Empty item PDA `["prize-pool-item", prize_pool, deposit_cursor]`,
+	/// created here in the prepared state.
 	pub prize_pool_item: solana_pubkey::Pubkey,
+	/// System program, invoked to create the item account.
 	pub system_program: solana_pubkey::Pubkey,
 }
 

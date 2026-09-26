@@ -18,23 +18,39 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Returns undrawn native SOL inventory of one bundle asset to the template
+/// authority.
+///
+/// Signed by the template authority. A funding bundle releases its full
+/// quantity; an active bundle releases only its remaining undrawn copies and
+/// requires a retired template with zero box supply and zero pending openings.
+/// Allocated but unclaimed copies stay escrowed, and each asset is reclaimed
+/// at most once.
 /// CPI call for the `reclaim_sol_prize` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct ReclaimSolPrize<'account> {
 	/// CPI account `authority`.
+	/// Template authority; must sign and match the authority recorded on the
+	/// template. Receives the reclaimed lamports.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template treasury, validated by its PDA seeds; supplies the status,
+	/// pending-opening count, and remaining inventory of the bundle.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// Template's box mint, validated against the template; its live supply
+	/// must be zero to reclaim from an active bundle.
 	/// Required privileges: read-only.
 	pub box_mint: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Bundle PDA of this template; records the asset as reclaimed and pays
+	/// the lamports directly.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 

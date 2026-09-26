@@ -39,18 +39,28 @@ export function getAppendExclusiveTreeInstructionDataCodec(): FixedSizeCodec<App
 }
 
 export type AppendExclusiveTreeInput<TAccountAdmin extends InstructionSignerInput = InstructionSignerInput, TAccountExclusiveCollection extends InstructionAccountInput = InstructionAccountInput, TAccountTreeConfig extends InstructionAccountInput = InstructionAccountInput, TAccountMerkleTree extends InstructionAccountInput = InstructionAccountInput, TAccountBubblegumProgram extends InstructionAccountInput = InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput = InstructionAccountInput, TAccountCompressionProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  admin: TAccountAdmin;
+  /** Collection admin; signs and pays the tree config rent. */
+admin: TAccountAdmin;
+/** Collection PDA; signs as tree creator and records the new active tree. */
 exclusiveCollection: TAccountExclusiveCollection;
-/** Bubblegum tree config PDA of `merkle_tree`. */
+/**
+ * Bubblegum tree config PDA of `merkle_tree`.
+ *
+ * Created by Bubblegum here.
+ */
 treeConfig: TAccountTreeConfig;
 /**
  * Pre-allocated, uninitialized MPL Account Compression tree whose size
  * includes a canopy leaving proofs of at most ten nodes.
  */
 merkleTree: TAccountMerkleTree;
+/** Bubblegum program, invoked to create the V2 tree. */
 bubblegumProgram: TAccountBubblegumProgram;
+/** MPL Noop program used by Bubblegum as its log wrapper. */
 logWrapper: TAccountLogWrapper;
+/** MPL Account Compression program that owns `merkle_tree`. */
 compressionProgram: TAccountCompressionProgram;
+/** System program, passed to Bubblegum. */
 systemProgram?: TAccountSystemProgram;
 maxDepth: AppendExclusiveTreeInstructionDataArgs["maxDepth"];
 maxBufferSize: AppendExclusiveTreeInstructionDataArgs["maxBufferSize"];
@@ -82,18 +92,28 @@ return Object.freeze({ accounts: [getAccountMeta("admin", accounts.admin), getAc
 
 export type ParsedAppendExclusiveTreeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Collection admin; signs and pays the tree config rent. */
 admin: TAccountMetas[0];
+/** Collection PDA; signs as tree creator and records the new active tree. */
 exclusiveCollection: TAccountMetas[1];
-/** Bubblegum tree config PDA of `merkle_tree`. */
+/**
+ * Bubblegum tree config PDA of `merkle_tree`.
+ *
+ * Created by Bubblegum here.
+ */
 treeConfig: TAccountMetas[2];
 /**
  * Pre-allocated, uninitialized MPL Account Compression tree whose size
  * includes a canopy leaving proofs of at most ten nodes.
  */
 merkleTree: TAccountMetas[3];
+/** Bubblegum program, invoked to create the V2 tree. */
 bubblegumProgram: TAccountMetas[4];
+/** MPL Noop program used by Bubblegum as its log wrapper. */
 logWrapper: TAccountMetas[5];
+/** MPL Account Compression program that owns `merkle_tree`. */
 compressionProgram: TAccountMetas[6];
+/** System program, passed to Bubblegum. */
 systemProgram: TAccountMetas[7];
 };
 data: AppendExclusiveTreeInstructionData; };

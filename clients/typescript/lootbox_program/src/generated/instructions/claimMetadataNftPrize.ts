@@ -39,21 +39,56 @@ export function getClaimMetadataNftPrizeInstructionDataCodec(): FixedSizeCodec<C
 }
 
 export type ClaimMetadataNftPrizeInput<TAccountPayer extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountRecipient extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountDestination extends InstructionAccountInput = InstructionAccountInput, TAccountMetadata extends InstructionAccountInput = InstructionAccountInput, TAccountTokenMetadataProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountInstructionsSysvar extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountAssociatedTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountOptionalAccounts extends InstructionAccountInput = InstructionAccountInput> =  {
-  payer: TAccountPayer;
+  /** Any signer; passed to Token Metadata as the transfer payer. */
+payer: TAccountPayer;
+/** Template PDA owned by this program. */
 template: TAccountTemplate;
+/**
+ * Allocated template opening PDA of `template` whose selected bundle is
+ * `bundle`. Records the slot's claim bit.
+ */
 opening: TAccountOpening;
+/**
+ * Bundle PDA of `template` that owns the escrow, signs the transfer, and
+ * counts the claim.
+ */
 bundle: TAccountBundle;
+/** The opening's beneficiary and new owner of the NFT. */
 recipient: TAccountRecipient;
+/**
+ * NFT mint stored in the claimed slot; revalidated as a standard Metadata
+ * NFT.
+ */
 mint: TAccountMint;
+/** The bundle's associated token account for `mint`, which the NFT leaves. */
 escrow: TAccountEscrow;
+/**
+ * The beneficiary's existing associated token account for `mint`, which
+ * receives the NFT.
+ */
 destination: TAccountDestination;
+/**
+ * Canonical Token Metadata PDA of `mint`; must still be revoked and
+ * immutable.
+ */
 metadata: TAccountMetadata;
+/** Metaplex Token Metadata program, invoked to transfer the NFT. */
 tokenMetadataProgram: TAccountTokenMetadataProgram;
+/** System program, forwarded to Token Metadata. */
 systemProgram: TAccountSystemProgram;
+/** Instructions sysvar, forwarded to Token Metadata. */
 instructionsSysvar: TAccountInstructionsSysvar;
+/** Classic SPL Token program, forwarded to Token Metadata. */
 tokenProgram: TAccountTokenProgram;
+/** Associated Token Account program, forwarded to Token Metadata. */
 associatedTokenProgram: TAccountAssociatedTokenProgram;
-/** Edition, source record, destination record, rules program, and rules. */
+/**
+ * Exactly five accounts: the Master Edition PDA, then the source token
+ * record, destination token record, rules program, and rules. The last four
+ * must be the Token Metadata program address, which rejects programmable
+ * NFTs. The edition is validated when `mint` keeps a mint or freeze
+ * authority.
+ */
 optionalAccounts: TAccountOptionalAccounts;
 assetIndex: ClaimMetadataNftPrizeInstructionDataArgs["assetIndex"];
 }
@@ -81,21 +116,56 @@ return Object.freeze({ accounts: [getAccountMeta("payer", accounts.payer), getAc
 
 export type ParsedClaimMetadataNftPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Any signer; passed to Token Metadata as the transfer payer. */
 payer: TAccountMetas[0];
+/** Template PDA owned by this program. */
 template: TAccountMetas[1];
+/**
+ * Allocated template opening PDA of `template` whose selected bundle is
+ * `bundle`. Records the slot's claim bit.
+ */
 opening: TAccountMetas[2];
+/**
+ * Bundle PDA of `template` that owns the escrow, signs the transfer, and
+ * counts the claim.
+ */
 bundle: TAccountMetas[3];
+/** The opening's beneficiary and new owner of the NFT. */
 recipient: TAccountMetas[4];
+/**
+ * NFT mint stored in the claimed slot; revalidated as a standard Metadata
+ * NFT.
+ */
 mint: TAccountMetas[5];
+/** The bundle's associated token account for `mint`, which the NFT leaves. */
 escrow: TAccountMetas[6];
+/**
+ * The beneficiary's existing associated token account for `mint`, which
+ * receives the NFT.
+ */
 destination: TAccountMetas[7];
+/**
+ * Canonical Token Metadata PDA of `mint`; must still be revoked and
+ * immutable.
+ */
 metadata: TAccountMetas[8];
+/** Metaplex Token Metadata program, invoked to transfer the NFT. */
 tokenMetadataProgram: TAccountMetas[9];
+/** System program, forwarded to Token Metadata. */
 systemProgram: TAccountMetas[10];
+/** Instructions sysvar, forwarded to Token Metadata. */
 instructionsSysvar: TAccountMetas[11];
+/** Classic SPL Token program, forwarded to Token Metadata. */
 tokenProgram: TAccountMetas[12];
+/** Associated Token Account program, forwarded to Token Metadata. */
 associatedTokenProgram: TAccountMetas[13];
-/** Edition, source record, destination record, rules program, and rules. */
+/**
+ * Exactly five accounts: the Master Edition PDA, then the source token
+ * record, destination token record, rules program, and rules. The last four
+ * must be the Token Metadata program address, which rejects programmable
+ * NFTs. The edition is validated when `mint` keeps a mint or freeze
+ * authority.
+ */
 optionalAccounts: TAccountMetas[14];
 };
 data: ClaimMetadataNftPrizeInstructionData; };

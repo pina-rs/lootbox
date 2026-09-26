@@ -39,17 +39,39 @@ export function getClaimCompressedNftPrizeInstructionDataCodec(): FixedSizeCodec
 }
 
 export type ClaimCompressedNftPrizeInput<TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountRecipient extends InstructionAccountInput = InstructionAccountInput, TAccountTreeConfig extends InstructionAccountInput = InstructionAccountInput, TAccountMerkleTree extends InstructionAccountInput = InstructionAccountInput, TAccountBubblegumProgram extends InstructionAccountInput = InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput = InstructionAccountInput, TAccountCompressionProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountProofAccounts extends InstructionAccountInput = InstructionAccountInput> =  {
-  template: TAccountTemplate;
+  /** Template PDA owned by this program. */
+template: TAccountTemplate;
+/**
+ * Allocated template opening PDA of `template` whose selected bundle is
+ * `bundle`. Records the slot's claim bit.
+ */
 opening: TAccountOpening;
+/**
+ * Bundle PDA of `template` that owns the leaf, signs the transfer, and
+ * counts the claim.
+ */
 bundle: TAccountBundle;
+/** The opening's beneficiary and new owner of the leaf. */
 recipient: TAccountRecipient;
+/** Bubblegum tree config of `merkle_tree`, validated by Bubblegum. */
 treeConfig: TAccountTreeConfig;
+/**
+ * Concurrent Merkle tree holding the leaf; with `nonce` it must derive the
+ * slot's stored asset ID.
+ */
 merkleTree: TAccountMerkleTree;
+/** Metaplex Bubblegum program, invoked to transfer the leaf. */
 bubblegumProgram: TAccountBubblegumProgram;
+/** SPL Noop program, forwarded to Bubblegum as its log wrapper. */
 logWrapper: TAccountLogWrapper;
+/** SPL Account Compression program, forwarded to Bubblegum. */
 compressionProgram: TAccountCompressionProgram;
+/** System program, forwarded to Bubblegum. */
 systemProgram: TAccountSystemProgram;
-/** Merkle proof nodes in leaf-to-root order. */
+/**
+ * Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+ * canopy.
+ */
 proofAccounts: TAccountProofAccounts;
 assetIndex: ClaimCompressedNftPrizeInstructionDataArgs["assetIndex"];
 root: ClaimCompressedNftPrizeInstructionDataArgs["root"];
@@ -82,17 +104,39 @@ return Object.freeze({ accounts: [getAccountMeta("template", accounts.template),
 
 export type ParsedClaimCompressedNftPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template PDA owned by this program. */
 template: TAccountMetas[0];
+/**
+ * Allocated template opening PDA of `template` whose selected bundle is
+ * `bundle`. Records the slot's claim bit.
+ */
 opening: TAccountMetas[1];
+/**
+ * Bundle PDA of `template` that owns the leaf, signs the transfer, and
+ * counts the claim.
+ */
 bundle: TAccountMetas[2];
+/** The opening's beneficiary and new owner of the leaf. */
 recipient: TAccountMetas[3];
+/** Bubblegum tree config of `merkle_tree`, validated by Bubblegum. */
 treeConfig: TAccountMetas[4];
+/**
+ * Concurrent Merkle tree holding the leaf; with `nonce` it must derive the
+ * slot's stored asset ID.
+ */
 merkleTree: TAccountMetas[5];
+/** Metaplex Bubblegum program, invoked to transfer the leaf. */
 bubblegumProgram: TAccountMetas[6];
+/** SPL Noop program, forwarded to Bubblegum as its log wrapper. */
 logWrapper: TAccountMetas[7];
+/** SPL Account Compression program, forwarded to Bubblegum. */
 compressionProgram: TAccountMetas[8];
+/** System program, forwarded to Bubblegum. */
 systemProgram: TAccountMetas[9];
-/** Merkle proof nodes in leaf-to-root order. */
+/**
+ * Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+ * canopy.
+ */
 proofAccounts: TAccountMetas[10];
 };
 data: ClaimCompressedNftPrizeInstructionData; };

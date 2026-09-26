@@ -39,17 +39,32 @@ export function getLockTreasuryInstructionDataCodec(): FixedSizeCodec<LockTreasu
 }
 
 export type LockTreasuryInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountBoxTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs and pays any service vault top-up. */
+authority: TAccountAuthority;
+/**
+ * Live, unlocked template PDA; signs the mint authority revocation and
+ * records the lock.
+ */
 template: TAccountTemplate;
+/**
+ * Template's box mint, whose supply must equal the activated tickets; its
+ * mint authority is revoked here.
+ */
 boxMint: TAccountBoxMint;
-/** The first unused bundle PDA proves that no funded tail was omitted. */
+/**
+ * The first unused bundle PDA proves that no funded tail was omitted.
+ * It must be the canonical PDA at `bundle_count` and hold no data.
+ */
 bundle: TAccountBundle;
 /**
  * Creator-funded only when receipts or crank bounties are enabled.
  * Unsolicited lamports are accepted and reduce the required top-up.
+ * Canonical PDA from `["service-vault", template]`.
  */
 serviceVault: TAccountServiceVault;
+/** System program, invoked for the service vault top-up. */
 systemProgram?: TAccountSystemProgram;
+/** Token-2022 program, invoked to revoke the box mint authority. */
 boxTokenProgram?: TAccountBoxTokenProgram;
 serviceVaultBump: LockTreasuryInstructionDataArgs["serviceVaultBump"];
 }
@@ -83,17 +98,32 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedLockTreasuryInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs and pays any service vault top-up. */
 authority: TAccountMetas[0];
+/**
+ * Live, unlocked template PDA; signs the mint authority revocation and
+ * records the lock.
+ */
 template: TAccountMetas[1];
+/**
+ * Template's box mint, whose supply must equal the activated tickets; its
+ * mint authority is revoked here.
+ */
 boxMint: TAccountMetas[2];
-/** The first unused bundle PDA proves that no funded tail was omitted. */
+/**
+ * The first unused bundle PDA proves that no funded tail was omitted.
+ * It must be the canonical PDA at `bundle_count` and hold no data.
+ */
 bundle: TAccountMetas[3];
 /**
  * Creator-funded only when receipts or crank bounties are enabled.
  * Unsolicited lamports are accepted and reduce the required top-up.
+ * Canonical PDA from `["service-vault", template]`.
  */
 serviceVault: TAccountMetas[4];
+/** System program, invoked for the service vault top-up. */
 systemProgram: TAccountMetas[5];
+/** Token-2022 program, invoked to revoke the box mint authority. */
 boxTokenProgram: TAccountMetas[6];
 };
 data: LockTreasuryInstructionData; };

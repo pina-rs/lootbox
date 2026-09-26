@@ -39,7 +39,10 @@ const ROUNDS: u8 = 8;
 /// Trait index chosen in each layer, bottom to top.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ExclusiveTraits {
+	/// Number of the collection's layers that hold a drawn trait.
 	pub layer_count: u8,
+	/// Drawn trait index per layer, bottom to top; `exclusive_traits` leaves
+	/// entries at or past `layer_count` zero.
 	pub traits: [u8; MAX_EXCLUSIVE_LAYERS],
 }
 

@@ -8,18 +8,35 @@
 	clippy::too_many_arguments
 )]
 
+/// Return unused Exclusive NFT mint fees to the template authority.
+///
+/// The template authority signs. On first use for the slot, applies the
+/// standard recovery rules: a staged bundle releases every copy, an active one
+/// releases undrawn copies only after retirement with zero box supply and no
+/// pending openings. A staged bundle empties the vault and closes the
+/// attachment; otherwise only the surplus above unclaimed copies' fees leaves.
 pub const RECLAIM_EXCLUSIVE_FEES_DISCRIMINATOR: u8 = 59u8;
 pub const RECLAIM_EXCLUSIVE_FEES_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ReclaimExclusiveFees {
+	/// Template authority; signs and receives released fees and, for a staged
+	/// bundle, the attachment rent.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA that owns `bundle`.
 	pub template: solana_pubkey::Pubkey,
+	/// Template's Token-2022 box mint; its supply must be zero to recover an
+	/// active bundle.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// Bundle PDA; the slot's undrawn copies are released on first recovery.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Attachment PDA committed in the bundle slot; closed for a staged bundle.
 	pub exclusive_attachment: solana_pubkey::Pubkey,
+	/// Canonical zero-data `["exclusive-fee-vault", attachment]` PDA; signs
+	/// the withdrawal.
 	pub fee_vault: solana_pubkey::Pubkey,
+	/// System program, invoked to withdraw from the fee vault.
 	pub system_program: solana_pubkey::Pubkey,
 }
 

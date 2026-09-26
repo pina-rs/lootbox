@@ -18,37 +18,54 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Allocate a verified opening whose drawn bundle contains a prize pool.
+///
+/// Permissionless. The opening must be verified and next in allocation order,
+/// and the bundle must be active and selected by the opening's entropy. Also
+/// reserves one entropy-selected unassigned pool item for the opening, then
+/// marks it allocated and optionally creates its result receipt.
 /// CPI call for the `allocate_prize_pool_open` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct AllocatePrizePoolOpen<'account> {
 	/// CPI account `template`.
+	/// Template PDA; its remaining inventory and allocation counters update.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
 
 	/// CPI account `opening`.
+	/// Verified `TemplateOpeningState` PDA next in allocation order; becomes
+	/// allocated and records the reserved pool item.
 	/// Required privileges: writable.
 	pub opening: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Active bundle PDA selected by the opening's entropy.
 	/// Required privileges: read-only.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `prizePool`.
+	/// Sealed `PrizePoolState` PDA in `bundle`; reserves one item.
 	/// Required privileges: writable.
 	pub prize_pool: &'account AccountView,
 
 	/// CPI account `serviceVault`.
 	/// Creator-funded when permanent result receipts are enabled.
+	///
+	/// Template service vault PDA `["service-vault", template]`, validated when
+	/// receipts or settlement bounties are enabled; pays the receipt rent.
 	/// Required privileges: writable.
 	pub service_vault: &'account AccountView,
 
 	/// CPI account `resultReceipt`.
 	/// Created only when enabled in the locked treasury configuration.
+	///
+	/// Must be the empty PDA `["result-receipt", opening, sequence]`.
 	/// Required privileges: writable.
 	pub result_receipt: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked to fund and create the result receipt.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 

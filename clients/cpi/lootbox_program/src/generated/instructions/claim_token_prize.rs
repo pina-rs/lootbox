@@ -18,39 +18,61 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Transfers one fungible or NFT token asset of an allocated bundle from its
+/// escrow to the beneficiary's associated token account.
+///
+/// Permissionless and signer-free: anyone may crank the claim, but tokens move
+/// only to the bound beneficiary. Each asset is claimable once per opening, and
+/// the opening becomes delivered after its last asset is claimed.
 /// CPI call for the `claim_token_prize` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct ClaimTokenPrize<'account> {
 	/// CPI account `template`.
+	/// Template treasury, validated by its PDA seeds; binds the bundle and the
+	/// opening.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `opening`.
+	/// Allocated opening of this template, validated by its PDA seeds; records
+	/// the claimed asset.
 	/// Required privileges: writable.
 	pub opening: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Bundle PDA the opening selected; advances the asset's release count and
+	/// signs the transfer as escrow owner.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `recipient`.
+	/// Opening beneficiary; rejected unless it matches the stored beneficiary.
+	/// Tokens go to `destination`, not this account.
 	/// Required privileges: read-only.
 	pub recipient: &'account AccountView,
 
 	/// CPI account `mint`.
+	/// Prize mint; must match the mint recorded in the bundle's asset slot.
 	/// Required privileges: read-only.
 	pub mint: &'account AccountView,
 
 	/// CPI account `escrow`.
+	/// Bundle's associated token account for `mint` under `token_program`;
+	/// source of the transfer.
 	/// Required privileges: writable.
 	pub escrow: &'account AccountView,
 
 	/// CPI account `destination`.
+	/// Beneficiary's existing associated token account for `mint` under
+	/// `token_program`; receives the tokens.
 	/// Required privileges: writable.
 	pub destination: &'account AccountView,
 
 	/// CPI account `tokenProgram`.
+	/// SPL Token or Token-2022 program matching the asset kind: SPL Token for
+	/// `PRIZE_TOKEN` and `PRIZE_NFT`, Token-2022 for `PRIZE_TOKEN_2022`, and
+	/// either for `PRIZE_QUOTE_TOKEN`.
 	/// Required privileges: read-only.
 	pub token_program: &'account AccountView,
 

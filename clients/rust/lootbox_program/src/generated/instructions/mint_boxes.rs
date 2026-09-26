@@ -8,17 +8,30 @@
 	clippy::too_many_arguments
 )]
 
+/// Mints boxes of a sealed lootbox into a recipient's canonical associated
+/// token account, signed by the lootbox authority. Fails unless lifetime mints
+/// stay within `max_supply` and the vault still covers the rent reserve plus
+/// `max_reward_lamports` for every live and pending box.
 pub const MINT_BOXES_DISCRIMINATOR: u8 = 4u8;
 pub const MINT_BOXES_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct MintBoxes {
+	/// Lootbox authority. Signer; must match the stored authority.
 	pub authority: solana_pubkey::Pubkey,
+	/// Sealed lootbox whose `total_minted` grows; its PDA signs the mint as
+	/// mint authority.
 	pub lootbox: solana_pubkey::Pubkey,
+	/// Vault PDA of `lootbox`, read to prove the new supply stays fully
+	/// collateralized.
 	pub vault: solana_pubkey::Pubkey,
+	/// The lootbox's box mint. Writable; its supply grows.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// Canonical associated token account of the recipient for the box mint,
+	/// which receives the new boxes.
 	pub recipient_box_account: solana_pubkey::Pubkey,
+	/// SPL Token program, invoked to mint the boxes.
 	pub token_program: solana_pubkey::Pubkey,
 }
 

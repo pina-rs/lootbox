@@ -39,11 +39,25 @@ export function getCreateExclusiveCollectionInstructionDataCodec(): FixedSizeCod
 }
 
 export type CreateExclusiveCollectionInput<TAccountAdmin extends InstructionSignerInput = InstructionSignerInput, TAccountExclusiveCollection extends InstructionAccountInput = InstructionAccountInput, TAccountCoreCollection extends InstructionSignerInput = InstructionSignerInput, TAccountCoreProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  admin: TAccountAdmin;
+  /**
+ * Collection admin; signs, pays both accounts' rent, and is recorded as
+ * `admin`.
+ */
+admin: TAccountAdmin;
+/**
+ * Empty collection PDA `["exclusive-collection", admin, collection_id]`,
+ * created here.
+ */
 exclusiveCollection: TAccountExclusiveCollection;
-/** Fresh Core collection keypair; its update authority becomes the PDA. */
+/**
+ * Fresh Core collection keypair; its update authority becomes the PDA.
+ *
+ * Signs, and is created here by Core.
+ */
 coreCollection: TAccountCoreCollection;
+/** Metaplex Core program, invoked to create the collection. */
 coreProgram: TAccountCoreProgram;
+/** System program, invoked to create both accounts. */
 systemProgram?: TAccountSystemProgram;
 collectionId: CreateExclusiveCollectionInstructionDataArgs["collectionId"];
 attachOpensAt: CreateExclusiveCollectionInstructionDataArgs["attachOpensAt"];
@@ -81,11 +95,25 @@ return Object.freeze({ accounts: [getAccountMeta("admin", accounts.admin), getAc
 
 export type ParsedCreateExclusiveCollectionInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Collection admin; signs, pays both accounts' rent, and is recorded as
+ * `admin`.
+ */
 admin: TAccountMetas[0];
+/**
+ * Empty collection PDA `["exclusive-collection", admin, collection_id]`,
+ * created here.
+ */
 exclusiveCollection: TAccountMetas[1];
-/** Fresh Core collection keypair; its update authority becomes the PDA. */
+/**
+ * Fresh Core collection keypair; its update authority becomes the PDA.
+ *
+ * Signs, and is created here by Core.
+ */
 coreCollection: TAccountMetas[2];
+/** Metaplex Core program, invoked to create the collection. */
 coreProgram: TAccountMetas[3];
+/** System program, invoked to create both accounts. */
 systemProgram: TAccountMetas[4];
 };
 data: CreateExclusiveCollectionInstructionData; };

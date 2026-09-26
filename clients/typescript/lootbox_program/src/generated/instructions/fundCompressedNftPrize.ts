@@ -39,16 +39,37 @@ export function getFundCompressedNftPrizeInstructionDataCodec(): FixedSizeCodec<
 }
 
 export type FundCompressedNftPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountTreeConfig extends InstructionAccountInput = InstructionAccountInput, TAccountMerkleTree extends InstructionAccountInput = InstructionAccountInput, TAccountBubblegumProgram extends InstructionAccountInput = InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput = InstructionAccountInput, TAccountCompressionProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountProofAccounts extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Template authority. Signs the Bubblegum transfer as both leaf owner and
+ * leaf delegate.
+ */
+authority: TAccountAuthority;
+/** Template PDA owned by this program; must be unlocked and not retired. */
 template: TAccountTemplate;
+/**
+ * Funding bundle PDA of `template` with a quantity of one. Records the
+ * asset ID and becomes the leaf owner.
+ */
 bundle: TAccountBundle;
+/** Bubblegum tree config of `merkle_tree`, validated by Bubblegum. */
 treeConfig: TAccountTreeConfig;
+/**
+ * Concurrent Merkle tree holding the leaf; with `nonce` it derives the
+ * recorded asset ID.
+ */
 merkleTree: TAccountMerkleTree;
+/** Metaplex Bubblegum program, invoked to transfer the leaf. */
 bubblegumProgram: TAccountBubblegumProgram;
+/** SPL Noop program, forwarded to Bubblegum as its log wrapper. */
 logWrapper: TAccountLogWrapper;
+/** SPL Account Compression program, forwarded to Bubblegum. */
 compressionProgram: TAccountCompressionProgram;
+/** System program, forwarded to Bubblegum. */
 systemProgram: TAccountSystemProgram;
-/** Merkle proof nodes in leaf-to-root order. */
+/**
+ * Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+ * canopy.
+ */
 proofAccounts: TAccountProofAccounts;
 root: FundCompressedNftPrizeInstructionDataArgs["root"];
 dataHash: FundCompressedNftPrizeInstructionDataArgs["dataHash"];
@@ -80,16 +101,37 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedFundCompressedNftPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template authority. Signs the Bubblegum transfer as both leaf owner and
+ * leaf delegate.
+ */
 authority: TAccountMetas[0];
+/** Template PDA owned by this program; must be unlocked and not retired. */
 template: TAccountMetas[1];
+/**
+ * Funding bundle PDA of `template` with a quantity of one. Records the
+ * asset ID and becomes the leaf owner.
+ */
 bundle: TAccountMetas[2];
+/** Bubblegum tree config of `merkle_tree`, validated by Bubblegum. */
 treeConfig: TAccountMetas[3];
+/**
+ * Concurrent Merkle tree holding the leaf; with `nonce` it derives the
+ * recorded asset ID.
+ */
 merkleTree: TAccountMetas[4];
+/** Metaplex Bubblegum program, invoked to transfer the leaf. */
 bubblegumProgram: TAccountMetas[5];
+/** SPL Noop program, forwarded to Bubblegum as its log wrapper. */
 logWrapper: TAccountMetas[6];
+/** SPL Account Compression program, forwarded to Bubblegum. */
 compressionProgram: TAccountMetas[7];
+/** System program, forwarded to Bubblegum. */
 systemProgram: TAccountMetas[8];
-/** Merkle proof nodes in leaf-to-root order. */
+/**
+ * Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+ * canopy.
+ */
 proofAccounts: TAccountMetas[9];
 };
 data: FundCompressedNftPrizeInstructionData; };

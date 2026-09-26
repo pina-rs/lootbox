@@ -19,27 +19,39 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Creates a draft treasury template PDA bound to an empty Token-2022 box mint.
+///
+/// The creator signs and pays rent. The box mint must have zero supply and
+/// decimals, no freeze authority, this template PDA as mint authority, and
+/// immutable on-mint metadata whose name and URI match the arguments.
 /// CPI call for the `create_template` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct CreateTemplate<'account, 'argument> {
 	/// CPI account `authority`.
+	/// Creator; signs, pays the template rent, and becomes its authority.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA created here from `["template", authority, id]`; must be
+	/// empty.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// Empty Token-2022 box mint whose mint authority is the template PDA and
+	/// whose metadata pointer and immutable metadata point at itself.
 	/// Required privileges: read-only.
 	pub box_mint: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked to create the template account.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
 	/// CPI account `boxTokenProgram`.
+	/// Token-2022 program that must own the box mint.
 	/// Required privileges: read-only.
 	pub box_token_program: &'account AccountView,
 

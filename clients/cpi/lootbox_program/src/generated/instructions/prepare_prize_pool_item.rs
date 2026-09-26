@@ -18,31 +18,45 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Admit one immutable compressed NFT's metadata as the pool's next item.
+///
+/// The template authority signs while the treasury is unlocked and not
+/// retired, the bundle is funding with this pool as its current slot, and the
+/// pool is funding, below its quantity, and has no prepared item. Recomputes
+/// both leaf hashes from `metadata`, rejects mutable metadata, and creates the
+/// `PrizePoolItemState` PDA at `deposit_cursor` in the prepared state.
 /// CPI call for the `prepare_prize_pool_item` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct PreparePrizePoolItem<'account, 'argument> {
 	/// CPI account `authority`.
+	/// Template authority; signs and pays the item rent.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA; its treasury must be unlocked and not retired.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Funding bundle PDA whose current slot holds `prize_pool`.
 	/// Required privileges: read-only.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `prizePool`.
+	/// Funding `PrizePoolState` PDA; `has_prepared_item` is set.
 	/// Required privileges: writable.
 	pub prize_pool: &'account AccountView,
 
 	/// CPI account `prizePoolItem`.
+	/// Empty item PDA `["prize-pool-item", prize_pool, deposit_cursor]`,
+	/// created here in the prepared state.
 	/// Required privileges: writable.
 	pub prize_pool_item: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked to create the item account.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 

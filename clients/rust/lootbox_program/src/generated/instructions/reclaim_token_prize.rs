@@ -8,19 +8,43 @@
 	clippy::too_many_arguments
 )]
 
+/// Returns undrawn token inventory of one bundle asset from its escrow to the
+/// template authority's associated token account.
+///
+/// Signed by the template authority. A funding bundle releases its full
+/// quantity; an active bundle releases only its remaining undrawn copies and
+/// requires a retired template with zero box supply and zero pending openings.
+/// Allocated but unclaimed copies stay escrowed, and each asset is reclaimed
+/// at most once.
 pub const RECLAIM_TOKEN_PRIZE_DISCRIMINATOR: u8 = 23u8;
 pub const RECLAIM_TOKEN_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ReclaimTokenPrize {
+	/// Template authority; must sign and match the authority recorded on the
+	/// template. Owns `destination`.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template treasury, validated by its PDA seeds; supplies the status,
+	/// pending-opening count, and remaining inventory of the bundle.
 	pub template: solana_pubkey::Pubkey,
+	/// Template's box mint, validated against the template; its live supply
+	/// must be zero to reclaim from an active bundle.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// Bundle PDA of this template; records the asset as reclaimed and signs
+	/// the transfer as escrow owner.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Prize mint; must match the mint recorded in the bundle's asset slot.
 	pub mint: solana_pubkey::Pubkey,
+	/// Bundle's associated token account for `mint` under `token_program`;
+	/// source of the transfer.
 	pub escrow: solana_pubkey::Pubkey,
+	/// Authority's existing associated token account for `mint` under
+	/// `token_program`; receives the tokens.
 	pub destination: solana_pubkey::Pubkey,
+	/// SPL Token or Token-2022 program matching the asset kind: SPL Token for
+	/// `PRIZE_TOKEN` and `PRIZE_NFT`, Token-2022 for `PRIZE_TOKEN_2022`, and
+	/// either for `PRIZE_QUOTE_TOKEN`.
 	pub token_program: solana_pubkey::Pubkey,
 }
 

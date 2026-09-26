@@ -39,12 +39,31 @@ export function getFundQuoteTokenPrizeInstructionDataCodec(): FixedSizeCodec<Fun
 }
 
 export type FundQuoteTokenPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountSource extends InstructionAccountInput = InstructionAccountInput, TAccountEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs the token transfer from `source`. */
+authority: TAccountAuthority;
+/**
+ * Template PDA that must be unlocked and not retired; read only by the
+ * handler.
+ */
 template: TAccountTemplate;
+/** Funding bundle PDA of this template that records the quote. */
 bundle: TAccountBundle;
+/**
+ * Quote mint owned by `token_program` with only metadata extensions, no
+ * freeze authority, and not wrapped SOL.
+ */
 mint: TAccountMint;
+/** Token account debited for the deposit. */
 source: TAccountSource;
+/**
+ * Bundle's associated token account for `mint`; must have no delegate or
+ * close authority and must not be frozen.
+ */
 escrow: TAccountEscrow;
+/**
+ * SPL Token or Token-2022 program that owns `mint`, invoked for the
+ * transfer.
+ */
 tokenProgram?: TAccountTokenProgram;
 amountPerWin: FundQuoteTokenPrizeInstructionDataArgs["amountPerWin"];
 }
@@ -75,12 +94,31 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedFundQuoteTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs the token transfer from `source`. */
 authority: TAccountMetas[0];
+/**
+ * Template PDA that must be unlocked and not retired; read only by the
+ * handler.
+ */
 template: TAccountMetas[1];
+/** Funding bundle PDA of this template that records the quote. */
 bundle: TAccountMetas[2];
+/**
+ * Quote mint owned by `token_program` with only metadata extensions, no
+ * freeze authority, and not wrapped SOL.
+ */
 mint: TAccountMetas[3];
+/** Token account debited for the deposit. */
 source: TAccountMetas[4];
+/**
+ * Bundle's associated token account for `mint`; must have no delegate or
+ * close authority and must not be frozen.
+ */
 escrow: TAccountMetas[5];
+/**
+ * SPL Token or Token-2022 program that owns `mint`, invoked for the
+ * transfer.
+ */
 tokenProgram: TAccountMetas[6];
 };
 data: FundQuoteTokenPrizeInstructionData; };

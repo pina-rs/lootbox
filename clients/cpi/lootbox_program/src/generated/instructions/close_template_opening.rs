@@ -18,59 +18,84 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Closes a delivered or forfeited template opening and its Switchboard
+/// accounts.
+///
+/// Permissionless: no signer is required. The opening PDA signs Switchboard's
+/// `randomness_close`, which returns the randomness rent to the opening, and
+/// the opening is then closed to its recorded `rent_refund` account.
 /// CPI call for the `close_template_opening` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct CloseTemplateOpening<'account> {
 	/// CPI account `rentRefund`.
+	/// Opening's recorded `rent_refund`, the original request payer; receives
+	/// the opening and randomness rent.
 	/// Required privileges: writable.
 	pub rent_refund: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA that owns the opening and pins the oracle program and
+	/// queue.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `opening`.
+	/// Opening PDA from `["template-opening", template, randomness]` with
+	/// status delivered or forfeited; signs the oracle close and is closed here.
 	/// Required privileges: writable.
 	pub opening: &'account AccountView,
 
 	/// CPI account `randomness`.
+	/// Opening's Switchboard randomness account, whose authority must be the
+	/// opening and whose queue must match the template; closed by the oracle.
 	/// Required privileges: writable.
 	pub randomness: &'account AccountView,
 
 	/// CPI account `rewardEscrow`.
+	/// Wrapped-SOL associated token account of `randomness`; closed by the
+	/// oracle.
 	/// Required privileges: writable.
 	pub reward_escrow: &'account AccountView,
 
 	/// CPI account `oracleProgram`.
+	/// Switchboard On-Demand program; must equal the template's
+	/// `oracle_program`.
 	/// Required privileges: read-only.
 	pub oracle_program: &'account AccountView,
 
 	/// CPI account `oracleProgramState`.
+	/// Switchboard program state, passed through to the oracle.
 	/// Required privileges: read-only.
 	pub oracle_program_state: &'account AccountView,
 
 	/// CPI account `oracleLut`.
+	/// Switchboard address lookup table, passed through to the oracle.
 	/// Required privileges: writable.
 	pub oracle_lut: &'account AccountView,
 
 	/// CPI account `oracleLutSigner`.
+	/// Switchboard lookup-table signer, passed through to the oracle.
 	/// Required privileges: read-only.
 	pub oracle_lut_signer: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program required by the oracle close.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
 	/// CPI account `tokenProgram`.
+	/// SPL Token program that owns the reward escrow.
 	/// Required privileges: read-only.
 	pub token_program: &'account AccountView,
 
 	/// CPI account `wrappedSolMint`.
+	/// Wrapped-SOL mint backing the reward escrow.
 	/// Required privileges: read-only.
 	pub wrapped_sol_mint: &'account AccountView,
 
 	/// CPI account `addressLookupTableProgram`.
+	/// Address Lookup Table program required by the oracle close.
 	/// Required privileges: read-only.
 	pub address_lookup_table_program: &'account AccountView,
 

@@ -51,7 +51,9 @@ const ONE_IN_BASIS_POINTS: u128 = 10_000;
 /// One Token-2022 transfer-fee schedule.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct TransferFee {
+	/// Fee rate in basis points of the transferred amount; 10,000 is 100%.
 	pub(super) basis_points: u16,
+	/// Fee cap per transfer, in the mint's base units.
 	pub(super) maximum_fee: u64,
 }
 
@@ -100,8 +102,11 @@ impl TransferFee {
 /// A mint's `TransferFeeConfig`, reduced to the schedules that set fees.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct TransferFeeConfig {
+	/// Schedule applied before `newer_epoch`.
 	older: TransferFee,
+	/// Schedule applied from `newer_epoch` onward.
 	newer: TransferFee,
+	/// First epoch in which `newer` applies.
 	newer_epoch: u64,
 }
 

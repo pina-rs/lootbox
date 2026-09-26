@@ -30,9 +30,17 @@ const ROUNDS: u8 = 8;
 /// Invalid layer table or derivation input.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ExclusiveNftError {
+	/// The collection has zero or more than `MAX_EXCLUSIVE_LAYERS` layers, or a
+	/// layer has zero or more than `MAX_EXCLUSIVE_TRAITS` traits or a total
+	/// weight of zero or above `u32::MAX`.
 	InvalidLayers,
+	/// The minted name `{name_prefix} #{serial}` exceeds
+	/// `MAX_EXCLUSIVE_NAME_BYTES`.
 	InvalidName,
+	/// Every one of a layer draw's eight rejection-sampling rounds fell below
+	/// the unbiased threshold, so no trait could be selected.
 	EntropyRejectionExhausted,
+	/// The mint-fee escrow for the requested quantity overflows `u64`.
 	ArithmeticOverflow,
 }
 

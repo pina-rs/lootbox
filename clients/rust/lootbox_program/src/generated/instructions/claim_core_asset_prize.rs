@@ -8,23 +8,44 @@
 	clippy::too_many_arguments
 )]
 
+/// Delivers an allocated Metaplex Core asset from bundle escrow to the
+/// opening's beneficiary.
+///
+/// Any signer may submit it. The opening must be allocated to `bundle`, and the
+/// slot must not be claimed yet. The asset is revalidated as plugin-free before
+/// the bundle PDA signs the transfer. Sets the slot's claim bit on the opening
+/// and marks the opening delivered once every slot is claimed.
 pub const CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR: u8 = 31u8;
 pub const CLAIM_CORE_ASSET_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ClaimCoreAssetPrize {
+	/// Any signer; pays for the Core transfer.
 	pub payer: solana_pubkey::Pubkey,
+	/// Template PDA owned by this program.
 	pub template: solana_pubkey::Pubkey,
+	/// Allocated template opening PDA of `template` whose selected bundle is
+	/// `bundle`. Records the slot's claim bit.
 	pub opening: solana_pubkey::Pubkey,
+	/// Bundle PDA of `template` that owns the asset, signs the transfer, and
+	/// counts the claim.
 	pub bundle: solana_pubkey::Pubkey,
+	/// The opening's beneficiary and new owner of the asset.
 	pub recipient: solana_pubkey::Pubkey,
+	/// Core asset stored in the claimed slot; revalidated as plugin-free with
+	/// `bundle` as update authority.
 	pub asset: solana_pubkey::Pubkey,
+	/// Must be the Core program address, Core's placeholder for no collection.
 	pub collection: solana_pubkey::Pubkey,
+	/// Metaplex Core program, invoked to transfer the asset.
 	pub core_program: solana_pubkey::Pubkey,
+	/// System program, forwarded to Core.
 	pub system_program: solana_pubkey::Pubkey,
+	/// SPL Noop program, forwarded to Core as its log wrapper.
 	pub log_wrapper: solana_pubkey::Pubkey,
-	/// Core plugin and external-adapter accounts, preserving client flags.
+	/// Core plugin and external-adapter accounts, forwarded with their client
+	/// flags. Must be empty: any account here fails with `InvalidPrize`.
 	pub plugin_accounts: solana_pubkey::Pubkey,
 }
 

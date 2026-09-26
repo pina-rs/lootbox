@@ -8,17 +8,36 @@
 	clippy::too_many_arguments
 )]
 
+/// Releases undrawn copies of one mint-badge asset and revokes the bundle's
+/// mint authority once no copies remain claimable.
+///
+/// Signed by the template authority, under the same funding-or-retired rules
+/// as the other reclaims. Mints nothing; when allocated copies are still
+/// unclaimed, only the accounting changes and the final claim later revokes
+/// the authority.
 pub const RECLAIM_MINT_PRIZE_DISCRIMINATOR: u8 = 43u8;
 pub const RECLAIM_MINT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ReclaimMintPrize {
+	/// Template authority; must sign and match the authority recorded on the
+	/// template.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template treasury, validated by its PDA seeds; supplies the status,
+	/// pending-opening count, and remaining inventory of the bundle.
 	pub template: solana_pubkey::Pubkey,
+	/// Template's box mint, validated against the template; its live supply
+	/// must be zero to reclaim from an active bundle.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// Bundle PDA of this template; records the asset as reclaimed and signs
+	/// the authority revocation.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Badge mint recorded in the bundle's asset slot; must have zero decimals,
+	/// the bundle as mint authority, no freeze authority, and only metadata
+	/// extensions. Its mint authority is revoked once every copy is released.
 	pub mint: solana_pubkey::Pubkey,
+	/// SPL Token or Token-2022 program that owns `mint`.
 	pub token_program: solana_pubkey::Pubkey,
 }
 

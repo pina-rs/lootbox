@@ -39,9 +39,19 @@ export function getAddBundleInstructionDataCodec(): FixedSizeCodec<AddBundleInst
 }
 
 export type AddBundleInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs and pays the bundle rent. */
+authority: TAccountAuthority;
+/**
+ * Template PDA that must be unlocked and not retired; read only by the
+ * handler.
+ */
 template: TAccountTemplate;
+/**
+ * Bundle PDA created here from `["bundle", template, bundle_count]`; must
+ * be empty.
+ */
 bundle: TAccountBundle;
+/** System program, invoked to create the bundle account. */
 systemProgram?: TAccountSystemProgram;
 quantity: AddBundleInstructionDataArgs["quantity"];
 assetCount: AddBundleInstructionDataArgs["assetCount"];
@@ -74,9 +84,19 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedAddBundleInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs and pays the bundle rent. */
 authority: TAccountMetas[0];
+/**
+ * Template PDA that must be unlocked and not retired; read only by the
+ * handler.
+ */
 template: TAccountMetas[1];
+/**
+ * Bundle PDA created here from `["bundle", template, bundle_count]`; must
+ * be empty.
+ */
 bundle: TAccountMetas[2];
+/** System program, invoked to create the bundle account. */
 systemProgram: TAccountMetas[3];
 };
 data: AddBundleInstructionData; };

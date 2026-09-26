@@ -1,3 +1,6 @@
+//! Host-side checks of the program's public ABI: discriminators, program ID
+//! routing, and instruction encoding.
+
 use lootbox_program::*;
 use pina::Address;
 use pina::ProgramError;

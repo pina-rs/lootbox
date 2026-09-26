@@ -39,9 +39,25 @@ export function getReclaimSolPrizeInstructionDataCodec(): FixedSizeCodec<Reclaim
 }
 
 export type ReclaimSolPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Template authority; must sign and match the authority recorded on the
+ * template. Receives the reclaimed lamports.
+ */
+authority: TAccountAuthority;
+/**
+ * Template treasury, validated by its PDA seeds; supplies the status,
+ * pending-opening count, and remaining inventory of the bundle.
+ */
 template: TAccountTemplate;
+/**
+ * Template's box mint, validated against the template; its live supply
+ * must be zero to reclaim from an active bundle.
+ */
 boxMint: TAccountBoxMint;
+/**
+ * Bundle PDA of this template; records the asset as reclaimed and pays
+ * the lamports directly.
+ */
 bundle: TAccountBundle;
 assetIndex: ReclaimSolPrizeInstructionDataArgs["assetIndex"];
 }
@@ -69,9 +85,25 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedReclaimSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template authority; must sign and match the authority recorded on the
+ * template. Receives the reclaimed lamports.
+ */
 authority: TAccountMetas[0];
+/**
+ * Template treasury, validated by its PDA seeds; supplies the status,
+ * pending-opening count, and remaining inventory of the bundle.
+ */
 template: TAccountMetas[1];
+/**
+ * Template's box mint, validated against the template; its live supply
+ * must be zero to reclaim from an active bundle.
+ */
 boxMint: TAccountMetas[2];
+/**
+ * Bundle PDA of this template; records the asset as reclaimed and pays
+ * the lamports directly.
+ */
 bundle: TAccountMetas[3];
 };
 data: ReclaimSolPrizeInstructionData; };

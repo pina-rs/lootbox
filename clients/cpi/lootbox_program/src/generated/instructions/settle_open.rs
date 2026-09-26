@@ -18,75 +18,102 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Reveals a pending opening's randomness through a Switchboard CPI signed by
+/// the opening PDA, selects an outcome, and pays its reward from the vault to
+/// the opening's recipient. Permissionless: any signer may relay the proof and
+/// pay the reveal fees. The randomness must still be unrevealed.
 /// CPI call for the `settle_open` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct SettleOpen<'account> {
 	/// CPI account `recipient`.
+	/// Opening's stored recipient, which receives the reward lamports. Writable;
+	/// need not sign.
 	/// Required privileges: writable.
 	pub recipient: &'account AccountView,
 
 	/// CPI account `payer`.
+	/// Relayer that submits the proof. Writable signer; pays Switchboard's
+	/// reveal costs.
 	/// Required privileges: writable and signer.
 	pub payer: &'account AccountView,
 
 	/// CPI account `lootbox`.
+	/// Lootbox of the opening; `pending_openings` falls and `opened` grows.
 	/// Required privileges: writable.
 	pub lootbox: &'account AccountView,
 
 	/// CPI account `vault`.
+	/// Vault PDA of `lootbox` that pays the reward; must keep its rent reserve
+	/// plus the remaining liability.
 	/// Required privileges: writable.
 	pub vault: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// The lootbox's box mint, read for the live supply in the liability check.
 	/// Required privileges: read-only.
 	pub box_mint: &'account AccountView,
 
 	/// CPI account `opening`.
+	/// Pending opening PDA bound to `lootbox`, `randomness`, and `recipient`.
+	/// Signs the reveal CPI and records the result.
 	/// Required privileges: writable.
 	pub opening: &'account AccountView,
 
 	/// CPI account `randomness`.
+	/// Opening's committed, unrevealed Switchboard randomness account, revealed
+	/// here.
 	/// Required privileges: writable.
 	pub randomness: &'account AccountView,
 
 	/// CPI account `oracleQueue`.
+	/// Switchboard queue; must equal the lootbox's stored queue.
 	/// Required privileges: read-only.
 	pub oracle_queue: &'account AccountView,
 
 	/// CPI account `oracle`.
+	/// Oracle recorded on the randomness at commit time.
 	/// Required privileges: read-only.
 	pub oracle: &'account AccountView,
 
 	/// CPI account `oracleStats`.
+	/// Oracle stats account updated by Switchboard's reveal.
 	/// Required privileges: writable.
 	pub oracle_stats: &'account AccountView,
 
 	/// CPI account `recentSlotHashes`.
+	/// Slot hashes sysvar, read by Switchboard's reveal.
 	/// Required privileges: read-only.
 	pub recent_slot_hashes: &'account AccountView,
 
 	/// CPI account `oracleProgram`.
+	/// Switchboard program; must equal the lootbox's stored oracle program.
 	/// Required privileges: read-only.
 	pub oracle_program: &'account AccountView,
 
 	/// CPI account `rewardEscrow`.
+	/// Wrapped-SOL associated token account of `randomness`, used by
+	/// Switchboard as its reward escrow.
 	/// Required privileges: writable.
 	pub reward_escrow: &'account AccountView,
 
 	/// CPI account `oracleProgramState`.
+	/// Switchboard program state, passed through to `randomness_reveal`.
 	/// Required privileges: read-only.
 	pub oracle_program_state: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, passed through to `randomness_reveal`.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
 	/// CPI account `tokenProgram`.
+	/// SPL Token program backing the reward escrow.
 	/// Required privileges: read-only.
 	pub token_program: &'account AccountView,
 
 	/// CPI account `wrappedSolMint`.
+	/// Wrapped-SOL mint backing the reward escrow.
 	/// Required privileges: read-only.
 	pub wrapped_sol_mint: &'account AccountView,
 

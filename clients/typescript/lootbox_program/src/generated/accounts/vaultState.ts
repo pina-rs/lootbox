@@ -19,9 +19,27 @@ export const VAULT_STATE_DISCRIMINATOR2 = 0;
 export function getVaultStateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(VAULT_STATE_DISCRIMINATOR2); }
 
 /** Program-owned SOL vault for one lootbox definition. */
-export type VaultState = { discriminator: number; migrationVersion: number; lootbox: Address; rentReserve: bigint; bump: number;  };
+export type VaultState = { discriminator: number; migrationVersion: number;
+/** Lootbox this vault collateralizes. A PDA seed. */
+lootbox: Address;
+/**
+ * Vault balance in lamports recorded immediately after creation, normally
+ * its rent-exempt minimum. Never paid out or withdrawn.
+ */
+rentReserve: bigint;
+/** Canonical bump of this vault PDA. */
+bump: number;  };
 
-export type VaultStateArgs = { lootbox: Address; rentReserve: number | bigint; bump: number;  };
+export type VaultStateArgs = {
+/** Lootbox this vault collateralizes. A PDA seed. */
+lootbox: Address;
+/**
+ * Vault balance in lamports recorded immediately after creation, normally
+ * its rent-exempt minimum. Never paid out or withdrawn.
+ */
+rentReserve: number | bigint;
+/** Canonical bump of this vault PDA. */
+bump: number;  };
 
 /** Gets the encoder for {@link VaultStateArgs} account data. */
 export function getVaultStateEncoder(): FixedSizeEncoder<VaultStateArgs> {

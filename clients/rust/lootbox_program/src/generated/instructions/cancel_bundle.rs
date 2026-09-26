@@ -8,14 +8,22 @@
 	clippy::too_many_arguments
 )]
 
+/// Closes the staged tail bundle once it is unfunded or fully reclaimed.
+///
+/// The template authority signs and receives the bundle's rent. The treasury
+/// must be unlocked, though a retired template is allowed. No slot may be
+/// reserved or hold a prize pool.
 pub const CANCEL_BUNDLE_DISCRIMINATOR: u8 = 26u8;
 pub const CANCEL_BUNDLE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct CancelBundle {
+	/// Template authority; signs and receives the closed bundle's rent.
 	pub authority: solana_pubkey::Pubkey,
+	/// Unlocked template PDA, which may be retired.
 	pub template: solana_pubkey::Pubkey,
+	/// Staged bundle PDA at index `bundle_count`; closed here.
 	pub bundle: solana_pubkey::Pubkey,
 }
 

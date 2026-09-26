@@ -39,7 +39,9 @@ export function getPublishExclusiveCollectionInstructionDataCodec(): FixedSizeCo
 }
 
 export type PublishExclusiveCollectionInput<TAccountAdmin extends InstructionSignerInput = InstructionSignerInput, TAccountExclusiveCollection extends InstructionAccountInput = InstructionAccountInput> =  {
-  admin: TAccountAdmin;
+  /** Collection admin; signs. */
+admin: TAccountAdmin;
+/** Draft collection PDA that becomes published. */
 exclusiveCollection: TAccountExclusiveCollection;
 }
 
@@ -62,7 +64,9 @@ return Object.freeze({ accounts: [getAccountMeta("admin", accounts.admin), getAc
 
 export type ParsedPublishExclusiveCollectionInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Collection admin; signs. */
 admin: TAccountMetas[0];
+/** Draft collection PDA that becomes published. */
 exclusiveCollection: TAccountMetas[1];
 };
 data: PublishExclusiveCollectionInstructionData; };

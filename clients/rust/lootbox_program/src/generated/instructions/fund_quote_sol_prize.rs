@@ -8,15 +8,25 @@
 	clippy::too_many_arguments
 )]
 
+/// Escrows winner-routable native SOL in the next slot of a funding bundle.
+///
+/// The template authority signs and transfers `lamports_per_win` times the
+/// bundle quantity to the bundle PDA. The treasury must be unlocked and not
+/// retired.
 pub const FUND_QUOTE_SOL_PRIZE_DISCRIMINATOR: u8 = 39u8;
 pub const FUND_QUOTE_SOL_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct FundQuoteSolPrize {
+	/// Template authority; signs and pays the escrowed lamports.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA that must be unlocked and not retired; read only by the
+	/// handler.
 	pub template: solana_pubkey::Pubkey,
+	/// Funding bundle PDA of this template that receives the lamports.
 	pub bundle: solana_pubkey::Pubkey,
+	/// System program, invoked for the lamport transfer.
 	pub system_program: solana_pubkey::Pubkey,
 }
 

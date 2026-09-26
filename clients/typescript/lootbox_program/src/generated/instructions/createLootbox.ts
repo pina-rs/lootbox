@@ -40,11 +40,26 @@ export function getCreateLootboxInstructionDataCodec(): FixedSizeCodec<CreateLoo
 }
 
 export type CreateLootboxAsyncInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Creator that becomes the lootbox authority and pays rent for the lootbox
+ * and vault accounts. Signer; seed of the lootbox PDA.
+ */
+authority: TAccountAuthority;
+/**
+ * Existing classic SPL mint for the boxes. Must have zero decimals, zero
+ * supply, the lootbox PDA as mint authority, and no freeze authority.
+ */
 boxMint: TAccountBoxMint;
+/** Lootbox PDA `["lootbox", authority, id]`, created here. */
 lootbox: TAccountLootbox;
+/**
+ * Vault PDA `["vault", lootbox]`, created here; its post-creation balance
+ * becomes the rent reserve.
+ */
 vault?: TAccountVault;
+/** System program, invoked to create the lootbox and vault accounts. */
 systemProgram?: TAccountSystemProgram;
+/** SPL Token program that owns the box mint. */
 tokenProgram?: TAccountTokenProgram;
 id: CreateLootboxInstructionDataArgs["id"];
 maxSupply: CreateLootboxInstructionDataArgs["maxSupply"];
@@ -85,11 +100,26 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 }
 
 export type CreateLootboxInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Creator that becomes the lootbox authority and pays rent for the lootbox
+ * and vault accounts. Signer; seed of the lootbox PDA.
+ */
+authority: TAccountAuthority;
+/**
+ * Existing classic SPL mint for the boxes. Must have zero decimals, zero
+ * supply, the lootbox PDA as mint authority, and no freeze authority.
+ */
 boxMint: TAccountBoxMint;
+/** Lootbox PDA `["lootbox", authority, id]`, created here. */
 lootbox: TAccountLootbox;
+/**
+ * Vault PDA `["vault", lootbox]`, created here; its post-creation balance
+ * becomes the rent reserve.
+ */
 vault: TAccountVault;
+/** System program, invoked to create the lootbox and vault accounts. */
 systemProgram?: TAccountSystemProgram;
+/** SPL Token program that owns the box mint. */
 tokenProgram?: TAccountTokenProgram;
 id: CreateLootboxInstructionDataArgs["id"];
 maxSupply: CreateLootboxInstructionDataArgs["maxSupply"];
@@ -128,11 +158,26 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedCreateLootboxInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Creator that becomes the lootbox authority and pays rent for the lootbox
+ * and vault accounts. Signer; seed of the lootbox PDA.
+ */
 authority: TAccountMetas[0];
+/**
+ * Existing classic SPL mint for the boxes. Must have zero decimals, zero
+ * supply, the lootbox PDA as mint authority, and no freeze authority.
+ */
 boxMint: TAccountMetas[1];
+/** Lootbox PDA `["lootbox", authority, id]`, created here. */
 lootbox: TAccountMetas[2];
+/**
+ * Vault PDA `["vault", lootbox]`, created here; its post-creation balance
+ * becomes the rent reserve.
+ */
 vault: TAccountMetas[3];
+/** System program, invoked to create the lootbox and vault accounts. */
 systemProgram: TAccountMetas[4];
+/** SPL Token program that owns the box mint. */
 tokenProgram: TAccountMetas[5];
 };
 data: CreateLootboxInstructionData; };

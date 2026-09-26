@@ -1,0 +1,27 @@
+{
+	"name": "@pina-rs/exclusive-nft-art",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Deterministic SVG art, tiers, and metadata for Exclusive Lootbox NFTs",
+	"license": "Apache-2.0",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts",
+		"./exclusive-nft.riv": "./assets/exclusive-nft.riv"
+	},
+	"files": [
+		"src",
+		"assets"
+	],
+	"scripts": {
+		"check": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
+		"contact-sheet": "node scripts/contact-sheet.ts",
+		"test": "vitest run"
+	},
+	"devDependencies": {
+		"@resvg/resvg-js": "^2.6.2",
+		"@types/node": "^26.6.2",
+		"typescript": "^7.0.2",
+		"vitest": "^5.0.2"
+	}
+}

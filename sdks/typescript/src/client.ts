@@ -29,6 +29,18 @@ import {
 	signTransactionMessageWithSigners,
 	type TransactionSigner,
 } from "@solana/kit";
+import {
+	encodeExclusiveLayer,
+	EXCLUSIVE_TREE_SHAPE,
+	exclusiveCollectionUri,
+	type ExclusiveLayer,
+	type ExclusiveTreeShape,
+	MAX_EXCLUSIVE_BASE_URI_BYTES,
+	MAX_EXCLUSIVE_NAME_BYTES,
+	MAX_EXCLUSIVE_NAME_PREFIX_BYTES,
+	MAX_EXCLUSIVE_SYMBOL_BYTES,
+	validateExclusiveLayers,
+} from "./exclusive.js";
 import { marketLockReadiness } from "./market.js";
 import {
 	type CompressedNftProof,
@@ -65,6 +77,19 @@ export const ACCOUNT_COMPRESSION_PROGRAM = address(
 export const NOOP_PROGRAM = address(
 	"noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV",
 );
+/** MPL Account Compression, which Bubblegum V2 trees use. */
+export const MPL_ACCOUNT_COMPRESSION_PROGRAM = address(
+	"mcmt6YrQEMKw8Mw43FmpRLmf7BqRnFMKmAcbxE3xkAW",
+);
+/** MPL Noop log wrapper, which Bubblegum V2 trees use. */
+export const MPL_NOOP_PROGRAM = address(
+	"mnoopTCrg4p8ry25e4bcWA9XZjbNjMTfgYVGGEdRsf3",
+);
+/** Bubblegum's fixed PDA that Core trusts to update collection counters. */
+export const MPL_CORE_CPI_SIGNER = address(
+	"CbNY3JiXdXNE9tPNEk1aRZVEkWdj2v7kfJLNQwZZgpXk",
+);
+const PRIZE_EXCLUSIVE_NFT = 11;
 const SYSTEM_PROGRAM = address("11111111111111111111111111111111");
 const INSTRUCTIONS_SYSVAR = address(
 	"Sysvar1nstructions1111111111111111111111111",
@@ -408,7 +433,7 @@ export function bundleAssets(
 	if (
 		bundle.assetCount < 1 || bundle.assetCount > 4 ||
 		Array.from(bundle.kinds.slice(0, bundle.assetCount)).some((kind) =>
-			kind > 10
+			kind > PRIZE_EXCLUSIVE_NFT
 		)
 	) throw new Error("invalid prize asset kind or count");
 	return Array.from({ length: bundle.assetCount }, (_, index) => ({
@@ -425,6 +450,7 @@ export function bundleAssets(
 			"quoteToken",
 			"mintBadge",
 			"prizePool",
+			"exclusiveNft",
 		] as const)[bundle.kinds[index] ?? -1],
 		mint: getAddressDecoder().decode(
 			bundle.mints.slice(index * 32, (index + 1) * 32),
@@ -548,6 +574,11 @@ function prizeIdentifier(asset: PrizeAsset): Address {
 		asset.kind === "mintBadge" || asset.kind === "nft"
 	) return asset.mint;
 	if (asset.kind === "prizePool") return asset.tree;
+	if (asset.kind === "exclusiveNft") {
+		throw new Error(
+			"an Exclusive NFT slot is identified by its attachment PDA",
+		);
+	}
 	return asset.asset;
 }
 
@@ -799,6 +830,242 @@ export class LootboxClient {
 			],
 		});
 	}
+	/** An Exclusive NFT collection PDA and its canonical bump. */
+	async exclusiveCollectionAddress(admin: Address, collectionId: bigint) {
+		return generated.findExclusiveCollectionPda({ admin, collectionId });
+	}
+
+	/** The attachment PDA binding one bundle slot to a collection. */
+	async exclusiveAttachmentAddress(bundle: Address, assetIndex: number) {
+		return generated.findExclusiveAttachmentPda({ bundle, assetIndex });
+	}
+
+	/** The zero-data PDA that prepays an attachment's Bubblegum mint fees. */
+	async exclusiveFeeVaultAddress(attachment: Address) {
+		return getProgramDerivedAddress({
+			programAddress: generated.LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
+			seeds: [
+				utf8.encode("exclusive-fee-vault"),
+				addressBytes.encode(attachment),
+			],
+		});
+	}
+
+	/** Bubblegum's tree config PDA for a Merkle tree. */
+	async treeConfigAddress(merkleTree: Address) {
+		return getProgramDerivedAddress({
+			programAddress: BUBBLEGUM_PROGRAM,
+			seeds: [addressBytes.encode(merkleTree)],
+		});
+	}
+
+	private async expectedPrizeIdentifier(
+		asset: PrizeAsset,
+		bundle: Address,
+		assetIndex: number,
+	): Promise<Address> {
+		if (asset.kind === "prizePool") {
+			return (await this.prizePoolAddress(bundle, assetIndex))[0];
+		}
+		if (asset.kind === "exclusiveNft") {
+			return (await this.exclusiveAttachmentAddress(bundle, assetIndex))[0];
+		}
+		return prizeIdentifier(asset);
+	}
+
+	/**
+	 * Create, load, and publish an Exclusive NFT collection as its admin.
+	 * Resumable: every run rereads the collection and continues from its
+	 * recorded layers, tree, and status. The admin should be a multisig on
+	 * mainnet because it alone appends trees and publishes once.
+	 */
+	async createExclusiveCollection(input: {
+		collectionId: bigint;
+		namePrefix: string;
+		symbol: string;
+		baseUri: string;
+		attachOpensAt: bigint;
+		attachClosesAt: bigint;
+		layers: readonly ExclusiveLayer[];
+		tree?: ExclusiveTreeShape;
+	}): Promise<Address> {
+		validateExclusiveLayers(input.layers);
+		if (
+			utf8.encode(input.namePrefix).length > MAX_EXCLUSIVE_NAME_PREFIX_BYTES ||
+			!input.baseUri.startsWith("https://") ||
+			input.attachOpensAt >= input.attachClosesAt
+		) {
+			throw new RangeError(
+				"collections need a prefix of at most 20 bytes, an https base URI, and an open-before-close window",
+			);
+		}
+		const [collection, bump] = await this.exclusiveCollectionAddress(
+			this.payer.address,
+			input.collectionId,
+		);
+		let state = await generated.fetchMaybeExclusiveCollectionState(
+			this.rpc,
+			collection,
+			{ commitment },
+		);
+		if (!state.exists) {
+			const coreCollection = await generateKeyPairSigner();
+			await this.send([generated.getCreateExclusiveCollectionInstruction({
+				admin: this.payer,
+				exclusiveCollection: collection,
+				coreCollection,
+				coreProgram: CORE_PROGRAM,
+				collectionId: input.collectionId,
+				attachOpensAt: input.attachOpensAt,
+				attachClosesAt: input.attachClosesAt,
+				layerCount: input.layers.length,
+				bump,
+				namePrefix: encodeTemplateText(
+					input.namePrefix,
+					MAX_EXCLUSIVE_NAME_BYTES,
+				),
+				symbol: encodeTemplateText(input.symbol, MAX_EXCLUSIVE_SYMBOL_BYTES),
+				baseUri: encodeTemplateText(
+					input.baseUri,
+					MAX_EXCLUSIVE_BASE_URI_BYTES,
+				),
+			})], "Create Exclusive NFT collection");
+			state = await generated.fetchMaybeExclusiveCollectionState(
+				this.rpc,
+				collection,
+				{ commitment },
+			);
+		}
+		if (!state.exists) throw new Error("the collection did not persist");
+		if (state.data.layerCount !== input.layers.length) {
+			throw new Error("saved collection differs from the requested layers");
+		}
+		if (state.data.status === 1) return collection;
+
+		for (const [index, layer] of input.layers.entries()) {
+			const weights = encodeExclusiveLayer(layer);
+			const saved = state.data.weights.slice(index * 256, (index + 1) * 256);
+			if (
+				state.data.traitCounts[index] === layer.length &&
+				bytesEqual(saved, weights)
+			) continue;
+			await this.send([generated.getSetExclusiveLayerInstruction({
+				admin: this.payer,
+				exclusiveCollection: collection,
+				layerIndex: index,
+				traitCount: layer.length,
+				weights,
+			})], `Load Exclusive NFT layer ${index + 1}`);
+		}
+		if (state.data.activeTree === SYSTEM_PROGRAM) {
+			await this.appendExclusiveTree(collection, input.tree);
+		}
+		await this.send([generated.getPublishExclusiveCollectionInstruction({
+			admin: this.payer,
+			exclusiveCollection: collection,
+		})], "Publish and freeze Exclusive NFT layers");
+		return collection;
+	}
+
+	/** Append a private Bubblegum V2 tree that receives the next mints. */
+	async appendExclusiveTree(
+		collection: Address,
+		shape: ExclusiveTreeShape = EXCLUSIVE_TREE_SHAPE,
+	) {
+		const tree = await generateKeyPairSigner();
+		const [treeConfig] = await this.treeConfigAddress(tree.address);
+		const rent = await this.rpc.getMinimumBalanceForRentExemption(shape.space)
+			.send();
+		await this.send([
+			getCreateAccountInstruction({
+				payer: this.payer,
+				newAccount: tree,
+				lamports: rent,
+				space: shape.space,
+				programAddress: MPL_ACCOUNT_COMPRESSION_PROGRAM,
+			}),
+			generated.getAppendExclusiveTreeInstruction({
+				admin: this.payer,
+				exclusiveCollection: collection,
+				treeConfig,
+				merkleTree: tree.address,
+				bubblegumProgram: BUBBLEGUM_PROGRAM,
+				logWrapper: MPL_NOOP_PROGRAM,
+				compressionProgram: MPL_ACCOUNT_COMPRESSION_PROGRAM,
+				maxDepth: shape.maxDepth,
+				maxBufferSize: shape.maxBufferSize,
+			}),
+		], "Append Exclusive NFT tree");
+		return tree.address;
+	}
+
+	/**
+	 * Return an attachment's unused Bubblegum mint fees. A staged bundle's
+	 * attachment closes; a retired treasury with zero supply and no pending
+	 * openings releases only fees no outstanding claim can use.
+	 */
+	async reclaimExclusiveFees(
+		template: ChainTemplate,
+		bundle: Address,
+		assetIndex: number,
+	) {
+		const [attachment] = await this.exclusiveAttachmentAddress(
+			bundle,
+			assetIndex,
+		);
+		return this.send([generated.getReclaimExclusiveFeesInstruction({
+			authority: this.payer,
+			template: template.address,
+			boxMint: template.data.boxMint,
+			bundle,
+			exclusiveAttachment: attachment,
+			feeVault: (await this.exclusiveFeeVaultAddress(attachment))[0],
+			assetIndex,
+		})], "Reclaim Exclusive NFT mint fees");
+	}
+
+	/**
+	 * Build the permissionless claim that mints an opening's Exclusive
+	 * Lootbox NFT to its bound beneficiary. Bubblegum's mint fee comes from the
+	 * attachment's fee vault, so the submitter pays only the transaction fee.
+	 */
+	async claimExclusiveNftInstruction(input: {
+		template: Address;
+		opening: Address;
+		bundle: Address;
+		recipient: Address;
+		assetIndex: number;
+	}): Promise<Instruction> {
+		const [attachment] = await this.exclusiveAttachmentAddress(
+			input.bundle,
+			input.assetIndex,
+		);
+		const binding = await generated.fetchExclusiveAttachmentState(
+			this.rpc,
+			attachment,
+			{ commitment },
+		);
+		const collection = await generated.fetchExclusiveCollectionState(
+			this.rpc,
+			binding.data.collection,
+			{ commitment },
+		);
+		return generated.getClaimExclusiveNftInstruction({
+			...input,
+			exclusiveAttachment: attachment,
+			feeVault: (await this.exclusiveFeeVaultAddress(attachment))[0],
+			exclusiveCollection: binding.data.collection,
+			treeConfig: (await this.treeConfigAddress(collection.data.activeTree))[0],
+			merkleTree: collection.data.activeTree,
+			coreCollection: collection.data.coreCollection,
+			coreCpiSigner: MPL_CORE_CPI_SIGNER,
+			bubblegumProgram: BUBBLEGUM_PROGRAM,
+			coreProgram: CORE_PROGRAM,
+			logWrapper: MPL_NOOP_PROGRAM,
+			compressionProgram: MPL_ACCOUNT_COMPRESSION_PROGRAM,
+		});
+	}
+
 	async prizePoolAddress(bundle: Address, assetIndex: number) {
 		if (!Number.isInteger(assetIndex) || assetIndex < 0 || assetIndex > 3) {
 			throw new RangeError("prize-pool asset index must be between 0 and 3");
@@ -1252,6 +1519,26 @@ export class LootboxClient {
 		options: TemplateFundingOptions,
 	) {
 		const authority = this.payer.address;
+		if (asset.kind === "exclusiveNft") {
+			const [attachment, bump] = await this.exclusiveAttachmentAddress(
+				bundle,
+				assetIndex,
+			);
+			const [feeVault, feeVaultBump] = await this.exclusiveFeeVaultAddress(
+				attachment,
+			);
+			return this.send([generated.getAttachExclusiveNftInstruction({
+				authority: this.payer,
+				template,
+				bundle,
+				exclusiveCollection: asset.collection,
+				exclusiveAttachment: attachment,
+				feeVault,
+				assetIndex,
+				bump,
+				feeVaultBump,
+			})], `Attach Exclusive NFT collection · bundle ${bundleNumber}`);
+		}
 		if (asset.kind === "prizePool") {
 			return this.fundPrizePool(
 				asset,
@@ -1574,9 +1861,11 @@ export class LootboxClient {
 			) throw new Error("saved bundle differs from chain");
 			for (const [assetIndex, asset] of prize.assets.entries()) {
 				if (assetIndex < funded.data.fundedAssets) {
-					const expectedIdentifier = asset.kind === "prizePool"
-						? (await this.prizePoolAddress(bundle, assetIndex))[0]
-						: prizeIdentifier(asset);
+					const expectedIdentifier = await this.expectedPrizeIdentifier(
+						asset,
+						bundle,
+						assetIndex,
+					);
 					assertFundedPrizeMatches(
 						funded.data,
 						assetIndex,
@@ -1847,9 +2136,11 @@ export class LootboxClient {
 			) throw new Error("the staged append differs from this bundle");
 			for (const [assetIndex, asset] of prize.assets.entries()) {
 				if (assetIndex < draft.data.fundedAssets) {
-					const expectedIdentifier = asset.kind === "prizePool"
-						? (await this.prizePoolAddress(bundle, assetIndex))[0]
-						: prizeIdentifier(asset);
+					const expectedIdentifier = await this.expectedPrizeIdentifier(
+						asset,
+						bundle,
+						assetIndex,
+					);
 					assertFundedPrizeMatches(
 						draft.data,
 						assetIndex,
@@ -2017,6 +2308,10 @@ export class LootboxClient {
 				continue;
 			}
 			if ((staged.data.reclaimedMask & (1 << asset.index)) !== 0) continue;
+			if (asset.kind === "exclusiveNft") {
+				await this.reclaimExclusiveFees(current, bundle, asset.index);
+				continue;
+			}
 			const input = {
 				template: current.address,
 				boxMint: current.data.boxMint,
@@ -2825,6 +3120,8 @@ export class LootboxClient {
 				let instructions: readonly Instruction[];
 				if (asset.kind === "sol" || asset.kind === "quoteSol") {
 					instructions = [generated.getClaimSolPrizeInstruction(input)];
+				} else if (asset.kind === "exclusiveNft") {
+					instructions = [await this.claimExclusiveNftInstruction(input)];
 				} else if (asset.kind === "prizePool") {
 					if (
 						!opening.data.hasPoolAssignment ||

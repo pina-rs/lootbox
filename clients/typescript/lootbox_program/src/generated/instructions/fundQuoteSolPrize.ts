@@ -39,9 +39,16 @@ export function getFundQuoteSolPrizeInstructionDataCodec(): FixedSizeCodec<FundQ
 }
 
 export type FundQuoteSolPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs and pays the escrowed lamports. */
+authority: TAccountAuthority;
+/**
+ * Template PDA that must be unlocked and not retired; read only by the
+ * handler.
+ */
 template: TAccountTemplate;
+/** Funding bundle PDA of this template that receives the lamports. */
 bundle: TAccountBundle;
+/** System program, invoked for the lamport transfer. */
 systemProgram?: TAccountSystemProgram;
 lamportsPerWin: FundQuoteSolPrizeInstructionDataArgs["lamportsPerWin"];
 }
@@ -72,9 +79,16 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedFundQuoteSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs and pays the escrowed lamports. */
 authority: TAccountMetas[0];
+/**
+ * Template PDA that must be unlocked and not retired; read only by the
+ * handler.
+ */
 template: TAccountMetas[1];
+/** Funding bundle PDA of this template that receives the lamports. */
 bundle: TAccountMetas[2];
+/** System program, invoked for the lamport transfer. */
 systemProgram: TAccountMetas[3];
 };
 data: FundQuoteSolPrizeInstructionData; };

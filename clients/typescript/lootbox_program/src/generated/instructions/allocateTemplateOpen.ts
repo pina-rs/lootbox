@@ -39,13 +39,35 @@ export function getAllocateTemplateOpenInstructionDataCodec(): FixedSizeCodec<Al
 }
 
 export type AllocateTemplateOpenInput<TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput = InstructionAccountInput, TAccountResultReceipt extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  template: TAccountTemplate;
+  /**
+ * Template treasury, validated by its PDA seeds; its remaining inventory,
+ * pending-opening count, FIFO cursor, and receipt budget are updated.
+ */
+template: TAccountTemplate;
+/**
+ * Verified opening at the FIFO head, validated by its PDA seeds; records
+ * the selected bundle and moves to the allocated status.
+ */
 opening: TAccountOpening;
+/**
+ * Active bundle at the index the opening's entropy selects; rejected
+ * unless it belongs to the template and was active at the opening's
+ * treasury revision.
+ */
 bundle: TAccountBundle;
-/** Creator-funded when permanent result receipts are enabled. */
+/**
+ * Creator-funded service vault PDA at `["service-vault", template]`;
+ * validated only when receipts or bounties are enabled, and pays the
+ * result receipt's rent.
+ */
 serviceVault: TAccountServiceVault;
-/** Created only when enabled in the locked treasury configuration. */
+/**
+ * Result receipt PDA at `["result-receipt", opening, sequence]`; must be
+ * empty and match the canonical address even when receipts are disabled.
+ * Created only when enabled in the locked treasury configuration.
+ */
 resultReceipt: TAccountResultReceipt;
+/** System program, used to fund and create the result receipt. */
 systemProgram?: TAccountSystemProgram;
 resultReceiptBump: AllocateTemplateOpenInstructionDataArgs["resultReceiptBump"];
 }
@@ -76,13 +98,35 @@ return Object.freeze({ accounts: [getAccountMeta("template", accounts.template),
 
 export type ParsedAllocateTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template treasury, validated by its PDA seeds; its remaining inventory,
+ * pending-opening count, FIFO cursor, and receipt budget are updated.
+ */
 template: TAccountMetas[0];
+/**
+ * Verified opening at the FIFO head, validated by its PDA seeds; records
+ * the selected bundle and moves to the allocated status.
+ */
 opening: TAccountMetas[1];
+/**
+ * Active bundle at the index the opening's entropy selects; rejected
+ * unless it belongs to the template and was active at the opening's
+ * treasury revision.
+ */
 bundle: TAccountMetas[2];
-/** Creator-funded when permanent result receipts are enabled. */
+/**
+ * Creator-funded service vault PDA at `["service-vault", template]`;
+ * validated only when receipts or bounties are enabled, and pays the
+ * result receipt's rent.
+ */
 serviceVault: TAccountMetas[3];
-/** Created only when enabled in the locked treasury configuration. */
+/**
+ * Result receipt PDA at `["result-receipt", opening, sequence]`; must be
+ * empty and match the canonical address even when receipts are disabled.
+ * Created only when enabled in the locked treasury configuration.
+ */
 resultReceipt: TAccountMetas[4];
+/** System program, used to fund and create the result receipt. */
 systemProgram: TAccountMetas[5];
 };
 data: AllocateTemplateOpenInstructionData; };

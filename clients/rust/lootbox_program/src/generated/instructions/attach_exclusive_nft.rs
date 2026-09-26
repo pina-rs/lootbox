@@ -8,20 +8,34 @@
 	clippy::too_many_arguments
 )]
 
+/// Bind the bundle's next slot to a published Exclusive NFT collection.
+///
+/// The template authority signs and pays while the treasury is unlocked and
+/// not retired, the bundle is funding, and the collection's attach window is
+/// open. Creates the attachment PDA, records the slot as kind
+/// `PRIZE_EXCLUSIVE_NFT` with its commitment, and tops up the fee vault to
+/// `quantity × 90,000` lamports plus its rent-exempt minimum.
 pub const ATTACH_EXCLUSIVE_NFT_DISCRIMINATOR: u8 = 57u8;
 pub const ATTACH_EXCLUSIVE_NFT_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct AttachExclusiveNft {
+	/// Template authority; signs and pays the attachment rent and fee top-up.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	pub template: solana_pubkey::Pubkey,
+	/// Funding bundle PDA of `template`; its next slot is bound here.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Published collection PDA whose attach window is open.
 	pub exclusive_collection: solana_pubkey::Pubkey,
+	/// Empty attachment PDA `["exclusive-attachment", bundle, asset_index]`,
+	/// created here.
 	pub exclusive_attachment: solana_pubkey::Pubkey,
 	/// Zero-data System account PDA that prepays Bubblegum mint fees.
 	/// Unsolicited lamports are accepted and reduce the required top-up.
 	pub fee_vault: solana_pubkey::Pubkey,
+	/// System program, invoked to create the attachment and fund the vault.
 	pub system_program: solana_pubkey::Pubkey,
 }
 

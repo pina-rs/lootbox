@@ -8,18 +8,31 @@
 	clippy::too_many_arguments
 )]
 
+/// Finalizes a pending opening at the lootbox's minimum reward, signed by the
+/// opening's recipient. Allowed only while the randomness is unrevealed and at
+/// least `RANDOMNESS_TIMEOUT_SLOTS` slots after the commitment's seed slot.
 pub const REFUND_OPEN_DISCRIMINATOR: u8 = 7u8;
 pub const REFUND_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct RefundOpen {
+	/// Opening's stored recipient. Writable signer; receives the minimum
+	/// reward.
 	pub recipient: solana_pubkey::Pubkey,
+	/// Lootbox of the opening; `pending_openings` falls and `refunded` grows.
 	pub lootbox: solana_pubkey::Pubkey,
+	/// Vault PDA of `lootbox` that pays the minimum reward; must keep its rent
+	/// reserve plus the remaining liability.
 	pub vault: solana_pubkey::Pubkey,
+	/// The lootbox's box mint, read for the live supply in the liability check.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// Pending opening PDA bound to `lootbox`, `randomness`, and `recipient`;
+	/// records the refund.
 	pub opening: solana_pubkey::Pubkey,
+	/// Opening's Switchboard randomness account; must still be unrevealed.
 	pub randomness: solana_pubkey::Pubkey,
+	/// Clock sysvar, validated in the handler and read for the current slot.
 	pub clock: solana_pubkey::Pubkey,
 }
 

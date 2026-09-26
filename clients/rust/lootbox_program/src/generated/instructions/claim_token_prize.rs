@@ -8,19 +8,41 @@
 	clippy::too_many_arguments
 )]
 
+/// Transfers one fungible or NFT token asset of an allocated bundle from its
+/// escrow to the beneficiary's associated token account.
+///
+/// Permissionless and signer-free: anyone may crank the claim, but tokens move
+/// only to the bound beneficiary. Each asset is claimable once per opening, and
+/// the opening becomes delivered after its last asset is claimed.
 pub const CLAIM_TOKEN_PRIZE_DISCRIMINATOR: u8 = 20u8;
 pub const CLAIM_TOKEN_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ClaimTokenPrize {
+	/// Template treasury, validated by its PDA seeds; binds the bundle and the
+	/// opening.
 	pub template: solana_pubkey::Pubkey,
+	/// Allocated opening of this template, validated by its PDA seeds; records
+	/// the claimed asset.
 	pub opening: solana_pubkey::Pubkey,
+	/// Bundle PDA the opening selected; advances the asset's release count and
+	/// signs the transfer as escrow owner.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Opening beneficiary; rejected unless it matches the stored beneficiary.
+	/// Tokens go to `destination`, not this account.
 	pub recipient: solana_pubkey::Pubkey,
+	/// Prize mint; must match the mint recorded in the bundle's asset slot.
 	pub mint: solana_pubkey::Pubkey,
+	/// Bundle's associated token account for `mint` under `token_program`;
+	/// source of the transfer.
 	pub escrow: solana_pubkey::Pubkey,
+	/// Beneficiary's existing associated token account for `mint` under
+	/// `token_program`; receives the tokens.
 	pub destination: solana_pubkey::Pubkey,
+	/// SPL Token or Token-2022 program matching the asset kind: SPL Token for
+	/// `PRIZE_TOKEN` and `PRIZE_NFT`, Token-2022 for `PRIZE_TOKEN_2022`, and
+	/// either for `PRIZE_QUOTE_TOKEN`.
 	pub token_program: solana_pubkey::Pubkey,
 }
 

@@ -18,31 +18,44 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Mints boxes of a sealed lootbox into a recipient's canonical associated
+/// token account, signed by the lootbox authority. Fails unless lifetime mints
+/// stay within `max_supply` and the vault still covers the rent reserve plus
+/// `max_reward_lamports` for every live and pending box.
 /// CPI call for the `mint_boxes` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct MintBoxes<'account> {
 	/// CPI account `authority`.
+	/// Lootbox authority. Signer; must match the stored authority.
 	/// Required privileges: read-only and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `lootbox`.
+	/// Sealed lootbox whose `total_minted` grows; its PDA signs the mint as
+	/// mint authority.
 	/// Required privileges: writable.
 	pub lootbox: &'account AccountView,
 
 	/// CPI account `vault`.
+	/// Vault PDA of `lootbox`, read to prove the new supply stays fully
+	/// collateralized.
 	/// Required privileges: read-only.
 	pub vault: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// The lootbox's box mint. Writable; its supply grows.
 	/// Required privileges: writable.
 	pub box_mint: &'account AccountView,
 
 	/// CPI account `recipientBoxAccount`.
+	/// Canonical associated token account of the recipient for the box mint,
+	/// which receives the new boxes.
 	/// Required privileges: writable.
 	pub recipient_box_account: &'account AccountView,
 
 	/// CPI account `tokenProgram`.
+	/// SPL Token program, invoked to mint the boxes.
 	/// Required privileges: read-only.
 	pub token_program: &'account AccountView,
 

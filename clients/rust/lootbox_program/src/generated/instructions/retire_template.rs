@@ -8,13 +8,24 @@
 	clippy::too_many_arguments
 )]
 
+/// Permanently retires a live template: issuance and every creator mutation
+/// stop, while existing boxes stay openable and prizes stay claimable.
+///
+/// Signed by the template authority. An issued template that is not
+/// market-locked may retire only at or after `opens_at`, as a missed-deadline
+/// recovery; that path also disables result receipts and settlement bounties,
+/// which were never prepaid.
 pub const RETIRE_TEMPLATE_DISCRIMINATOR: u8 = 21u8;
 pub const RETIRE_TEMPLATE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct RetireTemplate {
+	/// Template authority; must sign and match the authority recorded on the
+	/// template.
 	pub authority: solana_pubkey::Pubkey,
+	/// Live template treasury, validated by its PDA seeds; moves to the retired
+	/// status.
 	pub template: solana_pubkey::Pubkey,
 }
 

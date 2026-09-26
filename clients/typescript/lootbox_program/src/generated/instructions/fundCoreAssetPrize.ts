@@ -39,15 +39,38 @@ export function getFundCoreAssetPrizeInstructionDataCodec(): FixedSizeCodec<Fund
 }
 
 export type FundCoreAssetPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountAsset extends InstructionAccountInput = InstructionAccountInput, TAccountCollection extends InstructionAccountInput = InstructionAccountInput, TAccountCoreProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput = InstructionAccountInput, TAccountPluginAccounts extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Template authority. Signs the Core transfer as the asset's owner and pays
+ * for it.
+ */
+authority: TAccountAuthority;
+/** Template PDA owned by this program; must be unlocked and not retired. */
 template: TAccountTemplate;
+/**
+ * Funding bundle PDA of `template` with a quantity of one. Records the
+ * asset and becomes its owner.
+ */
 bundle: TAccountBundle;
+/**
+ * Core asset owned by the Core program, serialized as a plugin-free
+ * `AssetV1` whose update authority is `bundle`.
+ */
 asset: TAccountAsset;
+/**
+ * Must be the Core program address, Core's placeholder for no collection;
+ * collection-bound assets are rejected.
+ */
 collection: TAccountCollection;
+/** Metaplex Core program, invoked to transfer the asset. */
 coreProgram: TAccountCoreProgram;
+/** System program, forwarded to Core. */
 systemProgram: TAccountSystemProgram;
+/** SPL Noop program, forwarded to Core as its log wrapper. */
 logWrapper: TAccountLogWrapper;
-/** Core plugin and external-adapter accounts, preserving client flags. */
+/**
+ * Core plugin and external-adapter accounts, forwarded with their client
+ * flags. Must be empty: any account here fails with `InvalidPrize`.
+ */
 pluginAccounts: TAccountPluginAccounts;
 }
 
@@ -70,15 +93,38 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedFundCoreAssetPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template authority. Signs the Core transfer as the asset's owner and pays
+ * for it.
+ */
 authority: TAccountMetas[0];
+/** Template PDA owned by this program; must be unlocked and not retired. */
 template: TAccountMetas[1];
+/**
+ * Funding bundle PDA of `template` with a quantity of one. Records the
+ * asset and becomes its owner.
+ */
 bundle: TAccountMetas[2];
+/**
+ * Core asset owned by the Core program, serialized as a plugin-free
+ * `AssetV1` whose update authority is `bundle`.
+ */
 asset: TAccountMetas[3];
+/**
+ * Must be the Core program address, Core's placeholder for no collection;
+ * collection-bound assets are rejected.
+ */
 collection: TAccountMetas[4];
+/** Metaplex Core program, invoked to transfer the asset. */
 coreProgram: TAccountMetas[5];
+/** System program, forwarded to Core. */
 systemProgram: TAccountMetas[6];
+/** SPL Noop program, forwarded to Core as its log wrapper. */
 logWrapper: TAccountMetas[7];
-/** Core plugin and external-adapter accounts, preserving client flags. */
+/**
+ * Core plugin and external-adapter accounts, forwarded with their client
+ * flags. Must be empty: any account here fails with `InvalidPrize`.
+ */
 pluginAccounts: TAccountMetas[8];
 };
 data: FundCoreAssetPrizeInstructionData; };

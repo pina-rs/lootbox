@@ -18,15 +18,20 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Permanently seals a lootbox, signed by its authority. Requires at least one
+/// outcome. Sealing freezes the outcome table and enables minting and opening;
+/// it cannot be undone.
 /// CPI call for the `seal` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct Seal<'account> {
 	/// CPI account `authority`.
+	/// Lootbox authority. Signer; must match the stored authority.
 	/// Required privileges: read-only and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `lootbox`.
+	/// Unsealed lootbox with at least one outcome, marked sealed here.
 	/// Required privileges: writable.
 	pub lootbox: &'account AccountView,
 

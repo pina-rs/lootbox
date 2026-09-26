@@ -39,21 +39,38 @@ export function getClaimPrizePoolItemInstructionDataCodec(): FixedSizeCodec<Clai
 }
 
 export type ClaimPrizePoolItemInput<TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePoolItem extends InstructionAccountInput = InstructionAccountInput, TAccountRecipient extends InstructionAccountInput = InstructionAccountInput, TAccountRentRefund extends InstructionAccountInput = InstructionAccountInput, TAccountTreeConfig extends InstructionAccountInput = InstructionAccountInput, TAccountMerkleTree extends InstructionAccountInput = InstructionAccountInput, TAccountBubblegumProgram extends InstructionAccountInput = InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput = InstructionAccountInput, TAccountCompressionProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountProofAccounts extends InstructionAccountInput = InstructionAccountInput> =  {
-  template: TAccountTemplate;
+  /** Template PDA that owns the opening and bundle. */
+template: TAccountTemplate;
+/** Allocated opening PDA with a pool assignment; its claim bit is set. */
 opening: TAccountOpening;
+/** Bundle PDA the opening was allocated to; its claimed count advances. */
 bundle: TAccountBundle;
+/** Sealed `PrizePoolState` PDA; signs the transfer and counts the claim. */
 prizePool: TAccountPrizePool;
+/** Item PDA at the opening's `selected_pool_item`, closed here. */
 prizePoolItem: TAccountPrizePoolItem;
+/** Opening's bound beneficiary; becomes the leaf owner. */
 recipient: TAccountRecipient;
 /** Receives the closed per-item PDA rent; fixed to the pool creator. */
 rentRefund: TAccountRentRefund;
+/** Bubblegum tree config of `merkle_tree`, validated by Bubblegum. */
 treeConfig: TAccountTreeConfig;
+/** Pool's pinned tree that holds the leaf; Bubblegum rewrites it. */
 merkleTree: TAccountMerkleTree;
+/** Bubblegum program, invoked to transfer the compressed NFT. */
 bubblegumProgram: TAccountBubblegumProgram;
+/** SPL Noop program used by Bubblegum as its log wrapper. */
 logWrapper: TAccountLogWrapper;
+/** SPL Account Compression program that owns `merkle_tree`. */
 compressionProgram: TAccountCompressionProgram;
+/** System program, passed to Bubblegum. */
 systemProgram?: TAccountSystemProgram;
-/** Merkle proof nodes in leaf-to-root order. */
+/**
+ * Merkle proof nodes in leaf-to-root order.
+ *
+ * Passed as zero through 16 readonly remaining accounts; the tree's canopy
+ * supplies the rest of the path.
+ */
 proofAccounts: TAccountProofAccounts;
 assetIndex: ClaimPrizePoolItemInstructionDataArgs["assetIndex"];
 root: ClaimPrizePoolItemInstructionDataArgs["root"];
@@ -90,21 +107,38 @@ return Object.freeze({ accounts: [getAccountMeta("template", accounts.template),
 
 export type ParsedClaimPrizePoolItemInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template PDA that owns the opening and bundle. */
 template: TAccountMetas[0];
+/** Allocated opening PDA with a pool assignment; its claim bit is set. */
 opening: TAccountMetas[1];
+/** Bundle PDA the opening was allocated to; its claimed count advances. */
 bundle: TAccountMetas[2];
+/** Sealed `PrizePoolState` PDA; signs the transfer and counts the claim. */
 prizePool: TAccountMetas[3];
+/** Item PDA at the opening's `selected_pool_item`, closed here. */
 prizePoolItem: TAccountMetas[4];
+/** Opening's bound beneficiary; becomes the leaf owner. */
 recipient: TAccountMetas[5];
 /** Receives the closed per-item PDA rent; fixed to the pool creator. */
 rentRefund: TAccountMetas[6];
+/** Bubblegum tree config of `merkle_tree`, validated by Bubblegum. */
 treeConfig: TAccountMetas[7];
+/** Pool's pinned tree that holds the leaf; Bubblegum rewrites it. */
 merkleTree: TAccountMetas[8];
+/** Bubblegum program, invoked to transfer the compressed NFT. */
 bubblegumProgram: TAccountMetas[9];
+/** SPL Noop program used by Bubblegum as its log wrapper. */
 logWrapper: TAccountMetas[10];
+/** SPL Account Compression program that owns `merkle_tree`. */
 compressionProgram: TAccountMetas[11];
+/** System program, passed to Bubblegum. */
 systemProgram: TAccountMetas[12];
-/** Merkle proof nodes in leaf-to-root order. */
+/**
+ * Merkle proof nodes in leaf-to-root order.
+ *
+ * Passed as zero through 16 readonly remaining accounts; the tree's canopy
+ * supplies the rest of the path.
+ */
 proofAccounts: TAccountMetas[13];
 };
 data: ClaimPrizePoolItemInstructionData; };

@@ -18,31 +18,47 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Create a funding prize pool for the bundle's next unfunded manifest slot.
+///
+/// The template authority signs while the treasury is unlocked and not
+/// retired, and the bundle is funding with a quantity from 1 through 4,096.
+/// Creates the compact `PrizePoolState` PDA, pins its tree and quantity, and
+/// reserves the slot as kind `PRIZE_POOL` with amount 1; a bundle holds at
+/// most one pool.
 /// CPI call for the `create_prize_pool` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct CreatePrizePool<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs, pays the pool rent, and is recorded as the
+	/// pool's `authority`.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA; its treasury must be unlocked and not retired.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Funding bundle PDA of `template` whose next slot the pool reserves.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `prizePool`.
+	/// Empty `PrizePoolState` PDA `["prize-pool", bundle, asset_index]`,
+	/// created here.
 	/// Required privileges: writable.
 	pub prize_pool: &'account AccountView,
 
 	/// CPI account `merkleTree`.
+	/// Bubblegum tree that every pool leaf must come from; only its nonzero
+	/// address is recorded.
 	/// Required privileges: read-only.
 	pub merkle_tree: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked to create the pool account.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 

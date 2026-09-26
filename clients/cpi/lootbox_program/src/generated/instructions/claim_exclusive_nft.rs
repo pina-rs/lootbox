@@ -18,32 +18,48 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Mint an opening's Exclusive Lootbox NFT to its beneficiary.
+///
+/// Permissionless to relay. The opening must be allocated to this bundle with
+/// the slot unclaimed, and the attachment, collection, active tree, and Core
+/// collection must match their commitments. Records the claim, derives the
+/// traits from the opening's entropy, takes the next serial, mints through
+/// Bubblegum V2 with the fee vault paying, and emits `ExclusiveNftMintedEvent`.
 /// CPI call for the `claim_exclusive_nft` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct ClaimExclusiveNft<'account> {
 	/// CPI account `template`.
+	/// Template PDA that owns the opening and bundle.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `opening`.
+	/// Allocated opening PDA; its claim bit is set and its entropy seeds the
+	/// traits.
 	/// Required privileges: writable.
 	pub opening: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Bundle PDA the opening was allocated to; its claimed count advances.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `exclusiveAttachment`.
+	/// Attachment PDA committed in the bundle slot; its `minted` advances.
 	/// Required privileges: writable.
 	pub exclusive_attachment: &'account AccountView,
 
 	/// CPI account `feeVault`.
 	/// Pays Bubblegum's per-mint fee from the creator's escrow.
+	///
+	/// Canonical `["exclusive-fee-vault", attachment]` PDA; signs as payer.
 	/// Required privileges: writable.
 	pub fee_vault: &'account AccountView,
 
 	/// CPI account `exclusiveCollection`.
+	/// Published collection PDA named by the attachment; signs as tree and
+	/// collection authority and advances its serial.
 	/// Required privileges: writable.
 	pub exclusive_collection: &'account AccountView,
 
@@ -53,38 +69,48 @@ pub struct ClaimExclusiveNft<'account> {
 	pub recipient: &'account AccountView,
 
 	/// CPI account `treeConfig`.
+	/// Canonical Bubblegum tree config PDA of `merkle_tree`; supplies the leaf
+	/// nonce and receives the mint fee.
 	/// Required privileges: writable.
 	pub tree_config: &'account AccountView,
 
 	/// CPI account `merkleTree`.
+	/// The collection's `active_tree`, which receives the new leaf.
 	/// Required privileges: writable.
 	pub merkle_tree: &'account AccountView,
 
 	/// CPI account `coreCollection`.
+	/// The collection's Core collection, which the leaf joins.
 	/// Required privileges: writable.
 	pub core_collection: &'account AccountView,
 
 	/// CPI account `coreCpiSigner`.
+	/// Bubblegum's fixed Core CPI signer PDA.
 	/// Required privileges: read-only.
 	pub core_cpi_signer: &'account AccountView,
 
 	/// CPI account `bubblegumProgram`.
+	/// Bubblegum program, invoked to mint the leaf.
 	/// Required privileges: read-only.
 	pub bubblegum_program: &'account AccountView,
 
 	/// CPI account `coreProgram`.
+	/// Metaplex Core program, invoked by Bubblegum for the collection.
 	/// Required privileges: read-only.
 	pub core_program: &'account AccountView,
 
 	/// CPI account `logWrapper`.
+	/// MPL Noop program used by Bubblegum as its log wrapper.
 	/// Required privileges: read-only.
 	pub log_wrapper: &'account AccountView,
 
 	/// CPI account `compressionProgram`.
+	/// MPL Account Compression program that owns `merkle_tree`.
 	/// Required privileges: read-only.
 	pub compression_program: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, passed to Bubblegum.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 

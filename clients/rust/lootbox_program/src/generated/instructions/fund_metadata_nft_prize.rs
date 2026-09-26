@@ -8,25 +8,53 @@
 	clippy::too_many_arguments
 )]
 
+/// Escrows a standard Token Metadata NFT into a funding bundle.
+///
+/// The template authority signs while the template is unlocked and not
+/// retired. The bundle must be funding with a quantity of one. The NFT moves
+/// from the authority's token account to the bundle's, and its mint is recorded
+/// in the bundle's next unfunded slot.
 pub const FUND_METADATA_NFT_PRIZE_DISCRIMINATOR: u8 = 27u8;
 pub const FUND_METADATA_NFT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct FundMetadataNftPrize {
+	/// Template authority. Signs as the NFT's owner and pays for the Token
+	/// Metadata transfer.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA owned by this program; must be unlocked and not retired.
 	pub template: solana_pubkey::Pubkey,
+	/// Funding bundle PDA of `template` with a quantity of one. Records the NFT
+	/// and owns the escrow token account.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Classic SPL Token mint of the NFT: supply one, zero decimals, and any
+	/// mint or freeze authority held by its Master Edition PDA.
 	pub mint: solana_pubkey::Pubkey,
+	/// The authority's existing associated token account for `mint`, which the
+	/// NFT leaves.
 	pub source: solana_pubkey::Pubkey,
+	/// The bundle's existing associated token account for `mint`, which receives
+	/// the NFT.
 	pub escrow: solana_pubkey::Pubkey,
+	/// Canonical Token Metadata PDA of `mint`; its update authority must be
+	/// revoked and its data immutable.
 	pub metadata: solana_pubkey::Pubkey,
+	/// Metaplex Token Metadata program, invoked to transfer the NFT.
 	pub token_metadata_program: solana_pubkey::Pubkey,
+	/// System program, forwarded to Token Metadata.
 	pub system_program: solana_pubkey::Pubkey,
+	/// Instructions sysvar, forwarded to Token Metadata.
 	pub instructions_sysvar: solana_pubkey::Pubkey,
+	/// Classic SPL Token program, forwarded to Token Metadata.
 	pub token_program: solana_pubkey::Pubkey,
+	/// Associated Token Account program, forwarded to Token Metadata.
 	pub associated_token_program: solana_pubkey::Pubkey,
-	/// Edition, source record, destination record, rules program, and rules.
+	/// Exactly five accounts: the Master Edition PDA, then the source token
+	/// record, destination token record, rules program, and rules. The last four
+	/// must be the Token Metadata program address, which rejects programmable
+	/// NFTs. The edition is validated when `mint` keeps a mint or freeze
+	/// authority.
 	pub optional_accounts: solana_pubkey::Pubkey,
 }
 

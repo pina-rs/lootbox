@@ -18,39 +18,63 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Returns undrawn token inventory of one bundle asset from its escrow to the
+/// template authority's associated token account.
+///
+/// Signed by the template authority. A funding bundle releases its full
+/// quantity; an active bundle releases only its remaining undrawn copies and
+/// requires a retired template with zero box supply and zero pending openings.
+/// Allocated but unclaimed copies stay escrowed, and each asset is reclaimed
+/// at most once.
 /// CPI call for the `reclaim_token_prize` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct ReclaimTokenPrize<'account> {
 	/// CPI account `authority`.
+	/// Template authority; must sign and match the authority recorded on the
+	/// template. Owns `destination`.
 	/// Required privileges: read-only and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template treasury, validated by its PDA seeds; supplies the status,
+	/// pending-opening count, and remaining inventory of the bundle.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// Template's box mint, validated against the template; its live supply
+	/// must be zero to reclaim from an active bundle.
 	/// Required privileges: read-only.
 	pub box_mint: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Bundle PDA of this template; records the asset as reclaimed and signs
+	/// the transfer as escrow owner.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `mint`.
+	/// Prize mint; must match the mint recorded in the bundle's asset slot.
 	/// Required privileges: read-only.
 	pub mint: &'account AccountView,
 
 	/// CPI account `escrow`.
+	/// Bundle's associated token account for `mint` under `token_program`;
+	/// source of the transfer.
 	/// Required privileges: writable.
 	pub escrow: &'account AccountView,
 
 	/// CPI account `destination`.
+	/// Authority's existing associated token account for `mint` under
+	/// `token_program`; receives the tokens.
 	/// Required privileges: writable.
 	pub destination: &'account AccountView,
 
 	/// CPI account `tokenProgram`.
+	/// SPL Token or Token-2022 program matching the asset kind: SPL Token for
+	/// `PRIZE_TOKEN` and `PRIZE_NFT`, Token-2022 for `PRIZE_TOKEN_2022`, and
+	/// either for `PRIZE_QUOTE_TOKEN`.
 	/// Required privileges: read-only.
 	pub token_program: &'account AccountView,
 

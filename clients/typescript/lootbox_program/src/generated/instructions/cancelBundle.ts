@@ -39,8 +39,11 @@ export function getCancelBundleInstructionDataCodec(): FixedSizeCodec<CancelBund
 }
 
 export type CancelBundleInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs and receives the closed bundle's rent. */
+authority: TAccountAuthority;
+/** Unlocked template PDA, which may be retired. */
 template: TAccountTemplate;
+/** Staged bundle PDA at index `bundle_count`; closed here. */
 bundle: TAccountBundle;
 }
 
@@ -63,8 +66,11 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedCancelBundleInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs and receives the closed bundle's rent. */
 authority: TAccountMetas[0];
+/** Unlocked template PDA, which may be retired. */
 template: TAccountMetas[1];
+/** Staged bundle PDA at index `bundle_count`; closed here. */
 bundle: TAccountMetas[2];
 };
 data: CancelBundleInstructionData; };

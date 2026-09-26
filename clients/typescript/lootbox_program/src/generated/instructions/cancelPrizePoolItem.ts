@@ -39,10 +39,15 @@ export function getCancelPrizePoolItemInstructionDataCodec(): FixedSizeCodec<Can
 }
 
 export type CancelPrizePoolItemInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePoolItem extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs and receives the closed item's rent. */
+authority: TAccountAuthority;
+/** Template PDA; its treasury must be unlocked. */
 template: TAccountTemplate;
+/** Funding bundle PDA of `template`. */
 bundle: TAccountBundle;
+/** Funding `PrizePoolState` PDA; `has_prepared_item` is cleared. */
 prizePool: TAccountPrizePool;
+/** Prepared item PDA at the pool's `deposit_cursor`, closed here. */
 prizePoolItem: TAccountPrizePoolItem;
 }
 
@@ -65,10 +70,15 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedCancelPrizePoolItemInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs and receives the closed item's rent. */
 authority: TAccountMetas[0];
+/** Template PDA; its treasury must be unlocked. */
 template: TAccountMetas[1];
+/** Funding bundle PDA of `template`. */
 bundle: TAccountMetas[2];
+/** Funding `PrizePoolState` PDA; `has_prepared_item` is cleared. */
 prizePool: TAccountMetas[3];
+/** Prepared item PDA at the pool's `deposit_cursor`, closed here. */
 prizePoolItem: TAccountMetas[4];
 };
 data: CancelPrizePoolItemInstructionData; };

@@ -54,10 +54,17 @@ pub const fn merkle_tree_account_size(depth: u64, buffer: u64, canopy_depth: u64
 /// The subset of a Bubblegum `TreeConfig` the collection relies on.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TreeConfigSnapshot {
+	/// Creator recorded at tree creation, which Bubblegum never changes; the
+	/// lootbox requires the collection PDA.
 	pub tree_creator: Address,
+	/// Delegate that may mint alongside the creator; the lootbox requires the
+	/// collection PDA.
 	pub tree_delegate: Address,
+	/// Leaf capacity, which Bubblegum sets to `2^max_depth` at creation.
 	pub total_mint_capacity: u64,
+	/// Leaves minted so far, which is also the nonce of the next leaf.
 	pub num_minted: u64,
+	/// Whether anyone may mint into the tree; the lootbox requires a private tree.
 	pub is_public: bool,
 }
 
@@ -137,16 +144,26 @@ fn push_borsh_string(data: &mut Vec<u8>, value: &[u8]) -> ProgramResult {
 /// Core `CreateCollectionV2` with the collection PDA as update authority and the
 /// permanent `BubblegumV2` plugin, which Bubblegum V2 requires to mint into it.
 pub struct CreateCoreCollection<'a, 'b> {
+	/// New Core collection account; writable signer, the fresh `core_collection`
+	/// keypair.
 	pub collection: &'b AccountView,
+	/// Collection update authority; read-only, the collection PDA.
 	pub update_authority: &'b AccountView,
+	/// Pays the collection rent; writable signer, the collection admin.
 	pub payer: &'b AccountView,
+	/// System program Core uses to create `collection`.
 	pub system_program: &'b AccountView,
+	/// Metaplex Core program, checked against `MPL_CORE_ID` before the CPI.
 	pub core_program: &'b AccountView,
+	/// Collection name, the collection's `name_prefix`.
 	pub name: &'a [u8],
+	/// Collection metadata URI, the collection's `base_uri` followed by
+	/// `collection.json`.
 	pub uri: &'a [u8],
 }
 
 impl CreateCoreCollection<'_, '_> {
+	/// Invoke Core `CreateCollectionV2`, signing with `signers`.
 	pub fn invoke_signed(&self, signers: &[Signer<'_, '_>]) -> ProgramResult {
 		self.core_program.assert_program(&MPL_CORE_ID)?;
 		let metas = [
@@ -187,19 +204,33 @@ impl CreateCoreCollection<'_, '_> {
 /// Bubblegum never changes `tree_creator`, and a private tree accepts mints
 /// only from its creator or delegate, so the collection PDA is the sole minter.
 pub struct CreateBubblegumTree<'b> {
+	/// Tree config PDA of `merkle_tree` that Bubblegum creates; writable.
 	pub tree_config: &'b AccountView,
+	/// Pre-allocated MPL Account Compression tree that Bubblegum initializes;
+	/// writable.
 	pub merkle_tree: &'b AccountView,
+	/// Pays the tree config rent; writable signer, the collection admin.
 	pub payer: &'b AccountView,
+	/// Recorded tree creator and delegate; read-only signer, the collection PDA.
 	pub tree_creator: &'b AccountView,
+	/// MPL Noop program, checked against `MPL_NOOP_ID`.
 	pub log_wrapper: &'b AccountView,
+	/// MPL Account Compression program, checked against
+	/// `MPL_ACCOUNT_COMPRESSION_ID`.
 	pub compression_program: &'b AccountView,
+	/// System program Bubblegum uses to create `tree_config`.
 	pub system_program: &'b AccountView,
+	/// Bubblegum program, checked against `MPL_BUBBLEGUM_ID` before the CPI.
 	pub bubblegum_program: &'b AccountView,
+	/// Tree depth, which fixes the leaf capacity at `2^max_depth`.
 	pub max_depth: u32,
+	/// Number of concurrent changes the tree's change log buffers.
 	pub max_buffer_size: u32,
 }
 
 impl CreateBubblegumTree<'_> {
+	/// Invoke Bubblegum `create_tree_v2` for a private tree; `signers` must
+	/// include the seeds of `tree_creator`.
 	pub fn invoke_signed(&self, signers: &[Signer<'_, '_>]) -> ProgramResult {
 		self.bubblegum_program.assert_program(&MPL_BUBBLEGUM_ID)?;
 		self.log_wrapper.assert_address(&MPL_NOOP_ID)?;
@@ -244,9 +275,14 @@ impl CreateBubblegumTree<'_> {
 
 /// Immutable `MetadataArgsV2` fields of one Exclusive Lootbox NFT.
 pub struct LeafMetadata<'a> {
+	/// Leaf name `{name_prefix} #{serial}`.
 	pub name: &'a [u8],
+	/// Leaf symbol, the collection's `symbol`.
 	pub symbol: &'a [u8],
+	/// Leaf metadata URI built from the collection's `base_uri`, the drawn
+	/// traits, and the serial.
 	pub uri: &'a [u8],
+	/// Core collection the leaf joins, which Bubblegum verifies.
 	pub collection: &'a Address,
 }
 
@@ -281,23 +317,45 @@ pub fn encode_mint_v2_data(metadata: &LeafMetadata<'_>) -> Result<Vec<u8>, Progr
 /// The attachment's zero-data fee vault PDA signs as payer for Bubblegum's
 /// per-mint fee.
 pub struct MintBubblegumLeaf<'a, 'b> {
+	/// Tree config PDA of `merkle_tree`; writable, it receives the per-mint fee
+	/// and advances `num_minted`.
 	pub tree_config: &'b AccountView,
+	/// Pays Bubblegum's per-mint fee; writable signer, the attachment's fee vault
+	/// PDA.
 	pub payer: &'b AccountView,
+	/// Tree creator or delegate; read-only signer, the collection PDA.
 	pub tree_authority: &'b AccountView,
+	/// Core collection update authority; read-only signer, the collection PDA.
 	pub collection_authority: &'b AccountView,
+	/// Owner of the new leaf; read-only, the opening's bound beneficiary.
 	pub leaf_owner: &'b AccountView,
+	/// Tree that receives the leaf; writable, the collection's `active_tree`.
 	pub merkle_tree: &'b AccountView,
+	/// Core collection the leaf joins; writable, Bubblegum updates its counters.
 	pub collection: &'b AccountView,
+	/// Bubblegum's Core CPI signer PDA; read-only, checked against
+	/// `MPL_CORE_CPI_SIGNER_ID`.
 	pub core_cpi_signer: &'b AccountView,
+	/// MPL Noop program, checked against `MPL_NOOP_ID`.
 	pub log_wrapper: &'b AccountView,
+	/// MPL Account Compression program, checked against
+	/// `MPL_ACCOUNT_COMPRESSION_ID`.
 	pub compression_program: &'b AccountView,
+	/// Metaplex Core program Bubblegum invokes for `collection`, checked against
+	/// `MPL_CORE_ID`.
 	pub core_program: &'b AccountView,
+	/// System program, checked against `system::ID`.
 	pub system_program: &'b AccountView,
+	/// Bubblegum program, checked against `MPL_BUBBLEGUM_ID`; it also fills the
+	/// absent `leaf_delegate` slot.
 	pub bubblegum_program: &'b AccountView,
+	/// Immutable leaf metadata encoded into the instruction data.
 	pub metadata: LeafMetadata<'a>,
 }
 
 impl MintBubblegumLeaf<'_, '_> {
+	/// Invoke Bubblegum `mint_v2` without a leaf delegate; `signers` must include
+	/// the seeds of `payer`, `tree_authority`, and `collection_authority`.
 	pub fn invoke_signed(&self, signers: &[Signer<'_, '_>]) -> ProgramResult {
 		self.bubblegum_program.assert_program(&MPL_BUBBLEGUM_ID)?;
 		self.core_program.assert_program(&MPL_CORE_ID)?;

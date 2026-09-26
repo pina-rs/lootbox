@@ -18,60 +18,88 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Escrows a standard Token Metadata NFT into a funding bundle.
+///
+/// The template authority signs while the template is unlocked and not
+/// retired. The bundle must be funding with a quantity of one. The NFT moves
+/// from the authority's token account to the bundle's, and its mint is recorded
+/// in the bundle's next unfunded slot.
 /// CPI call for the `fund_metadata_nft_prize` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct FundMetadataNftPrize<'account> {
 	/// CPI account `authority`.
+	/// Template authority. Signs as the NFT's owner and pays for the Token
+	/// Metadata transfer.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA owned by this program; must be unlocked and not retired.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Funding bundle PDA of `template` with a quantity of one. Records the NFT
+	/// and owns the escrow token account.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `mint`.
+	/// Classic SPL Token mint of the NFT: supply one, zero decimals, and any
+	/// mint or freeze authority held by its Master Edition PDA.
 	/// Required privileges: read-only.
 	pub mint: &'account AccountView,
 
 	/// CPI account `source`.
+	/// The authority's existing associated token account for `mint`, which the
+	/// NFT leaves.
 	/// Required privileges: writable.
 	pub source: &'account AccountView,
 
 	/// CPI account `escrow`.
+	/// The bundle's existing associated token account for `mint`, which receives
+	/// the NFT.
 	/// Required privileges: writable.
 	pub escrow: &'account AccountView,
 
 	/// CPI account `metadata`.
+	/// Canonical Token Metadata PDA of `mint`; its update authority must be
+	/// revoked and its data immutable.
 	/// Required privileges: writable.
 	pub metadata: &'account AccountView,
 
 	/// CPI account `tokenMetadataProgram`.
+	/// Metaplex Token Metadata program, invoked to transfer the NFT.
 	/// Required privileges: read-only.
 	pub token_metadata_program: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, forwarded to Token Metadata.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
 	/// CPI account `instructionsSysvar`.
+	/// Instructions sysvar, forwarded to Token Metadata.
 	/// Required privileges: read-only.
 	pub instructions_sysvar: &'account AccountView,
 
 	/// CPI account `tokenProgram`.
+	/// Classic SPL Token program, forwarded to Token Metadata.
 	/// Required privileges: read-only.
 	pub token_program: &'account AccountView,
 
 	/// CPI account `associatedTokenProgram`.
+	/// Associated Token Account program, forwarded to Token Metadata.
 	/// Required privileges: read-only.
 	pub associated_token_program: &'account AccountView,
 
 	/// CPI account `optionalAccounts`.
-	/// Edition, source record, destination record, rules program, and rules.
+	/// Exactly five accounts: the Master Edition PDA, then the source token
+	/// record, destination token record, rules program, and rules. The last four
+	/// must be the Token Metadata program address, which rejects programmable
+	/// NFTs. The edition is validated when `mint` keeps a mint or freeze
+	/// authority.
 	/// Required privileges: read-only.
 	pub optional_accounts: &'account AccountView,
 

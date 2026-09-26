@@ -18,23 +18,31 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Transfers surplus vault lamports to the lootbox authority, who must sign.
+/// The vault must keep its rent reserve plus `max_reward_lamports` for every
+/// live and pending box.
 /// CPI call for the `withdraw_surplus` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct WithdrawSurplus<'account> {
 	/// CPI account `authority`.
+	/// Lootbox authority. Writable signer; must match the stored authority and
+	/// receives the lamports.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `lootbox`.
+	/// Lootbox whose vault is drawn from.
 	/// Required privileges: read-only.
 	pub lootbox: &'account AccountView,
 
 	/// CPI account `vault`.
+	/// Vault PDA of `lootbox` that pays the withdrawal. Writable.
 	/// Required privileges: writable.
 	pub vault: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// The lootbox's box mint, read for the live supply in the liability check.
 	/// Required privileges: read-only.
 	pub box_mint: &'account AccountView,
 

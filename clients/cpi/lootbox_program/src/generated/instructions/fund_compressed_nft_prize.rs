@@ -18,48 +18,68 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Escrows a Bubblegum compressed NFT into a funding bundle.
+///
+/// The template authority signs as the leaf owner while the template is
+/// unlocked and not retired. The bundle must be funding with a quantity of one.
+/// Bubblegum transfers the leaf to the bundle PDA, and the asset ID derived
+/// from `merkle_tree` and `nonce` is recorded in the bundle's next unfunded
+/// slot.
 /// CPI call for the `fund_compressed_nft_prize` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct FundCompressedNftPrize<'account> {
 	/// CPI account `authority`.
+	/// Template authority. Signs the Bubblegum transfer as both leaf owner and
+	/// leaf delegate.
 	/// Required privileges: read-only and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA owned by this program; must be unlocked and not retired.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Funding bundle PDA of `template` with a quantity of one. Records the
+	/// asset ID and becomes the leaf owner.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `treeConfig`.
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	/// Required privileges: read-only.
 	pub tree_config: &'account AccountView,
 
 	/// CPI account `merkleTree`.
+	/// Concurrent Merkle tree holding the leaf; with `nonce` it derives the
+	/// recorded asset ID.
 	/// Required privileges: writable.
 	pub merkle_tree: &'account AccountView,
 
 	/// CPI account `bubblegumProgram`.
+	/// Metaplex Bubblegum program, invoked to transfer the leaf.
 	/// Required privileges: read-only.
 	pub bubblegum_program: &'account AccountView,
 
 	/// CPI account `logWrapper`.
+	/// SPL Noop program, forwarded to Bubblegum as its log wrapper.
 	/// Required privileges: read-only.
 	pub log_wrapper: &'account AccountView,
 
 	/// CPI account `compressionProgram`.
+	/// SPL Account Compression program, forwarded to Bubblegum.
 	/// Required privileges: read-only.
 	pub compression_program: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, forwarded to Bubblegum.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
 	/// CPI account `proofAccounts`.
-	/// Merkle proof nodes in leaf-to-root order.
+	/// Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+	/// canopy.
 	/// Required privileges: read-only.
 	pub proof_accounts: &'account AccountView,
 

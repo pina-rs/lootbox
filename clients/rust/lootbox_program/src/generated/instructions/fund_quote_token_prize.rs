@@ -8,18 +8,34 @@
 	clippy::too_many_arguments
 )]
 
+/// Escrows a winner-routable token quote in the next slot of a funding bundle.
+///
+/// The template authority signs the transfer of the per-win amount times the
+/// bundle quantity into the bundle's associated token account. The mint may
+/// carry only metadata extensions and no freeze authority.
 pub const FUND_QUOTE_TOKEN_PRIZE_DISCRIMINATOR: u8 = 40u8;
 pub const FUND_QUOTE_TOKEN_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct FundQuoteTokenPrize {
+	/// Template authority; signs the token transfer from `source`.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA that must be unlocked and not retired; read only by the
+	/// handler.
 	pub template: solana_pubkey::Pubkey,
+	/// Funding bundle PDA of this template that records the quote.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Quote mint owned by `token_program` with only metadata extensions, no
+	/// freeze authority, and not wrapped SOL.
 	pub mint: solana_pubkey::Pubkey,
+	/// Token account debited for the deposit.
 	pub source: solana_pubkey::Pubkey,
+	/// Bundle's associated token account for `mint`; must have no delegate or
+	/// close authority and must not be frozen.
 	pub escrow: solana_pubkey::Pubkey,
+	/// SPL Token or Token-2022 program that owns `mint`, invoked for the
+	/// transfer.
 	pub token_program: solana_pubkey::Pubkey,
 }
 

@@ -18,33 +18,53 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Allocates the FIFO head opening's prize by drawing one bundle copy without
+/// replacement from its verified entropy.
+///
+/// Permissionless and signer-free. Requires a verified opening holding the
+/// next allocation sequence; the draw spans only the bundle prefix and treasury
+/// revision snapshotted at request. Consumes one inventory unit, advances the
+/// FIFO cursor, and creates a result receipt when receipts are enabled. Bundles
+/// holding a prize pool must use `AllocatePrizePoolOpen` instead.
 /// CPI call for the `allocate_template_open` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct AllocateTemplateOpen<'account> {
 	/// CPI account `template`.
+	/// Template treasury, validated by its PDA seeds; its remaining inventory,
+	/// pending-opening count, FIFO cursor, and receipt budget are updated.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
 
 	/// CPI account `opening`.
+	/// Verified opening at the FIFO head, validated by its PDA seeds; records
+	/// the selected bundle and moves to the allocated status.
 	/// Required privileges: writable.
 	pub opening: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Active bundle at the index the opening's entropy selects; rejected
+	/// unless it belongs to the template and was active at the opening's
+	/// treasury revision.
 	/// Required privileges: read-only.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `serviceVault`.
-	/// Creator-funded when permanent result receipts are enabled.
+	/// Creator-funded service vault PDA at `["service-vault", template]`;
+	/// validated only when receipts or bounties are enabled, and pays the
+	/// result receipt's rent.
 	/// Required privileges: writable.
 	pub service_vault: &'account AccountView,
 
 	/// CPI account `resultReceipt`.
+	/// Result receipt PDA at `["result-receipt", opening, sequence]`; must be
+	/// empty and match the canonical address even when receipts are disabled.
 	/// Created only when enabled in the locked treasury configuration.
 	/// Required privileges: writable.
 	pub result_receipt: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, used to fund and create the result receipt.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 

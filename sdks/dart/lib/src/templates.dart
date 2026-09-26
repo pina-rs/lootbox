@@ -46,8 +46,8 @@ final class TemplatePlanException implements Exception {
   String toString() => 'TemplatePlanException(${code.name}): $message';
 }
 
-/// A typed treasury asset. Ownership, extensions, plugins, and Merkle proofs
-/// are validated by the corresponding on-chain transfer adapter.
+/// One compressed NFT leaf deposited into a prize pool, with the metadata
+/// preimage and Merkle proof needed to admit and deposit it on chain.
 final class PrizePoolItem {
   PrizePoolItem({
     required this.asset,

@@ -39,19 +39,55 @@ export function getFundMetadataNftPrizeInstructionDataCodec(): FixedSizeCodec<Fu
 }
 
 export type FundMetadataNftPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountSource extends InstructionAccountInput = InstructionAccountInput, TAccountEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountMetadata extends InstructionAccountInput = InstructionAccountInput, TAccountTokenMetadataProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountInstructionsSysvar extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountAssociatedTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountOptionalAccounts extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Template authority. Signs as the NFT's owner and pays for the Token
+ * Metadata transfer.
+ */
+authority: TAccountAuthority;
+/** Template PDA owned by this program; must be unlocked and not retired. */
 template: TAccountTemplate;
+/**
+ * Funding bundle PDA of `template` with a quantity of one. Records the NFT
+ * and owns the escrow token account.
+ */
 bundle: TAccountBundle;
+/**
+ * Classic SPL Token mint of the NFT: supply one, zero decimals, and any
+ * mint or freeze authority held by its Master Edition PDA.
+ */
 mint: TAccountMint;
+/**
+ * The authority's existing associated token account for `mint`, which the
+ * NFT leaves.
+ */
 source: TAccountSource;
+/**
+ * The bundle's existing associated token account for `mint`, which receives
+ * the NFT.
+ */
 escrow: TAccountEscrow;
+/**
+ * Canonical Token Metadata PDA of `mint`; its update authority must be
+ * revoked and its data immutable.
+ */
 metadata: TAccountMetadata;
+/** Metaplex Token Metadata program, invoked to transfer the NFT. */
 tokenMetadataProgram: TAccountTokenMetadataProgram;
+/** System program, forwarded to Token Metadata. */
 systemProgram: TAccountSystemProgram;
+/** Instructions sysvar, forwarded to Token Metadata. */
 instructionsSysvar: TAccountInstructionsSysvar;
+/** Classic SPL Token program, forwarded to Token Metadata. */
 tokenProgram: TAccountTokenProgram;
+/** Associated Token Account program, forwarded to Token Metadata. */
 associatedTokenProgram: TAccountAssociatedTokenProgram;
-/** Edition, source record, destination record, rules program, and rules. */
+/**
+ * Exactly five accounts: the Master Edition PDA, then the source token
+ * record, destination token record, rules program, and rules. The last four
+ * must be the Token Metadata program address, which rejects programmable
+ * NFTs. The edition is validated when `mint` keeps a mint or freeze
+ * authority.
+ */
 optionalAccounts: TAccountOptionalAccounts;
 }
 
@@ -74,19 +110,55 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedFundMetadataNftPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template authority. Signs as the NFT's owner and pays for the Token
+ * Metadata transfer.
+ */
 authority: TAccountMetas[0];
+/** Template PDA owned by this program; must be unlocked and not retired. */
 template: TAccountMetas[1];
+/**
+ * Funding bundle PDA of `template` with a quantity of one. Records the NFT
+ * and owns the escrow token account.
+ */
 bundle: TAccountMetas[2];
+/**
+ * Classic SPL Token mint of the NFT: supply one, zero decimals, and any
+ * mint or freeze authority held by its Master Edition PDA.
+ */
 mint: TAccountMetas[3];
+/**
+ * The authority's existing associated token account for `mint`, which the
+ * NFT leaves.
+ */
 source: TAccountMetas[4];
+/**
+ * The bundle's existing associated token account for `mint`, which receives
+ * the NFT.
+ */
 escrow: TAccountMetas[5];
+/**
+ * Canonical Token Metadata PDA of `mint`; its update authority must be
+ * revoked and its data immutable.
+ */
 metadata: TAccountMetas[6];
+/** Metaplex Token Metadata program, invoked to transfer the NFT. */
 tokenMetadataProgram: TAccountMetas[7];
+/** System program, forwarded to Token Metadata. */
 systemProgram: TAccountMetas[8];
+/** Instructions sysvar, forwarded to Token Metadata. */
 instructionsSysvar: TAccountMetas[9];
+/** Classic SPL Token program, forwarded to Token Metadata. */
 tokenProgram: TAccountMetas[10];
+/** Associated Token Account program, forwarded to Token Metadata. */
 associatedTokenProgram: TAccountMetas[11];
-/** Edition, source record, destination record, rules program, and rules. */
+/**
+ * Exactly five accounts: the Master Edition PDA, then the source token
+ * record, destination token record, rules program, and rules. The last four
+ * must be the Token Metadata program address, which rejects programmable
+ * NFTs. The edition is validated when `mint` keeps a mint or freeze
+ * authority.
+ */
 optionalAccounts: TAccountMetas[12];
 };
 data: FundMetadataNftPrizeInstructionData; };

@@ -19,17 +19,27 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Burns one box and commits a fresh Switchboard randomness request for it,
+/// creating a pending opening at the tail of the template's FIFO queue.
+///
+/// Signed by the box holder and a payer, which may be a sponsor, plus the new
+/// randomness keypair. Requires a non-draft template that is market-locked or
+/// retired, a reached `opens_at`, and remaining inventory for every live and
+/// pending box. The beneficiary, consumer binding, request sequence, treasury
+/// revision, and eligible bundle prefix are fixed before any entropy exists.
 /// CPI call for the `request_template_open` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct RequestTemplateOpen<'account, 'argument> {
 	/// CPI account `boxAuthority`.
 	/// Owns the box token account and authorizes burning exactly one box.
+	/// Recorded on the opening as `box_authority`.
 	/// Required privileges: read-only and signer.
 	pub box_authority: &'account AccountView,
 
 	/// CPI account `payer`.
 	/// Pays for the opening and oracle initialization; may be a sponsor.
+	/// Recorded as the opening's `rent_refund` address.
 	///
 	/// The immutable authority intentionally precedes the mutable payer so the
 	/// same signer may fill both roles after Solana promotes duplicate metas to
@@ -39,78 +49,108 @@ pub struct RequestTemplateOpen<'account, 'argument> {
 	pub payer: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template treasury, validated by its PDA seeds; its request sequence and
+	/// pending-opening count advance.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// Template's Token-2022 box mint, validated against the template; one box
+	/// is burned from it.
 	/// Required privileges: writable.
 	pub box_mint: &'account AccountView,
 
 	/// CPI account `boxAccount`.
+	/// Box authority's Token-2022 associated token account for `box_mint`; must
+	/// hold at least one box, and one is burned.
 	/// Required privileges: writable.
 	pub box_account: &'account AccountView,
 
 	/// CPI account `opening`.
+	/// Opening PDA at `["template-opening", template, randomness]`; must be
+	/// empty, is created here funded by `payer`, and signs as the randomness
+	/// authority.
 	/// Required privileges: writable.
 	pub opening: &'account AccountView,
 
 	/// CPI account `randomness`.
+	/// Fresh Switchboard randomness account; must sign and be empty because
+	/// `randomness_init` creates it. Its address seeds the opening PDA.
 	/// Required privileges: writable and signer.
 	pub randomness: &'account AccountView,
 
 	/// CPI account `rewardEscrow`.
+	/// Switchboard reward escrow for `randomness`; rejected unless it is the
+	/// wrapped-SOL associated token account of `randomness`.
 	/// Required privileges: writable.
 	pub reward_escrow: &'account AccountView,
 
 	/// CPI account `oracleQueue`.
+	/// Switchboard queue; must match the queue recorded on the template.
 	/// Required privileges: writable.
 	pub oracle_queue: &'account AccountView,
 
 	/// CPI account `oracle`.
+	/// Oracle assigned to the commitment; must be owned by the oracle program,
+	/// and Switchboard checks its queue membership. Recorded on `randomness`.
 	/// Required privileges: writable.
 	pub oracle: &'account AccountView,
 
 	/// CPI account `recentSlotHashes`.
+	/// Slot hashes sysvar, read by Switchboard `randomness_commit`.
 	/// Required privileges: read-only.
 	pub recent_slot_hashes: &'account AccountView,
 
 	/// CPI account `oracleProgram`.
+	/// Switchboard On-Demand program; must match the oracle program recorded on
+	/// the template.
 	/// Required privileges: read-only.
 	pub oracle_program: &'account AccountView,
 
 	/// CPI account `oracleProgramState`.
+	/// Switchboard program state, passed to `randomness_init`.
 	/// Required privileges: read-only.
 	pub oracle_program_state: &'account AccountView,
 
 	/// CPI account `oracleLutSigner`.
+	/// Switchboard lookup-table signer, passed to `randomness_init`.
 	/// Required privileges: read-only.
 	pub oracle_lut_signer: &'account AccountView,
 
 	/// CPI account `oracleLut`.
+	/// Switchboard address lookup table for `randomness`, derived from
+	/// `recent_slot` and passed to `randomness_init`.
 	/// Required privileges: writable.
 	pub oracle_lut: &'account AccountView,
 
 	/// CPI account `associatedTokenProgram`.
+	/// Associated Token Account program, used by Switchboard for the reward
+	/// escrow.
 	/// Required privileges: read-only.
 	pub associated_token_program: &'account AccountView,
 
 	/// CPI account `wrappedSolMint`.
+	/// Wrapped SOL mint backing the reward escrow.
 	/// Required privileges: read-only.
 	pub wrapped_sol_mint: &'account AccountView,
 
 	/// CPI account `addressLookupTableProgram`.
+	/// Address Lookup Table program, used by Switchboard for `oracle_lut`.
 	/// Required privileges: read-only.
 	pub address_lookup_table_program: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, used to create the opening and Switchboard accounts.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
 	/// CPI account `boxTokenProgram`.
+	/// Token-2022 program, invoked to burn the box.
 	/// Required privileges: read-only.
 	pub box_token_program: &'account AccountView,
 
 	/// CPI account `tokenProgram`.
+	/// SPL Token program backing the wrapped-SOL reward escrow.
 	/// Required privileges: read-only.
 	pub token_program: &'account AccountView,
 

@@ -8,13 +8,18 @@
 	clippy::too_many_arguments
 )]
 
+/// Permanently seals a lootbox, signed by its authority. Requires at least one
+/// outcome. Sealing freezes the outcome table and enables minting and opening;
+/// it cannot be undone.
 pub const SEAL_DISCRIMINATOR: u8 = 3u8;
 pub const SEAL_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct Seal {
+	/// Lootbox authority. Signer; must match the stored authority.
 	pub authority: solana_pubkey::Pubkey,
+	/// Unsealed lootbox with at least one outcome, marked sealed here.
 	pub lootbox: solana_pubkey::Pubkey,
 }
 

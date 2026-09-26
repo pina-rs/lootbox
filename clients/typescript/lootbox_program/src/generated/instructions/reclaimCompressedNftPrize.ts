@@ -39,17 +39,39 @@ export function getReclaimCompressedNftPrizeInstructionDataCodec(): FixedSizeCod
 }
 
 export type ReclaimCompressedNftPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountTreeConfig extends InstructionAccountInput = InstructionAccountInput, TAccountMerkleTree extends InstructionAccountInput = InstructionAccountInput, TAccountBubblegumProgram extends InstructionAccountInput = InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput = InstructionAccountInput, TAccountCompressionProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountProofAccounts extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; receives the leaf. */
+authority: TAccountAuthority;
+/** Template PDA of this program. */
 template: TAccountTemplate;
+/**
+ * The template's Token-2022 box mint; its supply must be zero to reclaim
+ * from an active bundle.
+ */
 boxMint: TAccountBoxMint;
+/**
+ * Bundle PDA of `template` that owns the leaf, signs the transfer, and
+ * records the reclaim.
+ */
 bundle: TAccountBundle;
+/** Bubblegum tree config of `merkle_tree`, validated by Bubblegum. */
 treeConfig: TAccountTreeConfig;
+/**
+ * Concurrent Merkle tree holding the leaf; with `nonce` it must derive the
+ * slot's stored asset ID.
+ */
 merkleTree: TAccountMerkleTree;
+/** Metaplex Bubblegum program, invoked to transfer the leaf. */
 bubblegumProgram: TAccountBubblegumProgram;
+/** SPL Noop program, forwarded to Bubblegum as its log wrapper. */
 logWrapper: TAccountLogWrapper;
+/** SPL Account Compression program, forwarded to Bubblegum. */
 compressionProgram: TAccountCompressionProgram;
+/** System program, forwarded to Bubblegum. */
 systemProgram: TAccountSystemProgram;
-/** Merkle proof nodes in leaf-to-root order. */
+/**
+ * Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+ * canopy.
+ */
 proofAccounts: TAccountProofAccounts;
 assetIndex: ReclaimCompressedNftPrizeInstructionDataArgs["assetIndex"];
 root: ReclaimCompressedNftPrizeInstructionDataArgs["root"];
@@ -82,17 +104,39 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedReclaimCompressedNftPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; receives the leaf. */
 authority: TAccountMetas[0];
+/** Template PDA of this program. */
 template: TAccountMetas[1];
+/**
+ * The template's Token-2022 box mint; its supply must be zero to reclaim
+ * from an active bundle.
+ */
 boxMint: TAccountMetas[2];
+/**
+ * Bundle PDA of `template` that owns the leaf, signs the transfer, and
+ * records the reclaim.
+ */
 bundle: TAccountMetas[3];
+/** Bubblegum tree config of `merkle_tree`, validated by Bubblegum. */
 treeConfig: TAccountMetas[4];
+/**
+ * Concurrent Merkle tree holding the leaf; with `nonce` it must derive the
+ * slot's stored asset ID.
+ */
 merkleTree: TAccountMetas[5];
+/** Metaplex Bubblegum program, invoked to transfer the leaf. */
 bubblegumProgram: TAccountMetas[6];
+/** SPL Noop program, forwarded to Bubblegum as its log wrapper. */
 logWrapper: TAccountMetas[7];
+/** SPL Account Compression program, forwarded to Bubblegum. */
 compressionProgram: TAccountMetas[8];
+/** System program, forwarded to Bubblegum. */
 systemProgram: TAccountMetas[9];
-/** Merkle proof nodes in leaf-to-root order. */
+/**
+ * Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+ * canopy.
+ */
 proofAccounts: TAccountMetas[10];
 };
 data: ReclaimCompressedNftPrizeInstructionData; };

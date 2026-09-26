@@ -8,15 +8,23 @@
 	clippy::too_many_arguments
 )]
 
+/// Transfers surplus vault lamports to the lootbox authority, who must sign.
+/// The vault must keep its rent reserve plus `max_reward_lamports` for every
+/// live and pending box.
 pub const WITHDRAW_SURPLUS_DISCRIMINATOR: u8 = 9u8;
 pub const WITHDRAW_SURPLUS_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct WithdrawSurplus {
+	/// Lootbox authority. Writable signer; must match the stored authority and
+	/// receives the lamports.
 	pub authority: solana_pubkey::Pubkey,
+	/// Lootbox whose vault is drawn from.
 	pub lootbox: solana_pubkey::Pubkey,
+	/// Vault PDA of `lootbox` that pays the withdrawal. Writable.
 	pub vault: solana_pubkey::Pubkey,
+	/// The lootbox's box mint, read for the live supply in the liability check.
 	pub box_mint: solana_pubkey::Pubkey,
 }
 

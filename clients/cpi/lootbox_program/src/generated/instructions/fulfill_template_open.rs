@@ -18,67 +18,98 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Verifies the Switchboard reveal for a pending opening and records its
+/// entropy, moving the opening to the verified status.
+///
+/// Permissionless: any signer may submit the gateway proof, and openings may
+/// be verified out of FIFO order. Requires a pending opening whose randomness
+/// is still unrevealed; the program applies no deadline of its own, so only
+/// `forfeitTemplateOpen` ends the window. Pays any configured settlement
+/// bounty from the service vault to the payer.
 /// CPI call for the `fulfill_template_open` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct FulfillTemplateOpen<'account> {
 	/// CPI account `payer`.
+	/// Submits the proof and funds Switchboard's reveal bookkeeping; receives
+	/// the settlement bounty when one is configured.
 	/// Required privileges: writable and signer.
 	pub payer: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template treasury, validated by its PDA seeds; its remaining
+	/// settlement-bounty count is written back.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
 
 	/// CPI account `serviceVault`.
+	/// Service vault PDA at `["service-vault", template]`; validated only when
+	/// receipts or bounties are enabled, and pays the settlement bounty.
 	/// Required privileges: writable.
 	pub service_vault: &'account AccountView,
 
 	/// CPI account `opening`.
+	/// Pending opening PDA for `template` and `randomness`; signs the reveal as
+	/// the randomness authority, then stores the entropy and becomes verified.
 	/// Required privileges: writable.
 	pub opening: &'account AccountView,
 
 	/// CPI account `randomness`.
+	/// Switchboard randomness bound to the opening; must be committed at the
+	/// opening's seed slot and not yet revealed.
 	/// Required privileges: writable.
 	pub randomness: &'account AccountView,
 
 	/// CPI account `oracleQueue`.
+	/// Switchboard queue; must match the queue recorded on the template.
 	/// Required privileges: read-only.
 	pub oracle_queue: &'account AccountView,
 
 	/// CPI account `oracle`.
+	/// Oracle bound at commit time; rejected unless it matches the oracle
+	/// recorded on `randomness`.
 	/// Required privileges: read-only.
 	pub oracle: &'account AccountView,
 
 	/// CPI account `oracleStats`.
+	/// Oracle stats account, updated by Switchboard `randomness_reveal`.
 	/// Required privileges: writable.
 	pub oracle_stats: &'account AccountView,
 
 	/// CPI account `recentSlotHashes`.
+	/// Slot hashes sysvar, read by Switchboard `randomness_reveal`.
 	/// Required privileges: read-only.
 	pub recent_slot_hashes: &'account AccountView,
 
 	/// CPI account `oracleProgram`.
+	/// Switchboard On-Demand program; must match the oracle program recorded on
+	/// the template.
 	/// Required privileges: read-only.
 	pub oracle_program: &'account AccountView,
 
 	/// CPI account `rewardEscrow`.
+	/// Switchboard reward escrow for `randomness`; rejected unless it is the
+	/// wrapped-SOL associated token account of `randomness`.
 	/// Required privileges: writable.
 	pub reward_escrow: &'account AccountView,
 
 	/// CPI account `oracleProgramState`.
+	/// Switchboard program state, passed to `randomness_reveal`.
 	/// Required privileges: read-only.
 	pub oracle_program_state: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, used by Switchboard and for the bounty transfer.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
 	/// CPI account `tokenProgram`.
+	/// SPL Token program backing the wrapped-SOL reward escrow.
 	/// Required privileges: read-only.
 	pub token_program: &'account AccountView,
 
 	/// CPI account `wrappedSolMint`.
+	/// Wrapped SOL mint backing the reward escrow.
 	/// Required privileges: read-only.
 	pub wrapped_sol_mint: &'account AccountView,
 

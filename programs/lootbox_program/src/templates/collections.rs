@@ -28,232 +28,487 @@ const METADATA_V1_KEY: u8 = 4;
 /// Serialized size of one Metadata `Creator`: address, verified flag, share.
 const METADATA_CREATOR_LENGTH: usize = 34;
 
+/// Escrows a standard Token Metadata NFT into a funding bundle.
+///
+/// The template authority signs while the template is unlocked and not
+/// retired. The bundle must be funding with a quantity of one. The NFT moves
+/// from the authority's token account to the bundle's, and its mint is recorded
+/// in the bundle's next unfunded slot.
 #[instruction(discriminator = LootboxInstruction::FundMetadataNftPrize, migrations)]
 pub struct FundMetadataNftPrizeInstruction {}
 
+/// Delivers an allocated Token Metadata NFT from bundle escrow to the opening's
+/// beneficiary.
+///
+/// Any signer may submit it. The opening must be allocated to `bundle`, and the
+/// slot must not be claimed yet. Sets the slot's claim bit on the opening and
+/// marks the opening delivered once every slot is claimed.
 #[instruction(discriminator = LootboxInstruction::ClaimMetadataNftPrize, migrations)]
 pub struct ClaimMetadataNftPrizeInstruction {
+	/// Bundle slot holding the NFT. Must be below the bundle's `asset_count` and
+	/// hold a Token Metadata NFT whose mint is `mint`.
 	pub asset_index: u8,
 }
 
+/// Returns an undrawn Token Metadata NFT from bundle escrow to the template
+/// authority.
+///
+/// The template authority signs. A funding bundle is always reclaimable; an
+/// active bundle is reclaimable only after the template is retired, the box
+/// supply is zero, no openings are pending, and its copy was never drawn. Sets
+/// the slot's reclaimed bit so it cannot be reclaimed twice.
 #[instruction(discriminator = LootboxInstruction::ReclaimMetadataNftPrize, migrations)]
 pub struct ReclaimMetadataNftPrizeInstruction {
+	/// Bundle slot holding the NFT. Must be below the bundle's `funded_assets`
+	/// and hold a Token Metadata NFT whose mint is `mint`.
 	pub asset_index: u8,
 }
 
+/// Escrows a plain Metaplex Core asset into a funding bundle.
+///
+/// The template authority signs as the asset's owner while the template is
+/// unlocked and not retired. The bundle must be funding with a quantity of one.
+/// The asset must be uncollected, carry no plugins, and already name the bundle
+/// PDA as its update authority. Ownership moves to the bundle, and the asset
+/// address is recorded in the bundle's next unfunded slot.
 #[instruction(discriminator = LootboxInstruction::FundCoreAssetPrize, migrations)]
 pub struct FundCoreAssetPrizeInstruction {}
 
+/// Delivers an allocated Metaplex Core asset from bundle escrow to the
+/// opening's beneficiary.
+///
+/// Any signer may submit it. The opening must be allocated to `bundle`, and the
+/// slot must not be claimed yet. The asset is revalidated as plugin-free before
+/// the bundle PDA signs the transfer. Sets the slot's claim bit on the opening
+/// and marks the opening delivered once every slot is claimed.
 #[instruction(discriminator = LootboxInstruction::ClaimCoreAssetPrize, migrations)]
 pub struct ClaimCoreAssetPrizeInstruction {
+	/// Bundle slot holding the asset. Must be below the bundle's `asset_count`
+	/// and hold a Core asset whose address is `asset`.
 	pub asset_index: u8,
 }
 
+/// Returns an undrawn Metaplex Core asset from bundle escrow to the template
+/// authority.
+///
+/// The template authority signs. A funding bundle is always reclaimable; an
+/// active bundle is reclaimable only after the template is retired, the box
+/// supply is zero, no openings are pending, and its copy was never drawn. Sets
+/// the slot's reclaimed bit so it cannot be reclaimed twice.
 #[instruction(discriminator = LootboxInstruction::ReclaimCoreAssetPrize, migrations)]
 pub struct ReclaimCoreAssetPrizeInstruction {
+	/// Bundle slot holding the asset. Must be below the bundle's
+	/// `funded_assets` and hold a Core asset whose address is `asset`.
 	pub asset_index: u8,
 }
 
+/// Escrows a Bubblegum compressed NFT into a funding bundle.
+///
+/// The template authority signs as the leaf owner while the template is
+/// unlocked and not retired. The bundle must be funding with a quantity of one.
+/// Bubblegum transfers the leaf to the bundle PDA, and the asset ID derived
+/// from `merkle_tree` and `nonce` is recorded in the bundle's next unfunded
+/// slot.
 #[instruction(discriminator = LootboxInstruction::FundCompressedNftPrize, migrations)]
 pub struct FundCompressedNftPrizeInstruction {
+	/// Merkle root the proof was built against; Bubblegum verifies the leaf
+	/// against it.
 	pub root: [u8; 32],
+	/// Bubblegum hash of the leaf's metadata, forwarded to rebuild the leaf.
 	pub data_hash: [u8; 32],
+	/// Bubblegum hash of the leaf's creators, forwarded to rebuild the leaf.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce. With `merkle_tree` it derives the asset ID recorded in the
+	/// bundle.
 	pub nonce: u64,
+	/// Leaf position in `merkle_tree`, forwarded to Bubblegum.
 	pub index: u32,
 }
 
+/// Delivers an allocated Bubblegum compressed NFT from bundle escrow to the
+/// opening's beneficiary.
+///
+/// Permissionless: no signer is required because the bundle PDA signs the
+/// transfer and the recipient is fixed by the opening. The opening must be
+/// allocated to `bundle`, and the slot must not be claimed yet. Sets the slot's
+/// claim bit on the opening and marks the opening delivered once every slot is
+/// claimed.
 #[instruction(discriminator = LootboxInstruction::ClaimCompressedNftPrize, migrations)]
 pub struct ClaimCompressedNftPrizeInstruction {
+	/// Bundle slot holding the compressed NFT. Must be below the bundle's
+	/// `asset_count` and hold the asset ID derived from `merkle_tree` and
+	/// `nonce`.
 	pub asset_index: u8,
+	/// Merkle root the proof was built against; Bubblegum verifies the leaf
+	/// against it.
 	pub root: [u8; 32],
+	/// Bubblegum hash of the leaf's metadata, forwarded to rebuild the leaf.
 	pub data_hash: [u8; 32],
+	/// Bubblegum hash of the leaf's creators, forwarded to rebuild the leaf.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce. With `merkle_tree` it derives the asset ID, which must match
+	/// the slot's stored asset.
 	pub nonce: u64,
+	/// Leaf position in `merkle_tree`, forwarded to Bubblegum.
 	pub index: u32,
 }
 
+/// Returns an undrawn Bubblegum compressed NFT from bundle escrow to the
+/// template authority.
+///
+/// The template authority signs. A funding bundle is always reclaimable; an
+/// active bundle is reclaimable only after the template is retired, the box
+/// supply is zero, no openings are pending, and its copy was never drawn. Sets
+/// the slot's reclaimed bit so it cannot be reclaimed twice.
 #[instruction(discriminator = LootboxInstruction::ReclaimCompressedNftPrize, migrations)]
 pub struct ReclaimCompressedNftPrizeInstruction {
+	/// Bundle slot holding the compressed NFT. Must be below the bundle's
+	/// `funded_assets` and hold the asset ID derived from `merkle_tree` and
+	/// `nonce`.
 	pub asset_index: u8,
+	/// Merkle root the proof was built against; Bubblegum verifies the leaf
+	/// against it.
 	pub root: [u8; 32],
+	/// Bubblegum hash of the leaf's metadata, forwarded to rebuild the leaf.
 	pub data_hash: [u8; 32],
+	/// Bubblegum hash of the leaf's creators, forwarded to rebuild the leaf.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce. With `merkle_tree` it derives the asset ID, which must match
+	/// the slot's stored asset.
 	pub nonce: u64,
+	/// Leaf position in `merkle_tree`, forwarded to Bubblegum.
 	pub index: u32,
 }
 
+/// Accounts for `fundMetadataNftPrize`.
 #[derive(Accounts, Debug)]
 pub struct FundMetadataNftPrizeAccounts<'a> {
+	/// Template authority. Signs as the NFT's owner and pays for the Token
+	/// Metadata transfer.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA owned by this program; must be unlocked and not retired.
 	pub template: &'a AccountView,
+	/// Funding bundle PDA of `template` with a quantity of one. Records the NFT
+	/// and owns the escrow token account.
 	pub bundle: &'a mut AccountView,
+	/// Classic SPL Token mint of the NFT: supply one, zero decimals, and any
+	/// mint or freeze authority held by its Master Edition PDA.
 	pub mint: &'a AccountView,
+	/// The authority's existing associated token account for `mint`, which the
+	/// NFT leaves.
 	pub source: &'a mut AccountView,
+	/// The bundle's existing associated token account for `mint`, which receives
+	/// the NFT.
 	pub escrow: &'a mut AccountView,
+	/// Canonical Token Metadata PDA of `mint`; its update authority must be
+	/// revoked and its data immutable.
 	pub metadata: &'a mut AccountView,
+	/// Metaplex Token Metadata program, invoked to transfer the NFT.
 	pub token_metadata_program: &'a AccountView,
+	/// System program, forwarded to Token Metadata.
 	pub system_program: &'a AccountView,
+	/// Instructions sysvar, forwarded to Token Metadata.
 	pub instructions_sysvar: &'a AccountView,
+	/// Classic SPL Token program, forwarded to Token Metadata.
 	pub token_program: &'a AccountView,
+	/// Associated Token Account program, forwarded to Token Metadata.
 	pub associated_token_program: &'a AccountView,
-	/// Edition, source record, destination record, rules program, and rules.
+	/// Exactly five accounts: the Master Edition PDA, then the source token
+	/// record, destination token record, rules program, and rules. The last four
+	/// must be the Token Metadata program address, which rejects programmable
+	/// NFTs. The edition is validated when `mint` keeps a mint or freeze
+	/// authority.
 	#[pina(remaining)]
 	pub optional_accounts: &'a [AccountView],
 }
 
+/// Accounts for `claimMetadataNftPrize`.
 #[derive(Accounts, Debug)]
 pub struct ClaimMetadataNftPrizeAccounts<'a> {
+	/// Any signer; passed to Token Metadata as the transfer payer.
 	#[pina(validate(signer))]
 	pub payer: &'a mut AccountView,
+	/// Template PDA owned by this program.
 	pub template: &'a AccountView,
+	/// Allocated template opening PDA of `template` whose selected bundle is
+	/// `bundle`. Records the slot's claim bit.
 	pub opening: &'a mut AccountView,
+	/// Bundle PDA of `template` that owns the escrow, signs the transfer, and
+	/// counts the claim.
 	pub bundle: &'a mut AccountView,
+	/// The opening's beneficiary and new owner of the NFT.
 	pub recipient: &'a AccountView,
+	/// NFT mint stored in the claimed slot; revalidated as a standard Metadata
+	/// NFT.
 	pub mint: &'a AccountView,
+	/// The bundle's associated token account for `mint`, which the NFT leaves.
 	pub escrow: &'a mut AccountView,
+	/// The beneficiary's existing associated token account for `mint`, which
+	/// receives the NFT.
 	pub destination: &'a mut AccountView,
+	/// Canonical Token Metadata PDA of `mint`; must still be revoked and
+	/// immutable.
 	pub metadata: &'a mut AccountView,
+	/// Metaplex Token Metadata program, invoked to transfer the NFT.
 	pub token_metadata_program: &'a AccountView,
+	/// System program, forwarded to Token Metadata.
 	pub system_program: &'a AccountView,
+	/// Instructions sysvar, forwarded to Token Metadata.
 	pub instructions_sysvar: &'a AccountView,
+	/// Classic SPL Token program, forwarded to Token Metadata.
 	pub token_program: &'a AccountView,
+	/// Associated Token Account program, forwarded to Token Metadata.
 	pub associated_token_program: &'a AccountView,
-	/// Edition, source record, destination record, rules program, and rules.
+	/// Exactly five accounts: the Master Edition PDA, then the source token
+	/// record, destination token record, rules program, and rules. The last four
+	/// must be the Token Metadata program address, which rejects programmable
+	/// NFTs. The edition is validated when `mint` keeps a mint or freeze
+	/// authority.
 	#[pina(remaining)]
 	pub optional_accounts: &'a [AccountView],
 }
 
+/// Accounts for `reclaimMetadataNftPrize`.
 #[derive(Accounts, Debug)]
 pub struct ReclaimMetadataNftPrizeAccounts<'a> {
+	/// Template authority. Receives the NFT and pays for the Token Metadata
+	/// transfer.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA of this program.
 	pub template: &'a AccountView,
+	/// The template's Token-2022 box mint; its supply must be zero to reclaim
+	/// from an active bundle.
 	pub box_mint: &'a AccountView,
+	/// Bundle PDA of `template` that owns the escrow, signs the transfer, and
+	/// records the reclaim.
 	pub bundle: &'a mut AccountView,
+	/// NFT mint stored in the reclaimed slot; revalidated as a standard Metadata
+	/// NFT.
 	pub mint: &'a AccountView,
+	/// The bundle's associated token account for `mint`, which the NFT leaves.
 	pub escrow: &'a mut AccountView,
+	/// The authority's existing associated token account for `mint`, which
+	/// receives the NFT.
 	pub destination: &'a mut AccountView,
+	/// Canonical Token Metadata PDA of `mint`; must still be revoked and
+	/// immutable.
 	pub metadata: &'a mut AccountView,
+	/// Metaplex Token Metadata program, invoked to transfer the NFT.
 	pub token_metadata_program: &'a AccountView,
+	/// System program, forwarded to Token Metadata.
 	pub system_program: &'a AccountView,
+	/// Instructions sysvar, forwarded to Token Metadata.
 	pub instructions_sysvar: &'a AccountView,
+	/// Classic SPL Token program, forwarded to Token Metadata.
 	pub token_program: &'a AccountView,
+	/// Associated Token Account program, forwarded to Token Metadata.
 	pub associated_token_program: &'a AccountView,
-	/// Edition, source record, destination record, rules program, and rules.
+	/// Exactly five accounts: the Master Edition PDA, then the source token
+	/// record, destination token record, rules program, and rules. The last four
+	/// must be the Token Metadata program address, which rejects programmable
+	/// NFTs. The edition is validated when `mint` keeps a mint or freeze
+	/// authority.
 	#[pina(remaining)]
 	pub optional_accounts: &'a [AccountView],
 }
 
+/// Accounts for `fundCoreAssetPrize`.
 #[derive(Accounts, Debug)]
 pub struct FundCoreAssetPrizeAccounts<'a> {
+	/// Template authority. Signs the Core transfer as the asset's owner and pays
+	/// for it.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA owned by this program; must be unlocked and not retired.
 	pub template: &'a AccountView,
+	/// Funding bundle PDA of `template` with a quantity of one. Records the
+	/// asset and becomes its owner.
 	pub bundle: &'a mut AccountView,
+	/// Core asset owned by the Core program, serialized as a plugin-free
+	/// `AssetV1` whose update authority is `bundle`.
 	pub asset: &'a mut AccountView,
+	/// Must be the Core program address, Core's placeholder for no collection;
+	/// collection-bound assets are rejected.
 	pub collection: &'a AccountView,
+	/// Metaplex Core program, invoked to transfer the asset.
 	pub core_program: &'a AccountView,
+	/// System program, forwarded to Core.
 	pub system_program: &'a AccountView,
+	/// SPL Noop program, forwarded to Core as its log wrapper.
 	pub log_wrapper: &'a AccountView,
-	/// Core plugin and external-adapter accounts, preserving client flags.
+	/// Core plugin and external-adapter accounts, forwarded with their client
+	/// flags. Must be empty: any account here fails with `InvalidPrize`.
 	#[pina(remaining)]
 	pub plugin_accounts: &'a [AccountView],
 }
 
+/// Accounts for `claimCoreAssetPrize`.
 #[derive(Accounts, Debug)]
 pub struct ClaimCoreAssetPrizeAccounts<'a> {
+	/// Any signer; pays for the Core transfer.
 	#[pina(validate(signer))]
 	pub payer: &'a mut AccountView,
+	/// Template PDA owned by this program.
 	pub template: &'a AccountView,
+	/// Allocated template opening PDA of `template` whose selected bundle is
+	/// `bundle`. Records the slot's claim bit.
 	pub opening: &'a mut AccountView,
+	/// Bundle PDA of `template` that owns the asset, signs the transfer, and
+	/// counts the claim.
 	pub bundle: &'a mut AccountView,
+	/// The opening's beneficiary and new owner of the asset.
 	pub recipient: &'a AccountView,
+	/// Core asset stored in the claimed slot; revalidated as plugin-free with
+	/// `bundle` as update authority.
 	pub asset: &'a mut AccountView,
+	/// Must be the Core program address, Core's placeholder for no collection.
 	pub collection: &'a AccountView,
+	/// Metaplex Core program, invoked to transfer the asset.
 	pub core_program: &'a AccountView,
+	/// System program, forwarded to Core.
 	pub system_program: &'a AccountView,
+	/// SPL Noop program, forwarded to Core as its log wrapper.
 	pub log_wrapper: &'a AccountView,
-	/// Core plugin and external-adapter accounts, preserving client flags.
+	/// Core plugin and external-adapter accounts, forwarded with their client
+	/// flags. Must be empty: any account here fails with `InvalidPrize`.
 	#[pina(remaining)]
 	pub plugin_accounts: &'a [AccountView],
 }
 
+/// Accounts for `reclaimCoreAssetPrize`.
 #[derive(Accounts, Debug)]
 pub struct ReclaimCoreAssetPrizeAccounts<'a> {
+	/// Template authority. Receives the asset and pays for the Core transfer.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA of this program.
 	pub template: &'a AccountView,
+	/// The template's Token-2022 box mint; its supply must be zero to reclaim
+	/// from an active bundle.
 	pub box_mint: &'a AccountView,
+	/// Bundle PDA of `template` that owns the asset, signs the transfer, and
+	/// records the reclaim.
 	pub bundle: &'a mut AccountView,
+	/// Core asset stored in the reclaimed slot; revalidated as plugin-free with
+	/// `bundle` as update authority.
 	pub asset: &'a mut AccountView,
+	/// Must be the Core program address, Core's placeholder for no collection.
 	pub collection: &'a AccountView,
+	/// Metaplex Core program, invoked to transfer the asset.
 	pub core_program: &'a AccountView,
+	/// System program, forwarded to Core.
 	pub system_program: &'a AccountView,
+	/// SPL Noop program, forwarded to Core as its log wrapper.
 	pub log_wrapper: &'a AccountView,
-	/// Core plugin and external-adapter accounts, preserving client flags.
+	/// Core plugin and external-adapter accounts, forwarded with their client
+	/// flags. Must be empty: any account here fails with `InvalidPrize`.
 	#[pina(remaining)]
 	pub plugin_accounts: &'a [AccountView],
 }
 
+/// Accounts for `fundCompressedNftPrize`.
 #[derive(Accounts, Debug)]
 pub struct FundCompressedNftPrizeAccounts<'a> {
+	/// Template authority. Signs the Bubblegum transfer as both leaf owner and
+	/// leaf delegate.
 	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
+	/// Template PDA owned by this program; must be unlocked and not retired.
 	pub template: &'a AccountView,
+	/// Funding bundle PDA of `template` with a quantity of one. Records the
+	/// asset ID and becomes the leaf owner.
 	pub bundle: &'a mut AccountView,
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	pub tree_config: &'a AccountView,
+	/// Concurrent Merkle tree holding the leaf; with `nonce` it derives the
+	/// recorded asset ID.
 	pub merkle_tree: &'a mut AccountView,
+	/// Metaplex Bubblegum program, invoked to transfer the leaf.
 	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
 	pub bubblegum_program: &'a AccountView,
+	/// SPL Noop program, forwarded to Bubblegum as its log wrapper.
 	#[pina(validate(address = SPL_NOOP_ID))]
 	pub log_wrapper: &'a AccountView,
+	/// SPL Account Compression program, forwarded to Bubblegum.
 	#[pina(validate(address = SPL_ACCOUNT_COMPRESSION_ID))]
 	pub compression_program: &'a AccountView,
+	/// System program, forwarded to Bubblegum.
 	pub system_program: &'a AccountView,
-	/// Merkle proof nodes in leaf-to-root order.
+	/// Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+	/// canopy.
 	#[pina(remaining)]
 	pub proof_accounts: &'a [AccountView],
 }
 
+/// Accounts for `claimCompressedNftPrize`.
 #[derive(Accounts, Debug)]
 pub struct ClaimCompressedNftPrizeAccounts<'a> {
+	/// Template PDA owned by this program.
 	pub template: &'a AccountView,
+	/// Allocated template opening PDA of `template` whose selected bundle is
+	/// `bundle`. Records the slot's claim bit.
 	pub opening: &'a mut AccountView,
+	/// Bundle PDA of `template` that owns the leaf, signs the transfer, and
+	/// counts the claim.
 	pub bundle: &'a mut AccountView,
+	/// The opening's beneficiary and new owner of the leaf.
 	pub recipient: &'a AccountView,
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	pub tree_config: &'a AccountView,
+	/// Concurrent Merkle tree holding the leaf; with `nonce` it must derive the
+	/// slot's stored asset ID.
 	pub merkle_tree: &'a mut AccountView,
+	/// Metaplex Bubblegum program, invoked to transfer the leaf.
 	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
 	pub bubblegum_program: &'a AccountView,
+	/// SPL Noop program, forwarded to Bubblegum as its log wrapper.
 	#[pina(validate(address = SPL_NOOP_ID))]
 	pub log_wrapper: &'a AccountView,
+	/// SPL Account Compression program, forwarded to Bubblegum.
 	#[pina(validate(address = SPL_ACCOUNT_COMPRESSION_ID))]
 	pub compression_program: &'a AccountView,
+	/// System program, forwarded to Bubblegum.
 	pub system_program: &'a AccountView,
-	/// Merkle proof nodes in leaf-to-root order.
+	/// Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+	/// canopy.
 	#[pina(remaining)]
 	pub proof_accounts: &'a [AccountView],
 }
 
+/// Accounts for `reclaimCompressedNftPrize`.
 #[derive(Accounts, Debug)]
 pub struct ReclaimCompressedNftPrizeAccounts<'a> {
+	/// Template authority; receives the leaf.
 	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
+	/// Template PDA of this program.
 	pub template: &'a AccountView,
+	/// The template's Token-2022 box mint; its supply must be zero to reclaim
+	/// from an active bundle.
 	pub box_mint: &'a AccountView,
+	/// Bundle PDA of `template` that owns the leaf, signs the transfer, and
+	/// records the reclaim.
 	pub bundle: &'a mut AccountView,
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	pub tree_config: &'a AccountView,
+	/// Concurrent Merkle tree holding the leaf; with `nonce` it must derive the
+	/// slot's stored asset ID.
 	pub merkle_tree: &'a mut AccountView,
+	/// Metaplex Bubblegum program, invoked to transfer the leaf.
 	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
 	pub bubblegum_program: &'a AccountView,
+	/// SPL Noop program, forwarded to Bubblegum as its log wrapper.
 	#[pina(validate(address = SPL_NOOP_ID))]
 	pub log_wrapper: &'a AccountView,
+	/// SPL Account Compression program, forwarded to Bubblegum.
 	#[pina(validate(address = SPL_ACCOUNT_COMPRESSION_ID))]
 	pub compression_program: &'a AccountView,
+	/// System program, forwarded to Bubblegum.
 	pub system_program: &'a AccountView,
-	/// Merkle proof nodes in leaf-to-root order.
+	/// Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+	/// canopy.
 	#[pina(remaining)]
 	pub proof_accounts: &'a [AccountView],
 }

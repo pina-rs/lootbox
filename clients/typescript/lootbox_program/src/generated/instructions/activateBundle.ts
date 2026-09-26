@@ -39,9 +39,16 @@ export function getActivateBundleInstructionDataCodec(): FixedSizeCodec<Activate
 }
 
 export type ActivateBundleInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs and pays rent for the template's larger size. */
+authority: TAccountAuthority;
+/**
+ * Template PDA that must be unlocked and not retired; grows by one
+ * inventory slot here.
+ */
 template: TAccountTemplate;
+/** Fully funded staged bundle PDA at index `bundle_count`; becomes active. */
 bundle: TAccountBundle;
+/** System program, invoked to fund the template's rent increase. */
 systemProgram?: TAccountSystemProgram;
 }
 
@@ -67,9 +74,16 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedActivateBundleInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs and pays rent for the template's larger size. */
 authority: TAccountMetas[0];
+/**
+ * Template PDA that must be unlocked and not retired; grows by one
+ * inventory slot here.
+ */
 template: TAccountMetas[1];
+/** Fully funded staged bundle PDA at index `bundle_count`; becomes active. */
 bundle: TAccountMetas[2];
+/** System program, invoked to fund the template's rent increase. */
 systemProgram: TAccountMetas[3];
 };
 data: ActivateBundleInstructionData; };

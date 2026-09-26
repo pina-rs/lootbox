@@ -4,61 +4,144 @@ use pina::sysvars::Sysvar;
 
 use super::*;
 
+/// Permanently retires a live template: issuance and every creator mutation
+/// stop, while existing boxes stay openable and prizes stay claimable.
+///
+/// Signed by the template authority. An issued template that is not
+/// market-locked may retire only at or after `opens_at`, as a missed-deadline
+/// recovery; that path also disables result receipts and settlement bounties,
+/// which were never prepaid.
 #[instruction(discriminator = LootboxInstruction::RetireTemplate, migrations)]
 pub struct RetireTemplateInstruction {}
 
+/// Returns undrawn native SOL inventory of one bundle asset to the template
+/// authority.
+///
+/// Signed by the template authority. A funding bundle releases its full
+/// quantity; an active bundle releases only its remaining undrawn copies and
+/// requires a retired template with zero box supply and zero pending openings.
+/// Allocated but unclaimed copies stay escrowed, and each asset is reclaimed
+/// at most once.
 #[instruction(discriminator = LootboxInstruction::ReclaimSolPrize, migrations)]
 pub struct ReclaimSolPrizeInstruction {
+	/// Asset slot within the bundle; must be below its funded asset count,
+	/// hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and not be reclaimed
+	/// already.
 	pub asset_index: u8,
 }
 
+/// Returns undrawn token inventory of one bundle asset from its escrow to the
+/// template authority's associated token account.
+///
+/// Signed by the template authority. A funding bundle releases its full
+/// quantity; an active bundle releases only its remaining undrawn copies and
+/// requires a retired template with zero box supply and zero pending openings.
+/// Allocated but unclaimed copies stay escrowed, and each asset is reclaimed
+/// at most once.
 #[instruction(discriminator = LootboxInstruction::ReclaimTokenPrize, migrations)]
 pub struct ReclaimTokenPrizeInstruction {
+	/// Asset slot within the bundle; must be below its funded asset count,
+	/// hold a `PRIZE_TOKEN`, `PRIZE_NFT`, `PRIZE_TOKEN_2022`, or
+	/// `PRIZE_QUOTE_TOKEN` asset, and not be reclaimed already.
 	pub asset_index: u8,
 }
 
+/// Releases undrawn copies of one mint-badge asset and revokes the bundle's
+/// mint authority once no copies remain claimable.
+///
+/// Signed by the template authority, under the same funding-or-retired rules
+/// as the other reclaims. Mints nothing; when allocated copies are still
+/// unclaimed, only the accounting changes and the final claim later revokes
+/// the authority.
 #[instruction(discriminator = LootboxInstruction::ReclaimMintPrize, migrations)]
 pub struct ReclaimMintPrizeInstruction {
+	/// Asset slot within the bundle; must be below its funded asset count,
+	/// hold a `PRIZE_MINT_BADGE` asset with an amount of one, and not be
+	/// reclaimed already.
 	pub asset_index: u8,
 }
 
+/// Accounts for `retireTemplate`.
 #[derive(Accounts, Debug)]
 pub struct RetireTemplateAccounts<'a> {
+	/// Template authority; must sign and match the authority recorded on the
+	/// template.
 	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
+	/// Live template treasury, validated by its PDA seeds; moves to the retired
+	/// status.
 	pub template: &'a mut AccountView,
 }
 
+/// Accounts for `reclaimSolPrize`.
 #[derive(Accounts, Debug)]
 pub struct ReclaimSolPrizeAccounts<'a> {
+	/// Template authority; must sign and match the authority recorded on the
+	/// template. Receives the reclaimed lamports.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template treasury, validated by its PDA seeds; supplies the status,
+	/// pending-opening count, and remaining inventory of the bundle.
 	pub template: &'a AccountView,
+	/// Template's box mint, validated against the template; its live supply
+	/// must be zero to reclaim from an active bundle.
 	pub box_mint: &'a AccountView,
+	/// Bundle PDA of this template; records the asset as reclaimed and pays
+	/// the lamports directly.
 	pub bundle: &'a mut AccountView,
 }
 
+/// Accounts for `reclaimTokenPrize`.
 #[derive(Accounts, Debug)]
 pub struct ReclaimTokenPrizeAccounts<'a> {
+	/// Template authority; must sign and match the authority recorded on the
+	/// template. Owns `destination`.
 	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
+	/// Template treasury, validated by its PDA seeds; supplies the status,
+	/// pending-opening count, and remaining inventory of the bundle.
 	pub template: &'a AccountView,
+	/// Template's box mint, validated against the template; its live supply
+	/// must be zero to reclaim from an active bundle.
 	pub box_mint: &'a AccountView,
+	/// Bundle PDA of this template; records the asset as reclaimed and signs
+	/// the transfer as escrow owner.
 	pub bundle: &'a mut AccountView,
+	/// Prize mint; must match the mint recorded in the bundle's asset slot.
 	pub mint: &'a AccountView,
+	/// Bundle's associated token account for `mint` under `token_program`;
+	/// source of the transfer.
 	pub escrow: &'a mut AccountView,
+	/// Authority's existing associated token account for `mint` under
+	/// `token_program`; receives the tokens.
 	pub destination: &'a mut AccountView,
+	/// SPL Token or Token-2022 program matching the asset kind: SPL Token for
+	/// `PRIZE_TOKEN` and `PRIZE_NFT`, Token-2022 for `PRIZE_TOKEN_2022`, and
+	/// either for `PRIZE_QUOTE_TOKEN`.
 	pub token_program: &'a AccountView,
 }
 
+/// Accounts for `reclaimMintPrize`.
 #[derive(Accounts, Debug)]
 pub struct ReclaimMintPrizeAccounts<'a> {
+	/// Template authority; must sign and match the authority recorded on the
+	/// template.
 	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
+	/// Template treasury, validated by its PDA seeds; supplies the status,
+	/// pending-opening count, and remaining inventory of the bundle.
 	pub template: &'a AccountView,
+	/// Template's box mint, validated against the template; its live supply
+	/// must be zero to reclaim from an active bundle.
 	pub box_mint: &'a AccountView,
+	/// Bundle PDA of this template; records the asset as reclaimed and signs
+	/// the authority revocation.
 	pub bundle: &'a mut AccountView,
+	/// Badge mint recorded in the bundle's asset slot; must have zero decimals,
+	/// the bundle as mint authority, no freeze authority, and only metadata
+	/// extensions. Its mint authority is revoked once every copy is released.
 	pub mint: &'a mut AccountView,
+	/// SPL Token or Token-2022 program that owns `mint`.
 	pub token_program: &'a AccountView,
 }
 

@@ -15,10 +15,15 @@ pub struct ExclusiveNftMintedEvent {
 /// Emitted once per minted Exclusive Lootbox NFT.
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Template PDA of the claimed opening.
 	pub template: solana_pubkey::Pubkey,
+	/// Opening PDA whose entropy seeded the traits.
 	pub opening: solana_pubkey::Pubkey,
+	/// `ExclusiveCollectionState` PDA that minted the leaf.
 	pub collection: solana_pubkey::Pubkey,
+	/// `ExclusiveAttachmentState` PDA whose slot was claimed.
 	pub attachment: solana_pubkey::Pubkey,
+	/// Opening's bound beneficiary and the new leaf owner.
 	pub beneficiary: solana_pubkey::Pubkey,
 	/// Bubblegum asset ID of the minted leaf.
 	pub asset: solana_pubkey::Pubkey,
@@ -28,6 +33,7 @@ pub struct ExclusiveNftMintedEvent {
 	pub serial: u64,
 	/// Trait index per layer, bottom to top; unused layers are zero.
 	pub traits: [u8; 12],
+	/// Number of meaningful entries in `traits`.
 	pub layer_count: u8,
 }
 

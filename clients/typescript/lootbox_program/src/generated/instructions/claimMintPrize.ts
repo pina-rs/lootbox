@@ -39,12 +39,38 @@ export function getClaimMintPrizeInstructionDataCodec(): FixedSizeCodec<ClaimMin
 }
 
 export type ClaimMintPrizeInput<TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountRecipient extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountDestination extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  template: TAccountTemplate;
+  /**
+ * Template treasury, validated by its PDA seeds; binds the bundle and the
+ * opening.
+ */
+template: TAccountTemplate;
+/**
+ * Allocated opening of this template, validated by its PDA seeds; records
+ * the claimed asset.
+ */
 opening: TAccountOpening;
+/**
+ * Bundle PDA the opening selected; advances the asset's release count and
+ * signs as mint authority.
+ */
 bundle: TAccountBundle;
+/**
+ * Opening beneficiary; rejected unless it matches the stored beneficiary.
+ * The badge goes to `destination`, not this account.
+ */
 recipient: TAccountRecipient;
+/**
+ * Badge mint recorded in the bundle's asset slot; must have zero decimals,
+ * the bundle as mint authority, no freeze authority, and only metadata
+ * extensions. Its mint authority is revoked after the final copy.
+ */
 mint: TAccountMint;
+/**
+ * Beneficiary's existing associated token account for `mint` under
+ * `token_program`; receives one badge.
+ */
 destination: TAccountDestination;
+/** SPL Token or Token-2022 program that owns `mint`. */
 tokenProgram?: TAccountTokenProgram;
 assetIndex: ClaimMintPrizeInstructionDataArgs["assetIndex"];
 }
@@ -75,12 +101,38 @@ return Object.freeze({ accounts: [getAccountMeta("template", accounts.template),
 
 export type ParsedClaimMintPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template treasury, validated by its PDA seeds; binds the bundle and the
+ * opening.
+ */
 template: TAccountMetas[0];
+/**
+ * Allocated opening of this template, validated by its PDA seeds; records
+ * the claimed asset.
+ */
 opening: TAccountMetas[1];
+/**
+ * Bundle PDA the opening selected; advances the asset's release count and
+ * signs as mint authority.
+ */
 bundle: TAccountMetas[2];
+/**
+ * Opening beneficiary; rejected unless it matches the stored beneficiary.
+ * The badge goes to `destination`, not this account.
+ */
 recipient: TAccountMetas[3];
+/**
+ * Badge mint recorded in the bundle's asset slot; must have zero decimals,
+ * the bundle as mint authority, no freeze authority, and only metadata
+ * extensions. Its mint authority is revoked after the final copy.
+ */
 mint: TAccountMetas[4];
+/**
+ * Beneficiary's existing associated token account for `mint` under
+ * `token_program`; receives one badge.
+ */
 destination: TAccountMetas[5];
+/** SPL Token or Token-2022 program that owns `mint`. */
 tokenProgram: TAccountMetas[6];
 };
 data: ClaimMintPrizeInstructionData; };

@@ -39,18 +39,43 @@ export function getCloseOpeningInstructionDataCodec(): FixedSizeCodec<CloseOpeni
 }
 
 export type CloseOpeningInput<TAccountRecipient extends InstructionAccountInput = InstructionAccountInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountRandomness extends InstructionAccountInput = InstructionAccountInput, TAccountRewardEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgram extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgramState extends InstructionAccountInput = InstructionAccountInput, TAccountOracleLut extends InstructionAccountInput = InstructionAccountInput, TAccountOracleLutSigner extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountWrappedSolMint extends InstructionAccountInput = InstructionAccountInput, TAccountAddressLookupTableProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  recipient: TAccountRecipient;
+  /**
+ * Opening's stored recipient, which receives the receipt's lamports,
+ * including the randomness rent Switchboard returns to the opening PDA.
+ */
+recipient: TAccountRecipient;
+/** Lootbox of the opening, read to validate the oracle program and queue. */
 lootbox: TAccountLootbox;
+/** Settled or refunded opening PDA; signs the close CPI and is closed here. */
 opening: TAccountOpening;
+/** Opening's Switchboard randomness account, closed by Switchboard. */
 randomness: TAccountRandomness;
+/**
+ * Wrapped-SOL associated token account of `randomness`, closed by
+ * Switchboard.
+ */
 rewardEscrow: TAccountRewardEscrow;
+/** Switchboard program; must equal the lootbox's stored oracle program. */
 oracleProgram: TAccountOracleProgram;
+/** Switchboard program state, passed through to `randomness_close`. */
 oracleProgramState: TAccountOracleProgramState;
+/**
+ * Switchboard lookup table of the randomness account, passed through to
+ * `randomness_close`.
+ */
 oracleLut: TAccountOracleLut;
+/** Switchboard lookup-table signer, passed through to `randomness_close`. */
 oracleLutSigner: TAccountOracleLutSigner;
+/** System program, passed through to `randomness_close`. */
 systemProgram?: TAccountSystemProgram;
+/** SPL Token program backing the reward escrow. */
 tokenProgram?: TAccountTokenProgram;
+/** Wrapped-SOL mint backing the reward escrow. */
 wrappedSolMint: TAccountWrappedSolMint;
+/**
+ * Address Lookup Table program, used by Switchboard to close its lookup
+ * table.
+ */
 addressLookupTableProgram: TAccountAddressLookupTableProgram;
 }
 
@@ -79,18 +104,43 @@ return Object.freeze({ accounts: [getAccountMeta("recipient", accounts.recipient
 
 export type ParsedCloseOpeningInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Opening's stored recipient, which receives the receipt's lamports,
+ * including the randomness rent Switchboard returns to the opening PDA.
+ */
 recipient: TAccountMetas[0];
+/** Lootbox of the opening, read to validate the oracle program and queue. */
 lootbox: TAccountMetas[1];
+/** Settled or refunded opening PDA; signs the close CPI and is closed here. */
 opening: TAccountMetas[2];
+/** Opening's Switchboard randomness account, closed by Switchboard. */
 randomness: TAccountMetas[3];
+/**
+ * Wrapped-SOL associated token account of `randomness`, closed by
+ * Switchboard.
+ */
 rewardEscrow: TAccountMetas[4];
+/** Switchboard program; must equal the lootbox's stored oracle program. */
 oracleProgram: TAccountMetas[5];
+/** Switchboard program state, passed through to `randomness_close`. */
 oracleProgramState: TAccountMetas[6];
+/**
+ * Switchboard lookup table of the randomness account, passed through to
+ * `randomness_close`.
+ */
 oracleLut: TAccountMetas[7];
+/** Switchboard lookup-table signer, passed through to `randomness_close`. */
 oracleLutSigner: TAccountMetas[8];
+/** System program, passed through to `randomness_close`. */
 systemProgram: TAccountMetas[9];
+/** SPL Token program backing the reward escrow. */
 tokenProgram: TAccountMetas[10];
+/** Wrapped-SOL mint backing the reward escrow. */
 wrappedSolMint: TAccountMetas[11];
+/**
+ * Address Lookup Table program, used by Switchboard to close its lookup
+ * table.
+ */
 addressLookupTableProgram: TAccountMetas[12];
 };
 data: CloseOpeningInstructionData; };

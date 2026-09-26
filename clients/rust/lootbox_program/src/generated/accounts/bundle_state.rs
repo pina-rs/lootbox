@@ -15,27 +15,52 @@ pub struct BundleState {
 /// A complete prize outcome and its escrow authority, shared across all boxes.
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Template PDA that owns this bundle and seeds its address.
 	pub template: solana_pubkey::Pubkey,
+	/// Copies of this outcome, each one draw ticket. Fixed by `addBundle`.
+	/// Deposited slots (SOL, tokens, NFTs, prize pools) escrow their per-win
+	/// amount times this quantity. Mint-on-claim badge slots hold the mint
+	/// authority instead, and Exclusive NFT slots prepay `quantity` mint fees.
 	pub quantity: u64,
+	/// Lamports the bundle PDA held when `addBundle` created it. SOL claims
+	/// and reclaims always leave this reserve in the account.
 	pub rent_reserve: u64,
 	/// Four asset identifiers; the zero address denotes native SOL.
+	/// Slots hold a mint, Core asset, compressed asset ID, `PrizePool` PDA, or
+	/// exclusive attachment PDA; unfunded slots stay zeroed.
 	pub mints: [u8; 128],
 	/// Adapter-specific immutable commitments, one 32-byte value per slot.
 	/// Plain escrowed assets leave their commitment zeroed.
 	pub commitments: [u8; 128],
 	/// Four little-endian base-unit amounts paid per winning bundle.
+	/// Native SOL is in lamports; NFTs, badges, and prize pools use one.
 	pub amounts: [u8; 32],
 	/// Four little-endian counts released through claims or retirement recovery.
+	/// A slot's count never exceeds `quantity`.
 	pub claimed: [u8; 32],
+	/// Prize kind per slot: 0 SOL, 1 SPL token, 2 SPL NFT, 3 Token-2022 token,
+	/// 4 Token Metadata NFT, 5 Core asset, 6 compressed NFT, 7 quote SOL,
+	/// 8 quote token, 9 mint-on-claim badge, 10 prize pool, 11 exclusive NFT.
+	/// Slots at or beyond `funded_assets` are unfunded unless reserved.
 	pub kinds: [u8; 4],
+	/// Mint decimals per slot: 9 for native SOL and 0 for unique assets.
 	pub decimals: [u8; 4],
+	/// Template `revision` assigned by `activateBundle`; zero while funding.
+	/// Allocation rejects the bundle for openings snapshotted before it.
 	pub activated_revision: u64,
+	/// Append-order position within the template; seeds this PDA.
 	pub index: u32,
+	/// Declared asset slots, one to four, fixed by `addBundle`.
 	pub asset_count: u8,
+	/// Slots funded so far; funding fills slots in order at this index. A
+	/// prize pool slot counts only once the pool is sealed.
 	pub funded_assets: u8,
+	/// Bit `i` is set once slot `i`'s undrawn inventory is fully returned to
+	/// the creator by a reclaim instruction.
 	pub reclaimed_mask: u8,
 	/// 0 funding, 1 active.
 	pub status: u8,
+	/// Canonical bump of this bundle PDA.
 	pub bump: u8,
 }
 

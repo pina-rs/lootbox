@@ -9,6 +9,11 @@
 // AccountView is a copyable handle, but borrowing it makes account access and
 // mutability explicit at helper boundaries.
 #![allow(clippy::trivially_copy_pass_by_ref)]
+// Pina 0.21 macros (`PinaPod` derive and `#[pda]`) generate public items
+// without docs, so the workspace `missing_docs` lint cannot apply to this crate
+// until those macros document their output. Hand-written items are fully
+// documented; remove this once Pina ships generated-item docs.
+#![allow(missing_docs)]
 #![no_std]
 
 extern crate alloc;
@@ -20,6 +25,8 @@ extern crate alloc;
 ))]
 extern crate std;
 
+/// On-chain entrypoint that routes every instruction to `process_instruction`
+/// and installs the default allocator and `no_std` panic handler.
 #[cfg(feature = "bpf-entrypoint")]
 pub mod entrypoint;
 
@@ -67,6 +74,7 @@ const OPENING_SETTLED: u8 = 1;
 const OPENING_REFUNDED: u8 = 2;
 const OUTCOME_DOMAIN: &[u8] = b"pina-lootbox-outcome";
 
+/// Custom error codes the lootbox program returns as `ProgramError::Custom`.
 #[error]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LootboxError {
@@ -147,87 +155,176 @@ pub enum LootboxError {
 	ExclusiveAttachWindowClosed = 36,
 }
 
+/// Single-byte instruction discriminators for every lootbox instruction.
 #[discriminator]
 pub enum LootboxInstruction {
+	/// Creates a lootbox definition and its SOL vault around an existing box
+	/// mint.
 	CreateLootbox = 0,
+	/// Appends one weighted SOL outcome to an unsealed lootbox.
 	AddOutcome = 1,
+	/// Transfers SOL from any signer into a lootbox vault.
 	Deposit = 2,
+	/// Permanently freezes a lootbox's outcome table and enables minting.
 	Seal = 3,
+	/// Mints unopened boxes while enforcing maximum supply and solvency.
 	MintBoxes = 4,
+	/// Burns one box and commits fresh Switchboard randomness under an opening
+	/// receipt.
 	RequestOpen = 5,
+	/// Reveals committed randomness, selects an outcome, and pays the recipient.
 	SettleOpen = 6,
+	/// Pays the minimum reward for an opening left unrevealed past the timeout.
 	RefundOpen = 7,
+	/// Closes a finalized opening and its Switchboard accounts, returning rent.
 	CloseOpening = 8,
+	/// Withdraws vault SOL above the rent reserve and worst-case liability.
 	WithdrawSurplus = 9,
+	/// Creates a draft treasury template bound to a box mint.
 	CreateTemplate = 10,
+	/// Stages a new prize bundle at the template's next bundle index.
 	AddBundle = 11,
+	/// Escrows native SOL for one asset of a staged bundle.
 	FundSolPrize = 12,
+	/// Escrows an SPL Token or Token-2022 prize for one asset of a staged
+	/// bundle.
 	FundTokenPrize = 13,
+	/// Publishes a draft template with at least one activated bundle as live.
 	SealTemplate = 14,
+	/// Mints template boxes within the activated inventory before the market
+	/// lock.
 	MintTemplateBoxes = 15,
+	/// Burns one template box and commits fresh Switchboard randomness under an
+	/// opening receipt.
 	RequestTemplateOpen = 16,
+	/// Reveals and persists a template opening's randomness without moving any
+	/// prize.
 	FulfillTemplateOpen = 17,
+	/// Allocates the FIFO head opening to one bundle from its verified
+	/// randomness.
 	AllocateTemplateOpen = 18,
+	/// Delivers one allocated SOL asset to the opening's recipient.
 	ClaimSolPrize = 19,
+	/// Delivers one allocated token asset to the opening's recipient.
 	ClaimTokenPrize = 20,
+	/// Retires a template, stopping issuance and creator mutations.
 	RetireTemplate = 21,
+	/// Returns unallocated SOL inventory to the template authority.
 	ReclaimSolPrize = 22,
+	/// Returns unallocated token inventory to the template authority.
 	ReclaimTokenPrize = 23,
+	/// Closes a fully delivered template opening and its Switchboard accounts.
 	CloseTemplateOpening = 24,
+	/// Appends a fully funded staged bundle to the template's live inventory.
 	ActivateBundle = 25,
+	/// Closes the unfunded or fully reclaimed staged tail bundle.
 	CancelBundle = 26,
+	/// Escrows a Metaplex Token Metadata NFT for one asset of a staged bundle.
 	FundMetadataNftPrize = 27,
+	/// Delivers one allocated Token Metadata NFT to the opening's recipient.
 	ClaimMetadataNftPrize = 28,
+	/// Returns an unallocated Token Metadata NFT to the template authority.
 	ReclaimMetadataNftPrize = 29,
+	/// Escrows a Metaplex Core asset for one asset of a staged bundle.
 	FundCoreAssetPrize = 30,
+	/// Delivers one allocated Core asset to the opening's recipient.
 	ClaimCoreAssetPrize = 31,
+	/// Returns an unallocated Core asset to the template authority.
 	ReclaimCoreAssetPrize = 32,
+	/// Escrows a Bubblegum compressed NFT for one asset of a staged bundle.
 	FundCompressedNftPrize = 33,
+	/// Delivers one allocated compressed NFT to the opening's recipient.
 	ClaimCompressedNftPrize = 34,
+	/// Returns an unallocated compressed NFT to the template authority.
 	ReclaimCompressedNftPrize = 35,
+	/// Advances a FIFO head opening left unrevealed past the timeout without
+	/// consuming inventory.
 	ForfeitTemplateOpen = 36,
+	/// Irreversibly fixes a live template's box supply to its activated
+	/// inventory.
 	LockTreasury = 37,
+	/// Returns a retired, fully settled template's service vault balance.
 	CloseServiceVault = 38,
+	/// Escrows winner-routable native SOL for one asset of a staged bundle.
 	FundQuoteSolPrize = 39,
+	/// Escrows a winner-routable token quote for one asset of a staged bundle.
 	FundQuoteTokenPrize = 40,
+	/// Hands an empty badge mint's authority to a staged bundle for
+	/// mint-on-claim delivery.
 	FundMintPrize = 41,
+	/// Mints one allocated badge to the opening's recipient.
 	ClaimMintPrize = 42,
+	/// Releases unallocated badge copies and revokes the bundle's mint
+	/// authority once every copy is released.
 	ReclaimMintPrize = 43,
+	/// Reserves one bundle asset slot for a Bubblegum prize pool over one tree.
 	CreatePrizePool = 44,
+	/// Transfers the prepared compressed NFT into the prize pool's custody.
 	DepositPrizePoolItem = 45,
+	/// Commits a fully deposited prize pool to its bundle slot.
 	SealPrizePool = 46,
+	/// Allocates the FIFO head opening and selects one prize-pool item.
 	AllocatePrizePoolOpen = 47,
+	/// Transfers the selected prize-pool item to the opening's recipient.
 	ClaimPrizePoolItem = 48,
+	/// Returns an unassigned prize-pool item to the template authority.
 	ReclaimPrizePoolItem = 49,
+	/// Closes an empty, fully recovered, or terminal prize pool.
 	ClosePrizePool = 50,
+	/// Records the verified immutable metadata commitment for the next pool
+	/// item.
 	PreparePrizePoolItem = 51,
+	/// Closes a prepared prize-pool item that was never deposited.
 	CancelPrizePoolItem = 52,
+	/// Creates an Exclusive NFT collection PDA and its Metaplex Core
+	/// collection.
 	CreateExclusiveCollection = 53,
+	/// Loads one trait layer into a draft Exclusive NFT collection.
 	SetExclusiveLayer = 54,
+	/// Creates a Bubblegum tree and makes it the collection's active tree.
 	AppendExclusiveTree = 55,
+	/// Validates and freezes an Exclusive NFT collection's layer tables.
 	PublishExclusiveCollection = 56,
+	/// Binds a staged bundle asset slot to a published Exclusive NFT
+	/// collection and escrows its mint fees.
 	AttachExclusiveNft = 57,
+	/// Mints one allocated Exclusive NFT to the opening's recipient.
 	ClaimExclusiveNft = 58,
+	/// Returns unused Exclusive NFT mint fees to the template authority.
 	ReclaimExclusiveFees = 59,
 }
 
+/// Single-byte account discriminators for every lootbox-owned account.
 #[discriminator]
 pub enum LootboxAccountType {
+	/// A `LootboxState` definition.
 	LootboxState = 1,
+	/// A `VaultState` SOL vault.
 	VaultState = 2,
+	/// An `OpeningState` receipt for the single-reward lootbox model.
 	OpeningState = 3,
+	/// A `TemplateState` treasury template.
 	TemplateState = 4,
+	/// A `BundleState` prize bundle.
 	BundleState = 5,
+	/// A `TemplateOpeningState` receipt for a template box.
 	TemplateOpeningState = 6,
+	/// A `ResultReceiptState` immutable allocation result.
 	ResultReceiptState = 7,
+	/// A `PrizePoolState` Bubblegum prize pool.
 	PrizePoolState = 8,
+	/// A `PrizePoolItemState` prize-pool item.
 	PrizePoolItemState = 9,
+	/// An `ExclusiveCollectionState` layered NFT collection.
 	ExclusiveCollectionState = 10,
+	/// An `ExclusiveAttachmentState` binding a bundle slot to a collection.
 	ExclusiveAttachmentState = 11,
 }
 
+/// Single-byte event discriminators for every event the program emits.
 #[discriminator]
 pub enum LootboxEventType {
+	/// An `ExclusiveNftMintedEvent`, emitted once per minted Exclusive NFT.
 	ExclusiveNftMinted = 1,
 }
 
@@ -235,25 +332,52 @@ pub enum LootboxEventType {
 #[account(discriminator = LootboxAccountType, migrations)]
 #[pda(seeds = [SEED_LOOTBOX, authority: Address, id: u64], bump = bump)]
 pub struct LootboxState {
+	/// Creator that pays for creation and alone may add outcomes, seal, mint
+	/// boxes, and withdraw surplus. A PDA seed; never changes.
 	pub authority: Address,
+	/// Classic SPL Token mint whose tokens are unopened boxes. It has zero
+	/// decimals, this PDA as mint authority, and no freeze authority.
 	pub box_mint: Address,
+	/// Switchboard On-Demand program, mainnet or devnet, that must own every
+	/// opening's randomness account.
 	pub oracle_program: Address,
+	/// Switchboard queue that every opening's randomness must be bound to.
 	pub oracle_queue: Address,
+	/// Creator-chosen identifier that distinguishes this authority's lootboxes.
+	/// A PDA seed.
 	pub id: u64,
+	/// Lifetime cap on boxes minted; nonzero and fixed at creation.
 	pub max_supply: u64,
+	/// Boxes ever minted. Never decreases when boxes burn; bounded by
+	/// `max_supply`.
 	pub total_minted: u64,
+	/// Boxes burned by `RequestOpen` that are not yet settled or refunded.
+	/// Each counts toward the vault's worst-case liability.
 	pub pending_openings: u64,
+	/// Openings settled by `SettleOpen`.
 	pub opened: u64,
+	/// Openings finalized at the reward floor by `RefundOpen`.
 	pub refunded: u64,
+	/// Sum of all outcome weights; the uniform sampling domain. At most
+	/// `MAX_TOTAL_WEIGHT`.
 	pub total_weight: u64,
+	/// Largest outcome reward, in lamports. Every live or pending box is
+	/// collateralized at this amount.
 	pub max_reward_lamports: u64,
-	/// Eight little-endian `u64` weight slots.
+	/// Eight little-endian `u64` weight slots. Slot `i` holds outcome `i`'s
+	/// positive weight; slots at or past `outcome_count` are zero.
 	pub outcome_weights: [u8; 64],
-	/// Eight little-endian `u64` reward slots.
+	/// Eight little-endian `u64` reward slots, in lamports. Slot `i` holds
+	/// outcome `i`'s positive reward; slots at or past `outcome_count` are zero.
 	pub outcome_lamports: [u8; 64],
+	/// Number of configured outcomes, from zero through `MAX_OUTCOMES`.
 	pub outcome_count: u8,
+	/// Set once by `Seal`. A sealed lootbox has a frozen outcome table and may
+	/// mint and open boxes.
 	pub sealed: bool,
+	/// Canonical bump of this lootbox PDA.
 	pub bump: u8,
+	/// Canonical bump of this lootbox's vault PDA.
 	pub vault_bump: u8,
 }
 
@@ -261,8 +385,12 @@ pub struct LootboxState {
 #[account(discriminator = LootboxAccountType, migrations)]
 #[pda(seeds = [SEED_VAULT, lootbox: Address], bump = bump)]
 pub struct VaultState {
+	/// Lootbox this vault collateralizes. A PDA seed.
 	pub lootbox: Address,
+	/// Vault balance in lamports recorded immediately after creation, normally
+	/// its rent-exempt minimum. Never paid out or withdrawn.
 	pub rent_reserve: u64,
+	/// Canonical bump of this vault PDA.
 	pub bump: u8,
 }
 
@@ -273,13 +401,26 @@ pub struct VaultState {
 	bump = bump
 )]
 pub struct OpeningState {
+	/// Lootbox whose box was burned. A PDA seed.
 	pub lootbox: Address,
+	/// Box owner that requested the opening. The only address that may receive
+	/// the reward, sign a refund, or receive the closed receipt's rent.
 	pub recipient: Address,
+	/// Switchboard randomness account committed for this opening, with this
+	/// PDA as its authority. A PDA seed.
 	pub randomness: Address,
+	/// Slot Switchboard recorded when the randomness was committed. The reveal
+	/// must match it, and a refund opens `RANDOMNESS_TIMEOUT_SLOTS` later.
 	pub seed_slot: u64,
+	/// Lamports paid to the recipient. Zero while pending; set to the selected
+	/// reward on settlement or to the minimum reward on refund.
 	pub reward_lamports: u64,
+	/// Index of the paid outcome in the lootbox's outcome table. Zero while
+	/// pending; on refund, the index of the minimum reward.
 	pub selected_outcome: u8,
+	/// Lifecycle status: `0` pending, `1` settled, `2` refunded.
 	pub status: u8,
+	/// Canonical bump of this opening PDA.
 	pub bump: u8,
 }
 
@@ -314,213 +455,391 @@ fn write_outcome_slot(slots: &mut [u8; 64], index: usize, value: u64) -> Result<
 	Ok(())
 }
 
+/// Creates a lootbox definition PDA and its SOL vault PDA, both paid for by the
+/// signing authority. The box mint must be an existing classic SPL mint with
+/// zero decimals, zero supply, the lootbox PDA as mint authority, and no freeze
+/// authority. The new lootbox is unsealed and has no outcomes.
 #[instruction(discriminator = LootboxInstruction::CreateLootbox, migrations)]
 pub struct CreateLootboxInstruction {
+	/// Creator-chosen identifier that distinguishes this authority's lootboxes;
+	/// a seed of the lootbox PDA.
 	pub id: u64,
+	/// Lifetime cap on boxes minted. Rejected with `SupplyExceeded` when zero.
 	pub max_supply: u64,
+	/// Switchboard On-Demand program that will own randomness accounts; must be
+	/// the mainnet or devnet program ID.
 	pub oracle_program: Address,
+	/// Switchboard queue that every opening's randomness must be bound to.
+	/// Stored as given; each opening checks it.
 	pub oracle_queue: Address,
+	/// Canonical bump of the lootbox PDA; rejected unless it equals the derived
+	/// canonical bump.
 	pub bump: u8,
+	/// Canonical bump of the vault PDA; rejected unless it equals the derived
+	/// canonical bump.
 	pub vault_bump: u8,
 }
 
+/// Appends one outcome to an unsealed lootbox's table, signed by the lootbox
+/// authority. At most `MAX_OUTCOMES` outcomes may exist, and the total weight
+/// must stay within `MAX_TOTAL_WEIGHT`. Raises `max_reward_lamports` when this
+/// reward is the largest so far.
 #[instruction(discriminator = LootboxInstruction::AddOutcome, migrations)]
 pub struct AddOutcomeInstruction {
+	/// Relative selection weight; must be nonzero.
 	pub weight: u64,
+	/// SOL reward paid when this outcome is selected, in lamports; must be
+	/// nonzero.
 	pub reward_lamports: u64,
 }
 
+/// Transfers lamports from any signer into a lootbox's vault. Allowed at any
+/// point in the lootbox's life; deposits only add collateral.
 #[instruction(discriminator = LootboxInstruction::Deposit, migrations)]
 pub struct DepositInstruction {
+	/// Amount to transfer into the vault, in lamports; must be nonzero.
 	pub lamports: u64,
 }
 
+/// Permanently seals a lootbox, signed by its authority. Requires at least one
+/// outcome. Sealing freezes the outcome table and enables minting and opening;
+/// it cannot be undone.
 #[instruction(discriminator = LootboxInstruction::Seal, migrations)]
 pub struct SealInstruction {}
 
+/// Mints boxes of a sealed lootbox into a recipient's canonical associated
+/// token account, signed by the lootbox authority. Fails unless lifetime mints
+/// stay within `max_supply` and the vault still covers the rent reserve plus
+/// `max_reward_lamports` for every live and pending box.
 #[instruction(discriminator = LootboxInstruction::MintBoxes, migrations)]
 pub struct MintBoxesInstruction {
+	/// Number of boxes to mint; must be nonzero.
 	pub amount: u64,
 }
 
+/// Opens one box of a sealed lootbox, signed by the box owner and a fresh
+/// randomness keypair. Creates the opening receipt PDA, initializes and
+/// commits Switchboard randomness with that PDA as its authority, then burns
+/// one box from the owner's associated token account. The owner pays all rent.
 #[instruction(discriminator = LootboxInstruction::RequestOpen, migrations)]
 pub struct RequestOpenInstruction {
-	/// Recent slot used by Switchboard to derive its per-randomness lookup table.
+	/// Recent slot used by Switchboard to derive its per-randomness lookup
+	/// table; passed through to `randomness_init`.
 	pub recent_slot: u64,
+	/// Canonical bump of the opening PDA; rejected unless it equals the derived
+	/// canonical bump.
 	pub bump: u8,
 }
 
+/// Reveals a pending opening's randomness through a Switchboard CPI signed by
+/// the opening PDA, selects an outcome, and pays its reward from the vault to
+/// the opening's recipient. Permissionless: any signer may relay the proof and
+/// pay the reveal fees. The randomness must still be unrevealed.
 #[instruction(discriminator = LootboxInstruction::SettleOpen, migrations)]
 pub struct SettleOpenInstruction {
 	/// Switchboard enclave signature returned by the randomness gateway.
 	pub signature: [u8; 64],
 	/// Secp256k1 recovery identifier returned by the randomness gateway.
 	pub recovery_id: u8,
-	/// Revealed value covered by `signature`.
+	/// Revealed value covered by `signature`. The stored reveal must equal it
+	/// after the CPI.
 	pub value: [u8; 32],
 }
 
+/// Finalizes a pending opening at the lootbox's minimum reward, signed by the
+/// opening's recipient. Allowed only while the randomness is unrevealed and at
+/// least `RANDOMNESS_TIMEOUT_SLOTS` slots after the commitment's seed slot.
 #[instruction(discriminator = LootboxInstruction::RefundOpen, migrations)]
 pub struct RefundOpenInstruction {}
 
+/// Closes a settled or refunded opening. Permissionless. Closes the Switchboard
+/// randomness account and its reward escrow through a CPI signed by the opening
+/// PDA, then closes the receipt and returns its lamports to the recipient.
 #[instruction(discriminator = LootboxInstruction::CloseOpening, migrations)]
 pub struct CloseOpeningInstruction {}
 
+/// Transfers surplus vault lamports to the lootbox authority, who must sign.
+/// The vault must keep its rent reserve plus `max_reward_lamports` for every
+/// live and pending box.
 #[instruction(discriminator = LootboxInstruction::WithdrawSurplus, migrations)]
 pub struct WithdrawSurplusInstruction {
+	/// Amount to withdraw, in lamports. Zero is accepted as a no-op.
 	pub lamports: u64,
 }
 
+/// Accounts for `createLootbox`.
 #[derive(Accounts, Debug)]
 pub struct CreateLootboxAccounts<'a> {
+	/// Creator that becomes the lootbox authority and pays rent for the lootbox
+	/// and vault accounts. Signer; seed of the lootbox PDA.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Existing classic SPL mint for the boxes. Must have zero decimals, zero
+	/// supply, the lootbox PDA as mint authority, and no freeze authority.
 	pub box_mint: &'a AccountView,
+	/// Lootbox PDA `["lootbox", authority, id]`, created here.
 	#[pina(validate(empty))]
 	pub lootbox: &'a mut AccountView,
+	/// Vault PDA `["vault", lootbox]`, created here; its post-creation balance
+	/// becomes the rent reserve.
 	#[pina(validate(empty))]
 	pub vault: &'a mut AccountView,
+	/// System program, invoked to create the lootbox and vault accounts.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	/// SPL Token program that owns the box mint.
 	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
 }
 
+/// Accounts for `addOutcome`.
 #[derive(Accounts, Debug)]
 pub struct AddOutcomeAccounts<'a> {
+	/// Lootbox authority. Signer; must match the stored authority.
 	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
+	/// Unsealed lootbox whose outcome table, total weight, and maximum reward
+	/// are updated.
 	pub lootbox: &'a mut AccountView,
 }
 
+/// Accounts for `deposit`.
 #[derive(Accounts, Debug)]
 pub struct DepositAccounts<'a> {
+	/// Any wallet funding the vault. Writable signer; the lamports come from
+	/// it.
 	#[pina(validate(signer))]
 	pub depositor: &'a mut AccountView,
+	/// Lootbox whose vault receives the deposit; its PDA is revalidated.
 	pub lootbox: &'a AccountView,
+	/// Vault PDA of `lootbox` that receives the lamports. Writable.
 	pub vault: &'a mut AccountView,
+	/// System program, invoked for the transfer.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
+/// Accounts for `seal`.
 #[derive(Accounts, Debug)]
 pub struct SealAccounts<'a> {
+	/// Lootbox authority. Signer; must match the stored authority.
 	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
+	/// Unsealed lootbox with at least one outcome, marked sealed here.
 	pub lootbox: &'a mut AccountView,
 }
 
+/// Accounts for `mintBoxes`.
 #[derive(Accounts, Debug)]
 pub struct MintBoxesAccounts<'a> {
+	/// Lootbox authority. Signer; must match the stored authority.
 	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
+	/// Sealed lootbox whose `total_minted` grows; its PDA signs the mint as
+	/// mint authority.
 	pub lootbox: &'a mut AccountView,
+	/// Vault PDA of `lootbox`, read to prove the new supply stays fully
+	/// collateralized.
 	pub vault: &'a AccountView,
+	/// The lootbox's box mint. Writable; its supply grows.
 	pub box_mint: &'a mut AccountView,
+	/// Canonical associated token account of the recipient for the box mint,
+	/// which receives the new boxes.
 	pub recipient_box_account: &'a mut AccountView,
+	/// SPL Token program, invoked to mint the boxes.
 	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
 }
 
+/// Accounts for `requestOpen`.
 #[derive(Accounts, Debug)]
 pub struct RequestOpenAccounts<'a> {
+	/// Box owner that burns one box and becomes the opening's recipient.
+	/// Writable signer; pays rent for the opening and Switchboard accounts.
 	#[pina(validate(signer))]
 	pub owner: &'a mut AccountView,
+	/// Sealed lootbox whose `pending_openings` grows.
 	pub lootbox: &'a mut AccountView,
+	/// Vault PDA of `lootbox`, read to prove the pending opening stays fully
+	/// collateralized.
 	pub vault: &'a AccountView,
+	/// The lootbox's box mint. Writable; one box is burned.
 	pub box_mint: &'a mut AccountView,
+	/// Owner's canonical associated token account for the box mint; must hold
+	/// at least one box, and one is burned from it.
 	pub owner_box_account: &'a mut AccountView,
+	/// Opening PDA `["opening", lootbox, randomness]`, created here. It becomes
+	/// the randomness authority and signs the Switchboard CPIs.
 	#[pina(validate(empty))]
 	pub opening: &'a mut AccountView,
+	/// Fresh randomness keypair. Signer; initialized and committed here by
+	/// Switchboard.
 	#[pina(validate(signer))]
 	#[pina(validate(empty))]
 	pub randomness: &'a mut AccountView,
+	/// Wrapped-SOL associated token account of `randomness`, used by
+	/// Switchboard as its reward escrow.
 	pub reward_escrow: &'a mut AccountView,
+	/// Switchboard queue; must equal the lootbox's stored queue.
 	pub oracle_queue: &'a mut AccountView,
+	/// Oracle assigned to the commitment; must be owned by the oracle program.
+	/// Switchboard validates queue membership and binds it to the randomness.
 	pub oracle: &'a mut AccountView,
+	/// Slot hashes sysvar, read by Switchboard's commit.
 	#[pina(validate(sysvar = SLOT_HASHES_SYSVAR_ID))]
 	pub recent_slot_hashes: &'a AccountView,
+	/// Switchboard program; must equal the lootbox's stored oracle program.
 	pub oracle_program: &'a AccountView,
+	/// Switchboard program state, passed through to `randomness_init`.
 	pub oracle_program_state: &'a AccountView,
+	/// Switchboard lookup-table signer, passed through to `randomness_init`.
 	pub oracle_lut_signer: &'a AccountView,
+	/// Switchboard per-randomness lookup table derived from `recent_slot`,
+	/// created by `randomness_init`.
 	pub oracle_lut: &'a mut AccountView,
+	/// Associated Token Account program, used by Switchboard to create the
+	/// reward escrow.
 	#[pina(validate(address = associated_token_account::ID))]
 	pub associated_token_program: &'a AccountView,
+	/// Wrapped-SOL mint backing the reward escrow.
 	#[pina(validate(address = WRAPPED_SOL_MINT_ID))]
 	pub wrapped_sol_mint: &'a AccountView,
+	/// Address Lookup Table program, used by Switchboard to create its lookup
+	/// table.
 	#[pina(validate(address = ADDRESS_LOOKUP_TABLE_PROGRAM_ID))]
 	pub address_lookup_table_program: &'a AccountView,
+	/// System program, invoked to create the opening account.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	/// SPL Token program, invoked to burn the box.
 	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
 }
 
+/// Accounts for `settleOpen`.
 #[derive(Accounts, Debug)]
 pub struct SettleOpenAccounts<'a> {
+	/// Opening's stored recipient, which receives the reward lamports. Writable;
+	/// need not sign.
 	pub recipient: &'a mut AccountView,
+	/// Relayer that submits the proof. Writable signer; pays Switchboard's
+	/// reveal costs.
 	#[pina(validate(signer))]
 	pub payer: &'a mut AccountView,
+	/// Lootbox of the opening; `pending_openings` falls and `opened` grows.
 	pub lootbox: &'a mut AccountView,
+	/// Vault PDA of `lootbox` that pays the reward; must keep its rent reserve
+	/// plus the remaining liability.
 	pub vault: &'a mut AccountView,
+	/// The lootbox's box mint, read for the live supply in the liability check.
 	pub box_mint: &'a AccountView,
+	/// Pending opening PDA bound to `lootbox`, `randomness`, and `recipient`.
+	/// Signs the reveal CPI and records the result.
 	pub opening: &'a mut AccountView,
+	/// Opening's committed, unrevealed Switchboard randomness account, revealed
+	/// here.
 	pub randomness: &'a mut AccountView,
+	/// Switchboard queue; must equal the lootbox's stored queue.
 	pub oracle_queue: &'a AccountView,
+	/// Oracle recorded on the randomness at commit time.
 	pub oracle: &'a AccountView,
+	/// Oracle stats account updated by Switchboard's reveal.
 	pub oracle_stats: &'a mut AccountView,
+	/// Slot hashes sysvar, read by Switchboard's reveal.
 	#[pina(validate(sysvar = SLOT_HASHES_SYSVAR_ID))]
 	pub recent_slot_hashes: &'a AccountView,
+	/// Switchboard program; must equal the lootbox's stored oracle program.
 	pub oracle_program: &'a AccountView,
+	/// Wrapped-SOL associated token account of `randomness`, used by
+	/// Switchboard as its reward escrow.
 	pub reward_escrow: &'a mut AccountView,
+	/// Switchboard program state, passed through to `randomness_reveal`.
 	pub oracle_program_state: &'a AccountView,
+	/// System program, passed through to `randomness_reveal`.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	/// SPL Token program backing the reward escrow.
 	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
+	/// Wrapped-SOL mint backing the reward escrow.
 	#[pina(validate(address = WRAPPED_SOL_MINT_ID))]
 	pub wrapped_sol_mint: &'a AccountView,
 }
 
+/// Accounts for `refundOpen`.
 #[derive(Accounts, Debug)]
 pub struct RefundOpenAccounts<'a> {
+	/// Opening's stored recipient. Writable signer; receives the minimum
+	/// reward.
 	#[pina(validate(signer))]
 	pub recipient: &'a mut AccountView,
+	/// Lootbox of the opening; `pending_openings` falls and `refunded` grows.
 	pub lootbox: &'a mut AccountView,
+	/// Vault PDA of `lootbox` that pays the minimum reward; must keep its rent
+	/// reserve plus the remaining liability.
 	pub vault: &'a mut AccountView,
+	/// The lootbox's box mint, read for the live supply in the liability check.
 	pub box_mint: &'a AccountView,
+	/// Pending opening PDA bound to `lootbox`, `randomness`, and `recipient`;
+	/// records the refund.
 	pub opening: &'a mut AccountView,
+	/// Opening's Switchboard randomness account; must still be unrevealed.
 	pub randomness: &'a AccountView,
+	/// Clock sysvar, validated in the handler and read for the current slot.
 	pub clock: &'a AccountView,
 }
 
+/// Accounts for `closeOpening`.
 #[derive(Accounts, Debug)]
 pub struct CloseOpeningAccounts<'a> {
+	/// Opening's stored recipient, which receives the receipt's lamports,
+	/// including the randomness rent Switchboard returns to the opening PDA.
 	pub recipient: &'a mut AccountView,
+	/// Lootbox of the opening, read to validate the oracle program and queue.
 	pub lootbox: &'a AccountView,
+	/// Settled or refunded opening PDA; signs the close CPI and is closed here.
 	pub opening: &'a mut AccountView,
+	/// Opening's Switchboard randomness account, closed by Switchboard.
 	pub randomness: &'a mut AccountView,
+	/// Wrapped-SOL associated token account of `randomness`, closed by
+	/// Switchboard.
 	pub reward_escrow: &'a mut AccountView,
+	/// Switchboard program; must equal the lootbox's stored oracle program.
 	pub oracle_program: &'a AccountView,
+	/// Switchboard program state, passed through to `randomness_close`.
 	pub oracle_program_state: &'a AccountView,
+	/// Switchboard lookup table of the randomness account, passed through to
+	/// `randomness_close`.
 	pub oracle_lut: &'a mut AccountView,
+	/// Switchboard lookup-table signer, passed through to `randomness_close`.
 	pub oracle_lut_signer: &'a AccountView,
+	/// System program, passed through to `randomness_close`.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	/// SPL Token program backing the reward escrow.
 	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
+	/// Wrapped-SOL mint backing the reward escrow.
 	#[pina(validate(address = WRAPPED_SOL_MINT_ID))]
 	pub wrapped_sol_mint: &'a AccountView,
+	/// Address Lookup Table program, used by Switchboard to close its lookup
+	/// table.
 	#[pina(validate(address = ADDRESS_LOOKUP_TABLE_PROGRAM_ID))]
 	pub address_lookup_table_program: &'a AccountView,
 }
 
+/// Accounts for `withdrawSurplus`.
 #[derive(Accounts, Debug)]
 pub struct WithdrawSurplusAccounts<'a> {
+	/// Lootbox authority. Writable signer; must match the stored authority and
+	/// receives the lamports.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Lootbox whose vault is drawn from.
 	pub lootbox: &'a AccountView,
+	/// Vault PDA of `lootbox` that pays the withdrawal. Writable.
 	pub vault: &'a mut AccountView,
+	/// The lootbox's box mint, read for the live supply in the liability check.
 	pub box_mint: &'a AccountView,
 }
 

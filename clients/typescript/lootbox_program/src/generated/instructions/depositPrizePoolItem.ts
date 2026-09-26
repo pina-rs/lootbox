@@ -39,18 +39,40 @@ export function getDepositPrizePoolItemInstructionDataCodec(): FixedSizeCodec<De
 }
 
 export type DepositPrizePoolItemInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePoolItem extends InstructionAccountInput = InstructionAccountInput, TAccountTreeConfig extends InstructionAccountInput = InstructionAccountInput, TAccountMerkleTree extends InstructionAccountInput = InstructionAccountInput, TAccountBubblegumProgram extends InstructionAccountInput = InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput = InstructionAccountInput, TAccountCompressionProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountProofAccounts extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Template authority; signs as the current leaf owner and pays rent for
+ * bitmap growth.
+ */
+authority: TAccountAuthority;
+/** Template PDA; its treasury must be unlocked and not retired. */
 template: TAccountTemplate;
+/** Funding bundle PDA whose current slot holds `prize_pool`. */
 bundle: TAccountBundle;
+/**
+ * Funding `PrizePoolState` PDA that receives the leaf; its cursor,
+ * accumulator, and bitmap advance.
+ */
 prizePool: TAccountPrizePool;
+/** Prepared item PDA at the pool's `deposit_cursor`; marked deposited. */
 prizePoolItem: TAccountPrizePoolItem;
+/** Bubblegum tree config of `merkle_tree`, validated by Bubblegum. */
 treeConfig: TAccountTreeConfig;
+/** Pool's pinned tree that holds the leaf; Bubblegum rewrites it. */
 merkleTree: TAccountMerkleTree;
+/** Bubblegum program, invoked to transfer the compressed NFT. */
 bubblegumProgram: TAccountBubblegumProgram;
+/** SPL Noop program used by Bubblegum as its log wrapper. */
 logWrapper: TAccountLogWrapper;
+/** SPL Account Compression program that owns `merkle_tree`. */
 compressionProgram: TAccountCompressionProgram;
+/** System program, passed to Bubblegum. */
 systemProgram?: TAccountSystemProgram;
-/** Merkle proof nodes in leaf-to-root order. */
+/**
+ * Merkle proof nodes in leaf-to-root order.
+ *
+ * Passed as zero through 16 readonly remaining accounts; the tree's canopy
+ * supplies the rest of the path.
+ */
 proofAccounts: TAccountProofAccounts;
 root: DepositPrizePoolItemInstructionDataArgs["root"];
 dataHash: DepositPrizePoolItemInstructionDataArgs["dataHash"];
@@ -85,18 +107,40 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedDepositPrizePoolItemInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template authority; signs as the current leaf owner and pays rent for
+ * bitmap growth.
+ */
 authority: TAccountMetas[0];
+/** Template PDA; its treasury must be unlocked and not retired. */
 template: TAccountMetas[1];
+/** Funding bundle PDA whose current slot holds `prize_pool`. */
 bundle: TAccountMetas[2];
+/**
+ * Funding `PrizePoolState` PDA that receives the leaf; its cursor,
+ * accumulator, and bitmap advance.
+ */
 prizePool: TAccountMetas[3];
+/** Prepared item PDA at the pool's `deposit_cursor`; marked deposited. */
 prizePoolItem: TAccountMetas[4];
+/** Bubblegum tree config of `merkle_tree`, validated by Bubblegum. */
 treeConfig: TAccountMetas[5];
+/** Pool's pinned tree that holds the leaf; Bubblegum rewrites it. */
 merkleTree: TAccountMetas[6];
+/** Bubblegum program, invoked to transfer the compressed NFT. */
 bubblegumProgram: TAccountMetas[7];
+/** SPL Noop program used by Bubblegum as its log wrapper. */
 logWrapper: TAccountMetas[8];
+/** SPL Account Compression program that owns `merkle_tree`. */
 compressionProgram: TAccountMetas[9];
+/** System program, passed to Bubblegum. */
 systemProgram: TAccountMetas[10];
-/** Merkle proof nodes in leaf-to-root order. */
+/**
+ * Merkle proof nodes in leaf-to-root order.
+ *
+ * Passed as zero through 16 readonly remaining accounts; the tree's canopy
+ * supplies the rest of the path.
+ */
 proofAccounts: TAccountMetas[11];
 };
 data: DepositPrizePoolItemInstructionData; };

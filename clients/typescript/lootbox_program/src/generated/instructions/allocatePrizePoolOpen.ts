@@ -39,14 +39,31 @@ export function getAllocatePrizePoolOpenInstructionDataCodec(): FixedSizeCodec<A
 }
 
 export type AllocatePrizePoolOpenInput<TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput = InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput = InstructionAccountInput, TAccountResultReceipt extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  template: TAccountTemplate;
+  /** Template PDA; its remaining inventory and allocation counters update. */
+template: TAccountTemplate;
+/**
+ * Verified `TemplateOpeningState` PDA next in allocation order; becomes
+ * allocated and records the reserved pool item.
+ */
 opening: TAccountOpening;
+/** Active bundle PDA selected by the opening's entropy. */
 bundle: TAccountBundle;
+/** Sealed `PrizePoolState` PDA in `bundle`; reserves one item. */
 prizePool: TAccountPrizePool;
-/** Creator-funded when permanent result receipts are enabled. */
+/**
+ * Creator-funded when permanent result receipts are enabled.
+ *
+ * Template service vault PDA `["service-vault", template]`, validated when
+ * receipts or settlement bounties are enabled; pays the receipt rent.
+ */
 serviceVault: TAccountServiceVault;
-/** Created only when enabled in the locked treasury configuration. */
+/**
+ * Created only when enabled in the locked treasury configuration.
+ *
+ * Must be the empty PDA `["result-receipt", opening, sequence]`.
+ */
 resultReceipt: TAccountResultReceipt;
+/** System program, invoked to fund and create the result receipt. */
 systemProgram?: TAccountSystemProgram;
 resultReceiptBump: AllocatePrizePoolOpenInstructionDataArgs["resultReceiptBump"];
 }
@@ -77,14 +94,31 @@ return Object.freeze({ accounts: [getAccountMeta("template", accounts.template),
 
 export type ParsedAllocatePrizePoolOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template PDA; its remaining inventory and allocation counters update. */
 template: TAccountMetas[0];
+/**
+ * Verified `TemplateOpeningState` PDA next in allocation order; becomes
+ * allocated and records the reserved pool item.
+ */
 opening: TAccountMetas[1];
+/** Active bundle PDA selected by the opening's entropy. */
 bundle: TAccountMetas[2];
+/** Sealed `PrizePoolState` PDA in `bundle`; reserves one item. */
 prizePool: TAccountMetas[3];
-/** Creator-funded when permanent result receipts are enabled. */
+/**
+ * Creator-funded when permanent result receipts are enabled.
+ *
+ * Template service vault PDA `["service-vault", template]`, validated when
+ * receipts or settlement bounties are enabled; pays the receipt rent.
+ */
 serviceVault: TAccountMetas[4];
-/** Created only when enabled in the locked treasury configuration. */
+/**
+ * Created only when enabled in the locked treasury configuration.
+ *
+ * Must be the empty PDA `["result-receipt", opening, sequence]`.
+ */
 resultReceipt: TAccountMetas[5];
+/** System program, invoked to fund and create the result receipt. */
 systemProgram: TAccountMetas[6];
 };
 data: AllocatePrizePoolOpenInstructionData; };

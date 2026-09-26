@@ -8,29 +8,55 @@
 	clippy::too_many_arguments
 )]
 
+/// Mint an opening's Exclusive Lootbox NFT to its beneficiary.
+///
+/// Permissionless to relay. The opening must be allocated to this bundle with
+/// the slot unclaimed, and the attachment, collection, active tree, and Core
+/// collection must match their commitments. Records the claim, derives the
+/// traits from the opening's entropy, takes the next serial, mints through
+/// Bubblegum V2 with the fee vault paying, and emits `ExclusiveNftMintedEvent`.
 pub const CLAIM_EXCLUSIVE_NFT_DISCRIMINATOR: u8 = 58u8;
 pub const CLAIM_EXCLUSIVE_NFT_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ClaimExclusiveNft {
+	/// Template PDA that owns the opening and bundle.
 	pub template: solana_pubkey::Pubkey,
+	/// Allocated opening PDA; its claim bit is set and its entropy seeds the
+	/// traits.
 	pub opening: solana_pubkey::Pubkey,
+	/// Bundle PDA the opening was allocated to; its claimed count advances.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Attachment PDA committed in the bundle slot; its `minted` advances.
 	pub exclusive_attachment: solana_pubkey::Pubkey,
 	/// Pays Bubblegum's per-mint fee from the creator's escrow.
+	///
+	/// Canonical `["exclusive-fee-vault", attachment]` PDA; signs as payer.
 	pub fee_vault: solana_pubkey::Pubkey,
+	/// Published collection PDA named by the attachment; signs as tree and
+	/// collection authority and advances its serial.
 	pub exclusive_collection: solana_pubkey::Pubkey,
 	/// Must be the opening's bound beneficiary; becomes the leaf owner.
 	pub recipient: solana_pubkey::Pubkey,
+	/// Canonical Bubblegum tree config PDA of `merkle_tree`; supplies the leaf
+	/// nonce and receives the mint fee.
 	pub tree_config: solana_pubkey::Pubkey,
+	/// The collection's `active_tree`, which receives the new leaf.
 	pub merkle_tree: solana_pubkey::Pubkey,
+	/// The collection's Core collection, which the leaf joins.
 	pub core_collection: solana_pubkey::Pubkey,
+	/// Bubblegum's fixed Core CPI signer PDA.
 	pub core_cpi_signer: solana_pubkey::Pubkey,
+	/// Bubblegum program, invoked to mint the leaf.
 	pub bubblegum_program: solana_pubkey::Pubkey,
+	/// Metaplex Core program, invoked by Bubblegum for the collection.
 	pub core_program: solana_pubkey::Pubkey,
+	/// MPL Noop program used by Bubblegum as its log wrapper.
 	pub log_wrapper: solana_pubkey::Pubkey,
+	/// MPL Account Compression program that owns `merkle_tree`.
 	pub compression_program: solana_pubkey::Pubkey,
+	/// System program, passed to Bubblegum.
 	pub system_program: solana_pubkey::Pubkey,
 }
 

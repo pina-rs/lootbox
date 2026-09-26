@@ -18,15 +18,26 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Permanently retires a live template: issuance and every creator mutation
+/// stop, while existing boxes stay openable and prizes stay claimable.
+///
+/// Signed by the template authority. An issued template that is not
+/// market-locked may retire only at or after `opens_at`, as a missed-deadline
+/// recovery; that path also disables result receipts and settlement bounties,
+/// which were never prepaid.
 /// CPI call for the `retire_template` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct RetireTemplate<'account> {
 	/// CPI account `authority`.
+	/// Template authority; must sign and match the authority recorded on the
+	/// template.
 	/// Required privileges: read-only and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Live template treasury, validated by its PDA seeds; moves to the retired
+	/// status.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
 

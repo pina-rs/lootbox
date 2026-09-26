@@ -15,25 +15,52 @@ pub struct LootboxState {
 /// Immutable definition and live accounting for one lootbox mint.
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Creator that pays for creation and alone may add outcomes, seal, mint
+	/// boxes, and withdraw surplus. A PDA seed; never changes.
 	pub authority: solana_pubkey::Pubkey,
+	/// Classic SPL Token mint whose tokens are unopened boxes. It has zero
+	/// decimals, this PDA as mint authority, and no freeze authority.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// Switchboard On-Demand program, mainnet or devnet, that must own every
+	/// opening's randomness account.
 	pub oracle_program: solana_pubkey::Pubkey,
+	/// Switchboard queue that every opening's randomness must be bound to.
 	pub oracle_queue: solana_pubkey::Pubkey,
+	/// Creator-chosen identifier that distinguishes this authority's lootboxes.
+	/// A PDA seed.
 	pub id: u64,
+	/// Lifetime cap on boxes minted; nonzero and fixed at creation.
 	pub max_supply: u64,
+	/// Boxes ever minted. Never decreases when boxes burn; bounded by
+	/// `max_supply`.
 	pub total_minted: u64,
+	/// Boxes burned by `RequestOpen` that are not yet settled or refunded.
+	/// Each counts toward the vault's worst-case liability.
 	pub pending_openings: u64,
+	/// Openings settled by `SettleOpen`.
 	pub opened: u64,
+	/// Openings finalized at the reward floor by `RefundOpen`.
 	pub refunded: u64,
+	/// Sum of all outcome weights; the uniform sampling domain. At most
+	/// `MAX_TOTAL_WEIGHT`.
 	pub total_weight: u64,
+	/// Largest outcome reward, in lamports. Every live or pending box is
+	/// collateralized at this amount.
 	pub max_reward_lamports: u64,
-	/// Eight little-endian `u64` weight slots.
+	/// Eight little-endian `u64` weight slots. Slot `i` holds outcome `i`'s
+	/// positive weight; slots at or past `outcome_count` are zero.
 	pub outcome_weights: [u8; 64],
-	/// Eight little-endian `u64` reward slots.
+	/// Eight little-endian `u64` reward slots, in lamports. Slot `i` holds
+	/// outcome `i`'s positive reward; slots at or past `outcome_count` are zero.
 	pub outcome_lamports: [u8; 64],
+	/// Number of configured outcomes, from zero through `MAX_OUTCOMES`.
 	pub outcome_count: u8,
+	/// Set once by `Seal`. A sealed lootbox has a frozen outcome table and may
+	/// mint and open boxes.
 	pub sealed: bool,
+	/// Canonical bump of this lootbox PDA.
 	pub bump: u8,
+	/// Canonical bump of this lootbox's vault PDA.
 	pub vault_bump: u8,
 }
 

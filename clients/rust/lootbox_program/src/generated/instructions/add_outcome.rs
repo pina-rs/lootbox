@@ -8,13 +8,20 @@
 	clippy::too_many_arguments
 )]
 
+/// Appends one outcome to an unsealed lootbox's table, signed by the lootbox
+/// authority. At most `MAX_OUTCOMES` outcomes may exist, and the total weight
+/// must stay within `MAX_TOTAL_WEIGHT`. Raises `max_reward_lamports` when this
+/// reward is the largest so far.
 pub const ADD_OUTCOME_DISCRIMINATOR: u8 = 1u8;
 pub const ADD_OUTCOME_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct AddOutcome {
+	/// Lootbox authority. Signer; must match the stored authority.
 	pub authority: solana_pubkey::Pubkey,
+	/// Unsealed lootbox whose outcome table, total weight, and maximum reward
+	/// are updated.
 	pub lootbox: solana_pubkey::Pubkey,
 }
 

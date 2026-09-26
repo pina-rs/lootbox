@@ -8,17 +8,30 @@
 	clippy::too_many_arguments
 )]
 
+/// Creates a lootbox definition PDA and its SOL vault PDA, both paid for by the
+/// signing authority. The box mint must be an existing classic SPL mint with
+/// zero decimals, zero supply, the lootbox PDA as mint authority, and no freeze
+/// authority. The new lootbox is unsealed and has no outcomes.
 pub const CREATE_LOOTBOX_DISCRIMINATOR: u8 = 0u8;
 pub const CREATE_LOOTBOX_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct CreateLootbox {
+	/// Creator that becomes the lootbox authority and pays rent for the lootbox
+	/// and vault accounts. Signer; seed of the lootbox PDA.
 	pub authority: solana_pubkey::Pubkey,
+	/// Existing classic SPL mint for the boxes. Must have zero decimals, zero
+	/// supply, the lootbox PDA as mint authority, and no freeze authority.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// Lootbox PDA `["lootbox", authority, id]`, created here.
 	pub lootbox: solana_pubkey::Pubkey,
+	/// Vault PDA `["vault", lootbox]`, created here; its post-creation balance
+	/// becomes the rent reserve.
 	pub vault: solana_pubkey::Pubkey,
+	/// System program, invoked to create the lootbox and vault accounts.
 	pub system_program: solana_pubkey::Pubkey,
+	/// SPL Token program that owns the box mint.
 	pub token_program: solana_pubkey::Pubkey,
 }
 

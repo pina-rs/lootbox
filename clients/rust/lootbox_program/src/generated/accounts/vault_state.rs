@@ -15,8 +15,12 @@ pub struct VaultState {
 /// Program-owned SOL vault for one lootbox definition.
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Lootbox this vault collateralizes. A PDA seed.
 	pub lootbox: solana_pubkey::Pubkey,
+	/// Vault balance in lamports recorded immediately after creation, normally
+	/// its rent-exempt minimum. Never paid out or withdrawn.
 	pub rent_reserve: u64,
+	/// Canonical bump of this vault PDA.
 	pub bump: u8,
 }
 

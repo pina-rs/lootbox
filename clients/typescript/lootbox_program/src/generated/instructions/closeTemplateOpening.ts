@@ -39,18 +39,49 @@ export function getCloseTemplateOpeningInstructionDataCodec(): FixedSizeCodec<Cl
 }
 
 export type CloseTemplateOpeningInput<TAccountRentRefund extends InstructionAccountInput = InstructionAccountInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountRandomness extends InstructionAccountInput = InstructionAccountInput, TAccountRewardEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgram extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgramState extends InstructionAccountInput = InstructionAccountInput, TAccountOracleLut extends InstructionAccountInput = InstructionAccountInput, TAccountOracleLutSigner extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountWrappedSolMint extends InstructionAccountInput = InstructionAccountInput, TAccountAddressLookupTableProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  rentRefund: TAccountRentRefund;
+  /**
+ * Opening's recorded `rent_refund`, the original request payer; receives
+ * the opening and randomness rent.
+ */
+rentRefund: TAccountRentRefund;
+/**
+ * Template PDA that owns the opening and pins the oracle program and
+ * queue.
+ */
 template: TAccountTemplate;
+/**
+ * Opening PDA from `["template-opening", template, randomness]` with
+ * status delivered or forfeited; signs the oracle close and is closed here.
+ */
 opening: TAccountOpening;
+/**
+ * Opening's Switchboard randomness account, whose authority must be the
+ * opening and whose queue must match the template; closed by the oracle.
+ */
 randomness: TAccountRandomness;
+/**
+ * Wrapped-SOL associated token account of `randomness`; closed by the
+ * oracle.
+ */
 rewardEscrow: TAccountRewardEscrow;
+/**
+ * Switchboard On-Demand program; must equal the template's
+ * `oracle_program`.
+ */
 oracleProgram: TAccountOracleProgram;
+/** Switchboard program state, passed through to the oracle. */
 oracleProgramState: TAccountOracleProgramState;
+/** Switchboard address lookup table, passed through to the oracle. */
 oracleLut: TAccountOracleLut;
+/** Switchboard lookup-table signer, passed through to the oracle. */
 oracleLutSigner: TAccountOracleLutSigner;
+/** System program required by the oracle close. */
 systemProgram?: TAccountSystemProgram;
+/** SPL Token program that owns the reward escrow. */
 tokenProgram?: TAccountTokenProgram;
+/** Wrapped-SOL mint backing the reward escrow. */
 wrappedSolMint: TAccountWrappedSolMint;
+/** Address Lookup Table program required by the oracle close. */
 addressLookupTableProgram: TAccountAddressLookupTableProgram;
 }
 
@@ -79,18 +110,49 @@ return Object.freeze({ accounts: [getAccountMeta("rentRefund", accounts.rentRefu
 
 export type ParsedCloseTemplateOpeningInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Opening's recorded `rent_refund`, the original request payer; receives
+ * the opening and randomness rent.
+ */
 rentRefund: TAccountMetas[0];
+/**
+ * Template PDA that owns the opening and pins the oracle program and
+ * queue.
+ */
 template: TAccountMetas[1];
+/**
+ * Opening PDA from `["template-opening", template, randomness]` with
+ * status delivered or forfeited; signs the oracle close and is closed here.
+ */
 opening: TAccountMetas[2];
+/**
+ * Opening's Switchboard randomness account, whose authority must be the
+ * opening and whose queue must match the template; closed by the oracle.
+ */
 randomness: TAccountMetas[3];
+/**
+ * Wrapped-SOL associated token account of `randomness`; closed by the
+ * oracle.
+ */
 rewardEscrow: TAccountMetas[4];
+/**
+ * Switchboard On-Demand program; must equal the template's
+ * `oracle_program`.
+ */
 oracleProgram: TAccountMetas[5];
+/** Switchboard program state, passed through to the oracle. */
 oracleProgramState: TAccountMetas[6];
+/** Switchboard address lookup table, passed through to the oracle. */
 oracleLut: TAccountMetas[7];
+/** Switchboard lookup-table signer, passed through to the oracle. */
 oracleLutSigner: TAccountMetas[8];
+/** System program required by the oracle close. */
 systemProgram: TAccountMetas[9];
+/** SPL Token program that owns the reward escrow. */
 tokenProgram: TAccountMetas[10];
+/** Wrapped-SOL mint backing the reward escrow. */
 wrappedSolMint: TAccountMetas[11];
+/** Address Lookup Table program required by the oracle close. */
 addressLookupTableProgram: TAccountMetas[12];
 };
 data: CloseTemplateOpeningInstructionData; };

@@ -18,7 +18,17 @@ export const EXCLUSIVE_NFT_MINTED_EVENT_EVENT_DISCRIMINATOR2 = 0;
 export function getExclusiveNftMintedEventEventDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(EXCLUSIVE_NFT_MINTED_EVENT_EVENT_DISCRIMINATOR2); }
 
 /** Emitted once per minted Exclusive Lootbox NFT. */
-export type ExclusiveNftMintedEventEvent = { discriminator: number; migrationVersion: number; template: Address; opening: Address; collection: Address; attachment: Address; beneficiary: Address;
+export type ExclusiveNftMintedEventEvent = { discriminator: number; migrationVersion: number;
+/** Template PDA of the claimed opening. */
+template: Address;
+/** Opening PDA whose entropy seeded the traits. */
+opening: Address;
+/** `ExclusiveCollectionState` PDA that minted the leaf. */
+collection: Address;
+/** `ExclusiveAttachmentState` PDA whose slot was claimed. */
+attachment: Address;
+/** Opening's bound beneficiary and the new leaf owner. */
+beneficiary: Address;
 /** Bubblegum asset ID of the minted leaf. */
 asset: Address;
 /** Seed `S` that determined every trait. */
@@ -26,9 +36,21 @@ seed: ReadonlyUint8Array;
 /** Global serial within the collection. */
 serial: bigint;
 /** Trait index per layer, bottom to top; unused layers are zero. */
-traits: ReadonlyUint8Array; layerCount: number;  };
+traits: ReadonlyUint8Array;
+/** Number of meaningful entries in `traits`. */
+layerCount: number;  };
 
-export type ExclusiveNftMintedEventEventArgs = { template: Address; opening: Address; collection: Address; attachment: Address; beneficiary: Address;
+export type ExclusiveNftMintedEventEventArgs = {
+/** Template PDA of the claimed opening. */
+template: Address;
+/** Opening PDA whose entropy seeded the traits. */
+opening: Address;
+/** `ExclusiveCollectionState` PDA that minted the leaf. */
+collection: Address;
+/** `ExclusiveAttachmentState` PDA whose slot was claimed. */
+attachment: Address;
+/** Opening's bound beneficiary and the new leaf owner. */
+beneficiary: Address;
 /** Bubblegum asset ID of the minted leaf. */
 asset: Address;
 /** Seed `S` that determined every trait. */
@@ -36,7 +58,9 @@ seed: ReadonlyUint8Array;
 /** Global serial within the collection. */
 serial: number | bigint;
 /** Trait index per layer, bottom to top; unused layers are zero. */
-traits: ReadonlyUint8Array; layerCount: number;  };
+traits: ReadonlyUint8Array;
+/** Number of meaningful entries in `traits`. */
+layerCount: number;  };
 
 /** Gets the encoder for {@link ExclusiveNftMintedEventEventArgs} event data. */
 export function getExclusiveNftMintedEventEventEncoder(): FixedSizeEncoder<ExclusiveNftMintedEventEventArgs> {

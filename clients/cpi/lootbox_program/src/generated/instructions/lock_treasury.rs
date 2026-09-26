@@ -18,38 +18,53 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Irreversibly fixes a live template's box supply to its activated inventory.
+///
+/// The template authority signs before `opens_at`. Inventory must be pristine,
+/// with every activated ticket minted and no staged tail. It funds the service
+/// vault when receipts or bounties are enabled, revokes box mint authority, and
+/// records the manifest hash.
 /// CPI call for the `lock_treasury` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct LockTreasury<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs and pays any service vault top-up.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Live, unlocked template PDA; signs the mint authority revocation and
+	/// records the lock.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// Template's box mint, whose supply must equal the activated tickets; its
+	/// mint authority is revoked here.
 	/// Required privileges: writable.
 	pub box_mint: &'account AccountView,
 
 	/// CPI account `bundle`.
 	/// The first unused bundle PDA proves that no funded tail was omitted.
+	/// It must be the canonical PDA at `bundle_count` and hold no data.
 	/// Required privileges: read-only.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `serviceVault`.
 	/// Creator-funded only when receipts or crank bounties are enabled.
 	/// Unsolicited lamports are accepted and reduce the required top-up.
+	/// Canonical PDA from `["service-vault", template]`.
 	/// Required privileges: writable.
 	pub service_vault: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked for the service vault top-up.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
 	/// CPI account `boxTokenProgram`.
+	/// Token-2022 program, invoked to revoke the box mint authority.
 	/// Required privileges: read-only.
 	pub box_token_program: &'account AccountView,
 

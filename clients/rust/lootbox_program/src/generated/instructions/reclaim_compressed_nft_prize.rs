@@ -8,23 +8,44 @@
 	clippy::too_many_arguments
 )]
 
+/// Returns an undrawn Bubblegum compressed NFT from bundle escrow to the
+/// template authority.
+///
+/// The template authority signs. A funding bundle is always reclaimable; an
+/// active bundle is reclaimable only after the template is retired, the box
+/// supply is zero, no openings are pending, and its copy was never drawn. Sets
+/// the slot's reclaimed bit so it cannot be reclaimed twice.
 pub const RECLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: u8 = 35u8;
 pub const RECLAIM_COMPRESSED_NFT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ReclaimCompressedNftPrize {
+	/// Template authority; receives the leaf.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA of this program.
 	pub template: solana_pubkey::Pubkey,
+	/// The template's Token-2022 box mint; its supply must be zero to reclaim
+	/// from an active bundle.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// Bundle PDA of `template` that owns the leaf, signs the transfer, and
+	/// records the reclaim.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	pub tree_config: solana_pubkey::Pubkey,
+	/// Concurrent Merkle tree holding the leaf; with `nonce` it must derive the
+	/// slot's stored asset ID.
 	pub merkle_tree: solana_pubkey::Pubkey,
+	/// Metaplex Bubblegum program, invoked to transfer the leaf.
 	pub bubblegum_program: solana_pubkey::Pubkey,
+	/// SPL Noop program, forwarded to Bubblegum as its log wrapper.
 	pub log_wrapper: solana_pubkey::Pubkey,
+	/// SPL Account Compression program, forwarded to Bubblegum.
 	pub compression_program: solana_pubkey::Pubkey,
+	/// System program, forwarded to Bubblegum.
 	pub system_program: solana_pubkey::Pubkey,
-	/// Merkle proof nodes in leaf-to-root order.
+	/// Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+	/// canopy.
 	pub proof_accounts: solana_pubkey::Pubkey,
 }
 

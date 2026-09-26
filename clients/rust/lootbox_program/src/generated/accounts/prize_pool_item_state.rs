@@ -18,18 +18,30 @@ pub struct PrizePoolItemState {
 /// re-prove the current metadata while pinning every semantic field.
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Prize pool PDA that holds this item; seeds this PDA.
 	pub pool: solana_pubkey::Pubkey,
+	/// Bubblegum asset ID derived from the pool's tree and `nonce`.
 	pub asset: solana_pubkey::Pubkey,
+	/// Bubblegum leaf data hash admitted at preparation and re-checked on
+	/// deposit.
 	pub data_hash: [u8; 32],
+	/// Bubblegum leaf creator hash admitted at preparation and re-checked on
+	/// deposit.
 	pub creator_hash: [u8; 32],
+	/// Hash of the canonical metadata with only collection and creator
+	/// verification flags zeroed; claims and reclaims must reproduce it.
 	pub semantic_metadata_hash: [u8; 32],
 	/// Restores the append-only accumulator when an unfinished tail is removed.
 	pub previous_manifest_accumulator: [u8; 32],
+	/// Bubblegum leaf nonce.
 	pub nonce: u64,
+	/// Leaf index within the Merkle tree.
 	pub tree_index: u32,
+	/// Position within the pool in deposit order; seeds this PDA.
 	pub pool_index: u32,
 	/// 0 metadata-admitted, 1 transferred into `PrizePool` custody.
 	pub status: u8,
+	/// Canonical bump of this item PDA.
 	pub bump: u8,
 }
 

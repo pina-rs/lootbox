@@ -23,9 +23,65 @@ export function getResultReceiptStateDiscriminator2Bytes(): ReadonlyUint8Array {
  *
  * No instruction mutates or closes this account after initialization.
  */
-export type ResultReceiptState = { discriminator: number; migrationVersion: number; template: Address; opening: Address; boxAuthority: Address; beneficiary: Address; consumerProgram: Address; consumerContext: ReadonlyUint8Array; manifestHash: ReadonlyUint8Array; randomness: Address; sequence: bigint; selectedBundle: number; selectedPoolItem: number; selectedPoolAsset: number; hasPoolAssignment: boolean; bump: number;  };
+export type ResultReceiptState = { discriminator: number; migrationVersion: number;
+/** Template PDA that allocated the result. */
+template: Address;
+/** Opening PDA this receipt records; seeds this PDA. */
+opening: Address;
+/** Authority that burned the box, copied from the opening. */
+boxAuthority: Address;
+/** Bound prize destination, copied from the opening. */
+beneficiary: Address;
+/** Consumer program bound at request time; the zero address means none. */
+consumerProgram: Address;
+/** Consumer correlation key bound at request time. */
+consumerContext: ReadonlyUint8Array;
+/** Template's locked manifest hash at allocation. */
+manifestHash: ReadonlyUint8Array;
+/** Switchboard randomness account that supplied the entropy. */
+randomness: Address;
+/** FIFO sequence of the opening; seeds this PDA. */
+sequence: bigint;
+/** Index of the bundle won. */
+selectedBundle: number;
+/** Prize pool item index reserved when `has_pool_assignment` is set. */
+selectedPoolItem: number;
+/** Bundle slot holding the prize pool when `has_pool_assignment` is set. */
+selectedPoolAsset: number;
+/** Whether allocation reserved a prize pool item. */
+hasPoolAssignment: boolean;
+/** Canonical bump of this receipt PDA. */
+bump: number;  };
 
-export type ResultReceiptStateArgs = { template: Address; opening: Address; boxAuthority: Address; beneficiary: Address; consumerProgram: Address; consumerContext: ReadonlyUint8Array; manifestHash: ReadonlyUint8Array; randomness: Address; sequence: number | bigint; selectedBundle: number; selectedPoolItem: number; selectedPoolAsset: number; hasPoolAssignment: boolean; bump: number;  };
+export type ResultReceiptStateArgs = {
+/** Template PDA that allocated the result. */
+template: Address;
+/** Opening PDA this receipt records; seeds this PDA. */
+opening: Address;
+/** Authority that burned the box, copied from the opening. */
+boxAuthority: Address;
+/** Bound prize destination, copied from the opening. */
+beneficiary: Address;
+/** Consumer program bound at request time; the zero address means none. */
+consumerProgram: Address;
+/** Consumer correlation key bound at request time. */
+consumerContext: ReadonlyUint8Array;
+/** Template's locked manifest hash at allocation. */
+manifestHash: ReadonlyUint8Array;
+/** Switchboard randomness account that supplied the entropy. */
+randomness: Address;
+/** FIFO sequence of the opening; seeds this PDA. */
+sequence: number | bigint;
+/** Index of the bundle won. */
+selectedBundle: number;
+/** Prize pool item index reserved when `has_pool_assignment` is set. */
+selectedPoolItem: number;
+/** Bundle slot holding the prize pool when `has_pool_assignment` is set. */
+selectedPoolAsset: number;
+/** Whether allocation reserved a prize pool item. */
+hasPoolAssignment: boolean;
+/** Canonical bump of this receipt PDA. */
+bump: number;  };
 
 /** Gets the encoder for {@link ResultReceiptStateArgs} account data. */
 export function getResultReceiptStateEncoder(): FixedSizeEncoder<ResultReceiptStateArgs> {

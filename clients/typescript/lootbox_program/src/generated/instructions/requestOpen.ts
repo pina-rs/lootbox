@@ -40,25 +40,75 @@ export function getRequestOpenInstructionDataCodec(): FixedSizeCodec<RequestOpen
 }
 
 export type RequestOpenAsyncInput<TAccountOwner extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountOwnerBoxAccount extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountRandomness extends InstructionSignerInput = InstructionSignerInput, TAccountRewardEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountOracleQueue extends InstructionAccountInput = InstructionAccountInput, TAccountOracle extends InstructionAccountInput = InstructionAccountInput, TAccountRecentSlotHashes extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgram extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgramState extends InstructionAccountInput = InstructionAccountInput, TAccountOracleLutSigner extends InstructionAccountInput = InstructionAccountInput, TAccountOracleLut extends InstructionAccountInput = InstructionAccountInput, TAccountAssociatedTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountWrappedSolMint extends InstructionAccountInput = InstructionAccountInput, TAccountAddressLookupTableProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  owner: TAccountOwner;
+  /**
+ * Box owner that burns one box and becomes the opening's recipient.
+ * Writable signer; pays rent for the opening and Switchboard accounts.
+ */
+owner: TAccountOwner;
+/** Sealed lootbox whose `pending_openings` grows. */
 lootbox: TAccountLootbox;
+/**
+ * Vault PDA of `lootbox`, read to prove the pending opening stays fully
+ * collateralized.
+ */
 vault: TAccountVault;
+/** The lootbox's box mint. Writable; one box is burned. */
 boxMint: TAccountBoxMint;
+/**
+ * Owner's canonical associated token account for the box mint; must hold
+ * at least one box, and one is burned from it.
+ */
 ownerBoxAccount: TAccountOwnerBoxAccount;
+/**
+ * Opening PDA `["opening", lootbox, randomness]`, created here. It becomes
+ * the randomness authority and signs the Switchboard CPIs.
+ */
 opening?: TAccountOpening;
+/**
+ * Fresh randomness keypair. Signer; initialized and committed here by
+ * Switchboard.
+ */
 randomness: TAccountRandomness;
+/**
+ * Wrapped-SOL associated token account of `randomness`, used by
+ * Switchboard as its reward escrow.
+ */
 rewardEscrow: TAccountRewardEscrow;
+/** Switchboard queue; must equal the lootbox's stored queue. */
 oracleQueue: TAccountOracleQueue;
+/**
+ * Oracle assigned to the commitment; must be owned by the oracle program.
+ * Switchboard validates queue membership and binds it to the randomness.
+ */
 oracle: TAccountOracle;
+/** Slot hashes sysvar, read by Switchboard's commit. */
 recentSlotHashes: TAccountRecentSlotHashes;
+/** Switchboard program; must equal the lootbox's stored oracle program. */
 oracleProgram: TAccountOracleProgram;
+/** Switchboard program state, passed through to `randomness_init`. */
 oracleProgramState: TAccountOracleProgramState;
+/** Switchboard lookup-table signer, passed through to `randomness_init`. */
 oracleLutSigner: TAccountOracleLutSigner;
+/**
+ * Switchboard per-randomness lookup table derived from `recent_slot`,
+ * created by `randomness_init`.
+ */
 oracleLut: TAccountOracleLut;
+/**
+ * Associated Token Account program, used by Switchboard to create the
+ * reward escrow.
+ */
 associatedTokenProgram?: TAccountAssociatedTokenProgram;
+/** Wrapped-SOL mint backing the reward escrow. */
 wrappedSolMint: TAccountWrappedSolMint;
+/**
+ * Address Lookup Table program, used by Switchboard to create its lookup
+ * table.
+ */
 addressLookupTableProgram: TAccountAddressLookupTableProgram;
+/** System program, invoked to create the opening account. */
 systemProgram?: TAccountSystemProgram;
+/** SPL Token program, invoked to burn the box. */
 tokenProgram?: TAccountTokenProgram;
 recentSlot: RequestOpenInstructionDataArgs["recentSlot"];
 bump: RequestOpenInstructionDataArgs["bump"];
@@ -98,25 +148,75 @@ return Object.freeze({ accounts: [getAccountMeta("owner", accounts.owner), getAc
 }
 
 export type RequestOpenInput<TAccountOwner extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountOwnerBoxAccount extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountRandomness extends InstructionSignerInput = InstructionSignerInput, TAccountRewardEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountOracleQueue extends InstructionAccountInput = InstructionAccountInput, TAccountOracle extends InstructionAccountInput = InstructionAccountInput, TAccountRecentSlotHashes extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgram extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgramState extends InstructionAccountInput = InstructionAccountInput, TAccountOracleLutSigner extends InstructionAccountInput = InstructionAccountInput, TAccountOracleLut extends InstructionAccountInput = InstructionAccountInput, TAccountAssociatedTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountWrappedSolMint extends InstructionAccountInput = InstructionAccountInput, TAccountAddressLookupTableProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  owner: TAccountOwner;
+  /**
+ * Box owner that burns one box and becomes the opening's recipient.
+ * Writable signer; pays rent for the opening and Switchboard accounts.
+ */
+owner: TAccountOwner;
+/** Sealed lootbox whose `pending_openings` grows. */
 lootbox: TAccountLootbox;
+/**
+ * Vault PDA of `lootbox`, read to prove the pending opening stays fully
+ * collateralized.
+ */
 vault: TAccountVault;
+/** The lootbox's box mint. Writable; one box is burned. */
 boxMint: TAccountBoxMint;
+/**
+ * Owner's canonical associated token account for the box mint; must hold
+ * at least one box, and one is burned from it.
+ */
 ownerBoxAccount: TAccountOwnerBoxAccount;
+/**
+ * Opening PDA `["opening", lootbox, randomness]`, created here. It becomes
+ * the randomness authority and signs the Switchboard CPIs.
+ */
 opening: TAccountOpening;
+/**
+ * Fresh randomness keypair. Signer; initialized and committed here by
+ * Switchboard.
+ */
 randomness: TAccountRandomness;
+/**
+ * Wrapped-SOL associated token account of `randomness`, used by
+ * Switchboard as its reward escrow.
+ */
 rewardEscrow: TAccountRewardEscrow;
+/** Switchboard queue; must equal the lootbox's stored queue. */
 oracleQueue: TAccountOracleQueue;
+/**
+ * Oracle assigned to the commitment; must be owned by the oracle program.
+ * Switchboard validates queue membership and binds it to the randomness.
+ */
 oracle: TAccountOracle;
+/** Slot hashes sysvar, read by Switchboard's commit. */
 recentSlotHashes: TAccountRecentSlotHashes;
+/** Switchboard program; must equal the lootbox's stored oracle program. */
 oracleProgram: TAccountOracleProgram;
+/** Switchboard program state, passed through to `randomness_init`. */
 oracleProgramState: TAccountOracleProgramState;
+/** Switchboard lookup-table signer, passed through to `randomness_init`. */
 oracleLutSigner: TAccountOracleLutSigner;
+/**
+ * Switchboard per-randomness lookup table derived from `recent_slot`,
+ * created by `randomness_init`.
+ */
 oracleLut: TAccountOracleLut;
+/**
+ * Associated Token Account program, used by Switchboard to create the
+ * reward escrow.
+ */
 associatedTokenProgram?: TAccountAssociatedTokenProgram;
+/** Wrapped-SOL mint backing the reward escrow. */
 wrappedSolMint: TAccountWrappedSolMint;
+/**
+ * Address Lookup Table program, used by Switchboard to create its lookup
+ * table.
+ */
 addressLookupTableProgram: TAccountAddressLookupTableProgram;
+/** System program, invoked to create the opening account. */
 systemProgram?: TAccountSystemProgram;
+/** SPL Token program, invoked to burn the box. */
 tokenProgram?: TAccountTokenProgram;
 recentSlot: RequestOpenInstructionDataArgs["recentSlot"];
 bump: RequestOpenInstructionDataArgs["bump"];
@@ -154,25 +254,75 @@ return Object.freeze({ accounts: [getAccountMeta("owner", accounts.owner), getAc
 
 export type ParsedRequestOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Box owner that burns one box and becomes the opening's recipient.
+ * Writable signer; pays rent for the opening and Switchboard accounts.
+ */
 owner: TAccountMetas[0];
+/** Sealed lootbox whose `pending_openings` grows. */
 lootbox: TAccountMetas[1];
+/**
+ * Vault PDA of `lootbox`, read to prove the pending opening stays fully
+ * collateralized.
+ */
 vault: TAccountMetas[2];
+/** The lootbox's box mint. Writable; one box is burned. */
 boxMint: TAccountMetas[3];
+/**
+ * Owner's canonical associated token account for the box mint; must hold
+ * at least one box, and one is burned from it.
+ */
 ownerBoxAccount: TAccountMetas[4];
+/**
+ * Opening PDA `["opening", lootbox, randomness]`, created here. It becomes
+ * the randomness authority and signs the Switchboard CPIs.
+ */
 opening: TAccountMetas[5];
+/**
+ * Fresh randomness keypair. Signer; initialized and committed here by
+ * Switchboard.
+ */
 randomness: TAccountMetas[6];
+/**
+ * Wrapped-SOL associated token account of `randomness`, used by
+ * Switchboard as its reward escrow.
+ */
 rewardEscrow: TAccountMetas[7];
+/** Switchboard queue; must equal the lootbox's stored queue. */
 oracleQueue: TAccountMetas[8];
+/**
+ * Oracle assigned to the commitment; must be owned by the oracle program.
+ * Switchboard validates queue membership and binds it to the randomness.
+ */
 oracle: TAccountMetas[9];
+/** Slot hashes sysvar, read by Switchboard's commit. */
 recentSlotHashes: TAccountMetas[10];
+/** Switchboard program; must equal the lootbox's stored oracle program. */
 oracleProgram: TAccountMetas[11];
+/** Switchboard program state, passed through to `randomness_init`. */
 oracleProgramState: TAccountMetas[12];
+/** Switchboard lookup-table signer, passed through to `randomness_init`. */
 oracleLutSigner: TAccountMetas[13];
+/**
+ * Switchboard per-randomness lookup table derived from `recent_slot`,
+ * created by `randomness_init`.
+ */
 oracleLut: TAccountMetas[14];
+/**
+ * Associated Token Account program, used by Switchboard to create the
+ * reward escrow.
+ */
 associatedTokenProgram: TAccountMetas[15];
+/** Wrapped-SOL mint backing the reward escrow. */
 wrappedSolMint: TAccountMetas[16];
+/**
+ * Address Lookup Table program, used by Switchboard to create its lookup
+ * table.
+ */
 addressLookupTableProgram: TAccountMetas[17];
+/** System program, invoked to create the opening account. */
 systemProgram: TAccountMetas[18];
+/** SPL Token program, invoked to burn the box. */
 tokenProgram: TAccountMetas[19];
 };
 data: RequestOpenInstructionData; };

@@ -8,18 +8,36 @@
 	clippy::too_many_arguments
 )]
 
+/// Escrows an SPL Token or Token-2022 prize in the next slot of a funding
+/// bundle.
+///
+/// The template authority signs the transfer of the per-win amount times the
+/// bundle quantity into the bundle's associated token account. The treasury
+/// must be unlocked and not retired, and the escrow must end with exactly that
+/// increase.
 pub const FUND_TOKEN_PRIZE_DISCRIMINATOR: u8 = 13u8;
 pub const FUND_TOKEN_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct FundTokenPrize {
+	/// Template authority; signs the token transfer from `source`.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA that must be unlocked and not retired; read only by the
+	/// handler.
 	pub template: solana_pubkey::Pubkey,
+	/// Funding bundle PDA of this template that records the prize.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Prize mint owned by `token_program`; not wrapped SOL. Classic mints need
+	/// no freeze authority; Token-2022 mints must pass the prize allowlist.
 	pub mint: solana_pubkey::Pubkey,
+	/// Token account debited for the deposit, including any transfer fee.
 	pub source: solana_pubkey::Pubkey,
+	/// Bundle's associated token account for `mint`; must have no delegate or
+	/// close authority and must not be frozen.
 	pub escrow: solana_pubkey::Pubkey,
+	/// SPL Token or Token-2022 program that owns `mint`, invoked for the
+	/// transfer.
 	pub token_program: solana_pubkey::Pubkey,
 }
 

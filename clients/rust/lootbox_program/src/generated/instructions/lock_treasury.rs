@@ -8,21 +8,36 @@
 	clippy::too_many_arguments
 )]
 
+/// Irreversibly fixes a live template's box supply to its activated inventory.
+///
+/// The template authority signs before `opens_at`. Inventory must be pristine,
+/// with every activated ticket minted and no staged tail. It funds the service
+/// vault when receipts or bounties are enabled, revokes box mint authority, and
+/// records the manifest hash.
 pub const LOCK_TREASURY_DISCRIMINATOR: u8 = 37u8;
 pub const LOCK_TREASURY_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct LockTreasury {
+	/// Template authority; signs and pays any service vault top-up.
 	pub authority: solana_pubkey::Pubkey,
+	/// Live, unlocked template PDA; signs the mint authority revocation and
+	/// records the lock.
 	pub template: solana_pubkey::Pubkey,
+	/// Template's box mint, whose supply must equal the activated tickets; its
+	/// mint authority is revoked here.
 	pub box_mint: solana_pubkey::Pubkey,
 	/// The first unused bundle PDA proves that no funded tail was omitted.
+	/// It must be the canonical PDA at `bundle_count` and hold no data.
 	pub bundle: solana_pubkey::Pubkey,
 	/// Creator-funded only when receipts or crank bounties are enabled.
 	/// Unsolicited lamports are accepted and reduce the required top-up.
+	/// Canonical PDA from `["service-vault", template]`.
 	pub service_vault: solana_pubkey::Pubkey,
+	/// System program, invoked for the service vault top-up.
 	pub system_program: solana_pubkey::Pubkey,
+	/// Token-2022 program, invoked to revoke the box mint authority.
 	pub box_token_program: solana_pubkey::Pubkey,
 }
 

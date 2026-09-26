@@ -5,8 +5,15 @@ use alloc::vec::Vec;
 use crate::MAX_TEMPLATE_BUNDLES;
 
 const MAX_TOTAL_TICKETS: u64 = u32::MAX as u64;
+/// Maximum Bubblegum leaves held by one prize pool, and therefore the largest
+/// quantity of a bundle that contains one.
 pub const MAX_PRIZE_POOL_ITEMS: u32 = 4_096;
+/// Largest canonical Bubblegum V1 `MetadataArgs` Borsh preimage accepted for
+/// one prize-pool item.
 pub const MAX_PRIZE_POOL_METADATA_BYTES: usize = 512;
+/// Largest Merkle proof, in 32-byte nodes, accepted for one prize-pool item.
+/// The TypeScript and Dart planners share this limit; it is the longest proof
+/// the TypeScript SDK can always deliver without an address lookup table.
 pub const MAX_PRIZE_POOL_PROOF_NODES: usize = 16;
 // So11111111111111111111111111111111111111112. Match the program's
 // reward policy: use native SOL instead of a wrapped-SOL token prize.
@@ -15,68 +22,119 @@ const WRAPPED_SOL_MINT: [u8; 32] = [
 	235, 59, 85, 152, 160, 240, 0, 0, 0, 0, 1,
 ];
 
-/// A supported treasury asset. External ownership and transfer-rule validation
-/// remains an on-chain concern; this type makes the intended adapter explicit.
+/// One compressed NFT leaf deposited into a prize pool, with the metadata
+/// preimage and Merkle proof needed to admit and deposit it on chain.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PrizePoolItem<'a> {
+	/// Compressed asset ID of the leaf. It must be nonzero and unique across
+	/// every unique asset and pool item in the plan.
 	pub asset: [u8; 32],
 	/// Must be `false`; unknown mutability fails closed in checked planners.
 	pub metadata_mutable: bool,
 	/// Canonical Bubblegum V1 `MetadataArgs` Borsh preimage.
 	pub metadata: &'a [u8],
+	/// Merkle tree that holds the leaf; it must equal the pool's `tree`.
 	pub tree: [u8; 32],
+	/// Bubblegum tree config account of `tree`; it must be nonzero.
 	pub tree_config: [u8; 32],
+	/// Merkle root that Bubblegum verifies `proof` against when the leaf is
+	/// deposited into the pool.
 	pub root: [u8; 32],
+	/// Leaf data hash, which the program recomputes from `metadata`.
 	pub data_hash: [u8; 32],
+	/// Leaf creator hash, which the program recomputes from the creators
+	/// encoded in `metadata`.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce; with `tree` it derives the asset ID `["asset", tree, nonce]`
+	/// under Bubblegum.
 	pub nonce: u64,
+	/// Position of the leaf in `tree`.
 	pub leaf_index: u32,
+	/// Merkle proof nodes that Bubblegum verifies against `root`; at most
+	/// `MAX_PRIZE_POOL_PROOF_NODES` nodes.
 	pub proof: &'a [[u8; 32]],
 }
 
+/// One asset that every copy of a bundle delivers, tagged by prize kind.
+///
+/// Every asset must have a nonzero amount and identifier, and no mint may be
+/// wrapped SOL; native SOL prizes use `Sol` or `QuoteSol` instead.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PrizeAsset<'a> {
+	/// Native SOL escrowed in the bundle and paid to the beneficiary.
 	Sol {
+		/// Lamports paid per win; must be positive.
 		lamports: u64,
 	},
+	/// Native SOL released to the winner for winner-routed execution.
 	QuoteSol {
+		/// Lamports paid per win; must be positive.
 		lamports: u64,
 	},
+	/// A fungible classic SPL Token prize.
 	ClassicToken {
+		/// SPL Token mint of the prize.
 		mint: [u8; 32],
+		/// Base units paid per win; must be positive.
 		amount: u64,
 	},
+	/// A safe fungible Token-2022 prize; the program enforces its extension
+	/// allowlist.
 	Token2022 {
+		/// Token-2022 mint of the prize.
 		mint: [u8; 32],
+		/// Base units paid per win; must be positive.
 		amount: u64,
 	},
+	/// A classic or safe Token-2022 quote released to the winner for
+	/// winner-routed execution.
 	QuoteToken {
+		/// SPL Token or Token-2022 mint of the quote.
 		mint: [u8; 32],
+		/// Base units paid per win; must be positive.
 		amount: u64,
 	},
+	/// A zero-decimal badge that the bundle mints on claim after taking over
+	/// the mint authority. One badge mint may back every copy of its bundle
+	/// but no other bundle.
 	MintBadge {
+		/// Empty badge mint whose authority moves to the bundle.
 		mint: [u8; 32],
 	},
+	/// A classic SPL Token NFT with supply one, zero decimals, and revoked mint
+	/// authority. Its bundle must have a quantity of one.
 	LegacyNft {
+		/// SPL Token mint of the NFT.
 		mint: [u8; 32],
 	},
+	/// A standard Metaplex Token Metadata NFT with no programmable transfer
+	/// rules. Its bundle must have a quantity of one.
 	MetadataNft {
+		/// Mint of the NFT.
 		mint: [u8; 32],
 	},
+	/// A Metaplex Core asset. Its bundle must have a quantity of one.
 	CoreAsset {
+		/// Address of the Core asset.
 		asset: [u8; 32],
 	},
+	/// A Bubblegum compressed NFT. Its bundle must have a quantity of one.
 	CompressedNft {
+		/// Compressed asset ID of the leaf.
 		asset: [u8; 32],
 	},
 	/// One entropy-selected Bubblegum leaf from a separately escrowed pool.
 	PrizePool {
+		/// Merkle tree that holds every item; the pool's asset identifier.
 		tree: [u8; 32],
+		/// One to `MAX_PRIZE_POOL_ITEMS` items, exactly one per bundle copy.
+		/// A bundle may hold at most one prize pool.
 		items: &'a [PrizePoolItem<'a>],
 	},
 	/// One Exclusive Lootbox NFT minted on claim from a published
 	/// `ExclusiveCollectionState`. Many bundles may attach to one collection.
 	ExclusiveNft {
+		/// Address of the published `ExclusiveCollectionState`.
 		collection: [u8; 32],
 	},
 }
@@ -117,6 +175,10 @@ impl PrizeAsset<'_> {
 		}
 	}
 
+	/// Whether the identifier names one indivisible asset that at most one
+	/// bundle in the plan may hold: a badge mint or an NFT. Prize pools return
+	/// `false` because each of their items is checked individually, and
+	/// Exclusive NFTs because many bundles may share one collection.
 	#[must_use]
 	pub const fn is_unique(self) -> bool {
 		matches!(
@@ -129,6 +191,9 @@ impl PrizeAsset<'_> {
 		)
 	}
 
+	/// Whether the asset can fund only a bundle with a quantity of one. This
+	/// holds for every unique asset except a badge, which mints a fresh copy
+	/// per win.
 	#[must_use]
 	pub const fn requires_single_copy(self) -> bool {
 		self.is_unique() && !matches!(self, Self::MintBadge { .. })
@@ -138,21 +203,40 @@ impl PrizeAsset<'_> {
 /// Complete discrete prize with a finite number of equal-probability copies.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PrizeBundle<'a> {
+	/// Copies of this bundle, each one draw ticket; must be positive. Every
+	/// asset escrows its per-win amount times this quantity.
 	pub quantity: u64,
+	/// One to four assets delivered together by each winning copy, with no
+	/// identifier repeated.
 	pub assets: &'a [PrizeAsset<'a>],
 }
 
 /// Invalid finite-pool configuration.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TemplatePlanError {
+	/// The plan has no bundles or more than `MAX_TEMPLATE_BUNDLES`.
 	InvalidBundleCount,
+	/// A bundle has no assets or more than four.
 	InvalidAssetCount,
+	/// A bundle has a quantity of zero.
 	ZeroQuantity,
+	/// An asset has a zero amount, a zero identifier, or the wrapped SOL mint,
+	/// or a prize pool is malformed: a second pool in one bundle, an item
+	/// count outside one to `MAX_PRIZE_POOL_ITEMS` or unequal to the bundle
+	/// quantity, or an item with a zero asset, mutable, empty, or oversized
+	/// metadata, a different tree, a zero tree config, or an oversized proof.
 	InvalidAsset,
+	/// A bundle lists the same identifier twice. Both SOL kinds share the
+	/// native SOL identifier, so one bundle cannot hold `Sol` and `QuoteSol`.
 	DuplicateAsset,
+	/// A unique asset or prize-pool item appears more than once in the plan,
+	/// or a single-copy asset funds a bundle whose quantity is not one.
 	DuplicateUniqueAsset,
+	/// Memory for the unique-identifier check could not be reserved.
 	PlanningCapacityExceeded,
+	/// The total copies across all bundles exceed `u32::MAX`.
 	TicketLimitExceeded,
+	/// A bundle total, collateral total, or service budget overflows `u64`.
 	ArithmeticOverflow,
 }
 
@@ -179,7 +263,11 @@ impl core::error::Error for TemplatePlanError {}
 /// Creator-funded optional services attached to a locked treasury.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct ServicePlan {
+	/// Lamports the service vault pays per fulfilled or forfeited opening;
+	/// zero disables bounties.
 	pub settlement_bounty_lamports: u64,
+	/// Whether each allocation creates a creator-funded immutable result
+	/// receipt.
 	pub result_receipts_enabled: bool,
 }
 
@@ -265,6 +353,8 @@ impl<'a> TemplatePlan<'a> {
 		self
 	}
 
+	/// Total copies across all bundles, each one draw ticket. It never exceeds
+	/// `u32::MAX`.
 	#[must_use]
 	pub const fn total_bundles(&self) -> u64 {
 		self.total_bundles
@@ -276,11 +366,14 @@ impl<'a> TemplatePlan<'a> {
 		self.total_bundles
 	}
 
+	/// Validated bundles in append order.
 	#[must_use]
 	pub const fn bundles(&self) -> &'a [PrizeBundle<'a>] {
 		self.bundles
 	}
 
+	/// Creator-funded services; none are enabled unless set by
+	/// `with_services`.
 	#[must_use]
 	pub const fn services(&self) -> ServicePlan {
 		self.services

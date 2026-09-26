@@ -18,20 +18,31 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Create a private Bubblegum V2 tree and make it the collection's active tree.
+///
+/// The collection admin signs and pays, in draft or published state. The tree
+/// depth must be from 3 through 20 and the pre-allocated tree account must fit
+/// a canopy that leaves proofs of at most ten nodes. The collection PDA signs
+/// as tree creator; the resulting tree must be private with no delegate and
+/// no mints.
 /// CPI call for the `append_exclusive_tree` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct AppendExclusiveTree<'account> {
 	/// CPI account `admin`.
+	/// Collection admin; signs and pays the tree config rent.
 	/// Required privileges: writable and signer.
 	pub admin: &'account AccountView,
 
 	/// CPI account `exclusiveCollection`.
+	/// Collection PDA; signs as tree creator and records the new active tree.
 	/// Required privileges: writable.
 	pub exclusive_collection: &'account AccountView,
 
 	/// CPI account `treeConfig`.
 	/// Bubblegum tree config PDA of `merkle_tree`.
+	///
+	/// Created by Bubblegum here.
 	/// Required privileges: writable.
 	pub tree_config: &'account AccountView,
 
@@ -42,18 +53,22 @@ pub struct AppendExclusiveTree<'account> {
 	pub merkle_tree: &'account AccountView,
 
 	/// CPI account `bubblegumProgram`.
+	/// Bubblegum program, invoked to create the V2 tree.
 	/// Required privileges: read-only.
 	pub bubblegum_program: &'account AccountView,
 
 	/// CPI account `logWrapper`.
+	/// MPL Noop program used by Bubblegum as its log wrapper.
 	/// Required privileges: read-only.
 	pub log_wrapper: &'account AccountView,
 
 	/// CPI account `compressionProgram`.
+	/// MPL Account Compression program that owns `merkle_tree`.
 	/// Required privileges: read-only.
 	pub compression_program: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, passed to Bubblegum.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 

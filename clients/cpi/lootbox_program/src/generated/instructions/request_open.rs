@@ -18,87 +18,121 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Opens one box of a sealed lootbox, signed by the box owner and a fresh
+/// randomness keypair. Creates the opening receipt PDA, initializes and
+/// commits Switchboard randomness with that PDA as its authority, then burns
+/// one box from the owner's associated token account. The owner pays all rent.
 /// CPI call for the `request_open` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct RequestOpen<'account> {
 	/// CPI account `owner`.
+	/// Box owner that burns one box and becomes the opening's recipient.
+	/// Writable signer; pays rent for the opening and Switchboard accounts.
 	/// Required privileges: writable and signer.
 	pub owner: &'account AccountView,
 
 	/// CPI account `lootbox`.
+	/// Sealed lootbox whose `pending_openings` grows.
 	/// Required privileges: writable.
 	pub lootbox: &'account AccountView,
 
 	/// CPI account `vault`.
+	/// Vault PDA of `lootbox`, read to prove the pending opening stays fully
+	/// collateralized.
 	/// Required privileges: read-only.
 	pub vault: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// The lootbox's box mint. Writable; one box is burned.
 	/// Required privileges: writable.
 	pub box_mint: &'account AccountView,
 
 	/// CPI account `ownerBoxAccount`.
+	/// Owner's canonical associated token account for the box mint; must hold
+	/// at least one box, and one is burned from it.
 	/// Required privileges: writable.
 	pub owner_box_account: &'account AccountView,
 
 	/// CPI account `opening`.
+	/// Opening PDA `["opening", lootbox, randomness]`, created here. It becomes
+	/// the randomness authority and signs the Switchboard CPIs.
 	/// Required privileges: writable.
 	pub opening: &'account AccountView,
 
 	/// CPI account `randomness`.
+	/// Fresh randomness keypair. Signer; initialized and committed here by
+	/// Switchboard.
 	/// Required privileges: writable and signer.
 	pub randomness: &'account AccountView,
 
 	/// CPI account `rewardEscrow`.
+	/// Wrapped-SOL associated token account of `randomness`, used by
+	/// Switchboard as its reward escrow.
 	/// Required privileges: writable.
 	pub reward_escrow: &'account AccountView,
 
 	/// CPI account `oracleQueue`.
+	/// Switchboard queue; must equal the lootbox's stored queue.
 	/// Required privileges: writable.
 	pub oracle_queue: &'account AccountView,
 
 	/// CPI account `oracle`.
+	/// Oracle assigned to the commitment; must be owned by the oracle program.
+	/// Switchboard validates queue membership and binds it to the randomness.
 	/// Required privileges: writable.
 	pub oracle: &'account AccountView,
 
 	/// CPI account `recentSlotHashes`.
+	/// Slot hashes sysvar, read by Switchboard's commit.
 	/// Required privileges: read-only.
 	pub recent_slot_hashes: &'account AccountView,
 
 	/// CPI account `oracleProgram`.
+	/// Switchboard program; must equal the lootbox's stored oracle program.
 	/// Required privileges: read-only.
 	pub oracle_program: &'account AccountView,
 
 	/// CPI account `oracleProgramState`.
+	/// Switchboard program state, passed through to `randomness_init`.
 	/// Required privileges: read-only.
 	pub oracle_program_state: &'account AccountView,
 
 	/// CPI account `oracleLutSigner`.
+	/// Switchboard lookup-table signer, passed through to `randomness_init`.
 	/// Required privileges: read-only.
 	pub oracle_lut_signer: &'account AccountView,
 
 	/// CPI account `oracleLut`.
+	/// Switchboard per-randomness lookup table derived from `recent_slot`,
+	/// created by `randomness_init`.
 	/// Required privileges: writable.
 	pub oracle_lut: &'account AccountView,
 
 	/// CPI account `associatedTokenProgram`.
+	/// Associated Token Account program, used by Switchboard to create the
+	/// reward escrow.
 	/// Required privileges: read-only.
 	pub associated_token_program: &'account AccountView,
 
 	/// CPI account `wrappedSolMint`.
+	/// Wrapped-SOL mint backing the reward escrow.
 	/// Required privileges: read-only.
 	pub wrapped_sol_mint: &'account AccountView,
 
 	/// CPI account `addressLookupTableProgram`.
+	/// Address Lookup Table program, used by Switchboard to create its lookup
+	/// table.
 	/// Required privileges: read-only.
 	pub address_lookup_table_program: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked to create the opening account.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
 	/// CPI account `tokenProgram`.
+	/// SPL Token program, invoked to burn the box.
 	/// Required privileges: read-only.
 	pub token_program: &'account AccountView,
 

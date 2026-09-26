@@ -8,22 +8,37 @@
 	clippy::too_many_arguments
 )]
 
+/// Create a private Bubblegum V2 tree and make it the collection's active tree.
+///
+/// The collection admin signs and pays, in draft or published state. The tree
+/// depth must be from 3 through 20 and the pre-allocated tree account must fit
+/// a canopy that leaves proofs of at most ten nodes. The collection PDA signs
+/// as tree creator; the resulting tree must be private with no delegate and
+/// no mints.
 pub const APPEND_EXCLUSIVE_TREE_DISCRIMINATOR: u8 = 55u8;
 pub const APPEND_EXCLUSIVE_TREE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct AppendExclusiveTree {
+	/// Collection admin; signs and pays the tree config rent.
 	pub admin: solana_pubkey::Pubkey,
+	/// Collection PDA; signs as tree creator and records the new active tree.
 	pub exclusive_collection: solana_pubkey::Pubkey,
 	/// Bubblegum tree config PDA of `merkle_tree`.
+	///
+	/// Created by Bubblegum here.
 	pub tree_config: solana_pubkey::Pubkey,
 	/// Pre-allocated, uninitialized MPL Account Compression tree whose size
 	/// includes a canopy leaving proofs of at most ten nodes.
 	pub merkle_tree: solana_pubkey::Pubkey,
+	/// Bubblegum program, invoked to create the V2 tree.
 	pub bubblegum_program: solana_pubkey::Pubkey,
+	/// MPL Noop program used by Bubblegum as its log wrapper.
 	pub log_wrapper: solana_pubkey::Pubkey,
+	/// MPL Account Compression program that owns `merkle_tree`.
 	pub compression_program: solana_pubkey::Pubkey,
+	/// System program, passed to Bubblegum.
 	pub system_program: solana_pubkey::Pubkey,
 }
 

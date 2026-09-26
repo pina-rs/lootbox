@@ -8,31 +8,65 @@
 	clippy::too_many_arguments
 )]
 
+/// Opens one box of a sealed lootbox, signed by the box owner and a fresh
+/// randomness keypair. Creates the opening receipt PDA, initializes and
+/// commits Switchboard randomness with that PDA as its authority, then burns
+/// one box from the owner's associated token account. The owner pays all rent.
 pub const REQUEST_OPEN_DISCRIMINATOR: u8 = 5u8;
 pub const REQUEST_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct RequestOpen {
+	/// Box owner that burns one box and becomes the opening's recipient.
+	/// Writable signer; pays rent for the opening and Switchboard accounts.
 	pub owner: solana_pubkey::Pubkey,
+	/// Sealed lootbox whose `pending_openings` grows.
 	pub lootbox: solana_pubkey::Pubkey,
+	/// Vault PDA of `lootbox`, read to prove the pending opening stays fully
+	/// collateralized.
 	pub vault: solana_pubkey::Pubkey,
+	/// The lootbox's box mint. Writable; one box is burned.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// Owner's canonical associated token account for the box mint; must hold
+	/// at least one box, and one is burned from it.
 	pub owner_box_account: solana_pubkey::Pubkey,
+	/// Opening PDA `["opening", lootbox, randomness]`, created here. It becomes
+	/// the randomness authority and signs the Switchboard CPIs.
 	pub opening: solana_pubkey::Pubkey,
+	/// Fresh randomness keypair. Signer; initialized and committed here by
+	/// Switchboard.
 	pub randomness: solana_pubkey::Pubkey,
+	/// Wrapped-SOL associated token account of `randomness`, used by
+	/// Switchboard as its reward escrow.
 	pub reward_escrow: solana_pubkey::Pubkey,
+	/// Switchboard queue; must equal the lootbox's stored queue.
 	pub oracle_queue: solana_pubkey::Pubkey,
+	/// Oracle assigned to the commitment; must be owned by the oracle program.
+	/// Switchboard validates queue membership and binds it to the randomness.
 	pub oracle: solana_pubkey::Pubkey,
+	/// Slot hashes sysvar, read by Switchboard's commit.
 	pub recent_slot_hashes: solana_pubkey::Pubkey,
+	/// Switchboard program; must equal the lootbox's stored oracle program.
 	pub oracle_program: solana_pubkey::Pubkey,
+	/// Switchboard program state, passed through to `randomness_init`.
 	pub oracle_program_state: solana_pubkey::Pubkey,
+	/// Switchboard lookup-table signer, passed through to `randomness_init`.
 	pub oracle_lut_signer: solana_pubkey::Pubkey,
+	/// Switchboard per-randomness lookup table derived from `recent_slot`,
+	/// created by `randomness_init`.
 	pub oracle_lut: solana_pubkey::Pubkey,
+	/// Associated Token Account program, used by Switchboard to create the
+	/// reward escrow.
 	pub associated_token_program: solana_pubkey::Pubkey,
+	/// Wrapped-SOL mint backing the reward escrow.
 	pub wrapped_sol_mint: solana_pubkey::Pubkey,
+	/// Address Lookup Table program, used by Switchboard to create its lookup
+	/// table.
 	pub address_lookup_table_program: solana_pubkey::Pubkey,
+	/// System program, invoked to create the opening account.
 	pub system_program: solana_pubkey::Pubkey,
+	/// SPL Token program, invoked to burn the box.
 	pub token_program: solana_pubkey::Pubkey,
 }
 

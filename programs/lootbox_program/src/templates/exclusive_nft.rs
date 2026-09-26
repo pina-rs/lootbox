@@ -46,34 +46,55 @@ const EXCLUSIVE_COLLECTION_PUBLISHED: u8 = 1;
 )]
 pub struct ExclusiveCollectionState {
 	/// Loads layers, appends trees, and publishes; a multisig on mainnet.
+	///
+	/// Part of the PDA seeds, so it can never change.
 	pub admin: Address,
 	/// Metaplex Core collection whose update authority is this PDA.
 	pub core_collection: Address,
 	/// Bubblegum V2 tree that receives the next mint; zero until appended.
+	///
+	/// Each `appendExclusiveTree` replaces it, and claims must mint into it.
 	pub active_tree: Address,
 	/// Commitment to every frozen term; zero until published.
 	pub layers_hash: [u8; 32],
+	/// Admin-chosen identifier that separates this admin's collections in the
+	/// PDA seeds; set at creation.
 	pub collection_id: u64,
 	/// Editions minted so far; the next global serial is `minted + 1`.
 	pub minted: u64,
 	/// Unix time from which bundles may attach.
+	///
+	/// Seconds, inclusive; set at creation and earlier than `attach_closes_at`.
 	pub attach_opens_at: i64,
 	/// Unix time from which bundles may no longer attach.
+	///
+	/// Seconds, exclusive; checked only when a bundle attaches.
 	pub attach_closes_at: i64,
+	/// Trees appended so far; incremented by each `appendExclusiveTree`.
 	pub tree_count: u32,
 	/// Trait count of each layer, bottom to top.
+	///
+	/// Each configured layer has 1 through 64 traits; entries at or above
+	/// `layer_count` must be zero at publication.
 	pub trait_counts: [u8; 12],
 	/// Twelve layers of sixty-four little-endian `u32` trait weights.
 	pub weights: [u8; 3072],
 	/// Null-padded UTF-8 name prefix; minted names are `{prefix} #{serial}`.
+	///
+	/// At most 20 bytes, so any ten-digit serial fits the 32-byte name cap.
 	pub name_prefix: [u8; 32],
 	/// Null-padded UTF-8 symbol.
 	pub symbol: [u8; 10],
 	/// Null-padded `https://` base of every metadata URI.
 	pub base_uri: [u8; 128],
+	/// Number of trait layers, from 1 through 12; fixed at creation.
 	pub layer_count: u8,
 	/// 0 draft, 1 published.
+	///
+	/// `publishExclusiveCollection` moves it from draft to published once.
 	pub status: u8,
+	/// Canonical bump of this PDA
+	/// `["exclusive-collection", admin, collection_id]`.
 	pub bump: u8,
 }
 
@@ -88,29 +109,46 @@ pub struct ExclusiveCollectionState {
 	bump = bump
 )]
 pub struct ExclusiveAttachmentState {
+	/// Template PDA whose bundle attached; set at attach time.
 	pub template: Address,
+	/// Bundle PDA whose slot this attachment fills; part of the PDA seeds.
 	pub bundle: Address,
+	/// `ExclusiveCollectionState` PDA that every claim mints from.
 	pub collection: Address,
 	/// The collection's frozen `layers_hash` at attach time.
 	pub layers_hash: [u8; 32],
 	/// Copies the bound bundle slot can ever mint.
+	///
+	/// Copied from the bundle's quantity at attach time.
 	pub quantity: u64,
 	/// Copies minted through this attachment.
+	///
+	/// Incremented on each claim and never exceeds `quantity`.
 	pub minted: u64,
 	/// Bubblegum mint fee escrowed per copy.
+	///
+	/// Lamports; fixed at attach time to Bubblegum V2's 90,000-lamport fee.
 	pub mint_fee_lamports: u64,
+	/// Bundle manifest slot bound to the collection; part of the PDA seeds.
 	pub asset_index: u8,
+	/// Canonical bump of this PDA `["exclusive-attachment", bundle, asset_index]`.
 	pub bump: u8,
+	/// Canonical bump of the fee vault PDA `["exclusive-fee-vault", attachment]`.
 	pub fee_vault_bump: u8,
 }
 
 /// Emitted once per minted Exclusive Lootbox NFT.
 #[event(discriminator = LootboxEventType::ExclusiveNftMinted, migrations)]
 pub struct ExclusiveNftMintedEvent {
+	/// Template PDA of the claimed opening.
 	pub template: Address,
+	/// Opening PDA whose entropy seeded the traits.
 	pub opening: Address,
+	/// `ExclusiveCollectionState` PDA that minted the leaf.
 	pub collection: Address,
+	/// `ExclusiveAttachmentState` PDA whose slot was claimed.
 	pub attachment: Address,
+	/// Opening's bound beneficiary and the new leaf owner.
 	pub beneficiary: Address,
 	/// Bubblegum asset ID of the minted leaf.
 	pub asset: Address,
@@ -120,159 +158,295 @@ pub struct ExclusiveNftMintedEvent {
 	pub serial: u64,
 	/// Trait index per layer, bottom to top; unused layers are zero.
 	pub traits: [u8; 12],
+	/// Number of meaningful entries in `traits`.
 	pub layer_count: u8,
 }
 
+/// Create a draft Exclusive Lootbox NFT collection and its Core collection.
+///
+/// The admin signs and pays. Validates the text fields, a layer count from 1
+/// through 12, and an attach window that opens before it closes. Creates the
+/// `ExclusiveCollectionState` PDA and a Core collection, named after the
+/// prefix with the URI `{base_uri}collection.json`, whose update authority is
+/// that PDA.
 #[instruction(discriminator = LootboxInstruction::CreateExclusiveCollection, migrations)]
 pub struct CreateExclusiveCollectionInstruction {
+	/// Admin-chosen identifier in the PDA seeds, so one admin can own several
+	/// collections.
 	pub collection_id: u64,
+	/// Unix time in seconds from which bundles may attach; must be earlier
+	/// than `attach_closes_at`.
 	pub attach_opens_at: i64,
+	/// Unix time in seconds from which bundles may no longer attach.
 	pub attach_closes_at: i64,
+	/// Number of trait layers, from 1 through 12.
 	pub layer_count: u8,
+	/// Canonical bump of the collection PDA
+	/// `["exclusive-collection", admin, collection_id]`; any other value fails.
 	pub bump: u8,
+	/// Null-padded UTF-8 name prefix of at most 20 bytes.
 	pub name_prefix: [u8; 32],
+	/// Null-padded UTF-8 symbol.
 	pub symbol: [u8; 10],
+	/// Null-padded metadata URI base; must start with `https://`, continue
+	/// past it, and contain no spaces.
 	pub base_uri: [u8; 128],
 }
 
+/// Load one trait layer's weight table into a draft collection.
+///
+/// The collection admin signs while the collection is a draft. Overwrites the
+/// layer's trait count and 64 weight slots; layers load one per instruction
+/// because every table does not fit one transaction.
 #[instruction(discriminator = LootboxInstruction::SetExclusiveLayer, migrations)]
 pub struct SetExclusiveLayerInstruction {
+	/// Layer to overwrite, counted from 0 at the bottom; must be below the
+	/// collection's `layer_count`.
 	pub layer_index: u8,
+	/// Traits in the layer, from 1 through 64.
 	pub trait_count: u8,
 	/// Sixty-four little-endian `u32` weights; slots past `trait_count` are zero.
+	///
+	/// The used weights must total from 1 through `u32::MAX`.
 	pub weights: [u8; 256],
 }
 
+/// Create a private Bubblegum V2 tree and make it the collection's active tree.
+///
+/// The collection admin signs and pays, in draft or published state. The tree
+/// depth must be from 3 through 20 and the pre-allocated tree account must fit
+/// a canopy that leaves proofs of at most ten nodes. The collection PDA signs
+/// as tree creator; the resulting tree must be private with no delegate and
+/// no mints.
 #[instruction(discriminator = LootboxInstruction::AppendExclusiveTree, migrations)]
 pub struct AppendExclusiveTreeInstruction {
+	/// Concurrent Merkle tree depth, from 3 through 20.
 	pub max_depth: u8,
+	/// Concurrent Merkle tree changelog buffer size, passed to Bubblegum and
+	/// used in the minimum tree account size.
 	pub max_buffer_size: u32,
 }
 
+/// Freeze a draft collection's terms and open it to attachments.
+///
+/// The collection admin signs once. Requires an appended tree and valid
+/// layers, with every slot of unused layers zero. Stores `layers_hash` and
+/// marks the collection published; its tables can never change afterwards.
 #[instruction(discriminator = LootboxInstruction::PublishExclusiveCollection, migrations)]
 pub struct PublishExclusiveCollectionInstruction {}
 
+/// Bind the bundle's next slot to a published Exclusive NFT collection.
+///
+/// The template authority signs and pays while the treasury is unlocked and
+/// not retired, the bundle is funding, and the collection's attach window is
+/// open. Creates the attachment PDA, records the slot as kind
+/// `PRIZE_EXCLUSIVE_NFT` with its commitment, and tops up the fee vault to
+/// `quantity × 90,000` lamports plus its rent-exempt minimum.
 #[instruction(discriminator = LootboxInstruction::AttachExclusiveNft, migrations)]
 pub struct AttachExclusiveNftInstruction {
+	/// Manifest slot to bind; must equal the bundle's `funded_assets`.
 	pub asset_index: u8,
+	/// Canonical bump of the attachment PDA
+	/// `["exclusive-attachment", bundle, asset_index]`; any other value fails.
 	pub bump: u8,
+	/// Canonical bump of the fee vault PDA
+	/// `["exclusive-fee-vault", attachment]`; any other value fails.
 	pub fee_vault_bump: u8,
 }
 
+/// Mint an opening's Exclusive Lootbox NFT to its beneficiary.
+///
+/// Permissionless to relay. The opening must be allocated to this bundle with
+/// the slot unclaimed, and the attachment, collection, active tree, and Core
+/// collection must match their commitments. Records the claim, derives the
+/// traits from the opening's entropy, takes the next serial, mints through
+/// Bubblegum V2 with the fee vault paying, and emits `ExclusiveNftMintedEvent`.
 #[instruction(discriminator = LootboxInstruction::ClaimExclusiveNft, migrations)]
 pub struct ClaimExclusiveNftInstruction {
+	/// Manifest slot bound to the attachment.
 	pub asset_index: u8,
 }
 
+/// Return unused Exclusive NFT mint fees to the template authority.
+///
+/// The template authority signs. On first use for the slot, applies the
+/// standard recovery rules: a staged bundle releases every copy, an active one
+/// releases undrawn copies only after retirement with zero box supply and no
+/// pending openings. A staged bundle empties the vault and closes the
+/// attachment; otherwise only the surplus above unclaimed copies' fees leaves.
 #[instruction(discriminator = LootboxInstruction::ReclaimExclusiveFees, migrations)]
 pub struct ReclaimExclusiveFeesInstruction {
+	/// Manifest slot bound to the attachment.
 	pub asset_index: u8,
 }
 
+/// Accounts for `createExclusiveCollection`.
 #[derive(Accounts, Debug)]
 pub struct CreateExclusiveCollectionAccounts<'a> {
+	/// Collection admin; signs, pays both accounts' rent, and is recorded as
+	/// `admin`.
 	#[pina(validate(signer))]
 	pub admin: &'a mut AccountView,
+	/// Empty collection PDA `["exclusive-collection", admin, collection_id]`,
+	/// created here.
 	#[pina(validate(empty))]
 	pub exclusive_collection: &'a mut AccountView,
 	/// Fresh Core collection keypair; its update authority becomes the PDA.
+	///
+	/// Signs, and is created here by Core.
 	#[pina(validate(signer))]
 	#[pina(validate(empty))]
 	pub core_collection: &'a mut AccountView,
+	/// Metaplex Core program, invoked to create the collection.
 	#[pina(validate(address = MPL_CORE_ID))]
 	pub core_program: &'a AccountView,
+	/// System program, invoked to create both accounts.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
+/// Accounts for `setExclusiveLayer`.
 #[derive(Accounts, Debug)]
 pub struct SetExclusiveLayerAccounts<'a> {
+	/// Collection admin; signs.
 	#[pina(validate(signer))]
 	pub admin: &'a AccountView,
+	/// Draft collection PDA whose layer table is overwritten.
 	pub exclusive_collection: &'a mut AccountView,
 }
 
+/// Accounts for `appendExclusiveTree`.
 #[derive(Accounts, Debug)]
 pub struct AppendExclusiveTreeAccounts<'a> {
+	/// Collection admin; signs and pays the tree config rent.
 	#[pina(validate(signer))]
 	pub admin: &'a mut AccountView,
+	/// Collection PDA; signs as tree creator and records the new active tree.
 	pub exclusive_collection: &'a mut AccountView,
 	/// Bubblegum tree config PDA of `merkle_tree`.
+	///
+	/// Created by Bubblegum here.
 	pub tree_config: &'a mut AccountView,
 	/// Pre-allocated, uninitialized MPL Account Compression tree whose size
 	/// includes a canopy leaving proofs of at most ten nodes.
 	pub merkle_tree: &'a mut AccountView,
+	/// Bubblegum program, invoked to create the V2 tree.
 	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
 	pub bubblegum_program: &'a AccountView,
+	/// MPL Noop program used by Bubblegum as its log wrapper.
 	#[pina(validate(address = MPL_NOOP_ID))]
 	pub log_wrapper: &'a AccountView,
+	/// MPL Account Compression program that owns `merkle_tree`.
 	#[pina(validate(address = MPL_ACCOUNT_COMPRESSION_ID))]
 	pub compression_program: &'a AccountView,
+	/// System program, passed to Bubblegum.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
+/// Accounts for `publishExclusiveCollection`.
 #[derive(Accounts, Debug)]
 pub struct PublishExclusiveCollectionAccounts<'a> {
+	/// Collection admin; signs.
 	#[pina(validate(signer))]
 	pub admin: &'a AccountView,
+	/// Draft collection PDA that becomes published.
 	pub exclusive_collection: &'a mut AccountView,
 }
 
+/// Accounts for `attachExclusiveNft`.
 #[derive(Accounts, Debug)]
 pub struct AttachExclusiveNftAccounts<'a> {
+	/// Template authority; signs and pays the attachment rent and fee top-up.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	pub template: &'a AccountView,
+	/// Funding bundle PDA of `template`; its next slot is bound here.
 	pub bundle: &'a mut AccountView,
+	/// Published collection PDA whose attach window is open.
 	pub exclusive_collection: &'a AccountView,
+	/// Empty attachment PDA `["exclusive-attachment", bundle, asset_index]`,
+	/// created here.
 	#[pina(validate(empty))]
 	pub exclusive_attachment: &'a mut AccountView,
 	/// Zero-data System account PDA that prepays Bubblegum mint fees.
 	/// Unsolicited lamports are accepted and reduce the required top-up.
 	#[pina(validate(empty))]
 	pub fee_vault: &'a mut AccountView,
+	/// System program, invoked to create the attachment and fund the vault.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
+/// Accounts for `claimExclusiveNft`.
 #[derive(Accounts, Debug)]
 pub struct ClaimExclusiveNftAccounts<'a> {
+	/// Template PDA that owns the opening and bundle.
 	pub template: &'a AccountView,
+	/// Allocated opening PDA; its claim bit is set and its entropy seeds the
+	/// traits.
 	pub opening: &'a mut AccountView,
+	/// Bundle PDA the opening was allocated to; its claimed count advances.
 	pub bundle: &'a mut AccountView,
+	/// Attachment PDA committed in the bundle slot; its `minted` advances.
 	pub exclusive_attachment: &'a mut AccountView,
 	/// Pays Bubblegum's per-mint fee from the creator's escrow.
+	///
+	/// Canonical `["exclusive-fee-vault", attachment]` PDA; signs as payer.
 	pub fee_vault: &'a mut AccountView,
+	/// Published collection PDA named by the attachment; signs as tree and
+	/// collection authority and advances its serial.
 	pub exclusive_collection: &'a mut AccountView,
 	/// Must be the opening's bound beneficiary; becomes the leaf owner.
 	pub recipient: &'a AccountView,
+	/// Canonical Bubblegum tree config PDA of `merkle_tree`; supplies the leaf
+	/// nonce and receives the mint fee.
 	pub tree_config: &'a mut AccountView,
+	/// The collection's `active_tree`, which receives the new leaf.
 	pub merkle_tree: &'a mut AccountView,
+	/// The collection's Core collection, which the leaf joins.
 	pub core_collection: &'a mut AccountView,
+	/// Bubblegum's fixed Core CPI signer PDA.
 	#[pina(validate(address = MPL_CORE_CPI_SIGNER_ID))]
 	pub core_cpi_signer: &'a AccountView,
+	/// Bubblegum program, invoked to mint the leaf.
 	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
 	pub bubblegum_program: &'a AccountView,
+	/// Metaplex Core program, invoked by Bubblegum for the collection.
 	#[pina(validate(address = MPL_CORE_ID))]
 	pub core_program: &'a AccountView,
+	/// MPL Noop program used by Bubblegum as its log wrapper.
 	#[pina(validate(address = MPL_NOOP_ID))]
 	pub log_wrapper: &'a AccountView,
+	/// MPL Account Compression program that owns `merkle_tree`.
 	#[pina(validate(address = MPL_ACCOUNT_COMPRESSION_ID))]
 	pub compression_program: &'a AccountView,
+	/// System program, passed to Bubblegum.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
+/// Accounts for `reclaimExclusiveFees`.
 #[derive(Accounts, Debug)]
 pub struct ReclaimExclusiveFeesAccounts<'a> {
+	/// Template authority; signs and receives released fees and, for a staged
+	/// bundle, the attachment rent.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA that owns `bundle`.
 	pub template: &'a AccountView,
+	/// Template's Token-2022 box mint; its supply must be zero to recover an
+	/// active bundle.
 	pub box_mint: &'a AccountView,
+	/// Bundle PDA; the slot's undrawn copies are released on first recovery.
 	pub bundle: &'a mut AccountView,
+	/// Attachment PDA committed in the bundle slot; closed for a staged bundle.
 	pub exclusive_attachment: &'a mut AccountView,
+	/// Canonical zero-data `["exclusive-fee-vault", attachment]` PDA; signs
+	/// the withdrawal.
 	pub fee_vault: &'a mut AccountView,
+	/// System program, invoked to withdraw from the fee vault.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }

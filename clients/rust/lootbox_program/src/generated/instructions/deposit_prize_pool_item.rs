@@ -8,24 +8,47 @@
 	clippy::too_many_arguments
 )]
 
+/// Transfer the prepared compressed NFT into prize pool custody.
+///
+/// The template authority signs as the current leaf owner while the treasury
+/// is unlocked and not retired, the bundle is funding, and the pool has a
+/// prepared item at `deposit_cursor`. The arguments must match that item.
+/// Bubblegum moves the leaf to the pool PDA; the item becomes deposited, and
+/// the pool advances its cursor, manifest accumulator, and bitmap.
 pub const DEPOSIT_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 45u8;
 pub const DEPOSIT_PRIZE_POOL_ITEM_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct DepositPrizePoolItem {
+	/// Template authority; signs as the current leaf owner and pays rent for
+	/// bitmap growth.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	pub template: solana_pubkey::Pubkey,
+	/// Funding bundle PDA whose current slot holds `prize_pool`.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Funding `PrizePoolState` PDA that receives the leaf; its cursor,
+	/// accumulator, and bitmap advance.
 	pub prize_pool: solana_pubkey::Pubkey,
+	/// Prepared item PDA at the pool's `deposit_cursor`; marked deposited.
 	pub prize_pool_item: solana_pubkey::Pubkey,
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	pub tree_config: solana_pubkey::Pubkey,
+	/// Pool's pinned tree that holds the leaf; Bubblegum rewrites it.
 	pub merkle_tree: solana_pubkey::Pubkey,
+	/// Bubblegum program, invoked to transfer the compressed NFT.
 	pub bubblegum_program: solana_pubkey::Pubkey,
+	/// SPL Noop program used by Bubblegum as its log wrapper.
 	pub log_wrapper: solana_pubkey::Pubkey,
+	/// SPL Account Compression program that owns `merkle_tree`.
 	pub compression_program: solana_pubkey::Pubkey,
+	/// System program, passed to Bubblegum.
 	pub system_program: solana_pubkey::Pubkey,
 	/// Merkle proof nodes in leaf-to-root order.
+	///
+	/// Passed as zero through 16 readonly remaining accounts; the tree's canopy
+	/// supplies the rest of the path.
 	pub proof_accounts: solana_pubkey::Pubkey,
 }
 

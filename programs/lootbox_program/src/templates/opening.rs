@@ -4,31 +4,72 @@ use pina::sysvars::Sysvar;
 
 use super::*;
 
+/// Burns one box and commits a fresh Switchboard randomness request for it,
+/// creating a pending opening at the tail of the template's FIFO queue.
+///
+/// Signed by the box holder and a payer, which may be a sponsor, plus the new
+/// randomness keypair. Requires a non-draft template that is market-locked or
+/// retired, a reached `opens_at`, and remaining inventory for every live and
+/// pending box. The beneficiary, consumer binding, request sequence, treasury
+/// revision, and eligible bundle prefix are fixed before any entropy exists.
 #[instruction(discriminator = LootboxInstruction::RequestTemplateOpen, migrations)]
 pub struct RequestTemplateOpenInstruction {
+	/// Recent slot passed to Switchboard `randomness_init`, which uses it to
+	/// derive the per-randomness address lookup table.
 	pub recent_slot: u64,
+	/// Immutable destination for every prize claim and any forfeit bounty of
+	/// this opening; rejected when it is the default address. May differ from
+	/// the box authority and the payer.
 	pub beneficiary: Address,
+	/// Program expected to consume the result receipt, or the default address
+	/// for none. Recorded on the opening and copied into any result receipt.
 	pub consumer_program: Address,
+	/// Consumer-selected correlation key, fixed before randomness is known;
+	/// must be all zeros when `consumer_program` is the default address.
 	pub consumer_context: [u8; 32],
+	/// Canonical bump of the opening PDA; rejected unless it equals the derived
+	/// canonical bump.
 	pub bump: u8,
 }
 
+/// Verifies the Switchboard reveal for a pending opening and records its
+/// entropy, moving the opening to the verified status.
+///
+/// Permissionless: any signer may submit the gateway proof, and openings may
+/// be verified out of FIFO order. Requires a pending opening whose randomness
+/// is still unrevealed; the program applies no deadline of its own, so only
+/// `forfeitTemplateOpen` ends the window. Pays any configured settlement
+/// bounty from the service vault to the payer.
 #[instruction(discriminator = LootboxInstruction::FulfillTemplateOpen, migrations)]
 pub struct FulfillTemplateOpenInstruction {
+	/// Switchboard enclave signature returned by the randomness gateway.
 	pub signature: [u8; 64],
+	/// Secp256k1 recovery identifier returned by the randomness gateway.
 	pub recovery_id: u8,
+	/// Revealed value covered by `signature`; rejected unless Switchboard
+	/// stores exactly this value on the randomness account.
 	pub value: [u8; 32],
 }
 
+/// Forfeits the FIFO head opening after its reveal timed out, so later
+/// openings can allocate.
+///
+/// Permissionless: any signer may call once `RANDOMNESS_TIMEOUT_SLOTS` slots
+/// have passed since the committed seed slot and the randomness is still
+/// unrevealed. Consumes no inventory, never remints the box, and never changes
+/// the beneficiary; pays any configured settlement bounty to the beneficiary.
 #[instruction(discriminator = LootboxInstruction::ForfeitTemplateOpen, migrations)]
 pub struct ForfeitTemplateOpenInstruction {}
 
+/// Accounts for `requestTemplateOpen`.
 #[derive(Accounts, Debug)]
 pub struct RequestTemplateOpenAccounts<'a> {
 	/// Owns the box token account and authorizes burning exactly one box.
+	/// Recorded on the opening as `box_authority`.
 	#[pina(validate(signer))]
 	pub box_authority: &'a AccountView,
 	/// Pays for the opening and oracle initialization; may be a sponsor.
+	/// Recorded as the opening's `rent_refund` address.
 	///
 	/// The immutable authority intentionally precedes the mutable payer so the
 	/// same signer may fill both roles after Solana promotes duplicate metas to
@@ -36,61 +77,116 @@ pub struct RequestTemplateOpenAccounts<'a> {
 	/// checks while supporting the common self-paid opening flow.
 	#[pina(validate(signer))]
 	pub payer: &'a mut AccountView,
+	/// Template treasury, validated by its PDA seeds; its request sequence and
+	/// pending-opening count advance.
 	pub template: &'a mut AccountView,
+	/// Template's Token-2022 box mint, validated against the template; one box
+	/// is burned from it.
 	pub box_mint: &'a mut AccountView,
+	/// Box authority's Token-2022 associated token account for `box_mint`; must
+	/// hold at least one box, and one is burned.
 	pub box_account: &'a mut AccountView,
+	/// Opening PDA at `["template-opening", template, randomness]`; must be
+	/// empty, is created here funded by `payer`, and signs as the randomness
+	/// authority.
 	#[pina(validate(empty))]
 	pub opening: &'a mut AccountView,
+	/// Fresh Switchboard randomness account; must sign and be empty because
+	/// `randomness_init` creates it. Its address seeds the opening PDA.
 	#[pina(validate(signer))]
 	#[pina(validate(empty))]
 	pub randomness: &'a mut AccountView,
+	/// Switchboard reward escrow for `randomness`; rejected unless it is the
+	/// wrapped-SOL associated token account of `randomness`.
 	pub reward_escrow: &'a mut AccountView,
+	/// Switchboard queue; must match the queue recorded on the template.
 	pub oracle_queue: &'a mut AccountView,
+	/// Oracle assigned to the commitment; must be owned by the oracle program,
+	/// and Switchboard checks its queue membership. Recorded on `randomness`.
 	pub oracle: &'a mut AccountView,
+	/// Slot hashes sysvar, read by Switchboard `randomness_commit`.
 	#[pina(validate(sysvar = SLOT_HASHES_SYSVAR_ID))]
 	pub recent_slot_hashes: &'a AccountView,
+	/// Switchboard On-Demand program; must match the oracle program recorded on
+	/// the template.
 	pub oracle_program: &'a AccountView,
+	/// Switchboard program state, passed to `randomness_init`.
 	pub oracle_program_state: &'a AccountView,
+	/// Switchboard lookup-table signer, passed to `randomness_init`.
 	pub oracle_lut_signer: &'a AccountView,
+	/// Switchboard address lookup table for `randomness`, derived from
+	/// `recent_slot` and passed to `randomness_init`.
 	pub oracle_lut: &'a mut AccountView,
+	/// Associated Token Account program, used by Switchboard for the reward
+	/// escrow.
 	#[pina(validate(address = associated_token_account::ID))]
 	pub associated_token_program: &'a AccountView,
+	/// Wrapped SOL mint backing the reward escrow.
 	#[pina(validate(address = WRAPPED_SOL_MINT_ID))]
 	pub wrapped_sol_mint: &'a AccountView,
+	/// Address Lookup Table program, used by Switchboard for `oracle_lut`.
 	#[pina(validate(address = ADDRESS_LOOKUP_TABLE_PROGRAM_ID))]
 	pub address_lookup_table_program: &'a AccountView,
+	/// System program, used to create the opening and Switchboard accounts.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	/// Token-2022 program, invoked to burn the box.
 	#[pina(validate(address = token_2022::ID))]
 	pub box_token_program: &'a AccountView,
+	/// SPL Token program backing the wrapped-SOL reward escrow.
 	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
 }
 
+/// Accounts for `fulfillTemplateOpen`.
 #[derive(Accounts, Debug)]
 pub struct FulfillTemplateOpenAccounts<'a> {
+	/// Submits the proof and funds Switchboard's reveal bookkeeping; receives
+	/// the settlement bounty when one is configured.
 	#[pina(validate(signer))]
 	pub payer: &'a mut AccountView,
+	/// Template treasury, validated by its PDA seeds; its remaining
+	/// settlement-bounty count is written back.
 	pub template: &'a mut AccountView,
+	/// Service vault PDA at `["service-vault", template]`; validated only when
+	/// receipts or bounties are enabled, and pays the settlement bounty.
 	pub service_vault: &'a mut AccountView,
+	/// Pending opening PDA for `template` and `randomness`; signs the reveal as
+	/// the randomness authority, then stores the entropy and becomes verified.
 	pub opening: &'a mut AccountView,
+	/// Switchboard randomness bound to the opening; must be committed at the
+	/// opening's seed slot and not yet revealed.
 	pub randomness: &'a mut AccountView,
+	/// Switchboard queue; must match the queue recorded on the template.
 	pub oracle_queue: &'a AccountView,
+	/// Oracle bound at commit time; rejected unless it matches the oracle
+	/// recorded on `randomness`.
 	pub oracle: &'a AccountView,
+	/// Oracle stats account, updated by Switchboard `randomness_reveal`.
 	pub oracle_stats: &'a mut AccountView,
+	/// Slot hashes sysvar, read by Switchboard `randomness_reveal`.
 	#[pina(validate(sysvar = SLOT_HASHES_SYSVAR_ID))]
 	pub recent_slot_hashes: &'a AccountView,
+	/// Switchboard On-Demand program; must match the oracle program recorded on
+	/// the template.
 	pub oracle_program: &'a AccountView,
+	/// Switchboard reward escrow for `randomness`; rejected unless it is the
+	/// wrapped-SOL associated token account of `randomness`.
 	pub reward_escrow: &'a mut AccountView,
+	/// Switchboard program state, passed to `randomness_reveal`.
 	pub oracle_program_state: &'a AccountView,
+	/// System program, used by Switchboard and for the bounty transfer.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	/// SPL Token program backing the wrapped-SOL reward escrow.
 	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
+	/// Wrapped SOL mint backing the reward escrow.
 	#[pina(validate(address = WRAPPED_SOL_MINT_ID))]
 	pub wrapped_sol_mint: &'a AccountView,
 }
 
+/// Accounts for `forfeitTemplateOpen`.
 #[derive(Accounts, Debug)]
 pub struct ForfeitTemplateOpenAccounts<'a> {
 	/// Any signer may advance an expired FIFO head; the stored beneficiary and
@@ -99,11 +195,21 @@ pub struct ForfeitTemplateOpenAccounts<'a> {
 	pub caller: &'a mut AccountView,
 	/// Bound destination of the forfeit bounty: the creator-funded service
 	/// budget compensates the beneficiary whose box burned, never the crank.
+	/// Must match the opening's stored beneficiary.
 	pub beneficiary: &'a mut AccountView,
+	/// Template treasury, validated by its PDA seeds; its pending-opening count
+	/// falls and its FIFO allocation cursor advances.
 	pub template: &'a mut AccountView,
+	/// Service vault PDA at `["service-vault", template]`; validated only when
+	/// receipts or bounties are enabled, and pays the settlement bounty.
 	pub service_vault: &'a mut AccountView,
+	/// Pending opening at the FIFO head, validated by its PDA seeds; moves to
+	/// the forfeited status and is not closed here.
 	pub opening: &'a mut AccountView,
+	/// Switchboard randomness bound to the opening; must still be unrevealed at
+	/// the committed seed slot, which starts the timeout.
 	pub randomness: &'a AccountView,
+	/// System program, used for the bounty transfer.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }

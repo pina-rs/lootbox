@@ -20,24 +20,42 @@ pub struct PrizePoolState {
 /// commits the ordered inventory into the parent treasury manifest.
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Template authority that created the pool. Receives item rent when a
+	/// winner claims an item.
 	pub authority: solana_pubkey::Pubkey,
+	/// Bundle whose asset slot this pool fills; seeds this PDA.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Nonzero Bubblegum Merkle tree that holds every deposited leaf.
 	pub tree: solana_pubkey::Pubkey,
+	/// Chained hash of every deposited item in pool order. Removing the
+	/// unsealed tail restores the previous value; sealing commits it into the
+	/// bundle slot.
 	pub manifest_accumulator: [u8; 32],
+	/// Items the pool must hold before sealing; equals the bundle quantity and
+	/// is between one and 4,096.
 	pub quantity: u64,
+	/// Seal counter mixed into the bundle slot commitment; `sealPrizePool`
+	/// increments it from zero.
 	pub version: u64,
+	/// Items deposited so far, and the pool index of the next item.
 	pub deposit_cursor: u32,
 	/// Reserved items, including those already claimed by winners.
 	pub assigned_count: u32,
+	/// Assigned items already delivered to their winners.
 	pub claimed_count: u32,
+	/// Items returned to the creator from the sealed pool.
 	pub reclaimed_count: u32,
+	/// Bundle asset slot this pool fills; seeds this PDA.
 	pub asset_index: u8,
 	/// 0 funding, 1 sealed.
 	pub status: u8,
 	/// One metadata-admitted item PDA exists at `deposit_cursor`.
 	pub has_prepared_item: bool,
+	/// Canonical bump of this prize pool PDA.
 	pub bump: u8,
 	/// A set bit means the item cannot be allocated again.
+	/// Holds one bit per deposited item, so its length is `deposit_cursor`
+	/// divided by eight, rounded up; allocation and reclaim set bits.
 	pub unavailable: pina::Vec<u8, 512>,
 }
 

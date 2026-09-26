@@ -8,15 +8,26 @@
 	clippy::too_many_arguments
 )]
 
+/// Seal a fully deposited prize pool into its bundle slot.
+///
+/// The template authority signs while the treasury is unlocked and not
+/// retired. The pool must be funding with `deposit_cursor == quantity` and no
+/// prepared item. Writes the domain-separated pool commitment into the bundle
+/// slot, advances the bundle's `funded_assets`, and marks the pool sealed.
 pub const SEAL_PRIZE_POOL_DISCRIMINATOR: u8 = 46u8;
 pub const SEAL_PRIZE_POOL_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct SealPrizePool {
+	/// Template authority; signs.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	pub template: solana_pubkey::Pubkey,
+	/// Funding bundle PDA; receives the pool commitment and advances
+	/// `funded_assets`.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Fully deposited `PrizePoolState` PDA; becomes sealed.
 	pub prize_pool: solana_pubkey::Pubkey,
 }
 

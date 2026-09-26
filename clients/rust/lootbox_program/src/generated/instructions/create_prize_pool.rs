@@ -8,17 +8,33 @@
 	clippy::too_many_arguments
 )]
 
+/// Create a funding prize pool for the bundle's next unfunded manifest slot.
+///
+/// The template authority signs while the treasury is unlocked and not
+/// retired, and the bundle is funding with a quantity from 1 through 4,096.
+/// Creates the compact `PrizePoolState` PDA, pins its tree and quantity, and
+/// reserves the slot as kind `PRIZE_POOL` with amount 1; a bundle holds at
+/// most one pool.
 pub const CREATE_PRIZE_POOL_DISCRIMINATOR: u8 = 44u8;
 pub const CREATE_PRIZE_POOL_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct CreatePrizePool {
+	/// Template authority; signs, pays the pool rent, and is recorded as the
+	/// pool's `authority`.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	pub template: solana_pubkey::Pubkey,
+	/// Funding bundle PDA of `template` whose next slot the pool reserves.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Empty `PrizePoolState` PDA `["prize-pool", bundle, asset_index]`,
+	/// created here.
 	pub prize_pool: solana_pubkey::Pubkey,
+	/// Bubblegum tree that every pool leaf must come from; only its nonzero
+	/// address is recorded.
 	pub merkle_tree: solana_pubkey::Pubkey,
+	/// System program, invoked to create the pool account.
 	pub system_program: solana_pubkey::Pubkey,
 }
 

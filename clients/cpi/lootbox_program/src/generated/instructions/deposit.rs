@@ -18,23 +18,30 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Transfers lamports from any signer into a lootbox's vault. Allowed at any
+/// point in the lootbox's life; deposits only add collateral.
 /// CPI call for the `deposit` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct Deposit<'account> {
 	/// CPI account `depositor`.
+	/// Any wallet funding the vault. Writable signer; the lamports come from
+	/// it.
 	/// Required privileges: writable and signer.
 	pub depositor: &'account AccountView,
 
 	/// CPI account `lootbox`.
+	/// Lootbox whose vault receives the deposit; its PDA is revalidated.
 	/// Required privileges: read-only.
 	pub lootbox: &'account AccountView,
 
 	/// CPI account `vault`.
+	/// Vault PDA of `lootbox` that receives the lamports. Writable.
 	/// Required privileges: writable.
 	pub vault: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked for the transfer.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 

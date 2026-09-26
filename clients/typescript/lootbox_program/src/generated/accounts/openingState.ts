@@ -19,9 +19,71 @@ export const OPENING_STATE_DISCRIMINATOR2 = 0;
 export function getOpeningStateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(OPENING_STATE_DISCRIMINATOR2); }
 
 /** Receipt binding a burned box to one unrevealed randomness commitment. */
-export type OpeningState = { discriminator: number; migrationVersion: number; lootbox: Address; recipient: Address; randomness: Address; seedSlot: bigint; rewardLamports: bigint; selectedOutcome: number; status: number; bump: number;  };
+export type OpeningState = { discriminator: number; migrationVersion: number;
+/** Lootbox whose box was burned. A PDA seed. */
+lootbox: Address;
+/**
+ * Box owner that requested the opening. The only address that may receive
+ * the reward, sign a refund, or receive the closed receipt's rent.
+ */
+recipient: Address;
+/**
+ * Switchboard randomness account committed for this opening, with this
+ * PDA as its authority. A PDA seed.
+ */
+randomness: Address;
+/**
+ * Slot Switchboard recorded when the randomness was committed. The reveal
+ * must match it, and a refund opens `RANDOMNESS_TIMEOUT_SLOTS` later.
+ */
+seedSlot: bigint;
+/**
+ * Lamports paid to the recipient. Zero while pending; set to the selected
+ * reward on settlement or to the minimum reward on refund.
+ */
+rewardLamports: bigint;
+/**
+ * Index of the paid outcome in the lootbox's outcome table. Zero while
+ * pending; on refund, the index of the minimum reward.
+ */
+selectedOutcome: number;
+/** Lifecycle status: `0` pending, `1` settled, `2` refunded. */
+status: number;
+/** Canonical bump of this opening PDA. */
+bump: number;  };
 
-export type OpeningStateArgs = { lootbox: Address; recipient: Address; randomness: Address; seedSlot: number | bigint; rewardLamports: number | bigint; selectedOutcome: number; status: number; bump: number;  };
+export type OpeningStateArgs = {
+/** Lootbox whose box was burned. A PDA seed. */
+lootbox: Address;
+/**
+ * Box owner that requested the opening. The only address that may receive
+ * the reward, sign a refund, or receive the closed receipt's rent.
+ */
+recipient: Address;
+/**
+ * Switchboard randomness account committed for this opening, with this
+ * PDA as its authority. A PDA seed.
+ */
+randomness: Address;
+/**
+ * Slot Switchboard recorded when the randomness was committed. The reveal
+ * must match it, and a refund opens `RANDOMNESS_TIMEOUT_SLOTS` later.
+ */
+seedSlot: number | bigint;
+/**
+ * Lamports paid to the recipient. Zero while pending; set to the selected
+ * reward on settlement or to the minimum reward on refund.
+ */
+rewardLamports: number | bigint;
+/**
+ * Index of the paid outcome in the lootbox's outcome table. Zero while
+ * pending; on refund, the index of the minimum reward.
+ */
+selectedOutcome: number;
+/** Lifecycle status: `0` pending, `1` settled, `2` refunded. */
+status: number;
+/** Canonical bump of this opening PDA. */
+bump: number;  };
 
 /** Gets the encoder for {@link OpeningStateArgs} account data. */
 export function getOpeningStateEncoder(): FixedSizeEncoder<OpeningStateArgs> {

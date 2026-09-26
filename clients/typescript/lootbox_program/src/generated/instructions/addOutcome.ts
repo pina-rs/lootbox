@@ -39,7 +39,12 @@ export function getAddOutcomeInstructionDataCodec(): FixedSizeCodec<AddOutcomeIn
 }
 
 export type AddOutcomeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Lootbox authority. Signer; must match the stored authority. */
+authority: TAccountAuthority;
+/**
+ * Unsealed lootbox whose outcome table, total weight, and maximum reward
+ * are updated.
+ */
 lootbox: TAccountLootbox;
 weight: AddOutcomeInstructionDataArgs["weight"];
 rewardLamports: AddOutcomeInstructionDataArgs["rewardLamports"];
@@ -68,7 +73,12 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedAddOutcomeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Lootbox authority. Signer; must match the stored authority. */
 authority: TAccountMetas[0];
+/**
+ * Unsealed lootbox whose outcome table, total weight, and maximum reward
+ * are updated.
+ */
 lootbox: TAccountMetas[1];
 };
 data: AddOutcomeInstructionData; };

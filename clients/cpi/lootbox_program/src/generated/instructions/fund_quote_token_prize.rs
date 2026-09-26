@@ -18,35 +18,51 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Escrows a winner-routable token quote in the next slot of a funding bundle.
+///
+/// The template authority signs the transfer of the per-win amount times the
+/// bundle quantity into the bundle's associated token account. The mint may
+/// carry only metadata extensions and no freeze authority.
 /// CPI call for the `fund_quote_token_prize` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct FundQuoteTokenPrize<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs the token transfer from `source`.
 	/// Required privileges: read-only and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA that must be unlocked and not retired; read only by the
+	/// handler.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Funding bundle PDA of this template that records the quote.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `mint`.
+	/// Quote mint owned by `token_program` with only metadata extensions, no
+	/// freeze authority, and not wrapped SOL.
 	/// Required privileges: read-only.
 	pub mint: &'account AccountView,
 
 	/// CPI account `source`.
+	/// Token account debited for the deposit.
 	/// Required privileges: writable.
 	pub source: &'account AccountView,
 
 	/// CPI account `escrow`.
+	/// Bundle's associated token account for `mint`; must have no delegate or
+	/// close authority and must not be frozen.
 	/// Required privileges: writable.
 	pub escrow: &'account AccountView,
 
 	/// CPI account `tokenProgram`.
+	/// SPL Token or Token-2022 program that owns `mint`, invoked for the
+	/// transfer.
 	/// Required privileges: read-only.
 	pub token_program: &'account AccountView,
 

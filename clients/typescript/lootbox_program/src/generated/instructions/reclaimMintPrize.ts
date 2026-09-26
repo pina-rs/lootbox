@@ -39,11 +39,33 @@ export function getReclaimMintPrizeInstructionDataCodec(): FixedSizeCodec<Reclai
 }
 
 export type ReclaimMintPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Template authority; must sign and match the authority recorded on the
+ * template.
+ */
+authority: TAccountAuthority;
+/**
+ * Template treasury, validated by its PDA seeds; supplies the status,
+ * pending-opening count, and remaining inventory of the bundle.
+ */
 template: TAccountTemplate;
+/**
+ * Template's box mint, validated against the template; its live supply
+ * must be zero to reclaim from an active bundle.
+ */
 boxMint: TAccountBoxMint;
+/**
+ * Bundle PDA of this template; records the asset as reclaimed and signs
+ * the authority revocation.
+ */
 bundle: TAccountBundle;
+/**
+ * Badge mint recorded in the bundle's asset slot; must have zero decimals,
+ * the bundle as mint authority, no freeze authority, and only metadata
+ * extensions. Its mint authority is revoked once every copy is released.
+ */
 mint: TAccountMint;
+/** SPL Token or Token-2022 program that owns `mint`. */
 tokenProgram?: TAccountTokenProgram;
 assetIndex: ReclaimMintPrizeInstructionDataArgs["assetIndex"];
 }
@@ -74,11 +96,33 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedReclaimMintPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template authority; must sign and match the authority recorded on the
+ * template.
+ */
 authority: TAccountMetas[0];
+/**
+ * Template treasury, validated by its PDA seeds; supplies the status,
+ * pending-opening count, and remaining inventory of the bundle.
+ */
 template: TAccountMetas[1];
+/**
+ * Template's box mint, validated against the template; its live supply
+ * must be zero to reclaim from an active bundle.
+ */
 boxMint: TAccountMetas[2];
+/**
+ * Bundle PDA of this template; records the asset as reclaimed and signs
+ * the authority revocation.
+ */
 bundle: TAccountMetas[3];
+/**
+ * Badge mint recorded in the bundle's asset slot; must have zero decimals,
+ * the bundle as mint authority, no freeze authority, and only metadata
+ * extensions. Its mint authority is revoked once every copy is released.
+ */
 mint: TAccountMetas[4];
+/** SPL Token or Token-2022 program that owns `mint`. */
 tokenProgram: TAccountMetas[5];
 };
 data: ReclaimMintPrizeInstructionData; };

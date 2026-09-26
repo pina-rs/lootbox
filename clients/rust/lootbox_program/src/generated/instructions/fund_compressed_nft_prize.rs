@@ -8,22 +8,42 @@
 	clippy::too_many_arguments
 )]
 
+/// Escrows a Bubblegum compressed NFT into a funding bundle.
+///
+/// The template authority signs as the leaf owner while the template is
+/// unlocked and not retired. The bundle must be funding with a quantity of one.
+/// Bubblegum transfers the leaf to the bundle PDA, and the asset ID derived
+/// from `merkle_tree` and `nonce` is recorded in the bundle's next unfunded
+/// slot.
 pub const FUND_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: u8 = 33u8;
 pub const FUND_COMPRESSED_NFT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct FundCompressedNftPrize {
+	/// Template authority. Signs the Bubblegum transfer as both leaf owner and
+	/// leaf delegate.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA owned by this program; must be unlocked and not retired.
 	pub template: solana_pubkey::Pubkey,
+	/// Funding bundle PDA of `template` with a quantity of one. Records the
+	/// asset ID and becomes the leaf owner.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	pub tree_config: solana_pubkey::Pubkey,
+	/// Concurrent Merkle tree holding the leaf; with `nonce` it derives the
+	/// recorded asset ID.
 	pub merkle_tree: solana_pubkey::Pubkey,
+	/// Metaplex Bubblegum program, invoked to transfer the leaf.
 	pub bubblegum_program: solana_pubkey::Pubkey,
+	/// SPL Noop program, forwarded to Bubblegum as its log wrapper.
 	pub log_wrapper: solana_pubkey::Pubkey,
+	/// SPL Account Compression program, forwarded to Bubblegum.
 	pub compression_program: solana_pubkey::Pubkey,
+	/// System program, forwarded to Bubblegum.
 	pub system_program: solana_pubkey::Pubkey,
-	/// Merkle proof nodes in leaf-to-root order.
+	/// Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+	/// canopy.
 	pub proof_accounts: solana_pubkey::Pubkey,
 }
 

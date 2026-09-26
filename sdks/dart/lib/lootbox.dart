@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 export 'package:lootbox_program_client/lootbox_program.dart';
 
+export 'src/exclusive.dart';
 export 'src/templates.dart';
 
 const int maxOutcomes = 8;

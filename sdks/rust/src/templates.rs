@@ -74,6 +74,11 @@ pub enum PrizeAsset<'a> {
 		tree: [u8; 32],
 		items: &'a [PrizePoolItem<'a>],
 	},
+	/// One Exclusive Lootbox NFT minted on claim from a published
+	/// `ExclusiveCollectionState`. Many bundles may attach to one collection.
+	ExclusiveNft {
+		collection: [u8; 32],
+	},
 }
 
 impl PrizeAsset<'_> {
@@ -90,6 +95,7 @@ impl PrizeAsset<'_> {
 			| Self::MetadataNft { mint } => Some(mint),
 			Self::CoreAsset { asset } | Self::CompressedNft { asset } => Some(asset),
 			Self::PrizePool { tree, .. } => Some(tree),
+			Self::ExclusiveNft { collection } => Some(collection),
 		}
 	}
 
@@ -106,7 +112,8 @@ impl PrizeAsset<'_> {
 			| Self::MetadataNft { .. }
 			| Self::CoreAsset { .. }
 			| Self::CompressedNft { .. }
-			| Self::PrizePool { .. } => 1,
+			| Self::PrizePool { .. }
+			| Self::ExclusiveNft { .. } => 1,
 		}
 	}
 

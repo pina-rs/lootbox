@@ -22,6 +22,7 @@ enum PrizeKind {
   coreAsset,
   compressedNft,
   prizePool,
+  exclusiveNft,
 }
 
 /// Stable reasons why a treasury plan was rejected before transaction build.
@@ -146,6 +147,14 @@ final class PrizeAsset {
       amount = BigInt.one,
       poolItems = List.unmodifiable(items);
 
+  /// One Exclusive Lootbox NFT minted on claim from a published collection;
+  /// many bundles may attach to one collection.
+  PrizeAsset.exclusiveNft(Address collection)
+    : kind = PrizeKind.exclusiveNft,
+      identifier = collection,
+      amount = BigInt.one,
+      poolItems = const [];
+
   final PrizeKind kind;
   final Address? identifier;
   final BigInt amount;
@@ -159,7 +168,7 @@ final class PrizeAsset {
     PrizeKind.classicToken ||
     PrizeKind.token2022 ||
     PrizeKind.quoteToken => false,
-    PrizeKind.prizePool => false,
+    PrizeKind.prizePool || PrizeKind.exclusiveNft => false,
     PrizeKind.mintBadge ||
     PrizeKind.legacyNft ||
     PrizeKind.metadataNft ||

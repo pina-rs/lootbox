@@ -214,10 +214,19 @@ describe("chain prize decoding", () => {
 			"mintBadge",
 			"prizePool",
 		]);
-		expect(() =>
+		expect(
 			bundleAssets({
 				assetCount: 1,
 				kinds: new Uint8Array([11]),
+				mints: new Uint8Array(128),
+				amounts: new Uint8Array(32),
+				decimals: new Uint8Array(4),
+			})[0]?.kind,
+		).toBe("exclusiveNft");
+		expect(() =>
+			bundleAssets({
+				assetCount: 1,
+				kinds: new Uint8Array([12]),
 				mints: new Uint8Array(128),
 				amounts: new Uint8Array(32),
 				decimals: new Uint8Array(4),

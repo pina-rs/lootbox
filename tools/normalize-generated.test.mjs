@@ -7,9 +7,11 @@ import {
 	assertWorkspaceVersions,
 	normalizeDartHashes,
 	normalizeDartManifest,
+	normalizeRustEventProjectionTests,
 	normalizeRustManifest,
 	normalizeRustVersionEnvelopeGuards,
 	normalizeRustVersionEnvelopeTests,
+	normalizeTypeScriptEventVersionReads,
 	normalizeTypeScriptTypeArguments,
 	sdkKitRange,
 } from "./normalize-generated.mjs";
@@ -206,4 +208,34 @@ test("pins the generated client to the SDK's Kit range", () => {
 	assert.equal(sdkKitRange(root), "^8.3.0");
 	writeFileSync(manifest, JSON.stringify({ dependencies: {} }));
 	assert.throws(() => sdkKitRange(root), /must depend on @solana\/kit/);
+});
+
+test("rewrites generated event projection failures to expect_err", () => {
+	const source =
+		'\t\tlet error = Event::project_from_bytes(&record(future, &[]))\n\t\t\t.err()\n\t\t\t.expect("a future version must fail");\n';
+	const normalized = normalizeRustEventProjectionTests(source);
+	assert.equal(
+		normalized,
+		'\t\tlet error = Event::project_from_bytes(&record(future, &[]))\n\t\t\t.expect_err("a future version must fail");\n',
+	);
+	assert.equal(
+		normalizeRustEventProjectionTests(normalized),
+		normalized,
+		"idempotent",
+	);
+});
+
+test("guards generated event version reads for strict indexed access", () => {
+	const source =
+		"\tconst sourceVersion = bytes[1];\n\tif (sourceVersion === 0) {\n";
+	const normalized = normalizeTypeScriptEventVersionReads(source);
+	assert.equal(
+		normalized,
+		'\tconst sourceVersion = bytes[1];\n\tif (sourceVersion === undefined) {\n\t\tthrow new RangeError("the event envelope has no version byte");\n\t}\n\tif (sourceVersion === 0) {\n',
+	);
+	assert.equal(
+		normalizeTypeScriptEventVersionReads(normalized),
+		normalized,
+		"idempotent",
+	);
 });

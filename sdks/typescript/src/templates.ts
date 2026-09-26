@@ -98,6 +98,13 @@ export type PrizeAsset =
 		/** Every item must be a Bubblegum V1 leaf from this one pinned tree. */
 		tree: Address;
 		items: readonly PrizePoolItem[];
+	}>
+	| Readonly<{
+		/** One Exclusive Lootbox NFT minted on claim from a published
+		 * `ExclusiveCollectionState`; many bundles may attach to one collection.
+		 */
+		kind: "exclusiveNft";
+		collection: Address;
 	}>;
 
 export type PrizeBundleInput = Readonly<{
@@ -196,6 +203,7 @@ function assetAddress(asset: PrizeAsset): Address | null {
 		return address(asset.mint);
 	}
 	if (asset.kind === "prizePool") return address(asset.tree);
+	if (asset.kind === "exclusiveNft") return address(asset.collection);
 	return address(asset.asset);
 }
 
@@ -451,6 +459,7 @@ export function createTemplatePlan(
 				"token",
 				"quoteToken",
 				"prizePool",
+				"exclusiveNft",
 			].includes(asset.kind);
 			const singleCopy = exclusive && asset.kind !== "mintBadge";
 			if (exclusive) {

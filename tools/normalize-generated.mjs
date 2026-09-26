@@ -47,6 +47,17 @@ export function normalizeRustVersionEnvelopeGuards(source) {
 	);
 }
 
+/** Generated event projection tests assert a failure with `.err().expect(..)`.
+ * Event projections implement `Debug`, so clippy's `err_expect` rejects that
+ * form under `-D warnings`; `expect_err` states the same assertion.
+ */
+export function normalizeRustEventProjectionTests(source) {
+	return source.replace(
+		/(\s*)\.err\(\)\s*\.expect\("a future version must fail"\)/g,
+		'$1.expect_err("a future version must fail")',
+	);
+}
+
 function isInitialVersionContract(source) {
 	return /pub const \w+_MIGRATION_VERSION: u\d+ = 0u\d;/.test(source);
 }
@@ -58,6 +69,17 @@ function isInitialVersionContract(source) {
  */
 export function normalizeTypeScriptTypeArguments(source) {
 	return source.replace(/,(\n\t*)>/g, "$1>");
+}
+
+/** Generated event log decoders read the envelope version with `bytes[1]`
+ * after a length check that `noUncheckedIndexedAccess` cannot see. Narrow the
+ * read with an explicit guard instead of widening the SDK's strict settings.
+ */
+export function normalizeTypeScriptEventVersionReads(source) {
+	return source.replace(
+		/^(\t+)const sourceVersion = (bytes\[\d+\]);\n(?!\1if \(sourceVersion === undefined\))/gm,
+		'$1const sourceVersion = $2;\n$1if (sourceVersion === undefined) {\n$1\tthrow new RangeError("the event envelope has no version byte");\n$1}\n',
+	);
 }
 
 function normalizeDirectory(directory) {
@@ -83,7 +105,9 @@ function normalizeTypeScriptDirectory(directory) {
 		}
 		if (!entry.name.endsWith(".ts")) continue;
 		const source = readFileSync(path, "utf8");
-		const normalized = normalizeTypeScriptTypeArguments(source);
+		const normalized = normalizeTypeScriptEventVersionReads(
+			normalizeTypeScriptTypeArguments(source),
+		);
 		if (normalized !== source) writeFileSync(path, normalized);
 	}
 }
@@ -100,6 +124,16 @@ function normalizeRustAccounts(directory) {
 		const normalized = normalizeRustVersionEnvelopeGuards(
 			normalizeRustVersionEnvelopeTests(source),
 		);
+		if (normalized !== source) writeFileSync(path, normalized);
+	}
+}
+
+function normalizeRustEvents(directory) {
+	for (const entry of readdirSync(directory, { withFileTypes: true })) {
+		const path = join(directory, entry.name);
+		if (!entry.isFile() || !entry.name.endsWith(".rs")) continue;
+		const source = readFileSync(path, "utf8");
+		const normalized = normalizeRustEventProjectionTests(source);
 		if (normalized !== source) writeFileSync(path, normalized);
 	}
 }
@@ -249,6 +283,12 @@ if (
 		resolve(
 			root,
 			"clients/rust/lootbox_program/src/generated/accounts",
+		),
+	);
+	normalizeRustEvents(
+		resolve(
+			root,
+			"clients/rust/lootbox_program/src/generated/events",
 		),
 	);
 	normalizeTypeScriptDirectory(

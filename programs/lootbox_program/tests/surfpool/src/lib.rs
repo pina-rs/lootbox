@@ -31,7 +31,10 @@ use program_under_test::SettleOpenInstruction;
 use program_under_test::WithdrawSurplusInstruction;
 use solana_commitment_config::CommitmentConfig;
 use solana_message::Message;
+use solana_rpc_client_api::config::RpcSimulateTransactionConfig;
 use solana_transaction::Transaction;
+use solana_transaction_status_client_types::UiInstruction;
+use solana_transaction_status_client_types::UiParsedInstruction;
 use surfpool_sdk::Surfnet;
 use surfpool_sdk::cheatcodes::builders::DeployProgram;
 use switchboard_randomness_cpi::RANDOMNESS_ACCOUNT_LEN;
@@ -58,6 +61,14 @@ const OUTCOMES: [(u64, u64); 3] = [(60, 50_000), (30, 150_000), (10, MAX_REWARD)
 struct Harness {
 	program_id: Pubkey,
 	surfnet: Surfnet,
+}
+
+/// Logs, compute, and inner instructions of one simulated transaction.
+struct Execution {
+	logs: Vec<String>,
+	compute_units: u64,
+	/// `(program, data)` for every inner instruction in execution order.
+	inner_instructions: Vec<(Pubkey, Vec<u8>)>,
 }
 
 impl Harness {
@@ -144,6 +155,95 @@ impl Harness {
 		)
 		.map(|_| ())
 		.map_err(|error| format!("execute transaction: {error}"))
+	}
+
+	/// Simulate a transaction against current state and record its execution.
+	///
+	/// Simulation commits nothing, so a following send observes the same state
+	/// and produces the same logs and compute consumption.
+	fn simulate_instructions(
+		&self,
+		instructions: &[Instruction],
+		signers: &[&dyn Signer],
+	) -> Result<Execution, String> {
+		let _ = self.surfnet.events().try_iter().count();
+		let rpc = self.surfnet.rpc_client();
+		let payer = self.surfnet.payer();
+		let mut transaction_signers: Vec<&dyn Signer> = Vec::with_capacity(signers.len() + 1);
+		transaction_signers.push(payer);
+		transaction_signers.extend_from_slice(signers);
+		let blockhash = rpc
+			.get_latest_blockhash()
+			.map_err(|error| format!("fetch blockhash: {error}"))?;
+		let message = Message::new(instructions, Some(&payer.pubkey()));
+		let mut transaction = Transaction::new_unsigned(message);
+		transaction
+			.try_sign(&transaction_signers, blockhash)
+			.map_err(|error| format!("sign transaction: {error}"))?;
+		let result = rpc
+			.simulate_transaction_with_config(
+				&transaction,
+				RpcSimulateTransactionConfig {
+					commitment: Some(CommitmentConfig::processed()),
+					inner_instructions: true,
+					..RpcSimulateTransactionConfig::default()
+				},
+			)
+			.map_err(|error| format!("simulate transaction: {error}"))?
+			.value;
+		let logs = result.logs.unwrap_or_default();
+		if let Some(error) = result.err {
+			return Err(format!(
+				"simulated transaction failed: {error:?}\n{}",
+				logs.join("\n")
+			));
+		}
+		let keys = &transaction.message.account_keys;
+		let mut inner_instructions = Vec::new();
+		for set in result.inner_instructions.unwrap_or_default() {
+			for instruction in set.instructions {
+				// RPC nodes render instructions of well-known programs as parsed
+				// JSON; only the raw bytes of the other programs are compared.
+				let (program, data) = match instruction {
+					UiInstruction::Compiled(compiled) => {
+						(
+							*keys
+								.get(usize::from(compiled.program_id_index))
+								.ok_or("inner instruction program index is out of range")?,
+							compiled.data,
+						)
+					}
+					UiInstruction::Parsed(UiParsedInstruction::PartiallyDecoded(decoded)) => {
+						(
+							decoded
+								.program_id
+								.parse()
+								.map_err(|error| format!("parse inner program: {error}"))?,
+							decoded.data,
+						)
+					}
+					UiInstruction::Parsed(UiParsedInstruction::Parsed(parsed)) => {
+						(
+							parsed
+								.program_id
+								.parse()
+								.map_err(|error| format!("parse inner program: {error}"))?,
+							String::new(),
+						)
+					}
+				};
+				let data = bs58::decode(&data)
+					.into_vec()
+					.map_err(|error| format!("decode inner instruction data: {error}"))?;
+				inner_instructions.push((program, data));
+			}
+		}
+
+		Ok(Execution {
+			logs,
+			compute_units: result.units_consumed.unwrap_or_default(),
+			inner_instructions,
+		})
 	}
 
 	fn fund(&self, address: &Pubkey, lamports: u64) -> Result<(), String> {

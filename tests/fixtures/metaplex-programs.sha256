@@ -1,0 +1,10 @@
+# Mainnet program images for the Exclusive Lootbox NFT Surfpool journey, dumped
+# with `solana program dump` on 2026-09-26 and verified by `fetch:metaplex-programs`.
+# Bubblegum: release/bubblegum@2.0.0 (79e1a1954bddb7fe5dcd52a5570a66a9f7d465e4),
+# OtterSec-verified. Core: e72d63e4118a0a95ac9b40221e81b19d49e1e102,
+# OtterSec-verified. MPL Account Compression and MPL Noop: 2025-05-13 deploys.
+# The binaries are fetched at test time and never committed.
+b3a04a9d16cf2f168ae50e13756557867b3f6805c77519546147ec4065838bab  BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY.so
+96fa631a61234766afa538437c5166c628100dbc70e5c3ddb2f306d5dc5a8ba5  CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d.so
+fd55664396a9589330bed7e9e0c6b579781744d53f4602d2f0cfb2eacb69fcc5  mcmt6YrQEMKw8Mw43FmpRLmf7BqRnFMKmAcbxE3xkAW.so
+10d275edf5a3181eb4ac187c07d37efd0279c7a6fe0cb222b1ac97804bc14b8b  mnoopTCrg4p8ry25e4bcWA9XZjbNjMTfgYVGGEdRsf3.so

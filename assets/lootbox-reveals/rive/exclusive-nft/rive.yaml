@@ -1,0 +1,8 @@
+name: exclusive_nft
+main: Exclusive NFT
+output:
+  dir: build
+exclude:
+  - build/**
+  - "*.ts"
+  - README.md

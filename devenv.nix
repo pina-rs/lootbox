@@ -290,9 +290,12 @@ in
       pnpm --dir apps/web test:e2e
     '';
     # lootbox.so end to end: a production Worker build in Miniflare against
-    # local Surfpool. Needs build:program and build:test-programs first.
+    # local Surfpool with the pinned Metaplex programs (Exclusive Lootbox NFTs).
     "test:platform".exec = ''
       set -euo pipefail
+      build:program
+      build:test-programs
+      fetch:metaplex-programs
       pnpm --dir apps/platform test:e2e
     '';
     "lint:all".exec = ''

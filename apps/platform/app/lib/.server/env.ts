@@ -22,6 +22,9 @@ export type Secrets = Readonly<{
 	/** `true` serves recorded market data (end-to-end tests only). */
 	CATALOG_FIXTURES?: string;
 	FEATURE_NFT_PRIZES?: string;
+	EXCLUSIVE_COLLECTION_DEVNET?: string;
+	EXCLUSIVE_COLLECTION_MAINNET?: string;
+	EXCLUSIVE_COLLECTION_LOCALNET?: string;
 }>;
 
 export type WorkerEnv = Env & Secrets;
@@ -35,7 +38,11 @@ export type ServerConfig = Readonly<{
 	relayerClusters: readonly Cluster[];
 	relayerClaim: boolean;
 	features: Readonly<{ exclusiveNfts: boolean; nftPrizes: boolean }>;
+	/** The Introductory Exclusive Lootbox NFT collection PDA per cluster. */
+	exclusiveCollections: Readonly<Partial<Record<Cluster, string>>>;
 }>;
+
+const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
 function clusterList(value: string | undefined): Cluster[] {
 	return (value ?? "")
@@ -84,6 +91,20 @@ export function readServerConfig(env: WorkerEnv): ServerConfig {
 			exclusiveNfts: env.FEATURE_EXCLUSIVE_NFTS === "true",
 			nftPrizes: env.FEATURE_NFT_PRIZES === "true",
 		},
+		exclusiveCollections: Object.fromEntries(
+			(
+				[
+					["devnet", env.EXCLUSIVE_COLLECTION_DEVNET],
+					["mainnet", env.EXCLUSIVE_COLLECTION_MAINNET],
+					[
+						"localnet",
+						localnetAllowed ? env.EXCLUSIVE_COLLECTION_LOCALNET : "",
+					],
+				] as const
+			).flatMap(([cluster, value]) =>
+				value && BASE58.test(value.trim()) ? [[cluster, value.trim()]] : []
+			),
+		),
 	};
 }
 
@@ -169,6 +190,7 @@ export async function clusterInfos(
 				label: CLUSTER_LABELS[cluster],
 				rpcUrl: local.rpcUrl,
 				localOracle: local.oracle,
+				exclusiveCollection: config.exclusiveCollections[cluster] ?? null,
 			});
 			continue;
 		}
@@ -182,6 +204,7 @@ export async function clusterInfos(
 			label: CLUSTER_LABELS[cluster],
 			rpcUrl,
 			localOracle: null,
+			exclusiveCollection: config.exclusiveCollections[cluster] ?? null,
 		});
 	}
 

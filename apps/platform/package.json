@@ -12,12 +12,15 @@
 		"test": "vitest run",
 		"test:e2e": "env -u NO_COLOR playwright test",
 		"db:migrate:local": "wrangler d1 migrations apply lootbox --local",
-		"deploy": "react-router build && wrangler deploy"
+		"deploy": "react-router build && wrangler deploy",
+		"exclusive:collection": "tsx scripts/exclusive-collection.ts"
 	},
 	"dependencies": {
 		"@cf-wasm/og": "0.5.0",
+		"@cf-wasm/resvg": "0.4.0",
 		"@fontsource-variable/nunito": "^5.2.7",
 		"@fontsource/bungee": "^5.3.0",
+		"@pina-rs/exclusive-nft-art": "workspace:*",
 		"@pina-rs/lootbox": "workspace:*",
 		"@solana-program/token-2022": "0.19.0",
 		"@solana/kit": "^8.3.0",
@@ -41,6 +44,7 @@
 		"@types/node": "^26.6.2",
 		"@types/react": "^19.3.0",
 		"@types/react-dom": "^19.3.0",
+		"tsx": "4.23.13",
 		"typescript": "^7.0.2",
 		"vite": "^8.3.1",
 		"vitest": "^5.0.2",

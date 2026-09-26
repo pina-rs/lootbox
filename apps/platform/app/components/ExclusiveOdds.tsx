@@ -1,15 +1,15 @@
 /**
- * The Introductory Exclusive Lootbox NFT collection explained: example
- * NFTs, how rarity stacks, and every layer's odds.
+ * Exclusive Lootbox NFTs explained: example posters, how rarity stacks, and
+ * every layer's odds, straight from the published tables.
  */
+import { rarityOf, resolveTraits } from "@pina-rs/exclusive-nft-art";
+
 import {
-	type Collection,
-	combinationProbability,
+	commonestRarity,
+	EXCLUSIVE_LABEL,
 	layerOdds,
-	rarestCombination,
-	rarestIndices,
-	rarityLabel,
-	sampleCombinations,
+	rarestRarity,
+	sampleTraits,
 } from "../lib/exclusive-nft.js";
 import { ExclusiveNftArt } from "./ExclusiveNftArt.js";
 
@@ -21,23 +21,14 @@ function percent(probability: number): string {
 		: `${value.toFixed(2)}%`;
 }
 
-export function ExclusiveGallery(
-	{ collection, count = 5 }: Readonly<
-		{ collection: Collection; count?: number }
-	>,
-) {
-	const examples = [
-		...sampleCombinations(collection, count),
-		rarestIndices(collection),
-	];
-
+export function ExclusiveGallery({ count = 6 }: Readonly<{ count?: number }>) {
 	return (
-		<ul className="nft-gallery" aria-label="Example Exclusive Lootbox NFTs">
-			{examples.map((indices) => (
-				<li key={indices.join("")}>
+		<ul className="nft-gallery" aria-label={`Example ${EXCLUSIVE_LABEL}s`}>
+			{sampleTraits(count).map((traits, index) => (
+				<li key={traits.join("-")}>
 					<ExclusiveNftArt
-						collection={collection}
-						indices={indices}
+						traits={traits}
+						serial={index + 1}
 						size={150}
 						caption
 					/>
@@ -47,45 +38,41 @@ export function ExclusiveGallery(
 	);
 }
 
-export function RarityExplainer(
-	{ collection }: Readonly<{ collection: Collection }>,
-) {
-	const example = sampleCombinations(collection, 1, 7)[0] ??
-		rarestIndices(collection);
-	const odds = layerOdds(collection);
+export function RarityExplainer() {
+	const example = sampleTraits(1, 7)[0] ?? [];
+	const chosen = resolveTraits(example);
+	const odds = layerOdds();
 
 	return (
 		<div className="stack">
 			<p>
-				Every Exclusive Lootbox NFT stacks one trait from each of{" "}
-				{collection.layers.length}{" "}
-				layers. Each trait has its own odds, and an NFT's rarity is all of them
-				multiplied together. The rarest possible combination is{" "}
-				<strong>{rarityLabel(rarestCombination(collection))}</strong>.
+				Every {EXCLUSIVE_LABEL} stacks one trait from each of {odds.length}{" "}
+				layers, drawn on chain from the opening's randomness. Each trait has its
+				own odds, and an NFT's rarity is all of them multiplied together: from
+				{" "}
+				<strong>{commonestRarity()}</strong> for the commonest chest to{" "}
+				<strong>{rarestRarity()}</strong> for the rarest.
 			</p>
 			<p className="fine">
 				For example: {odds.map((layer, position) => {
-					const entry = layer.traits[example[position] ?? 0];
+					const trait = layer.traits[example[position] ?? 0];
 
-					return entry
-						? `${entry.trait.name} (${percent(entry.probability)})`
+					return trait
+						? `${chosen[position]?.name} (${percent(trait.probability)})`
 						: "";
-				}).join(" × ")} ={" "}
-				{rarityLabel(combinationProbability(collection, example))}.
+				}).join(" × ")} = {rarityOf(example).label}.
 			</p>
 		</div>
 	);
 }
 
-export function LayerOddsTables(
-	{ collection }: Readonly<{ collection: Collection }>,
-) {
+export function LayerOddsTables() {
 	return (
-		<div className="layer-odds">
-			{layerOdds(collection).map((layer) => (
-				<details key={layer.layer.key}>
+		<div className="layer-odds" data-testid="exclusive-layers">
+			{layerOdds().map((layer) => (
+				<details key={layer.id}>
 					<summary>
-						{layer.layer.name}
+						{layer.name}
 						<span className="muted">· {layer.traits.length} traits</span>
 					</summary>
 					<table className="odds">
@@ -96,17 +83,10 @@ export function LayerOddsTables(
 							</tr>
 						</thead>
 						<tbody>
-							{layer.traits.map((entry) => (
-								<tr key={entry.trait.name}>
-									<td>
-										<span
-											className="swatch"
-											style={{ background: entry.trait.color }}
-											aria-hidden="true"
-										/>
-										{entry.trait.name}
-									</td>
-									<td className="num">{percent(entry.probability)}</td>
+							{layer.traits.map((trait) => (
+								<tr key={trait.index}>
+									<td>{trait.name}</td>
+									<td className="num">{percent(trait.probability)}</td>
 								</tr>
 							))}
 						</tbody>

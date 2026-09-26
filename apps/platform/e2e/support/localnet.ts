@@ -18,6 +18,7 @@ import {
 	address,
 	generateKeyPairSigner,
 	getAddressEncoder,
+	getBase58Encoder,
 	getTransactionDecoder,
 	getTransactionEncoder,
 	type KeyPairSigner,
@@ -300,4 +301,65 @@ export function testClient(
 	signer: KeyPairSigner,
 ): LootboxClient {
 	return new LootboxClient(rpcUrl, signer);
+}
+
+const BUBBLEGUM = "BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY";
+/** Bubblegum V2 `mint_v2` instruction discriminator. */
+const MINT_V2 = [120, 121, 23, 146, 173, 110, 199, 205];
+
+/**
+ * Name, symbol, and URI the lootbox program handed Bubblegum's `mint_v2`
+ * in an opening's claim transaction (read from its inner instructions).
+ */
+export async function mintedLeaf(
+	client: LootboxClient,
+	opening: Address,
+): Promise<{ name: string; symbol: string; uri: string }> {
+	const signatures = await client.rpc.getSignaturesForAddress(opening, {
+		limit: 10,
+	})
+		.send();
+
+	for (const entry of signatures) {
+		const transaction = await client.rpc.getTransaction(entry.signature, {
+			encoding: "json",
+			maxSupportedTransactionVersion: 0,
+			commitment: "confirmed",
+		}).send();
+
+		if (!transaction?.meta) continue;
+
+		const keys = [
+			...transaction.transaction.message.accountKeys,
+			...(transaction.meta.loadedAddresses?.writable ?? []),
+			...(transaction.meta.loadedAddresses?.readonly ?? []),
+		];
+
+		for (const group of transaction.meta.innerInstructions ?? []) {
+			for (const instruction of group.instructions) {
+				if (keys[instruction.programIdIndex] !== BUBBLEGUM) continue;
+
+				const data = getBase58Encoder().encode(instruction.data);
+
+				if (!MINT_V2.every((byte, index) => data[index] === byte)) continue;
+
+				let offset = 8;
+				const read = () => {
+					const length = new DataView(data.buffer, data.byteOffset + offset, 4)
+						.getUint32(0, true);
+					const text = new TextDecoder().decode(
+						data.slice(offset + 4, offset + 4 + length),
+					);
+
+					offset += 4 + length;
+
+					return text;
+				};
+
+				return { name: read(), symbol: read(), uri: read() };
+			}
+		}
+	}
+
+	throw new Error(`no Bubblegum mint_v2 in the transactions of ${opening}`);
 }

@@ -256,3 +256,15 @@ export function escrowLines(bundles: readonly DraftBundle[]): EscrowLine[] {
 
 	return lines;
 }
+
+/** The consolation bundle: one Exclusive Lootbox NFT per box, minted on claim. */
+export function consolationBundle(
+	count: number,
+	collection: string,
+): PrizeBundleInput {
+	return {
+		label: "Exclusive Lootbox NFT",
+		quantity: BigInt(count),
+		assets: [{ kind: "exclusiveNft", collection: address(collection) }],
+	};
+}

@@ -6,9 +6,11 @@ import type { UiWalletAccount } from "@wallet-standard/react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 
-import * as sdk from "@pina-rs/lootbox";
 import { BundlesStep } from "../create/BundlesStep.js";
-import { ConsolationStep } from "../create/ConsolationStep.js";
+import {
+	ConsolationStep,
+	consolationUnavailable,
+} from "../create/ConsolationStep.js";
 import { DetailsStep } from "../create/DetailsStep.js";
 import {
 	emptyDraft,
@@ -17,7 +19,12 @@ import {
 	useWizard,
 	type WizardState,
 } from "../create/draft.js";
-import { useChainNow, useHoldings, useSolBalance } from "../create/hooks.js";
+import {
+	useChainNow,
+	useExclusiveCollection,
+	useHoldings,
+	useSolBalance,
+} from "../create/hooks.js";
 import { metadataUri } from "../create/launch.js";
 import { LaunchStep } from "../create/LaunchStep.js";
 import { ReviewStep } from "../create/ReviewStep.js";
@@ -25,7 +32,6 @@ import { currentWallet } from "../lib/.server/auth.js";
 import { nowSeconds, services } from "../lib/.server/context.js";
 import { draftById, type DraftRecord, latestDraft } from "../lib/.server/db.js";
 import type { Cluster } from "../lib/clusters.js";
-import { exclusiveNftAdapter } from "../lib/exclusive-nft.js";
 import { checkPlan, draftBundlesToInputs } from "../lib/plan.js";
 import { usePublicConfig } from "../lib/public-config.js";
 import { launchDetailsSchema } from "../lib/schemas.js";
@@ -83,8 +89,6 @@ function initialState(
 	};
 }
 
-const exclusive = exclusiveNftAdapter(sdk);
-
 function Wizard(
 	{ account, draft }: Readonly<
 		{ account: UiWalletAccount; draft: DraftRecord | null }
@@ -116,8 +120,10 @@ function Wizard(
 	const detailsProblem = detailsCheck.success
 		? revealProblem
 		: detailsCheck.error.issues[0]?.message ?? "Check the details";
+	// Zero bundles is allowed when every box holds an Exclusive Lootbox NFT;
+	// the consolation step checks that at least one of the two is set.
 	const planCheck = bundles.length === 0
-		? { ok: false as const, message: "Add at least one bundle." }
+		? { ok: true as const }
 		: bundles.some((bundle) => bundle.label.trim() === "")
 		? { ok: false as const, message: "Every bundle needs a name." }
 		: bundles.some((bundle) => bundle.assets.length === 0)
@@ -129,11 +135,31 @@ function Wizard(
 			bundles: draftBundlesToInputs(bundles, (mint) => mint),
 		});
 	const prizesProblem = planCheck.ok ? null : planCheck.message;
+	const exclusiveCollection = useExclusiveCollection(
+		rpcUrl,
+		cluster?.exclusiveCollection ?? null,
+	);
+	// Attach only while the collection is open; otherwise launch without it.
+	const consolationCollection = state.data.consolation.enabled &&
+			state.data.consolation.count > 0 &&
+			consolationUnavailable(
+					config.features.exclusiveNfts,
+					exclusiveCollection,
+					now,
+				) ===
+				null
+		? cluster?.exclusiveCollection ?? null
+		: null;
+	const emptyProblem = bundles.length === 0 && consolationCollection === null
+		? "Add a prize bundle, or Exclusive Lootbox NFTs for every box."
+		: null;
 	const problemFor = (step: number): string | null =>
 		step === 1
 			? detailsProblem
 			: step === 2
 			? prizesProblem
+			: step === 3
+			? emptyProblem
 			: step === 4
 			? reviewProblem
 			: null;
@@ -213,9 +239,7 @@ function Wizard(
 				<ConsolationStep
 					consolation={state.data.consolation}
 					enabled={config.features.exclusiveNfts}
-					unavailableReason={exclusive.status === "unavailable"
-						? exclusive.reason
-						: null}
+					collection={exclusiveCollection}
 					now={now}
 					dispatch={dispatch}
 				/>
@@ -223,6 +247,7 @@ function Wizard(
 			{step === 4 && (
 				<ReviewStep
 					data={state.data}
+					exclusiveCollection={consolationCollection}
 					cluster={cluster}
 					uriPreview={metadataUri(config.origin, account.address)}
 					holdings={holdings}
@@ -243,7 +268,8 @@ function Wizard(
 					draftId={state.id}
 					data={state.data}
 					pinned={{ template: state.template, boxMint: state.boxMint }}
-					blocked={detailsProblem ?? prizesProblem}
+					exclusiveCollection={consolationCollection}
+					blocked={detailsProblem ?? prizesProblem ?? emptyProblem}
 					beforeLaunch={state.signing ? () => Promise.resolve() : flush}
 					dispatch={dispatch}
 				/>

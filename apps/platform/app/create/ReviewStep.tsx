@@ -29,6 +29,8 @@ type Props = Readonly<{
 	/** Report whether the wallet can cover the launch. */
 	onBlocked: (reason: string | null) => void;
 	owner: string;
+	/** Set when the consolation bundle will attach at launch. */
+	exclusiveCollection: string | null;
 }>;
 
 export type Shortfall = Readonly<{ label: string; need: string; have: string }>;
@@ -115,13 +117,15 @@ export function ReviewStep(
 		onRefreshBalance,
 		onBlocked,
 		owner,
+		exclusiveCollection,
 	}: Props,
 ) {
 	const rent = useRentForZero(cluster.rpcUrl);
 	const [faucet, setFaucet] = useState<string | null>(null);
+	const consolationBoxes = exclusiveCollection ? data.consolation.count : 0;
 	const total = data.bundles.reduce(
 		(sum, bundle) => sum + BigInt(bundle.quantity),
-		0n,
+		BigInt(consolationBoxes),
 	);
 	const cost = rent === null ? null : creationCost({
 		name: data.details.name.trim(),
@@ -130,6 +134,7 @@ export function ReviewStep(
 		bundles: data.bundles,
 		bundleBytes: BigInt(getBundleStateEncoder().fixedSize),
 		rentForZeroBytes: rent,
+		consolationBoxes,
 	});
 	const escrow = escrowLines(data.bundles).filter((line) =>
 		line.symbol !== "SOL"
@@ -184,6 +189,24 @@ export function ReviewStep(
 									</td>
 								</tr>
 							))}
+							{consolationBoxes > 0 && (
+								<tr>
+									<td>
+										<span className="prize-name">Exclusive Lootbox NFT</span>
+										<span className="prize-detail">
+											A collectible minted when claimed
+										</span>
+									</td>
+									<td className="num">
+										{consolationBoxes.toLocaleString("en-US")}
+									</td>
+									<td className="num">
+										<strong>
+											{describeChance(BigInt(consolationBoxes), total)}
+										</strong>
+									</td>
+								</tr>
+							)}
 						</tbody>
 					</table>
 				</section>

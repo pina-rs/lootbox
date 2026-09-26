@@ -28,7 +28,7 @@ import {
 
 import { fromBase64, toBase64 } from "../lib/bytes.js";
 import type { ClusterInfo } from "../lib/clusters.js";
-import { draftBundlesToInputs } from "../lib/plan.js";
+import { consolationBundle, draftBundlesToInputs } from "../lib/plan.js";
 import type { DraftBundle, DraftData } from "../lib/schemas.js";
 
 /** The local Surfpool emulator is deployed at Switchboard's devnet id. */
@@ -211,12 +211,24 @@ export async function launchPlan(
 	client: LootboxClient,
 	data: DraftData,
 	uri: string,
+	exclusiveCollection: string | null,
 ): Promise<TemplatePlan> {
+	const bundles = await prizeInputs(client, data.bundles);
+
+	if (
+		exclusiveCollection && data.consolation.enabled &&
+		data.consolation.count > 0
+	) {
+		bundles.push(
+			consolationBundle(data.consolation.count, exclusiveCollection),
+		);
+	}
+
 	return createTemplatePlan({
 		name: data.details.name.trim(),
 		uri,
 		opensAt: BigInt(data.details.revealAt ?? 0),
-		bundles: await prizeInputs(client, data.bundles),
+		bundles,
 	});
 }
 
@@ -231,6 +243,8 @@ export async function launchLootbox(
 		signer: TransactionSigner;
 		pinned: Readonly<{ template: string | null; boxMint: string | null }>;
 		progress: ClientProgress;
+		/** Attach this Exclusive Lootbox NFT collection as the consolation. */
+		exclusiveCollection: string | null;
 		onIdentity: (identity: LaunchIdentity) => void;
 	}>,
 ): Promise<LaunchResult> {
@@ -251,6 +265,7 @@ export async function launchLootbox(
 		client,
 		input.data,
 		metadataUri(input.origin, identity.boxMint),
+		input.exclusiveCollection,
 	);
 	const oracle = oracleFor(input.cluster);
 	const mintExists = await client.rpc.getAccountInfo(identity.boxMint, {

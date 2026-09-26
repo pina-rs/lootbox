@@ -748,11 +748,17 @@ function DistributePanel(
 							);
 						}
 
-						setSent(`Sent ${plan.total} boxes.`);
+						setSent(
+							`Sent ${plan.total} ${plan.total === 1n ? "box" : "boxes"}.`,
+						);
 						setText("");
 					})}
 			>
-				Send {plan.total > 0n ? plan.total.toLocaleString("en-US") : ""} boxes
+				{plan.total === 0n
+					? "Send boxes"
+					: `Send ${plan.total.toLocaleString("en-US")} ${
+						plan.total === 1n ? "box" : "boxes"
+					}`}
 			</button>
 			{sent && <p className="notice" role="status" data-testid="sent">{sent}
 			</p>}

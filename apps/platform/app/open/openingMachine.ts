@@ -12,11 +12,6 @@ export type RecordedResult = Readonly<{
 	bundleIndex: number;
 	tier: PrizeTier;
 	signature: string | null;
-	/**
-	 * Trait indices of a minted Exclusive Lootbox NFT (consolation result).
-	 * Filled from the NFT's metadata URI once the SDK exposes the prize kind.
-	 */
-	exclusive?: readonly number[];
 }>;
 
 /**
@@ -141,6 +136,7 @@ export function reactionFor(tier: PrizeTier): Reaction {
 		case "headline":
 			return "big-prize";
 		case "standard":
+		case "exclusive":
 			return "small-prize";
 		case "empty":
 			return "disappointed";

@@ -19,6 +19,7 @@ type Props = Readonly<{
 	data: DraftData;
 	pinned: Readonly<{ template: string | null; boxMint: string | null }>;
 	blocked: string | null;
+	exclusiveCollection: string | null;
 	/** Save the draft before its identity is pinned on the server. */
 	beforeLaunch: () => Promise<void>;
 	dispatch: (action: WizardAction) => void;
@@ -33,6 +34,7 @@ export function LaunchStep(
 		data,
 		pinned,
 		blocked,
+		exclusiveCollection,
 		beforeLaunch,
 		dispatch,
 	}: Props,
@@ -74,6 +76,7 @@ export function LaunchStep(
 							const { slug } = await launchLootbox({
 								draftId,
 								data,
+								exclusiveCollection,
 								cluster,
 								origin,
 								signer,

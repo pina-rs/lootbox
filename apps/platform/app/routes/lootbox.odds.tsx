@@ -4,14 +4,12 @@ import {
 	RarityExplainer,
 } from "../components/ExclusiveOdds.js";
 import { OddsTable } from "../components/OddsTable.js";
-import { INTRODUCTORY_COLLECTION } from "../lib/exclusive-nft.js";
+import { EXCLUSIVE_LABEL } from "../lib/exclusive-nft.js";
 import { prizeViews, stockDisclaimer } from "../lib/prizes.js";
-import { usePublicConfig } from "../lib/public-config.js";
 import { useLootbox } from "./lootbox.js";
 
 export default function OddsTab() {
 	const { chain, lootbox } = useLootbox();
-	const { features } = usePublicConfig();
 
 	if (!chain) {
 		return <p className="notice">Odds appear once the chain answers.</p>;
@@ -50,12 +48,12 @@ export default function OddsTab() {
 					<p className="fine">{stockDisclaimer(stocks)}</p>
 				)}
 			</section>
-			{features.exclusiveNfts && (
+			{prizes.some((prize) => prize.tier === "exclusive") && (
 				<section className="card stack" aria-labelledby="exclusive-title">
-					<h2 id="exclusive-title">Exclusive Lootbox NFTs</h2>
-					<RarityExplainer collection={INTRODUCTORY_COLLECTION} />
-					<ExclusiveGallery collection={INTRODUCTORY_COLLECTION} count={3} />
-					<LayerOddsTables collection={INTRODUCTORY_COLLECTION} />
+					<h2 id="exclusive-title">{EXCLUSIVE_LABEL} rarity</h2>
+					<RarityExplainer />
+					<ExclusiveGallery count={3} />
+					<LayerOddsTables />
 				</section>
 			)}
 		</>

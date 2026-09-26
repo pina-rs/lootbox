@@ -32,8 +32,8 @@ Everything runs on your machine in Miniflare against a local Surfpool. Nothing t
 ```sh
 devenv shell
 install:all
-build:program && build:test-programs
-pnpm playground:rpc            # terminal 1: local Surfpool + emulated oracle
+build:program && build:test-programs && fetch:metaplex-programs
+LOOTBOX_METAPLEX_PROGRAMS_DIR=target/deploy/metaplex pnpm playground:rpc   # terminal 1
 ```
 
 ```sh
@@ -90,7 +90,22 @@ Secrets (`wrangler secret put <NAME>`): `JUPITER_API_KEY` (search, prices, swaps
 - Market data and swap orders are fetched by the Worker; API keys never reach the browser. Swaps sign only after an explicit confirmation of the quoted amounts.
 - The relayer holds the only server key and can only pay fees: the program pins every prize recipient, and the relayer never forfeits an opening.
 
+## Exclusive Lootbox NFTs
+
+Every lootbox can attach the shared Introductory collection as its consolation prize (step 3 of the wizard), or be made entirely of them. Traits are drawn on chain from the opening's randomness; the site derives and shows them on reveal, mints on claim, and plays the Rive reveal of the minted edition. The program writes each leaf's URI as `https://lootbox.so/x/<collection>/<hex traits>-<serial>.json`; the Worker serves that JSON, `.svg`, `.animated.svg`, `.png`, and `play.html` immutably from `@pina-rs/exclusive-nft-art`, only for collections configured in `EXCLUSIVE_COLLECTION_<CLUSTER>`.
+
+Create the collection once per cluster with a dedicated admin key (a multisig on mainnet):
+
+```sh
+pnpm --dir apps/platform exclusive:collection -- --cluster devnet --keypair admin.json --closes 2026-12-31T23:59:59Z
+pnpm --dir apps/platform exclusive:collection -- --cluster devnet --keypair admin.json --closes 2026-12-31T23:59:59Z --execute
+```
+
+It prints a dry run first (collection PDA, base URI, attach window, layer tables, tree rent: depth 20, buffer 64, canopy 10, about 0.76 SOL), then loads the layers from `layers.ts`, appends the Bubblegum V2 tree, creates the Core collection, and publishes. It resumes from chain state if interrupted. Put the printed address in `EXCLUSIVE_COLLECTION_DEVNET` and set `FEATURE_EXCLUSIVE_NFTS=true`.
+
+The end-to-end suite runs the playground with `LOOTBOX_METAPLEX_PROGRAMS_DIR=target/deploy/metaplex` (from `fetch:metaplex-programs`), so claims mint real compressed NFTs through the pinned mainnet Bubblegum V2 and Core programs.
+
 ## Not done yet
 
-- Exclusive Lootbox NFTs: the wizard step, gallery, layer odds, rarity maths, metadata URI format, and reveal card are built against the agreed contract but stay behind `FEATURE_EXCLUSIVE_NFTS`, and `exclusiveNftAdapter` reports unavailable until the SDK exports the prize kind.
 - Compressed NFTs and PrizePools are not offered in the web creator; use the SDK scripts.
+- Exclusive NFT mint-fee reclaim (`reclaimExclusiveFees`) is not in Manage yet.

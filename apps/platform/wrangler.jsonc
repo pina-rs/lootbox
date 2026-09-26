@@ -49,6 +49,10 @@
 		// Exclusive Lootbox NFTs; enable once the SDK ships them.
 		"FEATURE_EXCLUSIVE_NFTS": "false",
 		// NFT prizes from other projects in the bundle builder.
-		"FEATURE_NFT_PRIZES": "false"
+		"FEATURE_NFT_PRIZES": "false",
+		// The Introductory Exclusive Lootbox NFT collection PDA per cluster,
+		// printed by `pnpm exclusive:collection -- --execute`.
+		"EXCLUSIVE_COLLECTION_DEVNET": "",
+		"EXCLUSIVE_COLLECTION_MAINNET": ""
 	}
 }

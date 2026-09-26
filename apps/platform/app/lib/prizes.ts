@@ -9,7 +9,7 @@ import { formatSol, formatUnits } from "./plan.js";
 import type { BundleLabel, DraftAsset } from "./schemas.js";
 import { PRESTOCKS } from "./tokens.js";
 
-export type PrizeTier = "headline" | "standard" | "empty";
+export type PrizeTier = "headline" | "standard" | "exclusive" | "empty";
 
 export type PrizeView = Readonly<{
 	index: number;
@@ -22,6 +22,8 @@ export type PrizeView = Readonly<{
 	/** Company tracked by an issuer-stock prize, for the disclosure. */
 	tracks: readonly string[];
 	issuerStock: boolean;
+	/** The attachment PDA when this bundle mints an Exclusive Lootbox NFT. */
+	exclusiveAttachment: string | null;
 }>;
 
 function shortMint(mint: string): string {
@@ -65,6 +67,12 @@ function describeAsset(
 		}
 		case "mintBadge":
 			return { text: "A collectible badge", tracks: null, issuerStock: false };
+		case "exclusiveNft":
+			return {
+				text: "Exclusive Lootbox NFT",
+				tracks: null,
+				issuerStock: false,
+			};
 		case "prizePool":
 			return {
 				text: "One collectible from a pool",
@@ -85,12 +93,18 @@ function describeAsset(
 	}
 }
 
+function isExclusive(bundle: ChainBundleView): boolean {
+	return bundle.assets.some((asset) => asset.kind === "exclusiveNft");
+}
+
 /**
  * The rarest active bundle is the headline (big reaction); if every bundle
  * has the same copy count, nothing is a headline.
  */
 function headlineQuantity(bundles: readonly ChainBundleView[]): bigint | null {
-	const quantities = bundles.filter((bundle) => bundle.status === 1).map((
+	const quantities = bundles.filter((bundle) =>
+		bundle.status === 1 && !isExclusive(bundle)
+	).map((
 		bundle,
 	) => BigInt(bundle.quantity));
 
@@ -114,6 +128,9 @@ export function prizeViews(
 			describeAsset(asset, label?.assets[position])
 		);
 		const quantity = BigInt(bundle.quantity);
+		const exclusive = bundle.assets.find((asset) =>
+			asset.kind === "exclusiveNft"
+		);
 
 		return {
 			index: bundle.index,
@@ -121,11 +138,14 @@ export function prizeViews(
 			lines: described.map((item) => item.text),
 			quantity,
 			remaining: BigInt(bundle.remaining),
-			tier: headline !== null && quantity === headline
+			tier: exclusive
+				? "exclusive"
+				: headline !== null && quantity === headline
 				? "headline"
 				: "standard",
 			tracks: described.flatMap((item) => (item.tracks ? [item.tracks] : [])),
 			issuerStock: described.some((item) => item.issuerStock),
+			exclusiveAttachment: exclusive?.mint ?? null,
 		};
 	});
 }

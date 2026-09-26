@@ -3,6 +3,10 @@ import { createSolanaRpc } from "@solana/kit";
 import { useCallback, useEffect, useState } from "react";
 
 import { clusterTime } from "../lib/clock.js";
+import {
+	type ExclusiveCollectionInfo,
+	readExclusiveCollection,
+} from "../lib/exclusive-chain.js";
 import { type Holding, solBalance, walletHoldings } from "../lib/holdings.js";
 
 export type Load<T> =
@@ -73,4 +77,18 @@ export function useSolBalance(
 	);
 
 	return useLoad(rpcUrl && owner ? load : null);
+}
+
+/** The cluster's Exclusive Lootbox NFT collection, or `null` without one. */
+export function useExclusiveCollection(
+	rpcUrl: string | null,
+	collection: string | null,
+): Load<ExclusiveCollectionInfo | null> | null {
+	const load = useCallback(
+		() => readExclusiveCollection(rpcUrl ?? "", collection ?? ""),
+		[rpcUrl, collection],
+	);
+	const [state] = useLoad(rpcUrl && collection ? load : null);
+
+	return rpcUrl && collection ? state : null;
 }

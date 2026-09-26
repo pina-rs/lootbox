@@ -23,11 +23,9 @@ import {
 import { useRevalidator } from "react-router";
 import { friendlyError } from "../lib/errors.js";
 
-import { ExclusiveNftArt } from "../components/ExclusiveNftArt.js";
 import { TxProgress, useTxProgress } from "../components/TxProgress.js";
 import { openingsFor } from "../lib/chain.js";
 import { chainFor, type ClusterInfo, explorerUrl } from "../lib/clusters.js";
-import { INTRODUCTORY_COLLECTION } from "../lib/exclusive-nft.js";
 import {
 	ELIGIBILITY_STATEMENT,
 	type PrizeView,
@@ -35,6 +33,7 @@ import {
 } from "../lib/prizes.js";
 import { formatDuration } from "../lib/status.js";
 import { Chest } from "./Chest.js";
+import { ExclusivePrize } from "./ExclusivePrize.js";
 import {
 	initialOpening,
 	openingAnnouncement,
@@ -320,16 +319,20 @@ export function HolderPanel(
 							className="chip"
 							data-tone={resultPrize.tier === "headline" ? "open" : "sealed"}
 						>
-							{resultPrize.tier === "headline" ? "Rare prize!" : "You won"}
+							{resultPrize.tier === "headline"
+								? "Rare prize!"
+								: resultPrize.tier === "exclusive"
+								? "Something rare"
+								: "You won"}
 						</p>
 						<h3 id="prize-title">{resultPrize.title}</h3>
-						{result.exclusive
+						{resultPrize.exclusiveAttachment
 							? (
-								<ExclusiveNftArt
-									collection={INTRODUCTORY_COLLECTION}
-									indices={result.exclusive}
-									size={220}
-									caption
+								<ExclusivePrize
+									rpcUrl={cluster.rpcUrl}
+									opening={result.opening}
+									attachment={resultPrize.exclusiveAttachment}
+									claimed={state.phase === "claimed"}
 								/>
 							)
 							: <p>{resultPrize.lines.join(" + ")}</p>}

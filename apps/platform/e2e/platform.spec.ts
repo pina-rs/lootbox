@@ -10,6 +10,7 @@
  * keypair) and the oracle (the Surfpool Switchboard emulator).
  */
 import AxeBuilder from "@axe-core/playwright";
+import { rarityOf, resolveTraits } from "@pina-rs/exclusive-nft-art";
 import {
 	fetchTemplateOpeningState,
 	listTemplateOpenings,
@@ -23,6 +24,7 @@ import {
 	controlConfig,
 	fundedSigner,
 	injectTestWallet,
+	mintedLeaf,
 	testToken,
 	timeTravel,
 } from "./support/localnet.js";
@@ -60,6 +62,16 @@ async function snap(page: Page, name: string) {
 	});
 }
 
+/** The treasury address from a lootbox's Rules tab. */
+async function treasuryOf(page: Page, lootbox: string): Promise<string> {
+	await page.goto(`/l/${lootbox}/rules`);
+
+	const href = await page.getByRole("link", { name: "treasury account" })
+		.getAttribute("href");
+
+	return href?.split("/address/")[1]?.split("?")[0] ?? "";
+}
+
 function collectConsoleErrors(page: Page): string[] {
 	const errors: string[] = [];
 
@@ -88,6 +100,9 @@ let slug: string;
 let template: string;
 let boxMint: string;
 const name = `Treasure ${PROJECT_SUFFIX()}`;
+const chestsName = `Chests ${PROJECT_SUFFIX()}`;
+let chestsSlug: string;
+let chestsTemplate: string;
 
 test.beforeAll(async () => {
 	({ rpcUrl } = await controlConfig());
@@ -226,14 +241,26 @@ test("a creator launches a lootbox through the wizard", async ({ page }) => {
 	await snap(page, "03-create-prizes");
 	await page.getByRole("button", { name: "Next" }).click();
 
-	// 3. Exclusive Lootbox NFTs are behind a flag until the program ships them.
-	await expect(page.getByTestId("exclusive-unavailable")).toBeVisible();
+	// 3. Exclusive Lootbox NFTs from the shared collection, as the consolation.
+	await page.getByLabel(/Add Exclusive Lootbox NFTs as the consolation prize/)
+		.check();
+	await page.getByLabel("How many boxes").fill("2");
+	await expect(
+		page.getByRole("list", { name: /Example Exclusive Lootbox NFTs/ })
+			.getByRole("img"),
+	).toHaveCount(6);
 	await snap(page, "04-create-exclusive");
 	await page.getByRole("button", { name: "Review" }).click();
 
 	// 4. Review
 	await expect(page.getByTestId("cost-total")).toContainText("SOL");
 	await expect(page.getByTestId("review-odds")).toContainText("Meme pile");
+	await expect(page.getByTestId("review-odds")).toContainText(
+		"Exclusive Lootbox NFT",
+	);
+	await expect(page.getByTestId("cost-table")).toContainText(
+		"Exclusive Lootbox NFT mint fees",
+	);
 	await expectAccessible(page, "wizard review");
 	await snap(page, "05-create-review");
 	await page.getByRole("button", { name: "Continue to launch" }).click();
@@ -246,6 +273,9 @@ test("a creator launches a lootbox through the wizard", async ({ page }) => {
 	await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 	await expect(page.getByTestId("status")).toHaveText("Being filled");
 	await expect(page.getByTestId("odds-table")).toContainText("Meme pile");
+	await expect(page.getByTestId("odds-table")).toContainText(
+		"Exclusive Lootbox NFT",
+	);
 	await snap(page, "06-live-page");
 	expect(errors).toEqual([]);
 });
@@ -277,9 +307,9 @@ test("the creator edits the page, locks, and sends a box", async ({ page }) => {
 
 	await expect(lockState).toHaveText("Live, not locked");
 	await page.getByLabel(/locking is permanent/).check();
-	await page.getByRole("button", { name: /Lock and mint 5 boxes/ }).click();
+	await page.getByRole("button", { name: /Lock and mint 7 boxes/ }).click();
 	await expect(lockState).toHaveText("Locked", { timeout: 60_000 });
-	await expect(page.getByTestId("supply")).toHaveText("5");
+	await expect(page.getByTestId("supply")).toHaveText("7");
 
 	await page.getByLabel("Recipients").fill(`${friend.address} 2`);
 	await page.getByRole("button", { name: "Send 2 boxes" }).click();
@@ -340,6 +370,9 @@ test("rules tab navigation, metadata, and explore listing", async ({ page, reque
 		{ name: "Odds" },
 	).click();
 	await expect(page.getByTestId("odds-table")).toContainText("Grand prize");
+	await expect(page.getByTestId("exclusive-layers")).toContainText(
+		"Background",
+	);
 	await page.getByRole("navigation", { name: "Lootbox sections" }).getByRole(
 		"link",
 		{ name: "Overview" },
@@ -352,6 +385,43 @@ test("rules tab navigation, metadata, and explore listing", async ({ page, reque
 		.toBeVisible();
 	await page.getByRole("link", { name: new RegExp(name) }).click();
 	await expect(page).toHaveURL(new RegExp(`/l/${slug}$`));
+});
+
+test("a creator makes a lootbox where every box is an Exclusive Lootbox NFT", async ({ page }) => {
+	const errors = collectConsoleErrors(page);
+
+	await injectTestWallet(page, creator);
+	await page.goto("/create");
+	await connectAndSignIn(page);
+	await page.getByLabel("Name").fill(chestsName);
+	await page.getByRole("button", { name: "Tomorrow" }).click();
+	await page.getByRole("button", { name: "Next" }).click();
+	// No prize bundles: every box holds a collectible.
+	await page.getByRole("button", { name: "Next" }).click();
+	await page.getByLabel(/Add Exclusive Lootbox NFTs as the consolation prize/)
+		.check();
+	await page.getByLabel("How many boxes").fill("3");
+	await page.getByRole("button", { name: "Review" }).click();
+	await expect(page.getByTestId("review-odds")).toContainText("100%");
+	await page.getByRole("button", { name: "Continue to launch" }).click();
+	await page.getByRole("button", { name: "Launch lootbox" }).click();
+	await page.waitForURL(/\/l\/chests-/, { timeout: 120_000 });
+	chestsSlug = new URL(page.url()).pathname.split("/")[2] ?? "";
+
+	await page.getByRole("navigation", { name: "Lootbox sections" })
+		.getByRole("link", { name: "Manage" }).click();
+	await page.getByLabel(/locking is permanent/).check();
+	await page.getByRole("button", { name: /Lock and mint 3 boxes/ }).click();
+	await expect(page.getByTestId("lock-state")).toHaveText("Locked", {
+		timeout: 60_000,
+	});
+	await page.getByLabel("Recipients").fill(`${friend.address} 1`);
+	await page.getByRole("button", { name: "Send 1 box" }).click();
+	await expect(page.getByTestId("sent")).toHaveText("Sent 1 box.", {
+		timeout: 60_000,
+	});
+	chestsTemplate = await treasuryOf(page, chestsSlug);
+	expect(errors).toEqual([]);
 });
 
 test("the relayer finishes an abandoned opening after the reveal", async ({ request }) => {
@@ -435,5 +505,96 @@ test("a friend opens a box after the reveal and claims the prize", async ({ page
 
 	expect(mine.map((item) => item.data.status).sort()).toEqual([2, 3]);
 	expect(boxMint).not.toBe("");
+	expect(errors).toEqual([]);
+});
+
+test("a friend opens an Exclusive Lootbox NFT and claims a real compressed NFT", async ({ page, request }) => {
+	const errors = collectConsoleErrors(page);
+
+	await injectTestWallet(page, friend);
+	await page.goto(`/l/${chestsSlug}`);
+	await page.getByRole("button", { name: "Connect wallet" }).click();
+	await page.getByRole("button", { name: /E2E Wallet/ }).click();
+	await expect(page.getByTestId("box-balance")).toHaveText("You have 1 box");
+	await page.getByRole("button", { name: "Open without holding" }).click();
+
+	const card = page.getByTestId("prize-card");
+
+	await expect(card).toBeVisible({ timeout: 60_000 });
+	await expect(card.getByRole("heading", { name: "Exclusive Lootbox NFT" }))
+		.toBeVisible();
+
+	const rarity = await card.getByTestId("exclusive-rarity").textContent();
+	const shownTraits = await card.getByTestId("exclusive-traits").getByRole(
+		"listitem",
+	)
+		.allTextContents();
+
+	await card.getByRole("button", { name: "Claim to wallet" }).click();
+	await expect(card.getByText("Delivered to your wallet.")).toBeVisible({
+		timeout: 60_000,
+	});
+	await expect(card.getByTestId("exclusive-player")).toBeVisible();
+
+	// The player page shows the minted edition's poster (and the Rive reveal).
+	const poster = page.frameLocator('[data-testid="exclusive-player"]').locator(
+		"img.poster",
+	);
+
+	await expect(poster).toHaveAttribute("src", /\.(animated\.)?svg$/);
+	await expect.poll(() =>
+		poster.evaluate((image: HTMLImageElement) => image.naturalWidth)
+	)
+		.toBeGreaterThan(0);
+	await snap(page, "11-exclusive");
+
+	// The minted leaf, read from the claim transaction on chain.
+	const client = new LootboxClient(rpcUrl, friend);
+	const [opening] =
+		(await listTemplateOpenings(client.rpc, address(chestsTemplate)))
+			.filter((item) => item.data.beneficiary === friend.address);
+
+	if (!opening) throw new Error("no opening for the friend");
+
+	expect(opening.data.status).toBe(3);
+
+	const minted = await mintedLeaf(client, opening.address);
+	const match =
+		/^https:\/\/lootbox\.so\/x\/([1-9A-HJ-NP-Za-km-z]+)\/([0-9a-f]+)-(\d+)\.json$/
+			.exec(minted.uri);
+
+	expect(match, minted.uri).not.toBeNull();
+	expect(minted.name).toBe(`Lootbox #${match?.[3]}`);
+	expect(minted.symbol).toBe("LOOT");
+
+	const [, collection, hex, serial] = match ?? [];
+	const traits = (hex?.match(/../g) ?? []).map((byte) => parseInt(byte, 16));
+
+	expect(rarity).toBe(rarityOf(traits).label);
+	expect(shownTraits).toEqual(resolveTraits(traits).map((trait) => trait.name));
+
+	// Our host serves the leaf's metadata for exactly those traits.
+	const json = await request.get(`/x/${collection}/${hex}-${serial}.json`);
+
+	expect(json.headers()["cache-control"]).toBe(
+		"public, max-age=31536000, immutable",
+	);
+
+	const metadata: unknown = await json.json();
+	const attributes = Reflect.get(metadata as object, "attributes") as {
+		trait_type: string;
+		value: string | number;
+	}[];
+
+	expect(attributes.slice(0, traits.length).map((attribute) => attribute.value))
+		.toEqual(resolveTraits(traits).map((trait) => trait.name));
+	expect(
+		attributes.find((attribute) => attribute.trait_type === "Serial")?.value,
+	)
+		.toBe(Number(serial));
+
+	const png = await request.get(`/x/${collection}/${hex}-${serial}.png`);
+
+	expect(png.headers()["content-type"]).toBe("image/png");
 	expect(errors).toEqual([]);
 });

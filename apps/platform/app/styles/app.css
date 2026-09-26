@@ -1892,3 +1892,43 @@ textarea[aria-invalid="true"] {
 	font-size: 16px;
 	font-weight: 900;
 }
+
+.nft-player {
+	inline-size: 100%;
+	aspect-ratio: 1;
+	border: var(--border);
+	border-radius: var(--radius);
+	background: var(--ivory);
+}
+
+.trait-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.trait-list li {
+	padding: 3px 10px;
+	border: 2px solid var(--line);
+	border-radius: 999px;
+	background: var(--white);
+	font-size: 13px;
+	font-weight: 800;
+}
+
+.rarity {
+	font: 400 20px var(--display);
+	color: var(--accent);
+}
+
+.nft-art img {
+	display: block;
+	inline-size: 100%;
+	block-size: auto;
+	border: var(--border);
+	border-radius: var(--radius);
+	box-shadow: var(--shadow-s);
+}

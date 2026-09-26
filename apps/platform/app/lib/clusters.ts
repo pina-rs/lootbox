@@ -27,6 +27,8 @@ export type ClusterInfo = Readonly<{
 	rpcUrl: string;
 	/** Present only for localnet: the emulator's fixed oracle accounts. */
 	localOracle: LocalOracleAccounts | null;
+	/** The Introductory Exclusive Lootbox NFT collection on this cluster. */
+	exclusiveCollection: string | null;
 }>;
 
 export const CLUSTER_LABELS: Readonly<Record<Cluster, string>> = {

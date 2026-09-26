@@ -20,14 +20,20 @@ export default defineConfig({
 	],
 	webServer: [
 		{
+			// Real Bubblegum V2 and Core, so Exclusive Lootbox NFTs mint for real.
 			command: "pnpm --dir ../.. playground:rpc",
+			env: {
+				LOOTBOX_METAPLEX_PROGRAMS_DIR:
+					new URL("../../target/deploy/metaplex", import.meta.url)
+						.pathname,
+			},
 			url: "http://127.0.0.1:8898/config",
 			reuseExistingServer: !process.env.CI,
 			timeout: 120_000,
 		},
 		{
 			command: [
-				"node e2e/prepare.ts",
+				"./node_modules/.bin/tsx e2e/prepare.ts",
 				"./node_modules/.bin/wrangler d1 migrations apply lootbox --local --config e2e/wrangler.e2e.jsonc --persist-to .wrangler/e2e",
 				// A production build served by Miniflare: no dev-only dependency
 				// re-optimisation, and the same Worker bundle `wrangler deploy` ships.

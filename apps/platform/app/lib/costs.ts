@@ -20,6 +20,10 @@ export const CLASSIC_TOKEN_ACCOUNT_BYTES = 165n;
 export const TOKEN_2022_ACCOUNT_BYTES = 170n;
 /** Extra `TransferFeeAmount` extension on accounts of fee-bearing mints. */
 export const TRANSFER_FEE_ACCOUNT_BYTES = 12n;
+/** `ExclusiveAttachmentState`, created when a bundle attaches the collection. */
+export const EXCLUSIVE_ATTACHMENT_BYTES = 157n;
+/** Bubblegum V2 `mint_v2` fee, escrowed per consolation box. */
+export const EXCLUSIVE_MINT_FEE = 90_000n;
 
 const utf8 = new TextEncoder();
 
@@ -69,10 +73,14 @@ export function creationCost(
 		bundles: readonly DraftBundle[];
 		bundleBytes: bigint;
 		rentForZeroBytes: bigint;
+		/** Boxes holding an Exclusive Lootbox NFT consolation (0 for none). */
+		consolationBoxes?: number;
 	}>,
 ): CreationCost {
 	const rent = (bytes: bigint) => rentFor(bytes, input.rentForZeroBytes);
-	const bundleCount = BigInt(input.bundles.length);
+	const consolation = BigInt(input.consolationBoxes ?? 0);
+	const bundleCount = BigInt(input.bundles.length) +
+		(consolation > 0n ? 1n : 0n);
 	let solPrizes = 0n;
 	let escrowAccounts = 0n;
 	let escrowIsEstimate = false;
@@ -111,6 +119,8 @@ export function creationCost(
 		}
 	}
 
+	if (consolation > 0n) transactions += 3; // add, attach, activate
+
 	// The box-mint transaction carries two signatures: creator and new mint.
 	const fees = BigInt(transactions + 1) * SIGNATURE_FEE;
 	const lines: CostLine[] = [
@@ -147,6 +157,15 @@ export function creationCost(
 			note: escrowIsEstimate
 				? "Estimate: Token-2022 accounts may carry extra extensions"
 				: "One token account per token or NFT prize",
+		},
+		{
+			key: "exclusive",
+			label: "Exclusive Lootbox NFT mint fees",
+			lamports: consolation > 0n
+				? consolation * EXCLUSIVE_MINT_FEE + rent(EXCLUSIVE_ATTACHMENT_BYTES) +
+					rent(0n)
+				: 0n,
+			note: "Escrowed; unused fees come back",
 		},
 		{
 			key: "fees",

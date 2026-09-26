@@ -1,0 +1,980 @@
+{
+	"schema_version": "0.7",
+	"kind": "monochange.releaseRecord",
+	"created_at": "2026-09-26T18:59:57Z",
+	"command": "release",
+	"version": "0.0.2",
+	"versions": {
+		"lootbox": "0.0.2"
+	},
+	"release_targets": [
+		{
+			"id": "lootbox",
+			"kind": "group",
+			"version": "0.0.2",
+			"version_format": "namespaced",
+			"tag": false,
+			"release": false,
+			"tag_name": "lootbox/v0.0.2",
+			"members": [
+				"switchboard_randomness_cpi",
+				"lootbox_program",
+				"lootbox_sdk",
+				"lootbox_cli",
+				"lootbox_program_client_typescript",
+				"lootbox_sdk_typescript",
+				"lootbox_program_client_dart",
+				"lootbox_sdk_dart"
+			]
+		}
+	],
+	"released_packages": [
+		"@pina-rs/lootbox",
+		"@pina-rs/lootbox-program-client",
+		"lootbox",
+		"lootbox_cli",
+		"lootbox_program",
+		"lootbox_program_client",
+		"lootbox_sdk",
+		"switchboard_randomness_cpi"
+	],
+	"changed_files": [
+		"Cargo.lock",
+		"Cargo.toml",
+		"clients/dart/pubspec.yaml",
+		"clients/typescript/lootbox_program/package.json",
+		"crates/lootbox-cli/Cargo.toml",
+		"crates/switchboard_randomness_cpi/Cargo.toml",
+		"programs/lootbox_program/Cargo.toml",
+		"programs/lootbox_program/tests/surfpool/Cargo.toml",
+		"sdks/dart/pubspec.lock",
+		"sdks/dart/pubspec.yaml",
+		"sdks/rust/Cargo.toml",
+		"sdks/typescript/package.json"
+	],
+	"package_publications": [],
+	"updated_changelogs": [],
+	"deleted_changesets": [
+		".changeset/document-program-idl.md",
+		".changeset/entropy-selected-prize-pools.md",
+		".changeset/exclusive-lootbox-nfts.md",
+		".changeset/issuer-controlled-stock-prizes.md",
+		".changeset/randomness-lanes-spike.md",
+		".changeset/switchboard-gateway.md",
+		".changeset/switchboard-reveal-clears-oracle.md",
+		".changeset/upgrade-pina-0-20.md"
+	],
+	"changesets": [
+		{
+			"path": ".changeset/document-program-idl.md",
+			"summary": "Document the program IDL and deny missing docs",
+			"details": "Every instruction now carries a summary of what it does, who may sign it, what it requires, and what it changes. Every instruction account explains why the instruction needs it, and every state field states its units, lifecycle, and invariants. The generated Rust, CPI, and TypeScript clients carry the same documentation. Instruction argument docs are written in the program source but do not reach the IDL until Pina's generator emits them.\n\nThe workspace now denies `missing_docs`, and every public item in the Rust SDK and CLI is documented; CLI argument docs also appear in `--help`. The program crate allows the lint until Pina's macros document the items they generate.",
+			"targets": [
+				{
+					"id": "lootbox_program",
+					"kind": "package",
+					"bump": "none",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "docs"
+				},
+				{
+					"id": "lootbox_program_client_typescript",
+					"kind": "package",
+					"bump": "none",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "docs"
+				},
+				{
+					"id": "lootbox_sdk",
+					"kind": "package",
+					"bump": "none",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "docs"
+				},
+				{
+					"id": "lootbox_cli",
+					"kind": "package",
+					"bump": "none",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "docs"
+				},
+				{
+					"id": "lootbox_sdk_dart",
+					"kind": "package",
+					"bump": "none",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "docs"
+				}
+			],
+			"context": {
+				"provider": "github",
+				"host": "github.com",
+				"capabilities": {
+					"commit_web_urls": true,
+					"actor_profiles": true,
+					"review_request_lookup": true,
+					"related_issues": true,
+					"issue_comments": true
+				},
+				"introduced": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "39c9f097fb31829b71749754695d0c2f045124d0",
+						"short_sha": "39c9f09",
+						"url": "https://github.com/pina-rs/lootbox/commit/39c9f097fb31829b71749754695d0c2f045124d0",
+						"authored_at": "2026-09-26T14:33:21+01:00",
+						"committed_at": "2026-09-26T14:33:21+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#42",
+						"title": "docs(program): document every instruction, account, and field",
+						"url": "https://github.com/pina-rs/lootbox/pull/42",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"last_updated": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "39c9f097fb31829b71749754695d0c2f045124d0",
+						"short_sha": "39c9f09",
+						"url": "https://github.com/pina-rs/lootbox/commit/39c9f097fb31829b71749754695d0c2f045124d0",
+						"authored_at": "2026-09-26T14:33:21+01:00",
+						"committed_at": "2026-09-26T14:33:21+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#42",
+						"title": "docs(program): document every instruction, account, and field",
+						"url": "https://github.com/pina-rs/lootbox/pull/42",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"related_issues": []
+			}
+		},
+		{
+			"path": ".changeset/entropy-selected-prize-pools.md",
+			"summary": "Add entropy-selected PrizePools",
+			"details": "Add compact Bubblegum PrizePool custody, checked cross-language planning, resumable TypeScript funding and claims, adversarial Surfpool coverage, and a creator transfer composer.",
+			"targets": [
+				{
+					"id": "lootbox_sdk",
+					"kind": "package",
+					"bump": "minor",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "feat"
+				}
+			],
+			"context": {
+				"provider": "github",
+				"host": "github.com",
+				"capabilities": {
+					"commit_web_urls": true,
+					"actor_profiles": true,
+					"review_request_lookup": true,
+					"related_issues": true,
+					"issue_comments": true
+				},
+				"introduced": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "75cbf3dcc7c07f6e39c07d3083b1a8a3437d5204",
+						"short_sha": "75cbf3d",
+						"url": "https://github.com/pina-rs/lootbox/commit/75cbf3dcc7c07f6e39c07d3083b1a8a3437d5204",
+						"authored_at": "2026-09-18T09:43:59+01:00",
+						"committed_at": "2026-09-18T09:43:59+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#20",
+						"title": "feat: add entropy-selected prize pools",
+						"url": "https://github.com/pina-rs/lootbox/pull/20",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"last_updated": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "88d4774676eee278311ed98cd7fc0350fc5cf640",
+						"short_sha": "88d4774",
+						"url": "https://github.com/pina-rs/lootbox/commit/88d4774676eee278311ed98cd7fc0350fc5cf640",
+						"authored_at": "2026-09-21T05:23:28+01:00",
+						"committed_at": "2026-09-21T05:23:28+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#27",
+						"title": "fix(program)!: harden prize admission and compensate forfeited openings",
+						"url": "https://github.com/pina-rs/lootbox/pull/27",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"related_issues": []
+			}
+		},
+		{
+			"path": ".changeset/exclusive-lootbox-nfts.md",
+			"summary": "Mint layered Exclusive Lootbox NFTs on claim",
+			"details": "A consolation bundle can now attach to a protocol-level Exclusive NFT collection while its attach window is open. The collection PDA controls a private Bubblegum V2 tree and a Metaplex Core collection, so only `claimExclusiveNft` can mint. Each claim draws one trait per layer from `sha256(S || \"layer\" || i)`, where `S` binds the template, the opening, and its verified Switchboard value. It then mints an immutable leaf named `{prefix} #{serial}` with a `{base}{hex traits}-{serial}.json` URI to the bound beneficiary. Attachments escrow Bubblegum's per-mint fee, so claimers pay only transaction fees, and unused fees return through the existing recovery rules. The Rust, TypeScript, and Dart SDKs replay shared derivation vectors, and the TypeScript client creates, publishes, attaches, claims, and reclaims.",
+			"targets": [
+				{
+					"id": "lootbox_program",
+					"kind": "package",
+					"bump": "minor",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "feat"
+				},
+				{
+					"id": "lootbox_sdk",
+					"kind": "package",
+					"bump": "minor",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "feat"
+				},
+				{
+					"id": "lootbox_sdk_typescript",
+					"kind": "package",
+					"bump": "minor",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "feat"
+				},
+				{
+					"id": "lootbox_sdk_dart",
+					"kind": "package",
+					"bump": "minor",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "feat"
+				}
+			],
+			"context": {
+				"provider": "github",
+				"host": "github.com",
+				"capabilities": {
+					"commit_web_urls": true,
+					"actor_profiles": true,
+					"review_request_lookup": true,
+					"related_issues": true,
+					"issue_comments": true
+				},
+				"introduced": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "fae5ebe9e5a7530ce0ccb3984e0a7576023cc0d5",
+						"short_sha": "fae5ebe",
+						"url": "https://github.com/pina-rs/lootbox/commit/fae5ebe9e5a7530ce0ccb3984e0a7576023cc0d5",
+						"authored_at": "2026-09-26T11:40:22+01:00",
+						"committed_at": "2026-09-26T11:40:22+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#40",
+						"title": "feat(program)!: Exclusive Lootbox NFTs from one layered, shared collection",
+						"url": "https://github.com/pina-rs/lootbox/pull/40",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"last_updated": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "fae5ebe9e5a7530ce0ccb3984e0a7576023cc0d5",
+						"short_sha": "fae5ebe",
+						"url": "https://github.com/pina-rs/lootbox/commit/fae5ebe9e5a7530ce0ccb3984e0a7576023cc0d5",
+						"authored_at": "2026-09-26T11:40:22+01:00",
+						"committed_at": "2026-09-26T11:40:22+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#40",
+						"title": "feat(program)!: Exclusive Lootbox NFTs from one layered, shared collection",
+						"url": "https://github.com/pina-rs/lootbox/pull/40",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"related_issues": []
+			}
+		},
+		{
+			"path": ".changeset/issuer-controlled-stock-prizes.md",
+			"summary": "Admit issuer-controlled tokenized stock prizes",
+			"details": "`FundTokenPrize` now escrows PreStocks and Backed xStocks Token-2022 mints when their permanent delegate is an allowlisted issuer key. Such mints may carry a freeze authority, permanent delegate, initialized default account state, scaled UI amount, pause config, confidential-transfer config, a program-less transfer hook, and a transfer fee; every other Token-2022 mint keeps the strict metadata-only policy. Funding grosses up the current-epoch transfer fee with `TransferCheckedWithFee` and verifies the escrow received exactly the recorded amount, and paused mints are rejected. Winners receive the recorded amount minus the issuer's disclosed fee, and the security notes document the issuer powers the program cannot prevent.",
+			"targets": [
+				{
+					"id": "lootbox_program",
+					"kind": "package",
+					"bump": "minor",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "feat"
+				}
+			],
+			"context": {
+				"provider": "github",
+				"host": "github.com",
+				"capabilities": {
+					"commit_web_urls": true,
+					"actor_profiles": true,
+					"review_request_lookup": true,
+					"related_issues": true,
+					"issue_comments": true
+				},
+				"introduced": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "00105d19fd7fef76821d09da5c3512d1866b4c12",
+						"short_sha": "00105d1",
+						"url": "https://github.com/pina-rs/lootbox/commit/00105d19fd7fef76821d09da5c3512d1866b4c12",
+						"authored_at": "2026-09-25T16:01:56+01:00",
+						"committed_at": "2026-09-25T18:53:47+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "ifiokotung@gmail.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#34",
+						"title": "feat(program): admit issuer-controlled tokenized stock prizes",
+						"url": "https://github.com/pina-rs/lootbox/pull/34",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"last_updated": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "00105d19fd7fef76821d09da5c3512d1866b4c12",
+						"short_sha": "00105d1",
+						"url": "https://github.com/pina-rs/lootbox/commit/00105d19fd7fef76821d09da5c3512d1866b4c12",
+						"authored_at": "2026-09-25T16:01:56+01:00",
+						"committed_at": "2026-09-25T18:53:47+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "ifiokotung@gmail.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#34",
+						"title": "feat(program): admit issuer-controlled tokenized stock prizes",
+						"url": "https://github.com/pina-rs/lootbox/pull/34",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"related_issues": []
+			}
+		},
+		{
+			"path": ".changeset/randomness-lanes-spike.md",
+			"summary": "Add the randomness lanes devnet spike",
+			"details": "Add `spike:lanes`, a devnet script that tests reusable Switchboard randomness accounts, and document its findings in `docs/randomness-lanes.md`: accounts can be recommitted and fused with the previous reveal, same-slot commits get distinct values, and Switchboard accepts a commit over an unrevealed one, so the program must guard each lane itself.",
+			"targets": [
+				{
+					"id": "lootbox_sdk_typescript",
+					"kind": "package",
+					"bump": "none",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "docs"
+				}
+			],
+			"context": {
+				"provider": "github",
+				"host": "github.com",
+				"capabilities": {
+					"commit_web_urls": true,
+					"actor_profiles": true,
+					"review_request_lookup": true,
+					"related_issues": true,
+					"issue_comments": true
+				},
+				"introduced": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "df6746fae84548d5cdde0f136ae13ac70a9afd18",
+						"short_sha": "df6746f",
+						"url": "https://github.com/pina-rs/lootbox/commit/df6746fae84548d5cdde0f136ae13ac70a9afd18",
+						"authored_at": "2026-09-26T19:56:10+01:00",
+						"committed_at": "2026-09-26T19:56:10+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#43",
+						"title": "docs(randomness): add the randomness lanes devnet spike",
+						"url": "https://github.com/pina-rs/lootbox/pull/43",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"last_updated": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "df6746fae84548d5cdde0f136ae13ac70a9afd18",
+						"short_sha": "df6746f",
+						"url": "https://github.com/pina-rs/lootbox/commit/df6746fae84548d5cdde0f136ae13ac70a9afd18",
+						"authored_at": "2026-09-26T19:56:10+01:00",
+						"committed_at": "2026-09-26T19:56:10+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#43",
+						"title": "docs(randomness): add the randomness lanes devnet spike",
+						"url": "https://github.com/pina-rs/lootbox/pull/43",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"related_issues": []
+			}
+		},
+		{
+			"path": ".changeset/switchboard-gateway.md",
+			"summary": "Add a Switchboard On-Demand oracle transport",
+			"details": "Add `createSwitchboardOracle` for real devnet and mainnet randomness: it selects a verified oracle with a fresh heartbeat from the queue, derives the per-randomness lookup-table, program-state, and oracle-stats accounts, and fetches the reveal proof from the bound oracle's gateway with typed errors and bounded backoff. `requestOpen` now accepts an accounts resolver, because real Switchboard derives the lookup table from the fresh randomness address and its `recent_slot`, and it reads that slot at `finalized` commitment so the lookup-table program always finds it in `SlotHashes`.\n\n`createTemplate` accepts an optional box metadata `symbol` (default `LOOT`), and `accountsFor` retries while a fresh commit is not yet visible at `confirmed` commitment.\n\nAdd a settlement relayer script that reveals, allocates, and optionally claims abandoned openings in FIFO order without ever forfeiting them.",
+			"targets": [
+				{
+					"id": "lootbox_sdk_typescript",
+					"kind": "package",
+					"bump": "minor",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "feat"
+				}
+			],
+			"context": {
+				"provider": "github",
+				"host": "github.com",
+				"capabilities": {
+					"commit_web_urls": true,
+					"actor_profiles": true,
+					"review_request_lookup": true,
+					"related_issues": true,
+					"issue_comments": true
+				},
+				"introduced": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "a27b7e3a4134bc2892cee21869442db8f9a678b1",
+						"short_sha": "a27b7e3",
+						"url": "https://github.com/pina-rs/lootbox/commit/a27b7e3a4134bc2892cee21869442db8f9a678b1",
+						"authored_at": "2026-09-25T15:47:27+01:00",
+						"committed_at": "2026-09-25T18:53:47+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "ifiokotung@gmail.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#35",
+						"title": "feat(sdk): real Switchboard On-Demand transport, devnet proof, and launch tooling",
+						"url": "https://github.com/pina-rs/lootbox/pull/35",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"last_updated": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "1da251e60a6c38ac65db44a8f745bc9f51857621",
+						"short_sha": "1da251e",
+						"url": "https://github.com/pina-rs/lootbox/commit/1da251e60a6c38ac65db44a8f745bc9f51857621",
+						"authored_at": "2026-09-25T17:52:35+01:00",
+						"committed_at": "2026-09-25T18:53:49+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "ifiokotung@gmail.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#35",
+						"title": "feat(sdk): real Switchboard On-Demand transport, devnet proof, and launch tooling",
+						"url": "https://github.com/pina-rs/lootbox/pull/35",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"related_issues": []
+			}
+		},
+		{
+			"path": ".changeset/switchboard-reveal-clears-oracle.md",
+			"summary": "Accept Switchboard reveals that clear the bound oracle",
+			"details": "Switchboard On-Demand zeroes the randomness account's `oracle` field when it records a reveal, so the post-reveal check that compared it with the committed oracle rejected every real devnet reveal. The oracle is now bound only before the reveal CPI, which verifies the proof against it; the mock Switchboard program mirrors the real behavior.",
+			"targets": [
+				{
+					"id": "lootbox_program",
+					"kind": "package",
+					"bump": "patch",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "fix"
+				}
+			],
+			"context": {
+				"provider": "github",
+				"host": "github.com",
+				"capabilities": {
+					"commit_web_urls": true,
+					"actor_profiles": true,
+					"review_request_lookup": true,
+					"related_issues": true,
+					"issue_comments": true
+				},
+				"introduced": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "90372f2e7f521ed52dad9afae0764f0fac7b8903",
+						"short_sha": "90372f2",
+						"url": "https://github.com/pina-rs/lootbox/commit/90372f2e7f521ed52dad9afae0764f0fac7b8903",
+						"authored_at": "2026-09-25T16:39:52+01:00",
+						"committed_at": "2026-09-25T18:53:48+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "ifiokotung@gmail.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#35",
+						"title": "feat(sdk): real Switchboard On-Demand transport, devnet proof, and launch tooling",
+						"url": "https://github.com/pina-rs/lootbox/pull/35",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"last_updated": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "90372f2e7f521ed52dad9afae0764f0fac7b8903",
+						"short_sha": "90372f2",
+						"url": "https://github.com/pina-rs/lootbox/commit/90372f2e7f521ed52dad9afae0764f0fac7b8903",
+						"authored_at": "2026-09-25T16:39:52+01:00",
+						"committed_at": "2026-09-25T18:53:48+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "ifiokotung@gmail.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#35",
+						"title": "feat(sdk): real Switchboard On-Demand transport, devnet proof, and launch tooling",
+						"url": "https://github.com/pina-rs/lootbox/pull/35",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"related_issues": []
+			}
+		},
+		{
+			"path": ".changeset/upgrade-pina-0-20.md",
+			"summary": "Upgrade the framework to Pina 0.20.0",
+			"details": "Move `pina` from 0.19 to 0.20.0 and regenerate the migration documents for the reset ABI document format (`abiVersion` \"0.20\"): the manifest drops every derived field and the publication ledger is rebuilt with zero receipts and no pending record, matching the pre-deployment state. Generated clients are re-rendered by `pina generate`.",
+			"targets": [
+				{
+					"id": "lootbox_program",
+					"kind": "package",
+					"bump": "none",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "none"
+				},
+				{
+					"id": "lootbox_sdk",
+					"kind": "package",
+					"bump": "none",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "none"
+				}
+			],
+			"context": {
+				"provider": "github",
+				"host": "github.com",
+				"capabilities": {
+					"commit_web_urls": true,
+					"actor_profiles": true,
+					"review_request_lookup": true,
+					"related_issues": true,
+					"issue_comments": true
+				},
+				"introduced": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "8998c983148e6a7bf1e15d27889d8e74d8534d45",
+						"short_sha": "8998c98",
+						"url": "https://github.com/pina-rs/lootbox/commit/8998c983148e6a7bf1e15d27889d8e74d8534d45",
+						"authored_at": "2026-09-23T12:16:36+01:00",
+						"committed_at": "2026-09-23T12:16:36+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#29",
+						"title": "chore(deps): upgrade pina to 0.20.0",
+						"url": "https://github.com/pina-rs/lootbox/pull/29",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"last_updated": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "8998c983148e6a7bf1e15d27889d8e74d8534d45",
+						"short_sha": "8998c98",
+						"url": "https://github.com/pina-rs/lootbox/commit/8998c983148e6a7bf1e15d27889d8e74d8534d45",
+						"authored_at": "2026-09-23T12:16:36+01:00",
+						"committed_at": "2026-09-23T12:16:36+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#29",
+						"title": "chore(deps): upgrade pina to 0.20.0",
+						"url": "https://github.com/pina-rs/lootbox/pull/29",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"related_issues": []
+			}
+		}
+	],
+	"changelogs": [],
+	"provider": {
+		"kind": "github",
+		"owner": "pina-rs",
+		"repo": "lootbox",
+		"host": null
+	}
+}

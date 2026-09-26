@@ -251,8 +251,7 @@ mod exclusive_nft_minted_event_projection_tests {
 	fn future_versions_fail_closed() {
 		let future: u8 = 1;
 		let error = ExclusiveNftMintedEvent::project_from_bytes(&record(future, &[]))
-			.err()
-			.expect("a future version must fail");
+			.expect_err("a future version must fail");
 		assert_eq!(error, ExclusiveNftMintedEventProjectionError::Unknown { stored: u32::from(future) });
 	}
 

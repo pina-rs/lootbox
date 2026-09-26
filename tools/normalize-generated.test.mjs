@@ -7,6 +7,7 @@ import {
 	assertWorkspaceVersions,
 	normalizeDartHashes,
 	normalizeDartManifest,
+	normalizeRustEventProjectionTests,
 	normalizeRustManifest,
 	normalizeRustVersionEnvelopeGuards,
 	normalizeRustVersionEnvelopeTests,
@@ -206,4 +207,19 @@ test("pins the generated client to the SDK's Kit range", () => {
 	assert.equal(sdkKitRange(root), "^8.3.0");
 	writeFileSync(manifest, JSON.stringify({ dependencies: {} }));
 	assert.throws(() => sdkKitRange(root), /must depend on @solana\/kit/);
+});
+
+test("rewrites generated event projection failures to expect_err", () => {
+	const source =
+		'\t\tlet error = Event::project_from_bytes(&record(future, &[]))\n\t\t\t.err()\n\t\t\t.expect("a future version must fail");\n';
+	const normalized = normalizeRustEventProjectionTests(source);
+	assert.equal(
+		normalized,
+		'\t\tlet error = Event::project_from_bytes(&record(future, &[]))\n\t\t\t.expect_err("a future version must fail");\n',
+	);
+	assert.equal(
+		normalizeRustEventProjectionTests(normalized),
+		normalized,
+		"idempotent",
+	);
 });

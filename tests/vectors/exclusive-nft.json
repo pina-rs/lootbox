@@ -1,0 +1,195 @@
+{
+	"seeds": [
+		{
+			"templateHex": "0101010101010101010101010101010101010101010101010101010101010101",
+			"openingHex": "0202020202020202020202020202020202020202020202020202020202020202",
+			"entropyHex": "0303030303030303030303030303030303030303030303030303030303030303",
+			"seedHex": "400494d2e489c6b8822d566db902f67fae1add323959e7666b0b0edc92b23b45"
+		},
+		{
+			"templateHex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+			"openingHex": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+			"entropyHex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+			"seedHex": "6cf9bd7440bdcbff8d3513d4d9cb4aae8420449c29990cc474e2cb7ec6bcb889"
+		}
+	],
+	"draws": [
+		{
+			"name": "default weights",
+			"seedHex": "400494d2e489c6b8822d566db902f67fae1add323959e7666b0b0edc92b23b45",
+			"weights": [
+				32768,
+				16384,
+				8192,
+				4096,
+				2048,
+				1024,
+				512,
+				256,
+				128,
+				64,
+				32,
+				16,
+				8,
+				4,
+				2,
+				1
+			],
+			"traitCounts": { "contents": 12, "background": 8, "pattern": 5 },
+			"expected": { "tier": 0, "contents": 6, "background": 6, "pattern": 4 }
+		},
+		{
+			"name": "rejected first samples resample by hash",
+			"seedHex": "0000000000000000000000000000000000000000000000000000000000000000",
+			"weights": [
+				32768,
+				16384,
+				8192,
+				4096,
+				2048,
+				1024,
+				512,
+				256,
+				128,
+				64,
+				32,
+				16,
+				8,
+				4,
+				2,
+				1
+			],
+			"traitCounts": { "contents": 12, "background": 8, "pattern": 5 },
+			"expected": { "tier": 0, "contents": 6, "background": 0, "pattern": 4 }
+		},
+		{
+			"name": "single nonzero weight",
+			"seedHex": "6cf9bd7440bdcbff8d3513d4d9cb4aae8420449c29990cc474e2cb7ec6bcb889",
+			"weights": [0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0],
+			"traitCounts": { "contents": 1, "background": 1, "pattern": 1 },
+			"expected": { "tier": 9, "contents": 0, "background": 0, "pattern": 0 }
+		},
+		{
+			"name": "maximum total weight",
+			"seedHex": "400494d2e489c6b8822d566db902f67fae1add323959e7666b0b0edc92b23b45",
+			"weights": [4294967280, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+			"traitCounts": { "contents": 64, "background": 64, "pattern": 64 },
+			"expected": { "tier": 0, "contents": 2, "background": 46, "pattern": 43 }
+		},
+		{
+			"name": "rarest tier boundary",
+			"seedHex": "feff0000000000008d3513d4d9cb4aae8420449c29990cc474e2cb7ec6bcb889",
+			"weights": [
+				32768,
+				16384,
+				8192,
+				4096,
+				2048,
+				1024,
+				512,
+				256,
+				128,
+				64,
+				32,
+				16,
+				8,
+				4,
+				2,
+				1
+			],
+			"traitCounts": { "contents": 64, "background": 3, "pattern": 7 },
+			"expected": { "tier": 15, "contents": 13, "background": 1, "pattern": 1 }
+		},
+		{
+			"name": "middle tier",
+			"seedHex": "4cfe0000000000008d3513d4d9cb4aae8420449c29990cc474e2cb7ec6bcb889",
+			"weights": [
+				32768,
+				16384,
+				8192,
+				4096,
+				2048,
+				1024,
+				512,
+				256,
+				128,
+				64,
+				32,
+				16,
+				8,
+				4,
+				2,
+				1
+			],
+			"traitCounts": { "contents": 9, "background": 10, "pattern": 11 },
+			"expected": { "tier": 7, "contents": 4, "background": 0, "pattern": 10 }
+		},
+		{
+			"name": "full trait ranges",
+			"seedHex": "6cf9bd7440bdcbff8d3513d4d9cb4aae8420449c29990cc474e2cb7ec6bcb889",
+			"weights": [
+				32768,
+				16384,
+				8192,
+				4096,
+				2048,
+				1024,
+				512,
+				256,
+				128,
+				64,
+				32,
+				16,
+				8,
+				4,
+				2,
+				1
+			],
+			"traitCounts": { "contents": 64, "background": 64, "pattern": 64 },
+			"expected": { "tier": 0, "contents": 13, "background": 4, "pattern": 52 }
+		}
+	],
+	"metadata": [
+		{
+			"namePrefix": "Lootbox Exclusive",
+			"baseUri": "https://example.com/nft/",
+			"serial": "42",
+			"traits": { "tier": 0, "contents": 6, "background": 6, "pattern": 4 },
+			"name": "Lootbox Exclusive #42",
+			"uri": "https://example.com/nft/0-6-6-4-42.json"
+		},
+		{
+			"namePrefix": "AAAAAAAAAAAAAAAAAAAA",
+			"baseUri": "https://example.com/",
+			"serial": "4294967295",
+			"traits": { "tier": 15, "contents": 63, "background": 63, "pattern": 63 },
+			"name": "AAAAAAAAAAAAAAAAAAAA #4294967295",
+			"uri": "https://example.com/15-63-63-63-4294967295.json"
+		}
+	],
+	"planner": {
+		"quantity": "90",
+		"bonuses": [
+			{ "tier": 15, "lamports": "1000000000", "count": 1 },
+			{ "tier": 14, "lamports": "250000000", "count": 2 }
+		],
+		"expectedBonusReserveLamports": "1500000000",
+		"expectedMintFeeEscrowLamports": "8100000",
+		"longestValidNamePrefixBytes": 20,
+		"maxQuantity": "4294967295",
+		"invalid": [
+			{
+				"reason": "bonus count above quantity",
+				"tier": 15,
+				"lamports": "1",
+				"count": 91
+			},
+			{
+				"reason": "bonus without lamports",
+				"tier": 15,
+				"lamports": "0",
+				"count": 1
+			}
+		]
+	}
+}

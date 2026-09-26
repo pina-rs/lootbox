@@ -47,6 +47,17 @@ export function normalizeRustVersionEnvelopeGuards(source) {
 	);
 }
 
+/** Generated event projection tests assert a failure with `.err().expect(..)`.
+ * Event projections implement `Debug`, so clippy's `err_expect` rejects that
+ * form under `-D warnings`; `expect_err` states the same assertion.
+ */
+export function normalizeRustEventProjectionTests(source) {
+	return source.replace(
+		/(\s*)\.err\(\)\s*\.expect\("a future version must fail"\)/g,
+		'$1.expect_err("a future version must fail")',
+	);
+}
+
 function isInitialVersionContract(source) {
 	return /pub const \w+_MIGRATION_VERSION: u\d+ = 0u\d;/.test(source);
 }
@@ -100,6 +111,16 @@ function normalizeRustAccounts(directory) {
 		const normalized = normalizeRustVersionEnvelopeGuards(
 			normalizeRustVersionEnvelopeTests(source),
 		);
+		if (normalized !== source) writeFileSync(path, normalized);
+	}
+}
+
+function normalizeRustEvents(directory) {
+	for (const entry of readdirSync(directory, { withFileTypes: true })) {
+		const path = join(directory, entry.name);
+		if (!entry.isFile() || !entry.name.endsWith(".rs")) continue;
+		const source = readFileSync(path, "utf8");
+		const normalized = normalizeRustEventProjectionTests(source);
 		if (normalized !== source) writeFileSync(path, normalized);
 	}
 }
@@ -249,6 +270,12 @@ if (
 		resolve(
 			root,
 			"clients/rust/lootbox_program/src/generated/accounts",
+		),
+	);
+	normalizeRustEvents(
+		resolve(
+			root,
+			"clients/rust/lootbox_program/src/generated/events",
 		),
 	);
 	normalizeTypeScriptDirectory(

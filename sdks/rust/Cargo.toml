@@ -9,6 +9,7 @@ description = "Ergonomic Rust SDK for the Pina lootbox primitive"
 
 [dependencies]
 lootbox_program_client = { workspace = true }
+solana-sha256-hasher = { workspace = true, features = ["sha2"] }
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }

@@ -560,6 +560,96 @@ mod tests {
 		assert_eq!(seed, manual.to_bytes());
 	}
 
+	fn vector_bytes<const N: usize>(value: &serde_json::Value) -> [u8; N] {
+		let text = value.as_str().expect("hex string");
+		let mut bytes = [0u8; N];
+		for (index, byte) in bytes.iter_mut().enumerate() {
+			*byte = u8::from_str_radix(&text[index * 2..index * 2 + 2], 16).expect("hex byte");
+		}
+		bytes
+	}
+
+	fn vector_u8(value: &serde_json::Value) -> u8 {
+		u8::try_from(value.as_u64().expect("integer")).expect("u8")
+	}
+
+	/// The program is the canonical implementation of the shared vectors that
+	/// the Rust, TypeScript, and Dart SDKs replay.
+	#[test]
+	fn shared_vectors_match_the_program_derivation() {
+		let vectors: serde_json::Value = serde_json::from_str(include_str!(
+			"../../../../../tests/vectors/exclusive-nft.json"
+		))
+		.expect("exclusive NFT vectors");
+		for seed in vectors["seeds"].as_array().expect("seeds") {
+			assert_eq!(
+				exclusive_nft_seed(
+					&Address::new_from_array(vector_bytes(&seed["templateHex"])),
+					&Address::new_from_array(vector_bytes(&seed["openingHex"])),
+					&vector_bytes(&seed["entropyHex"]),
+				),
+				vector_bytes::<32>(&seed["seedHex"]),
+			);
+		}
+		for draw in vectors["draws"].as_array().expect("draws") {
+			let mut weights = [0u32; 16];
+			for (weight, value) in weights
+				.iter_mut()
+				.zip(draw["weights"].as_array().expect("weights"))
+			{
+				*weight = u32::try_from(value.as_u64().expect("weight")).expect("u32 weight");
+			}
+			let counts = &draw["traitCounts"];
+			let expected = &draw["expected"];
+			assert_eq!(
+				exclusive_traits(
+					&vector_bytes(&draw["seedHex"]),
+					&weights,
+					ExclusiveTraitCounts {
+						contents: vector_u8(&counts["contents"]),
+						background: vector_u8(&counts["background"]),
+						pattern: vector_u8(&counts["pattern"]),
+					},
+				),
+				Ok(ExclusiveTraits {
+					tier: vector_u8(&expected["tier"]),
+					contents: vector_u8(&expected["contents"]),
+					background: vector_u8(&expected["background"]),
+					pattern: vector_u8(&expected["pattern"]),
+				}),
+				"{}",
+				draw["name"],
+			);
+		}
+		for metadata in vectors["metadata"].as_array().expect("metadata") {
+			let serial = metadata["serial"]
+				.as_str()
+				.and_then(|value| value.parse::<u64>().ok())
+				.expect("serial");
+			let traits = &metadata["traits"];
+			let traits = ExclusiveTraits {
+				tier: vector_u8(&traits["tier"]),
+				contents: vector_u8(&traits["contents"]),
+				background: vector_u8(&traits["background"]),
+				pattern: vector_u8(&traits["pattern"]),
+			};
+			let prefix = metadata["namePrefix"].as_str().expect("prefix");
+			let base = metadata["baseUri"].as_str().expect("base URI");
+			assert_eq!(
+				exclusive_nft_name(prefix.as_bytes(), serial)
+					.expect("name")
+					.as_bytes(),
+				metadata["name"].as_str().expect("name").as_bytes(),
+			);
+			assert_eq!(
+				exclusive_nft_uri(base.as_bytes(), traits, serial)
+					.expect("uri")
+					.as_bytes(),
+				metadata["uri"].as_str().expect("uri").as_bytes(),
+			);
+		}
+	}
+
 	proptest! {
 		#[test]
 		fn traits_stay_inside_their_domains(

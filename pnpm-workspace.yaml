@@ -8,8 +8,10 @@ preferWorkspacePackages: true
 
 allowBuilds:
   esbuild: true
+  workerd: true
 
 onlyBuiltDependencies:
   - esbuild
+  - workerd
 
 nodeVersion: 24.13.0

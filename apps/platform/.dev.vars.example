@@ -1,0 +1,14 @@
+# Copy to .dev.vars for `pnpm dev`. Never commit real secrets.
+# Local Surfpool (run `pnpm playground:rpc` from the repository root first).
+DEFAULT_CLUSTER=localnet
+ENABLED_CLUSTERS=localnet,devnet
+LOCALNET_CONTROL_URL=http://127.0.0.1:8898
+RELAYER_CLUSTERS=localnet
+
+# Optional: live token search (Jupiter) and wallet NFT discovery (DAS RPC).
+# JUPITER_API_KEY=
+# DAS_RPC_URL=
+
+# Relayer fee payer: a base58 64-byte secret key or a JSON byte array.
+# Use a dedicated devnet-only key. Leave unset to disable the relayer.
+# RELAYER_SECRET_KEY=

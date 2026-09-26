@@ -1,0 +1,61 @@
+{
+	"capturedAt": "2026-09-25T14:38:29.677Z",
+	"stocks": [
+		{
+			"symbol": "ANDURIL",
+			"name": "Anduril",
+			"mint": "PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB",
+			"url": "https://www.prestocks.com/anduril",
+			"usdPrice": 165.18130668383955
+		},
+		{
+			"symbol": "ANTHROPIC",
+			"name": "Anthropic",
+			"mint": "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw",
+			"url": "https://www.prestocks.com/anthropic",
+			"usdPrice": 1076.3333261795497
+		},
+		{
+			"symbol": "FIGUREAI",
+			"name": "Figure AI",
+			"mint": "PreZad18qfPtbxNpMtMuAuX2zVpvkEU8DnJx56faCWd",
+			"url": "https://www.prestocks.com/figureai",
+			"usdPrice": 175.27141388473746
+		},
+		{
+			"symbol": "KALSHI",
+			"name": "Kalshi",
+			"mint": "PreLWGkkeqG1s4HEfFZSy9moCrJ7btsHuUtfcCeoRua",
+			"url": "https://www.prestocks.com/kalshi",
+			"usdPrice": 902.5462831078243
+		},
+		{
+			"symbol": "NEURALINK",
+			"name": "Neuralink",
+			"mint": "PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S",
+			"url": "https://www.prestocks.com/neuralink",
+			"usdPrice": 442.26699078741785
+		},
+		{
+			"symbol": "OPENAI",
+			"name": "OpenAI",
+			"mint": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+			"url": "https://www.prestocks.com/openai",
+			"usdPrice": 1315.7744364315206
+		},
+		{
+			"symbol": "POLYMARKET",
+			"name": "Polymarket",
+			"mint": "Pre8AREmFPtoJFT8mQSXQLh56cwJmM7CFDRuoGBZiUP",
+			"url": "https://www.prestocks.com/polymarket",
+			"usdPrice": 153.59963702540463
+		},
+		{
+			"symbol": "SPACEX",
+			"name": "SpaceX",
+			"mint": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
+			"url": "https://www.prestocks.com/spacex",
+			"usdPrice": 115.27430302962334
+		}
+	]
+}

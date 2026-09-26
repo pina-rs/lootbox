@@ -40,7 +40,10 @@
 		"**/target",
 		"**/pnpm-lock.yaml",
 		"clients/**",
-		"**/abi_layout.rs"
+		"**/abi_layout.rs",
+		"**/.react-router",
+		"**/.wrangler",
+		"apps/platform/worker-configuration.d.ts"
 	],
 	"plugins": [
 		"https://plugins.dprint.dev/typescript-0.95.13.wasm",

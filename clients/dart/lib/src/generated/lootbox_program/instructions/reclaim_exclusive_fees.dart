@@ -12,9 +12,9 @@ import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
 @immutable
-class ReclaimExclusiveReserveInstructionData {
-  const ReclaimExclusiveReserveInstructionData({required this.assetIndex})
-    : discriminator = 56,
+class ReclaimExclusiveFeesInstructionData {
+  const ReclaimExclusiveFeesInstructionData({required this.assetIndex})
+    : discriminator = 59,
       migrationVersion = 0;
 
   final int discriminator;
@@ -22,8 +22,8 @@ class ReclaimExclusiveReserveInstructionData {
   final int assetIndex;
 }
 
-Encoder<ReclaimExclusiveReserveInstructionData>
-getReclaimExclusiveReserveInstructionDataEncoder() {
+Encoder<ReclaimExclusiveFeesInstructionData>
+getReclaimExclusiveFeesInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
     ('migrationVersion', getU8Encoder()),
@@ -32,16 +32,16 @@ getReclaimExclusiveReserveInstructionDataEncoder() {
 
   return transformEncoder(
     structEncoder,
-    (ReclaimExclusiveReserveInstructionData value) => <String, Object?>{
-      'discriminator': 56,
+    (ReclaimExclusiveFeesInstructionData value) => <String, Object?>{
+      'discriminator': 59,
       'migrationVersion': 0,
       'assetIndex': value.assetIndex,
     },
   );
 }
 
-Decoder<ReclaimExclusiveReserveInstructionData>
-getReclaimExclusiveReserveInstructionDataDecoder() {
+Decoder<ReclaimExclusiveFeesInstructionData>
+getReclaimExclusiveFeesInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
     ('migrationVersion', getU8Decoder()),
@@ -50,17 +50,17 @@ getReclaimExclusiveReserveInstructionDataDecoder() {
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
     throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'reclaimExclusiveReserve instruction decoder',
+      'codecDescription': 'reclaimExclusiveFees instruction decoder',
       'expected': expected,
       'bytesLength': bytesLength,
     });
   }
 
-  (ReclaimExclusiveReserveInstructionData, int) readTopLevel(
+  (ReclaimExclusiveFeesInstructionData, int) readTopLevel(
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(56)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(59)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
@@ -68,7 +68,7 @@ getReclaimExclusiveReserveInstructionDataDecoder() {
     }
 
     return (
-      ReclaimExclusiveReserveInstructionData(
+      ReclaimExclusiveFeesInstructionData(
         assetIndex: map['assetIndex']! as int,
       ),
       newOffset,
@@ -77,7 +77,7 @@ getReclaimExclusiveReserveInstructionDataDecoder() {
 
   return switch (structDecoder) {
     FixedSizeDecoder<Map<String, Object?>>() =>
-      FixedSizeDecoder<ReclaimExclusiveReserveInstructionData>(
+      FixedSizeDecoder<ReclaimExclusiveFeesInstructionData>(
         fixedSize: structDecoder.fixedSize,
         read: (bytes, offset) {
           final bytesLength = bytes.length - offset;
@@ -88,37 +88,34 @@ getReclaimExclusiveReserveInstructionDataDecoder() {
         },
       ),
     VariableSizeDecoder<Map<String, Object?>>() =>
-      VariableSizeDecoder<ReclaimExclusiveReserveInstructionData>(
+      VariableSizeDecoder<ReclaimExclusiveFeesInstructionData>(
         read: readTopLevel,
         maxSize: structDecoder.maxSize,
       ),
   };
 }
 
-Codec<
-  ReclaimExclusiveReserveInstructionData,
-  ReclaimExclusiveReserveInstructionData
->
-getReclaimExclusiveReserveInstructionDataCodec() {
+Codec<ReclaimExclusiveFeesInstructionData, ReclaimExclusiveFeesInstructionData>
+getReclaimExclusiveFeesInstructionDataCodec() {
   return combineCodec(
-    getReclaimExclusiveReserveInstructionDataEncoder(),
-    getReclaimExclusiveReserveInstructionDataDecoder(),
+    getReclaimExclusiveFeesInstructionDataEncoder(),
+    getReclaimExclusiveFeesInstructionDataDecoder(),
   );
 }
 
-/// Creates a [ReclaimExclusiveReserve] instruction.
-Instruction getReclaimExclusiveReserveInstruction({
+/// Creates a [ReclaimExclusiveFees] instruction.
+Instruction getReclaimExclusiveFeesInstruction({
   required Address programAddress,
   required Address authority,
   required Address template,
   required Address boxMint,
   required Address bundle,
-  required Address exclusiveSeries,
+  required Address exclusiveAttachment,
   required Address feeVault,
   required Address systemProgram,
   required int assetIndex,
 }) {
-  final instructionData = ReclaimExclusiveReserveInstructionData(
+  final instructionData = ReclaimExclusiveFeesInstructionData(
     assetIndex: assetIndex,
   );
 
@@ -129,21 +126,21 @@ Instruction getReclaimExclusiveReserveInstruction({
       AccountMeta(address: template, role: AccountRole.readonly),
       AccountMeta(address: boxMint, role: AccountRole.readonly),
       AccountMeta(address: bundle, role: AccountRole.writable),
-      AccountMeta(address: exclusiveSeries, role: AccountRole.writable),
+      AccountMeta(address: exclusiveAttachment, role: AccountRole.writable),
       AccountMeta(address: feeVault, role: AccountRole.writable),
       AccountMeta(address: systemProgram, role: AccountRole.readonly),
     ],
-    data: getReclaimExclusiveReserveInstructionDataEncoder().encode(
+    data: getReclaimExclusiveFeesInstructionDataEncoder().encode(
       instructionData,
     ),
   );
 }
 
-/// Parses a [ReclaimExclusiveReserve] instruction from raw instruction data.
-ReclaimExclusiveReserveInstructionData parseReclaimExclusiveReserveInstruction(
+/// Parses a [ReclaimExclusiveFees] instruction from raw instruction data.
+ReclaimExclusiveFeesInstructionData parseReclaimExclusiveFeesInstruction(
   Instruction instruction,
 ) {
-  return getReclaimExclusiveReserveInstructionDataDecoder().decode(
+  return getReclaimExclusiveFeesInstructionDataDecoder().decode(
     instruction.data!,
   );
 }

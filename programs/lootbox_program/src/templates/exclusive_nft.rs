@@ -1,10 +1,14 @@
-//! Exclusive Lootbox NFTs: rarity-tiered consolation prizes minted on claim.
+//! Exclusive Lootbox NFTs: layered consolation collectibles minted on claim.
 //!
-//! A bundle slot of kind [`PRIZE_EXCLUSIVE_NFT`] targets one
-//! [`ExclusiveSeriesState`] PDA. The series is the Bubblegum V2 tree creator
-//! and the update authority of a Metaplex Core collection, so only a valid
-//! claim can mint. Rarity and traits come from the opening's verified
-//! Switchboard value; see [`exclusive_nft_seed`].
+//! One [`ExclusiveCollectionState`] is shared by every lootbox that attaches
+//! to it. Its PDA is the private Bubblegum V2 tree creator and the update
+//! authority of a Metaplex Core collection, so only a valid claim can mint.
+//! Its admin loads frozen trait-layer tables, appends trees, and publishes it
+//! once. While its attach window is open, any treasury creator may bind a
+//! bundle slot of kind [`PRIZE_EXCLUSIVE_NFT`] to it through an
+//! [`ExclusiveAttachmentState`] that escrows the Bubblegum mint fees. Traits
+//! come from the opening's verified Switchboard value; see
+//! [`exclusive_nft_seed`].
 
 use super::*;
 
@@ -16,68 +20,86 @@ pub use metaplex::*;
 
 /// Bundle slot kind for an Exclusive Lootbox NFT minted on claim.
 pub const PRIZE_EXCLUSIVE_NFT: u8 = 11;
-
-const SEED_EXCLUSIVE_SERIES: &[u8] = b"exclusive-series";
-const SEED_EXCLUSIVE_FEE_VAULT: &[u8] = b"exclusive-fee-vault";
-const EXCLUSIVE_SERIES_COMMITMENT_DOMAIN: &[u8] = b"lootbox:exclusive-nft-series";
-const EXCLUSIVE_SERIES_CONFIGURED: u8 = 0;
-const EXCLUSIVE_SERIES_READY: u8 = 1;
-/// Smallest Bubblegum tree depth a series accepts.
+/// Smallest Bubblegum tree depth a collection accepts.
 pub const MIN_EXCLUSIVE_TREE_DEPTH: u8 = 3;
-/// Largest Bubblegum tree depth a series accepts (1,048,576 leaves).
+/// Largest Bubblegum tree depth a collection accepts (1,048,576 leaves).
 pub const MAX_EXCLUSIVE_TREE_DEPTH: u8 = 20;
-const COLLECTION_URI_SUFFIX: &[u8] = b"collection.json";
 
-/// Immutable rarity rules, art references, bonus reserves, and mint counters of
-/// one template's Exclusive Lootbox NFT series.
+const SEED_EXCLUSIVE_COLLECTION: &[u8] = b"exclusive-collection";
+const SEED_EXCLUSIVE_ATTACHMENT: &[u8] = b"exclusive-attachment";
+const SEED_EXCLUSIVE_FEE_VAULT: &[u8] = b"exclusive-fee-vault";
+const EXCLUSIVE_LAYERS_DOMAIN: &[u8] = b"lootbox:exclusive-nft-layers";
+const EXCLUSIVE_ATTACHMENT_DOMAIN: &[u8] = b"lootbox:exclusive-nft-attachment";
+const COLLECTION_URI_SUFFIX: &[u8] = b"collection.json";
+const EXCLUSIVE_COLLECTION_DRAFT: u8 = 0;
+const EXCLUSIVE_COLLECTION_PUBLISHED: u8 = 1;
+
+/// A protocol-level Exclusive Lootbox NFT collection shared by many lootboxes.
 ///
-/// The PDA is the Bubblegum tree creator and the Core collection update
-/// authority. Its lamports hold rent plus every unpaid tier bonus:
-/// `lamports >= rent_reserve + sum(bonus_remaining[k] * bonus_lamports[k])`.
-/// A separate zero-data fee vault PDA prepays Bubblegum's per-mint fee, so a
-/// claim costs its submitter only the transaction fee.
+/// Drafts accept layer tables from the admin. Publishing freezes them under
+/// `layers_hash`; afterwards the admin can only append trees. Every mint
+/// takes the next global serial and lands in `active_tree`.
 #[account(discriminator = LootboxAccountType, migrations)]
-#[pda(seeds = [SEED_EXCLUSIVE_SERIES, template: Address], bump = bump)]
-pub struct ExclusiveSeriesState {
-	pub authority: Address,
-	pub template: Address,
-	pub bundle: Address,
-	/// Metaplex Core collection; zero until the series is initialized.
-	pub collection: Address,
-	/// Bubblegum V2 tree; zero until the series is initialized.
-	pub merkle_tree: Address,
-	/// Consolation copies the bound bundle slot can ever mint.
-	pub quantity: u64,
-	/// Editions minted so far; the next serial is `minted + 1`.
+#[pda(
+	seeds = [SEED_EXCLUSIVE_COLLECTION, admin: Address, collection_id: u64],
+	bump = bump
+)]
+pub struct ExclusiveCollectionState {
+	/// Loads layers, appends trees, and publishes; a multisig on mainnet.
+	pub admin: Address,
+	/// Metaplex Core collection whose update authority is this PDA.
+	pub core_collection: Address,
+	/// Bubblegum V2 tree that receives the next mint; zero until appended.
+	pub active_tree: Address,
+	/// Commitment to every frozen term; zero until published.
+	pub layers_hash: [u8; 32],
+	pub collection_id: u64,
+	/// Editions minted so far; the next global serial is `minted + 1`.
 	pub minted: u64,
-	/// Rent-exempt balance kept apart from the bonus reserves.
-	pub rent_reserve: u64,
-	/// Bubblegum mint fee escrowed per copy in the fee vault at creation.
-	pub mint_fee_lamports: u64,
-	/// Sixteen little-endian `u32` tier weights.
-	pub weights: [u8; 64],
-	/// Sixteen little-endian `u64` lamport bonuses paid per tier win.
-	pub bonus_lamports: [u8; 128],
-	/// Sixteen little-endian `u32` bonus counts funded at creation.
-	pub bonus_counts: [u8; 64],
-	/// Sixteen little-endian `u32` bonuses still escrowed.
-	pub bonus_remaining: [u8; 64],
-	/// Sixteen little-endian `u32` editions minted per tier.
-	pub tier_minted: [u8; 64],
+	/// Unix time from which bundles may attach.
+	pub attach_opens_at: i64,
+	/// Unix time from which bundles may no longer attach.
+	pub attach_closes_at: i64,
+	pub tree_count: u32,
+	/// Trait count of each layer, bottom to top.
+	pub trait_counts: [u8; 12],
+	/// Twelve layers of sixty-four little-endian `u32` trait weights.
+	pub weights: [u8; 3072],
 	/// Null-padded UTF-8 name prefix; minted names are `{prefix} #{serial}`.
 	pub name_prefix: [u8; 32],
 	/// Null-padded UTF-8 symbol.
 	pub symbol: [u8; 10],
 	/// Null-padded `https://` base of every metadata URI.
-	pub base_uri: [u8; 96],
-	pub max_buffer_size: u32,
-	pub asset_index: u8,
-	pub contents_count: u8,
-	pub background_count: u8,
-	pub pattern_count: u8,
-	pub max_depth: u8,
-	/// 0 configured (reserves escrowed), 1 ready (collection and tree bound).
+	pub base_uri: [u8; 128],
+	pub layer_count: u8,
+	/// 0 draft, 1 published.
 	pub status: u8,
+	pub bump: u8,
+}
+
+/// One bundle slot's promise of Exclusive Lootbox NFTs from a collection.
+///
+/// The PDA commits the slot to the collection's frozen layers and owns a
+/// zero-data fee vault prepaying Bubblegum's per-mint fee, so a claim costs
+/// its submitter only the transaction fee.
+#[account(discriminator = LootboxAccountType, migrations)]
+#[pda(
+	seeds = [SEED_EXCLUSIVE_ATTACHMENT, bundle: Address, asset_index: u8],
+	bump = bump
+)]
+pub struct ExclusiveAttachmentState {
+	pub template: Address,
+	pub bundle: Address,
+	pub collection: Address,
+	/// The collection's frozen `layers_hash` at attach time.
+	pub layers_hash: [u8; 32],
+	/// Copies the bound bundle slot can ever mint.
+	pub quantity: u64,
+	/// Copies minted through this attachment.
+	pub minted: u64,
+	/// Bubblegum mint fee escrowed per copy.
+	pub mint_fee_lamports: u64,
+	pub asset_index: u8,
 	pub bump: u8,
 	pub fee_vault_bump: u8,
 }
@@ -87,44 +109,54 @@ pub struct ExclusiveSeriesState {
 pub struct ExclusiveNftMintedEvent {
 	pub template: Address,
 	pub opening: Address,
-	pub series: Address,
+	pub collection: Address,
+	pub attachment: Address,
 	pub beneficiary: Address,
 	/// Bubblegum asset ID of the minted leaf.
 	pub asset: Address,
-	/// Series seed `S` that determined the tier and traits.
+	/// Seed `S` that determined every trait.
 	pub seed: [u8; 32],
+	/// Global serial within the collection.
 	pub serial: u64,
-	/// Tier bonus paid with this mint; zero when the tier has none left.
-	pub bonus_lamports: u64,
-	pub tier: u8,
-	pub contents: u8,
-	pub background: u8,
-	pub pattern: u8,
+	/// Trait index per layer, bottom to top; unused layers are zero.
+	pub traits: [u8; 12],
+	pub layer_count: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::CreateExclusiveSeries, migrations)]
-pub struct CreateExclusiveSeriesInstruction {
+#[instruction(discriminator = LootboxInstruction::CreateExclusiveCollection, migrations)]
+pub struct CreateExclusiveCollectionInstruction {
+	pub collection_id: u64,
+	pub attach_opens_at: i64,
+	pub attach_closes_at: i64,
+	pub layer_count: u8,
+	pub bump: u8,
+	pub name_prefix: [u8; 32],
+	pub symbol: [u8; 10],
+	pub base_uri: [u8; 128],
+}
+
+#[instruction(discriminator = LootboxInstruction::SetExclusiveLayer, migrations)]
+pub struct SetExclusiveLayerInstruction {
+	pub layer_index: u8,
+	pub trait_count: u8,
+	/// Sixty-four little-endian `u32` weights; slots past `trait_count` are zero.
+	pub weights: [u8; 256],
+}
+
+#[instruction(discriminator = LootboxInstruction::AppendExclusiveTree, migrations)]
+pub struct AppendExclusiveTreeInstruction {
+	pub max_depth: u8,
+	pub max_buffer_size: u32,
+}
+
+#[instruction(discriminator = LootboxInstruction::PublishExclusiveCollection, migrations)]
+pub struct PublishExclusiveCollectionInstruction {}
+
+#[instruction(discriminator = LootboxInstruction::AttachExclusiveNft, migrations)]
+pub struct AttachExclusiveNftInstruction {
 	pub asset_index: u8,
 	pub bump: u8,
 	pub fee_vault_bump: u8,
-	pub contents_count: u8,
-	pub background_count: u8,
-	pub pattern_count: u8,
-	/// Sixteen little-endian `u32` tier weights.
-	pub weights: [u8; 64],
-	/// Sixteen little-endian `u64` lamport bonuses per tier win.
-	pub bonus_lamports: [u8; 128],
-	/// Sixteen little-endian `u32` funded bonus counts.
-	pub bonus_counts: [u8; 64],
-	pub name_prefix: [u8; 32],
-	pub symbol: [u8; 10],
-	pub base_uri: [u8; 96],
-}
-
-#[instruction(discriminator = LootboxInstruction::InitializeExclusiveSeries, migrations)]
-pub struct InitializeExclusiveSeriesInstruction {
-	pub max_depth: u8,
-	pub max_buffer_size: u32,
 }
 
 #[instruction(discriminator = LootboxInstruction::ClaimExclusiveNft, migrations)]
@@ -132,44 +164,44 @@ pub struct ClaimExclusiveNftInstruction {
 	pub asset_index: u8,
 }
 
-#[instruction(discriminator = LootboxInstruction::ReclaimExclusiveReserve, migrations)]
-pub struct ReclaimExclusiveReserveInstruction {
+#[instruction(discriminator = LootboxInstruction::ReclaimExclusiveFees, migrations)]
+pub struct ReclaimExclusiveFeesInstruction {
 	pub asset_index: u8,
 }
 
 #[derive(Accounts, Debug)]
-pub struct CreateExclusiveSeriesAccounts<'a> {
+pub struct CreateExclusiveCollectionAccounts<'a> {
 	#[pina(validate(signer))]
-	pub authority: &'a mut AccountView,
-	pub template: &'a AccountView,
-	pub bundle: &'a mut AccountView,
+	pub admin: &'a mut AccountView,
 	#[pina(validate(empty))]
-	pub exclusive_series: &'a mut AccountView,
-	/// Zero-data System account PDA that prepays Bubblegum mint fees.
-	/// Unsolicited lamports are accepted and reduce the required top-up.
+	pub exclusive_collection: &'a mut AccountView,
+	/// Fresh Core collection keypair; its update authority becomes the PDA.
+	#[pina(validate(signer))]
 	#[pina(validate(empty))]
-	pub fee_vault: &'a mut AccountView,
+	pub core_collection: &'a mut AccountView,
+	#[pina(validate(address = MPL_CORE_ID))]
+	pub core_program: &'a AccountView,
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
 #[derive(Accounts, Debug)]
-pub struct InitializeExclusiveSeriesAccounts<'a> {
+pub struct SetExclusiveLayerAccounts<'a> {
 	#[pina(validate(signer))]
-	pub authority: &'a mut AccountView,
-	pub template: &'a AccountView,
-	pub bundle: &'a mut AccountView,
-	pub exclusive_series: &'a mut AccountView,
-	/// Fresh Core collection keypair; its update authority becomes the series.
+	pub admin: &'a AccountView,
+	pub exclusive_collection: &'a mut AccountView,
+}
+
+#[derive(Accounts, Debug)]
+pub struct AppendExclusiveTreeAccounts<'a> {
 	#[pina(validate(signer))]
-	#[pina(validate(empty))]
-	pub collection: &'a mut AccountView,
+	pub admin: &'a mut AccountView,
+	pub exclusive_collection: &'a mut AccountView,
 	/// Bubblegum tree config PDA of `merkle_tree`.
 	pub tree_config: &'a mut AccountView,
-	/// Pre-allocated, uninitialized MPL Account Compression tree.
+	/// Pre-allocated, uninitialized MPL Account Compression tree whose size
+	/// includes a canopy leaving proofs of at most ten nodes.
 	pub merkle_tree: &'a mut AccountView,
-	#[pina(validate(address = MPL_CORE_ID))]
-	pub core_program: &'a AccountView,
 	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
 	pub bubblegum_program: &'a AccountView,
 	#[pina(validate(address = MPL_NOOP_ID))]
@@ -181,18 +213,43 @@ pub struct InitializeExclusiveSeriesAccounts<'a> {
 }
 
 #[derive(Accounts, Debug)]
+pub struct PublishExclusiveCollectionAccounts<'a> {
+	#[pina(validate(signer))]
+	pub admin: &'a AccountView,
+	pub exclusive_collection: &'a mut AccountView,
+}
+
+#[derive(Accounts, Debug)]
+pub struct AttachExclusiveNftAccounts<'a> {
+	#[pina(validate(signer))]
+	pub authority: &'a mut AccountView,
+	pub template: &'a AccountView,
+	pub bundle: &'a mut AccountView,
+	pub exclusive_collection: &'a AccountView,
+	#[pina(validate(empty))]
+	pub exclusive_attachment: &'a mut AccountView,
+	/// Zero-data System account PDA that prepays Bubblegum mint fees.
+	/// Unsolicited lamports are accepted and reduce the required top-up.
+	#[pina(validate(empty))]
+	pub fee_vault: &'a mut AccountView,
+	#[pina(validate(address = system::ID))]
+	pub system_program: &'a AccountView,
+}
+
+#[derive(Accounts, Debug)]
 pub struct ClaimExclusiveNftAccounts<'a> {
 	pub template: &'a AccountView,
 	pub opening: &'a mut AccountView,
 	pub bundle: &'a mut AccountView,
-	pub exclusive_series: &'a mut AccountView,
+	pub exclusive_attachment: &'a mut AccountView,
 	/// Pays Bubblegum's per-mint fee from the creator's escrow.
 	pub fee_vault: &'a mut AccountView,
-	/// Must be the opening's bound beneficiary; receives the leaf and bonus.
-	pub recipient: &'a mut AccountView,
+	pub exclusive_collection: &'a mut AccountView,
+	/// Must be the opening's bound beneficiary; becomes the leaf owner.
+	pub recipient: &'a AccountView,
 	pub tree_config: &'a mut AccountView,
 	pub merkle_tree: &'a mut AccountView,
-	pub collection: &'a mut AccountView,
+	pub core_collection: &'a mut AccountView,
 	#[pina(validate(address = MPL_CORE_CPI_SIGNER_ID))]
 	pub core_cpi_signer: &'a AccountView,
 	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
@@ -208,120 +265,119 @@ pub struct ClaimExclusiveNftAccounts<'a> {
 }
 
 #[derive(Accounts, Debug)]
-pub struct ReclaimExclusiveReserveAccounts<'a> {
+pub struct ReclaimExclusiveFeesAccounts<'a> {
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
 	pub template: &'a AccountView,
 	pub box_mint: &'a AccountView,
 	pub bundle: &'a mut AccountView,
-	pub exclusive_series: &'a mut AccountView,
+	pub exclusive_attachment: &'a mut AccountView,
 	pub fee_vault: &'a mut AccountView,
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
-/// Read one little-endian `u32` lane of a sixteen-slot table.
-fn read_u32_slot(slots: &[u8; 64], index: usize) -> Result<u32, ProgramError> {
-	let bytes = slots
-		.get(index * 4..index * 4 + 4)
-		.ok_or(ProgramError::InvalidAccountData)?;
+/// Require the canonical collection PDA and return its signer seeds' inputs.
+fn assert_collection(address: &Address, state: &ExclusiveCollectionStateZc) -> ProgramResult {
+	let seeds = ExclusiveCollectionState::seeds(&state.admin, state.collection_id.get())
+		.with_bump(state.bump);
 
-	Ok(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
-}
-
-fn write_u32_slot(slots: &mut [u8; 64], index: usize, value: u32) -> ProgramResult {
-	slots
-		.get_mut(index * 4..index * 4 + 4)
-		.ok_or(ProgramError::InvalidAccountData)?
-		.copy_from_slice(&value.to_le_bytes());
+	if *address != create_program_address(&seeds.as_slices(), &ID)? {
+		return Err(ProgramError::InvalidSeeds);
+	}
 
 	Ok(())
 }
 
-/// Lamports every unpaid tier bonus still requires.
-fn bonus_liability(
-	bonus_lamports: &[u8; 128],
-	bonus_remaining: &[u8; 64],
-) -> Result<u64, ProgramError> {
-	(0..EXCLUSIVE_TIER_COUNT).try_fold(0u64, |total, tier| {
-		let remaining = u64::from(read_u32_slot(bonus_remaining, tier)?);
-		read_slot(bonus_lamports, tier)?
-			.checked_mul(remaining)
-			.and_then(|owed| total.checked_add(owed))
-			.ok_or(ProgramError::ArithmeticOverflow)
-	})
+/// Require the collection admin's signature on a collection mutation.
+fn assert_collection_admin(
+	admin: &AccountView,
+	address: &Address,
+	state: &ExclusiveCollectionStateZc,
+) -> ProgramResult {
+	assert_collection(address, state)?;
+	admin.assert_signer()?;
+	assert_authority_address(admin, &state.admin)
 }
 
-/// Validate creator bonus reserves and return the total lamports to escrow.
+/// Domain-separated commitment to every frozen collection term.
 ///
-/// A tier bonus needs both a positive amount and a positive count, must sit on
-/// a drawable tier, and can never be won more often than the bundle quantity.
-fn validate_bonus_reserves(
-	weights: &[u32; EXCLUSIVE_TIER_COUNT],
-	bonus_lamports: &[u8; 128],
-	bonus_counts: &[u8; 64],
-	quantity: u64,
-) -> Result<u64, ProgramError> {
-	for (tier, weight) in weights.iter().enumerate() {
-		let lamports = read_slot(bonus_lamports, tier)?;
-		let count = u64::from(read_u32_slot(bonus_counts, tier)?);
-
-		if (lamports == 0) != (count == 0) || (count != 0 && (*weight == 0 || count > quantity)) {
-			return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
-		}
-	}
-
-	bonus_liability(bonus_lamports, bonus_counts)
-}
-
-/// Domain-separated commitment to every immutable series term.
-///
-/// Initialization writes it into the bundle slot, so activation folds it into
-/// the treasury manifest and a locked template's odds and art rules are
-/// provable from the market-lock manifest hash.
-fn series_commitment(series: &Address, state: &ExclusiveSeriesStateZc) -> [u8; 32] {
+/// Attachments copy it and bundle slots commit to it, so the layer odds, text,
+/// and Core collection promised by a locked treasury can never change.
+fn layers_hash(collection: &Address, state: &ExclusiveCollectionStateZc) -> [u8; 32] {
 	hashv(&[
-		EXCLUSIVE_SERIES_COMMITMENT_DOMAIN,
-		series.as_ref(),
-		state.template.as_ref(),
-		state.bundle.as_ref(),
-		state.collection.as_ref(),
-		state.merkle_tree.as_ref(),
-		&state.quantity.get().to_le_bytes(),
+		EXCLUSIVE_LAYERS_DOMAIN,
+		collection.as_ref(),
+		state.admin.as_ref(),
+		state.core_collection.as_ref(),
+		&state.collection_id.get().to_le_bytes(),
+		&[state.layer_count],
+		&state.trait_counts,
 		&state.weights,
-		&state.bonus_lamports,
-		&state.bonus_counts,
 		&state.name_prefix,
 		&state.symbol,
 		&state.base_uri,
-		&state.max_buffer_size.get().to_le_bytes(),
-		&[
-			state.asset_index,
-			state.contents_count,
-			state.background_count,
-			state.pattern_count,
-			state.max_depth,
-		],
 	])
 	.to_bytes()
 }
 
-fn trait_counts(state: &ExclusiveSeriesStateZc) -> ExclusiveTraitCounts {
-	ExclusiveTraitCounts {
-		contents: state.contents_count,
-		background: state.background_count,
-		pattern: state.pattern_count,
-	}
+/// Commitment written into the bundle slot at attach time.
+fn attachment_commitment(attachment: &Address, state: &ExclusiveAttachmentStateZc) -> [u8; 32] {
+	hashv(&[
+		EXCLUSIVE_ATTACHMENT_DOMAIN,
+		attachment.as_ref(),
+		state.template.as_ref(),
+		state.bundle.as_ref(),
+		state.collection.as_ref(),
+		&state.layers_hash,
+		&state.quantity.get().to_le_bytes(),
+		&[state.asset_index],
+	])
+	.to_bytes()
 }
 
-/// Require the series' canonical zero-data System fee vault.
-fn assert_fee_vault(account: &AccountView, series: &Address, bump: u8) -> ProgramResult {
+/// Require the canonical attachment PDA bound to this bundle slot and its
+/// bundle commitment.
+fn assert_attachment(
+	address: &Address,
+	state: &ExclusiveAttachmentStateZc,
+	template: &Address,
+	bundle_address: &Address,
+	bundle: &BundleStateZc,
+	asset_index: u8,
+) -> ProgramResult {
+	let seeds = ExclusiveAttachmentState::seeds(bundle_address, asset_index).with_bump(state.bump);
+	if *address != create_program_address(&seeds.as_slices(), &ID)? {
+		return Err(ProgramError::InvalidSeeds);
+	}
+
+	let slot = usize::from(asset_index);
+	if state.template != *template
+		|| state.bundle != *bundle_address
+		|| state.asset_index != asset_index
+		|| bundle.kinds.get(slot) != Some(&PRIZE_EXCLUSIVE_NFT)
+		|| mint_at(bundle, slot)? != *address
+		|| read_slot(&bundle.amounts, slot)? != 1
+		|| bundle.commitments[slot * 32..(slot + 1) * 32] != attachment_commitment(address, state)
+	{
+		return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
+	}
+
+	Ok(())
+}
+
+/// Require the attachment's canonical zero-data System fee vault.
+fn assert_fee_vault(account: &AccountView, attachment: &Address, bump: u8) -> ProgramResult {
 	let bump = [bump];
-	let seeds = [SEED_EXCLUSIVE_FEE_VAULT, series.as_ref(), bump.as_slice()];
+	let seeds = [
+		SEED_EXCLUSIVE_FEE_VAULT,
+		attachment.as_ref(),
+		bump.as_slice(),
+	];
 	account.assert_seeds_with_bump(&seeds, &ID)?;
 
 	if account.owner() != &system::ID || !account.is_data_empty() {
-		return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
+		return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
 	}
 
 	Ok(())
@@ -339,7 +395,7 @@ fn required_fee_vault_balance(copies: u64, mint_fee: u64) -> Result<u64, Program
 /// Move lamports out of the fee vault under its PDA signature.
 fn withdraw_fee_vault(
 	fee_vault: &AccountView,
-	series: &Address,
+	attachment: &Address,
 	bump: u8,
 	to: &AccountView,
 	lamports: u64,
@@ -349,8 +405,11 @@ fn withdraw_fee_vault(
 	}
 
 	let bump = [bump];
-	let signer =
-		PdaSigner::from_slices([SEED_EXCLUSIVE_FEE_VAULT, series.as_ref(), bump.as_slice()]);
+	let signer = PdaSigner::from_slices([
+		SEED_EXCLUSIVE_FEE_VAULT,
+		attachment.as_ref(),
+		bump.as_slice(),
+	]);
 	system::instructions::Transfer {
 		from: fee_vault,
 		to,
@@ -359,194 +418,280 @@ fn withdraw_fee_vault(
 	.invoke_signed(&[signer.as_signer()])
 }
 
-/// Require the canonical series PDA bound to this template, bundle, and slot.
-fn assert_series(
-	address: &Address,
-	state: &ExclusiveSeriesStateZc,
-	template: &Address,
-	bundle: &Address,
-	asset_index: u8,
-) -> ProgramResult {
-	let seeds = ExclusiveSeriesState::seeds(template).with_bump(state.bump);
-	if *address != create_program_address(&seeds.as_slices(), &ID)? {
-		return Err(ProgramError::InvalidSeeds);
+/// Require a published collection accepting attachments at `now`.
+fn assert_attach_window(state: &ExclusiveCollectionStateZc, now: i64) -> ProgramResult {
+	if state.status != EXCLUSIVE_COLLECTION_PUBLISHED {
+		return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
 	}
 
-	if state.template != *template || state.bundle != *bundle || state.asset_index != asset_index {
-		return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
+	if now < state.attach_opens_at.get() || now >= state.attach_closes_at.get() {
+		return Err(lootbox_error(LootboxError::ExclusiveAttachWindowClosed));
 	}
 
 	Ok(())
 }
 
-/// Require that the bundle slot still commits to this ready series.
-fn assert_series_commitment(
-	bundle: &BundleStateZc,
-	series: &Address,
-	state: &ExclusiveSeriesStateZc,
-) -> ProgramResult {
-	let index = usize::from(state.asset_index);
+/// Validate every configured layer before the tables freeze.
+fn validate_collection_layers(state: &ExclusiveCollectionStateZc) -> ProgramResult {
+	let layer_count = usize::from(state.layer_count);
+	let (layers, _) = state.weights.as_chunks::<EXCLUSIVE_LAYER_WEIGHT_BYTES>();
 
-	if state.status != EXCLUSIVE_SERIES_READY
-		|| bundle.kinds.get(index) != Some(&PRIZE_EXCLUSIVE_NFT)
-		|| mint_at(bundle, index)? != *series
-		|| read_slot(&bundle.amounts, index)? != 1
-		|| bundle.commitments[index * 32..(index + 1) * 32] != series_commitment(series, state)
-	{
-		return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
+	for (layer, weights) in layers.iter().enumerate() {
+		if layer < layer_count {
+			validate_exclusive_layer(weights, state.trait_counts[layer])?;
+		} else if state.trait_counts[layer] != 0 || weights.iter().any(|byte| *byte != 0) {
+			return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
+		}
 	}
 
 	Ok(())
 }
 
-/// Reserve the next bundle slot for a configured series.
+/// Advance the attachment and global counters for one mint.
 ///
-/// The slot counts as funded only after initialization binds the collection
-/// and tree, so activation and cancellation fail while it is half set up.
-fn reserve_exclusive_slot(
-	bundle: &mut BundleStateZc,
-	series: &Address,
-	index: u8,
-) -> ProgramResult {
-	let slot = usize::from(index);
-
-	if index != bundle.funded_assets
-		|| index >= bundle.asset_count
-		|| bundle.kinds[slot] != 0
-		|| mint_at(bundle, slot)? != Address::default()
-		|| bundle.commitments[slot * 32..(slot + 1) * 32] != [0; 32]
-		|| read_slot(&bundle.amounts, slot)? != 0
-		|| bundle.decimals[slot] != 0
-	{
-		return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
-	}
-
-	bundle.mints[slot * 32..(slot + 1) * 32].copy_from_slice(series.as_ref());
-	write_slot(&mut bundle.amounts, slot, 1)?;
-	bundle.kinds[slot] = PRIZE_EXCLUSIVE_NFT;
-
-	Ok(())
-}
-
-fn clear_exclusive_slot(bundle: &mut BundleStateZc, index: u8) -> ProgramResult {
-	let slot = usize::from(index);
-
-	if index != bundle.funded_assets || bundle.kinds.get(slot) != Some(&PRIZE_EXCLUSIVE_NFT) {
-		return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
-	}
-
-	bundle.mints[slot * 32..(slot + 1) * 32].fill(0);
-	bundle.commitments[slot * 32..(slot + 1) * 32].fill(0);
-	write_slot(&mut bundle.amounts, slot, 0)?;
-	bundle.kinds[slot] = 0;
-
-	Ok(())
-}
-
-/// One allocated claim's edition, traits, and tier bonus.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct ExclusiveMint {
-	traits: ExclusiveTraits,
-	serial: u64,
-	bonus_lamports: u64,
-}
-
-/// Advance the series counters for one mint and reserve its tier bonus.
-///
-/// The bonus is paid only while that tier's escrowed count lasts; otherwise
-/// the winner receives the NFT alone.
+/// The attachment can never mint more copies than its committed quantity,
+/// and every mint takes the next global serial.
 fn record_exclusive_mint(
-	state: &mut ExclusiveSeriesStateZc,
-	traits: ExclusiveTraits,
-) -> Result<ExclusiveMint, ProgramError> {
-	let tier = usize::from(traits.tier);
-	let serial = state
+	collection: &mut ExclusiveCollectionStateZc,
+	attachment: &mut ExclusiveAttachmentStateZc,
+) -> Result<u64, ProgramError> {
+	let attachment_minted = attachment
 		.minted
 		.get()
 		.checked_add(1)
 		.ok_or(ProgramError::ArithmeticOverflow)?;
-
-	if serial > state.quantity.get() || tier >= EXCLUSIVE_TIER_COUNT {
-		return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
+	if attachment_minted > attachment.quantity.get() {
+		return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
 	}
 
-	let tier_minted = read_u32_slot(&state.tier_minted, tier)?
+	let serial = collection
+		.minted
+		.get()
 		.checked_add(1)
 		.ok_or(ProgramError::ArithmeticOverflow)?;
-	let remaining = read_u32_slot(&state.bonus_remaining, tier)?;
-	let bonus_lamports = if remaining == 0 {
-		0
-	} else {
-		write_u32_slot(&mut state.bonus_remaining, tier, remaining - 1)?;
-		read_slot(&state.bonus_lamports, tier)?
-	};
-	state.minted.set(serial);
-	write_u32_slot(&mut state.tier_minted, tier, tier_minted)?;
+	attachment.minted.set(attachment_minted);
+	collection.minted.set(serial);
 
-	Ok(ExclusiveMint {
-		traits,
-		serial,
-		bonus_lamports,
-	})
+	Ok(serial)
 }
 
-/// Cap every tier's unpaid bonuses at the claims that can still happen.
-///
-/// No tier can be won more often than the remaining outstanding claims, so
-/// trimming releases only lamports no holder can ever receive.
-fn trim_bonus_reserves(state: &mut ExclusiveSeriesStateZc, outstanding: u64) -> ProgramResult {
-	for tier in 0..EXCLUSIVE_TIER_COUNT {
-		let remaining = read_u32_slot(&state.bonus_remaining, tier)?;
-		let capped = u64::from(remaining).min(outstanding);
-		write_u32_slot(
-			&mut state.bonus_remaining,
-			tier,
-			u32::try_from(capped).map_err(|_| ProgramError::ArithmeticOverflow)?,
-		)?;
-	}
-
-	Ok(())
-}
-
-impl<'a> ProcessAccountInfos<'a> for CreateExclusiveSeriesAccounts<'a> {
+impl<'a> ProcessAccountInfos<'a> for CreateExclusiveCollectionAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
-		let args = CreateExclusiveSeriesInstruction::try_from_bytes(data)?;
+		let args = CreateExclusiveCollectionInstruction::try_from_bytes(data)?;
+		let admin = *self.admin.address();
+		let collection_address = *self.exclusive_collection.address();
+		validate_exclusive_text(&args.name_prefix, &args.symbol, &args.base_uri)?;
+
+		if args.layer_count == 0
+			|| usize::from(args.layer_count) > MAX_EXCLUSIVE_LAYERS
+			|| args.attach_opens_at.get() >= args.attach_closes_at.get()
+		{
+			return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
+		}
+
+		let seeds = ExclusiveCollectionState::seeds(&admin, args.collection_id.get());
+		if self
+			.exclusive_collection
+			.assert_canonical_bump(&seeds.as_slices(), &ID)?
+			!= args.bump
+		{
+			return Err(ProgramError::InvalidSeeds);
+		}
+
+		CreateProgramAccountWithBump {
+			account: self.exclusive_collection,
+			payer: self.admin,
+			owner: &ID,
+			seeds: &seeds.as_slices(),
+			bump: args.bump,
+		}
+		.invoke::<ExclusiveCollectionState>()?;
+		let mut state = self
+			.exclusive_collection
+			.as_account_mut::<ExclusiveCollectionState>(&ID)?;
+		state.admin = admin;
+		state.core_collection = *self.core_collection.address();
+		state.collection_id.set(args.collection_id.get());
+		state.attach_opens_at.set(args.attach_opens_at.get());
+		state.attach_closes_at.set(args.attach_closes_at.get());
+		state.name_prefix = args.name_prefix;
+		state.symbol = args.symbol;
+		state.base_uri = args.base_uri;
+		state.layer_count = args.layer_count;
+		state.status = EXCLUSIVE_COLLECTION_DRAFT;
+		state.bump = args.bump;
+		drop(state);
+
+		let mut collection_uri = BoundedText::<MAX_EXCLUSIVE_URI_BYTES>::default();
+		collection_uri.push_text(&args.base_uri[..text_len(&args.base_uri)])?;
+		collection_uri.push_text(COLLECTION_URI_SUFFIX)?;
+		let signer_seeds = seeds.with_bump(args.bump);
+		let signer = signer_seeds.to_signer();
+
+		CreateCoreCollection {
+			collection: self.core_collection,
+			update_authority: self.exclusive_collection,
+			payer: self.admin,
+			system_program: self.system_program,
+			core_program: self.core_program,
+			name: &args.name_prefix[..text_len(&args.name_prefix)],
+			uri: collection_uri.as_bytes(),
+		}
+		.invoke_signed(&[signer.as_signer()])?;
+
+		assert_core_collection(self.core_collection, &collection_address)
+	}
+}
+
+impl<'a> ProcessAccountInfos<'a> for SetExclusiveLayerAccounts<'a> {
+	fn process(self, data: &[u8]) -> ProgramResult {
+		let args = SetExclusiveLayerInstruction::try_from_bytes(data)?;
+		let address = *self.exclusive_collection.address();
+		let mut state = self
+			.exclusive_collection
+			.as_account_mut::<ExclusiveCollectionState>(&ID)?;
+		assert_collection_admin(self.admin, &address, &state)?;
+
+		if state.status != EXCLUSIVE_COLLECTION_DRAFT || args.layer_index >= state.layer_count {
+			return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
+		}
+
+		validate_exclusive_layer(&args.weights, args.trait_count)?;
+		let layer = usize::from(args.layer_index);
+		let start = layer * EXCLUSIVE_LAYER_WEIGHT_BYTES;
+		state.weights[start..start + EXCLUSIVE_LAYER_WEIGHT_BYTES].copy_from_slice(&args.weights);
+		state.trait_counts[layer] = args.trait_count;
+
+		Ok(())
+	}
+}
+
+impl<'a> ProcessAccountInfos<'a> for AppendExclusiveTreeAccounts<'a> {
+	fn process(self, data: &[u8]) -> ProgramResult {
+		let args = AppendExclusiveTreeInstruction::try_from_bytes(data)?;
+		let address = *self.exclusive_collection.address();
+		let state = self
+			.exclusive_collection
+			.as_account::<ExclusiveCollectionState>(&ID)?;
+		assert_collection_admin(self.admin, &address, &state)?;
+		let admin = state.admin;
+		let collection_id = state.collection_id.get();
+		let bump = state.bump;
+		drop(state);
+
+		let depth = u64::from(args.max_depth);
+		let canopy = depth.saturating_sub(u64::from(MAX_EXCLUSIVE_TRANSFER_PROOF_NODES));
+		let minimum_size =
+			merkle_tree_account_size(depth, u64::from(args.max_buffer_size.get()), canopy);
+		if !(MIN_EXCLUSIVE_TREE_DEPTH..=MAX_EXCLUSIVE_TREE_DEPTH).contains(&args.max_depth)
+			|| (self.merkle_tree.data_len() as u64) < minimum_size
+		{
+			return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
+		}
+
+		assert_tree_config_address(self.tree_config, self.merkle_tree.address())?;
+		self.merkle_tree
+			.assert_owner(&MPL_ACCOUNT_COMPRESSION_ID)?
+			.assert_writable()?;
+		let seeds = ExclusiveCollectionState::seeds(&admin, collection_id).with_bump(bump);
+		let signer = seeds.to_signer();
+
+		CreateBubblegumTree {
+			tree_config: self.tree_config,
+			merkle_tree: self.merkle_tree,
+			payer: self.admin,
+			tree_creator: self.exclusive_collection,
+			log_wrapper: self.log_wrapper,
+			compression_program: self.compression_program,
+			system_program: self.system_program,
+			bubblegum_program: self.bubblegum_program,
+			max_depth: u32::from(args.max_depth),
+			max_buffer_size: args.max_buffer_size.get(),
+		}
+		.invoke_signed(&[signer.as_signer()])?;
+
+		let tree = read_tree_config(self.tree_config)?;
+		if tree.tree_creator != address
+			|| tree.tree_delegate != address
+			|| tree.is_public
+			|| tree.num_minted != 0
+		{
+			return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
+		}
+
+		let mut state = self
+			.exclusive_collection
+			.as_account_mut::<ExclusiveCollectionState>(&ID)?;
+		let tree_count = state
+			.tree_count
+			.get()
+			.checked_add(1)
+			.ok_or(ProgramError::ArithmeticOverflow)?;
+		state.active_tree = *self.merkle_tree.address();
+		state.tree_count.set(tree_count);
+
+		Ok(())
+	}
+}
+
+impl<'a> ProcessAccountInfos<'a> for PublishExclusiveCollectionAccounts<'a> {
+	fn process(self, data: &[u8]) -> ProgramResult {
+		let _ = PublishExclusiveCollectionInstruction::try_from_bytes(data)?;
+		let address = *self.exclusive_collection.address();
+		let mut state = self
+			.exclusive_collection
+			.as_account_mut::<ExclusiveCollectionState>(&ID)?;
+		assert_collection_admin(self.admin, &address, &state)?;
+
+		if state.status != EXCLUSIVE_COLLECTION_DRAFT || state.active_tree == Address::default() {
+			return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
+		}
+
+		validate_collection_layers(&state)?;
+		state.layers_hash = layers_hash(&address, &state);
+		state.status = EXCLUSIVE_COLLECTION_PUBLISHED;
+
+		Ok(())
+	}
+}
+
+impl<'a> ProcessAccountInfos<'a> for AttachExclusiveNftAccounts<'a> {
+	fn process(self, data: &[u8]) -> ProgramResult {
+		let args = AttachExclusiveNftInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
 		let bundle_address = *self.bundle.address();
+		let collection_address = *self.exclusive_collection.address();
+		let attachment_address = *self.exclusive_attachment.address();
 		let template = as_template(self.template)?;
 		assert_template(&template_address, &template)?;
 		assert_template_authority(self.authority, &template)?;
 		assert_treasury_editable(&template)?;
 		assert_bundle(self.bundle, &template_address)?;
 
+		let collection = self
+			.exclusive_collection
+			.as_account::<ExclusiveCollectionState>(&ID)?;
+		assert_collection(&collection_address, &collection)?;
+		assert_attach_window(&collection, sysvars::clock::Clock::get()?.unix_timestamp)?;
+		let layers_hash = collection.layers_hash;
+		drop(collection);
+
 		let bundle = self.bundle.as_account::<BundleState>(&ID)?;
 		let quantity = bundle.quantity.get();
-		if bundle.status != BUNDLE_FUNDING || quantity > MAX_TOTAL_WEIGHT {
-			return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
+		if bundle.status != BUNDLE_FUNDING || args.asset_index != bundle.funded_assets {
+			return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
 		}
 		drop(bundle);
 
-		let weights = exclusive_weights(&args.weights);
-		exclusive_weight_total(&weights)?;
-		validate_exclusive_trait_counts(ExclusiveTraitCounts {
-			contents: args.contents_count,
-			background: args.background_count,
-			pattern: args.pattern_count,
-		})?;
-		validate_exclusive_text(&args.name_prefix, &args.symbol, &args.base_uri, quantity)?;
-		let reserve =
-			validate_bonus_reserves(&weights, &args.bonus_lamports, &args.bonus_counts, quantity)?;
-
-		let seeds = ExclusiveSeriesState::seeds(&template_address);
+		let seeds = ExclusiveAttachmentState::seeds(&bundle_address, args.asset_index);
 		if self
-			.exclusive_series
+			.exclusive_attachment
 			.assert_canonical_bump(&seeds.as_slices(), &ID)?
 			!= args.bump
 		{
 			return Err(ProgramError::InvalidSeeds);
 		}
-		let series_address = *self.exclusive_series.address();
-		let fee_vault_seeds = [SEED_EXCLUSIVE_FEE_VAULT, series_address.as_ref()];
+		let fee_vault_seeds = [SEED_EXCLUSIVE_FEE_VAULT, attachment_address.as_ref()];
 		if self
 			.fee_vault
 			.assert_canonical_bump(&fee_vault_seeds, &ID)?
@@ -558,186 +703,47 @@ impl<'a> ProcessAccountInfos<'a> for CreateExclusiveSeriesAccounts<'a> {
 		let fee_top_up = required_fee_vault_balance(quantity, BUBBLEGUM_MINT_V2_FEE_LAMPORTS)?
 			.saturating_sub(self.fee_vault.lamports());
 
-		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
-		reserve_exclusive_slot(
-			&mut bundle,
-			self.exclusive_series.address(),
-			args.asset_index,
-		)?;
-		drop(bundle);
-
 		CreateProgramAccountWithBump {
-			account: self.exclusive_series,
+			account: self.exclusive_attachment,
 			payer: self.authority,
 			owner: &ID,
 			seeds: &seeds.as_slices(),
 			bump: args.bump,
 		}
-		.invoke::<ExclusiveSeriesState>()?;
-		let rent_reserve = self.exclusive_series.lamports();
-		let mut series = self
-			.exclusive_series
-			.as_account_mut::<ExclusiveSeriesState>(&ID)?;
-		series.authority = *self.authority.address();
-		series.template = template_address;
-		series.bundle = bundle_address;
-		series.quantity.set(quantity);
-		series.rent_reserve.set(rent_reserve);
-		series.mint_fee_lamports.set(BUBBLEGUM_MINT_V2_FEE_LAMPORTS);
-		series.weights = args.weights;
-		series.bonus_lamports = args.bonus_lamports;
-		series.bonus_counts = args.bonus_counts;
-		series.bonus_remaining = args.bonus_counts;
-		series.name_prefix = args.name_prefix;
-		series.symbol = args.symbol;
-		series.base_uri = args.base_uri;
-		series.asset_index = args.asset_index;
-		series.contents_count = args.contents_count;
-		series.background_count = args.background_count;
-		series.pattern_count = args.pattern_count;
-		series.status = EXCLUSIVE_SERIES_CONFIGURED;
-		series.bump = args.bump;
-		series.fee_vault_bump = args.fee_vault_bump;
-		drop(series);
+		.invoke::<ExclusiveAttachmentState>()?;
+		let mut attachment = self
+			.exclusive_attachment
+			.as_account_mut::<ExclusiveAttachmentState>(&ID)?;
+		attachment.template = template_address;
+		attachment.bundle = bundle_address;
+		attachment.collection = collection_address;
+		attachment.layers_hash = layers_hash;
+		attachment.quantity.set(quantity);
+		attachment
+			.mint_fee_lamports
+			.set(BUBBLEGUM_MINT_V2_FEE_LAMPORTS);
+		attachment.asset_index = args.asset_index;
+		attachment.bump = args.bump;
+		attachment.fee_vault_bump = args.fee_vault_bump;
+		let commitment = attachment_commitment(&attachment_address, &attachment);
+		drop(attachment);
 
-		if fee_top_up != 0 {
-			system::instructions::Transfer {
-				from: self.authority,
-				to: self.fee_vault,
-				lamports: fee_top_up,
-			}
-			.invoke()?;
-		}
+		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+		let slot = usize::from(args.asset_index);
+		record_prize(&mut bundle, &attachment_address, 1, PRIZE_EXCLUSIVE_NFT, 0)?;
+		bundle.commitments[slot * 32..(slot + 1) * 32].copy_from_slice(&commitment);
+		drop(bundle);
 
-		if reserve == 0 {
+		if fee_top_up == 0 {
 			return Ok(());
 		}
 
 		system::instructions::Transfer {
 			from: self.authority,
-			to: self.exclusive_series,
-			lamports: reserve,
+			to: self.fee_vault,
+			lamports: fee_top_up,
 		}
 		.invoke()
-	}
-}
-
-impl<'a> ProcessAccountInfos<'a> for InitializeExclusiveSeriesAccounts<'a> {
-	fn process(self, data: &[u8]) -> ProgramResult {
-		let args = InitializeExclusiveSeriesInstruction::try_from_bytes(data)?;
-		let template_address = *self.template.address();
-		let bundle_address = *self.bundle.address();
-		let series_address = *self.exclusive_series.address();
-		let template = as_template(self.template)?;
-		assert_template(&template_address, &template)?;
-		assert_template_authority(self.authority, &template)?;
-		assert_treasury_editable(&template)?;
-		assert_bundle(self.bundle, &template_address)?;
-
-		let series = self
-			.exclusive_series
-			.as_account::<ExclusiveSeriesState>(&ID)?;
-		let asset_index = series.asset_index;
-		assert_series(
-			&series_address,
-			&series,
-			&template_address,
-			&bundle_address,
-			asset_index,
-		)?;
-		let capacity = 1u64
-			.checked_shl(u32::from(args.max_depth))
-			.ok_or(ProgramError::ArithmeticOverflow)?;
-		if series.status != EXCLUSIVE_SERIES_CONFIGURED
-			|| !(MIN_EXCLUSIVE_TREE_DEPTH..=MAX_EXCLUSIVE_TREE_DEPTH).contains(&args.max_depth)
-			|| capacity < series.quantity.get()
-		{
-			return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
-		}
-
-		let bump = series.bump;
-		let mut collection_name = BoundedText::<MAX_EXCLUSIVE_NAME_BYTES>::default();
-		collection_name.push_text(&series.name_prefix[..text_len(&series.name_prefix)])?;
-		let mut collection_uri = BoundedText::<MAX_EXCLUSIVE_URI_BYTES>::default();
-		collection_uri.push_text(&series.base_uri[..text_len(&series.base_uri)])?;
-		collection_uri.push_text(COLLECTION_URI_SUFFIX)?;
-		drop(series);
-
-		let bundle = self.bundle.as_account::<BundleState>(&ID)?;
-		let slot = usize::from(asset_index);
-		if bundle.status != BUNDLE_FUNDING
-			|| bundle.funded_assets != asset_index
-			|| bundle.kinds.get(slot) != Some(&PRIZE_EXCLUSIVE_NFT)
-			|| mint_at(&bundle, slot)? != series_address
-		{
-			return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
-		}
-		drop(bundle);
-
-		assert_tree_config_address(self.tree_config, self.merkle_tree.address())?;
-		self.merkle_tree
-			.assert_owner(&MPL_ACCOUNT_COMPRESSION_ID)?
-			.assert_writable()?;
-
-		let series_seeds = ExclusiveSeriesState::seeds(&template_address).with_bump(bump);
-		let series_signer = series_seeds.to_signer();
-		let signers = [series_signer.as_signer()];
-
-		CreateCoreCollection {
-			collection: self.collection,
-			update_authority: self.exclusive_series,
-			payer: self.authority,
-			system_program: self.system_program,
-			core_program: self.core_program,
-			name: collection_name.as_bytes(),
-			uri: collection_uri.as_bytes(),
-		}
-		.invoke_signed(&signers)?;
-
-		CreateBubblegumTree {
-			tree_config: self.tree_config,
-			merkle_tree: self.merkle_tree,
-			payer: self.authority,
-			tree_creator: self.exclusive_series,
-			log_wrapper: self.log_wrapper,
-			compression_program: self.compression_program,
-			system_program: self.system_program,
-			bubblegum_program: self.bubblegum_program,
-			max_depth: u32::from(args.max_depth),
-			max_buffer_size: args.max_buffer_size.get(),
-		}
-		.invoke_signed(&signers)?;
-
-		assert_core_collection(self.collection, &series_address)?;
-		let tree = read_tree_config(self.tree_config)?;
-		if tree.tree_creator != series_address
-			|| tree.tree_delegate != series_address
-			|| tree.is_public
-			|| tree.num_minted != 0
-			|| tree.total_mint_capacity < capacity
-		{
-			return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
-		}
-
-		let mut series = self
-			.exclusive_series
-			.as_account_mut::<ExclusiveSeriesState>(&ID)?;
-		series.collection = *self.collection.address();
-		series.merkle_tree = *self.merkle_tree.address();
-		series.max_depth = args.max_depth;
-		series.max_buffer_size.set(args.max_buffer_size.get());
-		series.status = EXCLUSIVE_SERIES_READY;
-		let commitment = series_commitment(&series_address, &series);
-		drop(series);
-
-		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
-		bundle.commitments[slot * 32..(slot + 1) * 32].copy_from_slice(&commitment);
-		bundle.funded_assets = bundle
-			.funded_assets
-			.checked_add(1)
-			.ok_or(ProgramError::ArithmeticOverflow)?;
-
-		Ok(())
 	}
 }
 
@@ -747,7 +753,8 @@ impl<'a> ProcessAccountInfos<'a> for ClaimExclusiveNftAccounts<'a> {
 		let template_address = *self.template.address();
 		let opening_address = *self.opening.address();
 		let bundle_address = *self.bundle.address();
-		let series_address = *self.exclusive_series.address();
+		let attachment_address = *self.exclusive_attachment.address();
+		let collection_address = *self.exclusive_collection.address();
 		let recipient_address = *self.recipient.address();
 		let template = as_template(self.template)?;
 		assert_template(&template_address, &template)?;
@@ -755,25 +762,32 @@ impl<'a> ProcessAccountInfos<'a> for ClaimExclusiveNftAccounts<'a> {
 
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
-		let mut series = self
-			.exclusive_series
-			.as_account_mut::<ExclusiveSeriesState>(&ID)?;
+		let mut attachment = self
+			.exclusive_attachment
+			.as_account_mut::<ExclusiveAttachmentState>(&ID)?;
+		let mut collection = self
+			.exclusive_collection
+			.as_account_mut::<ExclusiveCollectionState>(&ID)?;
 		assert_template_opening(&opening_address, &opening, &template_address)?;
-		assert_series(
-			&series_address,
-			&series,
+		assert_attachment(
+			&attachment_address,
+			&attachment,
 			&template_address,
 			&bundle_address,
+			&bundle,
 			args.asset_index,
 		)?;
-		assert_series_commitment(&bundle, &series_address, &series)?;
+		assert_collection(&collection_address, &collection)?;
 
-		// Security: the CPI targets only the committed tree and collection, and
-		// the leaf owner is the recipient that `record_claim` binds below.
-		if *self.merkle_tree.address() != series.merkle_tree
-			|| *self.collection.address() != series.collection
+		// Security: the CPI targets only the committed collection, its current
+		// tree, and its Core collection; `record_claim` binds the leaf owner.
+		if attachment.collection != collection_address
+			|| attachment.layers_hash != collection.layers_hash
+			|| collection.status != EXCLUSIVE_COLLECTION_PUBLISHED
+			|| *self.merkle_tree.address() != collection.active_tree
+			|| *self.core_collection.address() != collection.core_collection
 		{
-			return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
+			return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
 		}
 
 		record_claim(
@@ -785,66 +799,53 @@ impl<'a> ProcessAccountInfos<'a> for ClaimExclusiveNftAccounts<'a> {
 		let seed = exclusive_nft_seed(&template_address, &opening_address, &opening.entropy);
 		let traits = exclusive_traits(
 			&seed,
-			&exclusive_weights(&series.weights),
-			trait_counts(&series),
+			&collection.trait_counts,
+			&collection.weights,
+			collection.layer_count,
 		)?;
-		let mint = record_exclusive_mint(&mut series, traits)?;
-		let required_after = series
-			.rent_reserve
-			.get()
-			.checked_add(bonus_liability(
-				&series.bonus_lamports,
-				&series.bonus_remaining,
-			)?)
-			.ok_or(ProgramError::ArithmeticOverflow)?;
+		let serial = record_exclusive_mint(&mut collection, &mut attachment)?;
 		let name = exclusive_nft_name(
-			&series.name_prefix[..text_len(&series.name_prefix)],
-			mint.serial,
+			&collection.name_prefix[..text_len(&collection.name_prefix)],
+			serial,
 		)?;
 		let uri = exclusive_nft_uri(
-			&series.base_uri[..text_len(&series.base_uri)],
-			mint.traits,
-			mint.serial,
+			&collection.base_uri[..text_len(&collection.base_uri)],
+			&traits,
+			serial,
 		)?;
-		let mut symbol = BoundedText::<MAX_EXCLUSIVE_SYMBOL_BYTES>::default();
-		symbol.push_text(&series.symbol[..text_len(&series.symbol)])?;
-		let collection = series.collection;
-		let bump = series.bump;
-		let fee_vault_bump = series.fee_vault_bump;
-		drop(series);
+		let symbol = collection.symbol;
+		let core_collection = collection.core_collection;
+		let admin = collection.admin;
+		let collection_id = collection.collection_id.get();
+		let collection_bump = collection.bump;
+		let fee_vault_bump = attachment.fee_vault_bump;
+		drop(collection);
+		drop(attachment);
 		drop(opening);
 		drop(bundle);
 
-		let balance_after = self
-			.exclusive_series
-			.lamports()
-			.checked_sub(mint.bonus_lamports)
-			.ok_or_else(|| lootbox_error(LootboxError::Insolvent))?;
-		if balance_after < required_after {
-			return Err(lootbox_error(LootboxError::Insolvent));
-		}
-
-		assert_fee_vault(self.fee_vault, &series_address, fee_vault_bump)?;
+		assert_fee_vault(self.fee_vault, &attachment_address, fee_vault_bump)?;
 		assert_tree_config_address(self.tree_config, self.merkle_tree.address())?;
 		let nonce = read_tree_config(self.tree_config)?.num_minted;
 		let asset = compressed_asset_id(self.merkle_tree.address(), nonce)?;
-		let series_seeds = ExclusiveSeriesState::seeds(&template_address).with_bump(bump);
-		let series_signer = series_seeds.to_signer();
+		let collection_seeds =
+			ExclusiveCollectionState::seeds(&admin, collection_id).with_bump(collection_bump);
+		let collection_signer = collection_seeds.to_signer();
 		let fee_vault_bump = [fee_vault_bump];
 		let fee_vault_signer = PdaSigner::from_slices([
 			SEED_EXCLUSIVE_FEE_VAULT,
-			series_address.as_ref(),
+			attachment_address.as_ref(),
 			fee_vault_bump.as_slice(),
 		]);
 
 		MintBubblegumLeaf {
 			tree_config: self.tree_config,
 			payer: self.fee_vault,
-			tree_authority: self.exclusive_series,
-			collection_authority: self.exclusive_series,
+			tree_authority: self.exclusive_collection,
+			collection_authority: self.exclusive_collection,
 			leaf_owner: self.recipient,
 			merkle_tree: self.merkle_tree,
-			collection: self.collection,
+			collection: self.core_collection,
 			core_cpi_signer: self.core_cpi_signer,
 			log_wrapper: self.log_wrapper,
 			compression_program: self.compression_program,
@@ -853,43 +854,35 @@ impl<'a> ProcessAccountInfos<'a> for ClaimExclusiveNftAccounts<'a> {
 			bubblegum_program: self.bubblegum_program,
 			metadata: LeafMetadata {
 				name: name.as_bytes(),
-				symbol: symbol.as_bytes(),
+				symbol: &symbol[..text_len(&symbol)],
 				uri: uri.as_bytes(),
-				collection: &collection,
+				collection: &core_collection,
 			},
 		}
-		.invoke_signed(&[series_signer.as_signer(), fee_vault_signer.as_signer()])?;
-
-		if mint.bonus_lamports != 0 {
-			self.exclusive_series.assert_owner(&ID)?;
-			self.exclusive_series
-				.send_owned(&ID, mint.bonus_lamports, self.recipient)?;
-		}
+		.invoke_signed(&[collection_signer.as_signer(), fee_vault_signer.as_signer()])?;
 
 		ExclusiveNftMintedEvent::emit(|event| {
 			event.template = template_address;
 			event.opening = opening_address;
-			event.series = series_address;
+			event.collection = collection_address;
+			event.attachment = attachment_address;
 			event.beneficiary = recipient_address;
 			event.asset = asset;
 			event.seed = seed;
-			event.serial.set(mint.serial);
-			event.bonus_lamports.set(mint.bonus_lamports);
-			event.tier = mint.traits.tier;
-			event.contents = mint.traits.contents;
-			event.background = mint.traits.background;
-			event.pattern = mint.traits.pattern;
+			event.serial.set(serial);
+			event.traits = traits.traits;
+			event.layer_count = traits.layer_count;
 			Ok(())
 		})
 	}
 }
 
-impl<'a> ProcessAccountInfos<'a> for ReclaimExclusiveReserveAccounts<'a> {
+impl<'a> ProcessAccountInfos<'a> for ReclaimExclusiveFeesAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
-		let args = ReclaimExclusiveReserveInstruction::try_from_bytes(data)?;
+		let args = ReclaimExclusiveFeesInstruction::try_from_bytes(data)?;
 		let template_address = *self.template.address();
 		let bundle_address = *self.bundle.address();
-		let series_address = *self.exclusive_series.address();
+		let attachment_address = *self.exclusive_attachment.address();
 		let template_data = self.template.try_borrow()?;
 		let template = TemplateState::try_from_bytes(&template_data)?;
 		assert_template(&template_address, &template)?;
@@ -903,36 +896,25 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimExclusiveReserveAccounts<'a> {
 		)?;
 
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
-		let mut series = self
-			.exclusive_series
-			.as_account_mut::<ExclusiveSeriesState>(&ID)?;
-		assert_series(
-			&series_address,
-			&series,
+		let attachment = self
+			.exclusive_attachment
+			.as_account::<ExclusiveAttachmentState>(&ID)?;
+		assert_attachment(
+			&attachment_address,
+			&attachment,
 			&template_address,
 			&bundle_address,
+			&bundle,
 			args.asset_index,
 		)?;
-		let fee_vault_bump = series.fee_vault_bump;
-		let mint_fee = series.mint_fee_lamports.get();
-		assert_fee_vault(self.fee_vault, &series_address, fee_vault_bump)?;
+		let fee_vault_bump = attachment.fee_vault_bump;
+		let mint_fee = attachment.mint_fee_lamports.get();
+		drop(attachment);
+		assert_fee_vault(self.fee_vault, &attachment_address, fee_vault_bump)?;
 
-		// An unfinished series never counted as funded: release its slot and
-		// return every escrowed lamport with the account rent.
-		if series.status == EXCLUSIVE_SERIES_CONFIGURED {
-			if bundle.status != BUNDLE_FUNDING {
-				return Err(lootbox_error(LootboxError::InvalidState));
-			}
-			clear_exclusive_slot(&mut bundle, args.asset_index)?;
-			drop(series);
-			drop(bundle);
-			drop(template_data);
-
-			return self.close_series(&series_address, fee_vault_bump);
-		}
-
-		assert_series_commitment(&bundle, &series_address, &series)?;
-		let slot = usize::from(args.asset_index);
+		// Existing recovery rules release only undrawn copies: a staged bundle
+		// releases all of them, an active one only after retirement with zero
+		// box supply and no pending openings. Allocated copies stay payable.
 		let bit = 1u8
 			.checked_shl(u32::from(args.asset_index))
 			.ok_or(ProgramError::ArithmeticOverflow)?;
@@ -957,68 +939,39 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimExclusiveReserveAccounts<'a> {
 		let outstanding = bundle
 			.quantity
 			.get()
-			.checked_sub(read_slot(&bundle.claimed, slot)?)
+			.checked_sub(read_slot(&bundle.claimed, usize::from(args.asset_index))?)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
 		let is_staged = bundle.status == BUNDLE_FUNDING;
-		trim_bonus_reserves(&mut series, outstanding)?;
-		let required = series
-			.rent_reserve
-			.get()
-			.checked_add(bonus_liability(
-				&series.bonus_lamports,
-				&series.bonus_remaining,
-			)?)
-			.ok_or(ProgramError::ArithmeticOverflow)?;
-		drop(series);
 		drop(bundle);
 		drop(template_data);
 
-		// A cancelled staged bundle never minted anything, so the whole series
-		// closes and the template may configure a new one.
+		// A cancelled staged bundle never minted anything, so the attachment
+		// closes and the slot may later attach again.
 		if is_staged {
-			return self.close_series(&series_address, fee_vault_bump);
+			withdraw_fee_vault(
+				self.fee_vault,
+				&attachment_address,
+				fee_vault_bump,
+				self.authority,
+				self.fee_vault.lamports(),
+			)?;
+
+			return self
+				.exclusive_attachment
+				.close_account_zeroed(&ID, self.authority);
 		}
 
-		let fee_surplus = self
+		let surplus = self
 			.fee_vault
 			.lamports()
 			.saturating_sub(required_fee_vault_balance(outstanding, mint_fee)?);
 		withdraw_fee_vault(
 			self.fee_vault,
-			&series_address,
+			&attachment_address,
 			fee_vault_bump,
 			self.authority,
-			fee_surplus,
-		)?;
-
-		let surplus = self
-			.exclusive_series
-			.lamports()
-			.checked_sub(required)
-			.ok_or_else(|| lootbox_error(LootboxError::Insolvent))?;
-		if surplus == 0 {
-			return Ok(());
-		}
-
-		self.exclusive_series.assert_owner(&ID)?;
-		self.exclusive_series
-			.send_owned(&ID, surplus, self.authority)
-	}
-}
-
-impl ReclaimExclusiveReserveAccounts<'_> {
-	/// Return the fee vault, bonus reserves, and series rent to the creator.
-	fn close_series(self, series: &Address, fee_vault_bump: u8) -> ProgramResult {
-		withdraw_fee_vault(
-			self.fee_vault,
-			series,
-			fee_vault_bump,
-			self.authority,
-			self.fee_vault.lamports(),
-		)?;
-
-		self.exclusive_series
-			.close_account_zeroed(&ID, self.authority)
+			surplus,
+		)
 	}
 }
 
@@ -1026,142 +979,129 @@ impl ReclaimExclusiveReserveAccounts<'_> {
 mod tests {
 	use super::*;
 
-	fn ready_series(quantity: u64) -> [u8; ExclusiveSeriesState::SIZE] {
-		let mut bytes = [0u8; ExclusiveSeriesState::SIZE];
-		let state = ExclusiveSeriesState::initialize(&mut bytes, |_| Ok(())).expect("series");
-		state.quantity.set(quantity);
-		state.status = EXCLUSIVE_SERIES_READY;
+	fn collection_bytes() -> [u8; ExclusiveCollectionState::SIZE] {
+		let mut bytes = [0u8; ExclusiveCollectionState::SIZE];
+		let state =
+			ExclusiveCollectionState::initialize(&mut bytes, |_| Ok(())).expect("collection");
+		state.layer_count = 2;
+		state.trait_counts[..2].copy_from_slice(&[2, 3]);
+		state.weights[..8].copy_from_slice(&[1, 0, 0, 0, 2, 0, 0, 0]);
+		state.weights[256..268].copy_from_slice(&[1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]);
 		bytes
 	}
 
-	fn tier_traits(tier: u8) -> ExclusiveTraits {
-		ExclusiveTraits {
-			tier,
-			contents: 0,
-			background: 0,
-			pattern: 0,
-		}
-	}
-
 	#[test]
-	fn bonus_reserves_are_paid_once_per_funded_count_then_exhausted() {
-		let mut bytes = ready_series(3);
-		let state = ExclusiveSeriesState::try_from_bytes_mut(&mut bytes).expect("series");
-		write_slot(&mut state.bonus_lamports, 15, 1_000).expect("bonus");
-		write_u32_slot(&mut state.bonus_remaining, 15, 1).expect("count");
-		assert_eq!(
-			bonus_liability(&state.bonus_lamports, &state.bonus_remaining),
-			Ok(1_000)
-		);
+	fn publishing_requires_complete_canonical_layers() {
+		let mut bytes = collection_bytes();
+		let state = ExclusiveCollectionState::try_from_bytes_mut(&mut bytes).expect("collection");
+		assert_eq!(validate_collection_layers(state), Ok(()));
 
-		let first = record_exclusive_mint(state, tier_traits(15)).expect("first mint");
-		assert_eq!((first.serial, first.bonus_lamports), (1, 1_000));
-		assert_eq!(
-			bonus_liability(&state.bonus_lamports, &state.bonus_remaining),
-			Ok(0)
+		state.trait_counts[2] = 1;
+		assert!(
+			validate_collection_layers(state).is_err(),
+			"unused layer with traits"
 		);
-		let second = record_exclusive_mint(state, tier_traits(15)).expect("second mint");
-		assert_eq!((second.serial, second.bonus_lamports), (2, 0));
-		assert_eq!(read_u32_slot(&state.tier_minted, 15), Ok(2));
-		let third = record_exclusive_mint(state, tier_traits(0)).expect("third mint");
-		assert_eq!((third.serial, third.bonus_lamports), (3, 0));
-		assert_eq!(
-			record_exclusive_mint(state, tier_traits(0)),
-			Err(lootbox_error(LootboxError::InvalidExclusiveSeries))
+		state.trait_counts[2] = 0;
+		state.weights[512] = 1;
+		assert!(
+			validate_collection_layers(state).is_err(),
+			"unused layer with weights"
 		);
-		assert_eq!(state.minted.get(), 3);
-	}
-
-	#[test]
-	fn reserve_validation_rejects_unreachable_or_unbacked_bonuses() {
-		let mut weights = [0u32; 16];
-		weights[0] = 1;
-		weights[15] = 1;
-		let mut lamports = [0u8; 128];
-		let mut counts = [0u8; 64];
-		assert_eq!(
-			validate_bonus_reserves(&weights, &lamports, &counts, 5),
-			Ok(0)
-		);
-
-		write_slot(&mut lamports, 15, 7).expect("lamports");
-		assert!(validate_bonus_reserves(&weights, &lamports, &counts, 5).is_err());
-		write_u32_slot(&mut counts, 15, 2).expect("count");
-		assert_eq!(
-			validate_bonus_reserves(&weights, &lamports, &counts, 5),
-			Ok(14)
-		);
-		write_u32_slot(&mut counts, 15, 6).expect("count above quantity");
-		assert!(validate_bonus_reserves(&weights, &lamports, &counts, 5).is_err());
-
-		write_u32_slot(&mut counts, 15, 0).expect("reset");
-		write_slot(&mut lamports, 15, 0).expect("reset");
-		write_slot(&mut lamports, 7, 7).expect("zero-weight tier");
-		write_u32_slot(&mut counts, 7, 1).expect("zero-weight tier");
-		assert!(validate_bonus_reserves(&weights, &lamports, &counts, 5).is_err());
-
-		let mut huge = [0u8; 128];
-		let mut many = [0u8; 64];
-		write_slot(&mut huge, 0, u64::MAX).expect("huge");
-		write_u32_slot(&mut many, 0, 2).expect("many");
-		assert_eq!(
-			validate_bonus_reserves(&weights, &huge, &many, 5),
-			Err(ProgramError::ArithmeticOverflow)
+		state.weights[512] = 0;
+		state.trait_counts[1] = 0;
+		assert!(
+			validate_collection_layers(state).is_err(),
+			"configured layer left empty"
 		);
 	}
 
 	#[test]
-	fn trimming_never_drops_below_outstanding_claims() {
-		let mut bytes = ready_series(10);
-		let state = ExclusiveSeriesState::try_from_bytes_mut(&mut bytes).expect("series");
-		write_slot(&mut state.bonus_lamports, 3, 100).expect("bonus");
-		write_u32_slot(&mut state.bonus_remaining, 3, 5).expect("count");
-		write_slot(&mut state.bonus_lamports, 4, 100).expect("bonus");
-		write_u32_slot(&mut state.bonus_remaining, 4, 1).expect("count");
-
-		trim_bonus_reserves(state, 2).expect("trim");
-		assert_eq!(read_u32_slot(&state.bonus_remaining, 3), Ok(2));
-		assert_eq!(read_u32_slot(&state.bonus_remaining, 4), Ok(1));
-		trim_bonus_reserves(state, 0).expect("trim all");
-		assert_eq!(
-			bonus_liability(&state.bonus_lamports, &state.bonus_remaining),
-			Ok(0)
-		);
-	}
-
-	#[test]
-	fn slots_are_reserved_once_and_committed_terms_are_pinned() {
-		let series = Address::new_from_array([4; 32]);
-		let mut bundle_bytes = [0; BundleState::SIZE];
-		let bundle = BundleState::initialize(&mut bundle_bytes, |_| Ok(())).expect("bundle");
-		bundle.quantity.set(2);
-		bundle.asset_count = 2;
-		assert!(reserve_exclusive_slot(bundle, &series, 1).is_err());
-		reserve_exclusive_slot(bundle, &series, 0).expect("reserve");
-		assert!(reserve_exclusive_slot(bundle, &series, 0).is_err());
-		assert!(has_reserved_slot(bundle).expect("reserved"));
-
-		let mut bytes = ready_series(2);
-		let state = ExclusiveSeriesState::try_from_bytes_mut(&mut bytes).expect("series");
-		let commitment = series_commitment(&series, state);
-		bundle.commitments[..32].copy_from_slice(&commitment);
-		assert_eq!(assert_series_commitment(bundle, &series, state), Ok(()));
-
+	fn frozen_terms_change_the_layers_hash() {
+		let address = Address::new_from_array([3; 32]);
+		let mut bytes = collection_bytes();
+		let state = ExclusiveCollectionState::try_from_bytes_mut(&mut bytes).expect("collection");
+		let hash = layers_hash(&address, state);
+		state.weights[0] = 2;
+		assert_ne!(hash, layers_hash(&address, state));
 		state.weights[0] = 1;
-		assert!(assert_series_commitment(bundle, &series, state).is_err());
-		state.weights[0] = 0;
 		state.base_uri[0] = b'x';
-		assert!(assert_series_commitment(bundle, &series, state).is_err());
+		assert_ne!(hash, layers_hash(&address, state));
 		state.base_uri[0] = 0;
-		state.status = EXCLUSIVE_SERIES_CONFIGURED;
-		assert!(assert_series_commitment(bundle, &series, state).is_err());
+		assert_eq!(hash, layers_hash(&address, state));
+		assert_ne!(hash, layers_hash(&Address::new_from_array([4; 32]), state));
 	}
 
 	#[test]
-	fn series_layout_is_fixed() {
+	fn the_attach_window_is_half_open_and_needs_publication() {
+		let mut bytes = collection_bytes();
+		let state = ExclusiveCollectionState::try_from_bytes_mut(&mut bytes).expect("collection");
+		state.attach_opens_at.set(100);
+		state.attach_closes_at.set(200);
+		assert!(assert_attach_window(state, 150).is_err(), "draft");
+		state.status = EXCLUSIVE_COLLECTION_PUBLISHED;
 		assert_eq!(
-			ExclusiveSeriesState::SIZE,
-			size_of::<ExclusiveSeriesStateZc>()
+			assert_attach_window(state, 99),
+			Err(lootbox_error(LootboxError::ExclusiveAttachWindowClosed))
+		);
+		assert_eq!(assert_attach_window(state, 100), Ok(()));
+		assert_eq!(assert_attach_window(state, 199), Ok(()));
+		assert_eq!(
+			assert_attach_window(state, 200),
+			Err(lootbox_error(LootboxError::ExclusiveAttachWindowClosed))
+		);
+	}
+
+	#[test]
+	fn attachments_mint_at_most_their_quantity_with_global_serials() {
+		let mut collection_bytes = collection_bytes();
+		let collection = ExclusiveCollectionState::try_from_bytes_mut(&mut collection_bytes)
+			.expect("collection");
+		collection.minted.set(41);
+		let mut attachment_bytes = [0u8; ExclusiveAttachmentState::SIZE];
+		let attachment = ExclusiveAttachmentState::initialize(&mut attachment_bytes, |_| Ok(()))
+			.expect("attachment");
+		attachment.quantity.set(2);
+
+		assert_eq!(record_exclusive_mint(collection, attachment), Ok(42));
+		assert_eq!(record_exclusive_mint(collection, attachment), Ok(43));
+		assert_eq!(
+			record_exclusive_mint(collection, attachment),
+			Err(lootbox_error(LootboxError::InvalidExclusiveCollection))
+		);
+		assert_eq!(collection.minted.get(), 43);
+		assert_eq!(attachment.minted.get(), 2);
+	}
+
+	#[test]
+	fn attachment_commitments_pin_the_collection_layers() {
+		let attachment_address = Address::new_from_array([5; 32]);
+		let mut bytes = [0u8; ExclusiveAttachmentState::SIZE];
+		let attachment =
+			ExclusiveAttachmentState::initialize(&mut bytes, |_| Ok(())).expect("attachment");
+		attachment.quantity.set(9);
+		let commitment = attachment_commitment(&attachment_address, attachment);
+		attachment.layers_hash[0] = 1;
+		assert_ne!(
+			commitment,
+			attachment_commitment(&attachment_address, attachment)
+		);
+		attachment.layers_hash[0] = 0;
+		attachment.quantity.set(10);
+		assert_ne!(
+			commitment,
+			attachment_commitment(&attachment_address, attachment)
+		);
+	}
+
+	#[test]
+	fn layouts_are_fixed() {
+		assert_eq!(
+			ExclusiveCollectionState::SIZE,
+			size_of::<ExclusiveCollectionStateZc>()
+		);
+		assert_eq!(
+			ExclusiveAttachmentState::SIZE,
+			size_of::<ExclusiveAttachmentStateZc>()
 		);
 	}
 }

@@ -18,30 +18,17 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
-/// CPI call for the `initialize_exclusive_series` instruction.
+/// CPI call for the `append_exclusive_tree` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
-pub struct InitializeExclusiveSeries<'account> {
-	/// CPI account `authority`.
+pub struct AppendExclusiveTree<'account> {
+	/// CPI account `admin`.
 	/// Required privileges: writable and signer.
-	pub authority: &'account AccountView,
+	pub admin: &'account AccountView,
 
-	/// CPI account `template`.
-	/// Required privileges: read-only.
-	pub template: &'account AccountView,
-
-	/// CPI account `bundle`.
+	/// CPI account `exclusiveCollection`.
 	/// Required privileges: writable.
-	pub bundle: &'account AccountView,
-
-	/// CPI account `exclusiveSeries`.
-	/// Required privileges: writable.
-	pub exclusive_series: &'account AccountView,
-
-	/// CPI account `collection`.
-	/// Fresh Core collection keypair; its update authority becomes the series.
-	/// Required privileges: writable and signer.
-	pub collection: &'account AccountView,
+	pub exclusive_collection: &'account AccountView,
 
 	/// CPI account `treeConfig`.
 	/// Bubblegum tree config PDA of `merkle_tree`.
@@ -49,13 +36,10 @@ pub struct InitializeExclusiveSeries<'account> {
 	pub tree_config: &'account AccountView,
 
 	/// CPI account `merkleTree`.
-	/// Pre-allocated, uninitialized MPL Account Compression tree.
+	/// Pre-allocated, uninitialized MPL Account Compression tree whose size
+	/// includes a canopy leaving proofs of at most ten nodes.
 	/// Required privileges: writable.
 	pub merkle_tree: &'account AccountView,
-
-	/// CPI account `coreProgram`.
-	/// Required privileges: read-only.
-	pub core_program: &'account AccountView,
 
 	/// CPI account `bubblegumProgram`.
 	/// Required privileges: read-only.
@@ -73,13 +57,13 @@ pub struct InitializeExclusiveSeries<'account> {
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
-	/// Instruction arguments encoded and sent as CPI data for `initialize_exclusive_series`.
-	pub ix: InitializeExclusiveSeriesIx,
+	/// Instruction arguments encoded and sent as CPI data for `append_exclusive_tree`.
+	pub ix: AppendExclusiveTreeIx,
 }
 
-/// Instruction arguments for the `initialize_exclusive_series` CPI call.
+/// Instruction arguments for the `append_exclusive_tree` CPI call.
 #[derive(Clone, Copy, Debug)]
-pub struct InitializeExclusiveSeriesIx {
+pub struct AppendExclusiveTreeIx {
 	/// Instruction argument `maxDepth`.
 	pub max_depth: u8,
 
@@ -87,7 +71,7 @@ pub struct InitializeExclusiveSeriesIx {
 	pub max_buffer_size: u32,
 }
 
-impl InitializeExclusiveSeriesIx {
+impl AppendExclusiveTreeIx {
 	/// Number of bytes in the encoded instruction, including its discriminator.
 	pub const LEN: usize = 7;
 
@@ -95,7 +79,7 @@ impl InitializeExclusiveSeriesIx {
 	#[inline(always)]
 	pub fn to_bytes(&self) -> Result<[u8; 7], ProgramError> {
 		let mut data = [0u8; 7];
-		data[..2].copy_from_slice(&INITIALIZE_EXCLUSIVE_SERIES_DISCRIMINATOR);
+		data[..2].copy_from_slice(&APPEND_EXCLUSIVE_TREE_DISCRIMINATOR);
 		data[2..3].copy_from_slice(&self.max_depth.to_le_bytes());
 		data[3..7].copy_from_slice(&self.max_buffer_size.to_le_bytes());
 
@@ -103,7 +87,7 @@ impl InitializeExclusiveSeriesIx {
 	}
 }
 
-impl<'account> InitializeExclusiveSeries<'account> {
+impl<'account> AppendExclusiveTree<'account> {
 	/// Invokes the instruction with no PDA seeds.
 	#[inline(always)]
 	pub fn invoke(&self, program: &ProgramAccount<'_>) -> ProgramResult {
@@ -117,15 +101,11 @@ impl<'account> InitializeExclusiveSeries<'account> {
 		program: &ProgramAccount<'_>,
 		signers: &[Signer<'_, '_>],
 	) -> ProgramResult {
-		let accounts: [CpiHandle<'_>; 12] = [
-			CpiHandle::writable_signer(self.authority)?,
-			CpiHandle::readonly(self.template),
-			CpiHandle::writable(self.bundle)?,
-			CpiHandle::writable(self.exclusive_series)?,
-			CpiHandle::writable_signer(self.collection)?,
+		let accounts: [CpiHandle<'_>; 8] = [
+			CpiHandle::writable_signer(self.admin)?,
+			CpiHandle::writable(self.exclusive_collection)?,
 			CpiHandle::writable(self.tree_config)?,
 			CpiHandle::writable(self.merkle_tree)?,
-			CpiHandle::readonly(self.core_program),
 			CpiHandle::readonly(self.bubblegum_program),
 			CpiHandle::readonly(self.log_wrapper),
 			CpiHandle::readonly(self.compression_program),
@@ -138,4 +118,4 @@ impl<'account> InitializeExclusiveSeries<'account> {
 	}
 }
 
-const INITIALIZE_EXCLUSIVE_SERIES_DISCRIMINATOR: [u8; 2] = [54, 0];
+const APPEND_EXCLUSIVE_TREE_DISCRIMINATOR: [u8; 2] = [55, 0];

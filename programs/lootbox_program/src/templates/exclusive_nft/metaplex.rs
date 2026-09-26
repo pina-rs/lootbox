@@ -33,7 +33,25 @@ const CORE_PLUGIN_BUBBLEGUM_V2: u8 = 15;
 /// `TokenStandard::NonFungible`, the only standard `mint_v2` accepts.
 const TOKEN_STANDARD_NON_FUNGIBLE: u8 = 0;
 
-/// The subset of a Bubblegum `TreeConfig` the series relies on.
+/// Largest leaf-to-root proof a holder supplies to transfer a leaf; the
+/// rest of the path lives in the tree's canopy so wallets transfer cleanly.
+pub const MAX_EXCLUSIVE_TRANSFER_PROOF_NODES: u32 = 10;
+
+/// MPL Account Compression account size for a V1 header, a concurrent
+/// Merkle tree, and a canopy of `canopy_depth` levels.
+pub const fn merkle_tree_account_size(depth: u64, buffer: u64, canopy_depth: u64) -> u64 {
+	let header = 2 + 54;
+	let tree = 24 + buffer * (32 + 32 * depth + 8) + (32 * depth + 32 + 8);
+	let canopy = if canopy_depth == 0 {
+		0
+	} else {
+		32 * ((1 << (canopy_depth + 1)) - 2)
+	};
+
+	header + tree + canopy
+}
+
+/// The subset of a Bubblegum `TreeConfig` the collection relies on.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TreeConfigSnapshot {
 	pub tree_creator: Address,
@@ -52,7 +70,7 @@ pub fn assert_tree_config_address(
 		.ok_or(ProgramError::InvalidSeeds)?;
 
 	if *tree_config.address() != expected {
-		return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
+		return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
 	}
 
 	Ok(())
@@ -81,7 +99,7 @@ fn parse_tree_config(data: &[u8]) -> Result<TreeConfigSnapshot, ProgramError> {
 		|| data[88] > 1
 		|| data[90] != TREE_VERSION_V2
 	{
-		return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
+		return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
 	}
 
 	Ok(TreeConfigSnapshot {
@@ -93,16 +111,16 @@ fn parse_tree_config(data: &[u8]) -> Result<TreeConfigSnapshot, ProgramError> {
 	})
 }
 
-/// Require a Core `CollectionV1` whose update authority is the series PDA.
+/// Require a Core `CollectionV1` whose update authority is the collection PDA.
 ///
-/// The series itself created the collection with exactly the `BubblegumV2`
-/// plugin, and only the series can sign collection updates afterwards.
-pub fn assert_core_collection(collection: &AccountView, series: &Address) -> ProgramResult {
+/// The collection PDA itself created the Core collection with exactly the
+/// `BubblegumV2` plugin, and only it can sign collection updates afterwards.
+pub fn assert_core_collection(collection: &AccountView, authority: &Address) -> ProgramResult {
 	collection.assert_owner(&MPL_CORE_ID)?;
 	let data = collection.try_borrow()?;
 
-	if data.first() != Some(&CORE_COLLECTION_V1_KEY) || parse_address(&data, 1)? != *series {
-		return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
+	if data.first() != Some(&CORE_COLLECTION_V1_KEY) || parse_address(&data, 1)? != *authority {
+		return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
 	}
 
 	Ok(())
@@ -116,7 +134,7 @@ fn push_borsh_string(data: &mut Vec<u8>, value: &[u8]) -> ProgramResult {
 	Ok(())
 }
 
-/// Core `CreateCollectionV2` with the series PDA as update authority and the
+/// Core `CreateCollectionV2` with the collection PDA as update authority and the
 /// permanent `BubblegumV2` plugin, which Bubblegum V2 requires to mint into it.
 pub struct CreateCoreCollection<'a, 'b> {
 	pub collection: &'b AccountView,
@@ -164,10 +182,10 @@ impl CreateCoreCollection<'_, '_> {
 	}
 }
 
-/// Bubblegum `create_tree_v2` with the series PDA as the private tree creator.
+/// Bubblegum `create_tree_v2` with the collection PDA as the private tree creator.
 ///
 /// Bubblegum never changes `tree_creator`, and a private tree accepts mints
-/// only from its creator or delegate, so the series PDA is the sole minter.
+/// only from its creator or delegate, so the collection PDA is the sole minter.
 pub struct CreateBubblegumTree<'b> {
 	pub tree_config: &'b AccountView,
 	pub merkle_tree: &'b AccountView,
@@ -257,10 +275,11 @@ pub fn encode_mint_v2_data(metadata: &LeafMetadata<'_>) -> Result<Vec<u8>, Progr
 	Ok(data)
 }
 
-/// Bubblegum `mint_v2` into the series' private tree and Core collection.
+/// Bubblegum `mint_v2` into the collection's private tree and Core collection.
 ///
-/// The series PDA signs as both tree creator and collection authority. The
-/// zero-data fee vault PDA signs as payer for Bubblegum's per-mint fee.
+/// The collection PDA signs as both tree creator and collection authority.
+/// The attachment's zero-data fee vault PDA signs as payer for Bubblegum's
+/// per-mint fee.
 pub struct MintBubblegumLeaf<'a, 'b> {
 	pub tree_config: &'b AccountView,
 	pub payer: &'b AccountView,
@@ -383,6 +402,13 @@ mod tests {
 		data[0] ^= 1;
 		assert!(parse_tree_config(&data).is_err(), "foreign discriminator");
 		assert!(parse_tree_config(&data[..95]).is_err(), "short account");
+	}
+
+	#[test]
+	fn tree_sizes_match_mpl_account_compression() {
+		// `getConcurrentMerkleTreeAccountSize(3, 8)` and `(20, 64, 10)`.
+		assert_eq!(merkle_tree_account_size(3, 8, 0), 1_304);
+		assert_eq!(merkle_tree_account_size(20, 64, 10), 109_752);
 	}
 
 	#[test]

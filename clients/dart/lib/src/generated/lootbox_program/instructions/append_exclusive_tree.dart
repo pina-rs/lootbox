@@ -12,11 +12,11 @@ import 'package:solana_kit_errors/solana_kit_errors.dart';
 import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 
 @immutable
-class InitializeExclusiveSeriesInstructionData {
-  const InitializeExclusiveSeriesInstructionData({
+class AppendExclusiveTreeInstructionData {
+  const AppendExclusiveTreeInstructionData({
     required this.maxDepth,
     required this.maxBufferSize,
-  }) : discriminator = 54,
+  }) : discriminator = 55,
        migrationVersion = 0;
 
   final int discriminator;
@@ -25,8 +25,8 @@ class InitializeExclusiveSeriesInstructionData {
   final int maxBufferSize;
 }
 
-Encoder<InitializeExclusiveSeriesInstructionData>
-getInitializeExclusiveSeriesInstructionDataEncoder() {
+Encoder<AppendExclusiveTreeInstructionData>
+getAppendExclusiveTreeInstructionDataEncoder() {
   final structEncoder = getStructEncoder(<(String, Encoder<Object?>)>[
     ('discriminator', getU8Encoder()),
     ('migrationVersion', getU8Encoder()),
@@ -36,8 +36,8 @@ getInitializeExclusiveSeriesInstructionDataEncoder() {
 
   return transformEncoder(
     structEncoder,
-    (InitializeExclusiveSeriesInstructionData value) => <String, Object?>{
-      'discriminator': 54,
+    (AppendExclusiveTreeInstructionData value) => <String, Object?>{
+      'discriminator': 55,
       'migrationVersion': 0,
       'maxDepth': value.maxDepth,
       'maxBufferSize': value.maxBufferSize,
@@ -45,8 +45,8 @@ getInitializeExclusiveSeriesInstructionDataEncoder() {
   );
 }
 
-Decoder<InitializeExclusiveSeriesInstructionData>
-getInitializeExclusiveSeriesInstructionDataDecoder() {
+Decoder<AppendExclusiveTreeInstructionData>
+getAppendExclusiveTreeInstructionDataDecoder() {
   final structDecoder = getStructDecoder(<(String, Decoder<Object?>)>[
     ('discriminator', getU8Decoder()),
     ('migrationVersion', getU8Decoder()),
@@ -56,17 +56,17 @@ getInitializeExclusiveSeriesInstructionDataDecoder() {
 
   Never throwInvalidByteLength(int expected, int bytesLength) {
     throw SolanaError(SolanaErrorCode.codecsInvalidByteLength, {
-      'codecDescription': 'initializeExclusiveSeries instruction decoder',
+      'codecDescription': 'appendExclusiveTree instruction decoder',
       'expected': expected,
       'bytesLength': bytesLength,
     });
   }
 
-  (InitializeExclusiveSeriesInstructionData, int) readTopLevel(
+  (AppendExclusiveTreeInstructionData, int) readTopLevel(
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(54)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(55)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
@@ -74,7 +74,7 @@ getInitializeExclusiveSeriesInstructionDataDecoder() {
     }
 
     return (
-      InitializeExclusiveSeriesInstructionData(
+      AppendExclusiveTreeInstructionData(
         maxDepth: map['maxDepth']! as int,
         maxBufferSize: map['maxBufferSize']! as int,
       ),
@@ -84,7 +84,7 @@ getInitializeExclusiveSeriesInstructionDataDecoder() {
 
   return switch (structDecoder) {
     FixedSizeDecoder<Map<String, Object?>>() =>
-      FixedSizeDecoder<InitializeExclusiveSeriesInstructionData>(
+      FixedSizeDecoder<AppendExclusiveTreeInstructionData>(
         fixedSize: structDecoder.fixedSize,
         read: (bytes, offset) {
           final bytesLength = bytes.length - offset;
@@ -95,35 +95,28 @@ getInitializeExclusiveSeriesInstructionDataDecoder() {
         },
       ),
     VariableSizeDecoder<Map<String, Object?>>() =>
-      VariableSizeDecoder<InitializeExclusiveSeriesInstructionData>(
+      VariableSizeDecoder<AppendExclusiveTreeInstructionData>(
         read: readTopLevel,
         maxSize: structDecoder.maxSize,
       ),
   };
 }
 
-Codec<
-  InitializeExclusiveSeriesInstructionData,
-  InitializeExclusiveSeriesInstructionData
->
-getInitializeExclusiveSeriesInstructionDataCodec() {
+Codec<AppendExclusiveTreeInstructionData, AppendExclusiveTreeInstructionData>
+getAppendExclusiveTreeInstructionDataCodec() {
   return combineCodec(
-    getInitializeExclusiveSeriesInstructionDataEncoder(),
-    getInitializeExclusiveSeriesInstructionDataDecoder(),
+    getAppendExclusiveTreeInstructionDataEncoder(),
+    getAppendExclusiveTreeInstructionDataDecoder(),
   );
 }
 
-/// Creates a [InitializeExclusiveSeries] instruction.
-Instruction getInitializeExclusiveSeriesInstruction({
+/// Creates a [AppendExclusiveTree] instruction.
+Instruction getAppendExclusiveTreeInstruction({
   required Address programAddress,
-  required Address authority,
-  required Address template,
-  required Address bundle,
-  required Address exclusiveSeries,
-  required Address collection,
+  required Address admin,
+  required Address exclusiveCollection,
   required Address treeConfig,
   required Address merkleTree,
-  required Address coreProgram,
   required Address bubblegumProgram,
   required Address logWrapper,
   required Address compressionProgram,
@@ -131,7 +124,7 @@ Instruction getInitializeExclusiveSeriesInstruction({
   required int maxDepth,
   required int maxBufferSize,
 }) {
-  final instructionData = InitializeExclusiveSeriesInstructionData(
+  final instructionData = AppendExclusiveTreeInstructionData(
     maxDepth: maxDepth,
     maxBufferSize: maxBufferSize,
   );
@@ -139,29 +132,26 @@ Instruction getInitializeExclusiveSeriesInstruction({
   return Instruction(
     programAddress: programAddress,
     accounts: [
-      AccountMeta(address: authority, role: AccountRole.writableSigner),
-      AccountMeta(address: template, role: AccountRole.readonly),
-      AccountMeta(address: bundle, role: AccountRole.writable),
-      AccountMeta(address: exclusiveSeries, role: AccountRole.writable),
-      AccountMeta(address: collection, role: AccountRole.writableSigner),
+      AccountMeta(address: admin, role: AccountRole.writableSigner),
+      AccountMeta(address: exclusiveCollection, role: AccountRole.writable),
       AccountMeta(address: treeConfig, role: AccountRole.writable),
       AccountMeta(address: merkleTree, role: AccountRole.writable),
-      AccountMeta(address: coreProgram, role: AccountRole.readonly),
       AccountMeta(address: bubblegumProgram, role: AccountRole.readonly),
       AccountMeta(address: logWrapper, role: AccountRole.readonly),
       AccountMeta(address: compressionProgram, role: AccountRole.readonly),
       AccountMeta(address: systemProgram, role: AccountRole.readonly),
     ],
-    data: getInitializeExclusiveSeriesInstructionDataEncoder().encode(
+    data: getAppendExclusiveTreeInstructionDataEncoder().encode(
       instructionData,
     ),
   );
 }
 
-/// Parses a [InitializeExclusiveSeries] instruction from raw instruction data.
-InitializeExclusiveSeriesInstructionData
-parseInitializeExclusiveSeriesInstruction(Instruction instruction) {
-  return getInitializeExclusiveSeriesInstructionDataDecoder().decode(
+/// Parses a [AppendExclusiveTree] instruction from raw instruction data.
+AppendExclusiveTreeInstructionData parseAppendExclusiveTreeInstruction(
+  Instruction instruction,
+) {
+  return getAppendExclusiveTreeInstructionDataDecoder().decode(
     instruction.data!,
   );
 }

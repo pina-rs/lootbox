@@ -8,42 +8,42 @@
 	clippy::too_many_arguments
 )]
 
-pub const RECLAIM_EXCLUSIVE_RESERVE_DISCRIMINATOR: u8 = 56u8;
-pub const RECLAIM_EXCLUSIVE_RESERVE_MIGRATION_VERSION: u8 = 0u8;
+pub const RECLAIM_EXCLUSIVE_FEES_DISCRIMINATOR: u8 = 59u8;
+pub const RECLAIM_EXCLUSIVE_FEES_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
-pub struct ReclaimExclusiveReserve {
+pub struct ReclaimExclusiveFees {
 	pub authority: solana_pubkey::Pubkey,
 	pub template: solana_pubkey::Pubkey,
 	pub box_mint: solana_pubkey::Pubkey,
 	pub bundle: solana_pubkey::Pubkey,
-	pub exclusive_series: solana_pubkey::Pubkey,
+	pub exclusive_attachment: solana_pubkey::Pubkey,
 	pub fee_vault: solana_pubkey::Pubkey,
 	pub system_program: solana_pubkey::Pubkey,
 }
 
-impl ReclaimExclusiveReserve {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, exclusive_series: solana_pubkey::Pubkey, fee_vault: solana_pubkey::Pubkey) -> Self {
+impl ReclaimExclusiveFees {
+	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, exclusive_attachment: solana_pubkey::Pubkey, fee_vault: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			template,
 			box_mint,
 			bundle,
-			exclusive_series,
+			exclusive_attachment,
 			fee_vault,
 			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
 		}
 	}
 
-	pub fn instruction(&self, data: ReclaimExclusiveReserveInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: ReclaimExclusiveFeesInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
 	#[allow(clippy::arithmetic_side_effects)]
 	pub fn instruction_with_remaining_accounts(
 		&self,
-		data: ReclaimExclusiveReserveInstructionData,
+		data: ReclaimExclusiveFeesInstructionData,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
@@ -51,7 +51,7 @@ impl ReclaimExclusiveReserve {
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.exclusive_series, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.exclusive_attachment, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.fee_vault, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
 		accounts.extend_from_slice(remaining_accounts);
@@ -64,17 +64,17 @@ impl ReclaimExclusiveReserve {
 }
 
 /// Opaque, fully initialized instruction storage.
-pub struct ReclaimExclusiveReserveInstructionData {
+pub struct ReclaimExclusiveFeesInstructionData {
 	bytes: Vec<u8>,
 }
 
-impl ReclaimExclusiveReserveInstructionData {
-	pub fn new(configure: impl FnOnce(&mut ReclaimExclusiveReserveInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; core::mem::size_of::<ReclaimExclusiveReserveInstructionWireZc>()];
-		<ReclaimExclusiveReserveInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
+impl ReclaimExclusiveFeesInstructionData {
+	pub fn new(configure: impl FnOnce(&mut ReclaimExclusiveFeesInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+		let mut bytes = vec![0u8; core::mem::size_of::<ReclaimExclusiveFeesInstructionWireZc>()];
+		<ReclaimExclusiveFeesInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
-			data.discriminator = RECLAIM_EXCLUSIVE_RESERVE_DISCRIMINATOR;
-			data.migration_version = RECLAIM_EXCLUSIVE_RESERVE_MIGRATION_VERSION;
+			data.discriminator = RECLAIM_EXCLUSIVE_FEES_DISCRIMINATOR;
+			data.migration_version = RECLAIM_EXCLUSIVE_FEES_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -86,7 +86,7 @@ impl ReclaimExclusiveReserveInstructionData {
 #[allow(clippy::len_without_is_empty)]
 #[derive(pina::PinaPod)]
 #[pinapod(crate = pina::pinapod, no_inherent)]
-pub struct ReclaimExclusiveReserveInstructionWire {
+pub struct ReclaimExclusiveFeesInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
 	pub asset_index: u8,

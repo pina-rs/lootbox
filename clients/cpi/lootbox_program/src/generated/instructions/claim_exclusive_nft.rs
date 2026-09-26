@@ -34,18 +34,22 @@ pub struct ClaimExclusiveNft<'account> {
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
-	/// CPI account `exclusiveSeries`.
+	/// CPI account `exclusiveAttachment`.
 	/// Required privileges: writable.
-	pub exclusive_series: &'account AccountView,
+	pub exclusive_attachment: &'account AccountView,
 
 	/// CPI account `feeVault`.
 	/// Pays Bubblegum's per-mint fee from the creator's escrow.
 	/// Required privileges: writable.
 	pub fee_vault: &'account AccountView,
 
-	/// CPI account `recipient`.
-	/// Must be the opening's bound beneficiary; receives the leaf and bonus.
+	/// CPI account `exclusiveCollection`.
 	/// Required privileges: writable.
+	pub exclusive_collection: &'account AccountView,
+
+	/// CPI account `recipient`.
+	/// Must be the opening's bound beneficiary; becomes the leaf owner.
+	/// Required privileges: read-only.
 	pub recipient: &'account AccountView,
 
 	/// CPI account `treeConfig`.
@@ -56,9 +60,9 @@ pub struct ClaimExclusiveNft<'account> {
 	/// Required privileges: writable.
 	pub merkle_tree: &'account AccountView,
 
-	/// CPI account `collection`.
+	/// CPI account `coreCollection`.
 	/// Required privileges: writable.
-	pub collection: &'account AccountView,
+	pub core_collection: &'account AccountView,
 
 	/// CPI account `coreCpiSigner`.
 	/// Required privileges: read-only.
@@ -124,16 +128,17 @@ impl<'account> ClaimExclusiveNft<'account> {
 		program: &ProgramAccount<'_>,
 		signers: &[Signer<'_, '_>],
 	) -> ProgramResult {
-		let accounts: [CpiHandle<'_>; 15] = [
+		let accounts: [CpiHandle<'_>; 16] = [
 			CpiHandle::readonly(self.template),
 			CpiHandle::writable(self.opening)?,
 			CpiHandle::writable(self.bundle)?,
-			CpiHandle::writable(self.exclusive_series)?,
+			CpiHandle::writable(self.exclusive_attachment)?,
 			CpiHandle::writable(self.fee_vault)?,
-			CpiHandle::writable(self.recipient)?,
+			CpiHandle::writable(self.exclusive_collection)?,
+			CpiHandle::readonly(self.recipient),
 			CpiHandle::writable(self.tree_config)?,
 			CpiHandle::writable(self.merkle_tree)?,
-			CpiHandle::writable(self.collection)?,
+			CpiHandle::writable(self.core_collection)?,
 			CpiHandle::readonly(self.core_cpi_signer),
 			CpiHandle::readonly(self.bubblegum_program),
 			CpiHandle::readonly(self.core_program),
@@ -148,4 +153,4 @@ impl<'account> ClaimExclusiveNft<'account> {
 	}
 }
 
-const CLAIM_EXCLUSIVE_NFT_DISCRIMINATOR: [u8; 2] = [55, 0];
+const CLAIM_EXCLUSIVE_NFT_DISCRIMINATOR: [u8; 2] = [58, 0];

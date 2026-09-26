@@ -1,66 +1,56 @@
-//! Oracle-derived rarity, traits, and metadata text for Exclusive Lootbox NFTs.
+//! Oracle-derived trait layers and metadata text for Exclusive Lootbox NFTs.
 //!
 //! Everything here is a pure function of on-chain data: the template and
-//! opening addresses plus the verified Switchboard value the opening already
-//! used for allocation. Anyone can recompute a minted NFT's tier and traits, so
-//! neither the creator nor a metadata server can fake rarity.
+//! opening addresses, the verified Switchboard value the opening already used
+//! for allocation, and the collection's frozen layer tables. Anyone can
+//! recompute a minted NFT's traits, so no metadata server can fake rarity.
 
 use super::*;
 
-/// Domain separator for the per-opening series seed `S`.
+/// Domain separator for the per-opening seed `S`.
 pub const EXCLUSIVE_NFT_SEED_DOMAIN: &[u8] = b"lootbox:exclusive-nft";
-/// Domain separator for the negligible-probability rejection resample.
-pub const EXCLUSIVE_NFT_RESAMPLE_DOMAIN: &[u8] = b"lootbox:exclusive-nft:resample";
-/// Rarity tiers: index 0 is the most common and 15 the rarest.
-pub const EXCLUSIVE_TIER_COUNT: usize = 16;
-/// Largest variant count for each visual trait.
-pub const MAX_EXCLUSIVE_TRAIT_VARIANTS: u8 = 64;
+/// Per-layer sample label: `sha256(S || "layer" || layer [|| round])`.
+pub const EXCLUSIVE_NFT_LAYER_LABEL: &[u8] = b"layer";
+/// Largest number of stacked trait layers in one collection.
+pub const MAX_EXCLUSIVE_LAYERS: usize = 12;
+/// Largest number of traits in one layer.
+pub const MAX_EXCLUSIVE_TRAITS: usize = 64;
+/// Bytes of one layer's little-endian `u32` weight table.
+pub const EXCLUSIVE_LAYER_WEIGHT_BYTES: usize = MAX_EXCLUSIVE_TRAITS * 4;
+/// Bytes of every layer's weight table.
+pub const EXCLUSIVE_WEIGHT_TABLE_BYTES: usize = MAX_EXCLUSIVE_LAYERS * EXCLUSIVE_LAYER_WEIGHT_BYTES;
 /// Bubblegum's on-chain name cap, which bounds `{prefix} #{serial}`.
 pub const MAX_EXCLUSIVE_NAME_BYTES: usize = 32;
+/// Longest name prefix; it leaves room for ` #` and a ten-digit serial.
+pub const MAX_EXCLUSIVE_NAME_PREFIX_BYTES: usize = 20;
 /// Bubblegum's on-chain symbol cap.
 pub const MAX_EXCLUSIVE_SYMBOL_BYTES: usize = 10;
 /// Base URI capacity; the longest generated suffix still fits Bubblegum's cap.
-pub const MAX_EXCLUSIVE_BASE_URI_BYTES: usize = 96;
+pub const MAX_EXCLUSIVE_BASE_URI_BYTES: usize = 128;
 /// Bubblegum's on-chain URI cap.
 pub const MAX_EXCLUSIVE_URI_BYTES: usize = 200;
-/// Default tier weights `2^(15 - k)`: tier 15 is drawn about once in 65,535.
-pub const DEFAULT_EXCLUSIVE_TIER_WEIGHTS: [u32; EXCLUSIVE_TIER_COUNT] = [
-	32_768, 16_384, 8_192, 4_096, 2_048, 1_024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1,
-];
 
 const HTTPS_PREFIX: &[u8] = b"https://";
 const URI_SUFFIX: &[u8] = b".json";
 const NAME_SERIAL_SEPARATOR: &[u8] = b" #";
+const HEX_DIGITS: &[u8; 16] = b"0123456789abcdef";
 const ROUNDS: u8 = 8;
 
-/// The four independently sampled 8-byte lanes of the series seed.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[repr(u8)]
-enum SampleLane {
-	Tier = 0,
-	Contents = 1,
-	Background = 2,
-	Pattern = 3,
-}
-
-/// Variant counts for the three visual traits.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ExclusiveTraitCounts {
-	pub contents: u8,
-	pub background: u8,
-	pub pattern: u8,
-}
-
-/// Rarity tier and visual trait indices of one Exclusive Lootbox NFT.
+/// Trait index chosen in each layer, bottom to top.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ExclusiveTraits {
-	pub tier: u8,
-	pub contents: u8,
-	pub background: u8,
-	pub pattern: u8,
+	pub layer_count: u8,
+	pub traits: [u8; MAX_EXCLUSIVE_LAYERS],
 }
 
-/// Derive the series seed `S` for one allocated opening.
+impl ExclusiveTraits {
+	/// The chosen trait indices of the collection's layers.
+	pub fn as_slice(&self) -> &[u8] {
+		&self.traits[..usize::from(self.layer_count)]
+	}
+}
+
+/// Derive the seed `S` for one allocated opening.
 ///
 /// `S = sha256("lootbox:exclusive-nft" || template || opening || R)` where `R`
 /// is the opening's verified Switchboard value. The domain separates `S` from
@@ -75,26 +65,24 @@ pub fn exclusive_nft_seed(template: &Address, opening: &Address, entropy: &[u8; 
 	.to_bytes()
 }
 
-/// Draw one unbiased index in `0..bound` from a seed lane.
+/// Draw one unbiased index in `0..bound` for a layer.
 ///
-/// Round zero uses the lane's own eight bytes of `S`. The probability that it
-/// lands in the rejected band is below `bound / 2^64`; only then does a round
-/// draw `sha256("lootbox:exclusive-nft:resample" || S || lane || round)[0..8]`.
-fn lane_draw(seed: &[u8; 32], lane: SampleLane, bound: u64) -> Result<u64, ProgramError> {
+/// Round zero samples `sha256(S || "layer" || layer)[0..8]`. A candidate in
+/// the rejected low band (probability below `bound / 2^64`) moves to round
+/// `r`, which samples `sha256(S || "layer" || layer || r)[0..8]`.
+fn layer_draw(seed: &[u8; 32], layer: u8, bound: u64) -> Result<u64, ProgramError> {
 	if bound == 0 || bound > MAX_TOTAL_WEIGHT {
 		return Err(lootbox_error(LootboxError::InvalidWeight));
 	}
 
-	let start = usize::from(lane as u8) * 8;
 	for round in 0..ROUNDS {
-		let candidate = if round == 0 {
-			digest_candidate(&seed[start..start + 8])
+		let digest = if round == 0 {
+			hashv(&[seed, EXCLUSIVE_NFT_LAYER_LABEL, &[layer]])
 		} else {
-			let digest = hashv(&[EXCLUSIVE_NFT_RESAMPLE_DOMAIN, seed, &[lane as u8], &[round]]);
-			digest_candidate(digest.as_ref())
+			hashv(&[seed, EXCLUSIVE_NFT_LAYER_LABEL, &[layer], &[round]])
 		};
 
-		if let Some(index) = accept_uniform_candidate(candidate, bound) {
+		if let Some(index) = accept_uniform_candidate(digest_candidate(digest.as_ref()), bound) {
 			return Ok(index);
 		}
 	}
@@ -102,28 +90,32 @@ fn lane_draw(seed: &[u8; 32], lane: SampleLane, bound: u64) -> Result<u64, Progr
 	Err(lootbox_error(LootboxError::EntropyRejectionExhausted))
 }
 
-/// Decode sixteen little-endian `u32` tier weights.
-pub fn exclusive_weights(bytes: &[u8; 64]) -> [u32; EXCLUSIVE_TIER_COUNT] {
-	let mut weights = [0u32; EXCLUSIVE_TIER_COUNT];
-	let (chunks, _) = bytes.as_chunks::<4>();
-	for (weight, chunk) in weights.iter_mut().zip(chunks) {
-		*weight = u32::from_le_bytes(*chunk);
-	}
-
-	weights
+fn weight_at(weights: &[u8], index: usize) -> u64 {
+	let bytes = &weights[index * 4..index * 4 + 4];
+	u64::from(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
 }
 
-/// Validate creator weights and return their total.
+/// Validate one layer table and return its total weight.
 ///
-/// At least one tier must be drawable and the total must stay within the
-/// program's rejection-sampling bound so a claim can never exhaust its rounds
-/// with non-negligible probability.
-pub fn exclusive_weight_total(weights: &[u32; EXCLUSIVE_TIER_COUNT]) -> Result<u64, ProgramError> {
-	let total = weights
-		.iter()
-		.try_fold(0u64, |sum, weight| sum.checked_add(u64::from(*weight)))
-		.ok_or(ProgramError::ArithmeticOverflow)?;
+/// A layer has one to 64 traits, at least one drawable trait, a total within
+/// the rejection-sampling bound, and zeroed bytes after its last trait so the
+/// frozen table hash has exactly one encoding.
+pub fn validate_exclusive_layer(
+	weights: &[u8; EXCLUSIVE_LAYER_WEIGHT_BYTES],
+	trait_count: u8,
+) -> Result<u64, ProgramError> {
+	let count = usize::from(trait_count);
 
+	if count == 0
+		|| count > MAX_EXCLUSIVE_TRAITS
+		|| weights[count * 4..].iter().any(|byte| *byte != 0)
+	{
+		return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
+	}
+
+	let total = (0..count)
+		.map(|index| weight_at(weights, index))
+		.sum::<u64>();
 	if total == 0 || total > MAX_TOTAL_WEIGHT {
 		return Err(lootbox_error(LootboxError::InvalidWeight));
 	}
@@ -131,57 +123,47 @@ pub fn exclusive_weight_total(weights: &[u32; EXCLUSIVE_TIER_COUNT]) -> Result<u
 	Ok(total)
 }
 
-/// Require every trait to have between one and 64 variants.
-pub fn validate_exclusive_trait_counts(counts: ExclusiveTraitCounts) -> ProgramResult {
-	let in_range = |count: u8| (1..=MAX_EXCLUSIVE_TRAIT_VARIANTS).contains(&count);
-
-	if !in_range(counts.contents) || !in_range(counts.background) || !in_range(counts.pattern) {
-		return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
-	}
-
-	Ok(())
-}
-
-/// Select a tier with probability `weight / total`; zero-weight tiers never win.
-pub fn exclusive_tier(
-	seed: &[u8; 32],
-	weights: &[u32; EXCLUSIVE_TIER_COUNT],
-) -> Result<u8, ProgramError> {
-	let total = exclusive_weight_total(weights)?;
-	let target = lane_draw(seed, SampleLane::Tier, total)?;
-	let mut cumulative = 0u64;
-
-	for (tier, weight) in weights.iter().enumerate() {
-		cumulative = cumulative
-			.checked_add(u64::from(*weight))
-			.ok_or(ProgramError::ArithmeticOverflow)?;
-
-		if target < cumulative {
-			return u8::try_from(tier).map_err(|_| ProgramError::InvalidAccountData);
-		}
-	}
-
-	Err(lootbox_error(LootboxError::InvalidOutcome))
-}
-
-/// Derive the tier and every visual trait from the series seed.
+/// Pick one trait per layer with probability `weight / layer total`.
+///
+/// Zero-weight traits are never chosen. `weights` holds every layer's
+/// 64-slot table back to back.
 pub fn exclusive_traits(
 	seed: &[u8; 32],
-	weights: &[u32; EXCLUSIVE_TIER_COUNT],
-	counts: ExclusiveTraitCounts,
+	trait_counts: &[u8; MAX_EXCLUSIVE_LAYERS],
+	weights: &[u8],
+	layer_count: u8,
 ) -> Result<ExclusiveTraits, ProgramError> {
-	validate_exclusive_trait_counts(counts)?;
-	let tier = exclusive_tier(seed, weights)?;
-	let trait_index = |lane, count: u8| -> Result<u8, ProgramError> {
-		let index = lane_draw(seed, lane, u64::from(count))?;
-		u8::try_from(index).map_err(|_| ProgramError::InvalidAccountData)
-	};
+	if layer_count == 0 || usize::from(layer_count) > MAX_EXCLUSIVE_LAYERS {
+		return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
+	}
+
+	let mut traits = [0u8; MAX_EXCLUSIVE_LAYERS];
+	for layer in 0..layer_count {
+		let index = usize::from(layer);
+		let count = usize::from(trait_counts[index]);
+		let start = index * EXCLUSIVE_LAYER_WEIGHT_BYTES;
+		let table = weights
+			.get(start..start + count * 4)
+			.ok_or(ProgramError::InvalidAccountData)?;
+		let total = (0..count).map(|slot| weight_at(table, slot)).sum::<u64>();
+		let target = layer_draw(seed, layer, total)?;
+		let mut cumulative = 0u64;
+		let mut chosen = None;
+
+		for slot in 0..count {
+			cumulative += weight_at(table, slot);
+			if target < cumulative {
+				chosen = u8::try_from(slot).ok();
+				break;
+			}
+		}
+
+		traits[index] = chosen.ok_or_else(|| lootbox_error(LootboxError::InvalidOutcome))?;
+	}
 
 	Ok(ExclusiveTraits {
-		tier,
-		contents: trait_index(SampleLane::Contents, counts.contents)?,
-		background: trait_index(SampleLane::Background, counts.background)?,
-		pattern: trait_index(SampleLane::Pattern, counts.pattern)?,
+		layer_count,
+		traits,
 	})
 }
 
@@ -208,46 +190,32 @@ impl<const N: usize> BoundedText<N> {
 			.len
 			.checked_add(value.len())
 			.filter(|end| *end <= N)
-			.ok_or_else(|| lootbox_error(LootboxError::InvalidExclusiveSeries))?;
+			.ok_or_else(|| lootbox_error(LootboxError::InvalidExclusiveCollection))?;
 		self.bytes[self.len..end].copy_from_slice(value);
 		self.len = end;
 
 		Ok(())
 	}
 
-	fn push_decimal(&mut self, value: u64) -> ProgramResult {
+	fn push_decimal(&mut self, mut value: u64) -> ProgramResult {
 		let mut digits = [0u8; 20];
-		let count = write_decimal(value, &mut digits);
+		let mut start = digits.len();
+		loop {
+			start -= 1;
+			digits[start] = b'0' + (value % 10) as u8;
+			value /= 10;
+			if value == 0 {
+				break;
+			}
+		}
 
-		self.push_text(&digits[..count])
+		self.push_text(&digits[start..])
 	}
 
 	/// The encoded bytes.
 	pub fn as_bytes(&self) -> &[u8] {
 		&self.bytes[..self.len]
 	}
-}
-
-/// Write `value` in base ten and return the number of digits written.
-fn write_decimal(mut value: u64, digits: &mut [u8; 20]) -> usize {
-	let count = decimal_digits(value);
-	for slot in digits[..count].iter_mut().rev() {
-		*slot = b'0' + (value % 10) as u8;
-		value /= 10;
-	}
-
-	count
-}
-
-/// Number of base-ten digits in `value`.
-pub const fn decimal_digits(mut value: u64) -> usize {
-	let mut digits = 1;
-	while value >= 10 {
-		value /= 10;
-		digits += 1;
-	}
-
-	digits
 }
 
 /// Length of the null-padded prefix of a fixed text field.
@@ -270,27 +238,19 @@ pub fn exclusive_nft_name(
 	Ok(name)
 }
 
-/// URI `{base_uri}{tier}-{contents}-{background}-{pattern}-{serial}.json`.
+/// URI `{base_uri}{lowercase hex, one byte per layer}-{serial}.json`.
 pub fn exclusive_nft_uri(
 	base_uri: &[u8],
-	traits: ExclusiveTraits,
+	traits: &ExclusiveTraits,
 	serial: u64,
 ) -> Result<BoundedText<MAX_EXCLUSIVE_URI_BYTES>, ProgramError> {
 	let mut uri = BoundedText::default();
 	uri.push_text(base_uri)?;
-	for (index, value) in [
-		traits.tier,
-		traits.contents,
-		traits.background,
-		traits.pattern,
-	]
-	.into_iter()
-	.enumerate()
-	{
-		if index != 0 {
-			uri.push_text(b"-")?;
-		}
-		uri.push_decimal(u64::from(value))?;
+	for value in traits.as_slice() {
+		uri.push_text(&[
+			HEX_DIGITS[usize::from(value >> 4)],
+			HEX_DIGITS[usize::from(value & 0x0f)],
+		])?;
 	}
 	uri.push_text(b"-")?;
 	uri.push_decimal(serial)?;
@@ -299,34 +259,27 @@ pub fn exclusive_nft_uri(
 	Ok(uri)
 }
 
-/// Validate the creator's null-padded metadata text at series creation.
+/// Validate the admin's null-padded collection text at creation.
 ///
-/// The name prefix must leave room for ` #{serial}` up to the bundle quantity,
-/// so no claim can ever fail on the 32-byte Bubblegum name cap.
+/// A 20-byte prefix leaves room for ` #` and any ten-digit serial within the
+/// 32-byte name cap, and a 128-byte `https://` base leaves room for twelve
+/// hex layers, a twenty-digit serial, and `.json` within the URI cap.
 pub fn validate_exclusive_text(
 	name_prefix: &[u8; MAX_EXCLUSIVE_NAME_BYTES],
 	symbol: &[u8; MAX_EXCLUSIVE_SYMBOL_BYTES],
 	base_uri: &[u8; MAX_EXCLUSIVE_BASE_URI_BYTES],
-	quantity: u64,
 ) -> ProgramResult {
 	validate_text(name_prefix, true)?;
 	validate_text(symbol, false)?;
 	validate_text(base_uri, true)?;
-	let prefix_len = text_len(name_prefix);
-	let uri_len = text_len(base_uri);
-	let longest_name = prefix_len
-		.checked_add(NAME_SERIAL_SEPARATOR.len())
-		.and_then(|len| len.checked_add(decimal_digits(quantity)))
-		.ok_or(ProgramError::ArithmeticOverflow)?;
-	let base_uri = &base_uri[..uri_len];
+	let base_uri = &base_uri[..text_len(base_uri)];
 
-	if quantity == 0
-		|| longest_name > MAX_EXCLUSIVE_NAME_BYTES
+	if text_len(name_prefix) > MAX_EXCLUSIVE_NAME_PREFIX_BYTES
 		|| !base_uri.starts_with(HTTPS_PREFIX)
 		|| base_uri.len() == HTTPS_PREFIX.len()
-		|| base_uri.iter().any(u8::is_ascii_whitespace)
+		|| base_uri.contains(&b' ')
 	{
-		return Err(lootbox_error(LootboxError::InvalidExclusiveSeries));
+		return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
 	}
 
 	Ok(())
@@ -334,214 +287,119 @@ pub fn validate_exclusive_text(
 
 #[cfg(test)]
 mod tests {
+	use alloc::vec::Vec;
+
 	use proptest::prelude::*;
 
 	use super::*;
 
-	const COUNTS: ExclusiveTraitCounts = ExclusiveTraitCounts {
-		contents: 12,
-		background: 8,
-		pattern: 5,
-	};
-
-	fn seed_with_lanes(lanes: [u64; 4]) -> [u8; 32] {
-		let mut seed = [0u8; 32];
-		for (index, lane) in lanes.iter().enumerate() {
-			seed[index * 8..index * 8 + 8].copy_from_slice(&lane.to_le_bytes());
+	fn table(layers: &[&[u32]]) -> ([u8; MAX_EXCLUSIVE_LAYERS], Vec<u8>) {
+		let mut counts = [0u8; MAX_EXCLUSIVE_LAYERS];
+		let mut weights = alloc::vec![0u8; EXCLUSIVE_WEIGHT_TABLE_BYTES];
+		for (layer, values) in layers.iter().enumerate() {
+			counts[layer] = u8::try_from(values.len()).expect("trait count");
+			for (slot, weight) in values.iter().enumerate() {
+				let start = layer * EXCLUSIVE_LAYER_WEIGHT_BYTES + slot * 4;
+				weights[start..start + 4].copy_from_slice(&weight.to_le_bytes());
+			}
 		}
-		seed
+		(counts, weights)
 	}
 
-	#[test]
-	fn default_weights_are_powers_of_two_summing_below_the_bound() {
-		for (tier, weight) in DEFAULT_EXCLUSIVE_TIER_WEIGHTS.iter().enumerate() {
-			assert_eq!(*weight, 1 << (15 - tier));
+	fn layer_bytes(values: &[u32]) -> [u8; EXCLUSIVE_LAYER_WEIGHT_BYTES] {
+		let mut bytes = [0u8; EXCLUSIVE_LAYER_WEIGHT_BYTES];
+		for (slot, weight) in values.iter().enumerate() {
+			bytes[slot * 4..slot * 4 + 4].copy_from_slice(&weight.to_le_bytes());
 		}
-		assert_eq!(
-			exclusive_weight_total(&DEFAULT_EXCLUSIVE_TIER_WEIGHTS),
-			Ok(65_535)
-		);
+		bytes
 	}
 
 	#[test]
-	fn weights_reject_zero_and_oversized_totals() {
-		assert_eq!(
-			exclusive_weight_total(&[0; 16]),
-			Err(lootbox_error(LootboxError::InvalidWeight))
-		);
-		let mut max = [0u32; 16];
-		max[0] = u32::MAX;
-		assert_eq!(exclusive_weight_total(&max), Ok(MAX_TOTAL_WEIGHT));
-		max[15] = 1;
-		assert_eq!(
-			exclusive_weight_total(&max),
-			Err(lootbox_error(LootboxError::InvalidWeight))
-		);
-		assert_eq!(
-			exclusive_weight_total(&[u32::MAX; 16]),
-			Err(lootbox_error(LootboxError::InvalidWeight))
-		);
-	}
-
-	#[test]
-	fn tier_boundaries_follow_cumulative_weights() {
-		let weights = DEFAULT_EXCLUSIVE_TIER_WEIGHTS;
-		// 65,535 divides 2^64 - 1, so only the candidate zero is rejected.
-		assert_eq!(
-			exclusive_tier(&seed_with_lanes([1, 0, 0, 0]), &weights),
-			Ok(0)
-		);
-		assert_eq!(
-			exclusive_tier(&seed_with_lanes([32_767, 0, 0, 0]), &weights),
-			Ok(0)
-		);
-		assert_eq!(
-			exclusive_tier(&seed_with_lanes([32_768, 0, 0, 0]), &weights),
-			Ok(1)
-		);
-		assert_eq!(
-			exclusive_tier(&seed_with_lanes([65_534, 0, 0, 0]), &weights),
-			Ok(15)
-		);
-		assert_eq!(
-			exclusive_tier(&seed_with_lanes([65_535 + 65_534, 0, 0, 0]), &weights),
-			Ok(15)
-		);
-	}
-
-	#[test]
-	fn a_single_nonzero_weight_always_wins() {
-		let mut weights = [0u32; 16];
-		weights[9] = 3;
-		for lane in [1, 2, 3, u64::MAX, u64::MAX / 3] {
-			assert_eq!(
-				exclusive_tier(&seed_with_lanes([lane, 0, 0, 0]), &weights),
-				Ok(9)
-			);
-		}
-		assert_eq!(exclusive_tier(&[0; 32], &weights), Ok(9));
-	}
-
-	#[test]
-	fn zero_weight_tiers_are_never_selected() {
-		let mut weights = [0u32; 16];
-		weights[0] = 5;
-		weights[15] = 5;
-		for lane in 1..200u64 {
-			let tier = exclusive_tier(&seed_with_lanes([lane, 0, 0, 0]), &weights).unwrap();
-			assert!(tier == 0 || tier == 15);
-		}
-	}
-
-	#[test]
-	fn rejected_lanes_resample_deterministically() {
-		// Zero is below every threshold 2^64 mod n for n = 3, 12, and 65,535.
-		let seed = [0u8; 32];
-		let traits = exclusive_traits(&seed, &DEFAULT_EXCLUSIVE_TIER_WEIGHTS, COUNTS).unwrap();
-		assert_eq!(
-			traits,
-			exclusive_traits(&seed, &DEFAULT_EXCLUSIVE_TIER_WEIGHTS, COUNTS).unwrap()
-		);
-		let resampled = hashv(&[EXCLUSIVE_NFT_RESAMPLE_DOMAIN, &seed, &[0], &[1]]);
-		let candidate = digest_candidate(resampled.as_ref());
-		let expected = exclusive_tier(
-			&seed_with_lanes([candidate, 0, 0, 0]),
-			&DEFAULT_EXCLUSIVE_TIER_WEIGHTS,
-		)
-		.unwrap();
-		assert_eq!(traits.tier, expected);
-	}
-
-	#[test]
-	fn trait_counts_are_bounded() {
+	fn layer_tables_reject_empty_oversized_and_padded_encodings() {
+		assert_eq!(validate_exclusive_layer(&layer_bytes(&[1, 2, 3]), 3), Ok(6));
+		assert!(validate_exclusive_layer(&layer_bytes(&[0, 0]), 2).is_err());
+		assert!(validate_exclusive_layer(&layer_bytes(&[1]), 0).is_err());
 		assert!(
-			validate_exclusive_trait_counts(ExclusiveTraitCounts {
-				contents: 0,
-				background: 1,
-				pattern: 1,
-			})
-			.is_err()
+			validate_exclusive_layer(&layer_bytes(&[1, 2, 3]), 2).is_err(),
+			"a weight hidden after the last trait"
 		);
-		assert!(
-			validate_exclusive_trait_counts(ExclusiveTraitCounts {
-				contents: 1,
-				background: 65,
-				pattern: 1,
-			})
-			.is_err()
-		);
+		assert!(validate_exclusive_layer(&layer_bytes(&[1]), 65).is_err());
 		assert_eq!(
-			validate_exclusive_trait_counts(ExclusiveTraitCounts {
-				contents: 64,
-				background: 1,
-				pattern: 64,
-			}),
-			Ok(())
+			validate_exclusive_layer(&layer_bytes(&[u32::MAX]), 1),
+			Ok(MAX_TOTAL_WEIGHT)
 		);
+		assert!(validate_exclusive_layer(&layer_bytes(&[u32::MAX, 1]), 2).is_err());
+		assert!(validate_exclusive_layer(&layer_bytes(&[1; 64]), 64).is_ok());
+	}
+
+	#[test]
+	fn a_single_drawable_trait_always_wins() {
+		let (counts, weights) = table(&[&[0, 0, 9, 0], &[5, 0], &[1]]);
+		for seed in [[0u8; 32], [7; 32], [255; 32]] {
+			let traits = exclusive_traits(&seed, &counts, &weights, 3).expect("traits");
+			assert_eq!(traits.as_slice(), &[2, 0, 0]);
+		}
+	}
+
+	#[test]
+	fn layers_sample_independent_domain_separated_hashes() {
+		let seed = [42u8; 32];
+		let (counts, weights) = table(&[&[1; 64], &[1; 64]]);
+		let traits = exclusive_traits(&seed, &counts, &weights, 2).expect("traits");
+		for layer in 0..2u8 {
+			let digest = hashv(&[&seed, b"layer".as_slice(), &[layer]]);
+			let expected =
+				accept_uniform_candidate(digest_candidate(digest.as_ref()), 64).expect("accepted");
+			assert_eq!(u64::from(traits.traits[usize::from(layer)]), expected);
+		}
 	}
 
 	#[test]
 	fn names_and_uris_follow_the_shared_contract() {
-		let name = exclusive_nft_name(b"Lootbox Exclusive", 42).unwrap();
-		assert_eq!(name.as_bytes(), b"Lootbox Exclusive #42");
-		let traits = ExclusiveTraits {
-			tier: 15,
-			contents: 63,
-			background: 0,
-			pattern: 7,
+		let name = exclusive_nft_name(b"Introductory", 42).expect("name");
+		assert_eq!(name.as_bytes(), b"Introductory #42");
+		let mut traits = ExclusiveTraits {
+			layer_count: 3,
+			traits: [0; MAX_EXCLUSIVE_LAYERS],
 		};
-		let uri = exclusive_nft_uri(b"https://example.com/nft/", traits, 4_294_967_295).unwrap();
-		assert_eq!(
-			uri.as_bytes(),
-			b"https://example.com/nft/15-63-0-7-4294967295.json"
-		);
-		assert_eq!(
-			exclusive_nft_name(&[b'a'; 23], 1_000_000_000),
-			Err(lootbox_error(LootboxError::InvalidExclusiveSeries))
-		);
+		traits.traits[..3].copy_from_slice(&[0, 15, 63]);
+		let uri = exclusive_nft_uri(b"https://example.com/nft/", &traits, 7).expect("uri");
+		assert_eq!(uri.as_bytes(), b"https://example.com/nft/000f3f-7.json");
+		assert!(exclusive_nft_name(&[b'a'; 20], 9_999_999_999).is_ok());
+		assert!(exclusive_nft_name(&[b'a'; 21], 9_999_999_999).is_err());
 	}
 
 	#[test]
 	fn the_longest_uri_fits_the_bubblegum_cap() {
-		let base = [b'a'; MAX_EXCLUSIVE_BASE_URI_BYTES];
 		let traits = ExclusiveTraits {
-			tier: 15,
-			contents: 63,
-			background: 63,
-			pattern: 63,
+			layer_count: 12,
+			traits: [63; MAX_EXCLUSIVE_LAYERS],
 		};
-		let uri = exclusive_nft_uri(&base, traits, u64::MAX).unwrap();
+		let uri = exclusive_nft_uri(&[b'a'; MAX_EXCLUSIVE_BASE_URI_BYTES], &traits, u64::MAX)
+			.expect("uri");
 		assert!(uri.as_bytes().len() <= MAX_EXCLUSIVE_URI_BYTES);
 	}
 
 	#[test]
-	fn creation_text_reserves_room_for_the_largest_serial() {
+	fn collection_text_is_bounded_and_https() {
 		let mut prefix = [0u8; 32];
 		prefix[..20].copy_from_slice(&[b'A'; 20]);
-		let mut symbol = [0u8; 10];
-		symbol[..3].copy_from_slice(b"LBX");
-		let mut base = [0u8; 96];
+		let symbol = [0u8; 10];
+		let mut base = [0u8; 128];
 		base[..20].copy_from_slice(b"https://example.com/");
-		assert_eq!(
-			validate_exclusive_text(&prefix, &symbol, &base, u64::from(u32::MAX)),
-			Ok(())
-		);
+		assert_eq!(validate_exclusive_text(&prefix, &symbol, &base), Ok(()));
 		prefix[20] = b'A';
-		assert!(validate_exclusive_text(&prefix, &symbol, &base, u64::from(u32::MAX)).is_err());
-		assert_eq!(
-			validate_exclusive_text(&prefix, &symbol, &base, 999_999_999),
-			Ok(())
-		);
-
-		let mut insecure = [0u8; 96];
+		assert!(validate_exclusive_text(&prefix, &symbol, &base).is_err());
+		prefix[20] = 0;
+		let mut insecure = [0u8; 128];
 		insecure[..19].copy_from_slice(b"http://example.com/");
-		assert!(validate_exclusive_text(&prefix, &symbol, &insecure, 1).is_err());
-		let mut scheme_only = [0u8; 96];
+		assert!(validate_exclusive_text(&prefix, &symbol, &insecure).is_err());
+		let mut scheme_only = [0u8; 128];
 		scheme_only[..8].copy_from_slice(b"https://");
-		assert!(validate_exclusive_text(&prefix, &symbol, &scheme_only, 1).is_err());
-		let mut spaced = [0u8; 96];
+		assert!(validate_exclusive_text(&prefix, &symbol, &scheme_only).is_err());
+		let mut spaced = [0u8; 128];
 		spaced[..21].copy_from_slice(b"https://example.com/ ");
-		assert!(validate_exclusive_text(&prefix, &symbol, &spaced, 1).is_err());
+		assert!(validate_exclusive_text(&prefix, &symbol, &spaced).is_err());
 	}
 
 	#[test]
@@ -569,8 +427,27 @@ mod tests {
 		bytes
 	}
 
-	fn vector_u8(value: &serde_json::Value) -> u8 {
-		u8::try_from(value.as_u64().expect("integer")).expect("u8")
+	fn vector_layers(value: &serde_json::Value) -> ([u8; MAX_EXCLUSIVE_LAYERS], Vec<u8>, u8) {
+		let tables = value
+			.as_array()
+			.expect("layers")
+			.iter()
+			.map(|layer| {
+				layer
+					.as_array()
+					.expect("weights")
+					.iter()
+					.map(|weight| u32::try_from(weight.as_u64().expect("weight")).expect("u32"))
+					.collect::<Vec<_>>()
+			})
+			.collect::<Vec<_>>();
+		let borrowed = tables.iter().map(Vec::as_slice).collect::<Vec<_>>();
+		let (counts, weights) = table(&borrowed);
+		(
+			counts,
+			weights,
+			u8::try_from(tables.len()).expect("layer count"),
+		)
 	}
 
 	/// The program is the canonical implementation of the shared vectors that
@@ -592,82 +469,63 @@ mod tests {
 			);
 		}
 		for draw in vectors["draws"].as_array().expect("draws") {
-			let mut weights = [0u32; 16];
-			for (weight, value) in weights
-				.iter_mut()
-				.zip(draw["weights"].as_array().expect("weights"))
-			{
-				*weight = u32::try_from(value.as_u64().expect("weight")).expect("u32 weight");
-			}
-			let counts = &draw["traitCounts"];
-			let expected = &draw["expected"];
-			assert_eq!(
-				exclusive_traits(
-					&vector_bytes(&draw["seedHex"]),
-					&weights,
-					ExclusiveTraitCounts {
-						contents: vector_u8(&counts["contents"]),
-						background: vector_u8(&counts["background"]),
-						pattern: vector_u8(&counts["pattern"]),
-					},
-				),
-				Ok(ExclusiveTraits {
-					tier: vector_u8(&expected["tier"]),
-					contents: vector_u8(&expected["contents"]),
-					background: vector_u8(&expected["background"]),
-					pattern: vector_u8(&expected["pattern"]),
-				}),
-				"{}",
-				draw["name"],
-			);
-		}
-		for metadata in vectors["metadata"].as_array().expect("metadata") {
-			let serial = metadata["serial"]
+			let (counts, weights, layer_count) = vector_layers(&draw["layers"]);
+			let traits = exclusive_traits(
+				&vector_bytes(&draw["seedHex"]),
+				&counts,
+				&weights,
+				layer_count,
+			)
+			.expect("traits");
+			let expected = draw["traits"]
+				.as_array()
+				.expect("traits")
+				.iter()
+				.map(|value| u8::try_from(value.as_u64().expect("trait")).expect("u8"))
+				.collect::<Vec<_>>();
+			assert_eq!(traits.as_slice(), expected.as_slice(), "{}", draw["label"]);
+			let serial = draw["serial"]
 				.as_str()
-				.and_then(|value| value.parse::<u64>().ok())
+				.and_then(|value| value.parse().ok())
 				.expect("serial");
-			let traits = &metadata["traits"];
-			let traits = ExclusiveTraits {
-				tier: vector_u8(&traits["tier"]),
-				contents: vector_u8(&traits["contents"]),
-				background: vector_u8(&traits["background"]),
-				pattern: vector_u8(&traits["pattern"]),
-			};
-			let prefix = metadata["namePrefix"].as_str().expect("prefix");
-			let base = metadata["baseUri"].as_str().expect("base URI");
+			let uri = exclusive_nft_uri(
+				draw["baseUri"].as_str().expect("base").as_bytes(),
+				&traits,
+				serial,
+			)
+			.expect("uri");
 			assert_eq!(
-				exclusive_nft_name(prefix.as_bytes(), serial)
-					.expect("name")
-					.as_bytes(),
-				metadata["name"].as_str().expect("name").as_bytes(),
+				uri.as_bytes(),
+				draw["uri"].as_str().expect("uri").as_bytes()
 			);
+			let name = exclusive_nft_name(
+				draw["namePrefix"].as_str().expect("prefix").as_bytes(),
+				serial,
+			)
+			.expect("name");
 			assert_eq!(
-				exclusive_nft_uri(base.as_bytes(), traits, serial)
-					.expect("uri")
-					.as_bytes(),
-				metadata["uri"].as_str().expect("uri").as_bytes(),
+				name.as_bytes(),
+				draw["name"].as_str().expect("name").as_bytes()
 			);
 		}
 	}
 
 	proptest! {
 		#[test]
-		fn traits_stay_inside_their_domains(
+		fn traits_stay_inside_drawable_slots(
 			seed in any::<[u8; 32]>(),
-			weights in any::<[u16; 16]>(),
-			contents in 1u8..=64,
-			background in 1u8..=64,
-			pattern in 1u8..=64,
+			first in proptest::collection::vec(0u16..1_000, 1..=64),
+			second in proptest::collection::vec(0u16..1_000, 1..=64),
 		) {
-			let weights = weights.map(u32::from);
-			prop_assume!(weights.iter().any(|weight| *weight != 0));
-			let counts = ExclusiveTraitCounts { contents, background, pattern };
-			let traits = exclusive_traits(&seed, &weights, counts).unwrap();
+			let first = first.into_iter().map(u32::from).collect::<Vec<_>>();
+			let second = second.into_iter().map(u32::from).collect::<Vec<_>>();
+			prop_assume!(first.iter().any(|weight| *weight != 0));
+			prop_assume!(second.iter().any(|weight| *weight != 0));
+			let (counts, weights) = table(&[&first, &second]);
+			let traits = exclusive_traits(&seed, &counts, &weights, 2).unwrap();
 
-			prop_assert!(weights[usize::from(traits.tier)] != 0);
-			prop_assert!(traits.contents < contents);
-			prop_assert!(traits.background < background);
-			prop_assert!(traits.pattern < pattern);
+			prop_assert!(first[usize::from(traits.traits[0])] != 0);
+			prop_assert!(second[usize::from(traits.traits[1])] != 0);
 		}
 
 		#[test]
@@ -679,7 +537,6 @@ mod tests {
 			match accept_uniform_candidate(candidate, bound) {
 				Some(index) => {
 					prop_assert!(candidate >= threshold);
-					prop_assert!(index < bound);
 					prop_assert_eq!(index, candidate % bound);
 				}
 				None => prop_assert!(candidate < threshold),
@@ -691,24 +548,31 @@ mod tests {
 		}
 
 		#[test]
-		fn tier_frequencies_are_exact_over_one_full_weight_cycle(
-			weights in any::<[u8; 16]>(),
+		fn layer_frequencies_are_exact_over_one_full_weight_cycle(
+			weights in proptest::collection::vec(0u8..=255, 1..=16),
 			offset in any::<u32>(),
 		) {
-			let weights = weights.map(u32::from);
-			let total = exclusive_weight_total(&weights);
-			prop_assume!(total.is_ok());
-			let total = total.unwrap();
+			let weights = weights.into_iter().map(u32::from).collect::<Vec<_>>();
+			let total = weights.iter().map(|weight| u64::from(*weight)).sum::<u64>();
+			prop_assume!(total != 0);
 			let threshold = total.wrapping_neg() % total;
-			// Every block of `total` consecutive accepted candidates hits each
-			// tier exactly `weight` times: the draw is exactly proportional.
+			// Every block of `total` consecutive accepted candidates maps each
+			// trait's slots exactly `weight` times: the pick is proportional.
 			let start = threshold + u64::from(offset) * total;
-			let mut hits = [0u64; 16];
+			let mut hits = alloc::vec![0u64; weights.len()];
 			for candidate in start..start + total {
-				let tier = exclusive_tier(&seed_with_lanes([candidate, 0, 0, 0]), &weights).unwrap();
-				hits[usize::from(tier)] += 1;
+				let target = accept_uniform_candidate(candidate, total).unwrap();
+				let mut cumulative = 0;
+				let slot = weights
+					.iter()
+					.position(|weight| {
+						cumulative += u64::from(*weight);
+						target < cumulative
+					})
+					.unwrap();
+				hits[slot] += 1;
 			}
-			prop_assert_eq!(hits, weights.map(u64::from));
+			prop_assert_eq!(hits, weights.iter().map(|weight| u64::from(*weight)).collect::<Vec<_>>());
 		}
 	}
 }

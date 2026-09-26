@@ -17,19 +17,18 @@ pub struct ExclusiveNftMintedEvent {
 	pub migration_version: u8,
 	pub template: solana_pubkey::Pubkey,
 	pub opening: solana_pubkey::Pubkey,
-	pub series: solana_pubkey::Pubkey,
+	pub collection: solana_pubkey::Pubkey,
+	pub attachment: solana_pubkey::Pubkey,
 	pub beneficiary: solana_pubkey::Pubkey,
 	/// Bubblegum asset ID of the minted leaf.
 	pub asset: solana_pubkey::Pubkey,
-	/// Series seed `S` that determined the tier and traits.
+	/// Seed `S` that determined every trait.
 	pub seed: [u8; 32],
+	/// Global serial within the collection.
 	pub serial: u64,
-	/// Tier bonus paid with this mint; zero when the tier has none left.
-	pub bonus_lamports: u64,
-	pub tier: u8,
-	pub contents: u8,
-	pub background: u8,
-	pub pattern: u8,
+	/// Trait index per layer, bottom to top; unused layers are zero.
+	pub traits: [u8; 12],
+	pub layer_count: u8,
 }
 
 pub const EXCLUSIVE_NFT_MINTED_EVENT_DISCRIMINATOR: u8 = 1u8;

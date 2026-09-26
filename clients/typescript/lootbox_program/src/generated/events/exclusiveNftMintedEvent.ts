@@ -18,30 +18,34 @@ export const EXCLUSIVE_NFT_MINTED_EVENT_EVENT_DISCRIMINATOR2 = 0;
 export function getExclusiveNftMintedEventEventDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(EXCLUSIVE_NFT_MINTED_EVENT_EVENT_DISCRIMINATOR2); }
 
 /** Emitted once per minted Exclusive Lootbox NFT. */
-export type ExclusiveNftMintedEventEvent = { discriminator: number; migrationVersion: number; template: Address; opening: Address; series: Address; beneficiary: Address;
+export type ExclusiveNftMintedEventEvent = { discriminator: number; migrationVersion: number; template: Address; opening: Address; collection: Address; attachment: Address; beneficiary: Address;
 /** Bubblegum asset ID of the minted leaf. */
 asset: Address;
-/** Series seed `S` that determined the tier and traits. */
-seed: ReadonlyUint8Array; serial: bigint;
-/** Tier bonus paid with this mint; zero when the tier has none left. */
-bonusLamports: bigint; tier: number; contents: number; background: number; pattern: number;  };
+/** Seed `S` that determined every trait. */
+seed: ReadonlyUint8Array;
+/** Global serial within the collection. */
+serial: bigint;
+/** Trait index per layer, bottom to top; unused layers are zero. */
+traits: ReadonlyUint8Array; layerCount: number;  };
 
-export type ExclusiveNftMintedEventEventArgs = { template: Address; opening: Address; series: Address; beneficiary: Address;
+export type ExclusiveNftMintedEventEventArgs = { template: Address; opening: Address; collection: Address; attachment: Address; beneficiary: Address;
 /** Bubblegum asset ID of the minted leaf. */
 asset: Address;
-/** Series seed `S` that determined the tier and traits. */
-seed: ReadonlyUint8Array; serial: number | bigint;
-/** Tier bonus paid with this mint; zero when the tier has none left. */
-bonusLamports: number | bigint; tier: number; contents: number; background: number; pattern: number;  };
+/** Seed `S` that determined every trait. */
+seed: ReadonlyUint8Array;
+/** Global serial within the collection. */
+serial: number | bigint;
+/** Trait index per layer, bottom to top; unused layers are zero. */
+traits: ReadonlyUint8Array; layerCount: number;  };
 
 /** Gets the encoder for {@link ExclusiveNftMintedEventEventArgs} event data. */
 export function getExclusiveNftMintedEventEventEncoder(): FixedSizeEncoder<ExclusiveNftMintedEventEventArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['template', getAddressEncoder()], ['opening', getAddressEncoder()], ['series', getAddressEncoder()], ['beneficiary', getAddressEncoder()], ['asset', getAddressEncoder()], ['seed', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['serial', getU64Encoder()], ['bonusLamports', getU64Encoder()], ['tier', getU8Encoder()], ['contents', getU8Encoder()], ['background', getU8Encoder()], ['pattern', getU8Encoder()]]), (value) => ({ ...value, discriminator: 1, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['template', getAddressEncoder()], ['opening', getAddressEncoder()], ['collection', getAddressEncoder()], ['attachment', getAddressEncoder()], ['beneficiary', getAddressEncoder()], ['asset', getAddressEncoder()], ['seed', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['serial', getU64Encoder()], ['traits', fixPinaPodEncoderSize(getBytesEncoder(), 12)], ['layerCount', getU8Encoder()]]), (value) => ({ ...value, discriminator: 1, migrationVersion: 0 }));
 }
 
 /** Gets the decoder for {@link ExclusiveNftMintedEventEvent} event data. */
 export function getExclusiveNftMintedEventEventDecoder(): FixedSizeDecoder<ExclusiveNftMintedEventEvent> {
-    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(EXCLUSIVE_NFT_MINTED_EVENT_EVENT_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['template', getAddressDecoder()], ['opening', getAddressDecoder()], ['series', getAddressDecoder()], ['beneficiary', getAddressDecoder()], ['asset', getAddressDecoder()], ['seed', fixDecoderSize(getBytesDecoder(), 32)], ['serial', getU64Decoder()], ['bonusLamports', getU64Decoder()], ['tier', getU8Decoder()], ['contents', getU8Decoder()], ['background', getU8Decoder()], ['pattern', getU8Decoder()]]);
+    return getStructDecoder([['discriminator', getPinaPodDiscriminatorDecoder(EXCLUSIVE_NFT_MINTED_EVENT_EVENT_DISCRIMINATOR, getU8Decoder())], ['migrationVersion', getPinaPodMigrationVersionDecoder(0, getU8Decoder())], ['template', getAddressDecoder()], ['opening', getAddressDecoder()], ['collection', getAddressDecoder()], ['attachment', getAddressDecoder()], ['beneficiary', getAddressDecoder()], ['asset', getAddressDecoder()], ['seed', fixDecoderSize(getBytesDecoder(), 32)], ['serial', getU64Decoder()], ['traits', fixDecoderSize(getBytesDecoder(), 12)], ['layerCount', getU8Decoder()]]);
 }
 
 /** Gets the codec for {@link ExclusiveNftMintedEventEvent} event data. */

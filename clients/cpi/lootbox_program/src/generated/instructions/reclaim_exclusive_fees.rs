@@ -18,10 +18,10 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
-/// CPI call for the `reclaim_exclusive_reserve` instruction.
+/// CPI call for the `reclaim_exclusive_fees` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
-pub struct ReclaimExclusiveReserve<'account> {
+pub struct ReclaimExclusiveFees<'account> {
 	/// CPI account `authority`.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
@@ -38,9 +38,9 @@ pub struct ReclaimExclusiveReserve<'account> {
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
-	/// CPI account `exclusiveSeries`.
+	/// CPI account `exclusiveAttachment`.
 	/// Required privileges: writable.
-	pub exclusive_series: &'account AccountView,
+	pub exclusive_attachment: &'account AccountView,
 
 	/// CPI account `feeVault`.
 	/// Required privileges: writable.
@@ -50,18 +50,18 @@ pub struct ReclaimExclusiveReserve<'account> {
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
-	/// Instruction arguments encoded and sent as CPI data for `reclaim_exclusive_reserve`.
-	pub ix: ReclaimExclusiveReserveIx,
+	/// Instruction arguments encoded and sent as CPI data for `reclaim_exclusive_fees`.
+	pub ix: ReclaimExclusiveFeesIx,
 }
 
-/// Instruction arguments for the `reclaim_exclusive_reserve` CPI call.
+/// Instruction arguments for the `reclaim_exclusive_fees` CPI call.
 #[derive(Clone, Copy, Debug)]
-pub struct ReclaimExclusiveReserveIx {
+pub struct ReclaimExclusiveFeesIx {
 	/// Instruction argument `assetIndex`.
 	pub asset_index: u8,
 }
 
-impl ReclaimExclusiveReserveIx {
+impl ReclaimExclusiveFeesIx {
 	/// Number of bytes in the encoded instruction, including its discriminator.
 	pub const LEN: usize = 3;
 
@@ -69,14 +69,14 @@ impl ReclaimExclusiveReserveIx {
 	#[inline(always)]
 	pub fn to_bytes(&self) -> Result<[u8; 3], ProgramError> {
 		let mut data = [0u8; 3];
-		data[..2].copy_from_slice(&RECLAIM_EXCLUSIVE_RESERVE_DISCRIMINATOR);
+		data[..2].copy_from_slice(&RECLAIM_EXCLUSIVE_FEES_DISCRIMINATOR);
 		data[2..3].copy_from_slice(&self.asset_index.to_le_bytes());
 
 		Ok(data)
 	}
 }
 
-impl<'account> ReclaimExclusiveReserve<'account> {
+impl<'account> ReclaimExclusiveFees<'account> {
 	/// Invokes the instruction with no PDA seeds.
 	#[inline(always)]
 	pub fn invoke(&self, program: &ProgramAccount<'_>) -> ProgramResult {
@@ -95,7 +95,7 @@ impl<'account> ReclaimExclusiveReserve<'account> {
 			CpiHandle::readonly(self.template),
 			CpiHandle::readonly(self.box_mint),
 			CpiHandle::writable(self.bundle)?,
-			CpiHandle::writable(self.exclusive_series)?,
+			CpiHandle::writable(self.exclusive_attachment)?,
 			CpiHandle::writable(self.fee_vault)?,
 			CpiHandle::readonly(self.system_program),
 		];
@@ -106,4 +106,4 @@ impl<'account> ReclaimExclusiveReserve<'account> {
 	}
 }
 
-const RECLAIM_EXCLUSIVE_RESERVE_DISCRIMINATOR: [u8; 2] = [56, 0];
+const RECLAIM_EXCLUSIVE_FEES_DISCRIMINATOR: [u8; 2] = [59, 0];

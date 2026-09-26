@@ -7,7 +7,8 @@
  */
 
 export * from './bundleState';
-export * from './exclusiveSeriesState';
+export * from './exclusiveAttachmentState';
+export * from './exclusiveCollectionState';
 export * from './lootboxState';
 export * from './openingState';
 export * from './prizePoolItemState';

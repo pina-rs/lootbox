@@ -226,7 +226,8 @@ test("rewrites generated event projection failures to expect_err", () => {
 });
 
 test("guards generated event version reads for strict indexed access", () => {
-	const source = "\tconst sourceVersion = bytes[1];\n\tif (sourceVersion === 0) {\n";
+	const source =
+		"\tconst sourceVersion = bytes[1];\n\tif (sourceVersion === 0) {\n";
 	const normalized = normalizeTypeScriptEventVersionReads(source);
 	assert.equal(
 		normalized,

@@ -2,7 +2,8 @@
 // ignore_for_file: type=lint
 
 export 'bundle_state.dart';
-export 'exclusive_series_state.dart';
+export 'exclusive_attachment_state.dart';
+export 'exclusive_collection_state.dart';
 export 'lootbox_state.dart';
 export 'opening_state.dart';
 export 'prize_pool_item_state.dart';

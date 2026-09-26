@@ -13,31 +13,33 @@ const METAPLEX_PROGRAMS: [&str; 4] = [
 	"mcmt6YrQEMKw8Mw43FmpRLmf7BqRnFMKmAcbxE3xkAW",
 	"mnoopTCrg4p8ry25e4bcWA9XZjbNjMTfgYVGGEdRsf3",
 ];
-const SERIES_QUANTITY: u64 = 3;
-const TOP_TIER: usize = 15;
-const BONUS_LAMPORTS: u64 = 5_000_000;
-/// A drawable tier that the fixed test entropies never select.
-const RARE_TIER: usize = 14;
-const RARE_BONUS_LAMPORTS: u64 = 7_000_000;
-const TIER_WEIGHTS: [u32; 16] = {
-	let mut weights = [0; 16];
-	weights[RARE_TIER] = 1;
-	weights[TOP_TIER] = 1_000_000;
-	weights
-};
-const TREE_DEPTH: u8 = 3;
-const TREE_BUFFER: u32 = 8;
-const NAME_PREFIX: &str = "Lootbox Exclusive";
+const COLLECTION_ID: u64 = 1;
+const NAME_PREFIX: &str = "Introductory";
 const SYMBOL: &str = "LBX";
 const BASE_URI: &str = "https://example.com/exclusive/";
-const COUNTS: ExclusiveTraitCounts = ExclusiveTraitCounts {
-	contents: 12,
-	background: 8,
-	pattern: 5,
-};
+const TREE_DEPTH: u8 = 14;
+const TREE_BUFFER: u32 = 64;
+/// Trait counts of the fixture layers, bottom to top.
+const FIXTURE_TRAITS: [u8; 7] = [15, 16, 8, 10, 12, 20, 13];
 
 fn pubkey(address: &str) -> Pubkey {
 	Pubkey::from_str_const(address)
+}
+
+fn bubblegum() -> Pubkey {
+	pubkey(METAPLEX_PROGRAMS[0])
+}
+
+fn core() -> Pubkey {
+	pubkey(METAPLEX_PROGRAMS[1])
+}
+
+fn compression() -> Pubkey {
+	pubkey(METAPLEX_PROGRAMS[2])
+}
+
+fn noop() -> Pubkey {
+	pubkey(METAPLEX_PROGRAMS[3])
 }
 
 fn deploy_metaplex_programs(program: &Harness) {
@@ -52,95 +54,198 @@ fn deploy_metaplex_programs(program: &Harness) {
 	}
 }
 
-/// MPL Account Compression V1 account size with no canopy.
-fn merkle_tree_space(depth: u64, buffer: u64) -> u64 {
-	let header = 2 + 54;
-	let change_log = 32 + 32 * depth + 8;
-	let rightmost_path = 32 * depth + 32 + 8;
-	header + 24 + buffer * change_log + rightmost_path
-}
-
-fn series_addresses(program: &Harness, template: Pubkey) -> ((Pubkey, u8), (Pubkey, u8)) {
-	let series = Pubkey::find_program_address(
-		&[b"exclusive-series", template.as_ref()],
-		&program.program_id,
-	);
-	let fee_vault = Pubkey::find_program_address(
-		&[b"exclusive-fee-vault", series.0.as_ref()],
-		&program.program_id,
-	);
-	(series, fee_vault)
-}
-
 fn padded<const N: usize>(value: &str) -> [u8; N] {
 	let mut bytes = [0; N];
 	bytes[..value.len()].copy_from_slice(value.as_bytes());
 	bytes
 }
 
-fn create_series_data(bump: u8, fee_vault_bump: u8, bonuses: &[(usize, u64)]) -> Vec<u8> {
-	let mut data = vec![0; CreateExclusiveSeriesInstruction::SIZE];
-	let args = CreateExclusiveSeriesInstruction::initialize(&mut data, |_| Ok(()))
-		.expect("create series data");
+/// Fixture weights: a steep power law so rare combinations exist, with a
+/// dominant "none" trait in the decoration layer.
+fn fixture_weight(layer: usize, slot: usize) -> u32 {
+	if layer == 4 && slot == 0 {
+		return 5_000_000;
+	}
+	let rank = u32::try_from(slot + 1).expect("slot");
+	(1_000_000 / (rank * rank)).max(1)
+}
+
+fn fixture_table() -> ([u8; 12], Vec<u8>) {
+	let mut counts = [0u8; 12];
+	let mut weights = vec![0u8; 12 * 256];
+	for (layer, count) in FIXTURE_TRAITS.iter().enumerate() {
+		counts[layer] = *count;
+		for slot in 0..usize::from(*count) {
+			let start = layer * 256 + slot * 4;
+			weights[start..start + 4].copy_from_slice(&fixture_weight(layer, slot).to_le_bytes());
+		}
+	}
+	(counts, weights)
+}
+
+struct CollectionContext {
+	collection: Pubkey,
+	core_collection: Pubkey,
+	tree: Pubkey,
+	tree_config: Pubkey,
+}
+
+/// Create, load, and publish the fixture collection with one tree.
+fn publish_collection(program: &Harness, attach_closes_at: i64) -> CollectionContext {
+	let payer = program.payer();
+	let (collection, bump) = Pubkey::find_program_address(
+		&[
+			b"exclusive-collection",
+			payer.as_ref(),
+			&COLLECTION_ID.to_le_bytes(),
+		],
+		&program.program_id,
+	);
+	let core_collection = Keypair::new();
+	let mut create = vec![0; CreateExclusiveCollectionInstruction::SIZE];
+	let args = CreateExclusiveCollectionInstruction::initialize(&mut create, |_| Ok(()))
+		.expect("create collection data");
+	args.collection_id.set(COLLECTION_ID);
+	args.attach_opens_at.set(chain_timestamp(program) - 10);
+	args.attach_closes_at.set(attach_closes_at);
+	args.layer_count = u8::try_from(FIXTURE_TRAITS.len()).expect("layers");
 	args.bump = bump;
-	args.fee_vault_bump = fee_vault_bump;
-	args.contents_count = COUNTS.contents;
-	args.background_count = COUNTS.background;
-	args.pattern_count = COUNTS.pattern;
-	for (tier, weight) in TIER_WEIGHTS.iter().enumerate() {
-		args.weights[tier * 4..tier * 4 + 4].copy_from_slice(&weight.to_le_bytes());
-	}
-	for (tier, lamports) in bonuses {
-		args.bonus_lamports[tier * 8..tier * 8 + 8].copy_from_slice(&lamports.to_le_bytes());
-		args.bonus_counts[tier * 4..tier * 4 + 4].copy_from_slice(&1u32.to_le_bytes());
-	}
 	args.name_prefix = padded(NAME_PREFIX);
 	args.symbol = padded(SYMBOL);
 	args.base_uri = padded(BASE_URI);
-	data
+	program
+		.send_with_signers(
+			program.instruction(
+				&create,
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new(collection, false),
+					AccountMeta::new(core_collection.pubkey(), true),
+					AccountMeta::new_readonly(core(), false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+				],
+			),
+			&[&core_collection],
+		)
+		.expect("create the collection and its PDA-controlled Core collection");
+
+	let (counts, weights) = fixture_table();
+	for layer in 0..FIXTURE_TRAITS.len() {
+		let mut data = vec![0; SetExclusiveLayerInstruction::SIZE];
+		let args =
+			SetExclusiveLayerInstruction::initialize(&mut data, |_| Ok(())).expect("layer data");
+		args.layer_index = u8::try_from(layer).expect("layer");
+		args.trait_count = counts[layer];
+		args.weights
+			.copy_from_slice(&weights[layer * 256..(layer + 1) * 256]);
+		program
+			.send(
+				&data,
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(collection, false),
+				],
+			)
+			.expect("load one layer table");
+	}
+
+	let publish = [LootboxInstruction::PublishExclusiveCollection as u8, 0];
+	let publish_accounts = vec![
+		AccountMeta::new_readonly(payer, true),
+		AccountMeta::new(collection, false),
+	];
+	assert!(
+		program.send(&publish, publish_accounts.clone()).is_err(),
+		"a collection cannot publish without a tree"
+	);
+
+	let proof_heavy = append_tree(program, collection, 0);
+	assert!(
+		proof_heavy.is_err(),
+		"a tree whose proofs exceed ten nodes is rejected"
+	);
+	let tree = Keypair::new();
+	let canopy = u64::from(TREE_DEPTH) - u64::from(MAX_EXCLUSIVE_TRANSFER_PROOF_NODES);
+	let tree_config = append_tree_with(program, collection, &tree, canopy)
+		.expect("append a private Bubblegum V2 tree");
+	program
+		.send(&publish, publish_accounts.clone())
+		.expect("publish and freeze the layers");
+	assert!(
+		program.send(&publish, publish_accounts).is_err(),
+		"a collection publishes exactly once"
+	);
+
+	let mut layer = vec![0; SetExclusiveLayerInstruction::SIZE];
+	let args =
+		SetExclusiveLayerInstruction::initialize(&mut layer, |_| Ok(())).expect("layer data");
+	args.trait_count = 1;
+	args.weights[0] = 1;
+	assert!(
+		program
+			.send(
+				&layer,
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(collection, false),
+				],
+			)
+			.is_err(),
+		"published layers are frozen"
+	);
+
+	CollectionContext {
+		collection,
+		core_collection: core_collection.pubkey(),
+		tree: tree.pubkey(),
+		tree_config,
+	}
 }
 
-struct SeriesContext {
-	template: Pubkey,
-	bundle: Pubkey,
-	series: Pubkey,
-	fee_vault: Pubkey,
-	box_mint: Pubkey,
+fn append_tree(program: &Harness, collection: Pubkey, canopy: u64) -> Result<Pubkey, String> {
+	append_tree_with(program, collection, &Keypair::new(), canopy)
 }
 
-fn create_series(
+fn append_tree_with(
 	program: &Harness,
-	context: &SeriesContext,
-	bump: u8,
-	fee_vault_bump: u8,
-	bonuses: &[(usize, u64)],
-) -> Result<(), String> {
-	program.send(
-		&create_series_data(bump, fee_vault_bump, bonuses),
-		vec![
-			AccountMeta::new(program.payer(), true),
-			AccountMeta::new_readonly(context.template, false),
-			AccountMeta::new(context.bundle, false),
-			AccountMeta::new(context.series, false),
-			AccountMeta::new(context.fee_vault, false),
-			AccountMeta::new_readonly(Pubkey::default(), false),
+	collection: Pubkey,
+	tree: &Keypair,
+	canopy: u64,
+) -> Result<Pubkey, String> {
+	let payer = program.payer();
+	let tree_config = Pubkey::find_program_address(&[tree.pubkey().as_ref()], &bubblegum()).0;
+	let space = merkle_tree_account_size(u64::from(TREE_DEPTH), u64::from(TREE_BUFFER), canopy);
+	let mut data = vec![0; AppendExclusiveTreeInstruction::SIZE];
+	let args =
+		AppendExclusiveTreeInstruction::initialize(&mut data, |_| Ok(())).expect("tree data");
+	args.max_depth = TREE_DEPTH;
+	args.max_buffer_size.set(TREE_BUFFER);
+	program.send_instructions_with_signers(
+		&[
+			create_account_instruction(
+				&payer,
+				&tree.pubkey(),
+				rent_minimum(space),
+				space,
+				&compression(),
+			),
+			program.instruction(
+				&data,
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new(collection, false),
+					AccountMeta::new(tree_config, false),
+					AccountMeta::new(tree.pubkey(), false),
+					AccountMeta::new_readonly(bubblegum(), false),
+					AccountMeta::new_readonly(noop(), false),
+					AccountMeta::new_readonly(compression(), false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+				],
+			),
 		],
-	)
-}
-
-fn reclaim_series(program: &Harness, context: &SeriesContext) -> Result<(), String> {
-	program.send(
-		&[LootboxInstruction::ReclaimExclusiveReserve as u8, 0, 0],
-		vec![
-			AccountMeta::new(program.payer(), true),
-			AccountMeta::new_readonly(context.template, false),
-			AccountMeta::new_readonly(context.box_mint, false),
-			AccountMeta::new(context.bundle, false),
-			AccountMeta::new(context.series, false),
-			AccountMeta::new(context.fee_vault, false),
-			AccountMeta::new_readonly(Pubkey::default(), false),
-		],
-	)
+		&[tree],
+	)?;
+	Ok(tree_config)
 }
 
 fn create_template(program: &Harness, queue: Pubkey, opens_at: i64) -> (Pubkey, Pubkey) {
@@ -163,6 +268,71 @@ fn create_template(program: &Harness, queue: Pubkey, opens_at: i64) -> (Pubkey, 
 		)
 		.expect("template");
 	(template, box_mint)
+}
+
+struct AttachmentContext {
+	template: Pubkey,
+	bundle: Pubkey,
+	attachment: Pubkey,
+	fee_vault: Pubkey,
+	box_mint: Pubkey,
+}
+
+fn attach(
+	program: &Harness,
+	collection: Pubkey,
+	template: Pubkey,
+	bundle: Pubkey,
+	box_mint: Pubkey,
+) -> Result<AttachmentContext, String> {
+	let (attachment, bump) = Pubkey::find_program_address(
+		&[b"exclusive-attachment", bundle.as_ref(), &[0]],
+		&program.program_id,
+	);
+	let (fee_vault, fee_vault_bump) = Pubkey::find_program_address(
+		&[b"exclusive-fee-vault", attachment.as_ref()],
+		&program.program_id,
+	);
+	program.send(
+		&[
+			LootboxInstruction::AttachExclusiveNft as u8,
+			0,
+			0,
+			bump,
+			fee_vault_bump,
+		],
+		vec![
+			AccountMeta::new(program.payer(), true),
+			AccountMeta::new_readonly(template, false),
+			AccountMeta::new(bundle, false),
+			AccountMeta::new_readonly(collection, false),
+			AccountMeta::new(attachment, false),
+			AccountMeta::new(fee_vault, false),
+			AccountMeta::new_readonly(Pubkey::default(), false),
+		],
+	)?;
+	Ok(AttachmentContext {
+		template,
+		bundle,
+		attachment,
+		fee_vault,
+		box_mint,
+	})
+}
+
+fn reclaim_fees(program: &Harness, context: &AttachmentContext) -> Result<(), String> {
+	program.send(
+		&[LootboxInstruction::ReclaimExclusiveFees as u8, 0, 0],
+		vec![
+			AccountMeta::new(program.payer(), true),
+			AccountMeta::new_readonly(context.template, false),
+			AccountMeta::new_readonly(context.box_mint, false),
+			AccountMeta::new(context.bundle, false),
+			AccountMeta::new(context.attachment, false),
+			AccountMeta::new(context.fee_vault, false),
+			AccountMeta::new_readonly(Pubkey::default(), false),
+		],
+	)
 }
 
 /// Borsh `MetadataArgsV2` the program must hand Bubblegum for one edition.
@@ -207,7 +377,7 @@ struct MintedLeaf {
 
 /// Parse Bubblegum's `LeafSchemaEvent` from its MPL Noop application-data CPI.
 fn minted_leaf(execution: &Execution) -> MintedLeaf {
-	let noop = pubkey(METAPLEX_PROGRAMS[3]);
+	let noop = noop();
 	let data = execution
 		.inner_instructions
 		.iter()
@@ -226,7 +396,7 @@ fn minted_leaf(execution: &Execution) -> MintedLeaf {
 
 /// Name, symbol, and URI the lootbox program handed Bubblegum's `mint_v2`.
 fn minted_metadata(execution: &Execution) -> (String, String, String) {
-	let bubblegum = pubkey(METAPLEX_PROGRAMS[0]);
+	let bubblegum = bubblegum();
 	let data = execution
 		.inner_instructions
 		.iter()
@@ -242,7 +412,7 @@ fn minted_metadata(execution: &Execution) -> (String, String, String) {
 	(name, symbol, uri)
 }
 
-fn collection_minted(program: &Harness, collection: &Pubkey) -> u32 {
+fn core_collection_minted(program: &Harness, collection: &Pubkey) -> u32 {
 	let data = program.account(collection).expect("collection").data;
 	let mut offset = 33;
 	let _name = read_borsh_string(&data, &mut offset);
@@ -252,88 +422,53 @@ fn collection_minted(program: &Harness, collection: &Pubkey) -> u32 {
 
 #[test]
 #[ignore = "run with `devenv shell -- test:surfpool`"]
-fn exclusive_series_unwinds_before_it_is_initialized() {
+fn exclusive_attachment_unwinds_from_a_staged_bundle() {
 	pina_test::run(async {
 		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
 			.await
 			.expect("Surfpool");
+		deploy_metaplex_programs(&program);
 		let (queue, ..) = oracle_fixture(&mut program);
+		let payer = program.payer();
 		let opens_at = chain_timestamp(&program) + 3_600;
+		let collection = publish_collection(&program, opens_at);
 		let (template, box_mint) = create_template(&program, queue, opens_at);
-		let bundle = add_bundle(&program, template, 0, SERIES_QUANTITY, 1);
-		let ((series, bump), (fee_vault, fee_vault_bump)) = series_addresses(&program, template);
-		let context = SeriesContext {
-			template,
-			bundle,
-			series,
-			fee_vault,
-			box_mint,
-		};
+		let bundle = add_bundle(&program, template, 0, 3, 1);
 
-		assert!(
-			create_series(
-				&program,
-				&context,
-				bump,
-				fee_vault_bump,
-				&[(3, BONUS_LAMPORTS)]
-			)
-			.is_err(),
-			"a bonus on an undrawable tier is rejected"
-		);
-		let before = program.balance(&program.payer()).expect("creator balance");
-		create_series(
-			&program,
-			&context,
-			bump,
-			fee_vault_bump,
-			&[(TOP_TIER, BONUS_LAMPORTS)],
-		)
-		.expect("series");
+		let before = program.balance(&payer).expect("creator balance");
+		let context = attach(&program, collection.collection, template, bundle, box_mint)
+			.expect("attach while the window is open");
 		assert_eq!(
-			program.balance(&fee_vault).expect("fee vault"),
-			rent_minimum(0) + SERIES_QUANTITY * BUBBLEGUM_MINT_V2_FEE_LAMPORTS,
+			program.balance(&context.fee_vault).expect("fee vault"),
+			rent_minimum(0) + 3 * BUBBLEGUM_MINT_V2_FEE_LAMPORTS,
 		);
-		program
-			.send(
-				&[LootboxInstruction::ActivateBundle as u8, 0],
-				vec![
-					AccountMeta::new(program.payer(), true),
-					AccountMeta::new(template, false),
-					AccountMeta::new(bundle, false),
-					AccountMeta::new_readonly(Pubkey::default(), false),
-				],
-			)
-			.expect_err("a configured series is not yet funded collateral");
-
-		reclaim_series(&program, &context).expect("unwind configured series");
-		assert!(program.account(&series).is_err(), "series closed");
-		assert_eq!(program.balance(&fee_vault).expect("fee vault"), 0);
-		let after = program.balance(&program.payer()).expect("creator balance");
+		reclaim_fees(&program, &context).expect("unwind the staged attachment");
 		assert!(
-			before - after < 50_000,
+			program.account(&context.attachment).is_err(),
+			"attachment closed"
+		);
+		assert_eq!(program.balance(&context.fee_vault).expect("fee vault"), 0);
+		assert!(
+			before - program.balance(&payer).expect("creator balance") < 50_000,
 			"every escrowed lamport and the rent returned, minus fees"
 		);
-		let bundle_state = program.account(&bundle).expect("bundle");
-		let bundle_state = BundleState::try_from_bytes(&bundle_state.data).expect("bundle");
-		assert_eq!(bundle_state.kinds[0], 0, "slot released");
 		program
 			.send(
 				&[LootboxInstruction::CancelBundle as u8, 0],
 				vec![
-					AccountMeta::new(program.payer(), true),
+					AccountMeta::new(payer, true),
 					AccountMeta::new_readonly(template, false),
 					AccountMeta::new(bundle, false),
 				],
 			)
-			.expect("cancel the empty staged bundle");
+			.expect("cancel the reclaimed staged bundle");
 		program.stop().expect("stop Surfpool");
 	});
 }
 
 #[test]
 #[ignore = "run with `devenv shell -- test:surfpool`"]
-fn exclusive_nfts_mint_to_the_bound_beneficiary_with_a_bonus_paid_once() {
+fn exclusive_nfts_mint_layered_traits_to_the_bound_beneficiary() {
 	pina_test::run(async {
 		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
 			.await
@@ -346,85 +481,16 @@ fn exclusive_nfts_mint_to_the_bound_beneficiary_with_a_bonus_paid_once() {
 			.fund(&recipient.pubkey(), 100_000_000)
 			.expect("recipient fee funds");
 		let opens_at = chain_timestamp(&program) + 60;
+		let collection = publish_collection(&program, opens_at);
 		let (template, box_mint) = create_template(&program, queue, opens_at);
 		let creator_box_ata = box_ata(&program, &payer, &box_mint);
 		let recipient_box_ata = box_ata(&program, &recipient.pubkey(), &box_mint);
-		let bundle = add_bundle(&program, template, 0, SERIES_QUANTITY, 1);
-		let ((series, bump), (fee_vault, fee_vault_bump)) = series_addresses(&program, template);
-		let context = SeriesContext {
-			template,
-			bundle,
-			series,
-			fee_vault,
-			box_mint,
-		};
-		create_series(
-			&program,
-			&context,
-			bump,
-			fee_vault_bump,
-			&[(TOP_TIER, BONUS_LAMPORTS), (RARE_TIER, RARE_BONUS_LAMPORTS)],
-		)
-		.expect("series");
-
-		let tree = Keypair::new();
-		let collection = Keypair::new();
-		let tree_config =
-			Pubkey::find_program_address(&[tree.pubkey().as_ref()], &pubkey(METAPLEX_PROGRAMS[0]))
-				.0;
-		let space = merkle_tree_space(u64::from(TREE_DEPTH), u64::from(TREE_BUFFER));
-		let mut initialize = vec![0; InitializeExclusiveSeriesInstruction::SIZE];
-		let args = InitializeExclusiveSeriesInstruction::initialize(&mut initialize, |_| Ok(()))
-			.expect("initialize data");
-		args.max_depth = TREE_DEPTH;
-		args.max_buffer_size.set(TREE_BUFFER);
-		let initialize = program.instruction(
-			&initialize,
-			vec![
-				AccountMeta::new(payer, true),
-				AccountMeta::new_readonly(template, false),
-				AccountMeta::new(bundle, false),
-				AccountMeta::new(series, false),
-				AccountMeta::new(collection.pubkey(), true),
-				AccountMeta::new(tree_config, false),
-				AccountMeta::new(tree.pubkey(), false),
-				AccountMeta::new_readonly(pubkey(METAPLEX_PROGRAMS[1]), false),
-				AccountMeta::new_readonly(pubkey(METAPLEX_PROGRAMS[0]), false),
-				AccountMeta::new_readonly(pubkey(METAPLEX_PROGRAMS[3]), false),
-				AccountMeta::new_readonly(pubkey(METAPLEX_PROGRAMS[2]), false),
-				AccountMeta::new_readonly(Pubkey::default(), false),
-			],
-		);
-		program
-			.send_instructions_with_signers(
-				&[
-					create_account_instruction(
-						&payer,
-						&tree.pubkey(),
-						rent_minimum(space),
-						space,
-						&pubkey(METAPLEX_PROGRAMS[2]),
-					),
-					initialize,
-				],
-				&[&tree, &collection],
-			)
-			.expect("create the series Core collection and private Bubblegum V2 tree");
-		let config = program.account(&tree_config).expect("tree config");
-		assert_eq!(
-			&config.data[8..40],
-			series.as_ref(),
-			"series is tree creator"
-		);
-		assert_eq!(
-			&config.data[40..72],
-			series.as_ref(),
-			"series is tree delegate"
-		);
-		assert_eq!(config.data[88], 0, "private tree");
-		let collection_account = program.account(&collection.pubkey()).expect("collection");
-		assert_eq!(collection_account.data[0], 5, "Core CollectionV1");
-		assert_eq!(&collection_account.data[1..33], series.as_ref());
+		// Four copies: three are opened and one is burned unopened, so
+		// retirement recovery returns exactly one unused mint fee.
+		let quantity = 4;
+		let bundle = add_bundle(&program, template, 0, quantity, 1);
+		let context = attach(&program, collection.collection, template, bundle, box_mint)
+			.expect("attach while the window is open");
 
 		activate_bundle(&program, template, bundle);
 		program
@@ -438,7 +504,7 @@ fn exclusive_nfts_mint_to_the_bound_beneficiary_with_a_bonus_paid_once() {
 			.expect("seal");
 		program
 			.send(
-				&template_mint_data(SERIES_QUANTITY),
+				&template_mint_data(quantity),
 				vec![
 					AccountMeta::new_readonly(payer, true),
 					AccountMeta::new(template, false),
@@ -458,7 +524,7 @@ fn exclusive_nfts_mint_to_the_bound_beneficiary_with_a_bonus_paid_once() {
 					&recipient_box_ata,
 					&payer,
 					&[],
-					SERIES_QUANTITY,
+					quantity,
 					0,
 				)
 				.expect("box transfer"),
@@ -469,9 +535,13 @@ fn exclusive_nfts_mint_to_the_bound_beneficiary_with_a_bonus_paid_once() {
 			.cheatcodes()
 			.time_travel_to_timestamp(u64::try_from(opens_at + 1).expect("time") * 1000)
 			.expect("unlock");
+		assert!(
+			attach(&program, collection.collection, template, bundle, box_mint).is_err(),
+			"the attach window has closed"
+		);
 
 		let mut openings = Vec::new();
-		for _ in 0..SERIES_QUANTITY {
+		for _ in 0..3 {
 			let randomness = Keypair::new();
 			let (opening, opening_bump) = Pubkey::find_program_address(
 				&[
@@ -502,7 +572,27 @@ fn exclusive_nfts_mint_to_the_bound_beneficiary_with_a_bonus_paid_once() {
 				.expect("commit opening");
 			openings.push((opening, randomness.pubkey()));
 		}
+		program
+			.send_with_signers(
+				token_ix::burn_checked(
+					&token_2022(),
+					&recipient_box_ata,
+					&box_mint,
+					&recipient.pubkey(),
+					&[],
+					1,
+					0,
+				)
+				.expect("burn"),
+				&[&recipient],
+			)
+			.expect("burn the fourth box unopened");
 		program.advance_one_slot().expect("oracle delay");
+		let service_vault = Pubkey::find_program_address(
+			&[b"service-vault", template.as_ref()],
+			&program.program_id,
+		)
+		.0;
 		for (index, (opening, randomness)) in openings.iter().enumerate() {
 			fulfill(
 				&FulfillContext {
@@ -531,14 +621,7 @@ fn exclusive_nfts_mint_to_the_bound_beneficiary_with_a_bonus_paid_once() {
 						AccountMeta::new(template, false),
 						AccountMeta::new(*opening, false),
 						AccountMeta::new_readonly(bundle, false),
-						AccountMeta::new(
-							Pubkey::find_program_address(
-								&[b"service-vault", template.as_ref()],
-								&program.program_id,
-							)
-							.0,
-							false,
-						),
+						AccountMeta::new(service_vault, false),
 						AccountMeta::new(result_receipt, false),
 						AccountMeta::new_readonly(Pubkey::default(), false),
 					],
@@ -551,30 +634,32 @@ fn exclusive_nfts_mint_to_the_bound_beneficiary_with_a_bonus_paid_once() {
 				AccountMeta::new_readonly(template, false),
 				AccountMeta::new(opening, false),
 				AccountMeta::new(bundle, false),
-				AccountMeta::new(series, false),
-				AccountMeta::new(fee_vault, false),
-				AccountMeta::new(recipient, false),
-				AccountMeta::new(tree_config, false),
-				AccountMeta::new(tree.pubkey(), false),
-				AccountMeta::new(collection.pubkey(), false),
+				AccountMeta::new(context.attachment, false),
+				AccountMeta::new(context.fee_vault, false),
+				AccountMeta::new(collection.collection, false),
+				AccountMeta::new_readonly(recipient, false),
+				AccountMeta::new(collection.tree_config, false),
+				AccountMeta::new(collection.tree, false),
+				AccountMeta::new(collection.core_collection, false),
 				AccountMeta::new_readonly(
 					Pubkey::new_from_array(MPL_CORE_CPI_SIGNER_ID.to_bytes()),
 					false,
 				),
-				AccountMeta::new_readonly(pubkey(METAPLEX_PROGRAMS[0]), false),
-				AccountMeta::new_readonly(pubkey(METAPLEX_PROGRAMS[1]), false),
-				AccountMeta::new_readonly(pubkey(METAPLEX_PROGRAMS[3]), false),
-				AccountMeta::new_readonly(pubkey(METAPLEX_PROGRAMS[2]), false),
+				AccountMeta::new_readonly(bubblegum(), false),
+				AccountMeta::new_readonly(core(), false),
+				AccountMeta::new_readonly(noop(), false),
+				AccountMeta::new_readonly(compression(), false),
 				AccountMeta::new_readonly(Pubkey::default(), false),
 			]
 		};
 		let claim_data = [LootboxInstruction::ClaimExclusiveNft as u8, 0, 0];
+		let (counts, weights) = fixture_table();
 		for (index, (opening, _)) in openings.iter().enumerate() {
 			let serial = u64::try_from(index + 1).expect("serial");
 			let redirect = program.instruction(&claim_data, claim_accounts(*opening, payer));
 			assert!(
 				program.send_instruction(redirect).is_err(),
-				"a relayer cannot redirect the NFT or its bonus"
+				"a relayer cannot redirect the NFT"
 			);
 
 			let claim =
@@ -602,7 +687,6 @@ fn exclusive_nfts_mint_to_the_bound_beneficiary_with_a_bonus_paid_once() {
 				execution.compute_units < 200_000,
 				"a claim fits the default compute budget"
 			);
-			let balance_before = program.balance(&recipient.pubkey()).expect("balance");
 			program
 				.send_instruction(claim.clone())
 				.expect("permissionless claim mints to the bound beneficiary");
@@ -619,38 +703,30 @@ fn exclusive_nfts_mint_to_the_bound_beneficiary_with_a_bonus_paid_once() {
 				&opening.to_bytes().into(),
 				&[7 + u8::try_from(index).expect("index"); 32],
 			);
-			let traits = exclusive_traits(&seed, &TIER_WEIGHTS, COUNTS).expect("traits");
-			let bonus = if index == 0 { BONUS_LAMPORTS } else { 0 };
+			let layer_count = u8::try_from(FIXTURE_TRAITS.len()).expect("layers");
+			let traits = exclusive_traits(&seed, &counts, &weights, layer_count).expect("traits");
 			assert_eq!(event.seed, seed);
 			assert_eq!(event.serial.get(), serial);
-			assert_eq!(event.bonus_lamports.get(), bonus);
-			assert_eq!(
-				(event.tier, event.contents, event.background, event.pattern),
-				(
-					traits.tier,
-					traits.contents,
-					traits.background,
-					traits.pattern
-				),
-			);
-			assert_eq!(usize::from(event.tier), TOP_TIER);
-			assert_eq!(
-				program.balance(&recipient.pubkey()).expect("balance") - balance_before,
-				bonus,
-				"the tier bonus is paid only while its escrowed count lasts"
-			);
+			assert_eq!(event.layer_count, layer_count);
+			assert_eq!(event.traits, traits.traits);
+			assert_eq!(event.collection.as_ref(), collection.collection.as_ref());
 
 			let name = format!("{NAME_PREFIX} #{serial}");
-			let uri = format!(
-				"{BASE_URI}{}-{}-{}-{}-{serial}.json",
-				traits.tier, traits.contents, traits.background, traits.pattern
-			);
+			let hex = traits
+				.as_slice()
+				.iter()
+				.fold(String::new(), |mut text, value| {
+					use std::fmt::Write as _;
+					write!(text, "{value:02x}").expect("write hex");
+					text
+				});
+			let uri = format!("{BASE_URI}{hex}-{serial}.json");
 			assert_eq!(
 				minted_metadata(&execution),
 				(name.clone(), SYMBOL.to_owned(), uri.clone())
 			);
 			let leaf = minted_leaf(&execution);
-			let metadata = expected_metadata(&name, &uri, &collection.pubkey());
+			let metadata = expected_metadata(&name, &uri, &collection.core_collection);
 			let expected_data_hash =
 				keccak_hashv(&[keccak_hashv(&[&metadata]).as_ref(), &0u16.to_le_bytes()]);
 			assert_eq!(
@@ -667,31 +743,23 @@ fn exclusive_nfts_mint_to_the_bound_beneficiary_with_a_bonus_paid_once() {
 			assert_eq!(leaf.data_hash, expected_data_hash.to_bytes());
 		}
 
-		let config = program.account(&tree_config).expect("tree config");
-		assert_eq!(stored_u64(&config.data, 80), SERIES_QUANTITY);
+		let config = program
+			.account(&collection.tree_config)
+			.expect("tree config");
+		assert_eq!(stored_u64(&config.data, 80), 3);
 		assert_eq!(
-			collection_minted(&program, &collection.pubkey()),
-			u32::try_from(SERIES_QUANTITY).expect("count")
+			core_collection_minted(&program, &collection.core_collection),
+			3
 		);
 		assert_eq!(
-			program.balance(&fee_vault).expect("fee vault"),
-			rent_minimum(0),
+			program.balance(&context.fee_vault).expect("fee vault"),
+			rent_minimum(0) + BUBBLEGUM_MINT_V2_FEE_LAMPORTS,
 			"Bubblegum fees came from the creator's escrow, not the claimer"
-		);
-		let series_state = program.account(&series).expect("series");
-		let series_state =
-			ExclusiveSeriesState::try_from_bytes(&series_state.data).expect("series");
-		assert_eq!(series_state.minted.get(), SERIES_QUANTITY);
-		let series_rent = rent_minimum(ExclusiveSeriesState::SIZE as u64);
-		assert_eq!(
-			program.balance(&series).expect("series"),
-			series_rent + RARE_BONUS_LAMPORTS,
-			"the unwon rare-tier bonus stays escrowed"
 		);
 
 		assert!(
-			reclaim_series(&program, &context).is_err(),
-			"a live market treasury keeps its bonus reserves"
+			reclaim_fees(&program, &context).is_err(),
+			"a live market treasury keeps its mint-fee escrow"
 		);
 		program
 			.send(
@@ -701,22 +769,18 @@ fn exclusive_nfts_mint_to_the_bound_beneficiary_with_a_bonus_paid_once() {
 					AccountMeta::new(template, false),
 				],
 			)
-			.expect("retire the fully opened series");
+			.expect("retire the drained series");
 		let creator_before = program.balance(&payer).expect("creator");
-		reclaim_series(&program, &context).expect("recover unwinnable bonuses");
-		assert_eq!(program.balance(&series).expect("series"), series_rent);
+		reclaim_fees(&program, &context).expect("recover the unused copy's fee");
 		assert_eq!(
-			program.balance(&fee_vault).expect("fee vault"),
+			program.balance(&context.fee_vault).expect("fee vault"),
 			rent_minimum(0)
 		);
-		let recovered = program.balance(&payer).expect("creator") + 10_000 - creator_before;
-		assert!(
-			(RARE_BONUS_LAMPORTS..RARE_BONUS_LAMPORTS + 10_000).contains(&recovered),
-			"only the unwinnable reserve returns to the creator"
+		assert_eq!(
+			program.balance(&payer).expect("creator") + 5_000 - creator_before,
+			BUBBLEGUM_MINT_V2_FEE_LAMPORTS,
+			"exactly the unused copy's fee returns"
 		);
-		program.advance_one_slot().expect("new blockhash");
-		reclaim_series(&program, &context).expect("repeated recovery is a no-op");
-		assert_eq!(program.balance(&series).expect("series"), series_rent);
 		program.stop().expect("stop Surfpool");
 	});
 }

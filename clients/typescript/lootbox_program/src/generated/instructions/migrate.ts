@@ -51,7 +51,8 @@ export type MigrateInstruction<
 	TAccountResultReceiptState extends string | AccountMeta<string> = string,
 	TAccountPrizePoolState extends string | AccountMeta<string> = string,
 	TAccountPrizePoolItemState extends string | AccountMeta<string> = string,
-	TAccountExclusiveSeriesState extends string | AccountMeta<string> = string,
+	TAccountExclusiveCollectionState extends string | AccountMeta<string> = string,
+	TAccountExclusiveAttachmentState extends string | AccountMeta<string> = string,
 	TRemainingAccounts extends readonly AccountMeta<string>[] = []
 > =
 	& Instruction<TProgram>
@@ -82,8 +83,10 @@ export type MigrateInstruction<
 				: TAccountPrizePoolState,
 			TAccountPrizePoolItemState extends string ? WritableAccount<TAccountPrizePoolItemState>
 				: TAccountPrizePoolItemState,
-			TAccountExclusiveSeriesState extends string ? WritableAccount<TAccountExclusiveSeriesState>
-				: TAccountExclusiveSeriesState,
+			TAccountExclusiveCollectionState extends string ? WritableAccount<TAccountExclusiveCollectionState>
+				: TAccountExclusiveCollectionState,
+			TAccountExclusiveAttachmentState extends string ? WritableAccount<TAccountExclusiveAttachmentState>
+				: TAccountExclusiveAttachmentState,
 			...TRemainingAccounts,
 		]
 	>;
@@ -100,7 +103,8 @@ export type MigrateInput<
 	TAccountResultReceiptState extends string = string,
 	TAccountPrizePoolState extends string = string,
 	TAccountPrizePoolItemState extends string = string,
-	TAccountExclusiveSeriesState extends string = string
+	TAccountExclusiveCollectionState extends string = string,
+	TAccountExclusiveAttachmentState extends string = string
 > = {
 	payer?: TransactionSigner<TAccountPayer>;
 	systemProgram?: Address<TAccountSystemProgram>;
@@ -113,7 +117,8 @@ export type MigrateInput<
 	resultReceiptState?: Address<TAccountResultReceiptState>;
 	prizePoolState?: Address<TAccountPrizePoolState>;
 	prizePoolItemState?: Address<TAccountPrizePoolItemState>;
-	exclusiveSeriesState?: Address<TAccountExclusiveSeriesState>;
+	exclusiveCollectionState?: Address<TAccountExclusiveCollectionState>;
+	exclusiveAttachmentState?: Address<TAccountExclusiveAttachmentState>;
 };
 
 /**
@@ -138,7 +143,8 @@ export function getMigrateInstruction<
 	TAccountResultReceiptState extends string = string,
 	TAccountPrizePoolState extends string = string,
 	TAccountPrizePoolItemState extends string = string,
-	TAccountExclusiveSeriesState extends string = string,
+	TAccountExclusiveCollectionState extends string = string,
+	TAccountExclusiveAttachmentState extends string = string,
 	TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS
 >(
 	input: MigrateInput<
@@ -153,7 +159,8 @@ export function getMigrateInstruction<
 		TAccountResultReceiptState,
 		TAccountPrizePoolState,
 		TAccountPrizePoolItemState,
-		TAccountExclusiveSeriesState
+		TAccountExclusiveCollectionState,
+		TAccountExclusiveAttachmentState
 	>,
 	config?: { programAddress?: TProgramAddress },
 ): MigrateInstruction<
@@ -169,7 +176,8 @@ export function getMigrateInstruction<
 	TAccountResultReceiptState,
 	TAccountPrizePoolState,
 	TAccountPrizePoolItemState,
-	TAccountExclusiveSeriesState
+	TAccountExclusiveCollectionState,
+	TAccountExclusiveAttachmentState
 > {
 	// Program address.
 	const programAddress = config?.programAddress ??
@@ -188,7 +196,8 @@ export function getMigrateInstruction<
 		resultReceiptState: { value: input.resultReceiptState ?? null, isWritable: true },
 		prizePoolState: { value: input.prizePoolState ?? null, isWritable: true },
 		prizePoolItemState: { value: input.prizePoolItemState ?? null, isWritable: true },
-		exclusiveSeriesState: { value: input.exclusiveSeriesState ?? null, isWritable: true },
+		exclusiveCollectionState: { value: input.exclusiveCollectionState ?? null, isWritable: true },
+		exclusiveAttachmentState: { value: input.exclusiveAttachmentState ?? null, isWritable: true },
 	};
 	const accounts = originalAccounts as Record<
 		keyof typeof originalAccounts,
@@ -199,7 +208,7 @@ export function getMigrateInstruction<
 	// Slots after the last provided account may be truncated: the program
 	// treats a missing trailing slot exactly like the program-address
 	// placeholder.
-	const provided = [input.payer, input.systemProgram, input.lootboxState, input.vaultState, input.openingState, input.templateState, input.bundleState, input.templateOpeningState, input.resultReceiptState, input.prizePoolState, input.prizePoolItemState, input.exclusiveSeriesState];
+	const provided = [input.payer, input.systemProgram, input.lootboxState, input.vaultState, input.openingState, input.templateState, input.bundleState, input.templateOpeningState, input.resultReceiptState, input.prizePoolState, input.prizePoolItemState, input.exclusiveCollectionState, input.exclusiveAttachmentState];
 	let lastProvided = -1;
 	for (let index = 0; index < provided.length; index += 1) {
 		if (provided[index] != null) {
@@ -220,7 +229,8 @@ export function getMigrateInstruction<
 		getAccountMeta("resultReceiptState", accounts.resultReceiptState),
 		getAccountMeta("prizePoolState", accounts.prizePoolState),
 		getAccountMeta("prizePoolItemState", accounts.prizePoolItemState),
-		getAccountMeta("exclusiveSeriesState", accounts.exclusiveSeriesState),
+		getAccountMeta("exclusiveCollectionState", accounts.exclusiveCollectionState),
+		getAccountMeta("exclusiveAttachmentState", accounts.exclusiveAttachmentState),
 		].slice(0, lastProvided + 1),
 		data: getMigrateDiscriminatorBytes(),
 		programAddress,
@@ -237,6 +247,7 @@ export function getMigrateInstruction<
 	TAccountResultReceiptState,
 	TAccountPrizePoolState,
 	TAccountPrizePoolItemState,
-	TAccountExclusiveSeriesState
+	TAccountExclusiveCollectionState,
+	TAccountExclusiveAttachmentState
 	>);
 }

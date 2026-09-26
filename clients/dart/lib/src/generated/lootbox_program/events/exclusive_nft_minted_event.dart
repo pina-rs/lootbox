@@ -17,37 +17,33 @@ class ExclusiveNftMintedEventEvent {
     required this.migrationVersion,
     required this.template,
     required this.opening,
-    required this.series,
+    required this.collection,
+    required this.attachment,
     required this.beneficiary,
     required this.asset,
     required this.seed,
     required this.serial,
-    required this.bonusLamports,
-    required this.tier,
-    required this.contents,
-    required this.background,
-    required this.pattern,
+    required this.traits,
+    required this.layerCount,
   });
 
   final int discriminator;
   final int migrationVersion;
   final Address template;
   final Address opening;
-  final Address series;
+  final Address collection;
+  final Address attachment;
   final Address beneficiary;
   final Address asset;
   final Uint8List seed;
   final BigInt serial;
-  final BigInt bonusLamports;
-  final int tier;
-  final int contents;
-  final int background;
-  final int pattern;
+  final Uint8List traits;
+  final int layerCount;
 
   String get name => 'exclusiveNftMintedEvent';
 
   String toString() =>
-      'ExclusiveNftMintedEventEvent(discriminator: ${discriminator}, migrationVersion: ${migrationVersion}, template: ${template}, opening: ${opening}, series: ${series}, beneficiary: ${beneficiary}, asset: ${asset}, seed: ${seed}, serial: ${serial}, bonusLamports: ${bonusLamports}, tier: ${tier}, contents: ${contents}, background: ${background}, pattern: ${pattern})';
+      'ExclusiveNftMintedEventEvent(discriminator: ${discriminator}, migrationVersion: ${migrationVersion}, template: ${template}, opening: ${opening}, collection: ${collection}, attachment: ${attachment}, beneficiary: ${beneficiary}, asset: ${asset}, seed: ${seed}, serial: ${serial}, traits: ${traits}, layerCount: ${layerCount})';
 }
 
 /// The discriminator this event is emitted under.
@@ -60,7 +56,7 @@ const List<int> _exclusiveNftMintedEventEventDiscriminatorBytes = [1];
 const exclusiveNftMintedEventEventMigrationVersion = 0;
 
 /// Exact current byte length of a `ExclusiveNftMintedEvent` record, envelope included.
-const exclusiveNftMintedEventEventSize = 214;
+const exclusiveNftMintedEventEventSize = 247;
 
 /// Decode one current-version `ExclusiveNftMintedEvent` record.
 ExclusiveNftMintedEventEvent decodeExclusiveNftMintedEventEvent(
@@ -98,36 +94,30 @@ ExclusiveNftMintedEventEvent decodeExclusiveNftMintedEventEvent(
   cursor = c5;
   final (v6, c6) = getAddressDecoder().read(data, cursor);
   cursor = c6;
-  final (v7, c7) = fixDecoderSize(getBytesDecoder(), 32).read(data, cursor);
+  final (v7, c7) = getAddressDecoder().read(data, cursor);
   cursor = c7;
-  final (v8, c8) = getU64Decoder().read(data, cursor);
+  final (v8, c8) = fixDecoderSize(getBytesDecoder(), 32).read(data, cursor);
   cursor = c8;
   final (v9, c9) = getU64Decoder().read(data, cursor);
   cursor = c9;
-  final (v10, c10) = getU8Decoder().read(data, cursor);
+  final (v10, c10) = fixDecoderSize(getBytesDecoder(), 12).read(data, cursor);
   cursor = c10;
   final (v11, c11) = getU8Decoder().read(data, cursor);
   cursor = c11;
-  final (v12, c12) = getU8Decoder().read(data, cursor);
-  cursor = c12;
-  final (v13, c13) = getU8Decoder().read(data, cursor);
-  cursor = c13;
 
   return ExclusiveNftMintedEventEvent(
     discriminator: v0,
     migrationVersion: v1,
     template: v2,
     opening: v3,
-    series: v4,
-    beneficiary: v5,
-    asset: v6,
-    seed: v7,
-    serial: v8,
-    bonusLamports: v9,
-    tier: v10,
-    contents: v11,
-    background: v12,
-    pattern: v13,
+    collection: v4,
+    attachment: v5,
+    beneficiary: v6,
+    asset: v7,
+    seed: v8,
+    serial: v9,
+    traits: v10,
+    layerCount: v11,
   );
 }
 

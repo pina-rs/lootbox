@@ -8,52 +8,52 @@
 	clippy::too_many_arguments
 )]
 
-pub const CREATE_EXCLUSIVE_SERIES_DISCRIMINATOR: u8 = 53u8;
-pub const CREATE_EXCLUSIVE_SERIES_MIGRATION_VERSION: u8 = 0u8;
+pub const ATTACH_EXCLUSIVE_NFT_DISCRIMINATOR: u8 = 57u8;
+pub const ATTACH_EXCLUSIVE_NFT_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
-pub struct CreateExclusiveSeries {
+pub struct AttachExclusiveNft {
 	pub authority: solana_pubkey::Pubkey,
 	pub template: solana_pubkey::Pubkey,
 	pub bundle: solana_pubkey::Pubkey,
-	pub exclusive_series: solana_pubkey::Pubkey,
+	pub exclusive_collection: solana_pubkey::Pubkey,
+	pub exclusive_attachment: solana_pubkey::Pubkey,
 	/// Zero-data System account PDA that prepays Bubblegum mint fees.
 	/// Unsolicited lamports are accepted and reduce the required top-up.
 	pub fee_vault: solana_pubkey::Pubkey,
 	pub system_program: solana_pubkey::Pubkey,
 }
 
-impl CreateExclusiveSeries {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, fee_vault: solana_pubkey::Pubkey) -> Self {
+impl AttachExclusiveNft {
+	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, exclusive_collection: solana_pubkey::Pubkey, exclusive_attachment: solana_pubkey::Pubkey, fee_vault: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			template,
 			bundle,
-			exclusive_series: solana_pubkey::Pubkey::find_program_address(
-				&["exclusive-series".as_bytes(), template.as_ref()],
-				&crate::LOOTBOX_PROGRAM_ID,
-			).0,
+			exclusive_collection,
+			exclusive_attachment,
 			fee_vault,
 			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
 		}
 	}
 
-	pub fn instruction(&self, data: CreateExclusiveSeriesInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: AttachExclusiveNftInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
 	#[allow(clippy::arithmetic_side_effects)]
 	pub fn instruction_with_remaining_accounts(
 		&self,
-		data: CreateExclusiveSeriesInstructionData,
+		data: AttachExclusiveNftInstructionData,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
+		let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.exclusive_series, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.exclusive_collection, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.exclusive_attachment, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.fee_vault, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
 		accounts.extend_from_slice(remaining_accounts);
@@ -66,17 +66,17 @@ impl CreateExclusiveSeries {
 }
 
 /// Opaque, fully initialized instruction storage.
-pub struct CreateExclusiveSeriesInstructionData {
+pub struct AttachExclusiveNftInstructionData {
 	bytes: Vec<u8>,
 }
 
-impl CreateExclusiveSeriesInstructionData {
-	pub fn new(configure: impl FnOnce(&mut CreateExclusiveSeriesInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; core::mem::size_of::<CreateExclusiveSeriesInstructionWireZc>()];
-		<CreateExclusiveSeriesInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
+impl AttachExclusiveNftInstructionData {
+	pub fn new(configure: impl FnOnce(&mut AttachExclusiveNftInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+		let mut bytes = vec![0u8; core::mem::size_of::<AttachExclusiveNftInstructionWireZc>()];
+		<AttachExclusiveNftInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
-			data.discriminator = CREATE_EXCLUSIVE_SERIES_DISCRIMINATOR;
-			data.migration_version = CREATE_EXCLUSIVE_SERIES_MIGRATION_VERSION;
+			data.discriminator = ATTACH_EXCLUSIVE_NFT_DISCRIMINATOR;
+			data.migration_version = ATTACH_EXCLUSIVE_NFT_MIGRATION_VERSION;
 			Ok(())
 		})
 			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
@@ -88,19 +88,10 @@ impl CreateExclusiveSeriesInstructionData {
 #[allow(clippy::len_without_is_empty)]
 #[derive(pina::PinaPod)]
 #[pinapod(crate = pina::pinapod, no_inherent)]
-pub struct CreateExclusiveSeriesInstructionWire {
+pub struct AttachExclusiveNftInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
 	pub asset_index: u8,
 	pub bump: u8,
 	pub fee_vault_bump: u8,
-	pub contents_count: u8,
-	pub background_count: u8,
-	pub pattern_count: u8,
-	pub weights: [u8; 64],
-	pub bonus_lamports: [u8; 128],
-	pub bonus_counts: [u8; 64],
-	pub name_prefix: [u8; 32],
-	pub symbol: [u8; 10],
-	pub base_uri: [u8; 96],
 }

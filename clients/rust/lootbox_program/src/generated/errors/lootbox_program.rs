@@ -154,10 +154,14 @@ pub enum LootboxProgramError {
 	/// 34 - The reserved migration route only validates already-current accounts.
 	#[error("The reserved migration route only validates already-current accounts.")]
 	MigrationLocked = 0x22,
-	/// The exclusive NFT series configuration, account, or binding is invalid.
-	/// 35 - The exclusive NFT series configuration, account, or binding is invalid.
-	#[error("The exclusive NFT series configuration, account, or binding is invalid.")]
-	InvalidExclusiveSeries = 0x23,
+	/// The Exclusive NFT collection, attachment, layers, or tree is invalid.
+	/// 35 - The Exclusive NFT collection, attachment, layers, or tree is invalid.
+	#[error("The Exclusive NFT collection, attachment, layers, or tree is invalid.")]
+	InvalidExclusiveCollection = 0x23,
+	/// The Exclusive NFT collection is not accepting new attachments now.
+	/// 36 - The Exclusive NFT collection is not accepting new attachments now.
+	#[error("The Exclusive NFT collection is not accepting new attachments now.")]
+	ExclusiveAttachWindowClosed = 0x24,
 }
 
 impl From<LootboxProgramError> for solana_program_error::ProgramError {

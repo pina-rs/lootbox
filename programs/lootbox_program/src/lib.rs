@@ -141,8 +141,10 @@ pub enum LootboxError {
 	MutablePrize = 33,
 	/// The reserved migration route only validates already-current accounts.
 	MigrationLocked = 34,
-	/// The exclusive NFT series configuration, account, or binding is invalid.
-	InvalidExclusiveSeries = 35,
+	/// The Exclusive NFT collection, attachment, layers, or tree is invalid.
+	InvalidExclusiveCollection = 35,
+	/// The Exclusive NFT collection is not accepting new attachments now.
+	ExclusiveAttachWindowClosed = 36,
 }
 
 #[discriminator]
@@ -200,10 +202,13 @@ pub enum LootboxInstruction {
 	ClosePrizePool = 50,
 	PreparePrizePoolItem = 51,
 	CancelPrizePoolItem = 52,
-	CreateExclusiveSeries = 53,
-	InitializeExclusiveSeries = 54,
-	ClaimExclusiveNft = 55,
-	ReclaimExclusiveReserve = 56,
+	CreateExclusiveCollection = 53,
+	SetExclusiveLayer = 54,
+	AppendExclusiveTree = 55,
+	PublishExclusiveCollection = 56,
+	AttachExclusiveNft = 57,
+	ClaimExclusiveNft = 58,
+	ReclaimExclusiveFees = 59,
 }
 
 #[discriminator]
@@ -217,7 +222,8 @@ pub enum LootboxAccountType {
 	ResultReceiptState = 7,
 	PrizePoolState = 8,
 	PrizePoolItemState = 9,
-	ExclusiveSeriesState = 10,
+	ExclusiveCollectionState = 10,
+	ExclusiveAttachmentState = 11,
 }
 
 #[discriminator]
@@ -1479,7 +1485,7 @@ fn assert_migration_slot_is_current<T: MigratableAccount>(
 ///
 /// Accounts are `[payer, systemProgram, lootbox, vault, opening, template,
 /// bundle, templateOpening, resultReceipt, prizePool, prizePoolItem,
-/// exclusiveSeries]`; every
+/// exclusiveCollection, exclusiveAttachment]`; every
 /// state slot is optional and skipped when it holds the program-address
 /// placeholder.
 fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> ProgramResult {
@@ -1492,7 +1498,8 @@ fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> Progra
 	assert_migration_slot_is_current::<ResultReceiptState>(program_id, accounts, 8)?;
 	assert_migration_slot_is_current::<PrizePoolState>(program_id, accounts, 9)?;
 	assert_migration_slot_is_current::<PrizePoolItemState>(program_id, accounts, 10)?;
-	assert_migration_slot_is_current::<ExclusiveSeriesState>(program_id, accounts, 11)?;
+	assert_migration_slot_is_current::<ExclusiveCollectionState>(program_id, accounts, 11)?;
+	assert_migration_slot_is_current::<ExclusiveAttachmentState>(program_id, accounts, 12)?;
 
 	let mut context = MigrateContext::new(program_id, accounts, Some(MAX_MIGRATION_LAMPORTS))?;
 	context.run_optional::<LootboxState>(2)?;
@@ -1504,7 +1511,8 @@ fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> Progra
 	context.run_optional::<ResultReceiptState>(8)?;
 	context.run_optional::<PrizePoolState>(9)?;
 	context.run_optional::<PrizePoolItemState>(10)?;
-	context.run_optional::<ExclusiveSeriesState>(11)?;
+	context.run_optional::<ExclusiveCollectionState>(11)?;
+	context.run_optional::<ExclusiveAttachmentState>(12)?;
 	Ok(())
 }
 
@@ -1683,17 +1691,26 @@ pub fn process_instruction(
 		LootboxInstruction::ClosePrizePool => {
 			ClosePrizePoolAccounts::try_from((program_id, accounts))?.process(data)
 		}
-		LootboxInstruction::CreateExclusiveSeries => {
-			CreateExclusiveSeriesAccounts::try_from((program_id, accounts))?.process(data)
+		LootboxInstruction::CreateExclusiveCollection => {
+			CreateExclusiveCollectionAccounts::try_from((program_id, accounts))?.process(data)
 		}
-		LootboxInstruction::InitializeExclusiveSeries => {
-			InitializeExclusiveSeriesAccounts::try_from((program_id, accounts))?.process(data)
+		LootboxInstruction::SetExclusiveLayer => {
+			SetExclusiveLayerAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::AppendExclusiveTree => {
+			AppendExclusiveTreeAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::PublishExclusiveCollection => {
+			PublishExclusiveCollectionAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		LootboxInstruction::AttachExclusiveNft => {
+			AttachExclusiveNftAccounts::try_from((program_id, accounts))?.process(data)
 		}
 		LootboxInstruction::ClaimExclusiveNft => {
 			ClaimExclusiveNftAccounts::try_from((program_id, accounts))?.process(data)
 		}
-		LootboxInstruction::ReclaimExclusiveReserve => {
-			ReclaimExclusiveReserveAccounts::try_from((program_id, accounts))?.process(data)
+		LootboxInstruction::ReclaimExclusiveFees => {
+			ReclaimExclusiveFeesAccounts::try_from((program_id, accounts))?.process(data)
 		}
 	}
 }

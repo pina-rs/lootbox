@@ -2,7 +2,6 @@
 
 use alloc::vec::Vec;
 
-use crate::ExclusiveSeries;
 use crate::MAX_TEMPLATE_BUNDLES;
 
 const MAX_TOTAL_TICKETS: u64 = u32::MAX as u64;
@@ -75,21 +74,19 @@ pub enum PrizeAsset<'a> {
 		tree: [u8; 32],
 		items: &'a [PrizePoolItem<'a>],
 	},
-	/// An Exclusive Lootbox NFT minted on claim from the template's series.
-	/// Its escrow is the series' SOL bonus reserve, not a per-copy deposit.
+	/// One Exclusive Lootbox NFT minted on claim from a published
+	/// `ExclusiveCollectionState`. Many bundles may attach to one collection.
 	ExclusiveNft {
-		series: &'a ExclusiveSeries<'a>,
+		collection: [u8; 32],
 	},
 }
 
 impl PrizeAsset<'_> {
-	/// None denotes native SOL or the template's Exclusive NFT series, whose
-	/// PDA derives from the template; every other value is the stored asset
-	/// identifier.
+	/// None denotes native SOL; every other value is the stored asset identifier.
 	#[must_use]
 	pub const fn identifier(self) -> Option<[u8; 32]> {
 		match self {
-			Self::Sol { .. } | Self::QuoteSol { .. } | Self::ExclusiveNft { .. } => None,
+			Self::Sol { .. } | Self::QuoteSol { .. } => None,
 			Self::ClassicToken { mint, .. }
 			| Self::Token2022 { mint, .. }
 			| Self::QuoteToken { mint, .. }
@@ -98,6 +95,7 @@ impl PrizeAsset<'_> {
 			| Self::MetadataNft { mint } => Some(mint),
 			Self::CoreAsset { asset } | Self::CompressedNft { asset } => Some(asset),
 			Self::PrizePool { tree, .. } => Some(tree),
+			Self::ExclusiveNft { collection } => Some(collection),
 		}
 	}
 
@@ -116,15 +114,6 @@ impl PrizeAsset<'_> {
 			| Self::CompressedNft { .. }
 			| Self::PrizePool { .. }
 			| Self::ExclusiveNft { .. } => 1,
-		}
-	}
-
-	/// Lamports escrowed per winning copy. Exclusive NFT bonuses are escrowed
-	/// per tier count rather than per copy, so they contribute nothing here.
-	const fn sol_per_win(self) -> u64 {
-		match self {
-			Self::Sol { lamports } | Self::QuoteSol { lamports } => lamports,
-			_ => 0,
 		}
 	}
 
@@ -212,15 +201,6 @@ impl<'a> TemplatePlan<'a> {
 			return Err(TemplatePlanError::InvalidBundleCount);
 		}
 
-		let exclusive_series = bundles
-			.iter()
-			.flat_map(|bundle| bundle.assets)
-			.filter(|asset| matches!(asset, PrizeAsset::ExclusiveNft { .. }))
-			.count();
-		if exclusive_series > 1 {
-			return Err(TemplatePlanError::DuplicateUniqueAsset);
-		}
-
 		let mut total_bundles = 0u64;
 		for bundle in bundles {
 			validate_bundle(bundle)?;
@@ -270,7 +250,6 @@ impl<'a> TemplatePlan<'a> {
 			total_bundles,
 			services: ServicePlan::default(),
 		};
-		plan.required_collateral(None)?;
 		for asset in bundles.iter().flat_map(|bundle| bundle.assets) {
 			plan.required_collateral(asset.identifier())?;
 		}
@@ -353,8 +332,7 @@ impl<'a> TemplatePlan<'a> {
 		Some((self.bundles.get(index)?.quantity, self.total_bundles))
 	}
 
-	/// Sum all escrow deposits for an identifier. None selects native SOL,
-	/// which includes every Exclusive NFT tier-bonus reserve.
+	/// Sum all escrow deposits for an identifier. None selects native SOL.
 	///
 	/// # Errors
 	/// Returns arithmetic overflow if a total cannot fit in an on-chain u64.
@@ -363,45 +341,18 @@ impl<'a> TemplatePlan<'a> {
 		identifier: Option<[u8; 32]>,
 	) -> Result<u64, TemplatePlanError> {
 		self.bundles.iter().try_fold(0u64, |total, bundle| {
-			bundle.assets.iter().try_fold(total, |sum, asset| {
-				let deposit = match (asset, identifier) {
-					(PrizeAsset::ExclusiveNft { series }, None) => {
-						series
-							.bonus_reserve_lamports(bundle.quantity)
-							.map_err(|_| TemplatePlanError::InvalidAsset)?
-					}
-					(_, None) => {
-						asset
-							.sol_per_win()
-							.checked_mul(bundle.quantity)
-							.ok_or(TemplatePlanError::ArithmeticOverflow)?
-					}
-					(_, Some(_)) if asset.identifier() == identifier => {
-						asset
-							.amount()
-							.checked_mul(bundle.quantity)
-							.ok_or(TemplatePlanError::ArithmeticOverflow)?
-					}
-					_ => 0,
-				};
-				sum.checked_add(deposit)
-					.ok_or(TemplatePlanError::ArithmeticOverflow)
-			})
+			bundle
+				.assets
+				.iter()
+				.filter(|asset| asset.identifier() == identifier)
+				.try_fold(total, |sum, asset| {
+					asset
+						.amount()
+						.checked_mul(bundle.quantity)
+						.and_then(|amount| sum.checked_add(amount))
+						.ok_or(TemplatePlanError::ArithmeticOverflow)
+				})
 		})
-	}
-}
-
-/// Whether two assets would occupy the same on-chain bundle identifier.
-///
-/// The series PDA is a distinct identifier from native SOL even though the
-/// planner cannot derive it before the template exists.
-fn same_escrow_slot(left: &PrizeAsset<'_>, right: &PrizeAsset<'_>) -> bool {
-	let is_series = |asset: &PrizeAsset<'_>| matches!(asset, PrizeAsset::ExclusiveNft { .. });
-
-	match (is_series(left), is_series(right)) {
-		(true, true) => true,
-		(false, false) => left.identifier() == right.identifier(),
-		_ => false,
 	}
 }
 
@@ -434,11 +385,6 @@ fn validate_bundle(bundle: &PrizeBundle<'_>) -> Result<(), TemplatePlanError> {
 				return Err(TemplatePlanError::InvalidAsset);
 			}
 		}
-		if let PrizeAsset::ExclusiveNft { series } = asset {
-			series
-				.bonus_reserve_lamports(bundle.quantity)
-				.map_err(|_| TemplatePlanError::InvalidAsset)?;
-		}
 		if asset.amount() == 0
 			|| asset.identifier() == Some([0; 32])
 			|| asset.identifier() == Some(WRAPPED_SOL_MINT)
@@ -450,7 +396,7 @@ fn validate_bundle(bundle: &PrizeBundle<'_>) -> Result<(), TemplatePlanError> {
 		}
 		if bundle.assets[..index]
 			.iter()
-			.any(|previous| same_escrow_slot(previous, asset))
+			.any(|previous| previous.identifier() == asset.identifier())
 		{
 			return Err(TemplatePlanError::DuplicateAsset);
 		}

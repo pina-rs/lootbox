@@ -8,7 +8,7 @@
 	clippy::too_many_arguments
 )]
 
-pub const CLAIM_EXCLUSIVE_NFT_DISCRIMINATOR: u8 = 55u8;
+pub const CLAIM_EXCLUSIVE_NFT_DISCRIMINATOR: u8 = 58u8;
 pub const CLAIM_EXCLUSIVE_NFT_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
@@ -17,14 +17,15 @@ pub struct ClaimExclusiveNft {
 	pub template: solana_pubkey::Pubkey,
 	pub opening: solana_pubkey::Pubkey,
 	pub bundle: solana_pubkey::Pubkey,
-	pub exclusive_series: solana_pubkey::Pubkey,
+	pub exclusive_attachment: solana_pubkey::Pubkey,
 	/// Pays Bubblegum's per-mint fee from the creator's escrow.
 	pub fee_vault: solana_pubkey::Pubkey,
-	/// Must be the opening's bound beneficiary; receives the leaf and bonus.
+	pub exclusive_collection: solana_pubkey::Pubkey,
+	/// Must be the opening's bound beneficiary; becomes the leaf owner.
 	pub recipient: solana_pubkey::Pubkey,
 	pub tree_config: solana_pubkey::Pubkey,
 	pub merkle_tree: solana_pubkey::Pubkey,
-	pub collection: solana_pubkey::Pubkey,
+	pub core_collection: solana_pubkey::Pubkey,
 	pub core_cpi_signer: solana_pubkey::Pubkey,
 	pub bubblegum_program: solana_pubkey::Pubkey,
 	pub core_program: solana_pubkey::Pubkey,
@@ -34,17 +35,18 @@ pub struct ClaimExclusiveNft {
 }
 
 impl ClaimExclusiveNft {
-	pub fn new(template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, exclusive_series: solana_pubkey::Pubkey, fee_vault: solana_pubkey::Pubkey, recipient: solana_pubkey::Pubkey, tree_config: solana_pubkey::Pubkey, merkle_tree: solana_pubkey::Pubkey, collection: solana_pubkey::Pubkey, core_cpi_signer: solana_pubkey::Pubkey, bubblegum_program: solana_pubkey::Pubkey, core_program: solana_pubkey::Pubkey, log_wrapper: solana_pubkey::Pubkey, compression_program: solana_pubkey::Pubkey) -> Self {
+	pub fn new(template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, exclusive_attachment: solana_pubkey::Pubkey, fee_vault: solana_pubkey::Pubkey, exclusive_collection: solana_pubkey::Pubkey, recipient: solana_pubkey::Pubkey, tree_config: solana_pubkey::Pubkey, merkle_tree: solana_pubkey::Pubkey, core_collection: solana_pubkey::Pubkey, core_cpi_signer: solana_pubkey::Pubkey, bubblegum_program: solana_pubkey::Pubkey, core_program: solana_pubkey::Pubkey, log_wrapper: solana_pubkey::Pubkey, compression_program: solana_pubkey::Pubkey) -> Self {
 		Self {
 			template,
 			opening,
 			bundle,
-			exclusive_series,
+			exclusive_attachment,
 			fee_vault,
+			exclusive_collection,
 			recipient,
 			tree_config,
 			merkle_tree,
-			collection,
+			core_collection,
 			core_cpi_signer,
 			bubblegum_program,
 			core_program,
@@ -64,16 +66,17 @@ impl ClaimExclusiveNft {
 		data: ClaimExclusiveNftInstructionData,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(15 + remaining_accounts.len());
+		let mut accounts = Vec::with_capacity(16 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.exclusive_series, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.exclusive_attachment, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.fee_vault, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.recipient, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.exclusive_collection, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.recipient, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.tree_config, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.merkle_tree, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.collection, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.core_collection, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.core_cpi_signer, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.bubblegum_program, false));
 		accounts.push(solana_instruction::AccountMeta::new_readonly(self.core_program, false));

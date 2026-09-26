@@ -144,9 +144,13 @@ const int lootboxProgramErrorMutablePrize = 0x21; // 33
 /// Message: "The reserved migration route only validates already-current accounts."
 const int lootboxProgramErrorMigrationLocked = 0x22; // 34
 
-/// The exclusive NFT series configuration, account, or binding is invalid.
-/// Message: "The exclusive NFT series configuration, account, or binding is invalid."
-const int lootboxProgramErrorInvalidExclusiveSeries = 0x23; // 35
+/// The Exclusive NFT collection, attachment, layers, or tree is invalid.
+/// Message: "The Exclusive NFT collection, attachment, layers, or tree is invalid."
+const int lootboxProgramErrorInvalidExclusiveCollection = 0x23; // 35
+
+/// The Exclusive NFT collection is not accepting new attachments now.
+/// Message: "The Exclusive NFT collection is not accepting new attachments now."
+const int lootboxProgramErrorExclusiveAttachWindowClosed = 0x24; // 36
 
 /// Map of error codes to human-readable messages.
 const Map<int, String> _lootboxProgramErrorMessages = {
@@ -215,8 +219,10 @@ const Map<int, String> _lootboxProgramErrorMessages = {
       'A prize\'s advertised identity is still mutable after escrow.',
   lootboxProgramErrorMigrationLocked:
       'The reserved migration route only validates already-current accounts.',
-  lootboxProgramErrorInvalidExclusiveSeries:
-      'The exclusive NFT series configuration, account, or binding is invalid.',
+  lootboxProgramErrorInvalidExclusiveCollection:
+      'The Exclusive NFT collection, attachment, layers, or tree is invalid.',
+  lootboxProgramErrorExclusiveAttachWindowClosed:
+      'The Exclusive NFT collection is not accepting new attachments now.',
 };
 
 /// Get the error message for a LootboxProgram program error code.

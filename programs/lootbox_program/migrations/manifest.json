@@ -713,16 +713,99 @@
 				"discriminatorBytes": 1,
 				"discriminatorHex": "0a"
 			},
-			"rustName": "ExclusiveSeriesState",
+			"rustName": "ExclusiveCollectionState",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
 						"fields": [
 							{
-								"name": "authority",
+								"name": "admin",
 								"rustType": "Address"
 							},
+							{
+								"name": "core_collection",
+								"rustType": "Address"
+							},
+							{
+								"name": "active_tree",
+								"rustType": "Address"
+							},
+							{
+								"name": "layers_hash",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "collection_id",
+								"rustType": "u64"
+							},
+							{
+								"name": "minted",
+								"rustType": "u64"
+							},
+							{
+								"name": "attach_opens_at",
+								"rustType": "i64"
+							},
+							{
+								"name": "attach_closes_at",
+								"rustType": "i64"
+							},
+							{
+								"name": "tree_count",
+								"rustType": "u32"
+							},
+							{
+								"name": "trait_counts",
+								"rustType": "[u8; 12]"
+							},
+							{
+								"name": "weights",
+								"rustType": "[u8; 3072]"
+							},
+							{
+								"name": "name_prefix",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "symbol",
+								"rustType": "[u8; 10]"
+							},
+							{
+								"name": "base_uri",
+								"rustType": "[u8; 128]"
+							},
+							{
+								"name": "layer_count",
+								"rustType": "u8"
+							},
+							{
+								"name": "status",
+								"rustType": "u8"
+							},
+							{
+								"name": "bump",
+								"rustType": "u8"
+							}
+						],
+						"codec": "pinaPodV2"
+					},
+					"transition": null
+				}
+			]
+		},
+		"account:1:0b": {
+			"identity": {
+				"kind": "account",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "0b"
+			},
+			"rustName": "ExclusiveAttachmentState",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
 							{
 								"name": "template",
 								"rustType": "Address"
@@ -736,8 +819,8 @@
 								"rustType": "Address"
 							},
 							{
-								"name": "merkle_tree",
-								"rustType": "Address"
+								"name": "layers_hash",
+								"rustType": "[u8; 32]"
 							},
 							{
 								"name": "quantity",
@@ -748,71 +831,11 @@
 								"rustType": "u64"
 							},
 							{
-								"name": "rent_reserve",
-								"rustType": "u64"
-							},
-							{
 								"name": "mint_fee_lamports",
 								"rustType": "u64"
 							},
 							{
-								"name": "weights",
-								"rustType": "[u8; 64]"
-							},
-							{
-								"name": "bonus_lamports",
-								"rustType": "[u8; 128]"
-							},
-							{
-								"name": "bonus_counts",
-								"rustType": "[u8; 64]"
-							},
-							{
-								"name": "bonus_remaining",
-								"rustType": "[u8; 64]"
-							},
-							{
-								"name": "tier_minted",
-								"rustType": "[u8; 64]"
-							},
-							{
-								"name": "name_prefix",
-								"rustType": "[u8; 32]"
-							},
-							{
-								"name": "symbol",
-								"rustType": "[u8; 10]"
-							},
-							{
-								"name": "base_uri",
-								"rustType": "[u8; 96]"
-							},
-							{
-								"name": "max_buffer_size",
-								"rustType": "u32"
-							},
-							{
 								"name": "asset_index",
-								"rustType": "u8"
-							},
-							{
-								"name": "contents_count",
-								"rustType": "u8"
-							},
-							{
-								"name": "background_count",
-								"rustType": "u8"
-							},
-							{
-								"name": "pattern_count",
-								"rustType": "u8"
-							},
-							{
-								"name": "max_depth",
-								"rustType": "u8"
-							},
-							{
-								"name": "status",
 								"rustType": "u8"
 							},
 							{
@@ -851,7 +874,11 @@
 								"rustType": "Address"
 							},
 							{
-								"name": "series",
+								"name": "collection",
+								"rustType": "Address"
+							},
+							{
+								"name": "attachment",
 								"rustType": "Address"
 							},
 							{
@@ -871,23 +898,11 @@
 								"rustType": "u64"
 							},
 							{
-								"name": "bonus_lamports",
-								"rustType": "u64"
+								"name": "traits",
+								"rustType": "[u8; 12]"
 							},
 							{
-								"name": "tier",
-								"rustType": "u8"
-							},
-							{
-								"name": "contents",
-								"rustType": "u8"
-							},
-							{
-								"name": "background",
-								"rustType": "u8"
-							},
-							{
-								"name": "pattern",
+								"name": "layer_count",
 								"rustType": "u8"
 							}
 						],
@@ -5854,47 +5869,31 @@
 				"discriminatorBytes": 1,
 				"discriminatorHex": "35"
 			},
-			"rustName": "CreateExclusiveSeriesInstruction",
+			"rustName": "CreateExclusiveCollectionInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
 						"fields": [
 							{
-								"name": "asset_index",
+								"name": "collection_id",
+								"rustType": "u64"
+							},
+							{
+								"name": "attach_opens_at",
+								"rustType": "i64"
+							},
+							{
+								"name": "attach_closes_at",
+								"rustType": "i64"
+							},
+							{
+								"name": "layer_count",
 								"rustType": "u8"
 							},
 							{
 								"name": "bump",
 								"rustType": "u8"
-							},
-							{
-								"name": "fee_vault_bump",
-								"rustType": "u8"
-							},
-							{
-								"name": "contents_count",
-								"rustType": "u8"
-							},
-							{
-								"name": "background_count",
-								"rustType": "u8"
-							},
-							{
-								"name": "pattern_count",
-								"rustType": "u8"
-							},
-							{
-								"name": "weights",
-								"rustType": "[u8; 64]"
-							},
-							{
-								"name": "bonus_lamports",
-								"rustType": "[u8; 128]"
-							},
-							{
-								"name": "bonus_counts",
-								"rustType": "[u8; 64]"
 							},
 							{
 								"name": "name_prefix",
@@ -5906,7 +5905,7 @@
 							},
 							{
 								"name": "base_uri",
-								"rustType": "[u8; 96]"
+								"rustType": "[u8; 128]"
 							}
 						],
 						"codec": "pinaPodV2"
@@ -5914,7 +5913,7 @@
 					"process": {
 						"accounts": [
 							{
-								"name": "authority",
+								"name": "admin",
 								"writable": true,
 								"signer": true,
 								"optional": false,
@@ -5922,32 +5921,24 @@
 								"pda": null
 							},
 							{
-								"name": "template",
+								"name": "exclusive_collection",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": "exclusive_collection"
+							},
+							{
+								"name": "core_collection",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "core_program",
 								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
-							},
-							{
-								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
-							},
-							{
-								"name": "exclusive_series",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": "exclusive_series"
-							},
-							{
-								"name": "fee_vault",
-								"writable": true,
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
@@ -5973,7 +5964,58 @@
 				"discriminatorBytes": 1,
 				"discriminatorHex": "36"
 			},
-			"rustName": "InitializeExclusiveSeriesInstruction",
+			"rustName": "SetExclusiveLayerInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "layer_index",
+								"rustType": "u8"
+							},
+							{
+								"name": "trait_count",
+								"rustType": "u8"
+							},
+							{
+								"name": "weights",
+								"rustType": "[u8; 256]"
+							}
+						],
+						"codec": "pinaPodV2"
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "admin",
+								"writable": false,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "exclusive_collection",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							}
+						]
+					},
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:37": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "37"
+			},
+			"rustName": "AppendExclusiveTreeInstruction",
 			"versions": [
 				{
 					"schema": {
@@ -5993,7 +6035,7 @@
 					"process": {
 						"accounts": [
 							{
-								"name": "authority",
+								"name": "admin",
 								"writable": true,
 								"signer": true,
 								"optional": false,
@@ -6001,33 +6043,9 @@
 								"pda": null
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
-							},
-							{
-								"name": "bundle",
+								"name": "exclusive_collection",
 								"writable": true,
 								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
-							},
-							{
-								"name": "exclusive_series",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
-							},
-							{
-								"name": "collection",
-								"writable": true,
-								"signer": true,
 								"optional": false,
 								"defaultValue": null,
 								"pda": null
@@ -6043,14 +6061,6 @@
 							{
 								"name": "merkle_tree",
 								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
-							},
-							{
-								"name": "core_program",
-								"writable": false,
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
@@ -6094,11 +6104,140 @@
 				}
 			]
 		},
-		"instruction:1:37": {
+		"instruction:1:38": {
 			"identity": {
 				"kind": "instruction",
 				"discriminatorBytes": 1,
-				"discriminatorHex": "37"
+				"discriminatorHex": "38"
+			},
+			"rustName": "PublishExclusiveCollectionInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [],
+						"codec": "pinaPodV2"
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "admin",
+								"writable": false,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "exclusive_collection",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							}
+						]
+					},
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:39": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "39"
+			},
+			"rustName": "AttachExclusiveNftInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "asset_index",
+								"rustType": "u8"
+							},
+							{
+								"name": "bump",
+								"rustType": "u8"
+							},
+							{
+								"name": "fee_vault_bump",
+								"rustType": "u8"
+							}
+						],
+						"codec": "pinaPodV2"
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "bundle",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "exclusive_collection",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "exclusive_attachment",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": "exclusive_attachment"
+							},
+							{
+								"name": "fee_vault",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "system_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:11111111111111111111111111111111",
+								"pda": null
+							}
+						]
+					},
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:3a": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "3a"
 			},
 			"rustName": "ClaimExclusiveNftInstruction",
 			"versions": [
@@ -6140,7 +6279,7 @@
 								"pda": null
 							},
 							{
-								"name": "exclusive_series",
+								"name": "exclusive_attachment",
 								"writable": true,
 								"signer": false,
 								"optional": false,
@@ -6156,8 +6295,16 @@
 								"pda": null
 							},
 							{
-								"name": "recipient",
+								"name": "exclusive_collection",
 								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "recipient",
+								"writable": false,
 								"signer": false,
 								"optional": false,
 								"defaultValue": null,
@@ -6180,7 +6327,7 @@
 								"pda": null
 							},
 							{
-								"name": "collection",
+								"name": "core_collection",
 								"writable": true,
 								"signer": false,
 								"optional": false,
@@ -6241,13 +6388,13 @@
 				}
 			]
 		},
-		"instruction:1:38": {
+		"instruction:1:3b": {
 			"identity": {
 				"kind": "instruction",
 				"discriminatorBytes": 1,
-				"discriminatorHex": "38"
+				"discriminatorHex": "3b"
 			},
-			"rustName": "ReclaimExclusiveReserveInstruction",
+			"rustName": "ReclaimExclusiveFeesInstruction",
 			"versions": [
 				{
 					"schema": {
@@ -6295,7 +6442,7 @@
 								"pda": null
 							},
 							{
-								"name": "exclusive_series",
+								"name": "exclusive_attachment",
 								"writable": true,
 								"signer": false,
 								"optional": false,

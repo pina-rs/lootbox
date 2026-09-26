@@ -36,7 +36,8 @@ Instruction getMigrateInstruction({
   Address? resultReceiptState,
   Address? prizePoolState,
   Address? prizePoolItemState,
-  Address? exclusiveSeriesState,
+  Address? exclusiveCollectionState,
+  Address? exclusiveAttachmentState,
 }) {
   final resolvedProgram = programAddress ?? lootboxProgramProgramAddress;
   final metas = <AccountMeta>[
@@ -93,8 +94,14 @@ Instruction getMigrateInstruction({
           : AccountRole.writable,
     ),
     AccountMeta(
-      address: exclusiveSeriesState ?? resolvedProgram,
-      role: exclusiveSeriesState == null
+      address: exclusiveCollectionState ?? resolvedProgram,
+      role: exclusiveCollectionState == null
+          ? AccountRole.readonly
+          : AccountRole.writable,
+    ),
+    AccountMeta(
+      address: exclusiveAttachmentState ?? resolvedProgram,
+      role: exclusiveAttachmentState == null
           ? AccountRole.readonly
           : AccountRole.writable,
     ),
@@ -111,7 +118,8 @@ Instruction getMigrateInstruction({
     resultReceiptState,
     prizePoolState,
     prizePoolItemState,
-    exclusiveSeriesState,
+    exclusiveCollectionState,
+    exclusiveAttachmentState,
   ];
   var last = -1;
   for (var index = 0; index < provided.length; index++) {

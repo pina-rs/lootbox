@@ -18,10 +18,10 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
-/// CPI call for the `create_exclusive_series` instruction.
+/// CPI call for the `attach_exclusive_nft` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
-pub struct CreateExclusiveSeries<'account> {
+pub struct AttachExclusiveNft<'account> {
 	/// CPI account `authority`.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
@@ -34,9 +34,13 @@ pub struct CreateExclusiveSeries<'account> {
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
-	/// CPI account `exclusiveSeries`.
+	/// CPI account `exclusiveCollection`.
+	/// Required privileges: read-only.
+	pub exclusive_collection: &'account AccountView,
+
+	/// CPI account `exclusiveAttachment`.
 	/// Required privileges: writable.
-	pub exclusive_series: &'account AccountView,
+	pub exclusive_attachment: &'account AccountView,
 
 	/// CPI account `feeVault`.
 	/// Zero-data System account PDA that prepays Bubblegum mint fees.
@@ -48,13 +52,13 @@ pub struct CreateExclusiveSeries<'account> {
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
-	/// Instruction arguments encoded and sent as CPI data for `create_exclusive_series`.
-	pub ix: CreateExclusiveSeriesIx,
+	/// Instruction arguments encoded and sent as CPI data for `attach_exclusive_nft`.
+	pub ix: AttachExclusiveNftIx,
 }
 
-/// Instruction arguments for the `create_exclusive_series` CPI call.
+/// Instruction arguments for the `attach_exclusive_nft` CPI call.
 #[derive(Clone, Copy, Debug)]
-pub struct CreateExclusiveSeriesIx {
+pub struct AttachExclusiveNftIx {
 	/// Instruction argument `assetIndex`.
 	pub asset_index: u8,
 
@@ -63,62 +67,26 @@ pub struct CreateExclusiveSeriesIx {
 
 	/// Instruction argument `feeVaultBump`.
 	pub fee_vault_bump: u8,
-
-	/// Instruction argument `contentsCount`.
-	pub contents_count: u8,
-
-	/// Instruction argument `backgroundCount`.
-	pub background_count: u8,
-
-	/// Instruction argument `patternCount`.
-	pub pattern_count: u8,
-
-	/// Instruction argument `weights`.
-	pub weights: [u8; 64],
-
-	/// Instruction argument `bonusLamports`.
-	pub bonus_lamports: [u8; 128],
-
-	/// Instruction argument `bonusCounts`.
-	pub bonus_counts: [u8; 64],
-
-	/// Instruction argument `namePrefix`.
-	pub name_prefix: [u8; 32],
-
-	/// Instruction argument `symbol`.
-	pub symbol: [u8; 10],
-
-	/// Instruction argument `baseUri`.
-	pub base_uri: [u8; 96],
 }
 
-impl CreateExclusiveSeriesIx {
+impl AttachExclusiveNftIx {
 	/// Number of bytes in the encoded instruction, including its discriminator.
-	pub const LEN: usize = 402;
+	pub const LEN: usize = 5;
 
 	/// Encodes the discriminator and instruction arguments for CPI.
 	#[inline(always)]
-	pub fn to_bytes(&self) -> Result<[u8; 402], ProgramError> {
-		let mut data = [0u8; 402];
-		data[..2].copy_from_slice(&CREATE_EXCLUSIVE_SERIES_DISCRIMINATOR);
+	pub fn to_bytes(&self) -> Result<[u8; 5], ProgramError> {
+		let mut data = [0u8; 5];
+		data[..2].copy_from_slice(&ATTACH_EXCLUSIVE_NFT_DISCRIMINATOR);
 		data[2..3].copy_from_slice(&self.asset_index.to_le_bytes());
 		data[3..4].copy_from_slice(&self.bump.to_le_bytes());
 		data[4..5].copy_from_slice(&self.fee_vault_bump.to_le_bytes());
-		data[5..6].copy_from_slice(&self.contents_count.to_le_bytes());
-		data[6..7].copy_from_slice(&self.background_count.to_le_bytes());
-		data[7..8].copy_from_slice(&self.pattern_count.to_le_bytes());
-		data[8..72].copy_from_slice(&self.weights);
-		data[72..200].copy_from_slice(&self.bonus_lamports);
-		data[200..264].copy_from_slice(&self.bonus_counts);
-		data[264..296].copy_from_slice(&self.name_prefix);
-		data[296..306].copy_from_slice(&self.symbol);
-		data[306..402].copy_from_slice(&self.base_uri);
 
 		Ok(data)
 	}
 }
 
-impl<'account> CreateExclusiveSeries<'account> {
+impl<'account> AttachExclusiveNft<'account> {
 	/// Invokes the instruction with no PDA seeds.
 	#[inline(always)]
 	pub fn invoke(&self, program: &ProgramAccount<'_>) -> ProgramResult {
@@ -132,11 +100,12 @@ impl<'account> CreateExclusiveSeries<'account> {
 		program: &ProgramAccount<'_>,
 		signers: &[Signer<'_, '_>],
 	) -> ProgramResult {
-		let accounts: [CpiHandle<'_>; 6] = [
+		let accounts: [CpiHandle<'_>; 7] = [
 			CpiHandle::writable_signer(self.authority)?,
 			CpiHandle::readonly(self.template),
 			CpiHandle::writable(self.bundle)?,
-			CpiHandle::writable(self.exclusive_series)?,
+			CpiHandle::readonly(self.exclusive_collection),
+			CpiHandle::writable(self.exclusive_attachment)?,
 			CpiHandle::writable(self.fee_vault)?,
 			CpiHandle::readonly(self.system_program),
 		];
@@ -147,4 +116,4 @@ impl<'account> CreateExclusiveSeries<'account> {
 	}
 }
 
-const CREATE_EXCLUSIVE_SERIES_DISCRIMINATOR: [u8; 2] = [53, 0];
+const ATTACH_EXCLUSIVE_NFT_DISCRIMINATOR: [u8; 2] = [57, 0];

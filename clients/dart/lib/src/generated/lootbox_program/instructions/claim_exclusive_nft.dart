@@ -14,7 +14,7 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class ClaimExclusiveNftInstructionData {
   const ClaimExclusiveNftInstructionData({required this.assetIndex})
-    : discriminator = 55,
+    : discriminator = 58,
       migrationVersion = 0;
 
   final int discriminator;
@@ -33,7 +33,7 @@ getClaimExclusiveNftInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (ClaimExclusiveNftInstructionData value) => <String, Object?>{
-      'discriminator': 55,
+      'discriminator': 58,
       'migrationVersion': 0,
       'assetIndex': value.assetIndex,
     },
@@ -60,7 +60,7 @@ getClaimExclusiveNftInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(55)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(58)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {
@@ -107,12 +107,13 @@ Instruction getClaimExclusiveNftInstruction({
   required Address template,
   required Address opening,
   required Address bundle,
-  required Address exclusiveSeries,
+  required Address exclusiveAttachment,
   required Address feeVault,
+  required Address exclusiveCollection,
   required Address recipient,
   required Address treeConfig,
   required Address merkleTree,
-  required Address collection,
+  required Address coreCollection,
   required Address coreCpiSigner,
   required Address bubblegumProgram,
   required Address coreProgram,
@@ -131,12 +132,13 @@ Instruction getClaimExclusiveNftInstruction({
       AccountMeta(address: template, role: AccountRole.readonly),
       AccountMeta(address: opening, role: AccountRole.writable),
       AccountMeta(address: bundle, role: AccountRole.writable),
-      AccountMeta(address: exclusiveSeries, role: AccountRole.writable),
+      AccountMeta(address: exclusiveAttachment, role: AccountRole.writable),
       AccountMeta(address: feeVault, role: AccountRole.writable),
-      AccountMeta(address: recipient, role: AccountRole.writable),
+      AccountMeta(address: exclusiveCollection, role: AccountRole.writable),
+      AccountMeta(address: recipient, role: AccountRole.readonly),
       AccountMeta(address: treeConfig, role: AccountRole.writable),
       AccountMeta(address: merkleTree, role: AccountRole.writable),
-      AccountMeta(address: collection, role: AccountRole.writable),
+      AccountMeta(address: coreCollection, role: AccountRole.writable),
       AccountMeta(address: coreCpiSigner, role: AccountRole.readonly),
       AccountMeta(address: bubblegumProgram, role: AccountRole.readonly),
       AccountMeta(address: coreProgram, role: AccountRole.readonly),

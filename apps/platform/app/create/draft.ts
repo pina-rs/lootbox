@@ -4,7 +4,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 
 import type { Cluster } from "../lib/clusters.js";
-import { defaultExclusiveWeights } from "../lib/exclusive-nft.js";
 import type { DraftBundle, DraftData } from "../lib/schemas.js";
 
 export const STEPS = [
@@ -49,11 +48,7 @@ export function emptyDraft(): DraftData {
 				: Intl.DateTimeFormat().resolvedOptions().timeZone,
 		},
 		bundles: [],
-		consolation: {
-			enabled: false,
-			count: 0,
-			weights: defaultExclusiveWeights(),
-		},
+		consolation: { enabled: false, count: 0 },
 	};
 }
 

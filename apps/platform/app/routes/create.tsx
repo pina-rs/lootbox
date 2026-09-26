@@ -207,6 +207,7 @@ function Wizard(
 					unavailableReason={exclusive.status === "unavailable"
 						? exclusive.reason
 						: null}
+					now={now}
 					dispatch={dispatch}
 				/>
 			)}

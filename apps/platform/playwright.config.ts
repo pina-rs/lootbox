@@ -29,7 +29,10 @@ export default defineConfig({
 			command: [
 				"node e2e/prepare.ts",
 				"./node_modules/.bin/wrangler d1 migrations apply lootbox --local --config e2e/wrangler.e2e.jsonc --persist-to .wrangler/e2e",
-				"./node_modules/.bin/react-router dev --host 127.0.0.1",
+				// A production build served by Miniflare: no dev-only dependency
+				// re-optimisation, and the same Worker bundle `wrangler deploy` ships.
+				"./node_modules/.bin/react-router build",
+				"./node_modules/.bin/vite preview --host 127.0.0.1 --port 5175 --strictPort",
 			].join(" && "),
 			url: `http://127.0.0.1:${PORT}`,
 			reuseExistingServer: false,

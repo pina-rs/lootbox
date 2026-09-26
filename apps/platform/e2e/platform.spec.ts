@@ -46,6 +46,20 @@ async function expectAccessible(page: Page, label: string) {
 		.toEqual([]);
 }
 
+/** Save a screenshot when LOOTBOX_SCREENSHOTS is set (for design review). */
+async function snap(page: Page, name: string) {
+	const directory = process.env.LOOTBOX_SCREENSHOTS;
+
+	if (!directory) return;
+
+	const project = test.info().project.name;
+
+	await page.screenshot({
+		path: `${directory}/${project}-${name}.png`,
+		fullPage: true,
+	});
+}
+
 function collectConsoleErrors(page: Page): string[] {
 	const errors: string[] = [];
 
@@ -92,6 +106,7 @@ test("home and explore are accessible", async ({ page }) => {
 		"real prizes",
 	);
 	await expectAccessible(page, "home");
+	await snap(page, "01-home");
 	await page.getByRole("link", { name: "Explore", exact: true }).click();
 	await expect(page).toHaveURL(/\/explore$/);
 	await expect(page.getByRole("heading", { name: "Explore" })).toBeVisible();
@@ -116,6 +131,7 @@ test("a creator launches a lootbox through the wizard", async ({ page }) => {
 	await page.getByRole("button", { name: "Tomorrow" }).click();
 	await expect(page.getByText(/Opens \d+h|Opens 1d/)).toBeVisible();
 	await expectAccessible(page, "wizard details");
+	await snap(page, "02-create-details");
 	await page.getByRole("button", { name: "Next" }).click();
 
 	// 2. Prizes: a rare SOL bundle and a common token bundle.
@@ -145,16 +161,19 @@ test("a creator launches a lootbox through the wizard", async ({ page }) => {
 
 	await expect(preview).toContainText("25%");
 	await expect(preview).toContainText("75%");
+	await snap(page, "03-create-prizes");
 	await page.getByRole("button", { name: "Next" }).click();
 
 	// 3. Exclusive Lootbox NFTs are behind a flag until the program ships them.
 	await expect(page.getByTestId("exclusive-unavailable")).toBeVisible();
+	await snap(page, "04-create-exclusive");
 	await page.getByRole("button", { name: "Review" }).click();
 
 	// 4. Review
 	await expect(page.getByTestId("cost-total")).toContainText("SOL");
 	await expect(page.getByTestId("review-odds")).toContainText("Token pile");
 	await expectAccessible(page, "wizard review");
+	await snap(page, "05-create-review");
 	await page.getByRole("button", { name: "Continue to launch" }).click();
 
 	// 5. Launch
@@ -165,6 +184,7 @@ test("a creator launches a lootbox through the wizard", async ({ page }) => {
 	await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 	await expect(page.getByTestId("status")).toHaveText("Being filled");
 	await expect(page.getByTestId("odds-table")).toContainText("Token pile");
+	await snap(page, "06-live-page");
 	expect(errors).toEqual([]);
 });
 
@@ -201,9 +221,10 @@ test("the creator edits the page, locks, and sends a box", async ({ page }) => {
 
 	await page.getByLabel("Recipients").fill(`${friend.address} 2`);
 	await page.getByRole("button", { name: "Send 2 boxes" }).click();
-	await expect(page.getByTestId("tx-progress")).toContainText("Sent 2 boxes", {
+	await expect(page.getByTestId("sent")).toHaveText("Sent 2 boxes.", {
 		timeout: 60_000,
 	});
+	await snap(page, "07-manage");
 	expect(errors).toEqual([]);
 });
 
@@ -220,6 +241,7 @@ test("rules tab navigation, metadata, and explore listing", async ({ page, reque
 		"to be announced",
 	);
 	await expectAccessible(page, "rules");
+	await snap(page, "08-rules");
 
 	const treasury = await page.getByRole("link", { name: "treasury account" })
 		.getAttribute("href");
@@ -234,6 +256,20 @@ test("rules tab navigation, metadata, and explore listing", async ({ page, reque
 
 	expect(metadata).toMatchObject({ name, symbol: "TREASURE" });
 	expect(JSON.stringify(metadata)).toContain("Shiny things for testers");
+
+	const card = await request.get(`/og/${slug}.png`);
+
+	expect(card.headers()["content-type"]).toBe("image/png");
+	expect([...(await card.body()).subarray(0, 4)]).toEqual([
+		0x89,
+		0x50,
+		0x4e,
+		0x47,
+	]);
+	expect(
+		await page.locator('meta[property="og:image"]').getAttribute("content"),
+	)
+		.toMatch(new RegExp(`/og/${slug}\\.png$`));
 
 	await page.goBack();
 	await expect(page).toHaveURL(new RegExp(`/l/${slug}$`));
@@ -314,11 +350,13 @@ test("a friend opens a box after the reveal and claims the prize", async ({ page
 	await expect(page.getByRole("heading", { name: "Your unfinished openings" }))
 		.toBeVisible();
 	await expectAccessible(page, "holder");
+	await snap(page, "09-holder");
 
 	await page.getByRole("button", { name: "Open without holding" }).click();
 	const card = page.getByTestId("prize-card");
 
 	await expect(card).toBeVisible({ timeout: 60_000 });
+	await snap(page, "10-prize");
 	await card.getByRole("button", { name: "Claim to wallet" }).click();
 	await expect(card.getByText("Delivered to your wallet.")).toBeVisible({
 		timeout: 60_000,

@@ -477,7 +477,6 @@ function ChainActions(
 					owner={account.address}
 					busy={busy}
 					run={run}
-					progress={progress}
 				/>
 			)}
 			<WindDown
@@ -663,16 +662,16 @@ function LockPanel(
 }
 
 function DistributePanel(
-	{ client, boxMint, owner, busy, run, progress }: Readonly<{
+	{ client, boxMint, owner, busy, run }: Readonly<{
 		client: LootboxClient;
 		boxMint: string;
 		owner: string;
 		busy: boolean;
 		run: Run;
-		progress: (label: string, signature?: string) => void;
 	}>,
 ) {
 	const [text, setText] = useState("");
+	const [sent, setSent] = useState<string | null>(null);
 	const plan = parseDistribution(text);
 
 	return (
@@ -745,12 +744,14 @@ function DistributePanel(
 							);
 						}
 
-						progress(`Sent ${plan.total} boxes`);
+						setSent(`Sent ${plan.total} boxes.`);
 						setText("");
 					})}
 			>
 				Send {plan.total > 0n ? plan.total.toLocaleString("en-US") : ""} boxes
 			</button>
+			{sent && <p className="notice" role="status" data-testid="sent">{sent}
+			</p>}
 		</section>
 	);
 }

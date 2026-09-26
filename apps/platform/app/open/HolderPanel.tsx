@@ -22,9 +22,11 @@ import {
 } from "react";
 import { useRevalidator } from "react-router";
 
+import { ExclusiveNftArt } from "../components/ExclusiveNftArt.js";
 import { TxProgress, useTxProgress } from "../components/TxProgress.js";
 import { openingsFor } from "../lib/chain.js";
 import { chainFor, type ClusterInfo, explorerUrl } from "../lib/clusters.js";
+import { INTRODUCTORY_COLLECTION } from "../lib/exclusive-nft.js";
 import {
 	ELIGIBILITY_STATEMENT,
 	type PrizeView,
@@ -320,7 +322,16 @@ export function HolderPanel(
 							{resultPrize.tier === "headline" ? "Rare prize!" : "You won"}
 						</p>
 						<h3 id="prize-title">{resultPrize.title}</h3>
-						<p>{resultPrize.lines.join(" + ")}</p>
+						{result.exclusive
+							? (
+								<ExclusiveNftArt
+									collection={INTRODUCTORY_COLLECTION}
+									indices={result.exclusive}
+									size={220}
+									caption
+								/>
+							)
+							: <p>{resultPrize.lines.join(" + ")}</p>}
 						{resultPrize.issuerStock && (
 							<p className="fine">{stockDisclaimer(resultPrize.tracks)}</p>
 						)}

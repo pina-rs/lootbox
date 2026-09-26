@@ -15,6 +15,7 @@
 		"deploy": "react-router build && wrangler deploy"
 	},
 	"dependencies": {
+		"@cf-wasm/og": "0.5.0",
 		"@fontsource-variable/nunito": "^5.2.7",
 		"@fontsource/bungee": "^5.3.0",
 		"@pina-rs/lootbox": "workspace:*",

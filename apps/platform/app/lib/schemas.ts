@@ -8,7 +8,6 @@
 import { z } from "zod";
 
 import { CLUSTERS } from "./clusters.js";
-import { EXCLUSIVE_TIER_COUNT } from "./exclusive-nft.js";
 
 const utf8 = new TextEncoder();
 const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -86,11 +85,10 @@ export const draftBundleSchema = z.object({
 
 export type DraftBundle = z.infer<typeof draftBundleSchema>;
 
+/** Attach the global Exclusive Lootbox NFT collection as the consolation. */
 export const consolationSchema = z.object({
 	enabled: z.boolean(),
 	count: z.number().int().min(0).max(100_000),
-	weights: z.array(z.number().int().min(0).max(1_000_000))
-		.length(EXCLUSIVE_TIER_COUNT),
 });
 
 export type Consolation = z.infer<typeof consolationSchema>;

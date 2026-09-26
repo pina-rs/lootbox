@@ -17,7 +17,7 @@ export default [
 	]),
 	route("m/:file", "routes/box-metadata.ts"),
 	route("media/:key", "routes/media.ts"),
-	route("og/:file", "routes/og.ts"),
+	route("og/:file", "routes/og.tsx"),
 	...prefix("api", [
 		route("auth/nonce", "routes/api.auth.nonce.ts"),
 		route("auth/verify", "routes/api.auth.verify.ts"),

@@ -62,7 +62,7 @@ wildcard_imports = "allow"
 base64 = "=0.22.1"
 bs58 = "=0.5.1"
 pina_test = "=0.21.0"
-program_under_test = { package = "lootbox_program", path = "../..", version = "0.0.1-alpha.0" }
+program_under_test = { package = "lootbox_program", path = "../..", version = "0.0.2" }
 solana-commitment-config = "=3.1.1"
 solana-keccak-hasher = "=3.1.0"
 solana-message = "=4.4.1"
@@ -74,4 +74,4 @@ solana-zk-sdk-pod = "=0.1.2"
 spl-token-2022-interface = "=3.1.1"
 spl-token-metadata-interface = "=1.0.1"
 surfpool-sdk = "=1.6.0"
-switchboard_randomness_cpi = { path = "../../../../crates/switchboard_randomness_cpi", version = "0.0.1-alpha.0" }
+switchboard_randomness_cpi = { path = "../../../../crates/switchboard_randomness_cpi", version = "0.0.2" }

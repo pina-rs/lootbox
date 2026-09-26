@@ -1,7 +1,6 @@
 import { writeFileSync } from "node:fs";
 
 import {
-	BACKGROUND_ART_COUNT,
 	backgroundArt,
 	CANVAS,
 } from "../../../../packages/exclusive-nft-art/src/art/backgrounds.ts";
@@ -16,411 +15,255 @@ import {
 	LOCK_Y,
 	POSTER_LID,
 } from "../../../../packages/exclusive-nft-art/src/art/chest.ts";
-import {
-	CONTENTS_ART,
-	contentsRoot,
-} from "../../../../packages/exclusive-nft-art/src/art/contents.ts";
+import { contentsRoot } from "../../../../packages/exclusive-nft-art/src/art/contents.ts";
+import { decorationArt } from "../../../../packages/exclusive-nft-art/src/art/decorations.ts";
 import {
 	AURA_CENTER,
-	cosmosBackArt,
-	cosmosFrontArt,
+	effectArt,
 	haloArt,
 	holoArt,
-	raysArt,
 	sparkleArt,
-	sparklePlacements,
 } from "../../../../packages/exclusive-nft-art/src/art/effects.ts";
+import { lockArt } from "../../../../packages/exclusive-nft-art/src/art/locks.ts";
 import {
 	type Art,
-	type Color,
 	ellipse,
-	type FinishSlot,
 	type Geometry,
-	type Gradient,
 	group,
-	isGradient,
-	isSlot,
-	type Paint,
 	polar,
 	poly,
 	rect,
-	type Shape,
 	shape,
-	slot,
-	type StopColor,
 	type Transform,
-	withAlpha,
 } from "../../../../packages/exclusive-nft-art/src/art/model.ts";
+import { patternArt } from "../../../../packages/exclusive-nft-art/src/art/patterns.ts";
 import {
-	PATTERN_ART_COUNT,
-	patternArt,
-} from "../../../../packages/exclusive-nft-art/src/art/patterns.ts";
-import { STAGE } from "../../../../packages/exclusive-nft-art/src/render.ts";
-import {
+	FINISHES,
 	REVEAL_DRAMA_ORDER,
 	type RevealDrama,
-	type Tier,
-	TIERS,
-} from "../../../../packages/exclusive-nft-art/src/tiers.ts";
+} from "../../../../packages/exclusive-nft-art/src/finishes.ts";
+import {
+	LAYER,
+	type LayerId,
+	LAYERS,
+} from "../../../../packages/exclusive-nft-art/src/layers.ts";
+import {
+	BODY_BOUNDS,
+	LID_BOUNDS,
+	STAGE,
+} from "../../../../packages/exclusive-nft-art/src/render.ts";
+import {
+	RENDER_RULES,
+	type RenderRule,
+} from "../../../../packages/exclusive-nft-art/src/rules.ts";
+import {
+	add,
+	animation,
+	type ColorTrack,
+	cycleFrames,
+	type Ease,
+	equals,
+	type Expr,
+	hold,
+	input,
+	type Key,
+	motionTracks,
+	mul,
+	num,
+	property,
+	PROPERTY_KEY,
+	raise,
+	ref,
+	RmlWriter,
+	slotColor,
+	sub,
+	tokens,
+	type Track,
+	track,
+} from "./rml.ts";
 
 /**
  * Generates `scene.rml` for the Exclusive NFT reveal.
  *
- * All artwork comes from `@pina-rs/exclusive-nft-art`, the same vector model
- * that renders the SVG posters, so the animation and the still always match.
- * This script adds only what a poster lacks: ids, per-tier color keys,
- * visibility states, motion, and the state machine.
+ * All artwork and idle motion come from `@pina-rs/exclusive-nft-art`, the same
+ * model that renders the SVG posters, so still, animated SVG, and Rive match.
+ * The Rive file adds three things of its own:
+ *
+ * - **Visibility by data binding.** Every trait group, in its layer's
+ *   back-to-front order, binds its opacity to its layer's view-model number
+ *   through a per-trait converter that is 1 for that trait and 0 otherwise,
+ *   and render rules fold into the same formulas.
+ * - **Finish poses** in a state machine layer, recoloring the chest's paints.
+ * - **The reveal**: the chest pops, and a celebration that escalates with the
+ *   finish plays over the layers.
  */
 
+const {
+	x: X,
+	y: Y,
+	rotation: ROTATION,
+	scaleX: SCALE_X,
+	scaleY: SCALE_Y,
+	opacity: OPACITY,
+} = PROPERTY_KEY;
+
 // ---------------------------------------------------------------------------
-// Fixed ids and property keys.
+// Fixed ids.
 
 const ARTBOARD = 1;
 const LAYOUT_STYLE = 2;
 const STATE_MACHINE = 3;
 const VIEW_MODEL = 40;
 const VIEW_MODEL_INSTANCE = 41;
-const PROPERTY = {
-	tier: 42,
-	contents: 43,
-	background: 44,
-	pattern: 45,
-	reveal: 46,
-} as const;
+/** One number per layer, then the reveal trigger. */
+const PROPERTY_ID: Readonly<Record<LayerId, number>> = Object.fromEntries(
+	LAYERS.map((layer) => [layer.id, 42 + layer.index]),
+) as Record<LayerId, number>;
+const REVEAL = 42 + LAYERS.length;
 
-const X = 13;
-const Y = 14;
-const ROTATION = 15;
-const SCALE_X = 16;
-const SCALE_Y = 17;
-const OPACITY = 18;
-const SOLID_COLOR = 37;
-const STOP_COLOR = 38;
-
-const FPS = 30;
 const IDLE_FRAMES = 120;
 const REVEAL_FRAMES = 96;
-const AMBIENT_FRAMES = 240;
 const DRAMA_FRAMES = 90;
+const [CX, CY] = AURA_CENTER;
 
-const round = (value: number) => Number(value.toFixed(3));
-const ref = (id: number) => `0:${id}`;
+const writer = new RmlWriter(
+	FINISHES[0]?.palette ?? raise("No finishes"),
+	VIEW_MODEL,
+);
+const converters: string[] = [];
 
 // ---------------------------------------------------------------------------
-// Model → RML. Rive draws the first sibling on top, so every list is reversed.
+// Visibility: one converter per trait, folding in the render rules.
 
-type SlotPaint = Readonly<
-	{ id: number; slot: FinishSlot; alpha: number | undefined; property: number }
->;
+/** 1 while every condition of `rule` holds. */
+function ruleActive(rule: RenderRule): Expr {
+	return Object.entries(rule.when)
+		.map(([layer, values]): Expr => {
+			const source = property(PROPERTY_ID[layer as LayerId]);
 
-class RmlWriter {
-	#next = 1000;
-	readonly keys = new Map<string, number>();
-	readonly slots: SlotPaint[] = [];
-	readonly #fallback: Tier;
-
-	constructor(fallback: Tier) {
-		this.#fallback = fallback;
-	}
-
-	id(): number {
-		return this.#next++;
-	}
-
-	/** The id of a keyed group; throws if the art never declared the key. */
-	key(name: string): number {
-		const id = this.keys.get(name);
-
-		if (id === undefined) {
-			throw new Error(`No keyed group "${name}"`);
-		}
-
-		return id;
-	}
-
-	write(art: readonly Art[]): string {
-		return [...art].reverse().map((item) => this.#art(item)).join("");
-	}
-
-	#art(item: Art): string {
-		return item.kind === "shape" ? this.#shape(item) : this.#group(item);
-	}
-
-	#group(item: Extract<Art, { kind: "group" }>): string {
-		let id: number | null = null;
-
-		if (item.key !== undefined) {
-			if (this.keys.has(item.key)) {
-				throw new Error(`Duplicate key "${item.key}"`);
-			}
-
-			id = this.id();
-			this.keys.set(item.key, id);
-		}
-
-		let clip = "";
-
-		if (item.clip) {
-			const source = this.id();
-
-			clip = `<ClippingShape sourceId="${
-				ref(source)
-			}"/><Shape name="Clip source" id="${ref(source)}">${
-				item.clip.map(geometry).join("")
-			}</Shape>`;
-		}
-
-		return `<Node name="${item.name}"${id === null ? "" : ` id="${ref(id)}"`}${
-			transform(item)
-		}>${clip}${this.write(item.children)}</Node>`;
-	}
-
-	#shape(item: Shape): string {
-		const paths = item.geometry.map(geometry).join("");
-		const fill = item.fill === undefined
-			? ""
-			: `<Fill>${this.#paint(item.fill)}</Fill>`;
-		const stroke = item.stroke
-			? `<Stroke thickness="${
-				round(item.stroke.width)
-			}" cap="round" join="round">${this.#paint(item.stroke.paint)}</Stroke>`
-			: "";
-		const opacity = item.opacity === undefined
-			? ""
-			: ` opacity="${round(item.opacity)}"`;
-
-		return `<Shape name="${item.name}"${opacity}>${paths}${fill}${stroke}</Shape>`;
-	}
-
-	#paint(paint: Paint): string {
-		if (isGradient(paint)) {
-			return this.#gradient(paint);
-		}
-
-		return `<SolidColor${this.#color(paint, SOLID_COLOR, "colorValue")}/>`;
-	}
-
-	#color(color: StopColor, property: number, attribute: string): string {
-		if (!isSlot(color)) {
-			return ` ${attribute}="${color}"`;
-		}
-
-		const id = this.id();
-
-		this.slots.push({ id, slot: color.slot, alpha: color.alpha, property });
-
-		return ` id="${ref(id)}" ${attribute}="${
-			slotColor(this.#fallback, color.slot, color.alpha)
-		}"`;
-	}
-
-	#gradient(gradient: Gradient): string {
-		const tag = gradient.kind === "radial"
-			? "RadialGradient"
-			: "LinearGradient";
-		const [startX, startY] = gradient.from;
-		const [endX, endY] = gradient.to;
-		const stops = gradient.stops.map(([position, color]) =>
-			`<GradientStop${this.#color(color, STOP_COLOR, "colorValue")} position="${
-				round(position)
-			}"/>`
-		).join("");
-
-		return `<${tag} startX="${round(startX)}" startY="${round(startY)}" endX="${
-			round(endX)
-		}" endY="${round(endY)}">${stops}</${tag}>`;
-	}
+			return values.map((value) => equals(source, value)).reduce((a, b) =>
+				add(a, b)
+			);
+		})
+		.reduce((a, b) => mul(a, b));
 }
 
-function slotColor(
-	tier: Tier,
-	name: FinishSlot,
-	alpha: number | undefined,
-): Color {
-	const base = tier.palette[name];
+/** Converters by formula, so a trait's body and lid parts share one. */
+const converterIds = new Map<string, number>();
 
-	return alpha === undefined ? base : withAlpha(base, alpha);
+function converter(name: string, expr: Expr): number {
+	const body = tokens(expr, VIEW_MODEL);
+	const existing = converterIds.get(body);
+
+	if (existing !== undefined) {
+		return existing;
+	}
+
+	const id = writer.id();
+
+	converterIds.set(body, id);
+	converters.push(
+		`<DataConverterFormula name="${name}" id="${
+			ref(id)
+		}">${body}</DataConverterFormula>`,
+	);
+
+	return id;
 }
 
-function transform(item: Transform): string {
-	const attrs: [string, number | undefined][] = [
-		["x", item.x],
-		["y", item.y],
-		["rotation", item.rotation],
-		["scaleX", item.scaleX],
-		["scaleY", item.scaleY],
-		["opacity", item.opacity],
-	];
+/** A trait's group: shown only when its layer holds `trait` and no rule hides it. */
+function traitGroup(
+	layer: LayerId,
+	trait: number,
+	art: readonly Art[],
+	part = "",
+	transform: Transform = {},
+): Art {
+	const key = `${layer}${part}-${trait}`;
+	// A hide rule that names this layer only ever hides the traits it lists.
+	const hiders = RENDER_RULES.filter((rule) =>
+		rule.effect.kind === "hide" && rule.effect.layer === layer &&
+		(rule.when[layer]?.includes(trait) ?? true)
+	);
+	const visible = hiders.reduce(
+		(shown, rule) => mul(shown, sub(num(1), ruleActive(rule))),
+		equals(input, trait),
+	);
 
-	return attrs
-		.filter(([, value]) => value !== undefined)
-		.map(([name, value]) => ` ${name}="${round(value ?? 0)}"`)
-		.join("");
+	writer.bind(key, {
+		source: PROPERTY_ID[layer],
+		propertyKey: OPACITY,
+		converter: converter(`${layer} ${trait}${part} visible`, visible),
+	});
+
+	const authored = layer !== "contents" && trait === 0 ? 1 : 0;
+
+	return group(
+		`${layer} ${trait}${part}`,
+		{ ...transform, opacity: authored },
+		art,
+		{ key },
+	);
 }
 
-function geometry(item: Geometry): string {
-	switch (item.kind) {
-		case "poly":
-			return `<PointsPath isClosed="${item.closed}">${
-				item.points.map(([x, y]) =>
-					`<StraightVertex x="${round(x)}" y="${round(y)}"${
-						item.radius ? ` radius="${round(item.radius)}"` : ""
-					}/>`
-				).join("")
-			}</PointsPath>`;
+/** A layer's traits in index order: later traits draw above earlier ones. */
+function layerGroups(
+	layer: LayerId,
+	draw: (trait: number) => readonly Art[],
+	part = "",
+): Art[] {
+	const count = LAYERS[LAYER[layer]]?.traits.length ?? 0;
 
-		case "ellipse":
-			return `<Ellipse x="${round(item.x)}" y="${round(item.y)}" width="${
-				round(item.width)
-			}" height="${round(item.height)}"/>`;
+	return Array.from(
+		{ length: count },
+		(_, trait) => traitGroup(layer, trait, draw(trait), part),
+	);
+}
 
-		case "rect":
-			return `<Rectangle x="${round(item.x)}" y="${round(item.y)}" width="${
-				round(item.width)
-			}" height="${round(item.height)}" cornerRadiusTL="${
-				round(item.radius)
-			}"/>`;
+/** Offsets from render rules, bound onto the lock's offset node. */
+function bindLockOffset(): void {
+	for (const axis of ["x", "y"] as const) {
+		const terms = RENDER_RULES.filter((rule) =>
+			rule.effect.kind === "offset" && rule.effect.layer === "lock"
+		)
+			.map((rule) =>
+				mul(
+					num(rule.effect.kind === "offset" ? rule.effect[axis] : 0),
+					ruleActive(rule),
+				)
+			);
 
-		case "star":
-			return `<Star x="${round(item.x)}" y="${round(item.y)}" width="${
-				round(item.width)
-			}" height="${round(item.height)}" points="${item.points}" innerRadius="${
-				round(item.innerRadius)
-			}"/>`;
+		if (!terms.length) {
+			continue;
+		}
+
+		writer.bind("lock-offset", {
+			source: PROPERTY_ID.lock,
+			propertyKey: PROPERTY_KEY[axis],
+			converter: converter(
+				`lock offset ${axis}`,
+				terms.reduce((a, b) => add(a, b)),
+			),
+		});
 	}
 }
 
 // ---------------------------------------------------------------------------
-// Keyframes.
+// Rive-only reveal pieces. Each keyed group sits at its own pivot, so scale
+// and rotation keys turn it in place.
 
-type Ease = "ease" | "out" | "in" | "linear" | "hold";
-type Key = readonly [frame: number, value: number, ease?: Ease];
-type Track = Readonly<{ id: number; property: number; keys: readonly Key[] }>;
-type ColorTrack = Readonly<{ id: number; property: number; color: Color }>;
-
-const CURVES: Readonly<Record<"ease" | "out" | "in", string>> = {
-	ease: 'x1="0.42" y1="0" x2="0.58" y2="1"',
-	out: 'x1="0.16" y1="0.84" x2="0.3" y2="1"',
-	in: 'x1="0.55" y1="0" x2="0.9" y2="0.4"',
-};
-
-const track = (id: number, property: number, keys: readonly Key[]): Track => ({
-	id,
-	property,
-	keys,
-});
-const hold = (id: number, property: number, value: number): Track =>
-	track(id, property, [[0, value, "hold"]]);
-
-function keyframe([frame, value, ease = "ease"]: Key): string {
-	if (ease === "hold" || ease === "linear") {
-		return `<KeyFrameDouble frame="${frame}" value="${
-			round(value)
-		}" interpolationType="${ease}"/>`;
-	}
-
-	return `<KeyFrameDouble frame="${frame}" value="${
-		round(value)
-	}" interpolationType="cubic"><CubicEaseInterpolator ${
-		CURVES[ease]
-	}/></KeyFrameDouble>`;
-}
-
-function keyedObjects(
-	tracks: readonly Track[],
-	colors: readonly ColorTrack[],
-): string {
-	const byObject = new Map<number, string[]>();
-	const seen = new Set<string>();
-	const add = (id: number, property: number, body: string) => {
-		const signature = `${id}/${property}`;
-
-		if (seen.has(signature)) {
-			throw new Error(`Duplicate track ${signature}`);
-		}
-
-		seen.add(signature);
-		byObject.set(id, [
-			...(byObject.get(id) ?? []),
-			`<KeyedProperty propertyKey="${property}">${body}</KeyedProperty>`,
-		]);
-	};
-
-	for (const item of tracks) {
-		add(item.id, item.property, item.keys.map(keyframe).join(""));
-	}
-
-	for (const item of colors) {
-		add(
-			item.id,
-			item.property,
-			`<KeyFrameColor frame="0" value="${item.color}" interpolationType="hold"/>`,
-		);
-	}
-
-	return [...byObject].map(([id, properties]) =>
-		`<KeyedObject objectId="${ref(id)}">${properties.join("")}</KeyedObject>`
-	)
-		.join("");
-}
-
-function animation(
-	name: string,
-	id: number,
-	duration: number,
-	loop: boolean,
-	tracks: readonly Track[],
-	colors: readonly ColorTrack[] = [],
-): string {
-	return `<LinearAnimation name="${name}" id="${
-		ref(id)
-	}" fps="${FPS}" duration="${duration}" loopValue="${
-		loop ? "loop" : "oneShot"
-	}">${keyedObjects(tracks, colors)}</LinearAnimation>`;
-}
-
-// ---------------------------------------------------------------------------
-// The scene. Everything is drawn once at full strength; states decide what
-// shows. Keys name the groups that motion and visibility target.
-
-const writer = new RmlWriter(TIERS[0] ?? raise("No tiers"));
-const SPARKLES = 16;
 const BURST_GLINTS = 8;
 const BURST_STARS = 14;
 const PUFFS = 6;
-const BODY_BOUNDS = { left: -152, right: 156, top: -184, bottom: -3 };
-const LID_BOUNDS = { left: -152, right: 156, top: -103, bottom: 1 };
-const [CX, CY] = AURA_CENTER;
-
-function raise(message: string): never {
-	throw new Error(message);
-}
+const GOLD = "FFFFC94A";
 
 function hidden(
 	name: string,
 	key: string,
 	children: readonly Art[],
-	extra: Transform = {},
+	transform: Transform = {},
 ): Art {
-	return group(name, { ...extra, opacity: 0 }, children, { key });
-}
-
-function foil(
-	key: string,
-	silhouette: Geometry,
-	bounds: typeof BODY_BOUNDS,
-): Art {
-	const [foilShape, sheen] = holoArt(bounds);
-	const sweep = group("Sheen sweep", {}, sheen ? [sheen] : [], {
-		key: `${key}-sheen`,
-	});
-
-	return group(
-		"Holofoil",
-		{ opacity: 0 },
-		foilShape ? [foilShape, sweep] : [sweep],
-		{ key, clip: [silhouette] },
-	);
+	return group(name, { ...transform, opacity: 0 }, children, { key });
 }
 
 function puff(index: number): Art {
@@ -447,71 +290,66 @@ function burstGlint(index: number): Art {
 
 function burstStar(index: number): Art {
 	return hidden("Burst star", `burst-star-${index}`, [
-		shape("Star", ellipse(0, 0, 14, 14), "FFFFFFFF", 2.5, slot("glow")),
+		shape("Star", ellipse(0, 0, 14, 14), "FFFFFFFF", 2.5, GOLD),
 	], { x: CX, y: CY });
 }
 
-const rainbowBand: Gradient = {
-	kind: "linear",
-	from: [-160, 0],
-	to: [160, 0],
-	stops: [
-		[0, "00FF8AD8"],
-		[.2, "B3FF8AD8"],
-		[.4, "B3FFE27A"],
-		[.6, "B38AFFC1"],
-		[.8, "B37FD8FF"],
-		[1, "00C39BFF"],
-	],
-};
+function burstFan(): Art {
+	const wedges: Geometry[] = Array.from({ length: 24 }, (_, i) => {
+		const angle = i * Math.PI / 12;
+		const [x1, y1] = polar(640, angle - .07);
+		const [x2, y2] = polar(640, angle + .07);
+
+		return poly([[0, 0], [x1, y1], [x2, y2]]);
+	});
+
+	// Pivot on the keyed group itself (review fix): the fan is drawn around the
+	// group's origin, so the burst scales and spins about the aura centre.
+	return hidden("Burst rays", "burst-rays", [
+		shape("Burst fan", wedges, {
+			kind: "radial",
+			from: [0, 0],
+			to: [640, 0],
+			stops: [[0, "FFFFF1BA"], [.4, "CCFFC94A"], [1, "00FFC94A"]],
+		}, 0),
+	], { x: CX, y: CY });
+}
+
+function foil(
+	key: string,
+	silhouette: Geometry,
+	bounds: typeof BODY_BOUNDS,
+): Art {
+	return group("Holofoil", { opacity: 0 }, holoArt(bounds), {
+		key,
+		clip: [silhouette],
+	});
+}
+
+// ---------------------------------------------------------------------------
+// The scene, back to front.
+
+bindLockOffset();
+
+const effects =
+	LAYERS[LAYER.effect]?.traits.map((trait) =>
+		effectArt(trait.index, "glints-rive")
+	) ?? [];
+const decorations =
+	LAYERS[LAYER.decoration]?.traits.map((trait) => decorationArt(trait.index)) ??
+		[];
 
 const scene: Art[] = [
+	group("Backgrounds", {}, layerGroups("background", backgroundArt)),
+	group("Finish glow", { opacity: 0 }, [haloArt()], { key: "finish-glow" }),
 	group(
-		"Backgrounds",
+		"Effects behind",
 		{},
-		Array.from(
-			{ length: BACKGROUND_ART_COUNT },
-			(_, i) =>
-				group(
-					`Background ${i}`,
-					{ opacity: i === 0 ? 1 : 0 },
-					backgroundArt(i),
-					{
-						key: `background-${i}`,
-					},
-				),
-		),
+		layerGroups("effect", (i) => effects[i]?.back ?? [], "-back"),
 	),
-	hidden("Halo", "halo", haloArt()),
-	...cosmosBackArt(3).map((art) => ({ ...art, opacity: 0 })),
-	...cosmosBackArt(2).slice(1).map((art) => ({ ...art, opacity: 0 })),
-	hidden("Rays", "rays", raysArt(16)),
-	hidden("Burst rays", "burst-rays", [
-		group("Burst fan", { x: CX, y: CY }, [
-			shape(
-				"Burst fan",
-				Array.from({ length: 24 }, (_, i) => {
-					const angle = i * Math.PI / 12;
-					const [x1, y1] = polar(640, angle - .07);
-					const [x2, y2] = polar(640, angle + .07);
-
-					return poly([[0, 0], [x1, y1], [x2, y2]]);
-				}),
-				{
-					kind: "radial",
-					from: [0, 0],
-					to: [640, 0],
-					stops: [[0, "FFFFF1BA"], [.4, slot("glow", .8)], [
-						1,
-						slot("glow", 0),
-					]],
-				},
-				0,
-			),
-		]),
-	]),
+	burstFan(),
 	hidden("Shockwave", "burst-ring", [
-		shape("Ring", ellipse(0, 0, 400, 400), undefined, 10, slot("glow", .9)),
+		shape("Ring", ellipse(0, 0, 400, 400), undefined, 10, "E6FFC94A"),
 	], {
 		x: CX,
 		y: CY,
@@ -524,53 +362,55 @@ const scene: Art[] = [
 	}, [
 		chest({
 			lid: POSTER_LID,
-			bodyPattern: Array.from(
-				{ length: PATTERN_ART_COUNT },
-				(_, i) =>
-					group(
-						`Body pattern ${i}`,
-						{ opacity: i === 0 ? 1 : 0 },
-						patternArt(i, BODY_PANEL),
-						{
-							key: `pattern-body-${i}`,
-						},
-					),
+			bodyPattern: layerGroups(
+				"pattern",
+				(i) => patternArt(i, BODY_PANEL),
+				"-body",
 			),
-			lidPattern: Array.from(
-				{ length: PATTERN_ART_COUNT },
-				(_, i) =>
-					group(
-						`Lid pattern ${i}`,
-						{ opacity: i === 0 ? 1 : 0 },
-						patternArt(i, LID_PANEL),
-						{
-							key: `pattern-lid-${i}`,
-						},
-					),
+			lidPattern: layerGroups(
+				"pattern",
+				(i) => patternArt(i, LID_PANEL),
+				"-lid",
 			),
 			bodyOverlay: [foil("holo-body", BODY_SILHOUETTE, BODY_BOUNDS)],
 			lidOverlay: [foil("holo-lid", LID_SILHOUETTE, LID_BOUNDS)],
-			contents: CONTENTS_ART.map((_, i) =>
-				contentsRoot(i, { opacity: 0, key: `contents-${i}` })
+			bodyDecoration: layerGroups(
+				"decoration",
+				(i) => decorations[i]?.body ?? [],
+				"-body",
 			),
+			lidDecoration: layerGroups(
+				"decoration",
+				(i) => decorations[i]?.lid ?? [],
+				"-lid",
+			),
+			lock: layerGroups("lock", lockArt),
+			lockOffset: { x: 0, y: 0 },
+			contents: layerGroups("contents", (i) => [contentsRoot(i)]),
 		}),
 	]),
-	...cosmosFrontArt(2).map((art) => ({ ...art, opacity: 0 })),
-	...cosmosFrontArt(3).map((art) => ({ ...art, opacity: 0 })),
-	...sparklePlacements(SPARKLES, "rive-sparkles").map((
-		{ x, y, size, rotation },
-		i,
-	) =>
-		hidden("Sparkle", `sparkle-${i}`, [sparkleArt(0, 0, size, rotation)], {
-			x,
-			y,
-		})
+	group(
+		"Effects in front",
+		{},
+		layerGroups("effect", (i) => effects[i]?.front ?? [], "-front"),
 	),
 	...Array.from({ length: PUFFS }, (_, i) => puff(i)),
 	...Array.from({ length: BURST_GLINTS }, (_, i) => burstGlint(i)),
 	...Array.from({ length: BURST_STARS }, (_, i) => burstStar(i)),
 	hidden("Holo sweep", "burst-holo", [
-		shape("Band", rect(0, 0, 320, 1600), rainbowBand, 0),
+		shape("Band", rect(0, 0, 320, 1600), {
+			kind: "linear",
+			from: [-160, 0],
+			to: [160, 0],
+			stops: [
+				[0, "00FF8AD8"],
+				[.2, "B3FF8AD8"],
+				[.4, "B3FFE27A"],
+				[.6, "B38AFFC1"],
+				[.8, "B37FD8FF"],
+				[1, "00C39BFF"],
+			],
+		}, 0),
 	], { x: -300, y: CY, rotation: .35 }),
 	hidden("Flash", "flash", [
 		shape("Flash", rect(CANVAS / 2, CANVAS / 2, CANVAS, CANVAS), "FFFFFFFF", 0),
@@ -581,7 +421,8 @@ const artwork = writer.write(scene);
 const key = (name: string) => writer.key(name);
 
 // ---------------------------------------------------------------------------
-// Chest layer: closed, idle loop, and the reveal one-shot.
+// Chest layer: closed, idle pose, and the reveal one-shot. Breathing comes
+// from the ambient loop's motion wrappers, so these key only the rest pose.
 
 const LID = key("lid");
 const LOCK = key("lock");
@@ -634,22 +475,17 @@ const closedChest = animation("Closed", 30, 1, false, [
 	hold(CONTENTS, Y, CONTENTS_Y + SUNK),
 	hold(CONTENTS, OPACITY, 0),
 	hold(LOCK, ROTATION, 0),
+	hold(WOBBLE, ROTATION, 0),
 	...squash([[0, 1, "hold"]]),
 ]);
 
 const idleChest = animation("Idle", 31, IDLE_FRAMES, true, [
-	...lidTracks([
-		[0, POSTER_LID.lift, POSTER_LID.tilt],
-		[60, POSTER_LID.lift + 8, POSTER_LID.tilt - .02],
-		[IDLE_FRAMES, POSTER_LID.lift, POSTER_LID.tilt],
-	]),
-	track(CONTENTS, Y, [[0, CONTENTS_Y], [60, CONTENTS_Y - 10], [
-		IDLE_FRAMES,
-		CONTENTS_Y,
-	]]),
+	...lidTracks([[0, POSTER_LID.lift, POSTER_LID.tilt, "hold"]]),
+	hold(CONTENTS, Y, CONTENTS_Y),
 	hold(CONTENTS, OPACITY, 1),
-	track(LOCK, ROTATION, [[0, 0], [30, .06], [90, -.06], [IDLE_FRAMES, 0]]),
-	...squash([[0, 1], [60, 1.012], [IDLE_FRAMES, 1]]),
+	hold(LOCK, ROTATION, 0),
+	hold(WOBBLE, ROTATION, 0),
+	...squash([[0, 1, "hold"]]),
 ]);
 
 const revealChest = animation("Reveal", 32, REVEAL_FRAMES, false, [
@@ -681,10 +517,7 @@ const revealChest = animation("Reveal", 32, REVEAL_FRAMES, false, [
 		[80, 1],
 		[84, .95],
 		[90, 1],
-		[
-			REVEAL_FRAMES,
-			1,
-		],
+		[REVEAL_FRAMES, 1],
 	]),
 	track(CONTENTS, Y, [
 		[0, CONTENTS_Y + SUNK, "hold"],
@@ -705,115 +538,47 @@ const revealChest = animation("Reveal", 32, REVEAL_FRAMES, false, [
 ]);
 
 // ---------------------------------------------------------------------------
-// Tier layer: one pose per tier sets the finish colors and which effects show.
+// Finish layer: one pose per finish recolors every slotted paint and sets the
+// material's glow and foil.
 
-const COSMOS_KEYS = [
-	"cosmos-1",
-	"cosmos-2-back",
-	"cosmos-2-front",
-	"cosmos-3-back",
-	"cosmos-3-front",
-] as const;
-
-function cosmosOpacity(
-	name: (typeof COSMOS_KEYS)[number],
-	level: number,
-): number {
-	switch (name) {
-		case "cosmos-1":
-			return level >= 1 ? 1 : 0;
-
-		case "cosmos-2-back":
-		case "cosmos-2-front":
-			return level === 2 ? 1 : 0;
-
-		case "cosmos-3-back":
-		case "cosmos-3-front":
-			return level >= 3 ? 1 : 0;
-	}
-}
-
-function tierPose(tier: Tier, id: number): string {
-	const { effects } = tier;
+function finishPose(index: number, id: number): string {
+	const finish = FINISHES[index] ?? raise(`No finish ${index}`);
 	const colors = writer.slots.map((paint): ColorTrack => ({
 		id: paint.id,
 		property: paint.property,
-		color: slotColor(tier, paint.slot, paint.alpha),
+		color: slotColor(finish.palette, paint.slot, paint.alpha),
 	}));
 
-	return animation(`Tier ${tier.index}`, id, 1, false, [
-		hold(key("halo"), OPACITY, effects.halo),
-		hold(key("rays"), OPACITY, effects.rays > 0 ? .9 : 0),
-		hold(key("holo-body"), OPACITY, effects.holo),
-		hold(key("holo-lid"), OPACITY, effects.holo),
-		...COSMOS_KEYS.map((name) =>
-			hold(key(name), OPACITY, cosmosOpacity(name, effects.cosmos))
-		),
-		...Array.from(
-			{ length: SPARKLES },
-			(_, i) =>
-				hold(key(`sparkle-${i}`), OPACITY, i < effects.sparkles ? 1 : 0),
-		),
+	return animation(`Finish ${index}`, id, 1, false, [
+		hold(key("finish-glow"), OPACITY, finish.halo),
+		hold(key("holo-body"), OPACITY, finish.holo),
+		hold(key("holo-lid"), OPACITY, finish.holo),
 	], colors);
 }
 
 // ---------------------------------------------------------------------------
-// Trait layers: one pose per value shows exactly one group.
+// Ambient loops: every motion wrapper in the scene, from the shared model.
+// Motions of one duration share a looping animation on its own layer, so each
+// is keyed once per cycle rather than repeated across a long loop.
 
-function onlyShown(
-	prefix: string,
-	count: number,
-	shown: number | null,
-): Track[] {
-	return Array.from(
-		{ length: count },
-		(_, i) => hold(key(`${prefix}-${i}`), OPACITY, i === shown ? 1 : 0),
-	);
-}
-
-// ---------------------------------------------------------------------------
-// Ambient loop: rays turn one ray-width per loop (seamless), sparkles
-// twinkle out of phase, foil sheen drifts, the corona breathes.
-
-const ambient = animation("Ambient", 33, AMBIENT_FRAMES, true, [
-	track(key("rays-spin"), ROTATION, [[0, 0, "linear"], [
-		AMBIENT_FRAMES,
-		Math.PI * 2 / 16,
-		"linear",
-	]]),
-	...Array.from({ length: SPARKLES }, (_, i) => {
-		const offset = (i * 17) % 60;
-		const keys: Key[] = [[0, 1]];
-
-		// One 32-frame twinkle per second, skipping any that would wrap.
-		for (let start = offset; start + 32 < AMBIENT_FRAMES; start += 60) {
-			if (start > 0) {
-				keys.push([start, 1]);
-			}
-
-			keys.push([start + 12, .45], [start + 24, 1.12], [start + 32, 1]);
-		}
-
-		keys.push([AMBIENT_FRAMES, 1]);
-
-		return [
-			track(key(`sparkle-${i}`), SCALE_X, keys),
-			track(key(`sparkle-${i}`), SCALE_Y, keys),
-		];
-	}).flat(),
-	track(key("holo-body-sheen"), X, [[0, -120], [120, 160], [
-		AMBIENT_FRAMES,
-		-120,
-	]]),
-	track(key("holo-lid-sheen"), X, [[0, -140], [120, 140], [
-		AMBIENT_FRAMES,
-		-140,
-	]]),
-	track(key("cosmos-1"), SCALE_X, [[0, 1], [120, 1.02], [AMBIENT_FRAMES, 1]]),
-]);
+const AMBIENT_ANIMATION = 60;
+const durations = [
+	...new Set(writer.motions.map(({ use }) => use.motion.duration)),
+].sort((a, b) => a - b);
+const ambients = durations.map((seconds, i) =>
+	animation(
+		`Ambient ${seconds}s`,
+		AMBIENT_ANIMATION + i,
+		cycleFrames(seconds),
+		true,
+		writer.motions.filter(({ use }) => use.motion.duration === seconds).flatMap(
+			({ id, use }) => motionTracks(id, use),
+		),
+	)
+);
 
 // ---------------------------------------------------------------------------
-// Drama layer: the reveal's celebration, escalating with the tier.
+// Drama layer: the reveal's celebration, escalating with the finish.
 
 function dramaRest(): Track[] {
 	return [
@@ -885,10 +650,7 @@ function glintTracks(): Track[] {
 			[at + 6, 1.25],
 			[at + 12, .9],
 			[at + 24, 0, "in"],
-			[
-				DRAMA_FRAMES,
-				0,
-			],
+			[DRAMA_FRAMES, 0],
 		];
 
 		return [
@@ -1010,53 +772,13 @@ function dramaTracks(stage: RevealDrama): Track[] {
 }
 
 // ---------------------------------------------------------------------------
-// Animation ids.
+// Animations and state machine.
 
-const TIER_ANIMATION = 100;
-const BACKGROUND_ANIMATION = 140;
-const PATTERN_ANIMATION = 160;
-const CONTENTS_ANIMATION = 180;
+const FINISH_ANIMATION = 100;
 const DRAMA_ANIMATION = 220;
 const DRAMA_REST = 219;
 
-const tierPoses = TIERS.map((tier) =>
-	tierPose(tier, TIER_ANIMATION + tier.index)
-);
-const backgroundPoses = Array.from(
-	{ length: BACKGROUND_ART_COUNT },
-	(_, i) =>
-		animation(
-			`Background ${i}`,
-			BACKGROUND_ANIMATION + i,
-			1,
-			false,
-			onlyShown("background", BACKGROUND_ART_COUNT, i),
-		),
-);
-const patternPoses = Array.from(
-	{ length: PATTERN_ART_COUNT },
-	(_, i) =>
-		animation(`Pattern ${i}`, PATTERN_ANIMATION + i, 1, false, [
-			...onlyShown("pattern-body", PATTERN_ART_COUNT, i),
-			...onlyShown("pattern-lid", PATTERN_ART_COUNT, i),
-		]),
-);
-const noContents = animation(
-	"No contents",
-	CONTENTS_ANIMATION - 1,
-	1,
-	false,
-	onlyShown("contents", CONTENTS_ART.length, null),
-);
-const contentsPoses = CONTENTS_ART.map((_, i) =>
-	animation(
-		`Contents ${i}`,
-		CONTENTS_ANIMATION + i,
-		1,
-		false,
-		onlyShown("contents", CONTENTS_ART.length, i),
-	)
-);
+const finishPoses = FINISHES.map((_, i) => finishPose(i, FINISH_ANIMATION + i));
 const dramaRestAnimation = animation(
 	"Drama rest",
 	DRAMA_REST,
@@ -1074,20 +796,11 @@ const dramaAnimations = REVEAL_DRAMA_ORDER.map((stage, i) =>
 	)
 );
 
-// ---------------------------------------------------------------------------
-// State machine.
-
-type Property = keyof typeof PROPERTY;
-
-function numberIs(
-	property: Exclude<Property, "reveal">,
-	op: string,
-	value: number,
-): string {
+function numberIs(layer: LayerId, op: string, value: number): string {
 	return `<TransitionViewModelCondition opValue="${op}"><TransitionPropertyViewModelComparator><BindablePropertyNumber><DataBindContext sourcePathIds="${
 		ref(VIEW_MODEL)
 	}-${
-		ref(PROPERTY[property])
+		ref(PROPERTY_ID[layer])
 	}" propertyKey="636"/></BindablePropertyNumber></TransitionPropertyViewModelComparator><TransitionValueNumberComparator value="${value}"/></TransitionViewModelCondition>`;
 }
 
@@ -1095,7 +808,7 @@ const revealFired =
 	`<TransitionViewModelCondition opValue="equal"><TransitionPropertyViewModelComparator><BindablePropertyTrigger><DataBindContext sourcePathIds="${
 		ref(VIEW_MODEL)
 	}-${
-		ref(PROPERTY.reveal)
+		ref(REVEAL)
 	}" propertyKey="686"/></BindablePropertyTrigger></TransitionPropertyViewModelComparator><TransitionValueTriggerComparator/></TransitionViewModelCondition>`;
 
 const afterExit = (to: number) =>
@@ -1105,41 +818,6 @@ const afterExit = (to: number) =>
 
 let stateId = 300;
 const nextState = () => stateId++;
-
-/**
- * A layer that mirrors one number property: a rest pose, then one pose per
- * value. Leaving a pose goes back through rest, so any change of value lands.
- */
-function selectorLayer(
-	name: string,
-	property: Exclude<Property, "reveal">,
-	restAnimation: number,
-	animations: readonly number[],
-): string {
-	const rest = nextState();
-	const states = animations.map(() => nextState());
-
-	return `<StateMachineLayer name="${name}"><AnyState x="0" y="-150"/><ExitState x="800" y="-150"/><EntryState x="0" y="0"><StateTransition stateToId="${
-		ref(rest)
-	}"/></EntryState><AnimationState id="${ref(rest)}" animationId="${
-		ref(restAnimation)
-	}" x="200" y="0">${
-		states.map((state, value) =>
-			`<StateTransition stateToId="${ref(state)}">${
-				numberIs(property, "equal", value)
-			}</StateTransition>`
-		)
-			.join("")
-	}</AnimationState>${
-		states.map((state, value) =>
-			`<AnimationState id="${ref(state)}" animationId="${
-				ref(animations[value] ?? raise("missing animation"))
-			}" x="450" y="${value * 100}"><StateTransition stateToId="${ref(rest)}">${
-				numberIs(property, "notEqual", value)
-			}</StateTransition></AnimationState>`
-		).join("")
-	}</StateMachineLayer>`;
-}
 
 function chestLayer(): string {
 	const closed = nextState();
@@ -1163,21 +841,47 @@ function chestLayer(): string {
 	}</AnimationState></StateMachineLayer>`;
 }
 
-function ambientLayer(): string {
+/** One pose per finish; leaving a pose returns through rest, so any change lands. */
+function finishLayer(): string {
+	const rest = nextState();
+	const states = FINISHES.map(() => nextState());
+
+	return `<StateMachineLayer name="Finish"><AnyState x="0" y="-150"/><ExitState x="800" y="-150"/><EntryState x="0" y="0"><StateTransition stateToId="${
+		ref(rest)
+	}"/></EntryState><AnimationState id="${ref(rest)}" animationId="${
+		ref(FINISH_ANIMATION)
+	}" x="200" y="0">${
+		states.map((state, value) =>
+			`<StateTransition stateToId="${ref(state)}">${
+				numberIs("finish", "equal", value)
+			}</StateTransition>`
+		).join("")
+	}</AnimationState>${
+		states.map((state, value) =>
+			`<AnimationState id="${ref(state)}" animationId="${
+				ref(FINISH_ANIMATION + value)
+			}" x="450" y="${value * 100}"><StateTransition stateToId="${ref(rest)}">${
+				numberIs("finish", "notEqual", value)
+			}</StateTransition></AnimationState>`
+		).join("")
+	}</StateMachineLayer>`;
+}
+
+function ambientLayer(seconds: number, index: number): string {
 	const loop = nextState();
 
-	return `<StateMachineLayer name="Ambient"><AnyState x="0" y="-150"/><ExitState x="400" y="-150"/><EntryState x="0" y="0"><StateTransition stateToId="${
+	return `<StateMachineLayer name="Ambient ${seconds}s"><AnyState x="0" y="-150"/><ExitState x="400" y="-150"/><EntryState x="0" y="0"><StateTransition stateToId="${
 		ref(loop)
 	}"/></EntryState><AnimationState id="${ref(loop)}" animationId="${
-		ref(33)
+		ref(AMBIENT_ANIMATION + index)
 	}" x="200" y="0"/></StateMachineLayer>`;
 }
 
-/** Tier ranges per drama stage, from the tier table. */
 function dramaRange(stage: RevealDrama): readonly [number, number] {
-	const indices = TIERS.filter((tier) => tier.drama === stage).map((tier) =>
-		tier.index
-	);
+	const indices = FINISHES.flatMap((
+		finish,
+		index,
+	) => (finish.drama === stage ? [index] : []));
 
 	return [Math.min(...indices), Math.max(...indices)];
 }
@@ -1190,8 +894,8 @@ function dramaLayer(): string {
 
 		return `<StateTransition stateToId="${
 			ref(states[i] ?? raise("missing state"))
-		}">${revealFired}${numberIs("tier", "greaterThanOrEqual", low)}${
-			numberIs("tier", "lessThanOrEqual", high)
+		}">${revealFired}${numberIs("finish", "greaterThanOrEqual", low)}${
+			numberIs("finish", "lessThanOrEqual", high)
 		}</StateTransition>`;
 	}).join("");
 
@@ -1212,78 +916,51 @@ function dramaLayer(): string {
 
 const machine = `<StateMachine name="Exclusive NFT" id="${
 	ref(STATE_MACHINE)
-}">${chestLayer()}${
-	selectorLayer(
-		"Tier",
-		"tier",
-		TIER_ANIMATION,
-		TIERS.map((tier) => TIER_ANIMATION + tier.index),
-	)
-}${
-	selectorLayer(
-		"Background",
-		"background",
-		BACKGROUND_ANIMATION,
-		Array.from({ length: BACKGROUND_ART_COUNT }, (_, i) =>
-			BACKGROUND_ANIMATION + i),
-	)
-}${
-	selectorLayer(
-		"Pattern",
-		"pattern",
-		PATTERN_ANIMATION,
-		Array.from({ length: PATTERN_ART_COUNT }, (_, i) => PATTERN_ANIMATION + i),
-	)
-}${
-	selectorLayer(
-		"Contents",
-		"contents",
-		CONTENTS_ANIMATION - 1,
-		CONTENTS_ART.map((_, i) => CONTENTS_ANIMATION + i),
-	)
-}${ambientLayer()}${dramaLayer()}</StateMachine>`;
+}">${chestLayer()}${finishLayer()}${
+	durations.map(ambientLayer).join("")
+}${dramaLayer()}</StateMachine>`;
 
 // ---------------------------------------------------------------------------
 // Document.
 
+const defaults: Readonly<Record<LayerId, number>> = {
+	background: 0,
+	finish: 0,
+	pattern: 0,
+	lock: 0,
+	decoration: 0,
+	contents: -1,
+	effect: 0,
+};
+
 const viewModel = `<ViewModel name="Exclusive NFT" id="${
 	ref(VIEW_MODEL)
-}" defaultInstanceId="${
-	ref(VIEW_MODEL_INSTANCE)
-}"><ViewModelPropertyNumber name="tier" id="${
-	ref(PROPERTY.tier)
-}"/><ViewModelPropertyNumber name="contents" id="${
-	ref(PROPERTY.contents)
-}"/><ViewModelPropertyNumber name="background" id="${
-	ref(PROPERTY.background)
-}"/><ViewModelPropertyNumber name="pattern" id="${
-	ref(PROPERTY.pattern)
-}"/><ViewModelPropertyTrigger name="reveal" id="${
-	ref(PROPERTY.reveal)
+}" defaultInstanceId="${ref(VIEW_MODEL_INSTANCE)}">${
+	LAYERS.map((layer) =>
+		`<ViewModelPropertyNumber name="${layer.id}" id="${
+			ref(PROPERTY_ID[layer.id])
+		}"/>`
+	).join("")
+}<ViewModelPropertyTrigger name="reveal" id="${
+	ref(REVEAL)
 }"/><ViewModelInstance name="Default" id="${
 	ref(VIEW_MODEL_INSTANCE)
-}" exports="true"><ViewModelInstanceNumber viewModelPropertyId="${
-	ref(PROPERTY.tier)
-}" propertyValue="0"/><ViewModelInstanceNumber viewModelPropertyId="${
-	ref(PROPERTY.contents)
-}" propertyValue="-1"/><ViewModelInstanceNumber viewModelPropertyId="${
-	ref(PROPERTY.background)
-}" propertyValue="0"/><ViewModelInstanceNumber viewModelPropertyId="${
-	ref(PROPERTY.pattern)
-}" propertyValue="0"/><ViewModelInstanceTrigger viewModelPropertyId="${
-	ref(PROPERTY.reveal)
+}" exports="true">${
+	LAYERS.map((layer) =>
+		`<ViewModelInstanceNumber viewModelPropertyId="${
+			ref(PROPERTY_ID[layer.id])
+		}" propertyValue="${defaults[layer.id]}"/>`
+	).join("")
+}<ViewModelInstanceTrigger viewModelPropertyId="${
+	ref(REVEAL)
 }"/></ViewModelInstance></ViewModel>`;
 
 const animations = [
 	closedChest,
 	idleChest,
 	revealChest,
-	ambient,
-	...tierPoses,
-	...backgroundPoses,
-	...patternPoses,
-	noContents,
-	...contentsPoses,
+	...ambients,
+	...finishPoses,
 	dramaRestAnimation,
 	...dramaAnimations,
 ].join("\n");
@@ -1303,13 +980,14 @@ ${artwork}
 ${animations}
 ${machine}
   </Artboard>
+  ${converters.join("\n  ")}
   ${viewModel}
 </Rive>
 `;
 
 writeFileSync(new URL("./scene.rml", import.meta.url), document);
 console.log(
-	`Wrote scene.rml: ${writer.keys.size} keyed groups, ${writer.slots.length} finish paints, ${
+	`Wrote scene.rml: ${writer.keys.size} keyed groups, ${converters.length} converters, ${writer.motions.length} motions, ${
 		(document.length / 1024).toFixed(0)
 	} KB`,
 );

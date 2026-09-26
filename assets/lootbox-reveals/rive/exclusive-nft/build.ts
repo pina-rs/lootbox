@@ -1,12 +1,13 @@
 import { execFileSync } from "node:child_process";
-import { copyFileSync, mkdirSync, statSync } from "node:fs";
+import { copyFileSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
+import { playerHtml } from "../../../../packages/exclusive-nft-art/src/player.ts";
 import "./generate.ts";
 
 /**
- * Regenerates, verifies, and compiles the Exclusive NFT reveal, then copies
- * the `.riv` into `@pina-rs/exclusive-nft-art` so hosts can import it.
+ * Regenerates, verifies, and compiles the Exclusive NFT reveal, then copies the
+ * `.riv` and the `play.html` player into `@pina-rs/exclusive-nft-art`.
  */
 const BUDGET = 250 * 1024;
 const project = fileURLToPath(new URL(".", import.meta.url));
@@ -31,8 +32,9 @@ if (size >= BUDGET) {
 
 mkdirSync(target, { recursive: true });
 copyFileSync(built, fileURLToPath(new URL("exclusive-nft.riv", target)));
+writeFileSync(new URL("play.html", target), playerHtml());
 console.log(
 	`Copied exclusive-nft.riv (${
 		(size / 1024).toFixed(1)
-	} KB) into packages/exclusive-nft-art/assets/`,
+	} KB) and play.html into packages/exclusive-nft-art/assets/`,
 );

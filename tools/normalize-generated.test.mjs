@@ -11,6 +11,7 @@ import {
 	normalizeRustManifest,
 	normalizeRustVersionEnvelopeGuards,
 	normalizeRustVersionEnvelopeTests,
+	normalizeTypeScriptEventVersionReads,
 	normalizeTypeScriptTypeArguments,
 	sdkKitRange,
 } from "./normalize-generated.mjs";
@@ -219,6 +220,20 @@ test("rewrites generated event projection failures to expect_err", () => {
 	);
 	assert.equal(
 		normalizeRustEventProjectionTests(normalized),
+		normalized,
+		"idempotent",
+	);
+});
+
+test("guards generated event version reads for strict indexed access", () => {
+	const source = "\tconst sourceVersion = bytes[1];\n\tif (sourceVersion === 0) {\n";
+	const normalized = normalizeTypeScriptEventVersionReads(source);
+	assert.equal(
+		normalized,
+		'\tconst sourceVersion = bytes[1];\n\tif (sourceVersion === undefined) {\n\t\tthrow new RangeError("the event envelope has no version byte");\n\t}\n\tif (sourceVersion === 0) {\n',
+	);
+	assert.equal(
+		normalizeTypeScriptEventVersionReads(normalized),
 		normalized,
 		"idempotent",
 	);

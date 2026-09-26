@@ -71,6 +71,17 @@ export function normalizeTypeScriptTypeArguments(source) {
 	return source.replace(/,(\n\t*)>/g, "$1>");
 }
 
+/** Generated event log decoders read the envelope version with `bytes[1]`
+ * after a length check that `noUncheckedIndexedAccess` cannot see. Narrow the
+ * read with an explicit guard instead of widening the SDK's strict settings.
+ */
+export function normalizeTypeScriptEventVersionReads(source) {
+	return source.replace(
+		/^(\t+)const sourceVersion = (bytes\[\d+\]);\n(?!\1if \(sourceVersion === undefined\))/gm,
+		'$1const sourceVersion = $2;\n$1if (sourceVersion === undefined) {\n$1\tthrow new RangeError("the event envelope has no version byte");\n$1}\n',
+	);
+}
+
 function normalizeDirectory(directory) {
 	for (const entry of readdirSync(directory, { withFileTypes: true })) {
 		const path = join(directory, entry.name);
@@ -94,7 +105,9 @@ function normalizeTypeScriptDirectory(directory) {
 		}
 		if (!entry.name.endsWith(".ts")) continue;
 		const source = readFileSync(path, "utf8");
-		const normalized = normalizeTypeScriptTypeArguments(source);
+		const normalized = normalizeTypeScriptEventVersionReads(
+			normalizeTypeScriptTypeArguments(source),
+		);
 		if (normalized !== source) writeFileSync(path, normalized);
 	}
 }

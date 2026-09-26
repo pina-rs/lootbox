@@ -71,6 +71,9 @@ export function normalizeExclusiveNftMintedEventEvent(
 		}
 	}
 	const sourceVersion = bytes[1];
+	if (sourceVersion === undefined) {
+		throw new RangeError("the event envelope has no version byte");
+	}
 	if (sourceVersion === EXCLUSIVE_NFT_MINTED_EVENT_EVENT_CURRENT_VERSION) {
 		return {
 			name: "exclusiveNftMintedEvent",

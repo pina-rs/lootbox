@@ -18,6 +18,7 @@ import {
 	useNavigation,
 	useRevalidator,
 } from "react-router";
+import { friendlyError } from "../lib/errors.js";
 
 import { TxProgress, useTxProgress } from "../components/TxProgress.js";
 import { BundlesStep } from "../create/BundlesStep.js";
@@ -442,7 +443,7 @@ function ChainActions(
 		try {
 			await work();
 		} catch (reason) {
-			setError(reason instanceof Error ? reason.message : "Transaction failed");
+			setError(friendlyError(reason));
 		} finally {
 			setBusy(false);
 			await revalidator.revalidate();
@@ -455,7 +456,7 @@ function ChainActions(
 				<AppendBundles
 					client={client}
 					cluster={cluster}
-					owner={account.address}
+					account={account}
 					busy={busy}
 					run={run}
 				/>
@@ -499,17 +500,20 @@ function ChainActions(
 type Run = (work: () => Promise<void>) => Promise<void>;
 
 function AppendBundles(
-	{ client, cluster, owner, busy, run }: Readonly<{
+	{ client, cluster, account, busy, run }: Readonly<{
 		client: LootboxClient;
 		cluster: ClusterInfo;
-		owner: string;
+		account: UiWalletAccount;
 		busy: boolean;
 		run: Run;
 	}>,
 ) {
 	const { lootbox } = useLootbox();
 	const [bundles, setBundles] = useState<readonly DraftBundle[]>([]);
-	const [holdings] = useHoldings(cluster.rpcUrl, owner);
+	const [holdings, refreshHoldings] = useHoldings(
+		cluster.rpcUrl,
+		account.address,
+	);
 	const [open, setOpen] = useState(false);
 	const check = bundles.length === 0 ? null : checkPlan({
 		name: "Append",
@@ -537,11 +541,11 @@ function AppendBundles(
 		<section className="card stack" aria-labelledby="append-title">
 			<h2 id="append-title">Add prizes</h2>
 			<BundlesStep
+				account={account}
 				bundles={bundles}
-				rpcUrl={cluster.rpcUrl}
 				cluster={cluster.cluster}
-				owner={owner}
 				holdings={holdings}
+				onRefreshHoldings={refreshHoldings}
 				problem={check && !check.ok ? check.message : null}
 				dispatch={(action) => {
 					if (action.type === "bundles") setBundles(action.bundles);

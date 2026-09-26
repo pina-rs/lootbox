@@ -25,6 +25,8 @@
 		"LOCALNET_CONTROL_URL": "http://127.0.0.1:8898",
 		"RELAYER_CLUSTERS": "localnet",
 		"RELAYER_CLAIM": "false",
-		"FEATURE_EXCLUSIVE_NFTS": "false"
+		"FEATURE_EXCLUSIVE_NFTS": "false",
+		"FEATURE_NFT_PRIZES": "false",
+		"CATALOG_FIXTURES": "true"
 	}
 }

@@ -165,6 +165,13 @@ export function describeAsset(asset: DraftAsset): string {
 		case "token": {
 			const amount = formatUnits(BigInt(asset.amount), asset.decimals);
 
+			if (asset.tracks && asset.issuer) {
+				return asset.issuer.name === "Backed xStocks" ||
+						asset.issuer.name === "xStocks"
+					? `${amount} xStocks tracking ${asset.tracks}`
+					: `${amount} PreStocks tokens tracking ${asset.tracks}`;
+			}
+
 			return asset.tracks
 				? `${amount} PreStocks tokens tracking ${asset.tracks}`
 				: `${amount} ${asset.symbol || "tokens"}`;

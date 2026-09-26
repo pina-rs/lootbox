@@ -80,7 +80,10 @@ async function connectAndSignIn(page: Page) {
 let creator: KeyPairSigner;
 let friend: KeyPairSigner;
 let rpcUrl: string;
-let token: string;
+/** Mainnet mints from the recorded catalog, recreated locally per run. */
+const BONK = address("DezXAZ8z7PnrnRJjz3wXBoRgixCa6XKj7D3WpqkDmzPK");
+const OPENAI = address("PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF");
+const USDC = address("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
 let slug: string;
 let template: string;
 let boxMint: string;
@@ -90,12 +93,21 @@ test.beforeAll(async () => {
 	({ rpcUrl } = await controlConfig());
 	creator = await fundedSigner();
 	friend = await fundedSigner();
-	token = await testToken(
-		new LootboxClient(rpcUrl, creator),
-		rpcUrl,
-		creator,
-		1_000_000_000n,
-	);
+	const client = new LootboxClient(rpcUrl, creator);
+
+	await testToken(client, rpcUrl, creator, 100_000_000_000n, {
+		at: BONK,
+		decimals: 5,
+	});
+	await testToken(client, rpcUrl, creator, 1_000_000_000n, {
+		at: OPENAI,
+		decimals: 9,
+	});
+	// USDC's issuer can freeze balances, so the program refuses it as a prize.
+	await testToken(client, rpcUrl, creator, 1_000_000n, {
+		at: USDC,
+		freezable: true,
+	});
 });
 
 test("home and explore are accessible", async ({ page }) => {
@@ -134,33 +146,83 @@ test("a creator launches a lootbox through the wizard", async ({ page }) => {
 	await snap(page, "02-create-details");
 	await page.getByRole("button", { name: "Next" }).click();
 
-	// 2. Prizes: a rare SOL bundle and a common token bundle.
+	// 2. Prizes: SOL, a meme coin, and a stock, all found by search.
 	await expect(page.getByRole("heading", { name: "Prizes" })).toBeVisible();
 	await page.getByRole("button", { name: "+ Add a bundle" }).click();
 	const grand = page.getByRole("region", { name: /Bundle 1/ });
 
 	await grand.getByRole("button", { name: "+ Add prize" }).click();
+	await grand.getByRole("button", { name: /Solana \(SOL\)/ }).click();
 	await grand.getByLabel("SOL per box").fill("0.5");
+	await expect(grand.getByText(/≈ \$76\.20 per box/)).toBeVisible();
 	await grand.getByRole("button", { name: "Add SOL" }).click();
 	await expect(grand.getByText("0.5 SOL")).toBeVisible();
 
 	await page.getByRole("button", { name: "+ Add a bundle" }).click();
 	const common = page.getByRole("region", { name: /Bundle 2/ });
 
-	await common.getByLabel("Bundle name").fill("Token pile");
+	await common.getByLabel("Bundle name").fill("Meme pile");
 	await common.getByLabel("Boxes").fill("3");
+
+	// A token whose issuer can freeze balances is refused with the reason.
 	await common.getByRole("button", { name: "+ Add prize" }).click();
-	await common.getByText("Token", { exact: true }).click();
-	await common.getByRole("button", { name: new RegExp(token.slice(0, 4)) })
+	await common.getByRole("button", { name: /Meme coins/ }).click();
+	await common.getByRole("combobox", { name: "Search tokens" }).fill("usdc");
+	await common.getByRole("option", { name: /USD Coin/ }).click();
+	await expect(common.getByTestId("admission-refused")).toContainText(
+		"issuer can freeze balances",
+	);
+	await common.getByRole("button", { name: "Pick another" }).click();
+
+	// Keyboard: type, arrow to the best match, Enter.
+	const search = common.getByRole("combobox", { name: "Search tokens" });
+
+	await search.fill("bonk");
+	await expect(common.getByRole("option").first()).toContainText("Bonk");
+	await expect(common.getByRole("option", { name: /Bonk Inu Moon/ }))
+		.toContainText("Unverified");
+	await search.press("Enter");
+	await common.getByLabel("Amount per box").fill("100000");
+	await expect(common.getByText(/≈ \$2\.13 per box/)).toBeVisible();
+	await snap(page, "03a-create-token");
+	await common.getByRole("button", { name: "Add Bonk" }).click();
+	await expect(common.getByText(/^100,000 Bonk/)).toBeVisible();
+
+	await page.getByRole("button", { name: "+ Add a bundle" }).click();
+	const stock = page.getByRole("region", { name: /Bundle 3/ });
+
+	await stock.getByLabel("Bundle name").fill("Stock slice");
+	await stock.getByLabel("Boxes").fill("1");
+	await stock.getByRole("button", { name: "+ Add prize" }).click();
+	await stock.getByRole("button", { name: /Stocks/ }).click();
+	await stock.getByRole("combobox", { name: "Search stocks" }).fill("openai");
+	await stock.getByRole("option", { name: /PreStocks tokens tracking OpenAI/ })
 		.click();
-	await common.getByLabel("Amount per box").fill("10");
-	await common.getByRole("button", { name: "Add token" }).click();
-	await expect(common.getByText(/^10 tokens/)).toBeVisible();
+	await stock.getByRole("radiogroup", { name: "Amount in" }).getByText("$", {
+		exact: true,
+	})
+		.click();
+	await expect(stock.getByRole("radio", { name: "$" })).toBeChecked();
+	await stock.getByLabel("Amount per box").fill("50");
+	await expect(stock.getByText(/= 0\.\d+ \w+ per box/)).toBeVisible();
+
+	// Short on a token: Jupiter quotes a SOL swap, and nothing signs until confirmed.
+	await stock.getByLabel("Amount per box").fill("5000000");
+	await expect(stock.getByText(/you need/)).toBeVisible();
+	await stock.getByRole("button", { name: /Buy with SOL/ }).click();
+	await expect(stock.getByTestId("swap-quote")).toContainText("Price impact");
+	await snap(page, "03b-create-swap");
+	await stock.getByTestId("swap").getByRole("button", { name: "Cancel" })
+		.click();
+	await stock.getByLabel("Amount per box").fill("50");
+	await stock.getByRole("button", { name: /^Add / }).click();
+	await expect(stock.getByText(/PreStocks tokens tracking OpenAI/))
+		.toBeVisible();
 
 	const preview = page.getByTestId("odds-preview");
 
-	await expect(preview).toContainText("25%");
-	await expect(preview).toContainText("75%");
+	await expect(preview).toContainText("20%");
+	await expect(preview).toContainText("60%");
 	await snap(page, "03-create-prizes");
 	await page.getByRole("button", { name: "Next" }).click();
 
@@ -171,7 +233,7 @@ test("a creator launches a lootbox through the wizard", async ({ page }) => {
 
 	// 4. Review
 	await expect(page.getByTestId("cost-total")).toContainText("SOL");
-	await expect(page.getByTestId("review-odds")).toContainText("Token pile");
+	await expect(page.getByTestId("review-odds")).toContainText("Meme pile");
 	await expectAccessible(page, "wizard review");
 	await snap(page, "05-create-review");
 	await page.getByRole("button", { name: "Continue to launch" }).click();
@@ -183,7 +245,7 @@ test("a creator launches a lootbox through the wizard", async ({ page }) => {
 
 	await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 	await expect(page.getByTestId("status")).toHaveText("Being filled");
-	await expect(page.getByTestId("odds-table")).toContainText("Token pile");
+	await expect(page.getByTestId("odds-table")).toContainText("Meme pile");
 	await snap(page, "06-live-page");
 	expect(errors).toEqual([]);
 });
@@ -215,9 +277,9 @@ test("the creator edits the page, locks, and sends a box", async ({ page }) => {
 
 	await expect(lockState).toHaveText("Live, not locked");
 	await page.getByLabel(/locking is permanent/).check();
-	await page.getByRole("button", { name: /Lock and mint 4 boxes/ }).click();
+	await page.getByRole("button", { name: /Lock and mint 5 boxes/ }).click();
 	await expect(lockState).toHaveText("Locked", { timeout: 60_000 });
-	await expect(page.getByTestId("supply")).toHaveText("4");
+	await expect(page.getByTestId("supply")).toHaveText("5");
 
 	await page.getByLabel("Recipients").fill(`${friend.address} 2`);
 	await page.getByRole("button", { name: "Send 2 boxes" }).click();

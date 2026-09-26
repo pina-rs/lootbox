@@ -21,6 +21,7 @@ import {
 	useSyncExternalStore,
 } from "react";
 import { useRevalidator } from "react-router";
+import { friendlyError } from "../lib/errors.js";
 
 import { ExclusiveNftArt } from "../components/ExclusiveNftArt.js";
 import { TxProgress, useTxProgress } from "../components/TxProgress.js";
@@ -56,7 +57,7 @@ const SETTLE_ATTEMPTS = 40;
 const SETTLE_DELAY_MS = 750;
 
 function message(error: unknown): string {
-	return error instanceof Error ? error.message : "Something went wrong";
+	return friendlyError(error);
 }
 
 function prefersReducedMotion(): boolean {

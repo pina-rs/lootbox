@@ -13,6 +13,7 @@ import {
 import type { UiWalletAccount } from "@wallet-standard/react";
 import { type ReactNode, useState } from "react";
 import { useRevalidator } from "react-router";
+import { friendlyError } from "../lib/errors.js";
 
 import { toBase64 } from "../lib/bytes.js";
 import { usePublicConfig } from "../lib/public-config.js";
@@ -122,9 +123,7 @@ function SignInAction(
 						});
 						await revalidator.revalidate();
 					} catch (reason) {
-						setError(
-							reason instanceof Error ? reason.message : "Sign-in failed",
-						);
+						setError(friendlyError(reason));
 					} finally {
 						setBusy(false);
 					}

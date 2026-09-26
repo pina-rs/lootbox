@@ -98,22 +98,25 @@ async function rpcCall(
 }
 
 /**
- * A fresh classic SPL mint (6 decimals, no freeze authority) with `amount`
- * base units minted to `owner`. Created with Surfpool's `surfnet_setAccount`.
+ * A classic SPL mint with `amount` base units minted to `owner`, created with
+ * Surfpool's `surfnet_setAccount`. Pass `at` to recreate a mainnet mint
+ * (BONK, a PreStocks token) as a local stand-in so catalog results resolve.
  */
 export async function testToken(
 	client: LootboxClient,
 	rpcUrl: string,
 	owner: KeyPairSigner,
 	amount: bigint,
+	options: Readonly<{ at?: Address; decimals?: number; freezable?: boolean }> =
+		{},
 ): Promise<Address> {
-	const mint = (await generateKeyPairSigner()).address;
+	const mint = options.at ?? (await generateKeyPairSigner()).address;
 	const data = getMintEncoder().encode({
 		mintAuthority: owner.address,
 		supply: 0n,
-		decimals: 6,
+		decimals: options.decimals ?? 6,
 		isInitialized: true,
-		freezeAuthority: null,
+		freezeAuthority: options.freezable ? owner.address : null,
 		extensions: null,
 	});
 	const rent = await client.rpc.getMinimumBalanceForRentExemption(82n).send();

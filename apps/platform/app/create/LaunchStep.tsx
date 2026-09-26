@@ -3,6 +3,7 @@ import { useWalletAccountTransactionSigner } from "@solana/react";
 import type { UiWalletAccount } from "@wallet-standard/react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { friendlyError } from "../lib/errors.js";
 
 import { TxProgress, useTxProgress } from "../components/TxProgress.js";
 import { chainFor, type ClusterInfo } from "../lib/clusters.js";
@@ -88,9 +89,7 @@ export function LaunchStep(
 
 							navigate(`/l/${slug}`);
 						} catch (reason) {
-							setError(
-								reason instanceof Error ? reason.message : "Launch stopped",
-							);
+							setError(friendlyError(reason));
 						} finally {
 							setBusy(false);
 						}

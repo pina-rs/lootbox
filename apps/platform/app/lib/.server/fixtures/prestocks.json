@@ -1,0 +1,41 @@
+[
+	{
+		"name": "Anthropic PreStocks",
+		"symbol": "ANTHROPIC",
+		"description": "Anthropic is an AI research company developing Claude, a language model built with a strong focus on safety and interpre",
+		"image": "https://www.prestocks.com/logos/anthropic.png",
+		"external_url": "https://www.prestocks.com/anthropic",
+		"contract_address": "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw",
+		"markPrice": 1060.53827793,
+		"markValuation": 1737526199836,
+		"tokenPrice": 1008.1458347106508,
+		"impliedValuation": 1651689370877,
+		"supply": 7381.764423289
+	},
+	{
+		"name": "OpenAI PreStocks",
+		"symbol": "OPENAI",
+		"description": "OpenAI pioneers large-language models like GPT and DALL\u00b7E, enabling advanced AI applications. Their research emphasizes ",
+		"image": "https://www.prestocks.com/logos/openai.png",
+		"external_url": "https://www.prestocks.com/openai",
+		"contract_address": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+		"markPrice": 1022.6795985787828,
+		"markValuation": 1267028739670,
+		"tokenPrice": 1340.4701819660932,
+		"impliedValuation": 1660749121799,
+		"supply": 2826.3066489988805
+	},
+	{
+		"name": "SpaceX PreStocks",
+		"symbol": "SPACEX",
+		"description": "SpaceX engineers reusable launch vehicles and the Starlink satellite constellation for global broadband. Their focus on ",
+		"image": "https://www.prestocks.com/logos/spacex.png",
+		"external_url": "https://www.prestocks.com/spacex",
+		"contract_address": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
+		"markPrice": 148.7135755205743,
+		"markValuation": 1949800212381,
+		"tokenPrice": 114.66082135444844,
+		"impliedValuation": 1503330768869,
+		"supply": 43712.526812125
+	}
+]

@@ -19,6 +19,9 @@ export type Secrets = Readonly<{
 	DAS_RPC_URL?: string;
 	DAS_RPC_URL_DEVNET?: string;
 	RELAYER_SECRET_KEY?: string;
+	/** `true` serves recorded market data (end-to-end tests only). */
+	CATALOG_FIXTURES?: string;
+	FEATURE_NFT_PRIZES?: string;
 }>;
 
 export type WorkerEnv = Env & Secrets;
@@ -31,7 +34,7 @@ export type ServerConfig = Readonly<{
 	localnetControlUrl: string | null;
 	relayerClusters: readonly Cluster[];
 	relayerClaim: boolean;
-	features: Readonly<{ exclusiveNfts: boolean }>;
+	features: Readonly<{ exclusiveNfts: boolean; nftPrizes: boolean }>;
 }>;
 
 function clusterList(value: string | undefined): Cluster[] {
@@ -77,7 +80,10 @@ export function readServerConfig(env: WorkerEnv): ServerConfig {
 			cluster !== "localnet" || localnetAllowed
 		),
 		relayerClaim: env.RELAYER_CLAIM === "true",
-		features: { exclusiveNfts: env.FEATURE_EXCLUSIVE_NFTS === "true" },
+		features: {
+			exclusiveNfts: env.FEATURE_EXCLUSIVE_NFTS === "true",
+			nftPrizes: env.FEATURE_NFT_PRIZES === "true",
+		},
 	};
 }
 

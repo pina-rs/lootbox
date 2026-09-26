@@ -3,7 +3,7 @@
  * from chain state after a reload.
  */
 import type { UiWalletAccount } from "@wallet-standard/react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router";
 
 import * as sdk from "@pina-rs/lootbox";
@@ -106,6 +106,7 @@ function Wizard(
 	const [holdings, refreshHoldings] = useHoldings(rpcUrl, account.address);
 	const [balance, refreshBalance] = useSolBalance(rpcUrl, account.address);
 	const { details, bundles } = state.data;
+	const [reviewProblem, setReviewProblem] = useState<string | null>(null);
 	const detailsCheck = launchDetailsSchema.safeParse(details);
 	const now = chainNow.status === "ready" ? chainNow.value : null;
 	const revealProblem =
@@ -117,6 +118,8 @@ function Wizard(
 		: detailsCheck.error.issues[0]?.message ?? "Check the details";
 	const planCheck = bundles.length === 0
 		? { ok: false as const, message: "Add at least one bundle." }
+		: bundles.some((bundle) => bundle.label.trim() === "")
+		? { ok: false as const, message: "Every bundle needs a name." }
 		: bundles.some((bundle) => bundle.assets.length === 0)
 		? { ok: false as const, message: "Every bundle needs at least one prize." }
 		: checkPlan({
@@ -127,7 +130,13 @@ function Wizard(
 		});
 	const prizesProblem = planCheck.ok ? null : planCheck.message;
 	const problemFor = (step: number): string | null =>
-		step === 1 ? detailsProblem : step === 2 ? prizesProblem : null;
+		step === 1
+			? detailsProblem
+			: step === 2
+			? prizesProblem
+			: step === 4
+			? reviewProblem
+			: null;
 	const canEnter = (step: number) =>
 		Array.from({ length: step - 1 }, (_, index) => problemFor(index + 1)).every(
 			(problem) => problem === null,
@@ -191,11 +200,11 @@ function Wizard(
 			)}
 			{step === 2 && (
 				<BundlesStep
+					account={account}
 					bundles={bundles}
-					rpcUrl={cluster.rpcUrl}
 					cluster={cluster.cluster}
-					owner={account.address}
 					holdings={holdings}
+					onRefreshHoldings={refreshHoldings}
 					problem={prizesProblem}
 					dispatch={dispatch}
 				/>
@@ -219,6 +228,7 @@ function Wizard(
 					holdings={holdings}
 					balance={balance}
 					owner={account.address}
+					onBlocked={setReviewProblem}
 					onRefreshBalance={() => {
 						refreshBalance();
 						refreshHoldings();

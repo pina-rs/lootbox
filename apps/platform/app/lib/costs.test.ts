@@ -43,6 +43,8 @@ describe("creationCost", () => {
 				icon: null,
 				issuer: null,
 				tracks: null,
+				category: "coin",
+				usdPrice: null,
 			}],
 		},
 	];
@@ -87,6 +89,8 @@ describe("creationCost", () => {
 				icon: null,
 				issuer: { name: "PreStocks", feeBasisPoints: 100, maximumFee: "1000" },
 				tracks: "OpenAI",
+				category: "stock",
+				usdPrice: null,
 			}],
 		};
 		const cost = creationCost({

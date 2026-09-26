@@ -46,7 +46,9 @@
 		"RELAYER_CLUSTERS": "devnet",
 		// Also deliver allocated prizes (the relayer then pays token-account rent).
 		"RELAYER_CLAIM": "false",
-		// Exclusive Lootbox NFT consolation prizes; enable once the SDK ships them.
-		"FEATURE_EXCLUSIVE_NFTS": "false"
+		// Exclusive Lootbox NFTs; enable once the SDK ships them.
+		"FEATURE_EXCLUSIVE_NFTS": "false",
+		// NFT prizes from other projects in the bundle builder.
+		"FEATURE_NFT_PRIZES": "false"
 	}
 }

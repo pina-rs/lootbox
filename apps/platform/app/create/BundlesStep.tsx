@@ -4,19 +4,39 @@
  */
 import { useState } from "react";
 
+import type { UiWalletAccount } from "@wallet-standard/react";
+
+import { compactUsd } from "../lib/catalog.js";
 import type { Holding } from "../lib/holdings.js";
 import { describeAsset, describeChance } from "../lib/plan.js";
+import { usePublicConfig } from "../lib/public-config.js";
 import type { DraftAsset, DraftBundle } from "../lib/schemas.js";
 import type { WizardAction } from "./draft.js";
 import type { Load } from "./hooks.js";
+import { usePrices } from "./prices.js";
 import { PrizePicker } from "./PrizePicker.js";
 
+const WSOL = "So11111111111111111111111111111111111111112";
+
+/** Approximate USD value of one prize per box, when a price is known. */
+function assetUsd(asset: DraftAsset, solUsd: number | null): number | null {
+	if (asset.kind === "sol") {
+		return solUsd === null ? null : (Number(asset.lamports) / 1e9) * solUsd;
+	}
+
+	if (asset.kind === "token" && asset.usdPrice !== null) {
+		return (Number(asset.amount) / 10 ** asset.decimals) * asset.usdPrice;
+	}
+
+	return null;
+}
+
 type Props = Readonly<{
+	account: UiWalletAccount;
 	bundles: readonly DraftBundle[];
-	rpcUrl: string;
 	cluster: string;
-	owner: string;
 	holdings: Load<Holding[]>;
+	onRefreshHoldings: () => void;
 	problem: string | null;
 	dispatch: (action: WizardAction) => void;
 }>;
@@ -35,9 +55,20 @@ function hasUnique(bundle: DraftBundle): boolean {
 }
 
 export function BundlesStep(
-	{ bundles, rpcUrl, cluster, owner, holdings, problem, dispatch }: Props,
+	{
+		account,
+		bundles,
+		cluster,
+		holdings,
+		onRefreshHoldings,
+		problem,
+		dispatch,
+	}: Props,
 ) {
 	const [picking, setPicking] = useState<string | null>(null);
+	const { features } = usePublicConfig();
+	const prices = usePrices([WSOL]);
+	const solUsd = prices.usd[WSOL] ?? null;
 	const total = bundles.reduce(
 		(sum, bundle) => sum + BigInt(bundle.quantity),
 		0n,
@@ -134,6 +165,11 @@ export function BundlesStep(
 								<li key={`${asset.kind}-${assetIndex}`} className="prize-row">
 									<span>
 										{describeAsset(asset)}
+										{assetUsd(asset, solUsd) !== null && (
+											<small>
+												≈ {compactUsd(assetUsd(asset, solUsd))} per box
+											</small>
+										)}
 										{asset.kind === "token" && asset.issuer && (
 											<small>
 												{asset.issuer.name} ·{" "}
@@ -160,9 +196,12 @@ export function BundlesStep(
 						{picking === bundle.id
 							? (
 								<PrizePicker
-									rpcUrl={rpcUrl}
+									account={account}
 									cluster={cluster}
-									owner={owner}
+									nftPrizes={features.nftPrizes}
+									swaps={features.swaps &&
+										(cluster === "mainnet" || cluster === "localnet")}
+									onRefreshHoldings={onRefreshHoldings}
 									copies={bundle.quantity}
 									holdings={holdings}
 									onAdd={(asset) => addAsset(bundle, asset)}

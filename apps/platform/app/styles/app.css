@@ -1767,3 +1767,128 @@ textarea[aria-invalid="true"] {
 	border: 2px solid var(--ink);
 	border-radius: 4px;
 }
+
+/* Prize picker */
+
+.type-menu {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.type-menu button {
+	display: grid;
+	gap: 2px;
+	inline-size: 100%;
+	min-block-size: 64px;
+	padding: 10px 14px;
+	border: 2px solid var(--ink);
+	border-radius: var(--radius);
+	background: var(--white);
+	box-shadow: var(--shadow-s);
+	color: var(--ink);
+	font: 800 16px var(--body);
+	text-align: start;
+	cursor: pointer;
+}
+
+.type-menu button:hover {
+	background: var(--gold-soft);
+}
+
+.type-menu .muted {
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.picker-results li[role="option"] {
+	display: grid;
+	grid-template-columns: 32px minmax(0, 1fr);
+	gap: 4px 10px;
+	align-items: center;
+	padding: 8px 10px;
+	border: 2px solid var(--line);
+	border-radius: var(--radius-s);
+	background: var(--white);
+	cursor: pointer;
+}
+
+.picker-results li[role="option"][data-active="true"] {
+	border-color: var(--ink);
+	background: var(--gold-soft);
+}
+
+.option-main {
+	display: grid;
+	min-inline-size: 0;
+}
+
+.option-title {
+	overflow: hidden;
+	font-weight: 800;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.option-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px 10px;
+	color: var(--muted);
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.option-badges {
+	grid-column: 2;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.token-mono {
+	display: grid;
+	place-items: center;
+	background: var(--gold-soft);
+	font: 400 11px var(--display);
+}
+
+.badge-ok {
+	background: var(--accent-soft);
+}
+
+.amount-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+
+.amount-row input {
+	flex: 1 1 140px;
+	inline-size: auto;
+}
+
+.chosen {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+
+.swap {
+	display: grid;
+	gap: 10px;
+	padding: 12px 14px;
+	border: 2px dashed var(--ink);
+	border-radius: var(--radius);
+	background: var(--white);
+}
+
+.swap h4 {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 900;
+}

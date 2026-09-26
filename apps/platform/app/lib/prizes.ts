@@ -50,9 +50,14 @@ function describeAsset(
 			const issuerStock = tracks !== null ||
 				(hint?.kind === "token" && hint.issuer !== null);
 
+			const xStock = hint?.kind === "token" &&
+				hint.issuer?.name.includes("xStocks") === true;
+
 			return {
 				text: tracks
-					? `${units} PreStocks tokens tracking ${tracks}`
+					? xStock
+						? `${units} xStocks tracking ${tracks}`
+						: `${units} PreStocks tokens tracking ${tracks}`
 					: `${units} ${symbol || `tokens (${shortMint(asset.mint)})`}`,
 				tracks,
 				issuerStock,
@@ -133,9 +138,9 @@ export function stockDisclaimer(companies: readonly string[]): string {
 		return "Tokenized stock prizes are issuer tokens, not shares, and carry no ownership, voting, or dividend rights.";
 	}
 
-	return `PreStocks tokens track economic exposure to ${
+	return `Tokenized stock prizes track economic exposure to ${
 		unique.join(", ")
-	}. They are not shares and carry no ownership, voting, or dividend rights. Not affiliated with or endorsed by ${
+	}. They are issuer tokens, not shares, and carry no ownership, voting, or dividend rights. Not affiliated with or endorsed by ${
 		unique.join(", ")
 	}.`;
 }

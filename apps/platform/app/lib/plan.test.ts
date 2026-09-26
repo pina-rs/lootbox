@@ -81,6 +81,8 @@ describe("draft to SDK", () => {
 					maximumFee: "1000000000",
 				},
 				tracks: "OpenAI",
+				category: "stock",
+				usdPrice: null,
 			}],
 		};
 		const [line] = escrowLines([bundle]);

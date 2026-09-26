@@ -9,7 +9,12 @@ export type PublicConfig = Readonly<{
 	origin: string;
 	clusters: readonly ClusterInfo[];
 	defaultCluster: Cluster;
-	features: Readonly<{ exclusiveNfts: boolean }>;
+	features: Readonly<{
+		exclusiveNfts: boolean;
+		nftPrizes: boolean;
+		/** "Buy with SOL" through Jupiter (mainnet, or recorded fixtures). */
+		swaps: boolean;
+	}>;
 	/** Wallet address of the signed-in session, if any. */
 	session: string | null;
 }>;

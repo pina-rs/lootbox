@@ -35,7 +35,11 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 		origin: originFor(app.config, request),
 		clusters,
 		defaultCluster: app.config.defaultCluster,
-		features: app.config.features,
+		features: {
+			...app.config.features,
+			swaps: app.env.CATALOG_FIXTURES === "true" ||
+				app.config.enabledClusters.includes("mainnet"),
+		},
 		session,
 	};
 

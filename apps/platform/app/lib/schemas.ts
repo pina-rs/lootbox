@@ -63,6 +63,10 @@ export const draftAssetSchema = z.discriminatedUnion("kind", [
 		issuer: issuerSchema.nullable(),
 		/** Company the tokenized stock tracks, when known. */
 		tracks: z.string().max(60).nullable(),
+		/** How the picker filed it: meme coin / token, or tokenized stock. */
+		category: z.enum(["coin", "stock"]).default("coin"),
+		/** USD price per whole token when it was added, for display only. */
+		usdPrice: z.number().nonnegative().nullable().default(null),
 	}),
 	z.object({
 		kind: z.literal("nft"),
@@ -75,12 +79,15 @@ export const draftAssetSchema = z.discriminatedUnion("kind", [
 
 export type DraftAsset = z.infer<typeof draftAssetSchema>;
 
+/** A draft bundle may be incomplete; `checkPlan` gates the launch. */
 export const draftBundleSchema = z.object({
 	id: z.string().min(1).max(40),
-	label: boundedUtf8("Bundle name", 40),
+	label: z.string().max(40),
 	quantity: z.number().int().min(1).max(100_000),
-	assets: z.array(draftAssetSchema).min(1, "Add at least one prize")
-		.max(4, "A bundle holds at most four prizes"),
+	assets: z.array(draftAssetSchema).max(
+		4,
+		"A bundle holds at most four prizes",
+	),
 });
 
 export type DraftBundle = z.infer<typeof draftBundleSchema>;

@@ -7,6 +7,7 @@ import { address, createSolanaRpc, isAddress, isSome } from "@solana/kit";
 
 import {
 	CLASSIC_TOKEN_PROGRAM,
+	PRESTOCK_SYMBOLS,
 	PRESTOCKS,
 	STOCK_ISSUERS,
 	TOKEN_2022_PROGRAM,
@@ -46,7 +47,8 @@ const ISSUER_EXTENSIONS = new Set([
 	"TransferFeeConfig",
 ]);
 
-function describeMint(
+/** Apply the program's prize admission rules to one decoded mint. */
+export function describeMint(
 	mintAddress: string,
 	owner: string,
 	mint: Mint,
@@ -75,11 +77,12 @@ function describeMint(
 	let ineligible: string | null = null;
 
 	if (owner !== CLASSIC_TOKEN_PROGRAM && owner !== TOKEN_2022_PROGRAM) {
-		ineligible = "This is not a token mint.";
+		ineligible = "This address isn't a token mint.";
 	} else if (blocked) {
-		ineligible = `Tokens with ${blocked.__kind} can't be escrowed safely.`;
+		ineligible =
+			`This token uses the ${blocked.__kind} extension, which the lootbox program can't escrow safely — not supported.`;
 	} else if (isSome(mint.freezeAuthority) && !issuerName) {
-		ineligible = "Tokens that can be frozen can't be prizes.";
+		ineligible = "This token's issuer can freeze balances — not supported.";
 	}
 
 	return {
@@ -88,7 +91,9 @@ function describeMint(
 		decimals: mint.decimals,
 		supply: mint.supply,
 		name: metadata?.__kind === "TokenMetadata" ? metadata.name : null,
-		symbol: metadata?.__kind === "TokenMetadata" ? metadata.symbol : null,
+		symbol: metadata?.__kind === "TokenMetadata"
+			? metadata.symbol
+			: PRESTOCK_SYMBOLS.get(mintAddress) ?? null,
 		issuer: issuerName
 			? {
 				name: issuerName,

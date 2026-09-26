@@ -1,0 +1,17 @@
+{
+	"So11111111111111111111111111111111111111112": {
+		"usdPrice": 152.4,
+		"decimals": 9,
+		"priceChange24h": 1.2
+	},
+	"DezXAZ8z7PnrnRJjz3wXBoRgixCa6XKj7D3WpqkDmzPK": {
+		"usdPrice": 0.0000213,
+		"decimals": 5,
+		"priceChange24h": -2.1
+	},
+	"EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm": {
+		"usdPrice": 0.84,
+		"decimals": 6,
+		"priceChange24h": 3.4
+	}
+}

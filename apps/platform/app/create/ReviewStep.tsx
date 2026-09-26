@@ -26,6 +26,8 @@ type Props = Readonly<{
 	holdings: Load<Holding[]>;
 	balance: Load<bigint>;
 	onRefreshBalance: () => void;
+	/** Report whether the wallet can cover the launch. */
+	onBlocked: (reason: string | null) => void;
 	owner: string;
 }>;
 
@@ -104,8 +106,16 @@ export function shortfalls(
 }
 
 export function ReviewStep(
-	{ data, cluster, uriPreview, holdings, balance, onRefreshBalance, owner }:
-		Props,
+	{
+		data,
+		cluster,
+		uriPreview,
+		holdings,
+		balance,
+		onRefreshBalance,
+		onBlocked,
+		owner,
+	}: Props,
 ) {
 	const rent = useRentForZero(cluster.rpcUrl);
 	const [faucet, setFaucet] = useState<string | null>(null);
@@ -128,6 +138,14 @@ export function ReviewStep(
 		cost && balance.status === "ready" && holdings.status === "ready"
 			? shortfalls(data, holdings.value, balance.value, cost.totalLamports)
 			: [];
+
+	const blocked = missing.length > 0
+		? `Top up ${
+			missing.map((item) => item.label).join(" and ")
+		} before launching.`
+		: null;
+
+	useEffect(() => onBlocked(blocked), [blocked, onBlocked]);
 
 	return (
 		<div className="two-col">

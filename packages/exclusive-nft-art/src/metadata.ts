@@ -1,18 +1,27 @@
-import { type ExclusiveNftTraits, resolveTraits } from "./render.ts";
+import {
+	LAYER,
+	LAYER_COUNT,
+	LAYERS,
+	resolveTraits,
+	type TraitVector,
+} from "./layers.ts";
+import { rarityOf } from "./rarity.ts";
+import { assertSerial } from "./render.ts";
 
 /**
  * Metaplex JSON and URI helpers for Exclusive Lootbox NFTs.
  *
- * The program writes each NFT's URI as
- * `{base}{tier}-{contents}-{background}-{pattern}-{serial}.json`. A host (for
- * example a Cloudflare Worker) parses that path back into traits with
- * `parseExclusiveNftStem`, then serves `metadataFor` and `renderExclusiveNft`.
+ * The program writes each NFT's URI as `{base}{hex}-{serial}.json`, where
+ * `hex` is one lowercase byte per layer, bottom to top (`00050203000d01`). A
+ * host (for example a Cloudflare Worker) parses the stem back with
+ * `parseExclusiveNftStem`, then serves `metadataFor`, `renderExclusiveNft`,
+ * `renderAnimatedExclusiveNft`, and `playerHtml`.
  */
 
 export const EXCLUSIVE_NFT_SYMBOL = "EXCHEST";
 
 export const EXCLUSIVE_NFT_DISCLOSURE =
-	"An Exclusive Chest for an Unlisted opening without a main prize. Tier, contents, background, and pattern are drawn on-chain from the opening's committed randomness.";
+	"An Exclusive Chest for an Unlisted opening without a main prize. Every layer is drawn independently on-chain from the opening's committed randomness.";
 
 export type MetadataAttribute = Readonly<
 	| { trait_type: string; value: string }
@@ -40,55 +49,54 @@ export type MetadataOptions = Readonly<{
 	externalUrl: string;
 }>;
 
-/** `{tier}-{contents}-{background}-{pattern}-{serial}`, the shared file stem. */
-export function exclusiveNftStem(traits: ExclusiveNftTraits): string {
-	const { tier, contents, background, pattern, serial } = traits;
+export type ParsedStem = Readonly<{ traits: TraitVector; serial: number }>;
 
-	return `${tier}-${contents}-${background}-${pattern}-${serial}`;
+/** One lowercase hex byte per layer, bottom to top. */
+export function traitHex(traits: TraitVector): string {
+	resolveTraits(traits);
+
+	return traits.map((trait) => trait.toString(16).padStart(2, "0")).join("");
 }
 
-/** The metadata URI the program writes for `traits`. */
+/** `{hex}-{serial}`, the stem shared by the JSON, SVG, and player URLs. */
+export function exclusiveNftStem(traits: TraitVector, serial: number): string {
+	assertSerial(serial);
+
+	return `${traitHex(traits)}-${serial}`;
+}
+
+/** The metadata URI the program writes. */
 export function exclusiveNftUri(
 	base: string,
-	traits: ExclusiveNftTraits,
+	traits: TraitVector,
+	serial: number,
 ): string {
-	return `${base}${exclusiveNftStem(traits)}.json`;
+	return `${base}${exclusiveNftStem(traits, serial)}.json`;
 }
 
-const STEM = /^(\d{1,2})-(\d{1,2})-(\d{1,2})-(\d{1,2})-(\d{1,16})$/;
+const STEM = new RegExp(
+	`^((?:[0-9a-f]{2}){${LAYER_COUNT}})-(0|[1-9]\\d{0,15})$`,
+);
 
 /**
- * Parse a file stem (`3-5-0-2-42`) back into traits.
+ * Parse a stem (`00050203000d01-42`) back into traits and serial.
  *
- * Returns `null` for anything malformed or out of range, including leading
- * zeros that would give one NFT two URIs.
+ * Returns `null` for anything malformed or out of range, including uppercase
+ * hex and padded serials that would give one NFT two URIs.
  */
-export function parseExclusiveNftStem(stem: string): ExclusiveNftTraits | null {
+export function parseExclusiveNftStem(stem: string): ParsedStem | null {
 	const match = STEM.exec(stem);
 
-	if (!match) {
+	if (!match?.[1] || !match[2]) {
 		return null;
 	}
 
-	const fields = match.slice(1);
-
-	if (fields.some((field) => field.length > 1 && field.startsWith("0"))) {
-		return null;
-	}
-
-	const [tier, contents, background, pattern, serial] = fields.map(Number);
-
-	if (
-		tier === undefined || contents === undefined || background === undefined ||
-		pattern === undefined || serial === undefined
-	) {
-		return null;
-	}
-
-	const traits = { tier, contents, background, pattern, serial };
+	const traits = match[1].match(/../g)?.map((byte) => parseInt(byte, 16)) ?? [];
+	const serial = Number(match[2]);
 
 	try {
 		resolveTraits(traits);
+		assertSerial(serial);
 	} catch (error) {
 		if (error instanceof RangeError) {
 			return null;
@@ -97,40 +105,63 @@ export function parseExclusiveNftStem(stem: string): ExclusiveNftTraits | null {
 		throw error;
 	}
 
-	return traits;
+	return { traits, serial };
+}
+
+/** `a` or `an`, by the first letter of `word`. */
+export function article(word: string): "a" | "an" {
+	return /^[aeiou]/i.test(word) ? "an" : "a";
+}
+
+/** The collectible's name, e.g. `Solid Gold Chest #42`. */
+export function exclusiveNftName(traits: TraitVector, serial: number): string {
+	const finish = resolveTraits(traits)[LAYER.finish]?.name ?? "";
+
+	return `${finish} Chest #${serial}`;
 }
 
 /** The Metaplex JSON for one Exclusive Lootbox NFT. */
 export function metadataFor(
-	traits: ExclusiveNftTraits,
+	traits: TraitVector,
+	serial: number,
 	options: MetadataOptions,
 ): ExclusiveNftMetadata {
-	const { tier, contents, background, pattern, serial } = resolveTraits(traits);
-	const stem = exclusiveNftStem(traits);
+	const chosen = resolveTraits(traits);
+	const stem = exclusiveNftStem(traits, serial);
+	const rarity = rarityOf(traits);
+	const finish = chosen[LAYER.finish]?.name ?? "";
+	const contents = chosen[LAYER.contents];
 	const image = `${options.base}${stem}.svg`;
+	const animated = `${options.base}${stem}.animated.svg`;
 	const player = `${options.base}play.html?nft=${stem}`;
 
 	return {
-		name: `${tier.name} Chest #${serial}`,
+		name: exclusiveNftName(traits, serial),
 		symbol: EXCLUSIVE_NFT_SYMBOL,
-		description:
-			`${contents.name}, in a ${tier.name} chest. ${contents.line} ${tier.line} ${EXCLUSIVE_NFT_DISCLOSURE}`,
+		description: `${contents?.name}, in ${
+			article(finish)
+		} ${finish} chest. ${contents?.description} ${rarity.label}. ${EXCLUSIVE_NFT_DISCLOSURE}`,
 		image,
 		animation_url: player,
 		external_url: options.externalUrl,
 		attributes: [
-			{ trait_type: "Tier", value: tier.name },
-			{ trait_type: "Finish", value: tier.finish },
-			{ trait_type: "Contents", value: contents.name },
-			{ trait_type: "Background", value: background.name },
-			{ trait_type: "Pattern", value: pattern.name },
+			...LAYERS.map((layer, index) => ({
+				trait_type: layer.name,
+				value: chosen[index]?.name ?? "",
+			})),
 			{ trait_type: "Serial", value: serial, display_type: "number" },
-			{ trait_type: "Odds", value: tier.odds },
+			{ trait_type: "Rarity", value: rarity.label },
+			{
+				trait_type: "Rarity score",
+				value: rarity.score,
+				display_type: "number",
+			},
 		],
 		properties: {
 			category: "html",
 			files: [
 				{ uri: image, type: "image/svg+xml" },
+				{ uri: animated, type: "image/svg+xml" },
 				{ uri: player, type: "text/html" },
 			],
 		},

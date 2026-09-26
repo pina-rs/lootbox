@@ -227,18 +227,19 @@ function waves(panel: Panel): Geometry[] {
 		const points: Point[] = [];
 		const shift = row % 2 ? width / 2 : 0;
 
+		// Troughs and crests, rounded by the vertex radius: a scallop per wave
+		// with three points instead of a sampled arc keeps the Rive file small.
 		for (let x = area.left - shift; x < area.right; x += width) {
-			for (let i = 0; i <= 6; i++) {
-				const angle = Math.PI + i * Math.PI / 6;
-				const px = x + width / 2 + Math.cos(angle) * width / 2;
+			for (const [dx, dy] of [[0, 0], [width / 2, -6]] as const) {
+				const px = x + dx;
 
 				if (px >= area.left && px <= area.right) {
-					points.push([px, y + Math.sin(angle) * 6]);
+					points.push([px, y + dy]);
 				}
 			}
 		}
 
-		return poly(points, false);
+		return poly(points, false, 6);
 	});
 }
 

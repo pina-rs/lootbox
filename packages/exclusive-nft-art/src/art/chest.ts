@@ -11,6 +11,24 @@ import {
 	shape,
 	slot,
 } from "./model.ts";
+import { motion, use } from "./motion.ts";
+
+// The chest's own idle: it breathes, the lid bobs on its hinge, and the
+// contents float. These are the motions every NFT shares.
+const breathe = motion("chest-breathe", 4, {
+	scaleX: [[0, 1], [.5, .99], [1, 1]],
+	scaleY: [[0, 1], [.5, 1.015], [1, 1]],
+});
+const lidBob = motion("lid-bob", 4, {
+	y: [[0, 0], [.5, -8], [1, 0]],
+	rotation: [[0, 0], [.5, -.02], [1, 0]],
+});
+const lockSway = motion("lock-bob", 4, {
+	y: [[0, 0], [.5, -8], [1, 0]],
+});
+const float = motion("contents-float", 4, {
+	y: [[0, 0], [.5, -10], [1, 0]],
+});
 
 /**
  * The cartoon chest, drawn in chest units with the origin at the middle of
@@ -82,8 +100,12 @@ function hatch(x: number, y: number, dx: number, dy: number, count: number) {
 	);
 }
 
-/** The front of the chest: wood, pattern, trim, and cel shading. */
-function bodyArt(pattern: readonly Art[], overlay: readonly Art[]): Art[] {
+/** The front of the chest: wood, pattern, trim, cel shading, foil, and dressing. */
+function bodyArt(
+	pattern: readonly Art[],
+	overlay: readonly Art[],
+	decoration: readonly Art[],
+): Art[] {
 	return [
 		shape("Painted chest body", BODY_SILHOUETTE, slot("wood"), 4.5),
 		shape(
@@ -149,11 +171,16 @@ function bodyArt(pattern: readonly Art[], overlay: readonly Art[]): Art[] {
 		rivet(106, -151),
 		rivet(106, -37),
 		...overlay,
+		...decoration,
 	];
 }
 
 /** The lid in its own space: y 0 is the hinge line, the top is about -102. */
-function lidArt(pattern: readonly Art[], overlay: readonly Art[]): Art[] {
+function lidArt(
+	pattern: readonly Art[],
+	overlay: readonly Art[],
+	decoration: readonly Art[],
+): Art[] {
 	return [
 		shape("Curved lid", LID_SILHOUETTE, slot("wood"), 4.5),
 		shape(
@@ -187,24 +214,7 @@ function lidArt(pattern: readonly Art[], overlay: readonly Art[]): Art[] {
 		line("Lid strap light", [[-119, -87], [-118, -14]], slot("trimLight"), 3),
 		line("Lid strap light", [[98, -87], [99, -14]], slot("trimLight"), 3),
 		...overlay,
-	];
-}
-
-function lockArt(): Art[] {
-	return [
-		shape(
-			"Latch",
-			poly([[-19, -8], [20, -7], [23, 31], [2, 45], [-22, 31]], true, 3),
-			slot("lock"),
-			4,
-		),
-		line("Latch glint", [[-11, 0], [12, 1]], slot("lockLight"), 3),
-		shape(
-			"Keyhole",
-			poly([[-5, 11], [5, 11], [3, 21], [6, 29], [-6, 29], [-3, 21]], true, 2),
-			INK,
-			0,
-		),
+		...decoration,
 	];
 }
 
@@ -219,6 +229,12 @@ export type ChestParts = Readonly<{
 	lidPattern: readonly Art[];
 	bodyOverlay: readonly Art[];
 	lidOverlay: readonly Art[];
+	bodyDecoration: readonly Art[];
+	lidDecoration: readonly Art[];
+	/** Lock art in lock-plate space. */
+	lock: readonly Art[];
+	/** Where a render rule nudges the lock, in chest units. */
+	lockOffset: Readonly<{ x: number; y: number }>;
 	contents: readonly Art[];
 }>;
 
@@ -253,16 +269,31 @@ export function chest(parts: ChestParts): Group {
 			group(
 				"Lid",
 				{ y: LID_Y - parts.lid.lift, rotation: parts.lid.tilt },
-				lidArt(parts.lidPattern, parts.lidOverlay),
+				[
+					group(
+						"Lid bob",
+						{},
+						lidArt(parts.lidPattern, parts.lidOverlay, parts.lidDecoration),
+						{ motion: use(lidBob) },
+					),
+				],
 				{ key: "lid" },
 			),
-			group("Contents", { y: CONTENTS_Y }, parts.contents, {
-				key: "contents",
-			}),
-			group("Body", {}, bodyArt(parts.bodyPattern, parts.bodyOverlay)),
-			group("Lock plate", { y: LOCK_Y - parts.lid.lift }, lockArt(), {
-				key: "lock",
-			}),
-		], { key: "wobble" }),
+			group("Contents", { y: CONTENTS_Y }, [
+				group("Float", {}, parts.contents, { motion: use(float) }),
+			], { key: "contents" }),
+			group(
+				"Body",
+				{},
+				bodyArt(parts.bodyPattern, parts.bodyOverlay, parts.bodyDecoration),
+			),
+			group("Lock plate", { y: LOCK_Y - parts.lid.lift }, [
+				group("Lock bob", {}, [
+					group("Lock offset", parts.lockOffset, parts.lock, {
+						key: "lock-offset",
+					}),
+				], { motion: use(lockSway) }),
+			], { key: "lock" }),
+		], { key: "wobble", motion: use(breathe) }),
 	]);
 }

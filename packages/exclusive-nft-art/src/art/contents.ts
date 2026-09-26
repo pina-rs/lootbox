@@ -13,6 +13,43 @@ import {
 	star,
 	withAlpha,
 } from "./model.ts";
+import { motion, type MotionUse, use } from "./motion.ts";
+
+// Idle motions. Each loops seamlessly inside the shared eight-second loop.
+const flap = motion("moth-flap", .5, { scaleX: [[0, 1], [.5, .3], [1, 1]] });
+const rock = motion("contents-rock", 4, {
+	rotation: [[0, 0], [.25, .05], [.75, -.05], [1, 0]],
+});
+const swing = motion("contents-swing", 4, {
+	rotation: [[0, 0], [.25, .16], [.75, -.16], [1, 0]],
+});
+const wiggle = motion("contents-wiggle", 2, {
+	rotation: [[0, 0], [.25, .22], [.5, -.05], [.75, .18], [1, 0]],
+});
+const bob = motion("contents-bob", 2, { y: [[0, 0], [.5, 10], [1, 0]] });
+const blink = motion("contents-blink", 4, {
+	scaleY: [[0, 1], [.46, 1], [.5, .1], [.54, 1], [1, 1]],
+});
+const breathe = motion("contents-breathe", 4, {
+	scaleX: [[0, 1], [.5, 1.04], [1, 1]],
+	scaleY: [[0, 1], [.5, .97], [1, 1]],
+});
+const haunt = motion("contents-haunt", 4, {
+	y: [[0, 0], [.5, -10], [1, 0]],
+	opacity: [[0, 1], [.5, .7], [1, 1]],
+});
+const echoPulse = motion("contents-echo", 2, {
+	opacity: [[0, .2], [.5, 1], [1, .2]],
+});
+const snap = motion("contents-snap", 2, {
+	rotation: [[0, 0], [.1, -.35], [.2, 0], [.3, -.35], [.4, 0], [1, 0]],
+});
+const flip = motion("contents-flip", 4, {
+	scaleX: [[0, 1], [.4, 1], [.5, .12], [.6, 1], [1, 1]],
+});
+const glowPulse = motion("contents-glow", 2, {
+	opacity: [[0, .4], [.5, 1], [1, .4]],
+});
 
 /**
  * The things inside the chest. Indices match the `contents` URI field and the
@@ -25,6 +62,8 @@ import {
  */
 export type ContentsArt = Readonly<{
 	scale: number;
+	/** Whole-item idle motion around its base, if any. */
+	idle?: MotionUse;
 	peek: Readonly<{ x: number; y: number; rotation: number }>;
 	art: readonly Art[];
 }>;
@@ -55,10 +94,15 @@ function moth(): ContentsArt {
 
 	return {
 		scale: 2,
+		idle: use(bob, .5),
 		peek: { x: 84, y: -292, rotation: -.3 },
 		art: [
-			group("Right wing", { y: -24, rotation: -.12 }, wing(1)),
-			group("Left wing", { y: -24, rotation: .12 }, wing(-1)),
+			group("Right wing", { y: -24, rotation: -.12 }, wing(1), {
+				motion: use(flap),
+			}),
+			group("Left wing", { y: -24, rotation: .12 }, wing(-1), {
+				motion: use(flap),
+			}),
 			shape("Body", ellipse(0, -22, 18, 38), "FFBFA67C"),
 			line("Stripe", [[-6, -26], [6, -26]]),
 			line("Stripe", [[-6, -16], [6, -16]]),
@@ -74,6 +118,7 @@ function moth(): ContentsArt {
 function sock(): ContentsArt {
 	return {
 		scale: 1.25,
+		idle: use(rock),
 		peek: { x: -6, y: -200, rotation: -.08 },
 		art: [
 			shape("Leg", rect(0, -36, 42, 74, 4), CORAL),
@@ -115,7 +160,7 @@ function sock(): ContentsArt {
 					GOLD,
 					3,
 				),
-			]),
+			], { motion: use(wiggle) }),
 		],
 	};
 }
@@ -123,6 +168,7 @@ function sock(): ContentsArt {
 function iou(): ContentsArt {
 	return {
 		scale: 1.45,
+		idle: use(rock),
 		peek: { x: 0, y: -200, rotation: -.06 },
 		art: [
 			shape("Slip", rect(0, -52, 156, 96, 6), PAPER),
@@ -174,6 +220,7 @@ function cobweb(): ContentsArt {
 
 	return {
 		scale: 1.3,
+		idle: use(rock, .5),
 		peek: { x: 0, y: -236, rotation: 0 },
 		art: [
 			shape(
@@ -189,7 +236,7 @@ function cobweb(): ContentsArt {
 				shape("Body", ellipse(0, 0, 16, 16), INK, 0),
 				shape("Eye", ellipse(-3, -3, 4, 4), PAPER, 0),
 				shape("Eye", ellipse(3, -3, 4, 4), PAPER, 0),
-			]),
+			], { motion: use(bob) }),
 		],
 	};
 }
@@ -199,6 +246,7 @@ function dustBunny(): ContentsArt {
 
 	return {
 		scale: 1.4,
+		idle: use(breathe),
 		peek: { x: 10, y: -212, rotation: .06 },
 		art: [
 			shape(
@@ -214,10 +262,12 @@ function dustBunny(): ContentsArt {
 			shape("Fluff", star(0, -40, 96, 82, 22, .84), fluff),
 			shape("Blush", ellipse(26, -34, 10, 5), "FFF2A89C", 0),
 			shape("Blush", ellipse(-26, -34, 10, 5), "FFF2A89C", 0),
-			shape("Eye", ellipse(13, -48, 14, 16), PAPER, 2.5),
-			shape("Eye", ellipse(-13, -48, 14, 16), PAPER, 2.5),
-			shape("Pupil", ellipse(14, -47, 6, 8), INK, 0),
-			shape("Pupil", ellipse(-12, -47, 6, 8), INK, 0),
+			group("Eyes", { y: -48 }, [
+				shape("Eye", ellipse(13, 0, 14, 16), PAPER, 2.5),
+				shape("Eye", ellipse(-13, 0, 14, 16), PAPER, 2.5),
+				shape("Pupil", ellipse(14, 1, 6, 8), INK, 0),
+				shape("Pupil", ellipse(-12, 1, 6, 8), INK, 0),
+			], { motion: use(blink) }),
 		],
 	};
 }
@@ -227,6 +277,7 @@ function duck(): ContentsArt {
 
 	return {
 		scale: 1.5,
+		idle: use(rock, .5),
 		peek: { x: 0, y: -210, rotation: .04 },
 		art: [
 			shape(
@@ -294,7 +345,7 @@ function soldOutTag(): ContentsArt {
 				shape("Hole", ellipse(0, 50, 11, 11), IVORY, 2.5),
 				lettering("Sold", "SOLD", 0, 76, 17, DEEP_CORAL, 3.4),
 				lettering("Out", "OUT", 0, 100, 17, DEEP_CORAL, 3.4),
-			]),
+			], { motion: use(swing) }),
 		],
 	};
 }
@@ -313,7 +364,7 @@ function button(): ContentsArt {
 				),
 				line("Thread", [[9, -9], [-9, 9]], GOLD, 3.4),
 				line("Thread", [[-9, -9], [9, 9]], GOLD, 3.4),
-			]),
+			], { motion: use(wiggle, .3) }),
 		],
 	};
 }
@@ -323,6 +374,7 @@ function crown(): ContentsArt {
 
 	return {
 		scale: 1.5,
+		idle: use(rock, .3),
 		peek: { x: -40, y: -330, rotation: .14 },
 		art: [
 			shape(
@@ -374,6 +426,7 @@ function snail(): ContentsArt {
 
 	return {
 		scale: 1.5,
+		idle: use(breathe, .3),
 		peek: { x: 14, y: -214, rotation: 0 },
 		art: [
 			shape(
@@ -394,7 +447,7 @@ function snail(): ContentsArt {
 				line("Stalk", [[-2, 0], [-6, -36]], INK, 3),
 				shape("Eye", ellipse(12, -40, 10, 10), INK, 0),
 				shape("Eye", ellipse(-6, -38, 10, 10), INK, 0),
-			]),
+			], { motion: use(rock, .2) }),
 			shape("Shell", ellipse(4, -42, 64, 60), "FFE39A55"),
 			shape("Spiral", poly(spiral, false, 6), undefined, 3),
 		],
@@ -412,6 +465,7 @@ function receipt(): ContentsArt {
 
 	return {
 		scale: 1.25,
+		idle: use(breathe),
 		peek: { x: -4, y: -196, rotation: .06 },
 		art: [
 			shape("Receipt", poly(zigzag, true), PAPER),
@@ -450,7 +504,7 @@ function ghostCertificate(): ContentsArt {
 				shape("Eye", ellipse(14, -62, 9, 14), INK, 0),
 				shape("Eye", ellipse(-14, -62, 9, 14), INK, 0),
 				shape("Mouth", ellipse(0, -44, 11, 13), INK, 0),
-			]),
+			], { motion: use(haunt) }),
 		],
 	};
 }
@@ -470,17 +524,23 @@ function echo(): ContentsArt {
 		scale: 1.35,
 		peek: { x: -10, y: -214, rotation: -.04 },
 		art: [
-			group("Faint echo", {
-				x: 70,
-				y: -150,
-				scaleX: .5,
-				scaleY: .5,
-				opacity: .3,
-			}, bubble("Faint")),
+			group(
+				"Faint echo",
+				{
+					x: 70,
+					y: -150,
+					scaleX: .5,
+					scaleY: .5,
+					opacity: .3,
+				},
+				bubble("Faint"),
+				{ motion: use(echoPulse) },
+			),
 			group(
 				"Echo",
 				{ x: 44, y: -90, scaleX: .72, scaleY: .72, opacity: .55 },
 				bubble("Echo"),
+				{ motion: use(echoPulse, .5) },
 			),
 			group("Hello", {}, bubble("Speech")),
 		],
@@ -516,10 +576,11 @@ function crab(): ContentsArt {
 				shell,
 				3,
 			),
-		]);
+		], { motion: use(snap, side > 0 ? .5 : 0) });
 
 	return {
 		scale: 1.35,
+		idle: use(bob),
 		peek: { x: 0, y: -206, rotation: 0 },
 		art: [
 			...[-1, 1].flatMap((side) =>
@@ -552,6 +613,7 @@ function bottle(): ContentsArt {
 
 	return {
 		scale: 1.35,
+		idle: use(rock, .6),
 		peek: { x: 6, y: -206, rotation: .42 },
 		art: [
 			shape("Neck", rect(0, -104, 22, 30, 5), glass),
@@ -611,6 +673,7 @@ function goldenTicket(): ContentsArt {
 
 	return {
 		scale: 1.4,
+		idle: use(rock, .1),
 		peek: { x: 0, y: -206, rotation: -.1 },
 		art: [
 			shape("Ticket", poly(outline, true, 2), GOLD),
@@ -635,6 +698,7 @@ function goldenTicket(): ContentsArt {
 function petRock(): ContentsArt {
 	return {
 		scale: 1.5,
+		idle: use(breathe, .5),
 		peek: { x: 0, y: -208, rotation: 0 },
 		art: [
 			shape(
@@ -683,6 +747,7 @@ function petRock(): ContentsArt {
 function keyToNothing(): ContentsArt {
 	return {
 		scale: 1.4,
+		idle: use(rock, .8),
 		peek: { x: 0, y: -214, rotation: -.55 },
 		art: [
 			line("Tag string", [[-6, -104], [-30, -84]], INK, 2),
@@ -694,7 +759,7 @@ function keyToNothing(): ContentsArt {
 					2.5,
 				),
 				lettering("Question", "?", 0, -10, 18, DEEP_CORAL, 3),
-			]),
+			], { motion: use(swing, .4) }),
 			shape("Shaft", rect(0, -44, 12, 88, 3), GOLD, 3),
 			shape(
 				"Bit",
@@ -733,10 +798,12 @@ function fireflies(): ContentsArt {
 				to: [0, 0],
 				stops: [[0, "99FFE27A"], [1, "00FFE27A"]],
 			}, 0),
-			...bugs.flatMap(([x, y]) => [
-				shape("Firefly glow", ellipse(x, y, 16, 16), "66FFF1A0", 0),
-				shape("Firefly", ellipse(x, y, 6, 6), "FFFFF6C8", 0),
-			]),
+			...bugs.map(([x, y], i) =>
+				group("Firefly", { x, y }, [
+					shape("Firefly glow", ellipse(0, 0, 16, 16), "66FFF1A0", 0),
+					shape("Firefly", ellipse(0, 0, 6, 6), "FFFFF6C8", 0),
+				], { motion: use(glowPulse, i / bugs.length) })
+			),
 			shape("Glass rim", rect(0, -44, 70, 88, 16), undefined, 3.5),
 			line("Glass shine", [[-26, -16], [-26, -62]], "B3FFFFFF", 4),
 			shape("Lid band", rect(0, -92, 60, 12, 3), "FFB8BEC4", 3),
@@ -757,6 +824,7 @@ function luckyPenny(): ContentsArt {
 
 	return {
 		scale: 1.5,
+		idle: use(bob, .2),
 		peek: { x: 0, y: -212, rotation: .18 },
 		art: [
 			group("Penny", { y: -38 }, [
@@ -777,7 +845,7 @@ function luckyPenny(): ContentsArt {
 				line("Stem", [[0, 6], [4, 18]], INK, 2),
 				lettering("Tails", "TAILS", 0, 20, 7, INK, 1.6),
 				line("Shine", [[-24, -14], [-16, -26]], "FFFFC9A0", 3),
-			]),
+			], { motion: use(flip) }),
 		],
 	};
 }
@@ -825,7 +893,14 @@ export function contentsRoot(
 			...peek,
 			...(options.opacity === undefined ? {} : { opacity: options.opacity }),
 		},
-		[group("Art", { scaleX: scale, scaleY: scale }, art)],
+		[
+			group(
+				"Art",
+				{ scaleX: scale, scaleY: scale },
+				art,
+				contents.idle ? { motion: contents.idle } : {},
+			),
+		],
 		options.key === undefined ? {} : { key: options.key },
 	);
 }

@@ -1,4 +1,4 @@
-import type { TierPalette } from "../tiers.ts";
+import type { FinishPalette } from "../finishes.ts";
 import {
 	type Art,
 	type Color,
@@ -13,6 +13,12 @@ import {
 	type Transform,
 	withAlpha,
 } from "./model.ts";
+import {
+	type Motion,
+	MOTION_PROPERTIES,
+	type MotionUse,
+	sample,
+} from "./motion.ts";
 
 /**
  * Serialises the vector model to compact SVG markup.
@@ -21,14 +27,40 @@ import {
  * per-document counter, and numbers are rounded to one decimal place (a tenth
  * of a unit is well under a pixel at the 1024² poster size), which keeps each
  * poster small and byte-for-byte reproducible.
+ *
+ * With `animated`, every group that carries a motion gains an inner `<g>`
+ * animated by CSS keyframes; without it motions are ignored and the output is
+ * the still poster.
  */
 export class SvgWriter {
-	readonly #palette: TierPalette;
+	readonly #palette: FinishPalette;
+	readonly #animated: boolean;
 	readonly #defs: string[] = [];
+	readonly #keyframes = new Map<string, string>();
+	readonly #classes = new Map<
+		string,
+		Readonly<{ name: string; rule: string }>
+	>();
 	#nextId = 0;
 
-	constructor(palette: TierPalette) {
+	constructor(palette: FinishPalette, animated = false) {
 		this.#palette = palette;
+		this.#animated = animated;
+	}
+
+	/**
+	 * The `<style>` for every motion written so far, or `""` for a still.
+	 * Reduced-motion viewers get the still pose.
+	 */
+	get style(): string {
+		if (!this.#classes.size) {
+			return "";
+		}
+
+		const rules = [...this.#classes.values()].map(({ rule }) => rule).join("");
+		const frames = [...this.#keyframes.values()].join("");
+
+		return `<style>${frames}${rules}@media (prefers-reduced-motion:reduce){.m{animation:none!important}}</style>`;
 	}
 
 	/** The `<defs>` accumulated while writing art. */
@@ -47,13 +79,43 @@ export class SvgWriter {
 
 		const attrs = transformAttrs(item);
 		const clip = item.clip ? this.#clip(item.clip) : "";
-		const body = this.write(item.children);
+		const children = this.write(item.children);
+		const body = this.#animated && item.motion
+			? `<g class="m ${this.#motionClass(item.motion)}">${children}</g>`
+			: children;
 
 		if (!attrs && !clip) {
 			return body;
 		}
 
 		return `<g${attrs}${clip}>${body}</g>`;
+	}
+
+	#motionClass({ motion, phase }: MotionUse): string {
+		const frames = keyframesName(motion);
+		const signature = `${frames}@${phase}`;
+		const existing = this.#classes.get(signature);
+
+		if (existing) {
+			return existing.name;
+		}
+
+		if (!this.#keyframes.has(frames)) {
+			this.#keyframes.set(frames, cssKeyframes(frames, motion));
+		}
+
+		const name = `a${this.#classes.size}`;
+		const timing = motion.linear ? "linear" : "ease-in-out";
+		const delay = phase ? ` ${num(-phase * motion.duration, 3)}s` : "";
+
+		this.#classes.set(signature, {
+			name,
+			rule: `.${name}{animation:${frames} ${
+				num(motion.duration, 3)
+			}s ${timing} infinite${delay}}`,
+		});
+
+		return name;
 	}
 
 	#shape(item: Shape): string {
@@ -148,6 +210,46 @@ export class SvgWriter {
 
 		return ` clip-path="url(#${id})"`;
 	}
+}
+
+function keyframesName(motion: Motion): string {
+	return `k-${motion.name.replace(/[^A-Za-z0-9-]/g, "-")}`;
+}
+
+/** One CSS `@keyframes` rule sampling every track at every key time. */
+function cssKeyframes(name: string, motion: Motion): string {
+	const times = new Set<number>();
+
+	for (const keys of Object.values(motion.tracks)) {
+		for (const [t] of keys) {
+			times.add(t);
+		}
+	}
+
+	const steps = [...times].sort((a, b) => a - b).map((t) => {
+		const at = (property: (typeof MOTION_PROPERTIES)[number], rest: number) => {
+			const keys = motion.tracks[property];
+
+			return keys ? sample(keys, t, motion.linear) : rest;
+		};
+		const hasTransform = MOTION_PROPERTIES.some((property) =>
+			property !== "opacity" && motion.tracks[property]
+		);
+		const transform = hasTransform
+			? `transform:translate(${num(at("x", 0))}px,${
+				num(at("y", 0))
+			}px) rotate(${num(at("rotation", 0) * 180 / Math.PI, 2)}deg) scale(${
+				num(at("scaleX", 1), 3)
+			},${num(at("scaleY", 1), 3)});`
+			: "";
+		const opacity = motion.tracks.opacity
+			? `opacity:${num(at("opacity", 1), 3)}`
+			: "";
+
+		return `${num(t * 100, 2)}%{${transform}${opacity}}`;
+	}).join("");
+
+	return `@keyframes ${name}{${steps}}`;
 }
 
 /** Round to `digits` decimals and drop trailing zeros; `-0` becomes `0`. */

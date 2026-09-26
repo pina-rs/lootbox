@@ -3,44 +3,49 @@
  *
  * Usage: node scripts/contact-sheet.ts [out-dir]   (default: output/contact-sheet)
  *
- * Writes one 1024² PNG per tier, a 4×4 tier sheet, a contents sheet (every
- * contents item), a backgrounds × patterns sheet, and the SVG sizes. The
- * renderer itself stays DOM- and Node-free; only this review script uses resvg.
+ * Writes `layers-<id>.png` (every trait of one layer on a fixed base),
+ * `random-grid.png` (24 weighted random chests), `rarest.png` (the rarest
+ * vector and its near neighbours), and `sizes.txt`. The renderer stays DOM-
+ * and Node-free; only this review script uses resvg.
  */
 import { Resvg } from "@resvg/resvg-js";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
+import { randomFrom, seedFrom } from "../src/random.ts";
+
 import {
-	BACKGROUNDS,
-	CONTENTS,
-	type ExclusiveNftTraits,
-	PATTERNS,
+	LAYERS,
+	rarestTraits,
+	rarityOf,
+	renderAnimatedExclusiveNft,
 	renderExclusiveNft,
-	TIERS,
+	type TraitVector,
 } from "../src/index.ts";
 
+type Tile = Readonly<{ traits: TraitVector; serial: number }>;
+
 const out = resolve(process.argv[2] ?? "output/contact-sheet");
+/** Ivory, Painted Pine, Plain Planks, Shield Latch, no decoration, A Lost Button, no effect. */
+const BASE: TraitVector = [0, 0, 0, 0, 0, 7, 0];
 
 function png(svg: string, width: number): Buffer {
 	return new Resvg(svg, { fitTo: { mode: "width", value: width } }).render()
 		.asPng();
 }
 
-/** A grid of rendered SVGs embedded as images, so tile ids never collide. */
-function sheet(
-	items: readonly ExclusiveNftTraits[],
-	columns: number,
-	tile: number,
-): string {
-	const rows = Math.ceil(items.length / columns);
+/** A grid of rendered posters embedded as images, so tile ids never collide. */
+function sheet(tiles: readonly Tile[], columns: number, tile: number): string {
+	const rows = Math.ceil(tiles.length / columns);
 	const gap = 12;
 	const width = columns * (tile + gap) + gap;
 	const height = rows * (tile + gap) + gap;
-	const images = items.map((traits, i) => {
+	const images = tiles.map(({ traits, serial }, i) => {
 		const x = gap + (i % columns) * (tile + gap);
 		const y = gap + Math.floor(i / columns) * (tile + gap);
-		const data = Buffer.from(renderExclusiveNft(traits)).toString("base64");
+		const data = Buffer.from(renderExclusiveNft(traits, serial)).toString(
+			"base64",
+		);
 
 		return `<image x="${x}" y="${y}" width="${tile}" height="${tile}" href="data:image/svg+xml;base64,${data}"/>`;
 	});
@@ -57,56 +62,71 @@ function save(name: string, svg: string, width: number) {
 	console.log(`wrote ${path}`);
 }
 
-mkdirSync(out, { recursive: true });
+/** Draw a vector the way the program does: each layer by its weights. */
+function roll(random: () => number): TraitVector {
+	return LAYERS.map((layer) => {
+		let ticket = random() * layer.total;
 
-const tierSamples = TIERS.map((tier): ExclusiveNftTraits => ({
-	tier: tier.index,
-	contents: (tier.index * 7) % CONTENTS.length,
-	background: tier.index % BACKGROUNDS.length,
-	pattern: tier.index % PATTERNS.length,
-	serial: 42 + tier.index,
-}));
-const sizes: string[] = [];
+		for (const trait of layer.traits) {
+			ticket -= trait.weight;
 
-for (const traits of tierSamples) {
-	const svg = renderExclusiveNft(traits);
-	const name = `tier-${String(traits.tier).padStart(2, "0")}`;
+			if (ticket < 0) {
+				return trait.index;
+			}
+		}
 
-	writeFileSync(join(out, `${name}.svg`), svg);
-	sizes.push(`${name}.svg ${(svg.length / 1024).toFixed(1)} KB`);
-	save(`${name}.png`, svg, 1024);
+		return layer.traits.length - 1;
+	});
 }
 
-save("tiers-sheet.png", sheet(tierSamples, 4, 400), 1660);
-save(
-	"contents-sheet.png",
-	sheet(
-		CONTENTS.map((contents) => ({
-			tier: 0,
-			contents: contents.index,
-			background: 0,
-			pattern: 0,
-			serial: 7,
-		})),
-		5,
-		320,
-	),
-	1660,
+mkdirSync(out, { recursive: true });
+
+for (const layer of LAYERS) {
+	const tiles = layer.traits.map((trait): Tile => ({
+		traits: BASE.map((value, i) => (i === layer.index ? trait.index : value)),
+		serial: 7,
+	}));
+
+	save(`layers-${layer.id}.png`, sheet(tiles, 5, 320), 1660);
+}
+
+const random = randomFrom(seedFrom("contact-sheet"));
+const rolled = Array.from(
+	{ length: 24 },
+	(_, i): Tile => ({ traits: roll(random), serial: 100 + i }),
 );
+
+save("random-grid.png", sheet(rolled, 6, 300), 1872);
+
+const rarest = rarestTraits();
+const neighbours = LAYERS.slice(0, 5).map((layer): Tile => {
+	const byWeight = [...layer.traits].sort((a, b) => a.weight - b.weight);
+
+	return {
+		traits: rarest.map((
+			value,
+			i,
+		) => (i === layer.index ? byWeight[1]?.index ?? value : value)),
+		serial: 2 + layer.index,
+	};
+});
+
 save(
-	"backgrounds-patterns-sheet.png",
-	sheet(
-		BACKGROUNDS.map((background) => ({
-			tier: (background.index * 5) % TIERS.length,
-			contents: (background.index * 3) % CONTENTS.length,
-			background: background.index,
-			pattern: background.index % PATTERNS.length,
-			serial: 1000 + background.index,
-		})),
-		4,
-		400,
-	),
-	1660,
+	"rarest.png",
+	sheet([{ traits: rarest, serial: 1 }, ...neighbours], 3, 540),
+	1668,
 );
+
+const sizes = [...rolled, { traits: rarest, serial: 1 }].map(
+	({ traits, serial }) => {
+		const still = renderExclusiveNft(traits, serial).length / 1024;
+		const animated = renderAnimatedExclusiveNft(traits, serial).length / 1024;
+
+		return `${traits.join("-")} ${rarityOf(traits).label}: still ${
+			still.toFixed(1)
+		} KB, animated ${animated.toFixed(1)} KB`;
+	},
+);
+
 writeFileSync(join(out, "sizes.txt"), `${sizes.join("\n")}\n`);
-console.log(sizes.join("\n"));
+console.log(sizes.slice(-3).join("\n"));

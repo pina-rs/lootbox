@@ -16,6 +16,28 @@ import {
 	shape,
 	star,
 } from "./model.ts";
+import { motion, use } from "./motion.ts";
+
+const sunTurn = motion("sunburst-turn", 8, {
+	rotation: [[0, 0], [.999, Math.PI / 8], [1, 0]],
+}, true);
+const starTwinkle = motion("star-twinkle", 2, {
+	opacity: [[0, 1], [.5, .35], [1, 1]],
+});
+const cloudDrift = motion("cloud-drift", 8, {
+	x: [[0, 0], [.5, 40], [1, 0]],
+});
+const swell = motion("sea-swell", 4, {
+	y: [[0, 0], [.5, 6], [1, 0]],
+	x: [[0, 0], [.5, -10], [1, 0]],
+});
+const aurora = motion("aurora-sway", 8, {
+	x: [[0, 0], [.5, 30], [1, 0]],
+	scaleY: [[0, 1], [.5, 1.12], [1, 1]],
+});
+const lightPulse = motion("light-pulse", 4, {
+	opacity: [[0, .7], [.5, 1], [1, .7]],
+});
 
 /**
  * Full-bleed backdrops on the 1024² canvas. Indices match the `background` URI
@@ -146,29 +168,33 @@ function openSea(): Art[] {
 			vertical([[.64, "FF3C9DBE"], [1, "FF1E5F84"]]),
 			0,
 		),
-		shape(
-			"Waves",
-			[
-				wave(700, 0),
-				wave(760, 1.7),
-				wave(830, .6),
-				wave(910, 2.4),
-				wave(990, 1.2),
-			],
-			undefined,
-			4,
-			"80FFFFFF",
-		),
-		shape(
-			"Cloud",
-			[
-				ellipse(210, 180, 150, 54),
-				ellipse(260, 160, 110, 70),
-				ellipse(170, 168, 80, 50),
-			],
-			"F2FFFFFF",
-			0,
-		),
+		group("Swell", {}, [
+			shape(
+				"Waves",
+				[
+					wave(700, 0),
+					wave(760, 1.7),
+					wave(830, .6),
+					wave(910, 2.4),
+					wave(990, 1.2),
+				],
+				undefined,
+				4,
+				"80FFFFFF",
+			),
+		], { motion: use(swell) }),
+		group("Drifting cloud", {}, [
+			shape(
+				"Cloud",
+				[
+					ellipse(210, 180, 150, 54),
+					ellipse(260, 160, 110, 70),
+					ellipse(170, 168, 80, 50),
+				],
+				"F2FFFFFF",
+				0,
+			),
+		], { motion: use(cloudDrift) }),
 		line(
 			"Gull",
 			[[760, 210], [776, 200], [790, 212], [804, 200], [820, 210]],
@@ -224,17 +250,19 @@ function meadow(): Art[] {
 		shape("Far hill", ellipse(250, 860, 900, 330), "FF9BD37F", 0),
 		shape("Near hill", ellipse(820, 880, 900, 300), "FF7CC46E", 0),
 		shape("Field", rect(512, 930, 1024, 200), "FF5DAA5B", 0),
-		shape(
-			"Cloud",
-			[
-				ellipse(800, 170, 160, 58),
-				ellipse(850, 148, 110, 74),
-				ellipse(752, 160, 84, 50),
-			],
-			"FFFFFFFF",
-			3,
-			"33243D40",
-		),
+		group("Drifting cloud", {}, [
+			shape(
+				"Cloud",
+				[
+					ellipse(800, 170, 160, 58),
+					ellipse(850, 148, 110, 74),
+					ellipse(752, 160, 84, 50),
+				],
+				"FFFFFFFF",
+				3,
+				"33243D40",
+			),
+		], { motion: use(cloudDrift, .5) }),
 		...flowers,
 	];
 }
@@ -248,23 +276,21 @@ function starfield(): Art[] {
 			"B3FFFFFF",
 			0,
 		),
-		shape(
-			"Bright stars",
-			Array.from({ length: 8 }, (_, i) => {
-				const random = randomFrom(seedFrom(`starfield-${i}`));
+		...Array.from({ length: 8 }, (_, i) => {
+			const random = randomFrom(seedFrom(`starfield-${i}`));
 
-				return star(
-					between(random, 40, 984),
-					between(random, 40, 700),
-					22,
-					22,
-					4,
-					.28,
-				);
-			}),
-			"FFFFF6D6",
-			0,
-		),
+			return group(
+				"Bright star",
+				{
+					x: between(random, 40, 984),
+					y: between(random, 40, 700),
+				},
+				[shape("Star", star(0, 0, 22, 22, 4, .28), "FFFFF6D6", 0)],
+				{
+					motion: use(starTwinkle, i / 8),
+				},
+			);
+		}),
 		shape("Planet", ellipse(830, 190, 110, 110), "FFE39A55", 4, INK),
 		shape("Planet ring", ellipse(830, 196, 190, 40), undefined, 5, "FFF5C54E"),
 		shape("Moon", ellipse(150, 170, 64, 64), "FFD5DEE1", 3, INK),
@@ -369,12 +395,14 @@ function sunburst(): Art[] {
 		const [x1, y1] = polar(1100, a - Math.PI / 32);
 		const [x2, y2] = polar(1100, a + Math.PI / 32);
 
-		return poly([[512, 560], [512 + x1, 560 + y1], [512 + x2, 560 + y2]]);
+		return poly([[0, 0], [x1, y1], [x2, y2]]);
 	});
 
 	return [
 		fill("Base", "FFFBE3A8"),
-		shape("Rays", rays, "FFF7C873", 0),
+		group("Rays", { x: 512, y: 560 }, [shape("Rays", rays, "FFF7C873", 0)], {
+			motion: use(sunTurn),
+		}),
 		shape(
 			"Glow",
 			ellipse(512, 560, 700, 700),
@@ -539,6 +567,183 @@ function velvetCurtain(): Art[] {
 	];
 }
 
+function auroraSky(): Art[] {
+	const ribbon = (y: number, color: string, phase: number): Art =>
+		group("Aurora ribbon", { x: 0, y }, [
+			shape(
+				"Ribbon",
+				poly(
+					[
+						[-40, 0],
+						[200, -60],
+						[420, 10],
+						[640, -70],
+						[860, 0],
+						[1064, -50],
+						[1064, 90],
+						[860, 140],
+						[
+							640,
+							60,
+						],
+						[420, 150],
+						[200, 80],
+						[-40, 140],
+					],
+					true,
+					80,
+				),
+				{
+					kind: "linear",
+					from: [0, -60],
+					to: [0, 150],
+					stops: [[0, "00FFFFFF"], [.35, color], [1, "00FFFFFF"]],
+				},
+				0,
+			),
+		], { motion: use(aurora, phase) });
+
+	return [
+		fill(
+			"Night",
+			vertical([[0, "FF071429"], [.6, "FF12304F"], [1, "FF1B4466"]]),
+		),
+		shape(
+			"Stars",
+			scatter("aurora-stars", 60, { top: 0, bottom: 600 }, [1.5, 3.5]),
+			"CCFFFFFF",
+			0,
+		),
+		ribbon(120, "A67CFFB0", 0),
+		ribbon(230, "8C5CE0FF", .35),
+		ribbon(330, "66C39BFF", .7),
+		shape(
+			"Snow hills",
+			poly(
+				[[0, 1024], [0, 790], [220, 760], [470, 800], [720, 750], [1024, 790], [
+					1024,
+					1024,
+				]],
+				true,
+				90,
+			),
+			"FFE6EEF6",
+			3,
+			"66A9BCD9",
+		),
+	];
+}
+
+function treasureHoard(): Art[] {
+	const random = randomFrom(seedFrom("hoard"));
+	const coins = Array.from({ length: 70 }, (): Art => {
+		const x = between(random, 20, 1004);
+		const edge = x < 512 ? 700 - (512 - x) * .35 : 700 - (x - 512) * .3;
+		const y = between(random, Math.max(edge, 560), 900);
+		const tilt = between(random, .35, .8);
+
+		return shape(
+			"Coin",
+			ellipse(x, y, 34, 34 * tilt),
+			"FFF5C54E",
+			2,
+			"FFB07A24",
+		);
+	});
+
+	return [
+		fill("Cave", vertical([[0, "FF2A1A10"], [1, "FF5A3418"]])),
+		shape(
+			"Glow",
+			ellipse(512, 640, 1100, 700),
+			radial([512, 640], 550, [[0, "80FFD27A"], [1, "00FFD27A"]]),
+			0,
+		),
+		shape("Left heap", ellipse(170, 900, 620, 460), "FFE0A93A", 3, "FFB07A24"),
+		shape("Right heap", ellipse(860, 910, 620, 420), "FFE0A93A", 3, "FFB07A24"),
+		shape(
+			"Front heap",
+			ellipse(512, 1010, 1200, 300),
+			"FFF2C14E",
+			3,
+			"FFB07A24",
+		),
+		...coins,
+		...[[120, 700, "FFD9534A"], [900, 720, "FF4C7FD1"], [300, 860, "FF2E9E6B"]]
+			.map(([x, y, color]) =>
+				shape(
+					"Gem",
+					poly(
+						[[Number(x), Number(y) - 16], [Number(x) + 13, Number(y)], [
+							Number(x),
+							Number(y) + 16,
+						], [
+							Number(x) - 13,
+							Number(y),
+						]],
+						true,
+						2,
+					),
+					String(color),
+					3,
+				)
+			),
+		...[[200, 640], [760, 660], [420, 900], [640, 880]].map((
+			[x = 0, y = 0],
+			i,
+		) =>
+			group("Hoard glint", { x, y }, [
+				shape("Glint", star(0, 0, 26, 26, 4, .28), "FFFFFFFF", 0),
+			], {
+				motion: use(starTwinkle, i / 4),
+			})
+		),
+	];
+}
+
+function biggerChest(): Art[] {
+	const planks = Array.from(
+		{ length: 9 },
+		(_, i) => poly([[0, 150 + i * 100], [1024, 146 + i * 100]], false),
+	);
+
+	return [
+		fill("Giant wood", vertical([[0, "FF1F6F68"], [1, "FF2F8F86"]])),
+		shape("Plank seams", planks, undefined, 5, "66163A3A"),
+		shape("Giant strap", rect(110, 560, 120, 1120), "FFD9A635", 6, INK),
+		shape("Giant strap", rect(914, 560, 120, 1120), "FFD9A635", 6, INK),
+		shape(
+			"Rivets",
+			[110, 914].flatMap((x) =>
+				[260, 480, 700].map((y) => ellipse(x, y, 22, 22))
+			),
+			INK,
+			0,
+		),
+		shape("Lid shadow", rect(512, 60, 1024, 120), "B3163A3A", 0),
+		line("Lid edge", [[0, 120], [1024, 120]], INK, 6),
+		group("Keyhole light", { x: 512, y: 60 }, [
+			shape(
+				"Beam",
+				poly([[-26, 0], [26, 0], [220, 900], [-220, 900]]),
+				vertical([[0, "66FFF1C2"], [.8, "00FFF1C2"]]),
+				0,
+			),
+			shape(
+				"Keyhole",
+				poly(
+					[[-14, -34], [14, -34], [8, 0], [16, 34], [-16, 34], [-8, 0]],
+					true,
+					8,
+				),
+				"FFFFF6DA",
+				4,
+				INK,
+			),
+		], { motion: use(lightPulse) }),
+	];
+}
+
 const DRAWINGS: readonly (() => Art[])[] = [
 	ivoryStudio,
 	dusk,
@@ -552,6 +757,9 @@ const DRAWINGS: readonly (() => Art[])[] = [
 	picnicBlanket,
 	deepSea,
 	velvetCurtain,
+	auroraSky,
+	treasureHoard,
+	biggerChest,
 ];
 
 export const BACKGROUND_ART_COUNT = DRAWINGS.length;

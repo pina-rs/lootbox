@@ -1,4 +1,3 @@
-import { type Tier, TIER_COUNT } from "../tiers.ts";
 import { lettering, textWidth } from "./lettering.ts";
 import {
 	type Art,
@@ -12,9 +11,19 @@ import {
 } from "./model.ts";
 
 /**
- * The tier plaque along the bottom edge: a gem in the tier's trim color, the
- * tier name, a sixteen-pip rarity meter, the serial, and the odds.
+ * The plaque along the bottom edge: a gem in the finish's trim color, the
+ * chest's name, a sixteen-pip rarity meter, the serial, and the odds.
  */
+export type BadgeText = Readonly<{
+	name: string;
+	serial: number;
+	/** Short odds, e.g. `1 in 3.1 billion`. */
+	odds: string;
+	/** Filled rarity pips, 1–16. */
+	pips: number;
+}>;
+
+export const BADGE_PIPS = 16;
 const PAPER = "FFFBF8EE";
 const CENTER_X = 512;
 const CENTER_Y = 952;
@@ -30,19 +39,21 @@ export function formatSerial(serial: number): string {
 	return `No. ${String(serial).padStart(4, "0")}`;
 }
 
-export function badgeArt(tier: Tier, serial: number): Art[] {
+export function badgeArt(
+	{ name, serial, odds, pips: filled }: BadgeText,
+): Art[] {
 	const serialText = formatSerial(serial);
 	const serialSize = 22;
 	const nameLeft = LEFT + 78;
 	const serialRight = RIGHT - 36;
 	const room = serialRight - textWidth(serialText, serialSize) - 28 - nameLeft;
-	const nameSize = Math.min(NAME_SIZE, room / textWidth(tier.name, 1));
-	const pips = Array.from({ length: TIER_COUNT }, (_, i) =>
+	const nameSize = Math.min(NAME_SIZE, room / textWidth(name, 1));
+	const pips = Array.from({ length: BADGE_PIPS }, (_, i) =>
 		shape(
 			"Pip",
 			ellipse(nameLeft + 5 + i * PIP_GAP, CENTER_Y + 22, 9, 9),
-			i <= tier.index ? slot("trim") : undefined,
-			i <= tier.index ? 0 : 1.5,
+			i < filled ? slot("trim") : undefined,
+			i < filled ? 0 : 1.5,
 			"66FBF8EE",
 		));
 
@@ -86,8 +97,8 @@ export function badgeArt(tier: Tier, serial: number): Art[] {
 				slot("trimLight"),
 			),
 			lettering(
-				"Tier name",
-				tier.name,
+				"Name",
+				name,
 				nameLeft,
 				CENTER_Y - 32,
 				nameSize,
@@ -108,7 +119,7 @@ export function badgeArt(tier: Tier, serial: number): Art[] {
 			),
 			lettering(
 				"Odds",
-				tier.odds,
+				odds,
 				serialRight,
 				CENTER_Y + 13,
 				13,

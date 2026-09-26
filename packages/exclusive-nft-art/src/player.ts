@@ -1,0 +1,117 @@
+import { LAYER_COUNT, LAYERS } from "./layers.ts";
+
+/**
+ * The `animation_url` page: plays the Rive reveal for the NFT named by
+ * `?nft={hex}-{serial}`, and falls back to the animated SVG.
+ *
+ * One static page serves every NFT; host it beside `exclusive-nft.riv` and the
+ * `{stem}.svg` / `{stem}.animated.svg` renders. The Rive file has no tier
+ * plaque, so the page lays the still poster's plaque strip over the canvas.
+ * Reduced motion, a missing runtime, or a bad stem all show the SVG instead.
+ */
+export const RIVE_RUNTIME = {
+	script: "https://cdn.jsdelivr.net/npm/@rive-app/canvas@2.43.1/rive.js",
+	integrity:
+		"sha384-sJDSA/vrCqZDWPWBfz06ygq8soEj1BjyTnwGxOGsOdcSP9IJOhngm43L9jjPqIDb",
+	wasm: "https://cdn.jsdelivr.net/npm/@rive-app/canvas@2.43.1/rive.wasm",
+} as const;
+
+/** The share of the canvas height the plaque strip occupies, from the bottom. */
+const PLAQUE_INSET = "88%";
+
+export function playerHtml(): string {
+	const layerIds = JSON.stringify(LAYERS.map((layer) => layer.id));
+	const traitCounts = JSON.stringify(
+		LAYERS.map((layer) => layer.traits.length),
+	);
+
+	return `<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Exclusive Chest</title>
+		<meta name="description" content="An Unlisted Exclusive Chest. Tap the chest to open it." />
+		<style>
+			:root { color-scheme: light; background: #f3edda; }
+			html, body { margin: 0; block-size: 100%; background: #f3edda; overflow: hidden; }
+			main { position: relative; block-size: 100%; }
+			img, canvas { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: contain; }
+			canvas { opacity: 0; cursor: pointer; transition: opacity 160ms ease-out; }
+			canvas.is-playing { opacity: 1; }
+			.plaque { clip-path: inset(${PLAQUE_INSET} 0 0 0); visibility: hidden; pointer-events: none; }
+			canvas.is-playing ~ .plaque { visibility: visible; }
+			canvas.is-playing ~ .poster { visibility: hidden; }
+		</style>
+	</head>
+	<body>
+		<main>
+			<canvas aria-hidden="true"></canvas>
+			<img class="poster" alt="" />
+			<img class="plaque" alt="" />
+		</main>
+		<script src="${RIVE_RUNTIME.script}" integrity="${RIVE_RUNTIME.integrity}" crossorigin="anonymous"></script>
+		<script>
+			"use strict";
+
+			// Every path is relative, so the page works under any base.
+			const LAYERS = ${layerIds};
+			const COUNTS = ${traitCounts};
+			const stem = new URLSearchParams(location.search).get("nft") || "";
+			const match = /^((?:[0-9a-f]{2}){${LAYER_COUNT}})-(0|[1-9][0-9]{0,15})$/.exec(stem);
+			const traits = match ? match[1].match(/../g).map((byte) => parseInt(byte, 16)) : null;
+			const valid = traits !== null && traits.every((trait, i) => trait < COUNTS[i]);
+			const canvas = document.querySelector("canvas");
+			const poster = document.querySelector(".poster");
+			const plaque = document.querySelector(".plaque");
+			const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+			if (valid) {
+				poster.src = reducedMotion ? "./" + stem + ".svg" : "./" + stem + ".animated.svg";
+				poster.alt = "Exclusive Chest " + stem;
+				plaque.src = "./" + stem + ".svg";
+			}
+
+			// Reduced motion, a bad stem, or a runtime that failed to load keeps the SVG.
+			if (valid && !reducedMotion && window.rive) {
+				const { Rive, RuntimeLoader, Layout, Fit, Alignment } = window.rive;
+
+				RuntimeLoader.setWasmUrl("${RIVE_RUNTIME.wasm}");
+				RuntimeLoader.setWasmFallbackUrl(null);
+
+				const player = new Rive({
+					canvas,
+					src: "./exclusive-nft.riv",
+					artboard: "Exclusive NFT",
+					stateMachine: "Exclusive NFT",
+					autoplay: true,
+					autoBind: true,
+					layout: new Layout({ fit: Fit.Contain, alignment: Alignment.Center }),
+					onLoad: () => {
+						player.resizeDrawingSurfaceToCanvas();
+						const data = player.viewModelInstance;
+
+						if (!data) return;
+
+						LAYERS.forEach((id, i) => {
+							const input = data.number(id);
+							if (input) input.value = traits[i];
+						});
+
+						const reveal = data.trigger("reveal");
+						if (reveal) reveal.trigger();
+
+						canvas.classList.add("is-playing");
+						canvas.addEventListener("click", () => {
+							if (reveal) reveal.trigger();
+						});
+					},
+				});
+
+				addEventListener("resize", () => player.resizeDrawingSurfaceToCanvas());
+			}
+		</script>
+	</body>
+</html>
+`;
+}

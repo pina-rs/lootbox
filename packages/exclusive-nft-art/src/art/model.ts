@@ -1,3 +1,5 @@
+import type { MotionUse } from "./motion.ts";
+
 /**
  * A tiny retained vector model shared by the SVG renderer and the Rive
  * generator.
@@ -122,6 +124,8 @@ export type Group = Readonly<
 		key?: string;
 		/** Clip every child to this geometry, in the group's local space. */
 		clip?: readonly Geometry[];
+		/** Idle motion around this group's origin; see `motion.ts`. */
+		motion?: MotionUse;
 		children: readonly Art[];
 	}
 >;
@@ -216,7 +220,9 @@ export function group(
 	name: string,
 	transform: Transform,
 	children: readonly Art[],
-	extra: Readonly<{ key?: string; clip?: readonly Geometry[] }> = {},
+	extra: Readonly<
+		{ key?: string; clip?: readonly Geometry[]; motion?: MotionUse }
+	> = {},
 ): Group {
 	return { kind: "group", name, ...transform, ...extra, children };
 }

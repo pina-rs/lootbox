@@ -1,6 +1,7 @@
 export * from "@pina-rs/lootbox-program-client";
 export * from "./client.js";
 export * from "./market.js";
+export * from "./relayer.js";
 export * from "./switchboard.js";
 export * from "./templates.js";
 

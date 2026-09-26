@@ -30,8 +30,8 @@ export function playerHtml(): string {
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Exclusive Chest</title>
-		<meta name="description" content="An Unlisted Exclusive Chest. Tap the chest to open it." />
+		<title>Exclusive Lootbox NFT</title>
+		<meta name="description" content="An Exclusive Lootbox NFT. Tap the chest to open it." />
 		<style>
 			:root { color-scheme: light; background: #f3edda; }
 			html, body { margin: 0; block-size: 100%; background: #f3edda; overflow: hidden; }
@@ -68,7 +68,7 @@ export function playerHtml(): string {
 
 			if (valid) {
 				poster.src = reducedMotion ? "./" + stem + ".svg" : "./" + stem + ".animated.svg";
-				poster.alt = "Exclusive Chest " + stem;
+				poster.alt = "Exclusive Lootbox NFT " + stem;
 				plaque.src = "./" + stem + ".svg";
 			}
 

@@ -37,6 +37,7 @@
 		"launch:treasury": "tsx scripts/launch-treasury.ts",
 		"mint:empty-chests": "tsx scripts/mint-empty-chests.ts",
 		"relayer": "tsx scripts/relayer.ts",
+		"spike:lanes": "tsx scripts/randomness-lanes-spike.ts",
 		"test": "vitest run"
 	},
 	"type": "module",

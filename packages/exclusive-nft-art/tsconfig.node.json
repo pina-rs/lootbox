@@ -3,5 +3,9 @@
 	"compilerOptions": {
 		"types": ["node"]
 	},
-	"include": ["scripts/**/*.ts", "test/**/*.ts"]
+	"include": [
+		"scripts/**/*.ts",
+		"test/**/*.ts",
+		"../../assets/lootbox-reveals/rive/exclusive-nft/*.ts"
+	]
 }

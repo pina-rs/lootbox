@@ -15,6 +15,7 @@
 	],
 	"scripts": {
 		"check": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
+		"build:rive": "node ../../assets/lootbox-reveals/rive/exclusive-nft/build.ts",
 		"contact-sheet": "node scripts/contact-sheet.ts",
 		"test": "vitest run"
 	},

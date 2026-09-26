@@ -215,6 +215,32 @@ in
       cp "$sbf_target/deploy/mock_bubblegum.so" target/deploy/
       cp "$sbf_target/idl/mock_bubblegum.json" target/idl/
     '';
+    # Real Metaplex programs for the Exclusive NFT Surfpool journey. The images
+    # are dumped from mainnet once and pinned by hash; an upstream upgrade fails
+    # here until the new release is reviewed and re-pinned.
+    "fetch:metaplex-programs".exec = ''
+      set -euo pipefail
+      pins="$PWD/tests/fixtures/metaplex-programs.sha256"
+      directory="$PWD/target/deploy/metaplex"
+      rpc="''${LOOTBOX_METAPLEX_RPC_URL:-https://api.mainnet-beta.solana.com}"
+      mkdir -p "$directory"
+      grep -v '^#' "$pins" | while read -r expected file; do
+        [ -n "$expected" ] || continue
+        path="$directory/$file"
+        if [ -f "$path" ] && [ "$(sha256sum "$path" | cut -d' ' -f1)" = "$expected" ]; then
+          continue
+        fi
+        solana program dump --url "$rpc" "''${file%.so}" "$path.download" >/dev/null
+        actual="$(sha256sum "$path.download" | cut -d' ' -f1)"
+        if [ "$actual" != "$expected" ]; then
+          rm -f "$path.download"
+          echo "''${file%.so} on $rpc hashes to $actual, not the pinned $expected." >&2
+          echo "Review the upstream release against docs/exclusive-nfts.md, then re-pin $pins." >&2
+          exit 1
+        fi
+        mv "$path.download" "$path"
+      done
+    '';
     "generate:clients".exec = ''
       set -euo pipefail
       generated_client_modules="$PWD/clients/typescript/lootbox_program/node_modules"
@@ -244,9 +270,11 @@ in
       set -euo pipefail
       build:program
       build:test-programs
+      fetch:metaplex-programs
       PINA_SBF_ARTIFACT="$PWD/target/deploy/lootbox_program.so" \
         MOCK_SWITCHBOARD_SBF_ARTIFACT="$PWD/target/deploy/mock_switchboard.so" \
         MOCK_BUBBLEGUM_SBF_ARTIFACT="$PWD/target/deploy/mock_bubblegum.so" \
+        METAPLEX_PROGRAMS_DIR="$PWD/target/deploy/metaplex" \
         cargo test \
           --manifest-path programs/lootbox_program/tests/surfpool/Cargo.toml \
           --locked \

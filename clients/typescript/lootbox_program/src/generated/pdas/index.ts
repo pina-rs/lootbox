@@ -7,6 +7,8 @@
  */
 
 export * from './bundle';
+export * from './exclusiveAttachment';
+export * from './exclusiveCollection';
 export * from './lootbox';
 export * from './opening';
 export * from './prizePool';

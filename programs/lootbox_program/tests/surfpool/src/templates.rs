@@ -8,6 +8,7 @@ use spl_token_metadata_interface::instruction as metadata_ix;
 
 use super::*;
 
+mod exclusive_nft;
 mod prize_pool;
 
 const NAME: &str = "Treasury test";

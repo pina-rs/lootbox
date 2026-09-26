@@ -1996,6 +1996,7 @@ version = "0.0.1-alpha.0"
 dependencies = [
  "pina",
  "proptest",
+ "serde_json",
  "solana-keccak-hasher",
  "solana-sha256-hasher",
  "switchboard_randomness_cpi",
@@ -2030,6 +2031,7 @@ dependencies = [
  "lootbox_program_client",
  "serde",
  "serde_json",
+ "solana-sha256-hasher",
 ]
 
 [[package]]

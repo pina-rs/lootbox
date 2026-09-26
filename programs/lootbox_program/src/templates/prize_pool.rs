@@ -629,7 +629,6 @@ fn select_pool_target(
 	if available == 0 || available > MAX_PRIZE_POOL_ITEMS as u64 {
 		return Err(lootbox_error(LootboxError::PrizePoolItemUnavailable));
 	}
-	let rejection_threshold = available.wrapping_neg() % available;
 	for counter in 0u8..8 {
 		let counter_bytes = [counter];
 		let hash = hashv(&[
@@ -639,11 +638,9 @@ fn select_pool_target(
 			opening.as_ref(),
 			&counter_bytes,
 		]);
-		let mut candidate_bytes = [0; 8];
-		candidate_bytes.copy_from_slice(&hash.as_ref()[..8]);
-		let candidate = u64::from_le_bytes(candidate_bytes);
-		if candidate >= rejection_threshold {
-			return Ok(candidate % available);
+
+		if let Some(target) = accept_uniform_candidate(digest_candidate(hash.as_ref()), available) {
+			return Ok(target);
 		}
 	}
 	Err(lootbox_error(LootboxError::EntropyRejectionExhausted))

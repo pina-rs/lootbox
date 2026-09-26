@@ -26,6 +26,9 @@ pub use close::*;
 mod issuer_stock;
 pub use issuer_stock::*;
 
+mod exclusive_nft;
+pub use exclusive_nft::*;
+
 const SEED_TEMPLATE: &[u8] = b"template";
 const SEED_BUNDLE: &[u8] = b"bundle";
 const SEED_TEMPLATE_OPENING: &[u8] = b"template-opening";

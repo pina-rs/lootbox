@@ -4016,13 +4016,17 @@ dependencies = [
 name = "lootbox_program-surfpool-tests"
 version = "0.0.0"
 dependencies = [
+ "base64 0.22.1",
+ "bs58",
  "lootbox_program",
  "pina_test",
  "solana-commitment-config",
  "solana-keccak-hasher 3.1.0",
  "solana-message 4.4.1",
  "solana-rent 4.3.0",
+ "solana-rpc-client-api",
  "solana-transaction 4.1.6",
+ "solana-transaction-status-client-types",
  "solana-zk-sdk-pod",
  "spl-token-2022-interface 3.1.1",
  "spl-token-metadata-interface 1.0.1",

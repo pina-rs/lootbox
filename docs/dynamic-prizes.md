@@ -70,6 +70,8 @@ No adapter is currently allowlisted. The reviewed Meteora Dynamic Bonding Curve 
 
 ## NFT factory: not enabled
 
+[Exclusive Lootbox NFTs](exclusive-nfts.md) now provide mint-on-claim collectibles. A protocol-level collection PDA controls a private Bubblegum V2 tree and a Core collection, so no funding-time mint authority has to be surrendered. Their traits come from the opening's committed entropy, and only the edition serial follows claim order, so relay timing never changes what a winner receives. The general per-bundle factory below stays disabled.
+
 A fresh supply-one mint does not exist at funding time, so its mint authority cannot be surrendered in the same way as a badge. An NFT factory therefore needs a separately pinned authority primitive, such as a collection or master authority controlled by the bundle PDA, plus a decision about metadata program trust and compute limits.
 
 If added, the deterministic serial must be assigned during allocation from the committed opening result, not from claim order. Claim-order serials would make item assignment depend on relay timing. Metadata must be immutable, mint and freeze authorities must be revoked, and a two-step flow must preserve the allocated serial without permitting destination substitution or rerolls.

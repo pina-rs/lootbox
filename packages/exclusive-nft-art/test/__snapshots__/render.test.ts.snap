@@ -1,0 +1,14 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderExclusiveNft > keeps the published art frozen 1`] = `
+[
+  "05a45a350d8a14b493f9c6cc5ab57d9d4aa5d4c936086fdfaf9fb1cdea77a006",
+  "178096687c2c92a948a6177132b293d85cf96830fe387b3cb2e336393623e9d7",
+  "4b6c1e1e61c2f6f7004643d596186183afbc198acc61771b3c306ced2cb8731d",
+  "059cac7fbac38fedc0b40bbf93ee6fbe8849ce1c257a423c7c26bab36cdd781f",
+  "2d49415da9ea1dc8b4ca5e53f41d3d0c2f8a8e894aaa7c372f55554c489d3e22",
+  "a5008a216ed687cb6ecdc7ec2783d737145c7591fc2bac306a056b38516c7561",
+  "da78e859c3a109af337784cd7c05a32195295c3bfa5976d98711c59ef30e9ba6",
+  "90df142dbcd79b693b15f46d7c7737261e8ef5437b344c48c2f58718b4065bd2",
+]
+`;

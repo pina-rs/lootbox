@@ -182,8 +182,10 @@ fn validate_template_state(state: &TemplateStateRef<'_>) -> ProgramResult {
 pub struct BundleState {
 	/// Template PDA that owns this bundle and seeds its address.
 	pub template: Address,
-	/// Copies of this outcome, each one draw ticket. Fixed by `addBundle`; every
-	/// slot escrows its per-win amount times this quantity.
+	/// Copies of this outcome, each one draw ticket. Fixed by `addBundle`.
+	/// Deposited slots (SOL, tokens, NFTs, prize pools) escrow their per-win
+	/// amount times this quantity. Mint-on-claim badge slots hold the mint
+	/// authority instead, and Exclusive NFT slots prepay `quantity` mint fees.
 	pub quantity: u64,
 	/// Lamports the bundle PDA held when `addBundle` created it. SOL claims
 	/// and reclaims always leave this reserve in the account.

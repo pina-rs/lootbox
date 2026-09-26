@@ -11,8 +11,10 @@ use crate::error::CliError;
 
 /// Builds the wire-encoded instruction for one subcommand.
 pub trait InstructionBuilder {
-	/// Validates the arguments and returns the encoded instruction, or the
-	/// `CliError` for the first argument that fails validation or encoding.
+	/// Validates the locally encoded arguments and returns the instruction, or
+	/// the `CliError` for the first argument that fails. Program-side checks,
+	/// such as canonical bumps and manifest slots, run only on chain, so `Ok`
+	/// does not guarantee the program accepts the instruction.
 	fn build(&self) -> Result<Instruction, CliError>;
 }
 

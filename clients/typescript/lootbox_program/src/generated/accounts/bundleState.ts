@@ -23,8 +23,10 @@ export type BundleState = { discriminator: number; migrationVersion: number;
 /** Template PDA that owns this bundle and seeds its address. */
 template: Address;
 /**
- * Copies of this outcome, each one draw ticket. Fixed by `addBundle`; every
- * slot escrows its per-win amount times this quantity.
+ * Copies of this outcome, each one draw ticket. Fixed by `addBundle`.
+ * Deposited slots (SOL, tokens, NFTs, prize pools) escrow their per-win
+ * amount times this quantity. Mint-on-claim badge slots hold the mint
+ * authority instead, and Exclusive NFT slots prepay `quantity` mint fees.
  */
 quantity: bigint;
 /**
@@ -90,8 +92,10 @@ export type BundleStateArgs = {
 /** Template PDA that owns this bundle and seeds its address. */
 template: Address;
 /**
- * Copies of this outcome, each one draw ticket. Fixed by `addBundle`; every
- * slot escrows its per-win amount times this quantity.
+ * Copies of this outcome, each one draw ticket. Fixed by `addBundle`.
+ * Deposited slots (SOL, tokens, NFTs, prize pools) escrow their per-win
+ * amount times this quantity. Mint-on-claim badge slots hold the mint
+ * authority instead, and Exclusive NFT slots prepay `quantity` mint fees.
  */
 quantity: number | bigint;
 /**

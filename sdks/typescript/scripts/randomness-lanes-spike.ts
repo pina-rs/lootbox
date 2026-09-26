@@ -768,9 +768,16 @@ try {
 		console.log(
 			`latency: ${latencyLanes} lanes × ${cyclesPerLane} concurrent cycles`,
 		);
-		const pool = await Promise.all(
+		// Settle every creation before rethrowing, so each lane that was created
+		// is already in `lanes` when the cleanup below closes them.
+		const created = await Promise.allSettled(
 			Array.from({ length: latencyLanes }, async () => (await newLane()).lane),
 		);
+		const pool = created.map((result) => {
+			if (result.status === "rejected") throw result.reason;
+
+			return result.value;
+		});
 		const started = performance.now();
 		const failures: string[] = [];
 		const cycles = (await Promise.all(pool.map(async (lane) => {

@@ -62,4 +62,4 @@ rive assets/lootbox-reveals/rive/exclusive-nft --screenshot=/tmp/top.png \
 
 ## Asset provenance
 
-The chest silhouette reuses this repository's Empty Chest paths. Every other shape, pattern, backdrop, effect, and keyframe is original native vector work authored for this repository under its Apache-2.0 license.
+The chest silhouette and the first thirteen contents reuse this repository's Empty Chest paths. Every other shape, pattern, backdrop, effect, and keyframe is original native vector work authored for this repository under its Apache-2.0 license.

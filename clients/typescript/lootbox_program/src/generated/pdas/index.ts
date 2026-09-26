@@ -7,6 +7,7 @@
  */
 
 export * from './bundle';
+export * from './exclusiveSeries';
 export * from './lootbox';
 export * from './opening';
 export * from './prizePool';

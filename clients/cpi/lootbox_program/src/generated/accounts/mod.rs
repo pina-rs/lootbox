@@ -16,6 +16,7 @@ pub(crate) mod r#template_opening_state;
 pub(crate) mod r#result_receipt_state;
 pub(crate) mod r#prize_pool_state;
 pub(crate) mod r#prize_pool_item_state;
+pub(crate) mod r#exclusive_series_state;
 
 pub use self::r#lootbox_state::*;
 pub use self::r#vault_state::*;
@@ -26,3 +27,4 @@ pub use self::r#template_opening_state::*;
 pub use self::r#result_receipt_state::*;
 pub use self::r#prize_pool_state::*;
 pub use self::r#prize_pool_item_state::*;
+pub use self::r#exclusive_series_state::*;

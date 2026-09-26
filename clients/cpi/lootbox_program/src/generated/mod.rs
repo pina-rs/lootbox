@@ -17,4 +17,4 @@ pub use instructions::*;
 pub use programs::*;
 
 /// Number of instructions rendered for the `lootboxProgram` program.
-pub const INSTRUCTION_COUNT: usize = 53;
+pub const INSTRUCTION_COUNT: usize = 57;

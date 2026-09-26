@@ -144,6 +144,10 @@ const int lootboxProgramErrorMutablePrize = 0x21; // 33
 /// Message: "The reserved migration route only validates already-current accounts."
 const int lootboxProgramErrorMigrationLocked = 0x22; // 34
 
+/// The exclusive NFT series configuration, account, or binding is invalid.
+/// Message: "The exclusive NFT series configuration, account, or binding is invalid."
+const int lootboxProgramErrorInvalidExclusiveSeries = 0x23; // 35
+
 /// Map of error codes to human-readable messages.
 const Map<int, String> _lootboxProgramErrorMessages = {
   lootboxProgramErrorUnauthorized:
@@ -211,6 +215,8 @@ const Map<int, String> _lootboxProgramErrorMessages = {
       'A prize\'s advertised identity is still mutable after escrow.',
   lootboxProgramErrorMigrationLocked:
       'The reserved migration route only validates already-current accounts.',
+  lootboxProgramErrorInvalidExclusiveSeries:
+      'The exclusive NFT series configuration, account, or binding is invalid.',
 };
 
 /// Get the error message for a LootboxProgram program error code.

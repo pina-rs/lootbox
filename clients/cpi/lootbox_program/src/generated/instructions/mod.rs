@@ -60,6 +60,10 @@ pub(crate) mod r#allocate_prize_pool_open;
 pub(crate) mod r#claim_prize_pool_item;
 pub(crate) mod r#reclaim_prize_pool_item;
 pub(crate) mod r#close_prize_pool;
+pub(crate) mod r#create_exclusive_series;
+pub(crate) mod r#initialize_exclusive_series;
+pub(crate) mod r#claim_exclusive_nft;
+pub(crate) mod r#reclaim_exclusive_reserve;
 
 pub use self::r#create_lootbox::*;
 pub use self::r#add_outcome::*;
@@ -114,3 +118,7 @@ pub use self::r#allocate_prize_pool_open::*;
 pub use self::r#claim_prize_pool_item::*;
 pub use self::r#reclaim_prize_pool_item::*;
 pub use self::r#close_prize_pool::*;
+pub use self::r#create_exclusive_series::*;
+pub use self::r#initialize_exclusive_series::*;
+pub use self::r#claim_exclusive_nft::*;
+pub use self::r#reclaim_exclusive_reserve::*;

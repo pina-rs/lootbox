@@ -2,6 +2,7 @@
 // ignore_for_file: type=lint
 
 export 'bundle.dart';
+export 'exclusive_series.dart';
 export 'lootbox.dart';
 export 'opening.dart';
 export 'prize_pool.dart';

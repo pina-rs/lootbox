@@ -8,11 +8,6 @@
 	clippy::too_many_arguments
 )]
 
-pub mod accounts;
-pub mod errors;
-pub mod events;
-pub mod instructions;
-pub mod programs;
+pub(crate) mod r#exclusive_nft_minted_event;
 
-#[allow(unused_imports)]
-pub(crate) use programs::*;
+pub use self::r#exclusive_nft_minted_event::*;

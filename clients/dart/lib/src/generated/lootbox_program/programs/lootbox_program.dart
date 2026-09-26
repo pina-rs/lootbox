@@ -27,6 +27,7 @@ enum LootboxProgramAccount {
   resultReceiptState,
   prizePoolState,
   prizePoolItemState,
+  exclusiveSeriesState,
 }
 
 /// Known instructions for the LootboxProgram program.
@@ -84,6 +85,10 @@ enum LootboxProgramInstruction {
   claimPrizePoolItem,
   reclaimPrizePoolItem,
   closePrizePool,
+  createExclusiveSeries,
+  initializeExclusiveSeries,
+  claimExclusiveNft,
+  reclaimExclusiveReserve,
 }
 
 /// Identifies the type of a LootboxProgram instruction.
@@ -299,6 +304,22 @@ LootboxProgramInstruction identifyLootboxProgramInstruction(Uint8List data) {
   if (containsBytes(data, getU8Encoder().encode(50), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.closePrizePool;
+  }
+  if (containsBytes(data, getU8Encoder().encode(53), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.createExclusiveSeries;
+  }
+  if (containsBytes(data, getU8Encoder().encode(54), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.initializeExclusiveSeries;
+  }
+  if (containsBytes(data, getU8Encoder().encode(55), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.claimExclusiveNft;
+  }
+  if (containsBytes(data, getU8Encoder().encode(56), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.reclaimExclusiveReserve;
   }
 
   throw SolanaError(SolanaErrorCode.programClientsFailedToIdentifyInstruction, {
@@ -745,6 +766,41 @@ final class ParsedClosePrizePool extends ParsedLootboxProgramInstruction {
   final ClosePrizePoolInstructionData data;
 }
 
+/// A parsed CreateExclusiveSeries instruction.
+final class ParsedCreateExclusiveSeries
+    extends ParsedLootboxProgramInstruction {
+  const ParsedCreateExclusiveSeries({required this.data})
+    : super(LootboxProgramInstruction.createExclusiveSeries);
+
+  final CreateExclusiveSeriesInstructionData data;
+}
+
+/// A parsed InitializeExclusiveSeries instruction.
+final class ParsedInitializeExclusiveSeries
+    extends ParsedLootboxProgramInstruction {
+  const ParsedInitializeExclusiveSeries({required this.data})
+    : super(LootboxProgramInstruction.initializeExclusiveSeries);
+
+  final InitializeExclusiveSeriesInstructionData data;
+}
+
+/// A parsed ClaimExclusiveNft instruction.
+final class ParsedClaimExclusiveNft extends ParsedLootboxProgramInstruction {
+  const ParsedClaimExclusiveNft({required this.data})
+    : super(LootboxProgramInstruction.claimExclusiveNft);
+
+  final ClaimExclusiveNftInstructionData data;
+}
+
+/// A parsed ReclaimExclusiveReserve instruction.
+final class ParsedReclaimExclusiveReserve
+    extends ParsedLootboxProgramInstruction {
+  const ParsedReclaimExclusiveReserve({required this.data})
+    : super(LootboxProgramInstruction.reclaimExclusiveReserve);
+
+  final ReclaimExclusiveReserveInstructionData data;
+}
+
 /// Parses a LootboxProgram instruction.
 ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
   Instruction instruction,
@@ -924,5 +980,20 @@ ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
     LootboxProgramInstruction.closePrizePool => ParsedClosePrizePool(
       data: parseClosePrizePoolInstruction(instruction),
     ),
+    LootboxProgramInstruction.createExclusiveSeries =>
+      ParsedCreateExclusiveSeries(
+        data: parseCreateExclusiveSeriesInstruction(instruction),
+      ),
+    LootboxProgramInstruction.initializeExclusiveSeries =>
+      ParsedInitializeExclusiveSeries(
+        data: parseInitializeExclusiveSeriesInstruction(instruction),
+      ),
+    LootboxProgramInstruction.claimExclusiveNft => ParsedClaimExclusiveNft(
+      data: parseClaimExclusiveNftInstruction(instruction),
+    ),
+    LootboxProgramInstruction.reclaimExclusiveReserve =>
+      ParsedReclaimExclusiveReserve(
+        data: parseReclaimExclusiveReserveInstruction(instruction),
+      ),
   };
 }

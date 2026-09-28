@@ -1,22 +1,17 @@
 /**
  * The holder's side, on a phone: a box arrives, you hold the chest until the
- * ring fills, randomness picks, the chest leaps, and the prize is yours.
- * Uses the site's own chest renders and reaction clip.
+ * ring fills, randomness picks, the chest leaps, and the prize is yours. The
+ * chest plays the brand's motion on the site's own timeline, so this is what
+ * the page does.
  */
-import {
-	AbsoluteFill,
-	Img,
-	OffthreadVideo,
-	Sequence,
-	staticFile,
-	useCurrentFrame,
-	useVideoConfig,
-} from "remotion";
+import { ChestFigure, ChestMark } from "@pina-rs/lootbox-brand";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 
 import { DEMO_TITLE } from "../data/demo.ts";
+import { chestFlowFrame } from "../kit/chestFlow.ts";
 import { Coin } from "../kit/Coin.tsx";
 import { PhoneFrame, SiteViewport } from "../kit/Frames.tsx";
-import { BOUNCE, enter, mix, progress, SNAP } from "../kit/motion.ts";
+import { BOUNCE, enter, FPS, mix, progress, SNAP } from "../kit/motion.ts";
 import { Confetti } from "../kit/Particles.tsx";
 import { Sfx } from "../kit/Sound.tsx";
 import { Tap } from "../kit/Tap.tsx";
@@ -57,9 +52,11 @@ function Notification({ frame }: Readonly<{ frame: number }>) {
 				zIndex: 10,
 			}}
 		>
-			<Img
-				src={staticFile("chest/chest-closed.webp")}
-				style={{ width: 44, height: 44 }}
+			<ChestMark
+				variant="compact"
+				size={44}
+				look={{ x: 0, y: 0.05 }}
+				style={{ flex: "none" }}
 			/>
 			<span style={{ display: "grid", gap: 2, flex: 1 }}>
 				<b style={{ font: "900 15px/1.2 var(--body)" }}>You got a lootbox</b>
@@ -199,12 +196,13 @@ export function OpenOnPhone(
 	const arrive = enter(frame, 0, SNAP);
 	const charge = progress(frame, HOLD, CHARGED - HOLD, (t) => t);
 	const busy = frame >= CHARGED && frame < REVEAL;
-
-	const shake = frame >= HOLD && frame < REVEAL
-		? Math.sin(frame * 2.3) * (1 + charge * 3) +
-			(busy ? Math.sin(frame * 0.9) * 3 : 0)
-		: 0;
 	const revealing = frame >= REVEAL;
+	const chest = chestFlowFrame({
+		holdAt: HOLD / FPS,
+		waitAt: CHARGED / FPS,
+		revealAt: REVEAL / FPS,
+		reaction: "big-prize",
+	}, frame / FPS);
 	const inner = phoneWidth - 36;
 
 	return (
@@ -251,37 +249,15 @@ export function OpenOnPhone(
 								}}
 							/>
 							{!revealing && <Ring charge={charge} busy={busy} frame={frame} />}
-							{revealing
-								? (
-									<Sequence from={REVEAL} layout="none">
-										<OffthreadVideo
-											src={staticFile("chest/big-prize.mp4")}
-											muted
-											style={{
-												position: "absolute",
-												inset: "6%",
-												width: "88%",
-												height: "88%",
-												mixBlendMode: "darken",
-											}}
-										/>
-									</Sequence>
-								)
-								: (
-									<Img
-										src={staticFile("chest/chest-closed.webp")}
-										style={{
-											position: "absolute",
-											inset: "6%",
-											width: "88%",
-											height: "88%",
-											transformOrigin: "50% 88%",
-											transform: `rotate(${shake}deg) scale(${
-												1 + charge * 0.07
-											}, ${1 - charge * 0.09})`,
-										}}
-									/>
-								)}
+							<ChestFigure
+								frame={chest}
+								style={{
+									position: "absolute",
+									left: "6%",
+									top: "6%",
+									width: "88%",
+								}}
+							/>
 							{frame >= HOLD - 10 && frame < CHARGED + 4 && (
 								<span
 									style={{

@@ -8,6 +8,7 @@ import { Composition, Still } from "remotion";
 
 import { FPS } from "./kit/motion.ts";
 import { Avatar, Banner, ShareCard } from "./stills/Social.tsx";
+import { CHEST_REEL_FRAMES, ChestReel } from "./videos/ChestReel.tsx";
 import { CreatorCut, scriptCut } from "./videos/CreatorCut.tsx";
 import { FILL_IT_FRAMES, FillIt } from "./videos/FillIt.tsx";
 import { HAND_IT_OUT_FRAMES, HandItOut } from "./videos/HandItOut.tsx";
@@ -41,6 +42,13 @@ export function Root() {
 				fps={FPS}
 				{...SHAPES.square}
 				defaultProps={{ layout: "stacked" }}
+			/>
+			<Composition
+				id="chest-reel"
+				component={ChestReel}
+				durationInFrames={CHEST_REEL_FRAMES}
+				fps={FPS}
+				{...SHAPES.wide}
 			/>
 			<Composition
 				id="fill-it-wide"

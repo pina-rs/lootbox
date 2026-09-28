@@ -1,6 +1,6 @@
 # lootbox.so promo videos
 
-Motion design for lootbox.so, made with [Remotion](https://www.remotion.dev/) from the site's own pieces. The chest is `@pina-rs/lootbox-brand`, and the odds strip, curve chart, steppers, and action cards come from `@pina-rs/lootbox-ui`. The pages use the platform's real stylesheet. When the product's look changes, the videos change with it: re-render.
+Motion design for lootbox.so, made with [Remotion](https://www.remotion.dev/) from the site's own pieces. The chest is `@pina-rs/lootbox-brand`, moving with the same motion functions the site plays, and the odds strip, curve chart, steppers, and action cards come from `@pina-rs/lootbox-ui`. The pages use the platform's real stylesheet. When the product's look changes, the videos change with it: re-render.
 
 Every sound is original. The music and effects are synthesised by `audio/render.ts`, so nothing here can be claimed on X or YouTube.
 
@@ -8,6 +8,7 @@ Every sound is original. The music and effects are synthesised by `audio/render.
 
 | Id                                                   | Shape      | Length  | What                                                                                           |
 | ---------------------------------------------------- | ---------- | ------- | ---------------------------------------------------------------------------------------------- |
+| `chest-reel`                                         | 16:9       | 10 s    | Reference: the chest's whole performance on the site, one column per reaction.                 |
 | `sting-wide`, `sting-square`                         | 16:9, 1:1  | 5 s     | The logo: the chest drops in, pops, the letters rain down, and the chest and word trade looks. |
 | `fill-it-wide`                                       | 16:9       | 24 s    | The creator's side: the real wizard, prizes, collectibles, the lock.                           |
 | `open-it-tall`                                       | 9:16       | 15 s    | The holder's side on a phone: a box arrives, hold to open, the jackpot, claim.                 |

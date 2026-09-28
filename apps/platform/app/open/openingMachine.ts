@@ -1,10 +1,12 @@
+import type { ChestReaction } from "@pina-rs/lootbox-brand";
+
 import type { PrizeTier } from "../lib/prizes.js";
 
 /** How long the chest must be held before it commits to opening. */
 export const HOLD_TO_OPEN_MS = 1_200;
 
-/** The chest reaction clip that plays once the recorded result is known. */
-export type Reaction = "big-prize" | "small-prize" | "disappointed";
+/** How the chest reacts once the recorded result is known. */
+export type Reaction = ChestReaction;
 
 /** The on-chain result, read back after allocation. */
 export type RecordedResult = Readonly<{

@@ -302,7 +302,6 @@ test("hold to open charges, reveals the recorded prize, and claims it", async ({
 		"data-reaction",
 		/big-prize|small-prize/,
 	);
-	await expect(page.getByTestId("chest-video")).toBeAttached();
 	await expect(page.getByTestId("prize-card")).toBeVisible({ timeout: 20_000 });
 	await expect(page.getByTestId("box-balance")).toHaveText("2");
 
@@ -321,7 +320,7 @@ test("hold to open charges, reveals the recorded prize, and claims it", async ({
 	expect(errors).toEqual([]);
 });
 
-test("keyboard hold with reduced motion reveals without the clip", async ({ page }) => {
+test("keyboard hold with reduced motion reveals without the animation", async ({ page }) => {
 	test.setTimeout(180_000);
 
 	const errors = watchErrors(page);
@@ -345,7 +344,7 @@ test("keyboard hold with reduced motion reveals without the clip", async ({ page
 	);
 	await page.keyboard.up("Space");
 	await expect(page.getByTestId("prize-card")).toBeVisible({ timeout: 30_000 });
-	await expect(page.getByTestId("chest-video")).toHaveCount(0);
+	await expect(page.locator(".chest-burst")).toHaveCount(0);
 	await expect(page.getByRole("button", { name: "Skip animation" }))
 		.toHaveCount(0);
 	await claimAndVerify(page, series, wallet.address);
@@ -358,10 +357,9 @@ test("plain open button and skip animation", async ({ page }) => {
 	const errors = watchErrors(page);
 	const { wallet, series } = await openSeries(page, { revealed: true });
 
-	// Hold the clip download so the reveal stays on screen until skipped.
-	await page.route("**/animations/cartoon-chest/*.{webm,mp4}", () => {});
 	await connect(page);
 	await page.getByRole("button", { name: "Open without holding" }).click();
+	// The reveal plays for at least 2.2 s, so skip it as soon as it shows.
 	await expect(page.getByRole("button", { name: "Skip animation" }))
 		.toBeVisible({ timeout: 30_000 });
 	await expect(page.getByTestId("prize-card")).toHaveCount(0);

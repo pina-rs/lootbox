@@ -28,6 +28,21 @@ The mark exposes `data-part="eye"` and `data-part="lid"` for CSS-only motion, wh
 
 To draw the chest or the word inside your own SVG, place `ChestArt` or `WordmarkArt` in a group with `chestTransform(x, y, size)` or `wordmarkTransform(x, y, height)`. They take the same pose props and draw exactly what `ChestMark` and `Wordmark` draw, without a nested `<svg>`.
 
+## The chest as a character
+
+`ChestFigure` gives the mark a body: squash, tilt, and hops pivot on its feet, and its floor shadow shrinks as it rises. `src/motion.ts` performs it as pure functions of time, each returning a `ChestFrame`:
+
+| Function                   | When                                                                       |
+| -------------------------- | -------------------------------------------------------------------------- |
+| `idleFrame(t)`             | Waiting to be picked up: breathing, blinking, glancing, a hop now and then |
+| `chargeFrame(level, t)`    | Held down: the lid pressed shut and rattling, squashed, squinting          |
+| `waitFrame(t)`             | Waiting on the chain: rumbling, lid chattering, eyes darting               |
+| `revealFrame(reaction, t)` | The reveal: `big-prize`, `small-prize`, or `disappointed`                  |
+| `restFrame(reaction, t)`   | The pose it keeps afterwards, still breathing and blinking                 |
+| `nopeFrame(frame, t)`      | A head shake for a hold that cannot open anything                          |
+
+lootbox.so and the Unlisted site play these every animation frame, and the promo videos play them per video frame, so the chest moves the same way everywhere. `mixFrames` blends one phase into the next. The `chest-reel` composition in `apps/promo` shows the whole performance for each reaction.
+
 ## Files
 
 Every logo is a vector: an SVG, and a PDF of the same drawing for print shops and tools that prefer PDF. Each SVG is one flat `<svg>` of paths, with no fonts, images, or nested viewports, and its clip and gradient ids carry the file's name so several files can share a document.

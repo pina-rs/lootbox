@@ -16,6 +16,7 @@ import {
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import { LivelyChest } from "./components/LivelyChest.js";
 import { TopBar } from "./components/TopBar.js";
 import { currentWallet } from "./lib/.server/auth.js";
 import { nowSeconds, services } from "./lib/.server/context.js";
@@ -104,12 +105,7 @@ function ErrorPage({ error }: Readonly<{ error: unknown }>) {
 
 	return (
 		<main id="main" className="page page-narrow error-page">
-			<img
-				src="/chest/disappointed-final.webp"
-				alt=""
-				width={220}
-				height={220}
-			/>
+			<LivelyChest className="error-chest" mood="disappointed" />
 			<h1 className="display">{title}</h1>
 			<p className="lede">{detail}</p>
 			<p className="button-row">

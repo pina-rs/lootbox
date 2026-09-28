@@ -13,6 +13,7 @@ import {
 	Logo,
 	logoAspect,
 	palette,
+	REST_FRAME,
 	Wordmark,
 	WORDMARK_ASPECT,
 } from "../src/index.ts";
@@ -170,6 +171,21 @@ export function brandFiles(): BrandFile[] {
 				<Tile size={192} ground={palette.ivory} radius={42} />,
 			),
 			width: 192,
+		},
+		// The site's stand-in cover, and the image every box token shows.
+		{
+			kind: "svg",
+			path: "../../apps/platform/public/chest.svg",
+			svg: svg(
+				"chest",
+				<ChestMark size={512} look={REST_FRAME.look} title="lootbox" />,
+			),
+		},
+		{
+			kind: "png",
+			path: "../../apps/platform/public/box.png",
+			svg: svg("box", <ChestMark size={512} look={REST_FRAME.look} />),
+			width: 512,
 		},
 		{
 			kind: "svg",

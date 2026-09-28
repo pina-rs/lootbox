@@ -15,6 +15,7 @@
 		"@fontsource-variable/space-grotesk": "^5.3.0",
 		"@fontsource/bungee": "^5.3.0",
 		"@pina-rs/lootbox": "workspace:*",
+		"@pina-rs/lootbox-brand": "workspace:*",
 		"@rive-app/canvas": "^2.43.1",
 		"@solana-program/token-2022": "0.19.0",
 		"@solana/kit": "^8.3.0",

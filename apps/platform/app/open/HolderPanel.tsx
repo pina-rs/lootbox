@@ -12,18 +12,12 @@ import {
 import { type Address, address, isAddress } from "@solana/kit";
 import { useWalletAccountTransactionSigner } from "@solana/react";
 import type { UiWalletAccount } from "@wallet-standard/react";
-import {
-	useCallback,
-	useEffect,
-	useMemo,
-	useReducer,
-	useState,
-	useSyncExternalStore,
-} from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { useRevalidator } from "react-router";
 import { friendlyError } from "../lib/errors.js";
 
 import { TxProgress, useTxProgress } from "../components/TxProgress.js";
+import { useReducedMotion } from "../lib/animation.js";
 import { openingsFor } from "../lib/chain.js";
 import { chainFor, type ClusterInfo, explorerUrl } from "../lib/clusters.js";
 import {
@@ -59,27 +53,6 @@ const SETTLE_DELAY_MS = 750;
 
 function message(error: unknown): string {
 	return friendlyError(error);
-}
-
-function prefersReducedMotion(): boolean {
-	return typeof matchMedia !== "undefined" &&
-		matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-function subscribeMotion(callback: () => void): () => void {
-	const query = matchMedia("(prefers-reduced-motion: reduce)");
-
-	query.addEventListener("change", callback);
-
-	return () => query.removeEventListener("change", callback);
-}
-
-function useReducedMotion(): boolean {
-	return useSyncExternalStore(
-		subscribeMotion,
-		prefersReducedMotion,
-		() => false,
-	);
 }
 
 export function HolderPanel(

@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 
+import { LivelyChest } from "../components/LivelyChest.js";
 import { LootboxCard } from "../components/LootboxCard.js";
 import { toCards } from "../lib/.server/cards.js";
 import { services } from "../lib/.server/context.js";
@@ -51,12 +52,9 @@ export default function Home({ loaderData }: Route.ComponentProps) {
 						<Link className="button" to="/explore">See what's open</Link>
 					</p>
 				</div>
-				<img
+				<LivelyChest
 					className="hero-chest"
-					src="/chest/chest-closed.webp"
-					alt="A cartoon treasure chest, closed"
-					width={720}
-					height={720}
+					title="A cartoon treasure chest, peeking out at you"
 				/>
 			</section>
 

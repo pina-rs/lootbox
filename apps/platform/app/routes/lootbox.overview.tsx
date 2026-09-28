@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 
+import { LivelyChest } from "../components/LivelyChest.js";
 import { Markdown } from "../components/Markdown.js";
 import { OddsTable } from "../components/OddsTable.js";
 import { CurveMarket } from "../distribute/CurveMarket.js";
@@ -66,12 +67,7 @@ export default function Overview() {
 					)
 					: (
 						<section className="stage card" aria-labelledby="connect-cta">
-							<img
-								src="/chest/chest-closed.webp"
-								alt=""
-								width={280}
-								height={280}
-							/>
+							<LivelyChest className="stage-chest" />
 							<h2 id="connect-cta">Got a box?</h2>
 							<p className="muted">
 								Connect your wallet to see your boxes and open them.

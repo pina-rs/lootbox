@@ -2,9 +2,10 @@ import { Link } from "react-router";
 
 import { Markdown } from "../components/Markdown.js";
 import { OddsTable } from "../components/OddsTable.js";
+import { CurveMarket } from "../distribute/CurveMarket.js";
 import { revealState } from "../lib/chain.js";
 import { prizeViews } from "../lib/prizes.js";
-import { useClusterInfo } from "../lib/public-config.js";
+import { useClusterInfo, usePublicConfig } from "../lib/public-config.js";
 import { HolderPanel } from "../open/HolderPanel.js";
 import { useSession } from "../wallet/session.js";
 import { useHydrated, useWalletUi } from "../wallet/WalletProvider.js";
@@ -13,6 +14,7 @@ import { useLootbox } from "./lootbox.js";
 export default function Overview() {
 	const { lootbox, chain, isCreator, now } = useLootbox();
 	const cluster = useClusterInfo(lootbox.cluster);
+	const { features } = usePublicConfig();
 	const { account } = useSession();
 	const { openConnect } = useWalletUi();
 	const hydrated = useHydrated();
@@ -39,6 +41,16 @@ export default function Overview() {
 							: "The creator is still filling this lootbox. Boxes go out once it is locked."}
 					</p>
 				)}
+				{features.boxCurves && cluster && chain?.curve && (
+					<CurveMarket
+						account={hydrated ? account ?? null : null}
+						cluster={cluster}
+						template={lootbox.template}
+						boxMint={lootbox.boxMint}
+						curve={chain.curve}
+						now={now}
+					/>
+				)}
 				{hydrated && account && cluster && chain
 					? (
 						<HolderPanel
@@ -49,6 +61,7 @@ export default function Overview() {
 							prizes={prizes}
 							reveal={reveal}
 							secondsToReveal={chain.opensAt - now}
+							balanceKey={chain.curve?.sold ?? ""}
 						/>
 					)
 					: (

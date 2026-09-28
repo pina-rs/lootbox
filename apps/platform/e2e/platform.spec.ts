@@ -91,6 +91,7 @@ async function connectAndSignIn(page: Page) {
 
 let creator: KeyPairSigner;
 let friend: KeyPairSigner;
+let buyer: KeyPairSigner;
 let rpcUrl: string;
 /** Mainnet mints from the recorded catalog, recreated locally per run. */
 const BONK = address("DezXAZ8z7PnrnRJjz3wXBoRgixCa6XKj7D3WpqkDmzPK");
@@ -108,6 +109,7 @@ test.beforeAll(async () => {
 	({ rpcUrl } = await controlConfig());
 	creator = await fundedSigner();
 	friend = await fundedSigner();
+	buyer = await fundedSigner();
 	const client = new LootboxClient(rpcUrl, creator);
 
 	await testToken(client, rpcUrl, creator, 100_000_000_000n, {
@@ -400,7 +402,8 @@ test("a creator makes a lootbox where every box is an Exclusive Lootbox NFT", as
 	await page.getByRole("button", { name: "Next" }).click();
 	await page.getByLabel(/Add Exclusive Lootbox NFTs as the consolation prize/)
 		.check();
-	await page.getByLabel("How many boxes").fill("3");
+	// Enough boxes for a curve (at least 20) after one goes to a friend.
+	await page.getByLabel("How many boxes").fill("24");
 	await page.getByRole("button", { name: "Review" }).click();
 	await expect(page.getByTestId("review-odds")).toContainText("100%");
 	await page.getByRole("button", { name: "Continue to launch" }).click();
@@ -411,7 +414,7 @@ test("a creator makes a lootbox where every box is an Exclusive Lootbox NFT", as
 	await page.getByRole("navigation", { name: "Lootbox sections" })
 		.getByRole("link", { name: "Manage" }).click();
 	await page.getByLabel(/locking is permanent/).check();
-	await page.getByRole("button", { name: /Lock and mint 3 boxes/ }).click();
+	await page.getByRole("button", { name: /Lock and mint 24 boxes/ }).click();
 	await expect(page.getByTestId("lock-state")).toHaveText("Locked", {
 		timeout: 60_000,
 	});
@@ -422,6 +425,80 @@ test("a creator makes a lootbox where every box is an Exclusive Lootbox NFT", as
 	});
 	chestsTemplate = await treasuryOf(page, chestsSlug);
 	expect(errors).toEqual([]);
+});
+
+test("a creator sells boxes on a curve and a buyer trades against it", async ({ page }) => {
+	const errors = collectConsoleErrors(page);
+
+	await injectTestWallet(page, creator);
+	await page.goto(`/l/${chestsSlug}/manage`);
+	await connectAndSignIn(page);
+
+	const curveCard = page.locator("#curve");
+
+	await expect(curveCard.getByRole("heading", { name: "Sell on a curve" }))
+		.toBeVisible();
+	await curveCard.getByLabel("Boxes on the curve").fill("20");
+	await curveCard.getByLabel("First box (SOL)").fill("0.01");
+	await curveCard.getByLabel("Last box (SOL)").fill("0.05");
+	await curveCard.getByText("1%", { exact: true }).click();
+	// The step floors to whole lamports: 20 boxes sell out for 0.59999997 SOL.
+	await expect(curveCard.getByTestId("curve-plan")).toContainText("≈ 0.6 SOL");
+	await expectAccessible(page, "manage-curve");
+	await curveCard.getByRole("button", { name: "Put 20 boxes on the curve" })
+		.click();
+	await expect(curveCard.getByTestId("curve-sold")).toHaveText("0/20", {
+		timeout: 60_000,
+	});
+	await snap(page, "08-curve-open");
+
+	// A stranger buys two boxes, changes their mind about one, and sells it back.
+	// Another page, because each page holds one injected test wallet.
+	const shopper = await page.context().newPage();
+	const shopperErrors = collectConsoleErrors(shopper);
+
+	await injectTestWallet(shopper, buyer);
+	await shopper.goto(`/l/${chestsSlug}`);
+
+	const market = shopper.locator(".curve-market");
+
+	await expect(market.getByRole("heading", { name: "Get a box" }))
+		.toBeVisible();
+	await market.getByRole("button", { name: "Connect to buy" }).click();
+	await shopper.getByRole("button", { name: /E2E Wallet/ }).click();
+	await market.getByLabel("Boxes to buy").fill("2");
+	// 0.01 + 0.012105263 SOL, plus a 1% fee rounded up to the lamport.
+	await expect(market.getByTestId("curve-quote")).toContainText(
+		"0.022105263 SOL",
+	);
+	await expect(market.getByTestId("curve-quote")).toContainText(
+		"0.022326316 SOL",
+	);
+	await market.getByRole("button", { name: /^Buy 2 boxes for/ }).click();
+	await expect(market.getByTestId("curve-done")).toHaveText(
+		"You bought 2 boxes.",
+		{ timeout: 60_000 },
+	);
+	await expect(market).toContainText("18 of 20 left");
+	await expectAccessible(shopper, "curve-market");
+	await snap(shopper, "08-curve-buy");
+
+	await market.getByText("Sell back", { exact: true }).click();
+	await market.getByRole("button", { name: /^Sell 1 back for/ }).click();
+	await expect(market.getByTestId("curve-done")).toContainText(
+		"Sold 1 box back",
+		{ timeout: 60_000 },
+	);
+	await expect(market).toContainText("19 of 20 left");
+
+	const curve = await new LootboxClient(rpcUrl, buyer).boxCurve(
+		address(chestsTemplate),
+	);
+
+	expect(curve?.data.sold).toBe(1n);
+	expect(curve?.data.reserve).toBe(10_000_000n);
+	expect(errors).toEqual([]);
+	expect(shopperErrors).toEqual([]);
 });
 
 test("the relayer finishes an abandoned opening after the reveal", async ({ request }) => {

@@ -1,0 +1,46 @@
+/*
+ * lootbox design tokens — "the chest on the kitchen table".
+ *
+ * Warm ivory paper, heavy ink outlines, and chunky offset shadows: the same
+ * cel-shaded world as the cartoon chest renders. lootbox.so and the promo
+ * videos both load this file, so a change here reaches the site and every
+ * video frame together. Bungee is for identity; Nunito is for reading.
+ */
+
+:root {
+	--ivory: #f3edda;
+	--ivory-deep: #e9dfc3;
+	--paper: #fbf8ee;
+	--white: #fffdf7;
+	--ink: #1d1a14;
+	--ink-soft: #4a4336;
+	--muted: #6b6250;
+	--line: #d6caa9;
+	--teal: #146f63;
+	--teal-bright: #34a898;
+	--teal-deep: #0e4f47;
+	--gold: #f0b429;
+	--gold-soft: #f8dc8c;
+	--coral: #b23a31;
+	/* The chest's lock plate: warmer and lighter than the error coral. */
+	--lock: #ef7564;
+	--plum: #6b3fa0;
+	--sky: #5aa9e6;
+	--focus: #0b63ce;
+	--accent: var(--teal);
+	--accent-soft: #d3ece7;
+
+	--display: "Bungee", "Arial Black", sans-serif;
+	--body: "Nunito Variable", "Nunito", "Trebuchet MS", sans-serif;
+
+	--radius-s: 10px;
+	--radius: 16px;
+	--radius-l: 24px;
+	--shadow-s: 0 3px 0 var(--ink);
+	--shadow: 0 5px 0 var(--ink);
+	--border: 2.5px solid var(--ink);
+	--gutter: 16px;
+	--page: 1120px;
+
+	color-scheme: light;
+}

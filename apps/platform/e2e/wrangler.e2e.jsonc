@@ -27,6 +27,7 @@
 		"RELAYER_CLAIM": "false",
 		"FEATURE_EXCLUSIVE_NFTS": "true",
 		"FEATURE_NFT_PRIZES": "false",
+		"FEATURE_BOX_CURVES": "true",
 		"CATALOG_FIXTURES": "true"
 	}
 }

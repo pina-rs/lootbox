@@ -68,3 +68,36 @@ export function batches<T>(
 
 	return groups;
 }
+
+export type AirdropCost = Readonly<{
+	transactions: number;
+	/** Recipients without a box account yet; the creator funds each one. */
+	newAccounts: number;
+	accountRent: bigint;
+	fees: bigint;
+	total: bigint;
+}>;
+
+/**
+ * What sending boxes costs the creator: rent for every box account that
+ * doesn't exist yet, plus one signature fee per batch. The rent stays with
+ * the recipient's account; the creator never gets it back.
+ */
+export function airdropCost(
+	recipients: number,
+	newAccounts: number,
+	rentPerAccount: bigint,
+	signatureFee = 5_000n,
+): AirdropCost {
+	const transactions = Math.ceil(recipients / TRANSFERS_PER_TRANSACTION);
+	const accountRent = rentPerAccount * BigInt(newAccounts);
+	const fees = signatureFee * BigInt(transactions);
+
+	return {
+		transactions,
+		newAccounts,
+		accountRent,
+		fees,
+		total: accountRent + fees,
+	};
+}

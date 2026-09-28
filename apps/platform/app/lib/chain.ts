@@ -21,6 +21,7 @@ import {
 } from "@solana/kit";
 
 import { clusterTime } from "./clock.js";
+import { type BoxCurveView, toCurveView } from "./curve.js";
 
 /** The fee payer is never used for reads, so any address works. */
 const READ_ONLY_PAYER = address("11111111111111111111111111111111");
@@ -61,6 +62,8 @@ export type LootboxChainView = Readonly<{
 	supply: string;
 	revision: string;
 	bundles: readonly ChainBundleView[];
+	/** The open box curve, if the creator is selling boxes on one. */
+	curve: BoxCurveView | null;
 }>;
 
 export function readClient(rpcUrl: string): LootboxClient {
@@ -93,10 +96,11 @@ export async function readLootboxChain(
 
 	const state = { address: account.address, data: account.data };
 
-	const [bundles, supply, time] = await Promise.all([
+	const [bundles, supply, time, curve] = await Promise.all([
 		client.bundles(state),
 		client.mintSupply(state.data.boxMint),
 		chainTime(client),
+		client.boxCurve(state.address),
 	]);
 
 	return {
@@ -125,6 +129,7 @@ export async function readLootboxChain(
 				decimals: asset.decimals,
 			})),
 		})),
+		curve: curve ? toCurveView(curve.address, curve.data) : null,
 	};
 }
 

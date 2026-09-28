@@ -14,7 +14,8 @@ export type Load<T> =
 	| Readonly<{ status: "ready"; value: T }>
 	| Readonly<{ status: "error"; message: string }>;
 
-function useLoad<T>(
+/** Run `load` when it changes; `null` waits. The second value reloads. */
+export function useLoad<T>(
 	load: (() => Promise<T>) | null,
 ): [Load<T>, () => void] {
 	const [state, setState] = useState<Load<T>>({ status: "loading" });

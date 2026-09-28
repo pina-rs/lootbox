@@ -50,6 +50,9 @@
 		"FEATURE_EXCLUSIVE_NFTS": "false",
 		// NFT prizes from other projects in the bundle builder.
 		"FEATURE_NFT_PRIZES": "false",
+		// Selling boxes on a bonding curve. A paid chance at a prize is a lottery
+		// in many places (the UK included); enable only where that is lawful.
+		"FEATURE_BOX_CURVES": "false",
 		// The Introductory Exclusive Lootbox NFT collection PDA per cluster,
 		// printed by `pnpm exclusive:collection -- --execute`.
 		"EXCLUSIVE_COLLECTION_DEVNET": "",

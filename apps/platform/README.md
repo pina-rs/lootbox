@@ -15,15 +15,15 @@ A lootbox here is a Token-2022 "box" token backed by prizes escrowed by the [loo
 
 ## Routes
 
-| Route                                     | What                                                                                                       |
-| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `/`                                       | What a lootbox is, fresh lootboxes, Create                                                                 |
-| `/explore`                                | Every public lootbox, with search and open/coming-up filters                                               |
-| `/create`                                 | The wizard: details, prizes, Exclusive NFTs (flagged), review with exact costs, signed launch              |
-| `/l/:slug` (`/odds`, `/rules`, `/manage`) | Live page with tabs; Manage is for the creator (SIWS session plus on-chain authority)                      |
-| `/m/:mint.json`                           | Box token metadata, rebuilt from the creator's current display copy                                        |
-| `/og/:slug.png`                           | Social card rendered in the Worker (Satori + resvg)                                                        |
-| `/api/*`                                  | Sign-in, drafts, publish, uploads, token search, prices, admission checks, Jupiter swaps, localnet helpers |
+| Route                                     | What                                                                                                                                           |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                                       | What a lootbox is, fresh lootboxes, Create                                                                                                     |
+| `/explore`                                | Every public lootbox, with search and open/coming-up filters                                                                                   |
+| `/create`                                 | The wizard: details, prizes, Exclusive NFTs (flagged), review with exact costs, signed launch                                                  |
+| `/l/:slug` (`/odds`, `/rules`, `/manage`) | Live page with tabs and, when a box curve is open, a buy and sell-back panel; Manage is for the creator (SIWS session plus on-chain authority) |
+| `/m/:mint.json`                           | Box token metadata, rebuilt from the creator's current display copy                                                                            |
+| `/og/:slug.png`                           | Social card rendered in the Worker (Satori + resvg)                                                                                            |
+| `/api/*`                                  | Sign-in, drafts, publish, uploads, token search, prices, admission checks, Jupiter swaps, localnet helpers                                     |
 
 ## Run it locally
 
@@ -59,14 +59,15 @@ The end-to-end suite builds the Worker, serves it with `vite preview` (the same 
 
 `wrangler.jsonc` vars (strings):
 
-| Var                                            | Meaning                                                                       |
-| ---------------------------------------------- | ----------------------------------------------------------------------------- |
-| `PUBLIC_ORIGIN`                                | Canonical origin (`https://lootbox.so`). Empty uses the request origin.       |
-| `DEFAULT_CLUSTER`, `ENABLED_CLUSTERS`          | Networks creators may use: `devnet`, `mainnet`, `localnet` (loopback only).   |
-| `RPC_URL_DEVNET`, `RPC_URL_MAINNET`            | RPC endpoints. Use a dedicated provider for mainnet.                          |
-| `LOCALNET_CONTROL_URL`                         | Surfpool control plane; localnet is refused unless this is a loopback URL.    |
-| `RELAYER_CLUSTERS`, `RELAYER_CLAIM`            | Where the cron relayer settles openings, and whether it also delivers prizes. |
-| `FEATURE_EXCLUSIVE_NFTS`, `FEATURE_NFT_PRIZES` | Exclusive Lootbox NFT consolation, and NFT prizes from other projects.        |
+| Var                                            | Meaning                                                                                                |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `PUBLIC_ORIGIN`                                | Canonical origin (`https://lootbox.so`). Empty uses the request origin.                                |
+| `DEFAULT_CLUSTER`, `ENABLED_CLUSTERS`          | Networks creators may use: `devnet`, `mainnet`, `localnet` (loopback only).                            |
+| `RPC_URL_DEVNET`, `RPC_URL_MAINNET`            | RPC endpoints. Use a dedicated provider for mainnet.                                                   |
+| `LOCALNET_CONTROL_URL`                         | Surfpool control plane; localnet is refused unless this is a loopback URL.                             |
+| `RELAYER_CLUSTERS`, `RELAYER_CLAIM`            | Where the cron relayer settles openings, and whether it also delivers prizes.                          |
+| `FEATURE_EXCLUSIVE_NFTS`, `FEATURE_NFT_PRIZES` | Exclusive Lootbox NFT consolation, and NFT prizes from other projects.                                 |
+| `FEATURE_BOX_CURVES`                           | Selling boxes on a bonding curve. A paid chance is a lottery in many places; enable only where lawful. |
 
 Secrets (`wrangler secret put <NAME>`): `JUPITER_API_KEY` (search, prices, swaps), `DAS_RPC_URL` / `DAS_RPC_URL_DEVNET` (wallet NFT discovery), `RELAYER_SECRET_KEY` (relayer fee payer, base58 or JSON bytes).
 
@@ -80,6 +81,15 @@ Secrets (`wrangler secret put <NAME>`): `JUPITER_API_KEY` (search, prices, swaps
 6. Set `PUBLIC_ORIGIN` to `https://lootbox.so` and the clusters you want in `wrangler.jsonc`.
 7. `pnpm deploy` (builds, then `wrangler deploy`).
 8. In the Cloudflare dashboard, Workers → `lootbox-platform` → Settings → Domains & Routes → add the custom domain `lootbox.so` once the zone is on Cloudflare.
+
+## Handing boxes out
+
+Once a lootbox is locked, Manage shows where every box is (the creator's wallet, the curve, holders) and two ways to move them:
+
+- **Send to a list.** Paste or load a CSV of `wallet[,count]` lines. Before signing, the page checks which recipients already have a box account and shows the exact cost: rent for each new account plus one fee per batch of six transfers. The creator pays, so receiving is free.
+- **Sell on a curve** (`FEATURE_BOX_CURVES`). Pick how many boxes (at least 20), the first and last price, and a 0–5% fee, and see the staircase and the sell-out total before opening it. Visitors then buy on the lootbox page, optionally straight into a friend's wallet, and holders sell back until the curve sells out or the reveal closes trading. See [box curves](../../docs/box-curves.md).
+
+The chart, odds strip, stepper, and action cards come from `@pina-rs/lootbox-ui`, which the promo videos render too, so the site and the videos stay one design.
 
 ## Security notes
 

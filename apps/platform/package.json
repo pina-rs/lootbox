@@ -21,8 +21,9 @@
 		"@fontsource-variable/nunito": "^5.2.7",
 		"@fontsource/bungee": "^5.3.0",
 		"@pina-rs/exclusive-nft-art": "workspace:*",
-		"@pina-rs/lootbox-brand": "workspace:*",
 		"@pina-rs/lootbox": "workspace:*",
+		"@pina-rs/lootbox-brand": "workspace:*",
+		"@pina-rs/lootbox-ui": "workspace:*",
 		"@solana-program/token-2022": "0.19.0",
 		"@solana/kit": "^8.3.0",
 		"@solana/react": "8.3.0",
@@ -50,5 +51,8 @@
 		"vite": "^8.3.1",
 		"vitest": "^5.0.2",
 		"wrangler": "4.141.0"
+	},
+	"exports": {
+		"./styles.css": "./app/styles/app.css"
 	}
 }

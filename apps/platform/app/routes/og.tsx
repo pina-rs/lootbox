@@ -4,6 +4,8 @@
  * tagline, and status, so shared links follow the creator's edits.
  */
 import { cache, GoogleFont, ImageResponse } from "@cf-wasm/og/workerd";
+import chestCompactSvg from "@pina-rs/lootbox-brand/assets/logo/mark-compact.svg?raw";
+import chestSvg from "@pina-rs/lootbox-brand/assets/logo/mark.svg?raw";
 
 import { mediaUrl, services } from "../lib/.server/context.js";
 import { originFor, rpcUrlFor } from "../lib/.server/env.js";
@@ -12,11 +14,11 @@ import { readTemplateSummaries } from "../lib/chain.js";
 import { ACCENT_COLORS, lootboxStatus } from "../lib/status.js";
 import type { Route } from "./+types/og";
 
-const CHEST = `data:image/svg+xml;utf8,${
-	encodeURIComponent(
-		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M12 30c0-10 8.5-17 20-17s20 7 20 17v4H12z" fill="#146f63" stroke="#1d1a14" stroke-width="3" stroke-linejoin="round"/><rect x="12" y="30" width="40" height="22" rx="3" fill="#146f63" stroke="#1d1a14" stroke-width="3"/><path d="M12 30h40" stroke="#f0b429" stroke-width="5"/><rect x="26" y="25" width="12" height="15" rx="3" fill="#f0b429" stroke="#1d1a14" stroke-width="2.5"/><circle cx="32" cy="31" r="2.2" fill="#1d1a14"/></svg>`,
-	)
-}`;
+const svgDataUri = (svg: string) =>
+	`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+/** The full mark for the big tile; the compact one survives 56 px. */
+const CHEST = svgDataUri(chestSvg);
+const CHEST_SMALL = svgDataUri(chestCompactSvg);
 
 async function statusLabel(
 	app: ReturnType<typeof services>,
@@ -107,7 +109,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 						color: accent,
 					}}
 				>
-					<img src={CHEST} width={56} height={56} alt="" />
+					<img src={CHEST_SMALL} width={56} height={56} alt="" />
 					lootbox.so
 				</div>
 			</div>

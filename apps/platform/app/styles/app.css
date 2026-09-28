@@ -178,14 +178,43 @@ p {
 .brand {
 	display: inline-flex;
 	align-items: center;
-	gap: 8px;
+	gap: 6px;
 	color: var(--ink);
 	text-decoration: none;
-	font: 400 20px/1 var(--display);
 }
 
-.logo-mark {
+.brand-mark,
+.brand-word {
 	flex: none;
+	inline-size: auto;
+}
+
+/* The chest in the logo blinks every few seconds, and peeks harder on hover. */
+.brand-mark [data-part="eye"] {
+	transform-box: fill-box;
+	transform-origin: center;
+	animation: brand-blink 6.5s 2s infinite;
+}
+
+.brand-mark [data-part="lid"] {
+	transition: translate 180ms ease-out;
+}
+
+.brand:hover .brand-mark [data-part="lid"] {
+	/* Mark units: about 3 screen pixels at header size. */
+	translate: 0 -40px;
+}
+
+@keyframes brand-blink {
+	0%,
+	95%,
+	100% {
+		scale: 1 1;
+	}
+
+	97% {
+		scale: 1 0.08;
+	}
 }
 
 .topnav {

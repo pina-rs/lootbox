@@ -1,7 +1,10 @@
 export {
+	ChestArt,
 	ChestMark,
 	type ChestMarkProps,
 	type ChestMarkVariant,
+	type ChestPose,
+	chestTransform,
 	type Gaze,
 	LOGO_LOOK,
 } from "./ChestMark.tsx";
@@ -20,6 +23,9 @@ export {
 	WORDMARK_LETTERS,
 	WORDMARK_LOOK,
 	WORDMARK_VIEWBOX,
+	WordmarkArt,
 	type WordmarkLetter,
+	type WordmarkPose,
 	type WordmarkProps,
+	wordmarkTransform,
 } from "./Wordmark.tsx";

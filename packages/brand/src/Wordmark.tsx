@@ -61,16 +61,23 @@ export const WORDMARK_VIEWBOX = {
 /** Width over height, for sizing the wordmark by its height. */
 export const WORDMARK_ASPECT = WORDMARK_VIEWBOX.width / WORDMARK_VIEWBOX.height;
 
+/** How the word is drawn and posed. Every field has a logo default. */
+export type WordmarkPose = Readonly<{
+	/** Letter colour. Ink on light grounds, ivory on dark ones. */
+	color?: string | undefined;
+	/** Pupil direction. Defaults to a glance up, at whatever is above. */
+	look?: Gaze | undefined;
+	/** 0 is open, 1 is shut. */
+	blink?: number | undefined;
+	/** Extra SVG transform per letter, e.g. for a bounce-in. */
+	letterTransform?:
+		| ((letter: WordmarkLetter) => string | undefined)
+		| undefined;
+}>;
+
 export type WordmarkProps =
+	& WordmarkPose
 	& Readonly<{
-		/** Letter colour. Ink on light grounds, ivory on dark ones. */
-		color?: string;
-		/** Pupil direction. Defaults to a glance up, at whatever is above. */
-		look?: Gaze;
-		/** 0 is open, 1 is shut. */
-		blink?: number;
-		/** Extra SVG transform per letter, e.g. for a bounce-in. */
-		letterTransform?: (letter: WordmarkLetter) => string | undefined;
 		/** Accessible name; defaults to "lootbox". Pass "" for decorative use. */
 		title?: string;
 		/** Rendered height; the width follows the aspect ratio. */
@@ -79,6 +86,20 @@ export type WordmarkProps =
 	& Omit<SVGProps<SVGSVGElement>, "children" | "viewBox" | "height">;
 
 export const WORDMARK_LOOK: Gaze = { x: 0.85, y: -0.8 };
+
+/**
+ * The SVG transform that draws `WordmarkArt` `height` tall with its top-left
+ * corner at (x, y), matching `Wordmark` at the same place and size.
+ */
+export function wordmarkTransform(
+	x: number,
+	y: number,
+	height: number,
+): string {
+	return `translate(${x} ${y}) scale(${
+		height / WORDMARK_VIEWBOX.height
+	}) translate(${-WORDMARK_VIEWBOX.x} ${-WORDMARK_VIEWBOX.y})`;
+}
 
 function EyeO(
 	{ id, color, look, blink }: Readonly<{
@@ -132,16 +153,15 @@ function EyeO(
 
 export function Wordmark(
 	{
-		color = palette.ink,
-		look = WORDMARK_LOOK,
-		blink = 0,
+		color,
+		look,
+		blink,
 		letterTransform,
 		title = "lootbox",
 		height,
 		...svg
 	}: WordmarkProps,
 ) {
-	const id = svgId(useId());
 	const { x, y, width, height: boxHeight } = WORDMARK_VIEWBOX;
 
 	return (
@@ -154,6 +174,32 @@ export function Wordmark(
 			aria-hidden={title ? undefined : true}
 			{...svg}
 		>
+			<WordmarkArt
+				color={color}
+				look={look}
+				blink={blink}
+				letterTransform={letterTransform}
+			/>
+		</svg>
+	);
+}
+
+/**
+ * The word's shapes in wordmark units, without an `<svg>` of their own. Place
+ * it inside another drawing with `wordmarkTransform`.
+ */
+export function WordmarkArt(
+	{
+		color = palette.ink,
+		look = WORDMARK_LOOK,
+		blink = 0,
+		letterTransform,
+	}: WordmarkPose,
+) {
+	const id = svgId(useId());
+
+	return (
+		<>
 			{WORDMARK_LETTERS.map((letter) => {
 				const extra = letterTransform?.(letter);
 				const transform = `translate(${letter.x} 0)${extra ? ` ${extra}` : ""}`;
@@ -173,6 +219,6 @@ export function Wordmark(
 					</g>
 				);
 			})}
-		</svg>
+		</>
 	);
 }

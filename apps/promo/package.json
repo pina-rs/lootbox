@@ -1,0 +1,37 @@
+{
+	"name": "@pina-rs/lootbox-promo",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Promo videos for lootbox.so, made with Remotion from the site's own components",
+	"license": "Apache-2.0",
+	"type": "module",
+	"scripts": {
+		"studio": "remotion studio src/index.ts",
+		"render": "tsx scripts/render.ts",
+		"audio": "node audio/render.ts",
+		"check": "tsc --noEmit && tsc -p audio",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@fontsource-variable/nunito": "^5.2.7",
+		"@fontsource/bungee": "^5.3.0",
+		"@pina-rs/exclusive-nft-art": "workspace:*",
+		"@pina-rs/lootbox-brand": "workspace:*",
+		"@pina-rs/lootbox-platform": "workspace:*",
+		"@pina-rs/lootbox-ui": "workspace:*",
+		"react": "^19.3.0",
+		"react-dom": "^19.3.0",
+		"remotion": "4.0.529"
+	},
+	"devDependencies": {
+		"@remotion/bundler": "4.0.529",
+		"@remotion/cli": "4.0.529",
+		"@remotion/renderer": "4.0.529",
+		"@types/node": "^26.6.2",
+		"@types/react": "^19.3.0",
+		"@types/react-dom": "^19.3.0",
+		"tsx": "4.23.13",
+		"typescript": "^7.0.2",
+		"vitest": "^5.0.2"
+	}
+}

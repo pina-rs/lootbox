@@ -1,0 +1,79 @@
+{
+	"title": "treasure-hop-15",
+	"bpm": 116,
+	"beatsPerBar": 4,
+	"beatSeconds": 0.5172,
+	"barSeconds": 2.069,
+	"sampleRate": 48000,
+	"durationSeconds": 14.1138,
+	"swing": {
+		"unit": 0.25,
+		"ratio": 0.56
+	},
+	"sections": [
+		{
+			"name": "intro",
+			"startBar": 1,
+			"bars": 2,
+			"startSeconds": 0,
+			"endSeconds": 4.1379
+		},
+		{
+			"name": "A",
+			"startBar": 3,
+			"bars": 4,
+			"startSeconds": 4.1379,
+			"endSeconds": 12.4138
+		},
+		{
+			"name": "button",
+			"startBar": 7,
+			"bars": 1,
+			"startSeconds": 12.4138,
+			"endSeconds": 14.1138
+		}
+	],
+	"bars": [
+		{
+			"bar": 1,
+			"startSeconds": 0,
+			"section": "intro"
+		},
+		{
+			"bar": 2,
+			"startSeconds": 2.069,
+			"section": "intro"
+		},
+		{
+			"bar": 3,
+			"startSeconds": 4.1379,
+			"section": "A"
+		},
+		{
+			"bar": 4,
+			"startSeconds": 6.2069,
+			"section": "A"
+		},
+		{
+			"bar": 5,
+			"startSeconds": 8.2759,
+			"section": "A"
+		},
+		{
+			"bar": 6,
+			"startSeconds": 10.3448,
+			"section": "A"
+		},
+		{
+			"bar": 7,
+			"startSeconds": 12.4138,
+			"section": "button"
+		}
+	],
+	"markers": [
+		{
+			"name": "button",
+			"seconds": 12.4138
+		}
+	]
+}

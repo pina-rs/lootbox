@@ -1,0 +1,196 @@
+{
+	"title": "vault-lofi",
+	"bpm": 84,
+	"beatsPerBar": 4,
+	"beatSeconds": 0.7143,
+	"barSeconds": 2.8571,
+	"sampleRate": 48000,
+	"durationSeconds": 74.6286,
+	"swing": {
+		"unit": 0.25,
+		"ratio": 0.64
+	},
+	"sections": [
+		{
+			"name": "intro",
+			"startBar": 1,
+			"bars": 4,
+			"startSeconds": 0,
+			"endSeconds": 11.4286
+		},
+		{
+			"name": "core",
+			"startBar": 5,
+			"bars": 8,
+			"startSeconds": 11.4286,
+			"endSeconds": 34.2857
+		},
+		{
+			"name": "core + melody",
+			"startBar": 13,
+			"bars": 8,
+			"startSeconds": 34.2857,
+			"endSeconds": 57.1429
+		},
+		{
+			"name": "breakdown",
+			"startBar": 21,
+			"bars": 4,
+			"startSeconds": 57.1429,
+			"endSeconds": 68.5714
+		},
+		{
+			"name": "ending",
+			"startBar": 25,
+			"bars": 2,
+			"startSeconds": 68.5714,
+			"endSeconds": 74.2857
+		}
+	],
+	"bars": [
+		{
+			"bar": 1,
+			"startSeconds": 0,
+			"section": "intro"
+		},
+		{
+			"bar": 2,
+			"startSeconds": 2.8571,
+			"section": "intro"
+		},
+		{
+			"bar": 3,
+			"startSeconds": 5.7143,
+			"section": "intro"
+		},
+		{
+			"bar": 4,
+			"startSeconds": 8.5714,
+			"section": "intro"
+		},
+		{
+			"bar": 5,
+			"startSeconds": 11.4286,
+			"section": "core"
+		},
+		{
+			"bar": 6,
+			"startSeconds": 14.2857,
+			"section": "core"
+		},
+		{
+			"bar": 7,
+			"startSeconds": 17.1429,
+			"section": "core"
+		},
+		{
+			"bar": 8,
+			"startSeconds": 20,
+			"section": "core"
+		},
+		{
+			"bar": 9,
+			"startSeconds": 22.8571,
+			"section": "core"
+		},
+		{
+			"bar": 10,
+			"startSeconds": 25.7143,
+			"section": "core"
+		},
+		{
+			"bar": 11,
+			"startSeconds": 28.5714,
+			"section": "core"
+		},
+		{
+			"bar": 12,
+			"startSeconds": 31.4286,
+			"section": "core"
+		},
+		{
+			"bar": 13,
+			"startSeconds": 34.2857,
+			"section": "core + melody"
+		},
+		{
+			"bar": 14,
+			"startSeconds": 37.1429,
+			"section": "core + melody"
+		},
+		{
+			"bar": 15,
+			"startSeconds": 40,
+			"section": "core + melody"
+		},
+		{
+			"bar": 16,
+			"startSeconds": 42.8571,
+			"section": "core + melody"
+		},
+		{
+			"bar": 17,
+			"startSeconds": 45.7143,
+			"section": "core + melody"
+		},
+		{
+			"bar": 18,
+			"startSeconds": 48.5714,
+			"section": "core + melody"
+		},
+		{
+			"bar": 19,
+			"startSeconds": 51.4286,
+			"section": "core + melody"
+		},
+		{
+			"bar": 20,
+			"startSeconds": 54.2857,
+			"section": "core + melody"
+		},
+		{
+			"bar": 21,
+			"startSeconds": 57.1429,
+			"section": "breakdown"
+		},
+		{
+			"bar": 22,
+			"startSeconds": 60,
+			"section": "breakdown"
+		},
+		{
+			"bar": 23,
+			"startSeconds": 62.8571,
+			"section": "breakdown"
+		},
+		{
+			"bar": 24,
+			"startSeconds": 65.7143,
+			"section": "breakdown"
+		},
+		{
+			"bar": 25,
+			"startSeconds": 68.5714,
+			"section": "ending"
+		},
+		{
+			"bar": 26,
+			"startSeconds": 71.4286,
+			"section": "ending"
+		}
+	],
+	"markers": [
+		{
+			"name": "final chord",
+			"seconds": 71.4286
+		},
+		{
+			"name": "loop start",
+			"seconds": 11.4286
+		},
+		{
+			"name": "loop end",
+			"seconds": 34.2857
+		}
+	]
+}

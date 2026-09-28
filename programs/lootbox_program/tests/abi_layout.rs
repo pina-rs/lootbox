@@ -6,7 +6,7 @@
 //! check` fails when this file no longer matches the manifest. A layout
 //! change that forgets an offset fails `cargo test` in the same change.
 
-// manifest-sha256: ed8e7491c686e57f1c3ef6ca42b60f280f2164e749d553d00a2ee9d57191b833
+// manifest-sha256: c0f779858f75db3516bcc2e32204b6b22afe9e176905084c7f98b030165c72ad
 // program-id: LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E
 // version_type: u8
 
@@ -25,7 +25,8 @@ pub mod account_1_01 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "bc03a72604d1dabaa7a02c2cd063fc6c95835abbff83008b6e9e5c6bf7c8e610";
+	pub const SCHEMA_SHA256: &str =
+		"bc03a72604d1dabaa7a02c2cd063fc6c95835abbff83008b6e9e5c6bf7c8e610";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -72,7 +73,8 @@ pub mod account_1_02 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "d575b4d0181266eddf506390ec276f74b98b22de04f642005cf7a3af603757f3";
+	pub const SCHEMA_SHA256: &str =
+		"d575b4d0181266eddf506390ec276f74b98b22de04f642005cf7a3af603757f3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -104,7 +106,8 @@ pub mod account_1_03 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "248663ff7d5739b94c3f404fe34cac1b3b05ef0958edd2e66b3fc56473facad0";
+	pub const SCHEMA_SHA256: &str =
+		"248663ff7d5739b94c3f404fe34cac1b3b05ef0958edd2e66b3fc56473facad0";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -141,7 +144,8 @@ pub mod account_1_04 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "5e7d888a8d0c2daac0387b8e75ba02fe6c7e656b659339249b8f143c5f0c3f5e";
+	pub const SCHEMA_SHA256: &str =
+		"5e7d888a8d0c2daac0387b8e75ba02fe6c7e656b659339249b8f143c5f0c3f5e";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -169,7 +173,8 @@ pub mod account_1_05 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "28a5554a01f2d4fc8bb7e46e4b5c10e5d288c29e5c6a5224717f8ec3ef2fe589";
+	pub const SCHEMA_SHA256: &str =
+		"28a5554a01f2d4fc8bb7e46e4b5c10e5d288c29e5c6a5224717f8ec3ef2fe589";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -214,7 +219,8 @@ pub mod account_1_06 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "2df0d3c96d9839cc49d5f0b753b47534d855b30edc7ef60f3f5ff6ce3625312c";
+	pub const SCHEMA_SHA256: &str =
+		"2df0d3c96d9839cc49d5f0b753b47534d855b30edc7ef60f3f5ff6ce3625312c";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -262,7 +268,8 @@ pub mod account_1_07 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "86b0574cf7921f2bd48137052f6f1470c3aca19886265318acc1e4645d72f739";
+	pub const SCHEMA_SHA256: &str =
+		"86b0574cf7921f2bd48137052f6f1470c3aca19886265318acc1e4645d72f739";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -305,7 +312,8 @@ pub mod account_1_08 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "3d0b548475a1e493003540ab8560f68751186b3d49ce7f7805818ee8e501efee";
+	pub const SCHEMA_SHA256: &str =
+		"3d0b548475a1e493003540ab8560f68751186b3d49ce7f7805818ee8e501efee";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -333,7 +341,8 @@ pub mod account_1_09 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "bb9687af7bebe5884c8fbb97ed73d270b52900bad969a03f453608a4aae135e1";
+	pub const SCHEMA_SHA256: &str =
+		"bb9687af7bebe5884c8fbb97ed73d270b52900bad969a03f453608a4aae135e1";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -355,7 +364,11 @@ pub mod account_1_09 {
 		("data_hash", MIGRATION_HEADER_SIZE + 64, 32),
 		("creator_hash", MIGRATION_HEADER_SIZE + 96, 32),
 		("semantic_metadata_hash", MIGRATION_HEADER_SIZE + 128, 32),
-		("previous_manifest_accumulator", MIGRATION_HEADER_SIZE + 160, 32),
+		(
+			"previous_manifest_accumulator",
+			MIGRATION_HEADER_SIZE + 160,
+			32,
+		),
 		("nonce", MIGRATION_HEADER_SIZE + 192, 8),
 		("tree_index", MIGRATION_HEADER_SIZE + 200, 4),
 		("pool_index", MIGRATION_HEADER_SIZE + 204, 4),
@@ -373,7 +386,8 @@ pub mod account_1_0a {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "433966e365819ff7895dd5222ba721c8060e389743f70f301ce18293617d278c";
+	pub const SCHEMA_SHA256: &str =
+		"433966e365819ff7895dd5222ba721c8060e389743f70f301ce18293617d278c";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -419,7 +433,8 @@ pub mod account_1_0b {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "31862b7d10d7f23b193fce5a29493620c7225bae90515c7f20de6b3d15a72e21";
+	pub const SCHEMA_SHA256: &str =
+		"31862b7d10d7f23b193fce5a29493620c7225bae90515c7f20de6b3d15a72e21";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -449,6 +464,48 @@ pub mod account_1_0b {
 	];
 }
 
+/// ABI layout for the `BoxCurveState` account.
+pub mod account_1_0c {
+	/// Manifest contract key.
+	pub const KEY: &str = "account:1:0c";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "BoxCurveState";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str =
+		"d9a32f36f39ab295129546ea61053031bccd1eb58964782f0d7a2618afdc3222";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 155;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 155;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("template", MIGRATION_HEADER_SIZE + 0, 32),
+		("box_mint", MIGRATION_HEADER_SIZE + 32, 32),
+		("authority", MIGRATION_HEADER_SIZE + 64, 32),
+		("inventory", MIGRATION_HEADER_SIZE + 96, 8),
+		("sold", MIGRATION_HEADER_SIZE + 104, 8),
+		("start_price", MIGRATION_HEADER_SIZE + 112, 8),
+		("price_step", MIGRATION_HEADER_SIZE + 120, 8),
+		("reserve", MIGRATION_HEADER_SIZE + 128, 8),
+		("closes_at", MIGRATION_HEADER_SIZE + 136, 8),
+		("sold_out_at", MIGRATION_HEADER_SIZE + 144, 8),
+		("fee_bps", MIGRATION_HEADER_SIZE + 152, 2),
+		("bump", MIGRATION_HEADER_SIZE + 154, 1),
+	];
+}
+
 /// ABI layout for the `ExclusiveNftMintedEvent` event.
 pub mod event_1_01 {
 	/// Manifest contract key.
@@ -458,7 +515,8 @@ pub mod event_1_01 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "239f68b6a777f467ad3dc755fd76c273a41fc6747ea33c3031e0e5482d8ed5c2";
+	pub const SCHEMA_SHA256: &str =
+		"239f68b6a777f467ad3dc755fd76c273a41fc6747ea33c3031e0e5482d8ed5c2";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -488,6 +546,43 @@ pub mod event_1_01 {
 	];
 }
 
+/// ABI layout for the `BoxCurveTradedEvent` event.
+pub mod event_1_02 {
+	/// Manifest contract key.
+	pub const KEY: &str = "event:1:02";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "BoxCurveTradedEvent";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str =
+		"93ab13ba2a716cf4d1258cfca0d9d2644c88b0b3af682e4d460f14f1a1e26105";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 97;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 97;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("curve", MIGRATION_HEADER_SIZE + 0, 32),
+		("trader", MIGRATION_HEADER_SIZE + 32, 32),
+		("count", MIGRATION_HEADER_SIZE + 64, 8),
+		("lamports", MIGRATION_HEADER_SIZE + 72, 8),
+		("fee", MIGRATION_HEADER_SIZE + 80, 8),
+		("sold_after", MIGRATION_HEADER_SIZE + 88, 8),
+		("side", MIGRATION_HEADER_SIZE + 96, 1),
+	];
+}
+
 /// ABI layout for the `CreateLootboxInstruction` instruction.
 pub mod instruction_1_00 {
 	/// Manifest contract key.
@@ -497,7 +592,8 @@ pub mod instruction_1_00 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "1487a75eae30f677fb53769b430b49db531d1d264ced5dab453ca27e720790dd";
+	pub const SCHEMA_SHA256: &str =
+		"1487a75eae30f677fb53769b430b49db531d1d264ced5dab453ca27e720790dd";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -532,7 +628,8 @@ pub mod instruction_1_01 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "d49eee3181eceaec625d453fd04003ff270d218136c5f5e4b022f609cee3f14c";
+	pub const SCHEMA_SHA256: &str =
+		"d49eee3181eceaec625d453fd04003ff270d218136c5f5e4b022f609cee3f14c";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -563,7 +660,8 @@ pub mod instruction_1_02 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "cfc360b75f5544f71540aa1b2c65bc033bbaee9cc497ad3cd4d4315263a14df5";
+	pub const SCHEMA_SHA256: &str =
+		"cfc360b75f5544f71540aa1b2c65bc033bbaee9cc497ad3cd4d4315263a14df5";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -579,9 +677,7 @@ pub mod instruction_1_02 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 8;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("lamports", MIGRATION_HEADER_SIZE + 0, 8),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("lamports", MIGRATION_HEADER_SIZE + 0, 8)];
 }
 
 /// ABI layout for the `SealInstruction` instruction.
@@ -593,7 +689,8 @@ pub mod instruction_1_03 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -609,8 +706,7 @@ pub mod instruction_1_03 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `MintBoxesInstruction` instruction.
@@ -622,7 +718,8 @@ pub mod instruction_1_04 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "b883a87466c9662fda9abde04df710e5eb31718b0d9dd740c4de1da8980eea96";
+	pub const SCHEMA_SHA256: &str =
+		"b883a87466c9662fda9abde04df710e5eb31718b0d9dd740c4de1da8980eea96";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -638,9 +735,7 @@ pub mod instruction_1_04 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 8;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("amount", MIGRATION_HEADER_SIZE + 0, 8),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("amount", MIGRATION_HEADER_SIZE + 0, 8)];
 }
 
 /// ABI layout for the `RequestOpenInstruction` instruction.
@@ -652,7 +747,8 @@ pub mod instruction_1_05 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "082959ace74e847c6d780d7f4a4bff0f16e3fd956d0b89edd1b5dec7e0222ac2";
+	pub const SCHEMA_SHA256: &str =
+		"082959ace74e847c6d780d7f4a4bff0f16e3fd956d0b89edd1b5dec7e0222ac2";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -683,7 +779,8 @@ pub mod instruction_1_06 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "2381fa20e8f075f6b1b9309ded76fbf9e03e5b64ce830c1e21d0d8e25dabd0fc";
+	pub const SCHEMA_SHA256: &str =
+		"2381fa20e8f075f6b1b9309ded76fbf9e03e5b64ce830c1e21d0d8e25dabd0fc";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -715,7 +812,8 @@ pub mod instruction_1_07 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -731,8 +829,7 @@ pub mod instruction_1_07 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `CloseOpeningInstruction` instruction.
@@ -744,7 +841,8 @@ pub mod instruction_1_08 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -760,8 +858,7 @@ pub mod instruction_1_08 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `WithdrawSurplusInstruction` instruction.
@@ -773,7 +870,8 @@ pub mod instruction_1_09 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "cfc360b75f5544f71540aa1b2c65bc033bbaee9cc497ad3cd4d4315263a14df5";
+	pub const SCHEMA_SHA256: &str =
+		"cfc360b75f5544f71540aa1b2c65bc033bbaee9cc497ad3cd4d4315263a14df5";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -789,9 +887,7 @@ pub mod instruction_1_09 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 8;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("lamports", MIGRATION_HEADER_SIZE + 0, 8),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("lamports", MIGRATION_HEADER_SIZE + 0, 8)];
 }
 
 /// ABI layout for the `CreateTemplateInstruction` instruction.
@@ -803,7 +899,8 @@ pub mod instruction_1_0a {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "1ed31f8d0fe6b319770ed9c774b2ea7ddd19c471f95ca75a95ad754713041182";
+	pub const SCHEMA_SHA256: &str =
+		"1ed31f8d0fe6b319770ed9c774b2ea7ddd19c471f95ca75a95ad754713041182";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -841,7 +938,8 @@ pub mod instruction_1_0b {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "117ebf0aa90f3019334f95450919caa5184d6131397ea9be31649fda41ed5e56";
+	pub const SCHEMA_SHA256: &str =
+		"117ebf0aa90f3019334f95450919caa5184d6131397ea9be31649fda41ed5e56";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -873,7 +971,8 @@ pub mod instruction_1_0c {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "1c6418912055ee56cf8f10a726183fcefea86be1fb70e8c3a7ed5a01a5218c90";
+	pub const SCHEMA_SHA256: &str =
+		"1c6418912055ee56cf8f10a726183fcefea86be1fb70e8c3a7ed5a01a5218c90";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -889,9 +988,8 @@ pub mod instruction_1_0c {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 8;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("lamports_per_win", MIGRATION_HEADER_SIZE + 0, 8),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] =
+		&[("lamports_per_win", MIGRATION_HEADER_SIZE + 0, 8)];
 }
 
 /// ABI layout for the `FundTokenPrizeInstruction` instruction.
@@ -903,7 +1001,8 @@ pub mod instruction_1_0d {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "cd7ad2ccf64183ccf0508815bbe96f2e8f6f34a50fb03e518ed4bf575248b6da";
+	pub const SCHEMA_SHA256: &str =
+		"cd7ad2ccf64183ccf0508815bbe96f2e8f6f34a50fb03e518ed4bf575248b6da";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -934,7 +1033,8 @@ pub mod instruction_1_0e {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -950,8 +1050,7 @@ pub mod instruction_1_0e {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `MintTemplateBoxesInstruction` instruction.
@@ -963,7 +1062,8 @@ pub mod instruction_1_0f {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "b883a87466c9662fda9abde04df710e5eb31718b0d9dd740c4de1da8980eea96";
+	pub const SCHEMA_SHA256: &str =
+		"b883a87466c9662fda9abde04df710e5eb31718b0d9dd740c4de1da8980eea96";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -979,9 +1079,7 @@ pub mod instruction_1_0f {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 8;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("amount", MIGRATION_HEADER_SIZE + 0, 8),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("amount", MIGRATION_HEADER_SIZE + 0, 8)];
 }
 
 /// ABI layout for the `RequestTemplateOpenInstruction` instruction.
@@ -993,7 +1091,8 @@ pub mod instruction_1_10 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "0e2ac2f49314806cb9e00331bff39db346a4e6b8ac7ce681e37563ec5de1ca4e";
+	pub const SCHEMA_SHA256: &str =
+		"0e2ac2f49314806cb9e00331bff39db346a4e6b8ac7ce681e37563ec5de1ca4e";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1027,7 +1126,8 @@ pub mod instruction_1_11 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "2381fa20e8f075f6b1b9309ded76fbf9e03e5b64ce830c1e21d0d8e25dabd0fc";
+	pub const SCHEMA_SHA256: &str =
+		"2381fa20e8f075f6b1b9309ded76fbf9e03e5b64ce830c1e21d0d8e25dabd0fc";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1059,7 +1159,8 @@ pub mod instruction_1_12 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "40165723a35d11cbbb4ee385822d4aec7c8f977f3b947e17238913de68a5f2e2";
+	pub const SCHEMA_SHA256: &str =
+		"40165723a35d11cbbb4ee385822d4aec7c8f977f3b947e17238913de68a5f2e2";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1075,9 +1176,8 @@ pub mod instruction_1_12 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("result_receipt_bump", MIGRATION_HEADER_SIZE + 0, 1),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] =
+		&[("result_receipt_bump", MIGRATION_HEADER_SIZE + 0, 1)];
 }
 
 /// ABI layout for the `ClaimSolPrizeInstruction` instruction.
@@ -1089,7 +1189,8 @@ pub mod instruction_1_13 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
+	pub const SCHEMA_SHA256: &str =
+		"023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1105,9 +1206,7 @@ pub mod instruction_1_13 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("asset_index", MIGRATION_HEADER_SIZE + 0, 1)];
 }
 
 /// ABI layout for the `ClaimTokenPrizeInstruction` instruction.
@@ -1119,7 +1218,8 @@ pub mod instruction_1_14 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
+	pub const SCHEMA_SHA256: &str =
+		"023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1135,9 +1235,7 @@ pub mod instruction_1_14 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("asset_index", MIGRATION_HEADER_SIZE + 0, 1)];
 }
 
 /// ABI layout for the `RetireTemplateInstruction` instruction.
@@ -1149,7 +1247,8 @@ pub mod instruction_1_15 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1165,8 +1264,7 @@ pub mod instruction_1_15 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `ReclaimSolPrizeInstruction` instruction.
@@ -1178,7 +1276,8 @@ pub mod instruction_1_16 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
+	pub const SCHEMA_SHA256: &str =
+		"023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1194,9 +1293,7 @@ pub mod instruction_1_16 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("asset_index", MIGRATION_HEADER_SIZE + 0, 1)];
 }
 
 /// ABI layout for the `ReclaimTokenPrizeInstruction` instruction.
@@ -1208,7 +1305,8 @@ pub mod instruction_1_17 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
+	pub const SCHEMA_SHA256: &str =
+		"023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1224,9 +1322,7 @@ pub mod instruction_1_17 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("asset_index", MIGRATION_HEADER_SIZE + 0, 1)];
 }
 
 /// ABI layout for the `CloseTemplateOpeningInstruction` instruction.
@@ -1238,7 +1334,8 @@ pub mod instruction_1_18 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1254,8 +1351,7 @@ pub mod instruction_1_18 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `ActivateBundleInstruction` instruction.
@@ -1267,7 +1363,8 @@ pub mod instruction_1_19 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1283,8 +1380,7 @@ pub mod instruction_1_19 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `CancelBundleInstruction` instruction.
@@ -1296,7 +1392,8 @@ pub mod instruction_1_1a {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1312,8 +1409,7 @@ pub mod instruction_1_1a {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `FundMetadataNftPrizeInstruction` instruction.
@@ -1325,7 +1421,8 @@ pub mod instruction_1_1b {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1341,8 +1438,7 @@ pub mod instruction_1_1b {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `ClaimMetadataNftPrizeInstruction` instruction.
@@ -1354,7 +1450,8 @@ pub mod instruction_1_1c {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
+	pub const SCHEMA_SHA256: &str =
+		"023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1370,9 +1467,7 @@ pub mod instruction_1_1c {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("asset_index", MIGRATION_HEADER_SIZE + 0, 1)];
 }
 
 /// ABI layout for the `ReclaimMetadataNftPrizeInstruction` instruction.
@@ -1384,7 +1479,8 @@ pub mod instruction_1_1d {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
+	pub const SCHEMA_SHA256: &str =
+		"023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1400,9 +1496,7 @@ pub mod instruction_1_1d {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("asset_index", MIGRATION_HEADER_SIZE + 0, 1)];
 }
 
 /// ABI layout for the `FundCoreAssetPrizeInstruction` instruction.
@@ -1414,7 +1508,8 @@ pub mod instruction_1_1e {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1430,8 +1525,7 @@ pub mod instruction_1_1e {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `ClaimCoreAssetPrizeInstruction` instruction.
@@ -1443,7 +1537,8 @@ pub mod instruction_1_1f {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
+	pub const SCHEMA_SHA256: &str =
+		"023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1459,9 +1554,7 @@ pub mod instruction_1_1f {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("asset_index", MIGRATION_HEADER_SIZE + 0, 1)];
 }
 
 /// ABI layout for the `ReclaimCoreAssetPrizeInstruction` instruction.
@@ -1473,7 +1566,8 @@ pub mod instruction_1_20 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
+	pub const SCHEMA_SHA256: &str =
+		"023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1489,9 +1583,7 @@ pub mod instruction_1_20 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("asset_index", MIGRATION_HEADER_SIZE + 0, 1)];
 }
 
 /// ABI layout for the `FundCompressedNftPrizeInstruction` instruction.
@@ -1503,7 +1595,8 @@ pub mod instruction_1_21 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "d79b66bd48830e344f270d270c946c0d371bb5f1b498d0ce2a055a63d817121f";
+	pub const SCHEMA_SHA256: &str =
+		"d79b66bd48830e344f270d270c946c0d371bb5f1b498d0ce2a055a63d817121f";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1537,7 +1630,8 @@ pub mod instruction_1_22 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "e55e9741bf82ce849f742636fe3d2b828c4cf73e963e12eb7824fd857a1dd63c";
+	pub const SCHEMA_SHA256: &str =
+		"e55e9741bf82ce849f742636fe3d2b828c4cf73e963e12eb7824fd857a1dd63c";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1572,7 +1666,8 @@ pub mod instruction_1_23 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "e55e9741bf82ce849f742636fe3d2b828c4cf73e963e12eb7824fd857a1dd63c";
+	pub const SCHEMA_SHA256: &str =
+		"e55e9741bf82ce849f742636fe3d2b828c4cf73e963e12eb7824fd857a1dd63c";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1607,7 +1702,8 @@ pub mod instruction_1_24 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1623,8 +1719,7 @@ pub mod instruction_1_24 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `LockTreasuryInstruction` instruction.
@@ -1636,7 +1731,8 @@ pub mod instruction_1_25 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "345fdec293a3746bd0bd98e6cfb3b7609a016dec5e0302895b6b98deb5503d96";
+	pub const SCHEMA_SHA256: &str =
+		"345fdec293a3746bd0bd98e6cfb3b7609a016dec5e0302895b6b98deb5503d96";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1652,9 +1748,8 @@ pub mod instruction_1_25 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("service_vault_bump", MIGRATION_HEADER_SIZE + 0, 1),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] =
+		&[("service_vault_bump", MIGRATION_HEADER_SIZE + 0, 1)];
 }
 
 /// ABI layout for the `CloseServiceVaultInstruction` instruction.
@@ -1666,7 +1761,8 @@ pub mod instruction_1_26 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1682,8 +1778,7 @@ pub mod instruction_1_26 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `FundQuoteSolPrizeInstruction` instruction.
@@ -1695,7 +1790,8 @@ pub mod instruction_1_27 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "1c6418912055ee56cf8f10a726183fcefea86be1fb70e8c3a7ed5a01a5218c90";
+	pub const SCHEMA_SHA256: &str =
+		"1c6418912055ee56cf8f10a726183fcefea86be1fb70e8c3a7ed5a01a5218c90";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1711,9 +1807,8 @@ pub mod instruction_1_27 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 8;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("lamports_per_win", MIGRATION_HEADER_SIZE + 0, 8),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] =
+		&[("lamports_per_win", MIGRATION_HEADER_SIZE + 0, 8)];
 }
 
 /// ABI layout for the `FundQuoteTokenPrizeInstruction` instruction.
@@ -1725,7 +1820,8 @@ pub mod instruction_1_28 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "f5d9b44278cf1cde3738d6ea81bf89ee03ec4903d0fa8a4152b79403bfb42a41";
+	pub const SCHEMA_SHA256: &str =
+		"f5d9b44278cf1cde3738d6ea81bf89ee03ec4903d0fa8a4152b79403bfb42a41";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1741,9 +1837,7 @@ pub mod instruction_1_28 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 8;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("amount_per_win", MIGRATION_HEADER_SIZE + 0, 8),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("amount_per_win", MIGRATION_HEADER_SIZE + 0, 8)];
 }
 
 /// ABI layout for the `FundMintPrizeInstruction` instruction.
@@ -1755,7 +1849,8 @@ pub mod instruction_1_29 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1771,8 +1866,7 @@ pub mod instruction_1_29 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `ClaimMintPrizeInstruction` instruction.
@@ -1784,7 +1878,8 @@ pub mod instruction_1_2a {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
+	pub const SCHEMA_SHA256: &str =
+		"023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1800,9 +1895,7 @@ pub mod instruction_1_2a {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("asset_index", MIGRATION_HEADER_SIZE + 0, 1)];
 }
 
 /// ABI layout for the `ReclaimMintPrizeInstruction` instruction.
@@ -1814,7 +1907,8 @@ pub mod instruction_1_2b {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
+	pub const SCHEMA_SHA256: &str =
+		"023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1830,9 +1924,7 @@ pub mod instruction_1_2b {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("asset_index", MIGRATION_HEADER_SIZE + 0, 1)];
 }
 
 /// ABI layout for the `CreatePrizePoolInstruction` instruction.
@@ -1844,7 +1936,8 @@ pub mod instruction_1_2c {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "e680fd8aaf950180e42b11b8dab60550d96e978bca1ce72ce2f309861ad0a9bc";
+	pub const SCHEMA_SHA256: &str =
+		"e680fd8aaf950180e42b11b8dab60550d96e978bca1ce72ce2f309861ad0a9bc";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1875,7 +1968,8 @@ pub mod instruction_1_2d {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "d79b66bd48830e344f270d270c946c0d371bb5f1b498d0ce2a055a63d817121f";
+	pub const SCHEMA_SHA256: &str =
+		"d79b66bd48830e344f270d270c946c0d371bb5f1b498d0ce2a055a63d817121f";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1909,7 +2003,8 @@ pub mod instruction_1_2e {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1925,8 +2020,7 @@ pub mod instruction_1_2e {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `AllocatePrizePoolOpenInstruction` instruction.
@@ -1938,7 +2032,8 @@ pub mod instruction_1_2f {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "40165723a35d11cbbb4ee385822d4aec7c8f977f3b947e17238913de68a5f2e2";
+	pub const SCHEMA_SHA256: &str =
+		"40165723a35d11cbbb4ee385822d4aec7c8f977f3b947e17238913de68a5f2e2";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -1954,9 +2049,8 @@ pub mod instruction_1_2f {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("result_receipt_bump", MIGRATION_HEADER_SIZE + 0, 1),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] =
+		&[("result_receipt_bump", MIGRATION_HEADER_SIZE + 0, 1)];
 }
 
 /// ABI layout for the `ClaimPrizePoolItemInstruction` instruction.
@@ -1968,7 +2062,8 @@ pub mod instruction_1_30 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "ef91ef034f61fe977544454a7eee0d65fd22b144c1c392f0cbf4bd5e3d4b6e4d";
+	pub const SCHEMA_SHA256: &str =
+		"ef91ef034f61fe977544454a7eee0d65fd22b144c1c392f0cbf4bd5e3d4b6e4d";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -2004,7 +2099,8 @@ pub mod instruction_1_31 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "76aafa1ab9aee9f3c97392312dab2e73a0830e4c70374bd3da45c7235fa5cd39";
+	pub const SCHEMA_SHA256: &str =
+		"76aafa1ab9aee9f3c97392312dab2e73a0830e4c70374bd3da45c7235fa5cd39";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -2040,7 +2136,8 @@ pub mod instruction_1_32 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -2056,8 +2153,7 @@ pub mod instruction_1_32 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `PreparePrizePoolItemInstruction` instruction.
@@ -2069,7 +2165,8 @@ pub mod instruction_1_33 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "f2862aa34145e0352237ab929bf1ea8173296b8d5cfb46e0c5b08e87bf215ea5";
+	pub const SCHEMA_SHA256: &str =
+		"f2862aa34145e0352237ab929bf1ea8173296b8d5cfb46e0c5b08e87bf215ea5";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -2104,7 +2201,8 @@ pub mod instruction_1_34 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -2120,8 +2218,7 @@ pub mod instruction_1_34 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `CreateExclusiveCollectionInstruction` instruction.
@@ -2133,7 +2230,8 @@ pub mod instruction_1_35 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "8452d418460deb6bbfa7a82e1f408f886cf1943533eae1f99f137673c2dfe85b";
+	pub const SCHEMA_SHA256: &str =
+		"8452d418460deb6bbfa7a82e1f408f886cf1943533eae1f99f137673c2dfe85b";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -2170,7 +2268,8 @@ pub mod instruction_1_36 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "dc6b4c10e4e63e6a271fce37a94c3e91aa37a2c76af0876b50a6516de68a4924";
+	pub const SCHEMA_SHA256: &str =
+		"dc6b4c10e4e63e6a271fce37a94c3e91aa37a2c76af0876b50a6516de68a4924";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -2202,7 +2301,8 @@ pub mod instruction_1_37 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "c448547cc47d43dd89a8ad01976f8b798f553457bd7ac90fdb8a0ac45b9d3241";
+	pub const SCHEMA_SHA256: &str =
+		"c448547cc47d43dd89a8ad01976f8b798f553457bd7ac90fdb8a0ac45b9d3241";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -2233,7 +2333,8 @@ pub mod instruction_1_38 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -2249,8 +2350,7 @@ pub mod instruction_1_38 {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
 }
 
 /// ABI layout for the `AttachExclusiveNftInstruction` instruction.
@@ -2262,7 +2362,8 @@ pub mod instruction_1_39 {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "b63853e043f85694cd90807c67eb3dfee48b1c622d3a66c6eb4e33285a2bd1c4";
+	pub const SCHEMA_SHA256: &str =
+		"b63853e043f85694cd90807c67eb3dfee48b1c622d3a66c6eb4e33285a2bd1c4";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -2294,7 +2395,8 @@ pub mod instruction_1_3a {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
+	pub const SCHEMA_SHA256: &str =
+		"023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -2310,9 +2412,7 @@ pub mod instruction_1_3a {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
 	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
-	];
+	pub const FIELDS: &[(&str, usize, usize)] = &[("asset_index", MIGRATION_HEADER_SIZE + 0, 1)];
 }
 
 /// ABI layout for the `ReclaimExclusiveFeesInstruction` instruction.
@@ -2324,7 +2424,8 @@ pub mod instruction_1_3b {
 	/// Current schema version.
 	pub const VERSION: u32 = 0;
 	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
+	pub const SCHEMA_SHA256: &str =
+		"023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
 	/// Width of the discriminator in bytes.
 	pub const DISCRIMINATOR_BYTES: usize = 1;
 	/// Byte offset of the migration version field.
@@ -2340,8 +2441,133 @@ pub mod instruction_1_3b {
 	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
 	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[("asset_index", MIGRATION_HEADER_SIZE + 0, 1)];
+}
+
+/// ABI layout for the `OpenBoxCurveInstruction` instruction.
+pub mod instruction_1_3c {
+	/// Manifest contract key.
+	pub const KEY: &str = "instruction:1:3c";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "OpenBoxCurveInstruction";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str =
+		"76364f21734325905cd7fa862476da6a3dcc13576e7223a5c471532fa5a9c3bb";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 27;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 27;
+	/// `(name, absolute_offset, size)` in encoded bytes.
 	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
+		("inventory", MIGRATION_HEADER_SIZE + 0, 8),
+		("start_price", MIGRATION_HEADER_SIZE + 8, 8),
+		("price_step", MIGRATION_HEADER_SIZE + 16, 8),
+		("fee_bps", MIGRATION_HEADER_SIZE + 24, 2),
+		("bump", MIGRATION_HEADER_SIZE + 26, 1),
 	];
 }
 
+/// ABI layout for the `BuyCurveBoxesInstruction` instruction.
+pub mod instruction_1_3d {
+	/// Manifest contract key.
+	pub const KEY: &str = "instruction:1:3d";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "BuyCurveBoxesInstruction";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str =
+		"236c8e72ce4f46ac23e5f0679ee2a6e42ee308d44945c6f1c3e63d41bdead770";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 16;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 16;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("count", MIGRATION_HEADER_SIZE + 0, 8),
+		("max_lamports", MIGRATION_HEADER_SIZE + 8, 8),
+	];
+}
+
+/// ABI layout for the `SellCurveBoxesInstruction` instruction.
+pub mod instruction_1_3e {
+	/// Manifest contract key.
+	pub const KEY: &str = "instruction:1:3e";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "SellCurveBoxesInstruction";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str =
+		"df9c9328eab9c7fa317ee2efbe1853fa95676d6ebbd1c5b468f4231d0034ccec";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 16;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 16;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("count", MIGRATION_HEADER_SIZE + 0, 8),
+		("min_lamports", MIGRATION_HEADER_SIZE + 8, 8),
+	];
+}
+
+/// ABI layout for the `CloseBoxCurveInstruction` instruction.
+pub mod instruction_1_3f {
+	/// Manifest contract key.
+	pub const KEY: &str = "instruction:1:3f";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "CloseBoxCurveInstruction";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str =
+		"4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 0;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[];
+}

@@ -3,9 +3,11 @@
 
 export 'event_log.dart';
 export 'exclusive_nft_minted_event.dart';
+export 'box_curve_traded_event.dart';
 
 import 'event_log.dart';
 import 'exclusive_nft_minted_event.dart';
+import 'box_curve_traded_event.dart';
 
 /// Decode every `Program data:` line that names one of this program's events.
 ///
@@ -20,6 +22,11 @@ List<LootboxProgramEvent> parseLootboxProgramEventsFromLogs(List<String> logs) {
     );
     if (exclusiveNftMintedEvent != null) {
       discovered.add(exclusiveNftMintedEvent);
+      continue;
+    }
+    final boxCurveTradedEvent = parseBoxCurveTradedEventEventFromLog(log);
+    if (boxCurveTradedEvent != null) {
+      discovered.add(boxCurveTradedEvent);
       continue;
     }
   }

@@ -9,6 +9,9 @@ extern crate std;
 
 pub use lootbox_program_client as generated;
 
+mod curve;
+pub use curve::*;
+
 mod exclusive;
 pub use exclusive::*;
 

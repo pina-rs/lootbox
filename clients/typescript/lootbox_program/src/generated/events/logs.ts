@@ -15,6 +15,11 @@ import {
 	getExclusiveNftMintedEventEventDiscriminatorBytes,
 	type ExclusiveNftMintedEventEvent,
 } from "./exclusiveNftMintedEvent.js";
+import {
+	getBoxCurveTradedEventEventDecoder,
+	getBoxCurveTradedEventEventDiscriminatorBytes,
+	type BoxCurveTradedEventEvent,
+} from "./boxCurveTradedEvent.js";
 
 interface ExclusiveNftMintedEventEventProjectionStep {
 	readonly from: number;
@@ -166,10 +171,161 @@ function projectExclusiveNftMintedEventEvent(
 	return projected;
 }
 
+interface BoxCurveTradedEventEventProjectionStep {
+	readonly from: number;
+	readonly to: number;
+	readonly automatic: boolean;
+	readonly sourcePayloadSize: number;
+	readonly destinationPayloadSize: number;
+	readonly moves: readonly (readonly [number, number, number])[];
+}
+
+/**
+ * Adjacent projections derived from the checked-in migration manifest.
+ * Adjacent steps compose, mirroring the runtime's `normalize_event_data`.
+ */
+const BOX_CURVE_TRADED_EVENT_EVENT_PROJECTION_STEPS: readonly BoxCurveTradedEventEventProjectionStep[] = [
+
+];
+
+/** Versions whose adjacent transition is manual and not derivable in clients. */
+const BOX_CURVE_TRADED_EVENT_EVENT_MANUAL_VERSIONS: readonly number[] = [];
+
+const BOX_CURVE_TRADED_EVENT_EVENT_HEADER_SIZE = 2;
+const BOX_CURVE_TRADED_EVENT_EVENT_CURRENT_VERSION = 0;
+
+/** Raw event bytes with their source version and whether a projection ran. */
+export type NormalizedBoxCurveTradedEventEvent = {
+	name: "boxCurveTradedEvent";
+	data: BoxCurveTradedEventEvent;
+	sourceVersion: number;
+	wasMigrated: boolean;
+};
+
+/**
+ * Decode one event record, projecting historical versions into the current
+ * shape and retaining the version that actually wrote the bytes.
+ *
+ * Unknown, future, and non-projectable versions fail closed with the reason.
+ */
+export function normalizeBoxCurveTradedEventEvent(
+	data: ReadonlyUint8Array | Uint8Array,
+): NormalizedBoxCurveTradedEventEvent {
+	const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+	const discriminatorBytes = getBoxCurveTradedEventEventDiscriminatorBytes();
+	if (bytes.length < BOX_CURVE_TRADED_EVENT_EVENT_HEADER_SIZE) {
+		throw new RangeError(
+			`the provided data is too short for the "BoxCurveTradedEventEvent" event envelope`,
+		);
+	}
+	for (let index = 0; index < 1; index += 1) {
+		if (bytes[index] !== discriminatorBytes[index]) {
+			throw new RangeError(
+				'the provided data does not match the "BoxCurveTradedEventEvent" event discriminator.',
+			);
+		}
+	}
+	const sourceVersion = bytes[1];
+	if (sourceVersion === undefined) {
+		throw new RangeError("the event envelope has no version byte");
+	}
+	if (sourceVersion === BOX_CURVE_TRADED_EVENT_EVENT_CURRENT_VERSION) {
+		return {
+			name: "boxCurveTradedEvent",
+			data: getBoxCurveTradedEventEventDecoder().decode(bytes),
+			sourceVersion,
+			wasMigrated: false,
+		};
+	}
+	if (sourceVersion > BOX_CURVE_TRADED_EVENT_EVENT_CURRENT_VERSION) {
+		throw new RangeError(
+			`event migration version mismatch: expected 0, received ${sourceVersion} (the log was written by a newer program; upgrade this client)`,
+		);
+	}
+	const projected = projectBoxCurveTradedEventEvent(bytes, sourceVersion);
+	return {
+		name: "boxCurveTradedEvent",
+		data: getBoxCurveTradedEventEventDecoder().decode(projected),
+		sourceVersion,
+		wasMigrated: true,
+	};
+}
+
+/** One log entry that named this event. */
+export type DecodedBoxCurveTradedEventEvent = NormalizedBoxCurveTradedEventEvent;
+
+/**
+ * Decode a `Program data:` log line, or return `null` when the line is not
+ * this event.
+ *
+ * Lines that name the event but carry an unprojectable version throw.
+ */
+export function parseBoxCurveTradedEventEventFromLog(log: string): DecodedBoxCurveTradedEventEvent | null {
+	const prefix = "Program data: ";
+	if (!log.startsWith(prefix)) {
+		return null;
+	}
+	const bytes = getBase64Encoder().encode(log.slice(prefix.length));
+	if (bytes.length < 1) {
+		return null;
+	}
+	const discriminatorBytes = getBoxCurveTradedEventEventDiscriminatorBytes();
+	for (let index = 0; index < 1; index += 1) {
+		if (bytes[index] !== discriminatorBytes[index]) {
+			return null;
+		}
+	}
+	return normalizeBoxCurveTradedEventEvent(bytes);
+}
+
+function projectBoxCurveTradedEventEvent(
+	bytes: Uint8Array,
+	sourceVersion: number,
+): Uint8Array {
+	const discriminatorBytes = getBoxCurveTradedEventEventDiscriminatorBytes();
+	let version = sourceVersion;
+	let payload = bytes.slice(BOX_CURVE_TRADED_EVENT_EVENT_HEADER_SIZE);
+	while (version !== BOX_CURVE_TRADED_EVENT_EVENT_CURRENT_VERSION) {
+		const step = BOX_CURVE_TRADED_EVENT_EVENT_PROJECTION_STEPS.find(
+			(candidate) => candidate.from === version,
+		);
+		if (step === undefined || !step.automatic) {
+			const reason = BOX_CURVE_TRADED_EVENT_EVENT_MANUAL_VERSIONS.includes(version)
+				? "its adjacent transition is manual, so only an on-chain projection or a client generated from that schema can represent it"
+				: "this client has no checked-in projection for it";
+			throw new RangeError(
+				`event migration version mismatch: expected 0, received ${version} (${reason})`,
+			);
+		}
+		if (payload.length !== step.sourcePayloadSize) {
+			throw new RangeError(
+				`event migration version mismatch: expected 0, received ${version} (the log length does not match the v${version} schema)`,
+			);
+		}
+		const destination = new Uint8Array(step.destinationPayloadSize);
+		for (const [sourceOffset, destinationOffset, size] of step.moves) {
+			destination.set(
+				payload.subarray(sourceOffset, sourceOffset + size),
+				destinationOffset,
+			);
+		}
+		payload = destination;
+		version = step.to;
+	}
+
+	const projected = new Uint8Array(BOX_CURVE_TRADED_EVENT_EVENT_HEADER_SIZE + payload.length);
+	projected.set(discriminatorBytes, 0);
+	const header = 1;
+	projected[header] = 0;
+	projected.set(payload, BOX_CURVE_TRADED_EVENT_EVENT_HEADER_SIZE);
+	return projected;
+}
+
 
 /** Every event this program can emit, as decoded from a log line. */
 export type DecodedLootboxProgramEvent =
-	| DecodedExclusiveNftMintedEventEvent;
+	| DecodedExclusiveNftMintedEventEvent
+	| DecodedBoxCurveTradedEventEvent;
 
 /**
  * Decode every `Program data:` line that names one of this program's events.
@@ -186,6 +342,11 @@ export function parseLootboxProgramEventsFromLogs(
 		const exclusiveNftMintedEvent = parseExclusiveNftMintedEventEventFromLog(log);
 		if (exclusiveNftMintedEvent !== null) {
 			discovered.push(exclusiveNftMintedEvent);
+			continue;
+		}
+		const boxCurveTradedEvent = parseBoxCurveTradedEventEventFromLog(log);
+		if (boxCurveTradedEvent !== null) {
+			discovered.push(boxCurveTradedEvent);
 			continue;
 		}
 	}

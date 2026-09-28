@@ -29,6 +29,9 @@ pub use issuer_stock::*;
 mod exclusive_nft;
 pub use exclusive_nft::*;
 
+mod box_curve;
+pub use box_curve::*;
+
 const SEED_TEMPLATE: &[u8] = b"template";
 const SEED_BUNDLE: &[u8] = b"bundle";
 const SEED_TEMPLATE_OPENING: &[u8] = b"template-opening";

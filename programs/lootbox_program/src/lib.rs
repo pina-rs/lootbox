@@ -145,6 +145,15 @@ pub enum LootboxError {
 	InvalidExclusiveCollection = 35,
 	/// The Exclusive NFT collection is not accepting new attachments now.
 	ExclusiveAttachWindowClosed = 36,
+	/// The box curve's terms, accounts, or trade size are invalid.
+	InvalidBoxCurve = 37,
+	/// The box curve has sold out, or the lootbox's reveal closed trading.
+	BoxCurveClosed = 38,
+	/// The trade costs more, or returns less, than the caller allowed.
+	BoxCurveSlippage = 39,
+	/// A curve with boxes sold can close only after it sells out or trading
+	/// closes.
+	BoxCurveTrading = 40,
 }
 
 #[discriminator]
@@ -209,6 +218,10 @@ pub enum LootboxInstruction {
 	AttachExclusiveNft = 57,
 	ClaimExclusiveNft = 58,
 	ReclaimExclusiveFees = 59,
+	OpenBoxCurve = 60,
+	BuyCurveBoxes = 61,
+	SellCurveBoxes = 62,
+	CloseBoxCurve = 63,
 }
 
 #[discriminator]
@@ -224,11 +237,13 @@ pub enum LootboxAccountType {
 	PrizePoolItemState = 9,
 	ExclusiveCollectionState = 10,
 	ExclusiveAttachmentState = 11,
+	BoxCurveState = 12,
 }
 
 #[discriminator]
 pub enum LootboxEventType {
 	ExclusiveNftMinted = 1,
+	BoxCurveTraded = 2,
 }
 
 /// Immutable definition and live accounting for one lootbox mint.
@@ -1485,7 +1500,7 @@ fn assert_migration_slot_is_current<T: MigratableAccount>(
 ///
 /// Accounts are `[payer, systemProgram, lootbox, vault, opening, template,
 /// bundle, templateOpening, resultReceipt, prizePool, prizePoolItem,
-/// exclusiveCollection, exclusiveAttachment]`; every
+/// exclusiveCollection, exclusiveAttachment, boxCurve]`; every
 /// state slot is optional and skipped when it holds the program-address
 /// placeholder.
 fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> ProgramResult {
@@ -1500,6 +1515,7 @@ fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> Progra
 	assert_migration_slot_is_current::<PrizePoolItemState>(program_id, accounts, 10)?;
 	assert_migration_slot_is_current::<ExclusiveCollectionState>(program_id, accounts, 11)?;
 	assert_migration_slot_is_current::<ExclusiveAttachmentState>(program_id, accounts, 12)?;
+	assert_migration_slot_is_current::<BoxCurveState>(program_id, accounts, 13)?;
 
 	let mut context = MigrateContext::new(program_id, accounts, Some(MAX_MIGRATION_LAMPORTS))?;
 	context.run_optional::<LootboxState>(2)?;
@@ -1513,7 +1529,43 @@ fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> Progra
 	context.run_optional::<PrizePoolItemState>(10)?;
 	context.run_optional::<ExclusiveCollectionState>(11)?;
 	context.run_optional::<ExclusiveAttachmentState>(12)?;
+	context.run_optional::<BoxCurveState>(13)?;
 	Ok(())
+}
+
+/// Box-curve instructions, dispatched out of line.
+///
+/// Every arm of the main dispatcher keeps its own account-parsing slots in one
+/// SBF frame, and that frame has no room for four more. Routing the curve
+/// family through this second `process_instruction` keeps both frames under
+/// 4 KiB, and the IDL extractor still reads the canonical arms here.
+mod box_curve_dispatch {
+	use super::*;
+
+	#[inline(never)]
+	pub fn process_instruction(
+		program_id: &Address,
+		accounts: &mut [AccountView],
+		data: &[u8],
+	) -> ProgramResult {
+		let instruction: LootboxInstruction = parse_instruction(program_id, &ID, data)?;
+
+		match instruction {
+			LootboxInstruction::OpenBoxCurve => {
+				OpenBoxCurveAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::BuyCurveBoxes => {
+				BuyCurveBoxesAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::SellCurveBoxes => {
+				SellCurveBoxesAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::CloseBoxCurve => {
+				CloseBoxCurveAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			_ => Err(ProgramError::InvalidInstructionData),
+		}
+	}
 }
 
 /// Dispatches one validated lootbox instruction.
@@ -1711,6 +1763,14 @@ pub fn process_instruction(
 		}
 		LootboxInstruction::ReclaimExclusiveFees => {
 			ReclaimExclusiveFeesAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		// Bound rather than listed, so the IDL reads these arms from the
+		// curve dispatcher instead of recording them twice.
+		_curve @ (LootboxInstruction::OpenBoxCurve
+		| LootboxInstruction::BuyCurveBoxes
+		| LootboxInstruction::SellCurveBoxes
+		| LootboxInstruction::CloseBoxCurve) => {
+			box_curve_dispatch::process_instruction(program_id, accounts, data)
 		}
 	}
 }

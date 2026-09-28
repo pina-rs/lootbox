@@ -24,7 +24,14 @@ pub struct ReclaimExclusiveFees {
 }
 
 impl ReclaimExclusiveFees {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, exclusive_attachment: solana_pubkey::Pubkey, fee_vault: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		authority: solana_pubkey::Pubkey,
+		template: solana_pubkey::Pubkey,
+		box_mint: solana_pubkey::Pubkey,
+		bundle: solana_pubkey::Pubkey,
+		exclusive_attachment: solana_pubkey::Pubkey,
+		fee_vault: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			authority,
 			template,
@@ -36,7 +43,10 @@ impl ReclaimExclusiveFees {
 		}
 	}
 
-	pub fn instruction(&self, data: ReclaimExclusiveFeesInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: ReclaimExclusiveFeesInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -48,12 +58,24 @@ impl ReclaimExclusiveFees {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.template,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.box_mint,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.exclusive_attachment, false));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.exclusive_attachment,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.fee_vault, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.system_program,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -69,15 +91,20 @@ pub struct ReclaimExclusiveFeesInstructionData {
 }
 
 impl ReclaimExclusiveFeesInstructionData {
-	pub fn new(configure: impl FnOnce(&mut ReclaimExclusiveFeesInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut ReclaimExclusiveFeesInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<ReclaimExclusiveFeesInstructionWireZc>()];
-		<ReclaimExclusiveFeesInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
-			configure(data);
-			data.discriminator = RECLAIM_EXCLUSIVE_FEES_DISCRIMINATOR;
-			data.migration_version = RECLAIM_EXCLUSIVE_FEES_MIGRATION_VERSION;
-			Ok(())
-		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		<ReclaimExclusiveFeesInstructionWire as pina::PinaPodFixed>::initialize(
+			&mut bytes,
+			|data| {
+				configure(data);
+				data.discriminator = RECLAIM_EXCLUSIVE_FEES_DISCRIMINATOR;
+				data.migration_version = RECLAIM_EXCLUSIVE_FEES_MIGRATION_VERSION;
+				Ok(())
+			},
+		)
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

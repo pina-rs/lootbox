@@ -28,7 +28,14 @@ pub struct ForfeitTemplateOpen {
 }
 
 impl ForfeitTemplateOpen {
-	pub fn new(caller: solana_pubkey::Pubkey, beneficiary: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, service_vault: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		caller: solana_pubkey::Pubkey,
+		beneficiary: solana_pubkey::Pubkey,
+		template: solana_pubkey::Pubkey,
+		service_vault: solana_pubkey::Pubkey,
+		opening: solana_pubkey::Pubkey,
+		randomness: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			caller,
 			beneficiary,
@@ -40,7 +47,10 @@ impl ForfeitTemplateOpen {
 		}
 	}
 
-	pub fn instruction(&self, data: ForfeitTemplateOpenInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: ForfeitTemplateOpenInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -52,12 +62,24 @@ impl ForfeitTemplateOpen {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.caller, true));
-		accounts.push(solana_instruction::AccountMeta::new(self.beneficiary, false));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.beneficiary,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.service_vault, false));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.service_vault,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.randomness, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.randomness,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.system_program,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -73,15 +95,20 @@ pub struct ForfeitTemplateOpenInstructionData {
 }
 
 impl ForfeitTemplateOpenInstructionData {
-	pub fn new(configure: impl FnOnce(&mut ForfeitTemplateOpenInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut ForfeitTemplateOpenInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<ForfeitTemplateOpenInstructionWireZc>()];
-		<ForfeitTemplateOpenInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
-			configure(data);
-			data.discriminator = FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR;
-			data.migration_version = FORFEIT_TEMPLATE_OPEN_MIGRATION_VERSION;
-			Ok(())
-		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		<ForfeitTemplateOpenInstructionWire as pina::PinaPodFixed>::initialize(
+			&mut bytes,
+			|data| {
+				configure(data);
+				data.discriminator = FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR;
+				data.migration_version = FORFEIT_TEMPLATE_OPEN_MIGRATION_VERSION;
+				Ok(())
+			},
+		)
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

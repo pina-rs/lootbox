@@ -29,6 +29,7 @@ import {
 	signTransactionMessageWithSigners,
 	type TransactionSigner,
 } from "@solana/kit";
+import { type BoxCurvePlan, quoteCurveBuy, quoteCurveSell } from "./curve.js";
 import {
 	encodeExclusiveLayer,
 	EXCLUSIVE_TREE_SHAPE,
@@ -120,6 +121,9 @@ export type ChainOpening = Readonly<
 >;
 export type ChainBundle = Readonly<
 	{ address: Address; data: generated.BundleState }
+>;
+export type ChainBoxCurve = Readonly<
+	{ address: Address; data: generated.BoxCurveState }
 >;
 export type OracleAccounts = Readonly<{
 	queue: Address;
@@ -2842,6 +2846,153 @@ export class LootboxClient {
 		], "Create fixed-supply test prize");
 		return mint.address;
 	}
+	/** A lootbox's box curve PDA and its canonical bump. */
+	async boxCurveAddress(template: Address) {
+		return generated.findBoxCurvePda({ template });
+	}
+
+	/** A lootbox's box curve, or `null` when it has none open. */
+	async boxCurve(template: Address): Promise<ChainBoxCurve | null> {
+		const [curve] = await this.boxCurveAddress(template);
+		const account = await generated.fetchMaybeBoxCurveState(this.rpc, curve, {
+			commitment,
+		});
+
+		return account.exists ? account : null;
+	}
+
+	/**
+	 * Open a box curve on a locked lootbox, moving `plan.inventory` of the
+	 * creator's boxes into the curve. Plan the terms with `planBoxCurve`.
+	 */
+	async openBoxCurve(
+		template: ChainTemplate,
+		plan: BoxCurvePlan,
+	): Promise<ChainBoxCurve> {
+		const current = await this.template(template.address);
+		if (current.data.authority !== this.payer.address) {
+			throw new Error("only the lootbox creator can open its curve");
+		}
+		if (current.data.lockedAt === 0n) {
+			throw new Error("lock the lootbox before opening a curve");
+		}
+
+		const { boxMint } = current.data;
+		const [boxCurve, bump] = await this.boxCurveAddress(current.address);
+		await this.send([
+			await this.createAta(boxCurve, boxMint),
+			generated.getOpenBoxCurveInstruction({
+				authority: this.payer,
+				template: current.address,
+				boxMint,
+				sourceBoxAccount: await this.ata(this.payer.address, boxMint),
+				boxCurve,
+				curveBoxAccount: await this.ata(boxCurve, boxMint),
+				boxTokenProgram: BOX_TOKEN_PROGRAM,
+				inventory: plan.inventory,
+				startPrice: plan.startPrice,
+				priceStep: plan.priceStep,
+				feeBps: plan.feeBps,
+				bump,
+			}),
+		], "Open box curve");
+
+		return this.requireBoxCurve(current.address);
+	}
+
+	/**
+	 * Buy `count` boxes from a curve for at most `maxLamports`, fee included.
+	 * Boxes go to `recipient`, so a box can be bought for someone else.
+	 */
+	async buyCurveBoxes(
+		template: ChainTemplate,
+		count: bigint,
+		maxLamports?: bigint,
+		recipient: Address = this.payer.address,
+	): Promise<string> {
+		const curve = await this.requireBoxCurve(template.address);
+		const limit = maxLamports ?? quoteCurveBuy(curve.data, count).total;
+		const { boxMint } = curve.data;
+
+		return this.send([
+			await this.createAta(recipient, boxMint),
+			generated.getBuyCurveBoxesInstruction({
+				buyer: this.payer,
+				template: template.address,
+				boxCurve: curve.address,
+				boxMint,
+				curveBoxAccount: await this.ata(curve.address, boxMint),
+				destinationBoxAccount: await this.ata(recipient, boxMint),
+				authority: curve.data.authority,
+				boxTokenProgram: BOX_TOKEN_PROGRAM,
+				count,
+				maxLamports: limit,
+			}),
+		], count === 1n ? "Buy a box" : `Buy ${count} boxes`);
+	}
+
+	/** Sell `count` boxes back to a curve for at least `minLamports`. */
+	async sellCurveBoxes(
+		template: ChainTemplate,
+		count: bigint,
+		minLamports?: bigint,
+	): Promise<string> {
+		const curve = await this.requireBoxCurve(template.address);
+		const limit = minLamports ?? quoteCurveSell(curve.data, count).total;
+		const { boxMint } = curve.data;
+
+		return this.send([
+			generated.getSellCurveBoxesInstruction({
+				seller: this.payer,
+				template: template.address,
+				boxCurve: curve.address,
+				boxMint,
+				sourceBoxAccount: await this.ata(this.payer.address, boxMint),
+				curveBoxAccount: await this.ata(curve.address, boxMint),
+				authority: curve.data.authority,
+				boxTokenProgram: BOX_TOKEN_PROGRAM,
+				count,
+				minLamports: limit,
+			}),
+		], count === 1n ? "Sell a box back" : `Sell ${count} boxes back`);
+	}
+
+	/**
+	 * Close a curve that sold out, closed at reveal, or sold nothing. Unsold
+	 * boxes go to `destination`; the reserve and both accounts' rent go to
+	 * the creator.
+	 */
+	async closeBoxCurve(
+		template: ChainTemplate,
+		destination: Address = this.payer.address,
+	): Promise<string> {
+		const curve = await this.requireBoxCurve(template.address);
+		if (curve.data.authority !== this.payer.address) {
+			throw new Error("only the lootbox creator can close its curve");
+		}
+		const { boxMint } = curve.data;
+
+		return this.send([
+			await this.createAta(destination, boxMint),
+			generated.getCloseBoxCurveInstruction({
+				authority: this.payer,
+				template: template.address,
+				boxCurve: curve.address,
+				boxMint,
+				curveBoxAccount: await this.ata(curve.address, boxMint),
+				destinationBoxAccount: await this.ata(destination, boxMint),
+				boxTokenProgram: BOX_TOKEN_PROGRAM,
+			}),
+		], "Close box curve");
+	}
+
+	private async requireBoxCurve(template: Address): Promise<ChainBoxCurve> {
+		const curve = await this.boxCurve(template);
+		if (!curve) throw new Error("this lootbox has no open box curve");
+
+		return curve;
+	}
+
 	async transfer(template: ChainTemplate, recipient: Address, amount: bigint) {
 		return this.send([
 			await this.createAta(recipient, template.data.boxMint),

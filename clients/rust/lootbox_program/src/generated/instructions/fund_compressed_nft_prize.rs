@@ -28,7 +28,18 @@ pub struct FundCompressedNftPrize {
 }
 
 impl FundCompressedNftPrize {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, tree_config: solana_pubkey::Pubkey, merkle_tree: solana_pubkey::Pubkey, bubblegum_program: solana_pubkey::Pubkey, log_wrapper: solana_pubkey::Pubkey, compression_program: solana_pubkey::Pubkey, system_program: solana_pubkey::Pubkey, proof_accounts: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		authority: solana_pubkey::Pubkey,
+		template: solana_pubkey::Pubkey,
+		bundle: solana_pubkey::Pubkey,
+		tree_config: solana_pubkey::Pubkey,
+		merkle_tree: solana_pubkey::Pubkey,
+		bubblegum_program: solana_pubkey::Pubkey,
+		log_wrapper: solana_pubkey::Pubkey,
+		compression_program: solana_pubkey::Pubkey,
+		system_program: solana_pubkey::Pubkey,
+		proof_accounts: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			authority,
 			template,
@@ -43,7 +54,10 @@ impl FundCompressedNftPrize {
 		}
 	}
 
-	pub fn instruction(&self, data: FundCompressedNftPrizeInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: FundCompressedNftPrizeInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -54,16 +68,43 @@ impl FundCompressedNftPrize {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(10 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.authority, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.authority,
+			true,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.template,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.tree_config, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.merkle_tree, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.bubblegum_program, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.log_wrapper, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.compression_program, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.proof_accounts, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.tree_config,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.merkle_tree,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.bubblegum_program,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.log_wrapper,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.compression_program,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.system_program,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.proof_accounts,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -79,15 +120,20 @@ pub struct FundCompressedNftPrizeInstructionData {
 }
 
 impl FundCompressedNftPrizeInstructionData {
-	pub fn new(configure: impl FnOnce(&mut FundCompressedNftPrizeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut FundCompressedNftPrizeInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<FundCompressedNftPrizeInstructionWireZc>()];
-		<FundCompressedNftPrizeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
-			configure(data);
-			data.discriminator = FUND_COMPRESSED_NFT_PRIZE_DISCRIMINATOR;
-			data.migration_version = FUND_COMPRESSED_NFT_PRIZE_MIGRATION_VERSION;
-			Ok(())
-		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		<FundCompressedNftPrizeInstructionWire as pina::PinaPodFixed>::initialize(
+			&mut bytes,
+			|data| {
+				configure(data);
+				data.discriminator = FUND_COMPRESSED_NFT_PRIZE_DISCRIMINATOR;
+				data.migration_version = FUND_COMPRESSED_NFT_PRIZE_MIGRATION_VERSION;
+				Ok(())
+			},
+		)
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

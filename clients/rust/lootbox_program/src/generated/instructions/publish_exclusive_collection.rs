@@ -26,7 +26,10 @@ impl PublishExclusiveCollection {
 		}
 	}
 
-	pub fn instruction(&self, data: PublishExclusiveCollectionInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: PublishExclusiveCollectionInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -37,8 +40,13 @@ impl PublishExclusiveCollection {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(2 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.admin, true));
-		accounts.push(solana_instruction::AccountMeta::new(self.exclusive_collection, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.admin, true,
+		));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.exclusive_collection,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -54,15 +62,21 @@ pub struct PublishExclusiveCollectionInstructionData {
 }
 
 impl PublishExclusiveCollectionInstructionData {
-	pub fn new(configure: impl FnOnce(&mut PublishExclusiveCollectionInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; core::mem::size_of::<PublishExclusiveCollectionInstructionWireZc>()];
-		<PublishExclusiveCollectionInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
-			configure(data);
-			data.discriminator = PUBLISH_EXCLUSIVE_COLLECTION_DISCRIMINATOR;
-			data.migration_version = PUBLISH_EXCLUSIVE_COLLECTION_MIGRATION_VERSION;
-			Ok(())
-		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+	pub fn new(
+		configure: impl FnOnce(&mut PublishExclusiveCollectionInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
+		let mut bytes =
+			vec![0u8; core::mem::size_of::<PublishExclusiveCollectionInstructionWireZc>()];
+		<PublishExclusiveCollectionInstructionWire as pina::PinaPodFixed>::initialize(
+			&mut bytes,
+			|data| {
+				configure(data);
+				data.discriminator = PUBLISH_EXCLUSIVE_COLLECTION_DISCRIMINATOR;
+				data.migration_version = PUBLISH_EXCLUSIVE_COLLECTION_MIGRATION_VERSION;
+				Ok(())
+			},
+		)
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

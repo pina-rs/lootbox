@@ -12,7 +12,7 @@
 #[derive(pina::PinaPod)]
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct TemplateOpeningState {
-/// A burned box, its verified entropy, and independently claimable winning assets.
+	/// A burned box, its verified entropy, and independently claimable winning assets.
 	pub discriminator: u8,
 	pub migration_version: u8,
 	pub template: solana_pubkey::Pubkey,
@@ -68,7 +68,9 @@ impl TemplateOpeningState {
 		.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)
 	}
 
-	pub fn from_bytes(data: &[u8]) -> Result<&TemplateOpeningStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes(
+		data: &[u8],
+	) -> Result<&TemplateOpeningStateZc, solana_program_error::ProgramError> {
 		let account = <Self as pina::PinaPodFixed>::read_exact(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != TEMPLATE_OPENING_STATE_DISCRIMINATOR {
@@ -80,7 +82,9 @@ impl TemplateOpeningState {
 		Ok(account)
 	}
 
-	pub fn from_bytes_mut(data: &mut [u8]) -> Result<&mut TemplateOpeningStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes_mut(
+		data: &mut [u8],
+	) -> Result<&mut TemplateOpeningStateZc, solana_program_error::ProgramError> {
 		let account = <Self as pina::PinaPodFixed>::read_exact_mut(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != TEMPLATE_OPENING_STATE_DISCRIMINATOR {
@@ -94,7 +98,10 @@ impl TemplateOpeningState {
 }
 
 impl TemplateOpeningState {
-	pub fn find_pda(template: &solana_pubkey::Pubkey, randomness: &solana_pubkey::Pubkey) -> (solana_pubkey::Pubkey, u8) {
+	pub fn find_pda(
+		template: &solana_pubkey::Pubkey,
+		randomness: &solana_pubkey::Pubkey,
+	) -> (solana_pubkey::Pubkey, u8) {
 		solana_pubkey::Pubkey::find_program_address(
 			&[
 				"template-opening".as_bytes(),
@@ -105,7 +112,11 @@ impl TemplateOpeningState {
 		)
 	}
 
-	pub fn create_pda(template: &solana_pubkey::Pubkey, randomness: &solana_pubkey::Pubkey, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(
+		template: &solana_pubkey::Pubkey,
+		randomness: &solana_pubkey::Pubkey,
+		bump: u8,
+	) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
 			&[
 				"template-opening".as_bytes(),
@@ -118,7 +129,6 @@ impl TemplateOpeningState {
 	}
 }
 
-
 /// Whether raw account bytes are stale for this contract: the envelope names this account's discriminator and carries a version older than
 /// [`TEMPLATE_OPENING_STATE_MIGRATION_VERSION`]. Current or foreign bytes return false; decoding explains the difference.
 ///
@@ -126,7 +136,6 @@ impl TemplateOpeningState {
 pub fn template_opening_state_needs_migration(_data: &[u8]) -> bool {
 	false
 }
-
 
 /// Why `TemplateOpeningState::try_from_bytes` rejected account bytes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -143,14 +152,21 @@ impl core::fmt::Display for TemplateOpeningStateVersionError {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		match self {
 			Self::InvalidData => write!(f, "invalid TemplateOpeningState account data"),
-			Self::Stale { stored } => write!(
-				f,
-				"migration version mismatch: expected 0, received {stored} (the data predates this client; migrate it by sending a transaction to the program, or decode it with a client generated from an older IDL)"
-			),
-			Self::Future { stored } => write!(
-				f,
-				"migration version mismatch: expected 0, received {stored} (the data was written by a newer program; upgrade this client)"
-			),
+			Self::Stale { stored } => {
+				write!(
+					f,
+					"migration version mismatch: expected 0, received {stored} (the data predates \
+					 this client; migrate it by sending a transaction to the program, or decode \
+					 it with a client generated from an older IDL)"
+				)
+			}
+			Self::Future { stored } => {
+				write!(
+					f,
+					"migration version mismatch: expected 0, received {stored} (the data was \
+					 written by a newer program; upgrade this client)"
+				)
+			}
 		}
 	}
 }
@@ -166,7 +182,9 @@ impl TemplateOpeningState {
 			return Err(TemplateOpeningStateVersionError::InvalidData);
 		}
 		if account.migration_version > TEMPLATE_OPENING_STATE_MIGRATION_VERSION {
-			return Err(TemplateOpeningStateVersionError::Future { stored: account.migration_version });
+			return Err(TemplateOpeningStateVersionError::Future {
+				stored: account.migration_version,
+			});
 		}
 		Ok(account)
 	}
@@ -185,9 +203,18 @@ mod template_opening_state_version_error_tests {
 
 	#[test]
 	fn stale_and_future_versions_are_distinguishable() {
-		let error = TemplateOpeningState::try_from_bytes(&envelope(1_u8)).err().expect("a future envelope must fail");
-		assert_eq!(error, TemplateOpeningStateVersionError::Future { stored: 1 });
-		assert_eq!(TemplateOpeningStateVersionError::Future { stored: 1 }.to_string(), "migration version mismatch: expected 0, received 1 (the data was written by a newer program; upgrade this client)");
+		let error = TemplateOpeningState::try_from_bytes(&envelope(1_u8))
+			.err()
+			.expect("a future envelope must fail");
+		assert_eq!(
+			error,
+			TemplateOpeningStateVersionError::Future { stored: 1 }
+		);
+		assert_eq!(
+			TemplateOpeningStateVersionError::Future { stored: 1 }.to_string(),
+			"migration version mismatch: expected 0, received 1 (the data was written by a newer \
+			 program; upgrade this client)"
+		);
 		assert!(
 			TemplateOpeningState::try_from_bytes(&envelope(0_u8)).is_ok(),
 			"the current version must decode",

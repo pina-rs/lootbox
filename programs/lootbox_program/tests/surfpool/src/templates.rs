@@ -8,6 +8,7 @@ use spl_token_metadata_interface::instruction as metadata_ix;
 
 use super::*;
 
+mod box_curve;
 mod exclusive_nft;
 mod prize_pool;
 

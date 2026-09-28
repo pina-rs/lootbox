@@ -26,26 +26,31 @@ export type Gaze = Readonly<{
 	y: number;
 }>;
 
+/** How the chest is drawn and posed. Every field has a logo default. */
+export type ChestPose = Readonly<{
+	/**
+	 * `full` for 64 px and up; `compact` drops seams, rivets, and sparkles and
+	 * thickens the ink so the chest survives at icon sizes.
+	 */
+	variant?: ChestMarkVariant | undefined;
+	/** Lid opening: 0 is shut (eyes hidden), 1 is the logo's peek. Up to 2. */
+	open?: number | undefined;
+	/** Pupil direction. The logo glances right, toward the wordmark. */
+	look?: Gaze | undefined;
+	/** 0 is wide open, 1 is fully closed. */
+	blink?: number | undefined;
+	/** Sparkles by the lid. Defaults on for `full`. */
+	sparkles?: boolean | undefined;
+	/**
+	 * The floor shadow. Turn it off when the chest moves off the floor and
+	 * the caller draws its own.
+	 */
+	shadow?: boolean | undefined;
+}>;
+
 export type ChestMarkProps =
+	& ChestPose
 	& Readonly<{
-		/**
-		 * `full` for 64 px and up; `compact` drops seams, rivets, and sparkles and
-		 * thickens the ink so the chest survives at icon sizes.
-		 */
-		variant?: ChestMarkVariant;
-		/** Lid opening: 0 is shut (eyes hidden), 1 is the logo's peek. Up to 2. */
-		open?: number;
-		/** Pupil direction. The logo glances right, toward the wordmark. */
-		look?: Gaze;
-		/** 0 is wide open, 1 is fully closed. */
-		blink?: number;
-		/** Sparkles by the lid. Defaults on for `full`. */
-		sparkles?: boolean;
-		/**
-		 * The floor shadow. Turn it off when the chest moves off the floor and
-		 * the caller draws its own.
-		 */
-		shadow?: boolean;
 		/** Accessible name. Without it the mark is decorative. */
 		title?: string;
 		/** Rendered width and height; any CSS length or a number of px. */
@@ -55,6 +60,20 @@ export type ChestMarkProps =
 
 /** The logo's resting pose. */
 export const LOGO_LOOK: Gaze = { x: 1, y: -0.15 };
+
+/** The square of mark units the chest is drawn in. */
+const MARK_BOX = { x: 36, y: 60, size: 440 } as const;
+
+/**
+ * The SVG transform that draws `ChestArt` as a `size`-wide square at (x, y),
+ * matching `ChestMark` at the same place and size.
+ */
+export function chestTransform(x: number, y: number, size: number): string {
+	return `translate(${x} ${y}) scale(${
+		size / MARK_BOX.size
+	}) translate(${-MARK_BOX
+		.x} ${-MARK_BOX.y})`;
+}
 
 // Body: a gently tapered box. Coordinates are in mark units.
 const BODY_TOP = 280;
@@ -218,16 +237,54 @@ function Eye(
 
 export function ChestMark(
 	{
+		variant,
+		open,
+		look,
+		blink,
+		sparkles,
+		shadow,
+		title,
+		size,
+		...svg
+	}: ChestMarkProps,
+) {
+	return (
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			viewBox={`${MARK_BOX.x} ${MARK_BOX.y} ${MARK_BOX.size} ${MARK_BOX.size}`}
+			width={size}
+			height={size}
+			role={title ? "img" : undefined}
+			aria-label={title}
+			aria-hidden={title ? undefined : true}
+			{...svg}
+		>
+			<ChestArt
+				variant={variant}
+				open={open}
+				look={look}
+				blink={blink}
+				sparkles={sparkles}
+				shadow={shadow}
+			/>
+		</svg>
+	);
+}
+
+/**
+ * The chest's shapes in mark units, without an `<svg>` of their own. Place
+ * it inside another drawing with `chestTransform`, so lockups stay a single
+ * flat SVG that every design tool opens the same way.
+ */
+export function ChestArt(
+	{
 		variant = "full",
 		open = 1,
 		look = LOGO_LOOK,
 		blink = 0,
 		sparkles,
 		shadow = true,
-		title,
-		size,
-		...svg
-	}: ChestMarkProps,
+	}: ChestPose,
 ) {
 	const id = svgId(useId());
 	const style = LOOKS[variant];
@@ -241,16 +298,7 @@ export function ChestMark(
 	const ink = palette.ink;
 
 	return (
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			viewBox="36 60 440 440"
-			width={size}
-			height={size}
-			role={title ? "img" : undefined}
-			aria-label={title}
-			aria-hidden={title ? undefined : true}
-			{...svg}
-		>
+		<>
 			<defs>
 				<clipPath id={`${id}-body`}>
 					<path d={bodyPath} />
@@ -445,6 +493,6 @@ export function ChestMark(
 					<path d={sparklePath(420, 132, 13)} strokeWidth={5} />
 				</g>
 			)}
-		</svg>
+		</>
 	);
 }

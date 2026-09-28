@@ -112,11 +112,14 @@ describe("Wordmark", () => {
 });
 
 describe("Logo", () => {
-	it("has one accessible name and hides its parts", () => {
-		const markup = renderToStaticMarkup(<Logo />);
+	it("is one flat, named image that every design tool reads alike", () => {
+		for (const layout of ["horizontal", "stacked"] as const) {
+			const markup = renderToStaticMarkup(<Logo layout={layout} />);
 
-		expect(markup.match(/aria-label=/g)).toHaveLength(1);
-		expect(markup.match(/aria-hidden="true"/g)).toHaveLength(2);
+			expect(markup.match(/<svg/g)).toHaveLength(1);
+			expect(markup.match(/aria-label=/g)).toHaveLength(1);
+			expect(markup).not.toContain("aria-hidden");
+		}
 	});
 });
 
@@ -128,6 +131,37 @@ describe("exported files", () => {
 			expect(readFileSync(join(root, file.path), "utf8"), file.path).toBe(
 				file.svg,
 			);
+		}
+	});
+
+	it("keep clip and gradient ids unique across files", () => {
+		const all = brandFiles()
+			.filter((file) => file.kind === "svg" && file.path.startsWith("assets/"))
+			.flatMap((file) => ids(file.svg));
+
+		expect(all.length).toBeGreaterThan(0);
+		expect(new Set(all).size).toBe(all.length);
+	});
+
+	it("ship a one-page PDF the size of each SVG logo", () => {
+		const pdfs = brandFiles().filter((file) => file.kind === "pdf");
+
+		expect(pdfs.length).toBeGreaterThan(0);
+
+		for (const file of pdfs) {
+			const pdf = readFileSync(join(root, file.path)).toString("latin1");
+			const box = /\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/.exec(pdf);
+
+			expect(pdf.startsWith("%PDF-"), file.path).toBe(true);
+			expect(pdf.match(/\/Type \/Page\b/g), file.path).toHaveLength(1);
+			expect(pdf, file.path).toContain(`/Title (${file.page.title})`);
+			// Chrome prints 1 CSS px as 0.75 pt, then snaps the page to its own
+			// print units, which moves an edge by under a point.
+			const width = Number(box?.[1]) / (file.page.width * 0.75);
+			const height = Number(box?.[2]) / (file.page.height * 0.75);
+
+			expect(Math.abs(width - 1), file.path).toBeLessThan(0.005);
+			expect(Math.abs(height - 1), file.path).toBeLessThan(0.005);
 		}
 	});
 });

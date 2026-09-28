@@ -5,9 +5,13 @@
  */
 import type { SVGProps } from "react";
 
-import { ChestMark } from "./ChestMark.tsx";
+import { ChestArt, chestTransform } from "./ChestMark.tsx";
 import { palette } from "./tokens.ts";
-import { Wordmark, WORDMARK_ASPECT } from "./Wordmark.tsx";
+import {
+	WORDMARK_ASPECT,
+	WordmarkArt,
+	wordmarkTransform,
+} from "./Wordmark.tsx";
 
 export type LogoLayout = "horizontal" | "stacked";
 
@@ -90,21 +94,16 @@ export function Logo(
 			aria-hidden={title ? undefined : true}
 			{...svg}
 		>
-			<ChestMark
-				x={mark.x}
-				y={mark.y}
-				size={mark.size}
-				look={stacked ? { x: 0, y: 1 } : { x: 1, y: 0.1 }}
-			/>
-			<Wordmark
-				x={word.x}
-				y={word.y}
-				width={word.height * WORDMARK_ASPECT}
-				height={word.height}
-				title=""
-				color={tone === "light" ? palette.ink : palette.ivory}
-				look={stacked ? { x: 0, y: -1 } : { x: -1, y: 0.55 }}
-			/>
+			{/* Groups, not nested <svg>s, so every design tool reads the file alike. */}
+			<g transform={chestTransform(mark.x, mark.y, mark.size)}>
+				<ChestArt look={stacked ? { x: 0, y: 1 } : { x: 1, y: 0.1 }} />
+			</g>
+			<g transform={wordmarkTransform(word.x, word.y, word.height)}>
+				<WordmarkArt
+					color={tone === "light" ? palette.ink : palette.ivory}
+					look={stacked ? { x: 0, y: -1 } : { x: -1, y: 0.55 }}
+				/>
+			</g>
 		</svg>
 	);
 }

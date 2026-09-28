@@ -6,6 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './boxCurveState';
 export * from './bundleState';
 export * from './exclusiveAttachmentState';
 export * from './exclusiveCollectionState';

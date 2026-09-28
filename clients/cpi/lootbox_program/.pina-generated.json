@@ -1,5 +1,6 @@
 {
   "paths": [
+    "src/generated/accounts/box_curve_state.rs",
     "src/generated/accounts/bundle_state.rs",
     "src/generated/accounts/exclusive_attachment_state.rs",
     "src/generated/accounts/exclusive_collection_state.rs",
@@ -19,6 +20,7 @@
     "src/generated/instructions/allocate_template_open.rs",
     "src/generated/instructions/append_exclusive_tree.rs",
     "src/generated/instructions/attach_exclusive_nft.rs",
+    "src/generated/instructions/buy_curve_boxes.rs",
     "src/generated/instructions/cancel_bundle.rs",
     "src/generated/instructions/cancel_prize_pool_item.rs",
     "src/generated/instructions/claim_compressed_nft_prize.rs",
@@ -29,6 +31,7 @@
     "src/generated/instructions/claim_prize_pool_item.rs",
     "src/generated/instructions/claim_sol_prize.rs",
     "src/generated/instructions/claim_token_prize.rs",
+    "src/generated/instructions/close_box_curve.rs",
     "src/generated/instructions/close_opening.rs",
     "src/generated/instructions/close_prize_pool.rs",
     "src/generated/instructions/close_service_vault.rs",
@@ -53,6 +56,7 @@
     "src/generated/instructions/mint_boxes.rs",
     "src/generated/instructions/mint_template_boxes.rs",
     "src/generated/instructions/mod.rs",
+    "src/generated/instructions/open_box_curve.rs",
     "src/generated/instructions/prepare_prize_pool_item.rs",
     "src/generated/instructions/publish_exclusive_collection.rs",
     "src/generated/instructions/reclaim_compressed_nft_prize.rs",
@@ -70,6 +74,7 @@
     "src/generated/instructions/seal.rs",
     "src/generated/instructions/seal_prize_pool.rs",
     "src/generated/instructions/seal_template.rs",
+    "src/generated/instructions/sell_curve_boxes.rs",
     "src/generated/instructions/set_exclusive_layer.rs",
     "src/generated/instructions/settle_open.rs",
     "src/generated/instructions/withdraw_surplus.rs",

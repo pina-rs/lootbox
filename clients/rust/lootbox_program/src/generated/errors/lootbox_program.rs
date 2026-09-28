@@ -162,6 +162,23 @@ pub enum LootboxProgramError {
 	/// 36 - The Exclusive NFT collection is not accepting new attachments now.
 	#[error("The Exclusive NFT collection is not accepting new attachments now.")]
 	ExclusiveAttachWindowClosed = 0x24,
+	/// The box curve's terms, accounts, or trade size are invalid.
+	/// 37 - The box curve's terms, accounts, or trade size are invalid.
+	#[error("The box curve's terms, accounts, or trade size are invalid.")]
+	InvalidBoxCurve = 0x25,
+	/// The box curve has sold out, or the lootbox's reveal closed trading.
+	/// 38 - The box curve has sold out, or the lootbox's reveal closed trading.
+	#[error("The box curve has sold out, or the lootbox's reveal closed trading.")]
+	BoxCurveClosed = 0x26,
+	/// The trade costs more, or returns less, than the caller allowed.
+	/// 39 - The trade costs more, or returns less, than the caller allowed.
+	#[error("The trade costs more, or returns less, than the caller allowed.")]
+	BoxCurveSlippage = 0x27,
+	/// A curve with boxes sold can close only after it sells out or trading
+	/// closes.
+	/// 40 - A curve with boxes sold can close only after it sells out or trading
+	#[error("A curve with boxes sold can close only after it sells out or trading")]
+	BoxCurveTrading = 0x28,
 }
 
 impl From<LootboxProgramError> for solana_program_error::ProgramError {

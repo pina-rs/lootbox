@@ -6,7 +6,7 @@
 //! check` fails when this file no longer matches the manifest. A layout
 //! change that forgets an offset fails `cargo test` in the same change.
 
-// manifest-sha256: 1b3b439ed71cdf8e5c29e8c270414fcfc6e4b069528d6e1589e955f3b228eeb9
+// manifest-sha256: 35d86d5481842d68354de215fb8c33945c37c365460bc6294a0ad78a8d2d5b7e
 // program-id: LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E
 // version_type: u8
 
@@ -449,6 +449,47 @@ pub mod account_1_0b {
 	];
 }
 
+/// ABI layout for the `BoxCurveState` account.
+pub mod account_1_0c {
+	/// Manifest contract key.
+	pub const KEY: &str = "account:1:0c";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "BoxCurveState";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str = "d9a32f36f39ab295129546ea61053031bccd1eb58964782f0d7a2618afdc3222";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes; zero without an envelope.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 155;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 155;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("template", MIGRATION_HEADER_SIZE + 0, 32),
+		("box_mint", MIGRATION_HEADER_SIZE + 32, 32),
+		("authority", MIGRATION_HEADER_SIZE + 64, 32),
+		("inventory", MIGRATION_HEADER_SIZE + 96, 8),
+		("sold", MIGRATION_HEADER_SIZE + 104, 8),
+		("start_price", MIGRATION_HEADER_SIZE + 112, 8),
+		("price_step", MIGRATION_HEADER_SIZE + 120, 8),
+		("reserve", MIGRATION_HEADER_SIZE + 128, 8),
+		("closes_at", MIGRATION_HEADER_SIZE + 136, 8),
+		("sold_out_at", MIGRATION_HEADER_SIZE + 144, 8),
+		("fee_bps", MIGRATION_HEADER_SIZE + 152, 2),
+		("bump", MIGRATION_HEADER_SIZE + 154, 1),
+	];
+}
+
 /// ABI layout for the `ExclusiveNftMintedEvent` event.
 pub mod event_1_01 {
 	/// Manifest contract key.
@@ -485,6 +526,42 @@ pub mod event_1_01 {
 		("serial", MIGRATION_HEADER_SIZE + 224, 8),
 		("traits", MIGRATION_HEADER_SIZE + 232, 12),
 		("layer_count", MIGRATION_HEADER_SIZE + 244, 1),
+	];
+}
+
+/// ABI layout for the `BoxCurveTradedEvent` event.
+pub mod event_1_02 {
+	/// Manifest contract key.
+	pub const KEY: &str = "event:1:02";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "BoxCurveTradedEvent";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str = "93ab13ba2a716cf4d1258cfca0d9d2644c88b0b3af682e4d460f14f1a1e26105";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes; zero without an envelope.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 97;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 97;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("curve", MIGRATION_HEADER_SIZE + 0, 32),
+		("trader", MIGRATION_HEADER_SIZE + 32, 32),
+		("count", MIGRATION_HEADER_SIZE + 64, 8),
+		("lamports", MIGRATION_HEADER_SIZE + 72, 8),
+		("fee", MIGRATION_HEADER_SIZE + 80, 8),
+		("sold_after", MIGRATION_HEADER_SIZE + 88, 8),
+		("side", MIGRATION_HEADER_SIZE + 96, 1),
 	];
 }
 
@@ -2342,6 +2419,131 @@ pub mod instruction_1_3b {
 	/// `(name, absolute_offset, size)` in encoded bytes.
 	pub const FIELDS: &[(&str, usize, usize)] = &[
 		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
+	];
+}
+
+/// ABI layout for the `OpenBoxCurveInstruction` instruction.
+pub mod instruction_1_3c {
+	/// Manifest contract key.
+	pub const KEY: &str = "instruction:1:3c";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "OpenBoxCurveInstruction";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str = "76364f21734325905cd7fa862476da6a3dcc13576e7223a5c471532fa5a9c3bb";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes; zero without an envelope.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 27;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 27;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("inventory", MIGRATION_HEADER_SIZE + 0, 8),
+		("start_price", MIGRATION_HEADER_SIZE + 8, 8),
+		("price_step", MIGRATION_HEADER_SIZE + 16, 8),
+		("fee_bps", MIGRATION_HEADER_SIZE + 24, 2),
+		("bump", MIGRATION_HEADER_SIZE + 26, 1),
+	];
+}
+
+/// ABI layout for the `BuyCurveBoxesInstruction` instruction.
+pub mod instruction_1_3d {
+	/// Manifest contract key.
+	pub const KEY: &str = "instruction:1:3d";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "BuyCurveBoxesInstruction";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str = "236c8e72ce4f46ac23e5f0679ee2a6e42ee308d44945c6f1c3e63d41bdead770";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes; zero without an envelope.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 16;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 16;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("count", MIGRATION_HEADER_SIZE + 0, 8),
+		("max_lamports", MIGRATION_HEADER_SIZE + 8, 8),
+	];
+}
+
+/// ABI layout for the `SellCurveBoxesInstruction` instruction.
+pub mod instruction_1_3e {
+	/// Manifest contract key.
+	pub const KEY: &str = "instruction:1:3e";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "SellCurveBoxesInstruction";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str = "df9c9328eab9c7fa317ee2efbe1853fa95676d6ebbd1c5b468f4231d0034ccec";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes; zero without an envelope.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 16;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 16;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("count", MIGRATION_HEADER_SIZE + 0, 8),
+		("min_lamports", MIGRATION_HEADER_SIZE + 8, 8),
+	];
+}
+
+/// ABI layout for the `CloseBoxCurveInstruction` instruction.
+pub mod instruction_1_3f {
+	/// Manifest contract key.
+	pub const KEY: &str = "instruction:1:3f";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "CloseBoxCurveInstruction";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes; zero without an envelope.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 0;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
 	];
 }
 

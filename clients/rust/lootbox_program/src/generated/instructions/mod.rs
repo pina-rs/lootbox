@@ -8,6 +8,10 @@
 	clippy::too_many_arguments
 )]
 
+pub(crate) mod r#open_box_curve;
+pub(crate) mod r#buy_curve_boxes;
+pub(crate) mod r#sell_curve_boxes;
+pub(crate) mod r#close_box_curve;
 pub(crate) mod r#create_lootbox;
 pub(crate) mod r#add_outcome;
 pub(crate) mod r#deposit;
@@ -70,6 +74,10 @@ pub(crate) mod r#claim_exclusive_nft;
 pub(crate) mod r#reclaim_exclusive_fees;
 pub(crate) mod r#migrate;
 
+pub use self::r#open_box_curve::*;
+pub use self::r#buy_curve_boxes::*;
+pub use self::r#sell_curve_boxes::*;
+pub use self::r#close_box_curve::*;
 pub use self::r#create_lootbox::*;
 pub use self::r#add_outcome::*;
 pub use self::r#deposit::*;

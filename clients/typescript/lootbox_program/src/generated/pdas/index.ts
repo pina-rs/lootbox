@@ -6,6 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './boxCurve';
 export * from './bundle';
 export * from './exclusiveAttachment';
 export * from './exclusiveCollection';

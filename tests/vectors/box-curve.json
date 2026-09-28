@@ -1,0 +1,361 @@
+{
+	"minInventory": 20,
+	"minStartPrice": "100000",
+	"maxFeeBps": 500,
+	"quotes": [
+		{
+			"name": "first box",
+			"curve": {
+				"inventory": "20",
+				"sold": "0",
+				"startPrice": "1000000",
+				"priceStep": "50000",
+				"feeBps": "100"
+			},
+			"side": "buy",
+			"count": "1",
+			"expected": {
+				"lamports": "1000000",
+				"fee": "10000",
+				"total": "1010000",
+				"soldAfter": "1",
+				"nextPrice": "1050000"
+			}
+		},
+		{
+			"name": "three boxes",
+			"curve": {
+				"inventory": "20",
+				"sold": "0",
+				"startPrice": "1000000",
+				"priceStep": "50000",
+				"feeBps": "100"
+			},
+			"side": "buy",
+			"count": "3",
+			"expected": {
+				"lamports": "3150000",
+				"fee": "31500",
+				"total": "3181500",
+				"soldAfter": "3",
+				"nextPrice": "1150000"
+			}
+		},
+		{
+			"name": "buy past inventory",
+			"curve": {
+				"inventory": "20",
+				"sold": "18",
+				"startPrice": "1000000",
+				"priceStep": "50000",
+				"feeBps": "100"
+			},
+			"side": "buy",
+			"count": "3",
+			"expected": {
+				"error": "InvalidBoxCurve"
+			}
+		},
+		{
+			"name": "sell out",
+			"curve": {
+				"inventory": "20",
+				"sold": "18",
+				"startPrice": "1000000",
+				"priceStep": "50000",
+				"feeBps": "100"
+			},
+			"side": "buy",
+			"count": "2",
+			"expected": {
+				"lamports": "3850000",
+				"fee": "38500",
+				"total": "3888500",
+				"soldAfter": "20",
+				"nextPrice": null
+			}
+		},
+		{
+			"name": "empty buy",
+			"curve": {
+				"inventory": "20",
+				"sold": "0",
+				"startPrice": "1000000",
+				"priceStep": "50000",
+				"feeBps": "100"
+			},
+			"side": "buy",
+			"count": "0",
+			"expected": {
+				"error": "InvalidBoxCurve"
+			}
+		},
+		{
+			"name": "sell one",
+			"curve": {
+				"inventory": "20",
+				"sold": "18",
+				"startPrice": "1000000",
+				"priceStep": "50000",
+				"feeBps": "100"
+			},
+			"side": "sell",
+			"count": "1",
+			"expected": {
+				"lamports": "1850000",
+				"fee": "18500",
+				"total": "1831500",
+				"soldAfter": "17",
+				"nextPrice": "1850000"
+			}
+		},
+		{
+			"name": "sell everything",
+			"curve": {
+				"inventory": "20",
+				"sold": "18",
+				"startPrice": "1000000",
+				"priceStep": "50000",
+				"feeBps": "100"
+			},
+			"side": "sell",
+			"count": "18",
+			"expected": {
+				"lamports": "25650000",
+				"fee": "256500",
+				"total": "25393500",
+				"soldAfter": "0",
+				"nextPrice": "1000000"
+			}
+		},
+		{
+			"name": "sell more than sold",
+			"curve": {
+				"inventory": "20",
+				"sold": "18",
+				"startPrice": "1000000",
+				"priceStep": "50000",
+				"feeBps": "100"
+			},
+			"side": "sell",
+			"count": "19",
+			"expected": {
+				"error": "InvalidBoxCurve"
+			}
+		},
+		{
+			"name": "sell with nothing sold",
+			"curve": {
+				"inventory": "20",
+				"sold": "0",
+				"startPrice": "1000000",
+				"priceStep": "50000",
+				"feeBps": "100"
+			},
+			"side": "sell",
+			"count": "1",
+			"expected": {
+				"error": "InvalidBoxCurve"
+			}
+		},
+		{
+			"name": "flat price",
+			"curve": {
+				"inventory": "50",
+				"sold": "7",
+				"startPrice": "100000",
+				"priceStep": "0",
+				"feeBps": "0"
+			},
+			"side": "buy",
+			"count": "5",
+			"expected": {
+				"lamports": "500000",
+				"fee": "0",
+				"total": "500000",
+				"soldAfter": "12",
+				"nextPrice": "100000"
+			}
+		},
+		{
+			"name": "fee rounds up",
+			"curve": {
+				"inventory": "100",
+				"sold": "33",
+				"startPrice": "123457",
+				"priceStep": "9871",
+				"feeBps": "250"
+			},
+			"side": "buy",
+			"count": "7",
+			"expected": {
+				"lamports": "3351691",
+				"fee": "83793",
+				"total": "3435484",
+				"soldAfter": "40",
+				"nextPrice": "518297"
+			}
+		},
+		{
+			"name": "fee rounds up on sell",
+			"curve": {
+				"inventory": "100",
+				"sold": "33",
+				"startPrice": "123457",
+				"priceStep": "9871",
+				"feeBps": "250"
+			},
+			"side": "sell",
+			"count": "11",
+			"expected": {
+				"lamports": "4289714",
+				"fee": "107243",
+				"total": "4182471",
+				"soldAfter": "22",
+				"nextPrice": "340619"
+			}
+		},
+		{
+			"name": "last big box",
+			"curve": {
+				"inventory": "1000",
+				"sold": "999",
+				"startPrice": "5000000000",
+				"priceStep": "3000000",
+				"feeBps": "500"
+			},
+			"side": "buy",
+			"count": "1",
+			"expected": {
+				"lamports": "7997000000",
+				"fee": "399850000",
+				"total": "8396850000",
+				"soldAfter": "1000",
+				"nextPrice": null
+			}
+		},
+		{
+			"name": "big sell",
+			"curve": {
+				"inventory": "1000",
+				"sold": "999",
+				"startPrice": "5000000000",
+				"priceStep": "3000000",
+				"feeBps": "500"
+			},
+			"side": "sell",
+			"count": "500",
+			"expected": {
+				"lamports": "3622750000000",
+				"fee": "181137500000",
+				"total": "3441612500000",
+				"soldAfter": "499",
+				"nextPrice": "6497000000"
+			}
+		}
+	],
+	"plans": [
+		{
+			"name": "default launch",
+			"input": {
+				"inventory": "20",
+				"startPrice": "1000000",
+				"endPrice": "1950000",
+				"feeBps": "100"
+			},
+			"expected": {
+				"priceStep": "50000",
+				"endPrice": "1950000",
+				"sellOutLamports": "29500000"
+			}
+		},
+		{
+			"name": "end price floors to a whole step",
+			"input": {
+				"inventory": "30",
+				"startPrice": "1000000",
+				"endPrice": "2000000",
+				"feeBps": "0"
+			},
+			"expected": {
+				"priceStep": "34482",
+				"endPrice": "1999978",
+				"sellOutLamports": "44999670"
+			}
+		},
+		{
+			"name": "flat sale",
+			"input": {
+				"inventory": "25",
+				"startPrice": "500000",
+				"endPrice": "500000",
+				"feeBps": "50"
+			},
+			"expected": {
+				"priceStep": "0",
+				"endPrice": "500000",
+				"sellOutLamports": "12500000"
+			}
+		},
+		{
+			"name": "too few boxes",
+			"input": {
+				"inventory": "19",
+				"startPrice": "1000000",
+				"endPrice": "2000000",
+				"feeBps": "0"
+			},
+			"expected": {
+				"error": "InvalidBoxCurve"
+			}
+		},
+		{
+			"name": "dust start price",
+			"input": {
+				"inventory": "20",
+				"startPrice": "99999",
+				"endPrice": "2000000",
+				"feeBps": "0"
+			},
+			"expected": {
+				"error": "InvalidBoxCurve"
+			}
+		},
+		{
+			"name": "falling price",
+			"input": {
+				"inventory": "20",
+				"startPrice": "2000000",
+				"endPrice": "1000000",
+				"feeBps": "0"
+			},
+			"expected": {
+				"error": "InvalidBoxCurve"
+			}
+		},
+		{
+			"name": "fee too high",
+			"input": {
+				"inventory": "20",
+				"startPrice": "1000000",
+				"endPrice": "2000000",
+				"feeBps": "501"
+			},
+			"expected": {
+				"error": "InvalidBoxCurve"
+			}
+		},
+		{
+			"name": "sell-out overflows u64",
+			"input": {
+				"inventory": "4000000000",
+				"startPrice": "10000000000",
+				"endPrice": "20000000000",
+				"feeBps": "0"
+			},
+			"expected": {
+				"error": "InvalidBoxCurve"
+			}
+		}
+	]
+}

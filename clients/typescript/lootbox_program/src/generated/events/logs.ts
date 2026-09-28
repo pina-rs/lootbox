@@ -14,6 +14,11 @@ import {
 	getExclusiveNftMintedEventEventDiscriminatorBytes,
 	type ExclusiveNftMintedEventEvent,
 } from "./exclusiveNftMintedEvent.js";
+import {
+	getBoxCurveTradedEventEventDecoder,
+	getBoxCurveTradedEventEventDiscriminatorBytes,
+	type BoxCurveTradedEventEvent,
+} from "./boxCurveTradedEvent.js";
 
 /**
  * Decode one `exclusiveNftMintedEvent` record: only records carrying this event's migration version decode.
@@ -75,6 +80,66 @@ export function parseExclusiveNftMintedEventEventFromLog(log: string): DecodedEx
 	return decodeExclusiveNftMintedEventEvent(bytes);
 }
 
+/**
+ * Decode one `boxCurveTradedEvent` record: only records carrying this event's migration version decode.
+ */
+export function decodeBoxCurveTradedEventEvent(
+	data: ReadonlyUint8Array | Uint8Array,
+): DecodedBoxCurveTradedEventEvent {
+	const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+	const discriminatorBytes = getBoxCurveTradedEventEventDiscriminatorBytes();
+	if (bytes.length < 2) {
+		throw new RangeError(
+			`the provided data is too short for the "BoxCurveTradedEventEvent" event envelope`,
+		);
+	}
+	for (let index = 0; index < 1; index += 1) {
+		if (bytes[index] !== discriminatorBytes[index]) {
+			throw new RangeError(
+				'the provided data does not match the "BoxCurveTradedEventEvent" event discriminator.',
+			);
+		}
+	}
+	const sourceVersion = bytes[1];
+	if (sourceVersion === undefined) {
+		throw new RangeError("the event envelope has no version byte");
+	}
+	if (sourceVersion !== 0) {
+		throw new RangeError(
+			`event migration version mismatch: expected 0, received ${sourceVersion} (decode it with the event for that version, or regenerate this client)`,
+		);
+	}
+	return { name: "boxCurveTradedEvent", data: getBoxCurveTradedEventEventDecoder().decode(bytes) };
+}
+
+/** One log entry that named this event. */
+export type DecodedBoxCurveTradedEventEvent = { name: "boxCurveTradedEvent"; data: BoxCurveTradedEventEvent };
+
+/**
+ * Decode a `Program data:` log line, or return `null` when the line is not
+ * this event.
+ */
+export function parseBoxCurveTradedEventEventFromLog(log: string): DecodedBoxCurveTradedEventEvent | null {
+	const prefix = "Program data: ";
+	if (!log.startsWith(prefix)) {
+		return null;
+	}
+	const bytes = getBase64Encoder().encode(log.slice(prefix.length));
+	if (bytes.length < 2) {
+		return null;
+	}
+	const discriminatorBytes = getBoxCurveTradedEventEventDiscriminatorBytes();
+	for (let index = 0; index < 1; index += 1) {
+		if (bytes[index] !== discriminatorBytes[index]) {
+			return null;
+		}
+	}
+	if (bytes[1] !== 0) {
+		return null;
+	}
+	return decodeBoxCurveTradedEventEvent(bytes);
+}
+
 
 /**
  * Explain a `Program data:` line that names a migration-aware event but that
@@ -91,12 +156,18 @@ function unrecognizedEventVersion(log: string): string | null {
 			? 'event "exclusiveNftMintedEvent" log is too short for its version envelope'
 			: `event "exclusiveNftMintedEvent" log carries migration version ${bytes[1]}, which this client cannot decode; regenerate it`;
 	}
+	if (bytes.length >= 1 && bytes[0] === 2) {
+		return bytes.length < 2
+			? 'event "boxCurveTradedEvent" log is too short for its version envelope'
+			: `event "boxCurveTradedEvent" log carries migration version ${bytes[1]}, which this client cannot decode; regenerate it`;
+	}
 	return null;
 }
 
 /** Every event this program can emit, as decoded from a log line. */
 export type DecodedLootboxProgramEvent =
-	| DecodedExclusiveNftMintedEventEvent;
+	| DecodedExclusiveNftMintedEventEvent
+	| DecodedBoxCurveTradedEventEvent;
 
 /** The program whose invocation frames emit the events decoded here. */
 export const LOOTBOX_PROGRAM_EVENT_SOURCE_ADDRESS = "LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E";
@@ -145,6 +216,11 @@ export function parseLootboxProgramEventsFromLogs(
 		const exclusiveNftMintedEvent = parseExclusiveNftMintedEventEventFromLog(log);
 		if (exclusiveNftMintedEvent !== null) {
 			discovered.push(exclusiveNftMintedEvent);
+			continue;
+		}
+		const boxCurveTradedEvent = parseBoxCurveTradedEventEventFromLog(log);
+		if (boxCurveTradedEvent !== null) {
+			discovered.push(boxCurveTradedEvent);
 			continue;
 		}
 		const unknownVersion = unrecognizedEventVersion(log);

@@ -1,6 +1,7 @@
 // Auto-generated. Do not edit.
 // ignore_for_file: type=lint
 
+export 'box_curve_state.dart';
 export 'bundle_state.dart';
 export 'exclusive_attachment_state.dart';
 export 'exclusive_collection_state.dart';

@@ -41,6 +41,11 @@ export type ChestMarkProps =
 		blink?: number;
 		/** Sparkles by the lid. Defaults on for `full`. */
 		sparkles?: boolean;
+		/**
+		 * The floor shadow. Turn it off when the chest moves off the floor and
+		 * the caller draws its own.
+		 */
+		shadow?: boolean;
 		/** Accessible name. Without it the mark is decorative. */
 		title?: string;
 		/** Rendered width and height; any CSS length or a number of px. */
@@ -218,6 +223,7 @@ export function ChestMark(
 		look = LOGO_LOOK,
 		blink = 0,
 		sparkles,
+		shadow = true,
 		title,
 		size,
 		...svg
@@ -258,7 +264,9 @@ export function ChestMark(
 				</radialGradient>
 			</defs>
 
-			<ellipse cx={256} cy={454} rx={176} ry={14} fill={ink} opacity={0.14} />
+			{shadow && (
+				<ellipse cx={256} cy={454} rx={176} ry={14} fill={ink} opacity={0.14} />
+			)}
 
 			{/* The dark inside, the treasure's glow, and whoever lives in there. */}
 			<path

@@ -34,10 +34,15 @@ impl core::error::Error for BoxCurveError {}
 /// The terms and live position of a curve.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct BoxCurve {
+	/// Boxes the creator deposited into the curve.
 	pub inventory: u64,
+	/// Boxes the curve has sold and not bought back.
 	pub sold: u64,
+	/// Lamports for the first box.
 	pub start_price: u64,
+	/// Lamports each box costs more than the one before it.
 	pub price_step: u64,
+	/// Creator fee in basis points, charged on buys and sells.
 	pub fee_bps: u16,
 }
 
@@ -46,10 +51,12 @@ pub struct BoxCurve {
 pub struct CurveQuote {
 	/// The curve price of the boxes moved.
 	pub lamports: u64,
+	/// The creator fee on top of a buy, or taken from a sell.
 	pub fee: u64,
 	/// What the buyer pays (`lamports + fee`) or the seller receives
 	/// (`lamports - fee`).
 	pub total: u64,
+	/// Boxes sold once the trade lands.
 	pub sold_after: u64,
 	/// The price of the next box after the trade, or `None` once sold out.
 	pub next_price: Option<u64>,
@@ -58,12 +65,15 @@ pub struct CurveQuote {
 /// Terms for a new curve, derived from a start and an end price.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct BoxCurvePlan {
+	/// Boxes to deposit into the curve.
 	pub inventory: u64,
+	/// Lamports for the first box.
 	pub start_price: u64,
 	/// Whole lamports per box; the end price floors to a whole step.
 	pub price_step: u64,
 	/// The last box's price after flooring.
 	pub end_price: u64,
+	/// Creator fee in basis points, charged on buys and sells.
 	pub fee_bps: u16,
 	/// What the creator receives when every box sells, before fees.
 	pub sell_out_lamports: u64,

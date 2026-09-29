@@ -105,7 +105,12 @@ impl AttachExclusiveNftInstructionData {
 pub struct AttachExclusiveNftInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Manifest slot to bind; must equal the bundle's `funded_assets`.
 	pub asset_index: u8,
+	/// Canonical bump of the attachment PDA
+	/// `["exclusive-attachment", bundle, asset_index]`; any other value fails.
 	pub bump: u8,
+	/// Canonical bump of the fee vault PDA
+	/// `["exclusive-fee-vault", attachment]`; any other value fails.
 	pub fee_vault_bump: u8,
 }

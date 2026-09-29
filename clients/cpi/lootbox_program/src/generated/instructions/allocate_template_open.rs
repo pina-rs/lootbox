@@ -76,6 +76,8 @@ pub struct AllocateTemplateOpen<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct AllocateTemplateOpenIx {
 	/// Instruction argument `resultReceiptBump`.
+	/// Canonical bump of the result receipt PDA; rejected unless it equals the
+	/// derived canonical bump, even when result receipts are disabled.
 	pub result_receipt_bump: u8,
 }
 

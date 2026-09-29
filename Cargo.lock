@@ -2375,9 +2375,9 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
 name = "pina"
-version = "0.21.0"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf3c682d04204791549744f8646d0dd7a0bf987cca79995aa5ed493237f01cb0"
+checksum = "7fdb941c462859804a8e526b144c7d455bb577658a819c5ef328a38231ee49d9"
 dependencies = [
  "pastey",
  "pina_macros",
@@ -2409,9 +2409,9 @@ dependencies = [
 
 [[package]]
 name = "pina_macros"
-version = "0.21.0"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01cace5e0701d6d571d4506a14cb0fb7d8c813e4b3cec611ff9dd003db7c8001"
+checksum = "cf38a3ee7dea623d683c4aed454d475015143606c802f74e02d1d5359c6c430b"
 dependencies = [
  "darling 0.24.1",
  "heck",

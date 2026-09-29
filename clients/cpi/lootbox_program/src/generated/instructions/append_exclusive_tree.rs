@@ -80,9 +80,12 @@ pub struct AppendExclusiveTree<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct AppendExclusiveTreeIx {
 	/// Instruction argument `maxDepth`.
+	/// Concurrent Merkle tree depth, from 3 through 20.
 	pub max_depth: u8,
 
 	/// Instruction argument `maxBufferSize`.
+	/// Concurrent Merkle tree changelog buffer size, passed to Bubblegum and
+	/// used in the minimum tree account size.
 	pub max_buffer_size: u32,
 }
 

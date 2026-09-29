@@ -22,9 +22,19 @@ export function getReclaimMetadataNftPrizeDiscriminator2Bytes(): ReadonlyUint8Ar
 export type ReclaimMetadataNftPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountDestination extends string | AccountMeta<string> = string, TAccountMetadata extends string | AccountMeta<string> = string, TAccountTokenMetadataProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = string, TAccountInstructionsSysvar extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = string, TAccountAssociatedTokenProgram extends string | AccountMeta<string> = string, TAccountOptionalAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow, TAccountDestination extends string ? WritableAccount<TAccountDestination> : TAccountDestination, TAccountMetadata extends string ? WritableAccount<TAccountMetadata> : TAccountMetadata, TAccountTokenMetadataProgram extends string ? ReadonlyAccount<TAccountTokenMetadataProgram> : TAccountTokenMetadataProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountInstructionsSysvar extends string ? ReadonlyAccount<TAccountInstructionsSysvar> : TAccountInstructionsSysvar, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, TAccountAssociatedTokenProgram extends string ? ReadonlyAccount<TAccountAssociatedTokenProgram> : TAccountAssociatedTokenProgram, TAccountOptionalAccounts extends string ? ReadonlyAccount<TAccountOptionalAccounts> : TAccountOptionalAccounts, ...TRemainingAccounts]>;
 
-export type ReclaimMetadataNftPrizeInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number;  };
+export type ReclaimMetadataNftPrizeInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Bundle slot holding the NFT. Must be below the bundle's `funded_assets`
+ * and hold a Token Metadata NFT whose mint is `mint`.
+ */
+assetIndex: number;  };
 
-export type ReclaimMetadataNftPrizeInstructionDataArgs = { assetIndex: number;  };
+export type ReclaimMetadataNftPrizeInstructionDataArgs = {
+/**
+ * Bundle slot holding the NFT. Must be below the bundle's `funded_assets`
+ * and hold a Token Metadata NFT whose mint is `mint`.
+ */
+assetIndex: number;  };
 
 export function getReclaimMetadataNftPrizeInstructionDataEncoder(): FixedSizeEncoder<ReclaimMetadataNftPrizeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 29, migrationVersion: 0 }));

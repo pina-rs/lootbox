@@ -22,9 +22,19 @@ export function getClaimCoreAssetPrizeDiscriminator2Bytes(): ReadonlyUint8Array 
 export type ClaimCoreAssetPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountPayer extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountRecipient extends string | AccountMeta<string> = string, TAccountAsset extends string | AccountMeta<string> = string, TAccountCollection extends string | AccountMeta<string> = string, TAccountCoreProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = string, TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountPluginAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountPayer extends string ? WritableSignerAccount<TAccountPayer> & AccountSignerMeta<TAccountPayer> : TAccountPayer, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountRecipient extends string ? ReadonlyAccount<TAccountRecipient> : TAccountRecipient, TAccountAsset extends string ? WritableAccount<TAccountAsset> : TAccountAsset, TAccountCollection extends string ? ReadonlyAccount<TAccountCollection> : TAccountCollection, TAccountCoreProgram extends string ? ReadonlyAccount<TAccountCoreProgram> : TAccountCoreProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountPluginAccounts extends string ? ReadonlyAccount<TAccountPluginAccounts> : TAccountPluginAccounts, ...TRemainingAccounts]>;
 
-export type ClaimCoreAssetPrizeInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number;  };
+export type ClaimCoreAssetPrizeInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Bundle slot holding the asset. Must be below the bundle's `asset_count`
+ * and hold a Core asset whose address is `asset`.
+ */
+assetIndex: number;  };
 
-export type ClaimCoreAssetPrizeInstructionDataArgs = { assetIndex: number;  };
+export type ClaimCoreAssetPrizeInstructionDataArgs = {
+/**
+ * Bundle slot holding the asset. Must be below the bundle's `asset_count`
+ * and hold a Core asset whose address is `asset`.
+ */
+assetIndex: number;  };
 
 export function getClaimCoreAssetPrizeInstructionDataEncoder(): FixedSizeEncoder<ClaimCoreAssetPrizeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 31, migrationVersion: 0 }));

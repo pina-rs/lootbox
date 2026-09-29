@@ -63,6 +63,7 @@ pub struct MintTemplateBoxes<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct MintTemplateBoxesIx {
 	/// Instruction argument `amount`.
+	/// Boxes to mint; must be positive.
 	pub amount: u64,
 }
 

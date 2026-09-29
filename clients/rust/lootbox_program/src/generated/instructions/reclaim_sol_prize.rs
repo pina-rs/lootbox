@@ -96,5 +96,8 @@ impl ReclaimSolPrizeInstructionData {
 pub struct ReclaimSolPrizeInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Asset slot within the bundle; must be below its funded asset count,
+	/// hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and not be reclaimed
+	/// already.
 	pub asset_index: u8,
 }

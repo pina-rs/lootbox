@@ -108,5 +108,8 @@ impl AllocatePrizePoolOpenInstructionData {
 pub struct AllocatePrizePoolOpenInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Canonical bump of the result receipt PDA
+	/// `["result-receipt", opening, sequence]`; checked even when result
+	/// receipts are disabled.
 	pub result_receipt_bump: u8,
 }

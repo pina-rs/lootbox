@@ -81,6 +81,9 @@ impl AddOutcomeInstructionData {
 pub struct AddOutcomeInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Relative selection weight; must be nonzero.
 	pub weight: u64,
+	/// SOL reward paid when this outcome is selected, in lamports; must be
+	/// nonzero.
 	pub reward_lamports: u64,
 }

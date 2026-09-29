@@ -22,9 +22,19 @@ export function getAllocateTemplateOpenDiscriminator2Bytes(): ReadonlyUint8Array
 export type AllocateTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountServiceVault extends string | AccountMeta<string> = string, TAccountResultReceipt extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? ReadonlyAccount<TAccountBundle> : TAccountBundle, TAccountServiceVault extends string ? WritableAccount<TAccountServiceVault> : TAccountServiceVault, TAccountResultReceipt extends string ? WritableAccount<TAccountResultReceipt> : TAccountResultReceipt, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type AllocateTemplateOpenInstructionData = { discriminator: number; migrationVersion: number; resultReceiptBump: number;  };
+export type AllocateTemplateOpenInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Canonical bump of the result receipt PDA; rejected unless it equals the
+ * derived canonical bump, even when result receipts are disabled.
+ */
+resultReceiptBump: number;  };
 
-export type AllocateTemplateOpenInstructionDataArgs = { resultReceiptBump: number;  };
+export type AllocateTemplateOpenInstructionDataArgs = {
+/**
+ * Canonical bump of the result receipt PDA; rejected unless it equals the
+ * derived canonical bump, even when result receipts are disabled.
+ */
+resultReceiptBump: number;  };
 
 export function getAllocateTemplateOpenInstructionDataEncoder(): FixedSizeEncoder<AllocateTemplateOpenInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['resultReceiptBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 18, migrationVersion: 0 }));

@@ -123,5 +123,7 @@ impl ClaimCoreAssetPrizeInstructionData {
 pub struct ClaimCoreAssetPrizeInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Bundle slot holding the asset. Must be below the bundle's `asset_count`
+	/// and hold a Core asset whose address is `asset`.
 	pub asset_index: u8,
 }

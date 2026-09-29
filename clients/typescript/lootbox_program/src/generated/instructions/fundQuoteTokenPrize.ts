@@ -22,9 +22,13 @@ export function getFundQuoteTokenPrizeDiscriminator2Bytes(): ReadonlyUint8Array 
 export type FundQuoteTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountSource extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountSource extends string ? WritableAccount<TAccountSource> : TAccountSource, TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type FundQuoteTokenPrizeInstructionData = { discriminator: number; migrationVersion: number; amountPerWin: bigint;  };
+export type FundQuoteTokenPrizeInstructionData = { discriminator: number; migrationVersion: number;
+/** Base units delivered per win; must be positive. */
+amountPerWin: bigint;  };
 
-export type FundQuoteTokenPrizeInstructionDataArgs = { amountPerWin: number | bigint;  };
+export type FundQuoteTokenPrizeInstructionDataArgs = {
+/** Base units delivered per win; must be positive. */
+amountPerWin: number | bigint;  };
 
 export function getFundQuoteTokenPrizeInstructionDataEncoder(): FixedSizeEncoder<FundQuoteTokenPrizeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['amountPerWin', getU64Encoder()]]), (value) => ({ ...value, discriminator: 40, migrationVersion: 0 }));

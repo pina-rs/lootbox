@@ -22,9 +22,13 @@ export function getMintBoxesDiscriminator2Bytes(): ReadonlyUint8Array { return g
 export type MintBoxesInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountLootbox extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountRecipientBoxAccount extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountLootbox extends string ? WritableAccount<TAccountLootbox> : TAccountLootbox, TAccountVault extends string ? ReadonlyAccount<TAccountVault> : TAccountVault, TAccountBoxMint extends string ? WritableAccount<TAccountBoxMint> : TAccountBoxMint, TAccountRecipientBoxAccount extends string ? WritableAccount<TAccountRecipientBoxAccount> : TAccountRecipientBoxAccount, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type MintBoxesInstructionData = { discriminator: number; migrationVersion: number; amount: bigint;  };
+export type MintBoxesInstructionData = { discriminator: number; migrationVersion: number;
+/** Number of boxes to mint; must be nonzero. */
+amount: bigint;  };
 
-export type MintBoxesInstructionDataArgs = { amount: number | bigint;  };
+export type MintBoxesInstructionDataArgs = {
+/** Number of boxes to mint; must be nonzero. */
+amount: number | bigint;  };
 
 export function getMintBoxesInstructionDataEncoder(): FixedSizeEncoder<MintBoxesInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['amount', getU64Encoder()]]), (value) => ({ ...value, discriminator: 4, migrationVersion: 0 }));

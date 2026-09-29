@@ -110,6 +110,9 @@ impl AppendExclusiveTreeInstructionData {
 pub struct AppendExclusiveTreeInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Concurrent Merkle tree depth, from 3 through 20.
 	pub max_depth: u8,
+	/// Concurrent Merkle tree changelog buffer size, passed to Bubblegum and
+	/// used in the minimum tree account size.
 	pub max_buffer_size: u32,
 }

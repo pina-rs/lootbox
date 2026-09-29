@@ -22,9 +22,27 @@ export function getAddBundleDiscriminator2Bytes(): ReadonlyUint8Array { return g
 export type AddBundleInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type AddBundleInstructionData = { discriminator: number; migrationVersion: number; quantity: bigint; assetCount: number; bump: number;  };
+export type AddBundleInstructionData = { discriminator: number; migrationVersion: number;
+/** Copies of this outcome, each one draw ticket; must be positive. */
+quantity: bigint;
+/** Asset slots the bundle will hold; must be between one and four. */
+assetCount: number;
+/**
+ * Canonical bump of the bundle PDA; rejected unless it equals the derived
+ * canonical bump.
+ */
+bump: number;  };
 
-export type AddBundleInstructionDataArgs = { quantity: number | bigint; assetCount: number; bump: number;  };
+export type AddBundleInstructionDataArgs = {
+/** Copies of this outcome, each one draw ticket; must be positive. */
+quantity: number | bigint;
+/** Asset slots the bundle will hold; must be between one and four. */
+assetCount: number;
+/**
+ * Canonical bump of the bundle PDA; rejected unless it equals the derived
+ * canonical bump.
+ */
+bump: number;  };
 
 export function getAddBundleInstructionDataEncoder(): FixedSizeEncoder<AddBundleInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['quantity', getU64Encoder()], ['assetCount', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 11, migrationVersion: 0 }));

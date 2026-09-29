@@ -77,6 +77,9 @@ pub struct AllocatePrizePoolOpen<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct AllocatePrizePoolOpenIx {
 	/// Instruction argument `resultReceiptBump`.
+	/// Canonical bump of the result receipt PDA
+	/// `["result-receipt", opening, sequence]`; checked even when result
+	/// receipts are disabled.
 	pub result_receipt_bump: u8,
 }
 

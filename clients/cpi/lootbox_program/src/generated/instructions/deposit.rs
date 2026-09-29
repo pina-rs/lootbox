@@ -53,6 +53,7 @@ pub struct Deposit<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct DepositIx {
 	/// Instruction argument `lamports`.
+	/// Amount to transfer into the vault, in lamports; must be nonzero.
 	pub lamports: u64,
 }
 

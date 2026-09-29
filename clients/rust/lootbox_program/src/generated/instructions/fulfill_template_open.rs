@@ -144,7 +144,11 @@ impl FulfillTemplateOpenInstructionData {
 pub struct FulfillTemplateOpenInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Switchboard enclave signature returned by the randomness gateway.
 	pub signature: [u8; 64],
+	/// Secp256k1 recovery identifier returned by the randomness gateway.
 	pub recovery_id: u8,
+	/// Revealed value covered by `signature`; rejected unless Switchboard
+	/// stores exactly this value on the randomness account.
 	pub value: [u8; 32],
 }

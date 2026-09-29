@@ -128,9 +128,14 @@ impl DepositPrizePoolItemInstructionData {
 pub struct DepositPrizePoolItemInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Merkle root that Bubblegum verifies the proof against.
 	pub root: [u8; 32],
+	/// Current leaf data hash; must equal the prepared item's snapshot.
 	pub data_hash: [u8; 32],
+	/// Current leaf creator hash; must equal the prepared item's snapshot.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce; with `merkle_tree` it must derive the prepared asset ID.
 	pub nonce: u64,
+	/// Leaf index in `merkle_tree`; must equal the prepared item's tree index.
 	pub index: u32,
 }

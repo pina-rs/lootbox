@@ -95,13 +95,27 @@ impl CreateTemplateInstructionData {
 pub struct CreateTemplateInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Creator-chosen identifier that seeds the template PDA beside the
+	/// authority.
 	pub id: u64,
+	/// Reveal time in unix seconds; rejected when negative.
 	pub opens_at: i64,
+	/// Switchboard On-Demand program; must be the mainnet or devnet ID.
 	pub oracle_program: solana_pubkey::Pubkey,
+	/// Switchboard queue for every opening's randomness; must be nonzero.
 	pub oracle_queue: solana_pubkey::Pubkey,
+	/// Null-padded UTF-8 display name; must be nonblank, free of control
+	/// characters, and equal to the box mint's metadata name.
 	pub name: [u8; 32],
+	/// Null-padded UTF-8 metadata URI; may be empty, must be free of control
+	/// characters, and must equal the box mint's metadata URI.
 	pub uri: [u8; 200],
+	/// Lamports paid per fulfilled or forfeited opening from the service
+	/// vault; zero disables bounties.
 	pub settlement_bounty_lamports: u64,
+	/// Whether each allocation creates a creator-funded result receipt.
 	pub result_receipts_enabled: bool,
+	/// Canonical bump of the template PDA; rejected unless it equals the
+	/// derived canonical bump.
 	pub bump: u8,
 }

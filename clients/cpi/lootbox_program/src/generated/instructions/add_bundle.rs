@@ -57,12 +57,16 @@ pub struct AddBundle<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct AddBundleIx {
 	/// Instruction argument `quantity`.
+	/// Copies of this outcome, each one draw ticket; must be positive.
 	pub quantity: u64,
 
 	/// Instruction argument `assetCount`.
+	/// Asset slots the bundle will hold; must be between one and four.
 	pub asset_count: u8,
 
 	/// Instruction argument `bump`.
+	/// Canonical bump of the bundle PDA; rejected unless it equals the derived
+	/// canonical bump.
 	pub bump: u8,
 }
 

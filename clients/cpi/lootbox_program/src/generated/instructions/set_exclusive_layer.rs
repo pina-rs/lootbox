@@ -45,12 +45,18 @@ pub struct SetExclusiveLayer<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct SetExclusiveLayerIx {
 	/// Instruction argument `layerIndex`.
+	/// Layer to overwrite, counted from 0 at the bottom; must be below the
+	/// collection's `layer_count`.
 	pub layer_index: u8,
 
 	/// Instruction argument `traitCount`.
+	/// Traits in the layer, from 1 through 64.
 	pub trait_count: u8,
 
 	/// Instruction argument `weights`.
+	/// Sixty-four little-endian `u32` weights; slots past `trait_count` are zero.
+	///
+	/// The used weights must total from 1 through `u32::MAX`.
 	pub weights: [u8; 256],
 }
 

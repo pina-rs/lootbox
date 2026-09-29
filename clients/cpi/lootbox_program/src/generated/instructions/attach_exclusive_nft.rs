@@ -74,12 +74,17 @@ pub struct AttachExclusiveNft<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct AttachExclusiveNftIx {
 	/// Instruction argument `assetIndex`.
+	/// Manifest slot to bind; must equal the bundle's `funded_assets`.
 	pub asset_index: u8,
 
 	/// Instruction argument `bump`.
+	/// Canonical bump of the attachment PDA
+	/// `["exclusive-attachment", bundle, asset_index]`; any other value fails.
 	pub bump: u8,
 
 	/// Instruction argument `feeVaultBump`.
+	/// Canonical bump of the fee vault PDA
+	/// `["exclusive-fee-vault", attachment]`; any other value fails.
 	pub fee_vault_bump: u8,
 }
 

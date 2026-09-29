@@ -22,9 +22,23 @@ export function getAddOutcomeDiscriminator2Bytes(): ReadonlyUint8Array { return 
 export type AddOutcomeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountLootbox extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountLootbox extends string ? WritableAccount<TAccountLootbox> : TAccountLootbox, ...TRemainingAccounts]>;
 
-export type AddOutcomeInstructionData = { discriminator: number; migrationVersion: number; weight: bigint; rewardLamports: bigint;  };
+export type AddOutcomeInstructionData = { discriminator: number; migrationVersion: number;
+/** Relative selection weight; must be nonzero. */
+weight: bigint;
+/**
+ * SOL reward paid when this outcome is selected, in lamports; must be
+ * nonzero.
+ */
+rewardLamports: bigint;  };
 
-export type AddOutcomeInstructionDataArgs = { weight: number | bigint; rewardLamports: number | bigint;  };
+export type AddOutcomeInstructionDataArgs = {
+/** Relative selection weight; must be nonzero. */
+weight: number | bigint;
+/**
+ * SOL reward paid when this outcome is selected, in lamports; must be
+ * nonzero.
+ */
+rewardLamports: number | bigint;  };
 
 export function getAddOutcomeInstructionDataEncoder(): FixedSizeEncoder<AddOutcomeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['weight', getU64Encoder()], ['rewardLamports', getU64Encoder()]]), (value) => ({ ...value, discriminator: 1, migrationVersion: 0 }));

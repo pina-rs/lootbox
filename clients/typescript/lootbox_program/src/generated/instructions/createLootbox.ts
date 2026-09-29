@@ -23,9 +23,63 @@ export function getCreateLootboxDiscriminator2Bytes(): ReadonlyUint8Array { retu
 export type CreateLootboxInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountLootbox extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountLootbox extends string ? WritableAccount<TAccountLootbox> : TAccountLootbox, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type CreateLootboxInstructionData = { discriminator: number; migrationVersion: number; id: bigint; maxSupply: bigint; oracleProgram: Address; oracleQueue: Address; bump: number; vaultBump: number;  };
+export type CreateLootboxInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Creator-chosen identifier that distinguishes this authority's lootboxes;
+ * a seed of the lootbox PDA.
+ */
+id: bigint;
+/** Lifetime cap on boxes minted. Rejected with `SupplyExceeded` when zero. */
+maxSupply: bigint;
+/**
+ * Switchboard On-Demand program that will own randomness accounts; must be
+ * the mainnet or devnet program ID.
+ */
+oracleProgram: Address;
+/**
+ * Switchboard queue that every opening's randomness must be bound to.
+ * Stored as given; each opening checks it.
+ */
+oracleQueue: Address;
+/**
+ * Canonical bump of the lootbox PDA; rejected unless it equals the derived
+ * canonical bump.
+ */
+bump: number;
+/**
+ * Canonical bump of the vault PDA; rejected unless it equals the derived
+ * canonical bump.
+ */
+vaultBump: number;  };
 
-export type CreateLootboxInstructionDataArgs = { id: number | bigint; maxSupply: number | bigint; oracleProgram: Address; oracleQueue: Address; bump: number; vaultBump: number;  };
+export type CreateLootboxInstructionDataArgs = {
+/**
+ * Creator-chosen identifier that distinguishes this authority's lootboxes;
+ * a seed of the lootbox PDA.
+ */
+id: number | bigint;
+/** Lifetime cap on boxes minted. Rejected with `SupplyExceeded` when zero. */
+maxSupply: number | bigint;
+/**
+ * Switchboard On-Demand program that will own randomness accounts; must be
+ * the mainnet or devnet program ID.
+ */
+oracleProgram: Address;
+/**
+ * Switchboard queue that every opening's randomness must be bound to.
+ * Stored as given; each opening checks it.
+ */
+oracleQueue: Address;
+/**
+ * Canonical bump of the lootbox PDA; rejected unless it equals the derived
+ * canonical bump.
+ */
+bump: number;
+/**
+ * Canonical bump of the vault PDA; rejected unless it equals the derived
+ * canonical bump.
+ */
+vaultBump: number;  };
 
 export function getCreateLootboxInstructionDataEncoder(): FixedSizeEncoder<CreateLootboxInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['id', getU64Encoder()], ['maxSupply', getU64Encoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['bump', getU8Encoder()], ['vaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 0, migrationVersion: 0 }));

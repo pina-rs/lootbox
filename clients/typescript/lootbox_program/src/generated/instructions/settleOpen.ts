@@ -22,9 +22,27 @@ export function getSettleOpenDiscriminator2Bytes(): ReadonlyUint8Array { return 
 export type SettleOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountRecipient extends string | AccountMeta<string> = string, TAccountPayer extends string | AccountMeta<string> = string, TAccountLootbox extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountRandomness extends string | AccountMeta<string> = string, TAccountOracleQueue extends string | AccountMeta<string> = string, TAccountOracle extends string | AccountMeta<string> = string, TAccountOracleStats extends string | AccountMeta<string> = string, TAccountRecentSlotHashes extends string | AccountMeta<string> = string, TAccountOracleProgram extends string | AccountMeta<string> = string, TAccountRewardEscrow extends string | AccountMeta<string> = string, TAccountOracleProgramState extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TAccountWrappedSolMint extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountRecipient extends string ? WritableAccount<TAccountRecipient> : TAccountRecipient, TAccountPayer extends string ? WritableSignerAccount<TAccountPayer> & AccountSignerMeta<TAccountPayer> : TAccountPayer, TAccountLootbox extends string ? WritableAccount<TAccountLootbox> : TAccountLootbox, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountRandomness extends string ? WritableAccount<TAccountRandomness> : TAccountRandomness, TAccountOracleQueue extends string ? ReadonlyAccount<TAccountOracleQueue> : TAccountOracleQueue, TAccountOracle extends string ? ReadonlyAccount<TAccountOracle> : TAccountOracle, TAccountOracleStats extends string ? WritableAccount<TAccountOracleStats> : TAccountOracleStats, TAccountRecentSlotHashes extends string ? ReadonlyAccount<TAccountRecentSlotHashes> : TAccountRecentSlotHashes, TAccountOracleProgram extends string ? ReadonlyAccount<TAccountOracleProgram> : TAccountOracleProgram, TAccountRewardEscrow extends string ? WritableAccount<TAccountRewardEscrow> : TAccountRewardEscrow, TAccountOracleProgramState extends string ? ReadonlyAccount<TAccountOracleProgramState> : TAccountOracleProgramState, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, TAccountWrappedSolMint extends string ? ReadonlyAccount<TAccountWrappedSolMint> : TAccountWrappedSolMint, ...TRemainingAccounts]>;
 
-export type SettleOpenInstructionData = { discriminator: number; migrationVersion: number; signature: ReadonlyUint8Array; recoveryId: number; value: ReadonlyUint8Array;  };
+export type SettleOpenInstructionData = { discriminator: number; migrationVersion: number;
+/** Switchboard enclave signature returned by the randomness gateway. */
+signature: ReadonlyUint8Array;
+/** Secp256k1 recovery identifier returned by the randomness gateway. */
+recoveryId: number;
+/**
+ * Revealed value covered by `signature`. The stored reveal must equal it
+ * after the CPI.
+ */
+value: ReadonlyUint8Array;  };
 
-export type SettleOpenInstructionDataArgs = { signature: ReadonlyUint8Array; recoveryId: number; value: ReadonlyUint8Array;  };
+export type SettleOpenInstructionDataArgs = {
+/** Switchboard enclave signature returned by the randomness gateway. */
+signature: ReadonlyUint8Array;
+/** Secp256k1 recovery identifier returned by the randomness gateway. */
+recoveryId: number;
+/**
+ * Revealed value covered by `signature`. The stored reveal must equal it
+ * after the CPI.
+ */
+value: ReadonlyUint8Array;  };
 
 export function getSettleOpenInstructionDataEncoder(): FixedSizeEncoder<SettleOpenInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['signature', fixPinaPodEncoderSize(getBytesEncoder(), 64)], ['recoveryId', getU8Encoder()], ['value', fixPinaPodEncoderSize(getBytesEncoder(), 32)]]), (value) => ({ ...value, discriminator: 6, migrationVersion: 0 }));

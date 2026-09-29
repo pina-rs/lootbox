@@ -90,5 +90,6 @@ impl FundSolPrizeInstructionData {
 pub struct FundSolPrizeInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Lamports delivered per win; must be positive.
 	pub lamports_per_win: u64,
 }

@@ -22,9 +22,53 @@ export function getClaimCompressedNftPrizeDiscriminator2Bytes(): ReadonlyUint8Ar
 export type ClaimCompressedNftPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountRecipient extends string | AccountMeta<string> = string, TAccountTreeConfig extends string | AccountMeta<string> = string, TAccountMerkleTree extends string | AccountMeta<string> = string, TAccountBubblegumProgram extends string | AccountMeta<string> = string, TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountCompressionProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = string, TAccountProofAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountRecipient extends string ? ReadonlyAccount<TAccountRecipient> : TAccountRecipient, TAccountTreeConfig extends string ? ReadonlyAccount<TAccountTreeConfig> : TAccountTreeConfig, TAccountMerkleTree extends string ? WritableAccount<TAccountMerkleTree> : TAccountMerkleTree, TAccountBubblegumProgram extends string ? ReadonlyAccount<TAccountBubblegumProgram> : TAccountBubblegumProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountCompressionProgram extends string ? ReadonlyAccount<TAccountCompressionProgram> : TAccountCompressionProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountProofAccounts extends string ? ReadonlyAccount<TAccountProofAccounts> : TAccountProofAccounts, ...TRemainingAccounts]>;
 
-export type ClaimCompressedNftPrizeInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number; root: ReadonlyUint8Array; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: bigint; index: number;  };
+export type ClaimCompressedNftPrizeInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Bundle slot holding the compressed NFT. Must be below the bundle's
+ * `asset_count` and hold the asset ID derived from `merkle_tree` and
+ * `nonce`.
+ */
+assetIndex: number;
+/**
+ * Merkle root the proof was built against; Bubblegum verifies the leaf
+ * against it.
+ */
+root: ReadonlyUint8Array;
+/** Bubblegum hash of the leaf's metadata, forwarded to rebuild the leaf. */
+dataHash: ReadonlyUint8Array;
+/** Bubblegum hash of the leaf's creators, forwarded to rebuild the leaf. */
+creatorHash: ReadonlyUint8Array;
+/**
+ * Leaf nonce. With `merkle_tree` it derives the asset ID, which must match
+ * the slot's stored asset.
+ */
+nonce: bigint;
+/** Leaf position in `merkle_tree`, forwarded to Bubblegum. */
+index: number;  };
 
-export type ClaimCompressedNftPrizeInstructionDataArgs = { assetIndex: number; root: ReadonlyUint8Array; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: number | bigint; index: number;  };
+export type ClaimCompressedNftPrizeInstructionDataArgs = {
+/**
+ * Bundle slot holding the compressed NFT. Must be below the bundle's
+ * `asset_count` and hold the asset ID derived from `merkle_tree` and
+ * `nonce`.
+ */
+assetIndex: number;
+/**
+ * Merkle root the proof was built against; Bubblegum verifies the leaf
+ * against it.
+ */
+root: ReadonlyUint8Array;
+/** Bubblegum hash of the leaf's metadata, forwarded to rebuild the leaf. */
+dataHash: ReadonlyUint8Array;
+/** Bubblegum hash of the leaf's creators, forwarded to rebuild the leaf. */
+creatorHash: ReadonlyUint8Array;
+/**
+ * Leaf nonce. With `merkle_tree` it derives the asset ID, which must match
+ * the slot's stored asset.
+ */
+nonce: number | bigint;
+/** Leaf position in `merkle_tree`, forwarded to Bubblegum. */
+index: number;  };
 
 export function getClaimCompressedNftPrizeInstructionDataEncoder(): FixedSizeEncoder<ClaimCompressedNftPrizeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()], ['root', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()]]), (value) => ({ ...value, discriminator: 34, migrationVersion: 0 }));

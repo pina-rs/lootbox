@@ -70,9 +70,13 @@ pub struct CreatePrizePool<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct CreatePrizePoolIx {
 	/// Instruction argument `assetIndex`.
+	/// Manifest slot to reserve; must equal the bundle's `funded_assets` and be
+	/// below its `asset_count`.
 	pub asset_index: u8,
 
 	/// Instruction argument `bump`.
+	/// Canonical bump of the `PrizePoolState` PDA
+	/// `["prize-pool", bundle, asset_index]`; any other value fails.
 	pub bump: u8,
 }
 

@@ -84,6 +84,9 @@ pub struct ClaimTokenPrize<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct ClaimTokenPrizeIx {
 	/// Instruction argument `assetIndex`.
+	/// Asset slot within the selected bundle; must be below its asset count,
+	/// hold a `PRIZE_TOKEN`, `PRIZE_NFT`, `PRIZE_TOKEN_2022`, or
+	/// `PRIZE_QUOTE_TOKEN` asset, and be unclaimed by this opening.
 	pub asset_index: u8,
 }
 

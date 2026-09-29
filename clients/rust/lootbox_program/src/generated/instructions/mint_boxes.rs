@@ -99,5 +99,6 @@ impl MintBoxesInstructionData {
 pub struct MintBoxesInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Number of boxes to mint; must be nonzero.
 	pub amount: u64,
 }

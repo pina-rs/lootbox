@@ -143,5 +143,7 @@ impl ClaimMetadataNftPrizeInstructionData {
 pub struct ClaimMetadataNftPrizeInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Bundle slot holding the NFT. Must be below the bundle's `asset_count` and
+	/// hold a Token Metadata NFT whose mint is `mint`.
 	pub asset_index: u8,
 }

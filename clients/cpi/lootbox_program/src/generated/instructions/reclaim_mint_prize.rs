@@ -73,6 +73,9 @@ pub struct ReclaimMintPrize<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct ReclaimMintPrizeIx {
 	/// Instruction argument `assetIndex`.
+	/// Asset slot within the bundle; must be below its funded asset count,
+	/// hold a `PRIZE_MINT_BADGE` asset with an amount of one, and not be
+	/// reclaimed already.
 	pub asset_index: u8,
 }
 

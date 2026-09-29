@@ -54,6 +54,7 @@ pub struct WithdrawSurplus<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct WithdrawSurplusIx {
 	/// Instruction argument `lamports`.
+	/// Amount to withdraw, in lamports. Zero is accepted as a no-op.
 	pub lamports: u64,
 }
 

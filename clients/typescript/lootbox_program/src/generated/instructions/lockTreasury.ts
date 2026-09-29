@@ -22,9 +22,19 @@ export function getLockTreasuryDiscriminator2Bytes(): ReadonlyUint8Array { retur
 export type LockTreasuryInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountServiceVault extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountBoxTokenProgram extends string | AccountMeta<string> = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? WritableAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? ReadonlyAccount<TAccountBundle> : TAccountBundle, TAccountServiceVault extends string ? WritableAccount<TAccountServiceVault> : TAccountServiceVault, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, ...TRemainingAccounts]>;
 
-export type LockTreasuryInstructionData = { discriminator: number; migrationVersion: number; serviceVaultBump: number;  };
+export type LockTreasuryInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Canonical bump of the service vault PDA; rejected unless it equals the
+ * derived canonical bump, then stored on the template.
+ */
+serviceVaultBump: number;  };
 
-export type LockTreasuryInstructionDataArgs = { serviceVaultBump: number;  };
+export type LockTreasuryInstructionDataArgs = {
+/**
+ * Canonical bump of the service vault PDA; rejected unless it equals the
+ * derived canonical bump, then stored on the template.
+ */
+serviceVaultBump: number;  };
 
 export function getLockTreasuryInstructionDataEncoder(): FixedSizeEncoder<LockTreasuryInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['serviceVaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 37, migrationVersion: 0 }));

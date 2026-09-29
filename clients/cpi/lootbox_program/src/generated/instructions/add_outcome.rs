@@ -45,9 +45,12 @@ pub struct AddOutcome<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct AddOutcomeIx {
 	/// Instruction argument `weight`.
+	/// Relative selection weight; must be nonzero.
 	pub weight: u64,
 
 	/// Instruction argument `rewardLamports`.
+	/// SOL reward paid when this outcome is selected, in lamports; must be
+	/// nonzero.
 	pub reward_lamports: u64,
 }
 

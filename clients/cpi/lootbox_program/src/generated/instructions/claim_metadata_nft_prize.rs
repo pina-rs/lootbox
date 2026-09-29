@@ -120,6 +120,8 @@ pub struct ClaimMetadataNftPrize<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct ClaimMetadataNftPrizeIx {
 	/// Instruction argument `assetIndex`.
+	/// Bundle slot holding the NFT. Must be below the bundle's `asset_count` and
+	/// hold a Token Metadata NFT whose mint is `mint`.
 	pub asset_index: u8,
 }
 

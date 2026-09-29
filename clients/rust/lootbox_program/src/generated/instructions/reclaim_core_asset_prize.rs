@@ -119,5 +119,7 @@ impl ReclaimCoreAssetPrizeInstructionData {
 pub struct ReclaimCoreAssetPrizeInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Bundle slot holding the asset. Must be below the bundle's
+	/// `funded_assets` and hold a Core asset whose address is `asset`.
 	pub asset_index: u8,
 }

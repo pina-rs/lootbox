@@ -87,5 +87,6 @@ impl DepositInstructionData {
 pub struct DepositInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Amount to transfer into the vault, in lamports; must be nonzero.
 	pub lamports: u64,
 }

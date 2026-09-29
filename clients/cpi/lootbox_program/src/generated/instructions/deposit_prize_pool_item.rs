@@ -102,18 +102,23 @@ pub struct DepositPrizePoolItem<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct DepositPrizePoolItemIx {
 	/// Instruction argument `root`.
+	/// Merkle root that Bubblegum verifies the proof against.
 	pub root: [u8; 32],
 
 	/// Instruction argument `dataHash`.
+	/// Current leaf data hash; must equal the prepared item's snapshot.
 	pub data_hash: [u8; 32],
 
 	/// Instruction argument `creatorHash`.
+	/// Current leaf creator hash; must equal the prepared item's snapshot.
 	pub creator_hash: [u8; 32],
 
 	/// Instruction argument `nonce`.
+	/// Leaf nonce; with `merkle_tree` it must derive the prepared asset ID.
 	pub nonce: u64,
 
 	/// Instruction argument `index`.
+	/// Leaf index in `merkle_tree`; must equal the prepared item's tree index.
 	pub index: u32,
 }
 

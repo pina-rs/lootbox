@@ -125,12 +125,16 @@ pub struct SettleOpen<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct SettleOpenIx {
 	/// Instruction argument `signature`.
+	/// Switchboard enclave signature returned by the randomness gateway.
 	pub signature: [u8; 64],
 
 	/// Instruction argument `recoveryId`.
+	/// Secp256k1 recovery identifier returned by the randomness gateway.
 	pub recovery_id: u8,
 
 	/// Instruction argument `value`.
+	/// Revealed value covered by `signature`. The stored reveal must equal it
+	/// after the CPI.
 	pub value: [u8; 32],
 }
 

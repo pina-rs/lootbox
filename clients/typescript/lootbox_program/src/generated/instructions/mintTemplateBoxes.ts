@@ -22,9 +22,13 @@ export function getMintTemplateBoxesDiscriminator2Bytes(): ReadonlyUint8Array { 
 export type MintTemplateBoxesInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountRecipientBoxAccount extends string | AccountMeta<string> = string, TAccountBoxTokenProgram extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? WritableAccount<TAccountBoxMint> : TAccountBoxMint, TAccountRecipientBoxAccount extends string ? WritableAccount<TAccountRecipientBoxAccount> : TAccountRecipientBoxAccount, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, ...TRemainingAccounts]>;
 
-export type MintTemplateBoxesInstructionData = { discriminator: number; migrationVersion: number; amount: bigint;  };
+export type MintTemplateBoxesInstructionData = { discriminator: number; migrationVersion: number;
+/** Boxes to mint; must be positive. */
+amount: bigint;  };
 
-export type MintTemplateBoxesInstructionDataArgs = { amount: number | bigint;  };
+export type MintTemplateBoxesInstructionDataArgs = {
+/** Boxes to mint; must be positive. */
+amount: number | bigint;  };
 
 export function getMintTemplateBoxesInstructionDataEncoder(): FixedSizeEncoder<MintTemplateBoxesInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['amount', getU64Encoder()]]), (value) => ({ ...value, discriminator: 15, migrationVersion: 0 }));

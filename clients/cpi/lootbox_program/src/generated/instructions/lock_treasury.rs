@@ -76,6 +76,8 @@ pub struct LockTreasury<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct LockTreasuryIx {
 	/// Instruction argument `serviceVaultBump`.
+	/// Canonical bump of the service vault PDA; rejected unless it equals the
+	/// derived canonical bump, then stored on the template.
 	pub service_vault_bump: u8,
 }
 

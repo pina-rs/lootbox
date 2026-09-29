@@ -116,5 +116,8 @@ impl ReclaimTokenPrizeInstructionData {
 pub struct ReclaimTokenPrizeInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Asset slot within the bundle; must be below its funded asset count,
+	/// hold a `PRIZE_TOKEN`, `PRIZE_NFT`, `PRIZE_TOKEN_2022`, or
+	/// `PRIZE_QUOTE_TOKEN` asset, and not be reclaimed already.
 	pub asset_index: u8,
 }

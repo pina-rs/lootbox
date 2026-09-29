@@ -117,6 +117,8 @@ pub struct ReclaimMetadataNftPrize<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct ReclaimMetadataNftPrizeIx {
 	/// Instruction argument `assetIndex`.
+	/// Bundle slot holding the NFT. Must be below the bundle's `funded_assets`
+	/// and hold a Token Metadata NFT whose mint is `mint`.
 	pub asset_index: u8,
 }
 

@@ -22,9 +22,29 @@ export function getDepositPrizePoolItemDiscriminator2Bytes(): ReadonlyUint8Array
 export type DepositPrizePoolItemInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountPrizePool extends string | AccountMeta<string> = string, TAccountPrizePoolItem extends string | AccountMeta<string> = string, TAccountTreeConfig extends string | AccountMeta<string> = string, TAccountMerkleTree extends string | AccountMeta<string> = string, TAccountBubblegumProgram extends string | AccountMeta<string> = string, TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountCompressionProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountProofAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? ReadonlyAccount<TAccountBundle> : TAccountBundle, TAccountPrizePool extends string ? WritableAccount<TAccountPrizePool> : TAccountPrizePool, TAccountPrizePoolItem extends string ? WritableAccount<TAccountPrizePoolItem> : TAccountPrizePoolItem, TAccountTreeConfig extends string ? ReadonlyAccount<TAccountTreeConfig> : TAccountTreeConfig, TAccountMerkleTree extends string ? WritableAccount<TAccountMerkleTree> : TAccountMerkleTree, TAccountBubblegumProgram extends string ? ReadonlyAccount<TAccountBubblegumProgram> : TAccountBubblegumProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountCompressionProgram extends string ? ReadonlyAccount<TAccountCompressionProgram> : TAccountCompressionProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountProofAccounts extends string ? ReadonlyAccount<TAccountProofAccounts> : TAccountProofAccounts, ...TRemainingAccounts]>;
 
-export type DepositPrizePoolItemInstructionData = { discriminator: number; migrationVersion: number; root: ReadonlyUint8Array; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: bigint; index: number;  };
+export type DepositPrizePoolItemInstructionData = { discriminator: number; migrationVersion: number;
+/** Merkle root that Bubblegum verifies the proof against. */
+root: ReadonlyUint8Array;
+/** Current leaf data hash; must equal the prepared item's snapshot. */
+dataHash: ReadonlyUint8Array;
+/** Current leaf creator hash; must equal the prepared item's snapshot. */
+creatorHash: ReadonlyUint8Array;
+/** Leaf nonce; with `merkle_tree` it must derive the prepared asset ID. */
+nonce: bigint;
+/** Leaf index in `merkle_tree`; must equal the prepared item's tree index. */
+index: number;  };
 
-export type DepositPrizePoolItemInstructionDataArgs = { root: ReadonlyUint8Array; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: number | bigint; index: number;  };
+export type DepositPrizePoolItemInstructionDataArgs = {
+/** Merkle root that Bubblegum verifies the proof against. */
+root: ReadonlyUint8Array;
+/** Current leaf data hash; must equal the prepared item's snapshot. */
+dataHash: ReadonlyUint8Array;
+/** Current leaf creator hash; must equal the prepared item's snapshot. */
+creatorHash: ReadonlyUint8Array;
+/** Leaf nonce; with `merkle_tree` it must derive the prepared asset ID. */
+nonce: number | bigint;
+/** Leaf index in `merkle_tree`; must equal the prepared item's tree index. */
+index: number;  };
 
 export function getDepositPrizePoolItemInstructionDataEncoder(): FixedSizeEncoder<DepositPrizePoolItemInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['root', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()]]), (value) => ({ ...value, discriminator: 45, migrationVersion: 0 }));

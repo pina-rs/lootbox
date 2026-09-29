@@ -75,6 +75,7 @@ pub struct ReclaimExclusiveFees<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct ReclaimExclusiveFeesIx {
 	/// Instruction argument `assetIndex`.
+	/// Manifest slot bound to the attachment.
 	pub asset_index: u8,
 }
 

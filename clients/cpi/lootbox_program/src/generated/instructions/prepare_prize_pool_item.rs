@@ -68,21 +68,31 @@ pub struct PreparePrizePoolItem<'account, 'argument> {
 #[derive(Clone, Copy, Debug)]
 pub struct PreparePrizePoolItemIx<'argument> {
 	/// Instruction argument `itemBump`.
+	/// Canonical bump of the item PDA
+	/// `["prize-pool-item", prize_pool, deposit_cursor]`; any other value fails.
 	pub item_bump: u8,
 
 	/// Instruction argument `dataHash`.
+	/// Leaf data hash; must equal `keccak(keccak(metadata) ||
+	/// seller_fee_basis_points)` recomputed from `metadata`.
 	pub data_hash: [u8; 32],
 
 	/// Instruction argument `creatorHash`.
+	/// Leaf creator hash; must equal the keccak hash of the creators encoded
+	/// in `metadata`.
 	pub creator_hash: [u8; 32],
 
 	/// Instruction argument `nonce`.
+	/// Leaf nonce; derives the asset ID `["asset", tree, nonce]` under
+	/// Bubblegum using the pool's pinned tree.
 	pub nonce: u64,
 
 	/// Instruction argument `index`.
+	/// Leaf index in the pool's tree, stored for the later transfer.
 	pub index: u32,
 
 	/// Instruction argument `metadata`.
+	/// Canonical Borsh serialization of Bubblegum V1 `MetadataArgs`.
 	pub metadata: &'argument [u8],
 }
 

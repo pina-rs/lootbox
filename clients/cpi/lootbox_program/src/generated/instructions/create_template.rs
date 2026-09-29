@@ -63,30 +63,44 @@ pub struct CreateTemplate<'account, 'argument> {
 #[derive(Clone, Copy, Debug)]
 pub struct CreateTemplateIx<'argument> {
 	/// Instruction argument `id`.
+	/// Creator-chosen identifier that seeds the template PDA beside the
+	/// authority.
 	pub id: u64,
 
 	/// Instruction argument `opensAt`.
+	/// Reveal time in unix seconds; rejected when negative.
 	pub opens_at: i64,
 
 	/// Instruction argument `oracleProgram`.
+	/// Switchboard On-Demand program; must be the mainnet or devnet ID.
 	pub oracle_program: &'argument Address,
 
 	/// Instruction argument `oracleQueue`.
+	/// Switchboard queue for every opening's randomness; must be nonzero.
 	pub oracle_queue: &'argument Address,
 
 	/// Instruction argument `name`.
+	/// Null-padded UTF-8 display name; must be nonblank, free of control
+	/// characters, and equal to the box mint's metadata name.
 	pub name: [u8; 32],
 
 	/// Instruction argument `uri`.
+	/// Null-padded UTF-8 metadata URI; may be empty, must be free of control
+	/// characters, and must equal the box mint's metadata URI.
 	pub uri: [u8; 200],
 
 	/// Instruction argument `settlementBountyLamports`.
+	/// Lamports paid per fulfilled or forfeited opening from the service
+	/// vault; zero disables bounties.
 	pub settlement_bounty_lamports: u64,
 
 	/// Instruction argument `resultReceiptsEnabled`.
+	/// Whether each allocation creates a creator-funded result receipt.
 	pub result_receipts_enabled: bool,
 
 	/// Instruction argument `bump`.
+	/// Canonical bump of the template PDA; rejected unless it equals the
+	/// derived canonical bump.
 	pub bump: u8,
 }
 

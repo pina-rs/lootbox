@@ -91,7 +91,11 @@ impl AddBundleInstructionData {
 pub struct AddBundleInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Copies of this outcome, each one draw ticket; must be positive.
 	pub quantity: u64,
+	/// Asset slots the bundle will hold; must be between one and four.
 	pub asset_count: u8,
+	/// Canonical bump of the bundle PDA; rejected unless it equals the derived
+	/// canonical bump.
 	pub bump: u8,
 }

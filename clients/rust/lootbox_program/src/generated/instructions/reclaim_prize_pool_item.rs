@@ -135,11 +135,19 @@ impl ReclaimPrizePoolItemInstructionData {
 pub struct ReclaimPrizePoolItemInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Local index of the item within the pool; must be below
+	/// `deposit_cursor`, and equal `deposit_cursor - 1` while unsealed.
 	pub pool_index: u32,
+	/// Merkle root that Bubblegum verifies the proof against.
 	pub root: [u8; 32],
+	/// Current leaf data hash; must be recomputed from `metadata`.
 	pub data_hash: [u8; 32],
+	/// Current leaf creator hash; must be recomputed from `metadata`.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce; must equal the item's nonce and derive its asset ID.
 	pub nonce: u64,
+	/// Leaf index in the pool's tree; must equal the item's tree index.
 	pub index: u32,
+	/// Current canonical Bubblegum V1 `MetadataArgs` Borsh preimage.
 	pub metadata: pina::Vec<u8, 512>,
 }

@@ -88,5 +88,6 @@ impl WithdrawSurplusInstructionData {
 pub struct WithdrawSurplusInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Amount to withdraw, in lamports. Zero is accepted as a no-op.
 	pub lamports: u64,
 }

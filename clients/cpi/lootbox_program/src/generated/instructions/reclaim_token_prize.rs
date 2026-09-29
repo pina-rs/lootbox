@@ -86,6 +86,9 @@ pub struct ReclaimTokenPrize<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct ReclaimTokenPrizeIx {
 	/// Instruction argument `assetIndex`.
+	/// Asset slot within the bundle; must be below its funded asset count,
+	/// hold a `PRIZE_TOKEN`, `PRIZE_NFT`, `PRIZE_TOKEN_2022`, or
+	/// `PRIZE_QUOTE_TOKEN` asset, and not be reclaimed already.
 	pub asset_index: u8,
 }
 

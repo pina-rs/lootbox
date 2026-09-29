@@ -99,12 +99,24 @@ impl CreateExclusiveCollectionInstructionData {
 pub struct CreateExclusiveCollectionInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Admin-chosen identifier in the PDA seeds, so one admin can own several
+	/// collections.
 	pub collection_id: u64,
+	/// Unix time in seconds from which bundles may attach; must be earlier
+	/// than `attach_closes_at`.
 	pub attach_opens_at: i64,
+	/// Unix time in seconds from which bundles may no longer attach.
 	pub attach_closes_at: i64,
+	/// Number of trait layers, from 1 through 12.
 	pub layer_count: u8,
+	/// Canonical bump of the collection PDA
+	/// `["exclusive-collection", admin, collection_id]`; any other value fails.
 	pub bump: u8,
+	/// Null-padded UTF-8 name prefix of at most 20 bytes.
 	pub name_prefix: [u8; 32],
+	/// Null-padded UTF-8 symbol.
 	pub symbol: [u8; 10],
+	/// Null-padded metadata URI base; must start with `https://`, continue
+	/// past it, and contain no spaces.
 	pub base_uri: [u8; 128],
 }

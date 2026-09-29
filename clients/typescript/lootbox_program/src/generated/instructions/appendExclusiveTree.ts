@@ -22,9 +22,23 @@ export function getAppendExclusiveTreeDiscriminator2Bytes(): ReadonlyUint8Array 
 export type AppendExclusiveTreeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAdmin extends string | AccountMeta<string> = string, TAccountExclusiveCollection extends string | AccountMeta<string> = string, TAccountTreeConfig extends string | AccountMeta<string> = string, TAccountMerkleTree extends string | AccountMeta<string> = string, TAccountBubblegumProgram extends string | AccountMeta<string> = string, TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountCompressionProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAdmin extends string ? WritableSignerAccount<TAccountAdmin> & AccountSignerMeta<TAccountAdmin> : TAccountAdmin, TAccountExclusiveCollection extends string ? WritableAccount<TAccountExclusiveCollection> : TAccountExclusiveCollection, TAccountTreeConfig extends string ? WritableAccount<TAccountTreeConfig> : TAccountTreeConfig, TAccountMerkleTree extends string ? WritableAccount<TAccountMerkleTree> : TAccountMerkleTree, TAccountBubblegumProgram extends string ? ReadonlyAccount<TAccountBubblegumProgram> : TAccountBubblegumProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountCompressionProgram extends string ? ReadonlyAccount<TAccountCompressionProgram> : TAccountCompressionProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type AppendExclusiveTreeInstructionData = { discriminator: number; migrationVersion: number; maxDepth: number; maxBufferSize: number;  };
+export type AppendExclusiveTreeInstructionData = { discriminator: number; migrationVersion: number;
+/** Concurrent Merkle tree depth, from 3 through 20. */
+maxDepth: number;
+/**
+ * Concurrent Merkle tree changelog buffer size, passed to Bubblegum and
+ * used in the minimum tree account size.
+ */
+maxBufferSize: number;  };
 
-export type AppendExclusiveTreeInstructionDataArgs = { maxDepth: number; maxBufferSize: number;  };
+export type AppendExclusiveTreeInstructionDataArgs = {
+/** Concurrent Merkle tree depth, from 3 through 20. */
+maxDepth: number;
+/**
+ * Concurrent Merkle tree changelog buffer size, passed to Bubblegum and
+ * used in the minimum tree account size.
+ */
+maxBufferSize: number;  };
 
 export function getAppendExclusiveTreeInstructionDataEncoder(): FixedSizeEncoder<AppendExclusiveTreeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['maxDepth', getU8Encoder()], ['maxBufferSize', getU32Encoder()]]), (value) => ({ ...value, discriminator: 55, migrationVersion: 0 }));

@@ -22,9 +22,57 @@ export function getPreparePrizePoolItemDiscriminator2Bytes(): ReadonlyUint8Array
 export type PreparePrizePoolItemInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountPrizePool extends string | AccountMeta<string> = string, TAccountPrizePoolItem extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? ReadonlyAccount<TAccountBundle> : TAccountBundle, TAccountPrizePool extends string ? WritableAccount<TAccountPrizePool> : TAccountPrizePool, TAccountPrizePoolItem extends string ? WritableAccount<TAccountPrizePoolItem> : TAccountPrizePoolItem, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type PreparePrizePoolItemInstructionData = { discriminator: number; migrationVersion: number; itemBump: number; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: bigint; index: number; metadata: Array<number>;  };
+export type PreparePrizePoolItemInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Canonical bump of the item PDA
+ * `["prize-pool-item", prize_pool, deposit_cursor]`; any other value fails.
+ */
+itemBump: number;
+/**
+ * Leaf data hash; must equal `keccak(keccak(metadata) ||
+ * seller_fee_basis_points)` recomputed from `metadata`.
+ */
+dataHash: ReadonlyUint8Array;
+/**
+ * Leaf creator hash; must equal the keccak hash of the creators encoded
+ * in `metadata`.
+ */
+creatorHash: ReadonlyUint8Array;
+/**
+ * Leaf nonce; derives the asset ID `["asset", tree, nonce]` under
+ * Bubblegum using the pool's pinned tree.
+ */
+nonce: bigint;
+/** Leaf index in the pool's tree, stored for the later transfer. */
+index: number;
+/** Canonical Borsh serialization of Bubblegum V1 `MetadataArgs`. */
+metadata: Array<number>;  };
 
-export type PreparePrizePoolItemInstructionDataArgs = { itemBump: number; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: number | bigint; index: number; metadata: Array<number>;  };
+export type PreparePrizePoolItemInstructionDataArgs = {
+/**
+ * Canonical bump of the item PDA
+ * `["prize-pool-item", prize_pool, deposit_cursor]`; any other value fails.
+ */
+itemBump: number;
+/**
+ * Leaf data hash; must equal `keccak(keccak(metadata) ||
+ * seller_fee_basis_points)` recomputed from `metadata`.
+ */
+dataHash: ReadonlyUint8Array;
+/**
+ * Leaf creator hash; must equal the keccak hash of the creators encoded
+ * in `metadata`.
+ */
+creatorHash: ReadonlyUint8Array;
+/**
+ * Leaf nonce; derives the asset ID `["asset", tree, nonce]` under
+ * Bubblegum using the pool's pinned tree.
+ */
+nonce: number | bigint;
+/** Leaf index in the pool's tree, stored for the later transfer. */
+index: number;
+/** Canonical Borsh serialization of Bubblegum V1 `MetadataArgs`. */
+metadata: Array<number>;  };
 
 export function getPreparePrizePoolItemInstructionDataEncoder(): FixedSizeEncoder<PreparePrizePoolItemInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['itemBump', getU8Encoder()], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()], ['metadata', fixPinaPodEncoderSize(getArrayEncoder(getU8Encoder(), { size: getU16Encoder() }), 514)]]), (value) => ({ ...value, discriminator: 51, migrationVersion: 0 }));

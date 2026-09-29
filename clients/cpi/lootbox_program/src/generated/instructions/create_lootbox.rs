@@ -68,21 +68,32 @@ pub struct CreateLootbox<'account, 'argument> {
 #[derive(Clone, Copy, Debug)]
 pub struct CreateLootboxIx<'argument> {
 	/// Instruction argument `id`.
+	/// Creator-chosen identifier that distinguishes this authority's lootboxes;
+	/// a seed of the lootbox PDA.
 	pub id: u64,
 
 	/// Instruction argument `maxSupply`.
+	/// Lifetime cap on boxes minted. Rejected with `SupplyExceeded` when zero.
 	pub max_supply: u64,
 
 	/// Instruction argument `oracleProgram`.
+	/// Switchboard On-Demand program that will own randomness accounts; must be
+	/// the mainnet or devnet program ID.
 	pub oracle_program: &'argument Address,
 
 	/// Instruction argument `oracleQueue`.
+	/// Switchboard queue that every opening's randomness must be bound to.
+	/// Stored as given; each opening checks it.
 	pub oracle_queue: &'argument Address,
 
 	/// Instruction argument `bump`.
+	/// Canonical bump of the lootbox PDA; rejected unless it equals the derived
+	/// canonical bump.
 	pub bump: u8,
 
 	/// Instruction argument `vaultBump`.
+	/// Canonical bump of the vault PDA; rejected unless it equals the derived
+	/// canonical bump.
 	pub vault_bump: u8,
 }
 

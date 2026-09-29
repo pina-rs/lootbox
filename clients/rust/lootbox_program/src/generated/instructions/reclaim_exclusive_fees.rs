@@ -106,5 +106,6 @@ impl ReclaimExclusiveFeesInstructionData {
 pub struct ReclaimExclusiveFeesInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Manifest slot bound to the attachment.
 	pub asset_index: u8,
 }

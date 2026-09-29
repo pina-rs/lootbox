@@ -22,9 +22,43 @@ export function getReclaimPrizePoolItemDiscriminator2Bytes(): ReadonlyUint8Array
 export type ReclaimPrizePoolItemInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountPrizePool extends string | AccountMeta<string> = string, TAccountPrizePoolItem extends string | AccountMeta<string> = string, TAccountTreeConfig extends string | AccountMeta<string> = string, TAccountMerkleTree extends string | AccountMeta<string> = string, TAccountBubblegumProgram extends string | AccountMeta<string> = string, TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountCompressionProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountProofAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountPrizePool extends string ? WritableAccount<TAccountPrizePool> : TAccountPrizePool, TAccountPrizePoolItem extends string ? WritableAccount<TAccountPrizePoolItem> : TAccountPrizePoolItem, TAccountTreeConfig extends string ? ReadonlyAccount<TAccountTreeConfig> : TAccountTreeConfig, TAccountMerkleTree extends string ? WritableAccount<TAccountMerkleTree> : TAccountMerkleTree, TAccountBubblegumProgram extends string ? ReadonlyAccount<TAccountBubblegumProgram> : TAccountBubblegumProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountCompressionProgram extends string ? ReadonlyAccount<TAccountCompressionProgram> : TAccountCompressionProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountProofAccounts extends string ? ReadonlyAccount<TAccountProofAccounts> : TAccountProofAccounts, ...TRemainingAccounts]>;
 
-export type ReclaimPrizePoolItemInstructionData = { discriminator: number; migrationVersion: number; poolIndex: number; root: ReadonlyUint8Array; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: bigint; index: number; metadata: Array<number>;  };
+export type ReclaimPrizePoolItemInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Local index of the item within the pool; must be below
+ * `deposit_cursor`, and equal `deposit_cursor - 1` while unsealed.
+ */
+poolIndex: number;
+/** Merkle root that Bubblegum verifies the proof against. */
+root: ReadonlyUint8Array;
+/** Current leaf data hash; must be recomputed from `metadata`. */
+dataHash: ReadonlyUint8Array;
+/** Current leaf creator hash; must be recomputed from `metadata`. */
+creatorHash: ReadonlyUint8Array;
+/** Leaf nonce; must equal the item's nonce and derive its asset ID. */
+nonce: bigint;
+/** Leaf index in the pool's tree; must equal the item's tree index. */
+index: number;
+/** Current canonical Bubblegum V1 `MetadataArgs` Borsh preimage. */
+metadata: Array<number>;  };
 
-export type ReclaimPrizePoolItemInstructionDataArgs = { poolIndex: number; root: ReadonlyUint8Array; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: number | bigint; index: number; metadata: Array<number>;  };
+export type ReclaimPrizePoolItemInstructionDataArgs = {
+/**
+ * Local index of the item within the pool; must be below
+ * `deposit_cursor`, and equal `deposit_cursor - 1` while unsealed.
+ */
+poolIndex: number;
+/** Merkle root that Bubblegum verifies the proof against. */
+root: ReadonlyUint8Array;
+/** Current leaf data hash; must be recomputed from `metadata`. */
+dataHash: ReadonlyUint8Array;
+/** Current leaf creator hash; must be recomputed from `metadata`. */
+creatorHash: ReadonlyUint8Array;
+/** Leaf nonce; must equal the item's nonce and derive its asset ID. */
+nonce: number | bigint;
+/** Leaf index in the pool's tree; must equal the item's tree index. */
+index: number;
+/** Current canonical Bubblegum V1 `MetadataArgs` Borsh preimage. */
+metadata: Array<number>;  };
 
 export function getReclaimPrizePoolItemInstructionDataEncoder(): FixedSizeEncoder<ReclaimPrizePoolItemInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['poolIndex', getU32Encoder()], ['root', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()], ['metadata', fixPinaPodEncoderSize(getArrayEncoder(getU8Encoder(), { size: getU16Encoder() }), 514)]]), (value) => ({ ...value, discriminator: 49, migrationVersion: 0 }));

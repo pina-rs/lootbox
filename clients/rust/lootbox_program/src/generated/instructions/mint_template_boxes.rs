@@ -96,5 +96,6 @@ impl MintTemplateBoxesInstructionData {
 pub struct MintTemplateBoxesInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Boxes to mint; must be positive.
 	pub amount: u64,
 }

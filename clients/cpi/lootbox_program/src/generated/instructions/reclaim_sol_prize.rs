@@ -62,6 +62,9 @@ pub struct ReclaimSolPrize<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct ReclaimSolPrizeIx {
 	/// Instruction argument `assetIndex`.
+	/// Asset slot within the bundle; must be below its funded asset count,
+	/// hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and not be reclaimed
+	/// already.
 	pub asset_index: u8,
 }
 

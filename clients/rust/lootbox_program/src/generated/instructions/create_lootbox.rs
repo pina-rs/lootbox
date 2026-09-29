@@ -102,10 +102,21 @@ impl CreateLootboxInstructionData {
 pub struct CreateLootboxInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Creator-chosen identifier that distinguishes this authority's lootboxes;
+	/// a seed of the lootbox PDA.
 	pub id: u64,
+	/// Lifetime cap on boxes minted. Rejected with `SupplyExceeded` when zero.
 	pub max_supply: u64,
+	/// Switchboard On-Demand program that will own randomness accounts; must be
+	/// the mainnet or devnet program ID.
 	pub oracle_program: solana_pubkey::Pubkey,
+	/// Switchboard queue that every opening's randomness must be bound to.
+	/// Stored as given; each opening checks it.
 	pub oracle_queue: solana_pubkey::Pubkey,
+	/// Canonical bump of the lootbox PDA; rejected unless it equals the derived
+	/// canonical bump.
 	pub bump: u8,
+	/// Canonical bump of the vault PDA; rejected unless it equals the derived
+	/// canonical bump.
 	pub vault_bump: u8,
 }

@@ -110,24 +110,32 @@ pub struct ReclaimPrizePoolItem<'account, 'argument> {
 #[derive(Clone, Copy, Debug)]
 pub struct ReclaimPrizePoolItemIx<'argument> {
 	/// Instruction argument `poolIndex`.
+	/// Local index of the item within the pool; must be below
+	/// `deposit_cursor`, and equal `deposit_cursor - 1` while unsealed.
 	pub pool_index: u32,
 
 	/// Instruction argument `root`.
+	/// Merkle root that Bubblegum verifies the proof against.
 	pub root: [u8; 32],
 
 	/// Instruction argument `dataHash`.
+	/// Current leaf data hash; must be recomputed from `metadata`.
 	pub data_hash: [u8; 32],
 
 	/// Instruction argument `creatorHash`.
+	/// Current leaf creator hash; must be recomputed from `metadata`.
 	pub creator_hash: [u8; 32],
 
 	/// Instruction argument `nonce`.
+	/// Leaf nonce; must equal the item's nonce and derive its asset ID.
 	pub nonce: u64,
 
 	/// Instruction argument `index`.
+	/// Leaf index in the pool's tree; must equal the item's tree index.
 	pub index: u32,
 
 	/// Instruction argument `metadata`.
+	/// Current canonical Bubblegum V1 `MetadataArgs` Borsh preimage.
 	pub metadata: &'argument [u8],
 }
 

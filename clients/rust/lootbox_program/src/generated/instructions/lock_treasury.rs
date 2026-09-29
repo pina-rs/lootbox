@@ -107,5 +107,7 @@ impl LockTreasuryInstructionData {
 pub struct LockTreasuryInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Canonical bump of the service vault PDA; rejected unless it equals the
+	/// derived canonical bump, then stored on the template.
 	pub service_vault_bump: u8,
 }

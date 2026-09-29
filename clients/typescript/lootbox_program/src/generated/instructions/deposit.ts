@@ -22,9 +22,13 @@ export function getDepositDiscriminator2Bytes(): ReadonlyUint8Array { return get
 export type DepositInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountDepositor extends string | AccountMeta<string> = string, TAccountLootbox extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountDepositor extends string ? WritableSignerAccount<TAccountDepositor> & AccountSignerMeta<TAccountDepositor> : TAccountDepositor, TAccountLootbox extends string ? ReadonlyAccount<TAccountLootbox> : TAccountLootbox, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type DepositInstructionData = { discriminator: number; migrationVersion: number; lamports: bigint;  };
+export type DepositInstructionData = { discriminator: number; migrationVersion: number;
+/** Amount to transfer into the vault, in lamports; must be nonzero. */
+lamports: bigint;  };
 
-export type DepositInstructionDataArgs = { lamports: number | bigint;  };
+export type DepositInstructionDataArgs = {
+/** Amount to transfer into the vault, in lamports; must be nonzero. */
+lamports: number | bigint;  };
 
 export function getDepositInstructionDataEncoder(): FixedSizeEncoder<DepositInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['lamports', getU64Encoder()]]), (value) => ({ ...value, discriminator: 2, migrationVersion: 0 }));

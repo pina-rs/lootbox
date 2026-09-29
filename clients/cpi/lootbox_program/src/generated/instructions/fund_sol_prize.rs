@@ -56,6 +56,7 @@ pub struct FundSolPrize<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct FundSolPrizeIx {
 	/// Instruction argument `lamportsPerWin`.
+	/// Lamports delivered per win; must be positive.
 	pub lamports_per_win: u64,
 }
 

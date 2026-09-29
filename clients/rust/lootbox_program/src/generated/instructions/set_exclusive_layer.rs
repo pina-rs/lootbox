@@ -81,7 +81,13 @@ impl SetExclusiveLayerInstructionData {
 pub struct SetExclusiveLayerInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Layer to overwrite, counted from 0 at the bottom; must be below the
+	/// collection's `layer_count`.
 	pub layer_index: u8,
+	/// Traits in the layer, from 1 through 64.
 	pub trait_count: u8,
+	/// Sixty-four little-endian `u32` weights; slots past `trait_count` are zero.
+	///
+	/// The used weights must total from 1 through `u32::MAX`.
 	pub weights: [u8; 256],
 }

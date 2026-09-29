@@ -105,5 +105,6 @@ impl FundQuoteTokenPrizeInstructionData {
 pub struct FundQuoteTokenPrizeInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Base units delivered per win; must be positive.
 	pub amount_per_win: u64,
 }

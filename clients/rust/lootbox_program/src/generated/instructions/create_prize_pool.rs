@@ -102,6 +102,10 @@ impl CreatePrizePoolInstructionData {
 pub struct CreatePrizePoolInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Manifest slot to reserve; must equal the bundle's `funded_assets` and be
+	/// below its `asset_count`.
 	pub asset_index: u8,
+	/// Canonical bump of the `PrizePoolState` PDA
+	/// `["prize-pool", bundle, asset_index]`; any other value fails.
 	pub bump: u8,
 }

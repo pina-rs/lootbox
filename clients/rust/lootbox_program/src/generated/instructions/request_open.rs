@@ -165,6 +165,10 @@ impl RequestOpenInstructionData {
 pub struct RequestOpenInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Recent slot used by Switchboard to derive its per-randomness lookup
+	/// table; passed through to `randomness_init`.
 	pub recent_slot: u64,
+	/// Canonical bump of the opening PDA; rejected unless it equals the derived
+	/// canonical bump.
 	pub bump: u8,
 }

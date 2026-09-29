@@ -91,6 +91,8 @@ pub struct ReclaimCoreAssetPrize<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct ReclaimCoreAssetPrizeIx {
 	/// Instruction argument `assetIndex`.
+	/// Bundle slot holding the asset. Must be below the bundle's
+	/// `funded_assets` and hold a Core asset whose address is `asset`.
 	pub asset_index: u8,
 }
 

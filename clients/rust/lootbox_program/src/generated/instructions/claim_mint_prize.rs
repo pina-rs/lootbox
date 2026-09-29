@@ -110,5 +110,8 @@ impl ClaimMintPrizeInstructionData {
 pub struct ClaimMintPrizeInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Asset slot within the selected bundle; must be below its asset count,
+	/// hold a `PRIZE_MINT_BADGE` asset with an amount of one, and be unclaimed
+	/// by this opening.
 	pub asset_index: u8,
 }

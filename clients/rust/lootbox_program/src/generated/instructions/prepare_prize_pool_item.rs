@@ -100,10 +100,20 @@ impl PreparePrizePoolItemInstructionData {
 pub struct PreparePrizePoolItemInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Canonical bump of the item PDA
+	/// `["prize-pool-item", prize_pool, deposit_cursor]`; any other value fails.
 	pub item_bump: u8,
+	/// Leaf data hash; must equal `keccak(keccak(metadata) ||
+	/// seller_fee_basis_points)` recomputed from `metadata`.
 	pub data_hash: [u8; 32],
+	/// Leaf creator hash; must equal the keccak hash of the creators encoded
+	/// in `metadata`.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce; derives the asset ID `["asset", tree, nonce]` under
+	/// Bubblegum using the pool's pinned tree.
 	pub nonce: u64,
+	/// Leaf index in the pool's tree, stored for the later transfer.
 	pub index: u32,
+	/// Canonical Borsh serialization of Bubblegum V1 `MetadataArgs`.
 	pub metadata: pina::Vec<u8, 512>,
 }

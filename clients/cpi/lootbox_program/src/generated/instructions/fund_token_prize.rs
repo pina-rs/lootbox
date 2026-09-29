@@ -76,9 +76,13 @@ pub struct FundTokenPrize<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct FundTokenPrizeIx {
 	/// Instruction argument `amountPerWin`.
+	/// Base units delivered per win; must be positive. A transfer-fee mint
+	/// charges the funder the gross amount so escrow nets this total.
 	pub amount_per_win: u64,
 
 	/// Instruction argument `isNft`.
+	/// Records a classic SPL NFT: requires SPL Token, supply one, zero decimals,
+	/// revoked mint authority, and a one-copy bundle paying one unit.
 	pub is_nft: bool,
 }
 

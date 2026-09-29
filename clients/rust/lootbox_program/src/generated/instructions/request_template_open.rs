@@ -178,9 +178,20 @@ impl RequestTemplateOpenInstructionData {
 pub struct RequestTemplateOpenInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Recent slot passed to Switchboard `randomness_init`, which uses it to
+	/// derive the per-randomness address lookup table.
 	pub recent_slot: u64,
+	/// Immutable destination for every prize claim and any forfeit bounty of
+	/// this opening; rejected when it is the default address. May differ from
+	/// the box authority and the payer.
 	pub beneficiary: solana_pubkey::Pubkey,
+	/// Program expected to consume the result receipt, or the default address
+	/// for none. Recorded on the opening and copied into any result receipt.
 	pub consumer_program: solana_pubkey::Pubkey,
+	/// Consumer-selected correlation key, fixed before randomness is known;
+	/// must be all zeros when `consumer_program` is the default address.
 	pub consumer_context: [u8; 32],
+	/// Canonical bump of the opening PDA; rejected unless it equals the derived
+	/// canonical bump.
 	pub bump: u8,
 }

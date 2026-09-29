@@ -121,12 +121,16 @@ pub struct FulfillTemplateOpen<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct FulfillTemplateOpenIx {
 	/// Instruction argument `signature`.
+	/// Switchboard enclave signature returned by the randomness gateway.
 	pub signature: [u8; 64],
 
 	/// Instruction argument `recoveryId`.
+	/// Secp256k1 recovery identifier returned by the randomness gateway.
 	pub recovery_id: u8,
 
 	/// Instruction argument `value`.
+	/// Revealed value covered by `signature`; rejected unless Switchboard
+	/// stores exactly this value on the randomness account.
 	pub value: [u8; 32],
 }
 

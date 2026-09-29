@@ -79,6 +79,9 @@ pub struct ClaimMintPrize<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct ClaimMintPrizeIx {
 	/// Instruction argument `assetIndex`.
+	/// Asset slot within the selected bundle; must be below its asset count,
+	/// hold a `PRIZE_MINT_BADGE` asset with an amount of one, and be unclaimed
+	/// by this opening.
 	pub asset_index: u8,
 }
 

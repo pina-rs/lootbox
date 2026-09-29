@@ -66,27 +66,39 @@ pub struct CreateExclusiveCollection<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct CreateExclusiveCollectionIx {
 	/// Instruction argument `collectionId`.
+	/// Admin-chosen identifier in the PDA seeds, so one admin can own several
+	/// collections.
 	pub collection_id: u64,
 
 	/// Instruction argument `attachOpensAt`.
+	/// Unix time in seconds from which bundles may attach; must be earlier
+	/// than `attach_closes_at`.
 	pub attach_opens_at: i64,
 
 	/// Instruction argument `attachClosesAt`.
+	/// Unix time in seconds from which bundles may no longer attach.
 	pub attach_closes_at: i64,
 
 	/// Instruction argument `layerCount`.
+	/// Number of trait layers, from 1 through 12.
 	pub layer_count: u8,
 
 	/// Instruction argument `bump`.
+	/// Canonical bump of the collection PDA
+	/// `["exclusive-collection", admin, collection_id]`; any other value fails.
 	pub bump: u8,
 
 	/// Instruction argument `namePrefix`.
+	/// Null-padded UTF-8 name prefix of at most 20 bytes.
 	pub name_prefix: [u8; 32],
 
 	/// Instruction argument `symbol`.
+	/// Null-padded UTF-8 symbol.
 	pub symbol: [u8; 10],
 
 	/// Instruction argument `baseUri`.
+	/// Null-padded metadata URI base; must start with `https://`, continue
+	/// past it, and contain no spaces.
 	pub base_uri: [u8; 128],
 }
 

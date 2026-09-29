@@ -23,9 +23,29 @@ export function getRequestOpenDiscriminator2Bytes(): ReadonlyUint8Array { return
 export type RequestOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountOwner extends string | AccountMeta<string> = string, TAccountLootbox extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountOwnerBoxAccount extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountRandomness extends string | AccountMeta<string> = string, TAccountRewardEscrow extends string | AccountMeta<string> = string, TAccountOracleQueue extends string | AccountMeta<string> = string, TAccountOracle extends string | AccountMeta<string> = string, TAccountRecentSlotHashes extends string | AccountMeta<string> = string, TAccountOracleProgram extends string | AccountMeta<string> = string, TAccountOracleProgramState extends string | AccountMeta<string> = string, TAccountOracleLutSigner extends string | AccountMeta<string> = string, TAccountOracleLut extends string | AccountMeta<string> = string, TAccountAssociatedTokenProgram extends string | AccountMeta<string> = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL", TAccountWrappedSolMint extends string | AccountMeta<string> = string, TAccountAddressLookupTableProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountOwner extends string ? WritableSignerAccount<TAccountOwner> & AccountSignerMeta<TAccountOwner> : TAccountOwner, TAccountLootbox extends string ? WritableAccount<TAccountLootbox> : TAccountLootbox, TAccountVault extends string ? ReadonlyAccount<TAccountVault> : TAccountVault, TAccountBoxMint extends string ? WritableAccount<TAccountBoxMint> : TAccountBoxMint, TAccountOwnerBoxAccount extends string ? WritableAccount<TAccountOwnerBoxAccount> : TAccountOwnerBoxAccount, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountRandomness extends string ? WritableSignerAccount<TAccountRandomness> & AccountSignerMeta<TAccountRandomness> : TAccountRandomness, TAccountRewardEscrow extends string ? WritableAccount<TAccountRewardEscrow> : TAccountRewardEscrow, TAccountOracleQueue extends string ? WritableAccount<TAccountOracleQueue> : TAccountOracleQueue, TAccountOracle extends string ? WritableAccount<TAccountOracle> : TAccountOracle, TAccountRecentSlotHashes extends string ? ReadonlyAccount<TAccountRecentSlotHashes> : TAccountRecentSlotHashes, TAccountOracleProgram extends string ? ReadonlyAccount<TAccountOracleProgram> : TAccountOracleProgram, TAccountOracleProgramState extends string ? ReadonlyAccount<TAccountOracleProgramState> : TAccountOracleProgramState, TAccountOracleLutSigner extends string ? ReadonlyAccount<TAccountOracleLutSigner> : TAccountOracleLutSigner, TAccountOracleLut extends string ? WritableAccount<TAccountOracleLut> : TAccountOracleLut, TAccountAssociatedTokenProgram extends string ? ReadonlyAccount<TAccountAssociatedTokenProgram> : TAccountAssociatedTokenProgram, TAccountWrappedSolMint extends string ? ReadonlyAccount<TAccountWrappedSolMint> : TAccountWrappedSolMint, TAccountAddressLookupTableProgram extends string ? ReadonlyAccount<TAccountAddressLookupTableProgram> : TAccountAddressLookupTableProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type RequestOpenInstructionData = { discriminator: number; migrationVersion: number; recentSlot: bigint; bump: number;  };
+export type RequestOpenInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Recent slot used by Switchboard to derive its per-randomness lookup
+ * table; passed through to `randomness_init`.
+ */
+recentSlot: bigint;
+/**
+ * Canonical bump of the opening PDA; rejected unless it equals the derived
+ * canonical bump.
+ */
+bump: number;  };
 
-export type RequestOpenInstructionDataArgs = { recentSlot: number | bigint; bump: number;  };
+export type RequestOpenInstructionDataArgs = {
+/**
+ * Recent slot used by Switchboard to derive its per-randomness lookup
+ * table; passed through to `randomness_init`.
+ */
+recentSlot: number | bigint;
+/**
+ * Canonical bump of the opening PDA; rejected unless it equals the derived
+ * canonical bump.
+ */
+bump: number;  };
 
 export function getRequestOpenInstructionDataEncoder(): FixedSizeEncoder<RequestOpenInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['recentSlot', getU64Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 5, migrationVersion: 0 }));

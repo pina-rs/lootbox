@@ -74,6 +74,7 @@ pub struct FundQuoteTokenPrize<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct FundQuoteTokenPrizeIx {
 	/// Instruction argument `amountPerWin`.
+	/// Base units delivered per win; must be positive.
 	pub amount_per_win: u64,
 }
 

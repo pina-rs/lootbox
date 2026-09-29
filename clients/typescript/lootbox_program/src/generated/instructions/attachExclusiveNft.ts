@@ -22,9 +22,33 @@ export function getAttachExclusiveNftDiscriminator2Bytes(): ReadonlyUint8Array {
 export type AttachExclusiveNftInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountExclusiveCollection extends string | AccountMeta<string> = string, TAccountExclusiveAttachment extends string | AccountMeta<string> = string, TAccountFeeVault extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountExclusiveCollection extends string ? ReadonlyAccount<TAccountExclusiveCollection> : TAccountExclusiveCollection, TAccountExclusiveAttachment extends string ? WritableAccount<TAccountExclusiveAttachment> : TAccountExclusiveAttachment, TAccountFeeVault extends string ? WritableAccount<TAccountFeeVault> : TAccountFeeVault, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type AttachExclusiveNftInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number; bump: number; feeVaultBump: number;  };
+export type AttachExclusiveNftInstructionData = { discriminator: number; migrationVersion: number;
+/** Manifest slot to bind; must equal the bundle's `funded_assets`. */
+assetIndex: number;
+/**
+ * Canonical bump of the attachment PDA
+ * `["exclusive-attachment", bundle, asset_index]`; any other value fails.
+ */
+bump: number;
+/**
+ * Canonical bump of the fee vault PDA
+ * `["exclusive-fee-vault", attachment]`; any other value fails.
+ */
+feeVaultBump: number;  };
 
-export type AttachExclusiveNftInstructionDataArgs = { assetIndex: number; bump: number; feeVaultBump: number;  };
+export type AttachExclusiveNftInstructionDataArgs = {
+/** Manifest slot to bind; must equal the bundle's `funded_assets`. */
+assetIndex: number;
+/**
+ * Canonical bump of the attachment PDA
+ * `["exclusive-attachment", bundle, asset_index]`; any other value fails.
+ */
+bump: number;
+/**
+ * Canonical bump of the fee vault PDA
+ * `["exclusive-fee-vault", attachment]`; any other value fails.
+ */
+feeVaultBump: number;  };
 
 export function getAttachExclusiveNftInstructionDataEncoder(): FixedSizeEncoder<AttachExclusiveNftInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()], ['bump', getU8Encoder()], ['feeVaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 57, migrationVersion: 0 }));

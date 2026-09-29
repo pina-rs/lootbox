@@ -146,7 +146,11 @@ impl SettleOpenInstructionData {
 pub struct SettleOpenInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Switchboard enclave signature returned by the randomness gateway.
 	pub signature: [u8; 64],
+	/// Secp256k1 recovery identifier returned by the randomness gateway.
 	pub recovery_id: u8,
+	/// Revealed value covered by `signature`. The stored reveal must equal it
+	/// after the CPI.
 	pub value: [u8; 32],
 }

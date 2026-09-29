@@ -22,9 +22,13 @@ export function getFundSolPrizeDiscriminator2Bytes(): ReadonlyUint8Array { retur
 export type FundSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type FundSolPrizeInstructionData = { discriminator: number; migrationVersion: number; lamportsPerWin: bigint;  };
+export type FundSolPrizeInstructionData = { discriminator: number; migrationVersion: number;
+/** Lamports delivered per win; must be positive. */
+lamportsPerWin: bigint;  };
 
-export type FundSolPrizeInstructionDataArgs = { lamportsPerWin: number | bigint;  };
+export type FundSolPrizeInstructionDataArgs = {
+/** Lamports delivered per win; must be positive. */
+lamportsPerWin: number | bigint;  };
 
 export function getFundSolPrizeInstructionDataEncoder(): FixedSizeEncoder<FundSolPrizeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['lamportsPerWin', getU64Encoder()]]), (value) => ({ ...value, discriminator: 12, migrationVersion: 0 }));

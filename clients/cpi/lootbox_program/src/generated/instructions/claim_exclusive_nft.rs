@@ -122,6 +122,7 @@ pub struct ClaimExclusiveNft<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct ClaimExclusiveNftIx {
 	/// Instruction argument `assetIndex`.
+	/// Manifest slot bound to the attachment.
 	pub asset_index: u8,
 }
 

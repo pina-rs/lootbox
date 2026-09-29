@@ -97,21 +97,31 @@ pub struct ClaimCompressedNftPrize<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct ClaimCompressedNftPrizeIx {
 	/// Instruction argument `assetIndex`.
+	/// Bundle slot holding the compressed NFT. Must be below the bundle's
+	/// `asset_count` and hold the asset ID derived from `merkle_tree` and
+	/// `nonce`.
 	pub asset_index: u8,
 
 	/// Instruction argument `root`.
+	/// Merkle root the proof was built against; Bubblegum verifies the leaf
+	/// against it.
 	pub root: [u8; 32],
 
 	/// Instruction argument `dataHash`.
+	/// Bubblegum hash of the leaf's metadata, forwarded to rebuild the leaf.
 	pub data_hash: [u8; 32],
 
 	/// Instruction argument `creatorHash`.
+	/// Bubblegum hash of the leaf's creators, forwarded to rebuild the leaf.
 	pub creator_hash: [u8; 32],
 
 	/// Instruction argument `nonce`.
+	/// Leaf nonce. With `merkle_tree` it derives the asset ID, which must match
+	/// the slot's stored asset.
 	pub nonce: u64,
 
 	/// Instruction argument `index`.
+	/// Leaf position in `merkle_tree`, forwarded to Bubblegum.
 	pub index: u32,
 }
 

@@ -144,9 +144,13 @@ pub struct RequestOpen<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct RequestOpenIx {
 	/// Instruction argument `recentSlot`.
+	/// Recent slot used by Switchboard to derive its per-randomness lookup
+	/// table; passed through to `randomness_init`.
 	pub recent_slot: u64,
 
 	/// Instruction argument `bump`.
+	/// Canonical bump of the opening PDA; rejected unless it equals the derived
+	/// canonical bump.
 	pub bump: u8,
 }
 

@@ -67,6 +67,7 @@ pub struct MintBoxes<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct MintBoxesIx {
 	/// Instruction argument `amount`.
+	/// Number of boxes to mint; must be nonzero.
 	pub amount: u64,
 }
 

@@ -90,6 +90,7 @@ mod tests {
 		data[112..144].copy_from_slice(&[4u8; 32]);
 		data[144..152].copy_from_slice(&9u64.to_le_bytes());
 		data[152..184].copy_from_slice(&[5u8; 32]);
+
 		data
 	}
 

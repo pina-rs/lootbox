@@ -521,11 +521,13 @@ fn assert_attachment(
 	asset_index: u8,
 ) -> ProgramResult {
 	let seeds = ExclusiveAttachmentState::seeds(bundle_address, asset_index).with_bump(state.bump);
+
 	if *address != create_program_address(&seeds.as_slices(), &ID)? {
 		return Err(ProgramError::InvalidSeeds);
 	}
 
 	let slot = usize::from(asset_index);
+
 	if state.template != *template
 		|| state.bundle != *bundle_address
 		|| state.asset_index != asset_index
@@ -634,6 +636,7 @@ fn record_exclusive_mint(
 		.get()
 		.checked_add(1)
 		.ok_or(ProgramError::ArithmeticOverflow)?;
+
 	if attachment_minted > attachment.quantity.get() {
 		return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
 	}
@@ -664,6 +667,7 @@ impl<'a> ProcessAccountInfos<'a> for CreateExclusiveCollectionAccounts<'a> {
 		}
 
 		let seeds = ExclusiveCollectionState::seeds(&admin, args.collection_id.get());
+
 		if self
 			.exclusive_collection
 			.assert_canonical_bump(&seeds.as_slices(), &ID)?
@@ -689,6 +693,7 @@ impl<'a> ProcessAccountInfos<'a> for CreateExclusiveCollectionAccounts<'a> {
 		state.attach_opens_at.set(args.attach_opens_at.get());
 		state.attach_closes_at.set(args.attach_closes_at.get());
 		state.name_prefix = args.name_prefix;
+
 		state.symbol = args.symbol;
 		state.base_uri = args.base_uri;
 		state.layer_count = args.layer_count;
@@ -757,6 +762,7 @@ impl<'a> ProcessAccountInfos<'a> for AppendExclusiveTreeAccounts<'a> {
 		let canopy = depth.saturating_sub(u64::from(MAX_EXCLUSIVE_TRANSFER_PROOF_NODES));
 		let minimum_size =
 			merkle_tree_account_size(depth, u64::from(args.max_buffer_size.get()), canopy);
+
 		if !(MIN_EXCLUSIVE_TREE_DEPTH..=MAX_EXCLUSIVE_TREE_DEPTH).contains(&args.max_depth)
 			|| (self.merkle_tree.data_len() as u64) < minimum_size
 		{
@@ -785,6 +791,7 @@ impl<'a> ProcessAccountInfos<'a> for AppendExclusiveTreeAccounts<'a> {
 		.invoke_signed(&[signer.as_signer()])?;
 
 		let tree = read_tree_config(self.tree_config)?;
+
 		if tree.tree_creator != address
 			|| tree.tree_delegate != address
 			|| tree.is_public
@@ -839,6 +846,7 @@ impl<'a> ProcessAccountInfos<'a> for AttachExclusiveNftAccounts<'a> {
 		let template = as_template(self.template)?;
 		assert_template(&template_address, &template)?;
 		assert_template_authority(self.authority, &template)?;
+
 		assert_treasury_editable(&template)?;
 		assert_bundle(self.bundle, &template_address)?;
 
@@ -852,12 +860,15 @@ impl<'a> ProcessAccountInfos<'a> for AttachExclusiveNftAccounts<'a> {
 
 		let bundle = self.bundle.as_account::<BundleState>(&ID)?;
 		let quantity = bundle.quantity.get();
+
 		if bundle.status != BUNDLE_FUNDING || args.asset_index != bundle.funded_assets {
 			return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
 		}
+
 		drop(bundle);
 
 		let seeds = ExclusiveAttachmentState::seeds(&bundle_address, args.asset_index);
+
 		if self
 			.exclusive_attachment
 			.assert_canonical_bump(&seeds.as_slices(), &ID)?
@@ -866,6 +877,7 @@ impl<'a> ProcessAccountInfos<'a> for AttachExclusiveNftAccounts<'a> {
 			return Err(ProgramError::InvalidSeeds);
 		}
 		let fee_vault_seeds = [SEED_EXCLUSIVE_FEE_VAULT, attachment_address.as_ref()];
+
 		if self
 			.fee_vault
 			.assert_canonical_bump(&fee_vault_seeds, &ID)?
@@ -896,6 +908,7 @@ impl<'a> ProcessAccountInfos<'a> for AttachExclusiveNftAccounts<'a> {
 		attachment
 			.mint_fee_lamports
 			.set(BUBBLEGUM_MINT_V2_FEE_LAMPORTS);
+
 		attachment.asset_index = args.asset_index;
 		attachment.bump = args.bump;
 		attachment.fee_vault_bump = args.fee_vault_bump;
@@ -931,6 +944,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimExclusiveNftAccounts<'a> {
 		let collection_address = *self.exclusive_collection.address();
 		let recipient_address = *self.recipient.address();
 		let template = as_template(self.template)?;
+
 		assert_template(&template_address, &template)?;
 		assert_bundle(self.bundle, &template_address)?;
 
@@ -989,6 +1003,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimExclusiveNftAccounts<'a> {
 		)?;
 		let symbol = collection.symbol;
 		let core_collection = collection.core_collection;
+
 		let admin = collection.admin;
 		let collection_id = collection.collection_id.get();
 		let collection_bump = collection.bump;
@@ -1006,6 +1021,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimExclusiveNftAccounts<'a> {
 			ExclusiveCollectionState::seeds(&admin, collection_id).with_bump(collection_bump);
 		let collection_signer = collection_seeds.to_signer();
 		let fee_vault_bump = [fee_vault_bump];
+
 		let fee_vault_signer = PdaSigner::from_slices([
 			SEED_EXCLUSIVE_FEE_VAULT,
 			attachment_address.as_ref(),
@@ -1061,6 +1077,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimExclusiveFeesAccounts<'a> {
 		let template = TemplateState::try_from_bytes(&template_data)?;
 		assert_template(&template_address, &template)?;
 		assert_template_authority(self.authority, &template)?;
+
 		assert_bundle(self.bundle, &template_address)?;
 		let supply = assert_template_mint(
 			self.box_mint,
@@ -1092,6 +1109,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimExclusiveFeesAccounts<'a> {
 		let bit = 1u8
 			.checked_shl(u32::from(args.asset_index))
 			.ok_or(ProgramError::ArithmeticOverflow)?;
+
 		if bundle.reclaimed_mask & bit == 0 {
 			let bundle_index = usize::try_from(bundle.index.get())
 				.map_err(|_| ProgramError::InvalidAccountData)?;
@@ -1100,6 +1118,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimExclusiveFeesAccounts<'a> {
 			} else {
 				None
 			};
+
 			reclaim_amount(
 				template.status,
 				template.pending_openings.get(),
@@ -1199,6 +1218,7 @@ mod tests {
 		assert_ne!(hash, layers_hash(&address, state));
 		state.weights[0] = 1;
 		state.base_uri[0] = b'x';
+
 		assert_ne!(hash, layers_hash(&address, state));
 		state.base_uri[0] = 0;
 		assert_eq!(hash, layers_hash(&address, state));
@@ -1218,6 +1238,7 @@ mod tests {
 			Err(lootbox_error(LootboxError::ExclusiveAttachWindowClosed))
 		);
 		assert_eq!(assert_attach_window(state, 100), Ok(()));
+
 		assert_eq!(assert_attach_window(state, 199), Ok(()));
 		assert_eq!(
 			assert_attach_window(state, 200),
@@ -1259,6 +1280,7 @@ mod tests {
 			commitment,
 			attachment_commitment(&attachment_address, attachment)
 		);
+
 		attachment.layers_hash[0] = 0;
 		attachment.quantity.set(10);
 		assert_ne!(

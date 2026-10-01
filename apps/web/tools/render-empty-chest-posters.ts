@@ -45,6 +45,7 @@ const resources: Record<
 		body: readFileSync(new URL("empty-chest.riv", output)),
 	},
 };
+
 const browser = await chromium.launch();
 
 try {

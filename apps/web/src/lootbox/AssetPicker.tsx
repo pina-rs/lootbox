@@ -55,6 +55,7 @@ export function AssetPicker({ owner, onClose, onPick }: Props) {
 	const [nfts, setNfts] = useState(emptyNfts);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
+
 	const [manualKind, setManualKind] = useState<"token" | "nft">("token");
 	const [manualMint, setManualMint] = useState("");
 	const [manualLabel, setManualLabel] = useState("");
@@ -127,6 +128,7 @@ export function AssetPicker({ owner, onClose, onPick }: Props) {
 			setLoading(false);
 			return;
 		}
+
 		const timer = setTimeout(() => {
 			setLoading(true);
 			setError("");
@@ -186,6 +188,7 @@ export function AssetPicker({ owner, onClose, onPick }: Props) {
 			const items = await Promise.all(
 				poolSelection.map((item) => loadPrizePoolItem(item, owner)),
 			);
+
 			if (!mounted.current || request !== poolRequest.current) return;
 			onPick({
 				id: identifier(),
@@ -199,6 +202,7 @@ export function AssetPicker({ owner, onClose, onPick }: Props) {
 				poolItems: items,
 				...(items[0]?.image ? { icon: items[0].image } : {}),
 			});
+
 			dismiss();
 		} catch (reason: unknown) {
 			if (!mounted.current || request !== poolRequest.current) return;

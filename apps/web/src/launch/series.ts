@@ -117,6 +117,7 @@ async function settleOne(
 	try {
 		if (opening.data.status === 1) {
 			await client.allocate(template, opening);
+
 			return;
 		}
 

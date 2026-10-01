@@ -261,6 +261,7 @@ const steps: Step[] = [];
 for (const transaction of sent) {
 	steps.push(await measure(transaction));
 }
+
 const format = (lamports: bigint) =>
 	`${lamports < 0n ? "-" : ""}${(lamports < 0n ? -lamports : lamports)}`
 		.padStart(

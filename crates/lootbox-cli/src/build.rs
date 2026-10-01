@@ -42,6 +42,7 @@ fn replace_proof_tail(
 			actual: proof_accounts.len(),
 		});
 	}
+
 	instruction.accounts.pop();
 	instruction.accounts.extend(
 		proof_accounts
@@ -57,6 +58,7 @@ fn canonical_result_receipt(
 	override_address: Option<Pubkey>,
 ) -> Result<(Pubkey, u8), CliError> {
 	let (expected, bump) = generated_accounts::ResultReceiptState::find_pda(opening, sequence);
+
 	if let Some(actual) = override_address
 		&& actual != expected
 	{
@@ -69,6 +71,7 @@ fn canonical_result_receipt(
 /// Parses a fixed-size hex argument (`0x` prefix optional).
 fn hex_arg<const N: usize>(value: &str, field: &'static str) -> Result<[u8; N], CliError> {
 	let digits = value.strip_prefix("0x").unwrap_or(value);
+
 	if digits.len() != N * 2 {
 		return Err(CliError::InvalidHexLength {
 			field,
@@ -78,6 +81,7 @@ fn hex_arg<const N: usize>(value: &str, field: &'static str) -> Result<[u8; N], 
 	}
 
 	let mut out = [0u8; N];
+
 	for (index, pair) in digits.as_bytes().as_chunks::<2>().0.iter().enumerate() {
 		let byte = std::str::from_utf8(pair)
 			.ok()
@@ -96,13 +100,16 @@ fn hex_arg<const N: usize>(value: &str, field: &'static str) -> Result<[u8; N], 
 /// Parses a bounded variable-size hex argument (`0x` prefix optional).
 fn bounded_hex_arg(value: &str, field: &'static str, limit: usize) -> Result<Vec<u8>, CliError> {
 	let digits = value.strip_prefix("0x").unwrap_or(value);
+
 	if !digits.len().is_multiple_of(2) {
 		return Err(CliError::InvalidHexEncoding {
 			field,
 			value: value.to_string(),
 		});
 	}
+
 	let actual = digits.len() / 2;
+
 	if actual == 0 || actual > limit {
 		return Err(CliError::ByteArgumentLength {
 			field,
@@ -110,6 +117,7 @@ fn bounded_hex_arg(value: &str, field: &'static str, limit: usize) -> Result<Vec
 			actual,
 		});
 	}
+
 	digits
 		.as_bytes()
 		.as_chunks::<2>()
@@ -132,6 +140,7 @@ fn bounded_hex_arg(value: &str, field: &'static str, limit: usize) -> Result<Vec
 /// Packs a text argument into a zero-padded fixed-size wire field.
 fn text_arg<const N: usize>(value: &str, field: &'static str) -> Result<[u8; N], CliError> {
 	let bytes = value.as_bytes();
+
 	if bytes.len() > N {
 		return Err(CliError::TextTooLong {
 			field,
@@ -149,7 +158,6 @@ fn text_arg<const N: usize>(value: &str, field: &'static str) -> Result<[u8; N],
 // ---------------------------------------------------------------------------
 // lootbox lifecycle
 // ---------------------------------------------------------------------------
-
 /// Arguments for `create-lootbox`.
 #[derive(Debug, clap::Args)]
 pub struct CreateLootboxArgs {
@@ -658,7 +666,6 @@ impl InstructionBuilder for WithdrawSurplusArgs {
 // ---------------------------------------------------------------------------
 // treasury template lifecycle
 // ---------------------------------------------------------------------------
-
 /// Arguments for `create-template`.
 #[derive(Debug, clap::Args)]
 pub struct CreateTemplateArgs {
@@ -713,6 +720,7 @@ impl InstructionBuilder for CreateTemplateArgs {
 		let oracle_queue = self.oracle_queue;
 		let name = text_arg::<32>(&self.name, "name")?;
 		let uri = text_arg::<200>(&self.uri, "uri")?;
+
 		let bump = self.bump();
 		let data = generated::CreateTemplateInstructionData::new(|wire| {
 			wire.id = id.into();
@@ -759,6 +767,7 @@ pub struct AddBundleArgs {
 impl InstructionBuilder for AddBundleArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
 		let remaining = self.remaining_writable.len() + self.remaining_readonly.len();
+
 		if remaining != self.asset_count as usize {
 			return Err(CliError::AssetCountMismatch {
 				declared: self.asset_count as usize,
@@ -2181,7 +2190,6 @@ impl InstructionBuilder for ReclaimCompressedNftPrizeArgs {
 // ---------------------------------------------------------------------------
 // PrizePool lifecycle
 // ---------------------------------------------------------------------------
-
 /// Arguments for `create-prize-pool`.
 #[derive(Debug, clap::Args)]
 pub struct CreatePrizePoolArgs {

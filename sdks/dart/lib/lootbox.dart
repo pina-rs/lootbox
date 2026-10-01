@@ -79,18 +79,21 @@ final class LootboxPlan {
         'maxSupply must be greater than zero',
       );
     }
+
     if (maxSupply > _maxU64) {
       throw const LootboxPlanException(
         'OUT_OF_RANGE',
         'maxSupply exceeds the u64 maximum',
       );
     }
+
     if (outcomes.isEmpty) {
       throw const LootboxPlanException(
         'NO_OUTCOMES',
         'at least one outcome is required',
       );
     }
+
     if (outcomes.length > maxOutcomes) {
       throw const LootboxPlanException(
         'TOO_MANY_OUTCOMES',
@@ -105,18 +108,21 @@ final class LootboxPlan {
           'outcome $index must have a positive weight',
         );
       }
+
       if (outcome.rewardLamports < BigInt.zero) {
         throw LootboxPlanException(
           'NEGATIVE_REWARD',
           'outcome $index has a negative reward',
         );
       }
+
       if (outcome.rewardLamports == BigInt.zero) {
         throw LootboxPlanException(
           'ZERO_REWARD',
           'outcome $index must promise a positive reward so the timeout floor stays positive',
         );
       }
+
       if (outcome.weight > _maxU64 || outcome.rewardLamports > _maxU64) {
         throw LootboxPlanException(
           'OUT_OF_RANGE',
@@ -136,6 +142,7 @@ final class LootboxPlan {
         'the lootbox plan exceeds the on-chain u64 range',
       );
     }
+
     if (plan.totalWeight > maxTotalWeight) {
       throw LootboxPlanException(
         'WEIGHT_LIMIT_EXCEEDED',
@@ -170,6 +177,7 @@ final class LootboxPlan {
   /// Probability in basis points, rounded down exactly like integer clients.
   int probabilityBasisPoints(int index) {
     final outcome = outcomes[index];
+
     return ((outcome.weight * BigInt.from(10000)) ~/ totalWeight).toInt();
   }
 }

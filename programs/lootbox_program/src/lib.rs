@@ -69,6 +69,7 @@ const SEED_OPENING: &[u8] = b"opening";
 const WRAPPED_SOL_MINT_ID: Address = address!("So11111111111111111111111111111111111111112");
 const ADDRESS_LOOKUP_TABLE_PROGRAM_ID: Address =
 	address!("AddressLookupTab1e1111111111111111111111111");
+
 const OPENING_PENDING: u8 = 0;
 const OPENING_SETTLED: u8 = 1;
 const OPENING_REFUNDED: u8 = 2;
@@ -1147,6 +1148,7 @@ impl<'a> ProcessAccountInfos<'a> for CreateLootboxAccounts<'a> {
 		state.id.set(args.id.get());
 		state.max_supply.set(args.max_supply.get());
 		state.bump = args.bump;
+
 		state.vault_bump = args.vault_bump;
 		state.sealed.set(false);
 		drop(state);
@@ -1299,6 +1301,7 @@ impl<'a> ProcessAccountInfos<'a> for MintBoxesAccounts<'a> {
 		let liability = required_liability(&state, new_supply, state.pending_openings.get())?;
 		assert_solvency(self.vault, rent_reserve, liability)?;
 		let authority = state.authority;
+
 		let id = state.id.get();
 		let bump = state.bump;
 		state.total_minted.set(minted);
@@ -1327,6 +1330,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestOpenAccounts<'a> {
 		let rent_reserve = assert_vault(self.vault, &lootbox_address)?;
 		let mut state = self.lootbox.as_account_mut::<LootboxState>(&ID)?;
 		assert_lootbox_pda(&lootbox_address, &state)?;
+
 		self.oracle_queue.assert_address(&state.oracle_queue)?;
 		self.oracle_program.assert_program(&state.oracle_program)?;
 
@@ -1344,6 +1348,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestOpenAccounts<'a> {
 		if box_account.amount() == 0 {
 			return Err(ProgramError::InsufficientFunds);
 		}
+
 		drop(box_account);
 
 		let opening_seeds = OpeningState::seeds(&lootbox_address, &randomness_address);
@@ -1465,6 +1470,7 @@ impl<'a> ProcessAccountInfos<'a> for SettleOpenAccounts<'a> {
 		let rent_reserve = assert_vault(self.vault, &lootbox_address)?;
 		let state = self.lootbox.as_account_mut::<LootboxState>(&ID)?;
 		assert_lootbox_pda(&lootbox_address, &state)?;
+
 		self.oracle_queue.assert_address(&state.oracle_queue)?;
 		self.oracle_program.assert_program(&state.oracle_program)?;
 		let supply = assert_box_mint(self.box_mint, &lootbox_address, &state.box_mint)?;
@@ -1488,6 +1494,7 @@ impl<'a> ProcessAccountInfos<'a> for SettleOpenAccounts<'a> {
 		if expected_opening != opening_address {
 			return Err(ProgramError::InvalidSeeds);
 		}
+
 		assert_reward_escrow(self.reward_escrow, &randomness_address)?;
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 
@@ -1502,6 +1509,7 @@ impl<'a> ProcessAccountInfos<'a> for SettleOpenAccounts<'a> {
 		if randomness.reveal_slot != 0 {
 			return Err(lootbox_error(LootboxError::RandomnessExpired));
 		}
+
 		drop(opening);
 		drop(state);
 
@@ -1598,6 +1606,7 @@ impl<'a> ProcessAccountInfos<'a> for RefundOpenAccounts<'a> {
 		let recipient_address = *self.recipient.address();
 		let rent_reserve = assert_vault(self.vault, &lootbox_address)?;
 		let mut state = self.lootbox.as_account_mut::<LootboxState>(&ID)?;
+
 		assert_lootbox_pda(&lootbox_address, &state)?;
 		let supply = assert_box_mint(self.box_mint, &lootbox_address, &state.box_mint)?;
 		let mut opening = self.opening.as_account_mut::<OpeningState>(&ID)?;
@@ -1711,12 +1720,14 @@ impl<'a> ProcessAccountInfos<'a> for CloseOpeningAccounts<'a> {
 		if expected_opening != opening_address {
 			return Err(ProgramError::InvalidSeeds);
 		}
+
 		assert_reward_escrow(self.reward_escrow, &randomness_address)?;
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 
 		if randomness.authority != opening_address || randomness.queue != state.oracle_queue {
 			return Err(lootbox_error(LootboxError::InvalidRandomness));
 		}
+
 		drop(opening);
 		drop(state);
 
@@ -1752,6 +1763,7 @@ impl<'a> ProcessAccountInfos<'a> for WithdrawSurplusAccounts<'a> {
 		assert_authority_address(self.authority, &state.authority)?;
 		let supply = assert_box_mint(self.box_mint, &lootbox_address, &state.box_mint)?;
 		let liability = required_liability(&state, supply, state.pending_openings.get())?;
+
 		let requested_minimum = rent_reserve
 			.checked_add(liability)
 			.and_then(|value| value.checked_add(args.lamports.get()))
@@ -1788,11 +1800,13 @@ fn assert_migration_slot_is_current<T: MigratableAccount>(
 	let Some(account) = accounts.get(index) else {
 		return Ok(());
 	};
+
 	if account.address() == program_id {
 		return Ok(());
 	}
 
 	let data = account.try_borrow()?;
+
 	if !T::matches_discriminator(&data) || T::require_current_migration_version(&data).is_err() {
 		return Err(lootbox_error(LootboxError::MigrationLocked));
 	}
@@ -1816,6 +1830,7 @@ fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> Progra
 	assert_migration_slot_is_current::<TemplateOpeningState>(program_id, accounts, 7)?;
 	assert_migration_slot_is_current::<ResultReceiptState>(program_id, accounts, 8)?;
 	assert_migration_slot_is_current::<PrizePoolState>(program_id, accounts, 9)?;
+
 	assert_migration_slot_is_current::<PrizePoolItemState>(program_id, accounts, 10)?;
 	assert_migration_slot_is_current::<ExclusiveCollectionState>(program_id, accounts, 11)?;
 	assert_migration_slot_is_current::<ExclusiveAttachmentState>(program_id, accounts, 12)?;
@@ -1828,6 +1843,7 @@ fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> Progra
 	context.run_optional::<BundleState>(6)?;
 	context.run_optional::<TemplateOpeningState>(7)?;
 	context.run_optional::<ResultReceiptState>(8)?;
+
 	context.run_optional::<PrizePoolState>(9)?;
 	context.run_optional::<PrizePoolItemState>(10)?;
 	context.run_optional::<ExclusiveCollectionState>(11)?;
@@ -2050,6 +2066,7 @@ mod tests {
 		write_outcome_slot(&mut state.outcome_weights, 2, 20).expect("third weight");
 		write_outcome_slot(&mut state.outcome_lamports, 0, 1).expect("first reward");
 		write_outcome_slot(&mut state.outcome_lamports, 1, 2).expect("second reward");
+
 		write_outcome_slot(&mut state.outcome_lamports, 2, 3).expect("third reward");
 
 		assert_eq!(outcome_for_target(state, 0).unwrap(), (0, 1));

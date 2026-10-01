@@ -110,6 +110,7 @@ export function Chest(props: ChestProps) {
 			setRattle((value) => value + 1);
 			navigator.vibrate?.([20, 40, 20]);
 			callbacks.current.onBlocked();
+
 			return;
 		}
 

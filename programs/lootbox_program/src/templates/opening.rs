@@ -248,9 +248,11 @@ fn record_forfeit(
 	if opening.status != OPENING_PENDING {
 		return Err(lootbox_error(LootboxError::OpeningAlreadyFinalized));
 	}
+
 	if opening.sequence.get() != state.next_allocation.get() {
 		return Err(lootbox_error(LootboxError::AllocationOutOfOrder));
 	}
+
 	let pending = state
 		.pending_openings
 		.get()
@@ -332,6 +334,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		let opening_address = *self.opening.address();
 		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
+
 		self.oracle_queue.assert_address(&state.oracle_queue)?;
 		self.oracle_program.assert_program(&state.oracle_program)?;
 
@@ -364,6 +367,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		if box_account.amount() == 0 {
 			return Err(ProgramError::InsufficientFunds);
 		}
+
 		drop(box_account);
 
 		let opening_seeds = TemplateOpeningState::seeds(&template_address, &randomness_address);
@@ -390,6 +394,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		let post_burn_supply = mint_supply
 			.checked_sub(1)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
+
 		if post_burn_supply
 			.checked_add(pending)
 			.ok_or(ProgramError::ArithmeticOverflow)?
@@ -399,6 +404,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		}
 		let sequence = state.next_request.get();
 		let treasury_revision = state.revision.get();
+
 		let eligible_bundle_count = state.bundle_count.get();
 		let next_request = sequence
 			.checked_add(1)
@@ -427,6 +433,7 @@ impl<'a> ProcessAccountInfos<'a> for RequestTemplateOpenAccounts<'a> {
 		opening.consumer_program = args.consumer_program;
 		opening.consumer_context = args.consumer_context;
 		opening.randomness = randomness_address;
+
 		opening.status = OPENING_PENDING;
 		opening.sequence.set(sequence);
 		opening.treasury_revision.set(treasury_revision);
@@ -507,6 +514,7 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 		assert_template(&template_address, &state)?;
 		assert_service_vault(self.service_vault, &template_address, &state)?;
 		self.oracle_queue.assert_address(&state.oracle_queue)?;
+
 		self.oracle_program.assert_program(&state.oracle_program)?;
 		let opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 
@@ -525,6 +533,7 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 		if expected_opening != opening_address {
 			return Err(ProgramError::InvalidSeeds);
 		}
+
 		assert_reward_escrow(self.reward_escrow, &randomness_address)?;
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 
@@ -539,6 +548,7 @@ impl<'a> ProcessAccountInfos<'a> for FulfillTemplateOpenAccounts<'a> {
 		if randomness.reveal_slot != 0 {
 			return Err(lootbox_error(LootboxError::RandomnessExpired));
 		}
+
 		drop(opening);
 
 		let opening_signer = opening_seeds_with_bump.to_signer();
@@ -610,12 +620,14 @@ impl<'a> ProcessAccountInfos<'a> for ForfeitTemplateOpenAccounts<'a> {
 		assert_service_vault(self.service_vault, &template_address, &state)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&opening_address, &opening, &template_address)?;
+
 		if opening.randomness != *self.randomness.address()
 			|| opening.beneficiary != *self.beneficiary.address()
 		{
 			return Err(lootbox_error(LootboxError::InvalidRecipient));
 		}
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
+
 		if randomness.authority != opening_address
 			|| randomness.queue != state.oracle_queue
 			|| randomness.seed_slot != opening.seed_slot.get()
@@ -628,9 +640,11 @@ impl<'a> ProcessAccountInfos<'a> for ForfeitTemplateOpenAccounts<'a> {
 			.get()
 			.checked_add(RANDOMNESS_TIMEOUT_SLOTS)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
+
 		if sysvars::clock::Clock::get()?.slot < refund_slot {
 			return Err(lootbox_error(LootboxError::OpeningNotExpired));
 		}
+
 		record_forfeit(&mut state, &mut opening)?;
 		drop(opening);
 
@@ -667,6 +681,7 @@ mod tests {
 		state.status = TEMPLATE_LIVE;
 		state.locked_at.set(1);
 		assert_eq!(assert_openable(&state), Ok(()));
+
 		state.status = TEMPLATE_RETIRED;
 		assert_eq!(assert_openable(&state), Ok(()));
 	}
@@ -700,6 +715,7 @@ mod tests {
 		opening.sequence.set(8);
 		assert!(record_forfeit(&mut state, opening).is_err());
 		assert_eq!(state.pending_openings.get(), 2);
+
 		opening.sequence.set(7);
 		assert_eq!(record_forfeit(&mut state, opening), Ok(()));
 		assert_eq!(opening.status, 4);

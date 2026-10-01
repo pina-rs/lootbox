@@ -180,6 +180,7 @@ async function main() {
 	console.log(`Tree config rent: ${sol(configRent)}`);
 	console.log(`Fees (~${2 + EMPTY_CHESTS.length} signatures): ${sol(fees)}`);
 	console.log(`Total:            ${sol(total)} (balance ${sol(balance)})`);
+
 	console.log(`Per chest:        ${sol(total / BigInt(EMPTY_CHESTS.length))}`);
 
 	for (const chest of EMPTY_CHESTS) {
@@ -200,6 +201,7 @@ async function main() {
 		console.log(
 			"\nDry run: nothing was sent. Pass --execute to create the tree and mint.",
 		);
+
 		return;
 	}
 

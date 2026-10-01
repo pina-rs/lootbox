@@ -37,6 +37,7 @@ const SEED_RESULT_RECEIPT: &[u8] = b"result-receipt";
 const SEED_PRIZE_POOL: &[u8] = b"prize-pool";
 const SEED_PRIZE_POOL_ITEM: &[u8] = b"prize-pool-item";
 const MANIFEST_BUNDLE_DOMAIN: &[u8] = b"pina-lootbox-manifest-bundle";
+
 const MANIFEST_DOMAIN: &[u8] = b"pina-lootbox-manifest";
 /// Maximum assets delivered by one winning bundle.
 pub const MAX_PRIZE_ASSETS: usize = 4;
@@ -169,6 +170,7 @@ pub struct TemplateState {
 fn validate_template_state(state: &TemplateStateRef<'_>) -> ProgramResult {
 	let bundle_count =
 		usize::try_from(state.bundle_count.get()).map_err(|_| ProgramError::InvalidAccountData)?;
+
 	if state.remaining().len() != bundle_count || state.encoded_len() != state.storage_len() {
 		return Err(lootbox_error(LootboxError::InvalidState));
 	}
@@ -422,6 +424,7 @@ fn validate_prize_pool_state(state: &PrizePoolStateRef<'_>) -> ProgramResult {
 		usize::try_from(state.claimed_count.get()).map_err(|_| ProgramError::InvalidAccountData)?;
 	let reclaimed = usize::try_from(state.reclaimed_count.get())
 		.map_err(|_| ProgramError::InvalidAccountData)?;
+
 	if quantity == 0
 		|| quantity > MAX_PRIZE_POOL_ITEMS
 		|| deposited > quantity
@@ -446,11 +449,14 @@ fn validate_prize_pool_state(state: &PrizePoolStateRef<'_>) -> ProgramResult {
 	let set_bits = (0..deposited)
 		.filter(|index| unavailable[index / 8] & (1 << (index % 8)) != 0)
 		.count();
+
 	if set_bits != assigned + reclaimed {
 		return Err(lootbox_error(LootboxError::InvalidPrizePool));
 	}
+
 	if deposited % 8 != 0 {
 		let used_mask = (1u8 << (deposited % 8)) - 1;
+
 		if unavailable
 			.last()
 			.is_some_and(|byte| byte & !used_mask != 0)
@@ -489,6 +495,7 @@ mod layout_tests {
 			(548, 395, 299, 277),
 		);
 		assert_eq!(PrizePoolState::HEADER_SIZE, 168);
+
 		assert_eq!(PrizePoolState::MIN_SIZE, 168);
 		assert_eq!(PrizePoolState::MAX_SIZE, 680);
 		assert_eq!(PrizePoolItemState::SIZE, 212);
@@ -539,6 +546,7 @@ mod layout_tests {
 		bundle.amounts[..8].copy_from_slice(&42u64.to_le_bytes());
 		let first = next_manifest_accumulator(&[0; 32], bundle);
 		bundle.amounts[..8].copy_from_slice(&43u64.to_le_bytes());
+
 		assert_ne!(first, next_manifest_accumulator(&[0; 32], bundle));
 		bundle.amounts[..8].copy_from_slice(&42u64.to_le_bytes());
 		bundle.commitments[..32].copy_from_slice(&[7; 32]);
@@ -1096,6 +1104,7 @@ fn assert_service_vault(
 	let bump = [state.service_vault_bump];
 	let seeds = [SEED_SERVICE_VAULT, template.as_ref(), bump.as_slice()];
 	account.assert_seeds_with_bump(&seeds, &ID)?;
+
 	if account.owner() != &system::ID || !account.is_data_empty() {
 		return Err(lootbox_error(LootboxError::InvalidServiceAccount));
 	}
@@ -1224,6 +1233,7 @@ fn locked_manifest_hash(template: &Address, state: &TemplateStateHeader) -> [u8;
 		&state.manifest_accumulator,
 	]);
 	let mut result = [0u8; 32];
+
 	result.copy_from_slice(digest.as_ref());
 
 	result
@@ -1239,11 +1249,13 @@ fn mint_at(bundle: &BundleStateZc, index: usize) -> Result<Address, ProgramError
 
 fn available_in_prefix(state: &TemplateStateRef<'_>, count: u32) -> Result<u64, ProgramError> {
 	let count = usize::try_from(count).map_err(|_| ProgramError::InvalidAccountData)?;
+
 	if count > MAX_TEMPLATE_BUNDLES {
 		return Err(ProgramError::InvalidAccountData);
 	}
 
 	let remaining = state.remaining();
+
 	if count > remaining.len() {
 		return Err(ProgramError::InvalidAccountData);
 	}
@@ -1292,6 +1304,7 @@ fn assert_template_mint(
 		.token_2022()
 		.ok_or(ProgramError::InvalidAccountData)?
 		.get_extension::<token_2022::state::MetadataPointerExtension>()?;
+
 	if extension.authority.as_ref().is_some()
 		|| extension.metadata_address.as_ref() != Some(expected)
 	{
@@ -1318,14 +1331,17 @@ fn find_metadata_bytes(data: &[u8]) -> Result<Option<&[u8]>, ProgramError> {
 		if entries.len() < 4 {
 			break;
 		}
+
 		let kind = u16::from_le_bytes([entries[0], entries[1]]);
 		let length = usize::from(u16::from_le_bytes([entries[2], entries[3]]));
 		let value = entries
 			.get(4..4 + length)
 			.ok_or(ProgramError::InvalidAccountData)?;
+
 		if kind == token_2022::state::ExtensionType::TokenMetadata as u16 {
 			return Ok(Some(value));
 		}
+
 		entries = entries
 			.get(4 + length..)
 			.ok_or(ProgramError::InvalidAccountData)?;
@@ -1354,6 +1370,7 @@ fn take_metadata_string<'a>(data: &mut &'a [u8]) -> Result<&'a [u8], ProgramErro
 fn assert_metadata(mint: &AccountView, name: &[u8; 32], uri: &[u8; 200]) -> ProgramResult {
 	let data = mint.try_borrow()?;
 	let metadata = metadata_bytes(&data)?;
+
 	if metadata.get(..32) != Some([0u8; 32].as_slice())
 		|| parse_address(metadata, 32)? != *mint.address()
 	{
@@ -1362,6 +1379,7 @@ fn assert_metadata(mint: &AccountView, name: &[u8; 32], uri: &[u8; 200]) -> Prog
 	let mut strings = metadata.get(64..).ok_or(ProgramError::InvalidAccountData)?;
 	let metadata_name = take_metadata_string(&mut strings)?;
 	let _symbol = take_metadata_string(&mut strings)?;
+
 	let metadata_uri = take_metadata_string(&mut strings)?;
 	let name_length = name
 		.iter()
@@ -1402,6 +1420,7 @@ impl<'a> ProcessAccountInfos<'a> for CreateTemplateAccounts<'a> {
 		}
 
 		let seeds = TemplateState::seeds(self.authority.address(), args.id.get());
+
 		if self
 			.template
 			.assert_canonical_bump(&seeds.as_slices(), &ID)?
@@ -1469,6 +1488,7 @@ impl<'a> ProcessAccountInfos<'a> for AddBundleAccounts<'a> {
 
 		let index = state.bundle_count.get();
 		let seeds = BundleState::seeds(&template_address, index);
+
 		if self.bundle.assert_canonical_bump(&seeds.as_slices(), &ID)? != args.bump {
 			return Err(ProgramError::InvalidSeeds);
 		}
@@ -1488,6 +1508,7 @@ impl<'a> ProcessAccountInfos<'a> for AddBundleAccounts<'a> {
 		bundle.rent_reserve.set(rent);
 		bundle.index.set(index);
 		bundle.asset_count = args.asset_count;
+
 		bundle.status = BUNDLE_FUNDING;
 		bundle.bump = args.bump;
 
@@ -1503,6 +1524,7 @@ fn record_prize(
 	decimals: u8,
 ) -> Result<u64, ProgramError> {
 	let index = usize::from(bundle.funded_assets);
+
 	if index >= usize::from(bundle.asset_count)
 		|| amount == 0
 		|| bundle.kinds[index] != 0
@@ -1565,9 +1587,11 @@ impl<'a> ProcessAccountInfos<'a> for FundSolPrizeAccounts<'a> {
 		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, &template_address)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+
 		if bundle.status != BUNDLE_FUNDING {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
+
 		let deposit = record_prize(
 			&mut bundle,
 			&Address::default(),
@@ -1596,9 +1620,11 @@ impl<'a> ProcessAccountInfos<'a> for FundQuoteSolPrizeAccounts<'a> {
 		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, &template_address)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+
 		if bundle.status != BUNDLE_FUNDING {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
+
 		let deposit = record_prize(
 			&mut bundle,
 			&Address::default(),
@@ -1627,10 +1653,13 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, &template_address)?;
+
 		let token_program = *self.token_program.address();
+
 		if token_program != token::ID && token_program != token_2022::ID {
 			return Err(ProgramError::IncorrectProgramId);
 		}
+
 		// The outer allowlist is the widest prize policy. `admit_token_2022_prize`
 		// then keeps a mint strict unless an allow-listed issuer controls it.
 		let mint = self
@@ -1644,7 +1673,9 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 		} else {
 			None
 		};
+
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+
 		if bundle.status != BUNDLE_FUNDING {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
@@ -1675,6 +1706,7 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 		if escrow.delegate().is_some() || escrow.close_authority().is_some() || escrow.is_frozen() {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
+
 		let escrow_before = escrow.amount();
 		drop(escrow);
 		let kind = if args.is_nft.get() {
@@ -1684,6 +1716,7 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 		} else {
 			PRIZE_TOKEN
 		};
+
 		let deposit = record_prize(
 			&mut bundle,
 			self.mint.address(),
@@ -1717,6 +1750,7 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 			.invoke()?;
 		} else if token_program == token_2022::ID {
 			self.token_program.assert_address(&token_2022::ID)?;
+
 			token_2022::instructions::TransferChecked::new(
 				self.source,
 				self.mint,
@@ -1745,6 +1779,7 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 			.escrow
 			.as_token_account_for_program(&token_program)?
 			.amount();
+
 		if escrow_after.checked_sub(escrow_before) != Some(deposit) {
 			return Err(PinaProgramError::UnverifiedTransfer.into());
 		}
@@ -1763,10 +1798,13 @@ impl<'a> ProcessAccountInfos<'a> for FundQuoteTokenPrizeAccounts<'a> {
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, &template_address)?;
+
 		let token_program = *self.token_program.address();
+
 		if token_program != token::ID && token_program != token_2022::ID {
 			return Err(ProgramError::IncorrectProgramId);
 		}
+
 		let mint = self
 			.mint
 			.as_token_mint_for_program(&token_program)?
@@ -1775,9 +1813,11 @@ impl<'a> ProcessAccountInfos<'a> for FundQuoteTokenPrizeAccounts<'a> {
 				token_2022::state::ExtensionType::TokenMetadata,
 			])?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+
 		if bundle.status != BUNDLE_FUNDING {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
+
 		if mint.freeze_authority().is_some() || self.mint.address() == &WRAPPED_SOL_MINT_ID {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
@@ -1789,9 +1829,11 @@ impl<'a> ProcessAccountInfos<'a> for FundQuoteTokenPrizeAccounts<'a> {
 			self.mint.address(),
 			&token_program,
 		)?;
+
 		if escrow.delegate().is_some() || escrow.close_authority().is_some() || escrow.is_frozen() {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
+
 		drop(escrow);
 		let deposit = record_prize(
 			&mut bundle,
@@ -1838,10 +1880,13 @@ impl<'a> ProcessAccountInfos<'a> for FundMintPrizeAccounts<'a> {
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, &template_address)?;
+
 		let token_program = *self.token_program.address();
+
 		if token_program != token::ID && token_program != token_2022::ID {
 			return Err(ProgramError::IncorrectProgramId);
 		}
+
 		let mint = self
 			.mint
 			.as_token_mint_for_program(&token_program)?
@@ -1849,6 +1894,7 @@ impl<'a> ProcessAccountInfos<'a> for FundMintPrizeAccounts<'a> {
 				token_2022::state::ExtensionType::MetadataPointer,
 				token_2022::state::ExtensionType::TokenMetadata,
 			])?;
+
 		if mint.supply() != 0
 			|| mint.decimals() != 0
 			|| mint.mint_authority() != Some(self.authority.address())
@@ -1863,6 +1909,7 @@ impl<'a> ProcessAccountInfos<'a> for FundMintPrizeAccounts<'a> {
 		// The borrow is scoped so the data guard never outlives local checks.
 		{
 			let mint_data = self.mint.try_borrow()?;
+
 			if let Some(metadata) = find_metadata_bytes(&mint_data)?
 				&& metadata.get(..32) != Some([0u8; 32].as_slice())
 			{
@@ -1871,9 +1918,11 @@ impl<'a> ProcessAccountInfos<'a> for FundMintPrizeAccounts<'a> {
 		}
 
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+
 		if bundle.status != BUNDLE_FUNDING {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
+
 		let _ = record_prize(&mut bundle, self.mint.address(), 1, PRIZE_MINT_BADGE, 0)?;
 		drop(bundle);
 
@@ -1906,6 +1955,7 @@ impl<'a> ProcessAccountInfos<'a> for SealTemplateAccounts<'a> {
 		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
+
 		if state.status != TEMPLATE_DRAFT {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
@@ -1955,6 +2005,7 @@ fn service_budget(state: &TemplateStateHeader) -> Result<(u64, u64), ProgramErro
 	} else {
 		0
 	};
+
 	let receipt_budget = receipt_rent
 		.checked_mul(state.total_bundles.get())
 		.ok_or(ProgramError::ArithmeticOverflow)?;
@@ -1966,6 +2017,7 @@ fn service_budget(state: &TemplateStateHeader) -> Result<(u64, u64), ProgramErro
 	let reserve = receipt_budget
 		.checked_add(bounty_budget)
 		.ok_or(ProgramError::ArithmeticOverflow)?;
+
 	let total = if reserve == 0 {
 		0
 	} else {
@@ -1987,12 +2039,14 @@ impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 		assert_template_authority(self.authority, &state)?;
 		let supply =
 			assert_template_mint(self.box_mint, &template_address, &state.box_mint, false)?;
+
 		validate_market_lock(&state, supply, now)?;
 
 		let next_bundle_seeds = BundleState::seeds(&template_address, state.bundle_count.get());
 		self.bundle
 			.assert_canonical_bump(&next_bundle_seeds.as_slices(), &ID)?;
 		let service_vault_seeds = [SEED_SERVICE_VAULT, template_address.as_ref()];
+
 		if self
 			.service_vault
 			.assert_canonical_bump(&service_vault_seeds, &ID)?
@@ -2001,6 +2055,7 @@ impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 			return Err(ProgramError::InvalidSeeds);
 		}
 		let (receipt_rent, service_budget) = service_budget(&state)?;
+
 		let total_bundles = state.total_bundles.get();
 		let settlement_bounty = state.settlement_bounty_lamports.get();
 		let receipts_enabled = state.result_receipts_enabled.get();
@@ -2013,6 +2068,7 @@ impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 		if service_budget != 0 {
 			self.service_vault.assert_owner(&system::ID)?;
 			let top_up = service_budget.saturating_sub(self.service_vault.lamports());
+
 			if top_up != 0 {
 				system::instructions::Transfer {
 					from: self.authority,
@@ -2070,6 +2126,7 @@ fn validate_issuance(
 		.checked_add(state.pending_openings.get())
 		.and_then(|value| value.checked_add(amount))
 		.ok_or(ProgramError::ArithmeticOverflow)?;
+
 	if minted > state.total_bundles.get() || liability > state.remaining_bundles.get() {
 		return Err(lootbox_error(LootboxError::SupplyExceeded));
 	}
@@ -2087,6 +2144,7 @@ impl<'a> ProcessAccountInfos<'a> for ActivateBundleAccounts<'a> {
 		assert_template_authority(self.authority, &state)?;
 		assert_treasury_editable(&state)?;
 		assert_bundle(self.bundle, &template_address)?;
+
 		let bundle = self.bundle.as_account::<BundleState>(&ID)?;
 
 		if bundle.status != BUNDLE_FUNDING
@@ -2100,9 +2158,11 @@ impl<'a> ProcessAccountInfos<'a> for ActivateBundleAccounts<'a> {
 
 		let index =
 			usize::try_from(bundle.index.get()).map_err(|_| ProgramError::InvalidAccountData)?;
+
 		if state.remaining().len() != index {
 			return Err(ProgramError::InvalidAccountData);
 		}
+
 		let quantity = bundle.quantity.get();
 		let remaining_bundles = state
 			.remaining_bundles
@@ -2114,9 +2174,11 @@ impl<'a> ProcessAccountInfos<'a> for ActivateBundleAccounts<'a> {
 			.get()
 			.checked_add(quantity)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
+
 		if total_bundles > MAX_TOTAL_WEIGHT {
 			return Err(lootbox_error(LootboxError::SupplyExceeded));
 		}
+
 		let revision = state
 			.revision
 			.get()
@@ -2147,6 +2209,7 @@ impl<'a> ProcessAccountInfos<'a> for ActivateBundleAccounts<'a> {
 				.replace_remaining(&remaining),
 		}
 		.invoke::<TemplateState>()?;
+
 		if encoded_size != template_size(index + 1)? {
 			return Err(ProgramError::InvalidAccountData);
 		}
@@ -2176,6 +2239,7 @@ impl<'a> ProcessAccountInfos<'a> for CancelBundleAccounts<'a> {
 		} else {
 			(1u8 << bundle.funded_assets) - 1
 		};
+
 		if bundle.status != BUNDLE_FUNDING
 			|| bundle.index.get() != state.bundle_count.get()
 			|| bundle.reclaimed_mask != reclaimed
@@ -2200,6 +2264,7 @@ impl<'a> ProcessAccountInfos<'a> for MintTemplateBoxesAccounts<'a> {
 		assert_treasury_editable(&state)?;
 		let supply =
 			assert_template_mint(self.box_mint, &template_address, &state.box_mint, false)?;
+
 		let account = self
 			.recipient_box_account
 			.as_token_account_for_program(&token_2022::ID)?;
@@ -2253,6 +2318,7 @@ mod market_lock_tests {
 		state.remaining_bundles.set(7);
 		assert!(validate_market_lock(&state, 7, 1_001).is_err());
 		state.locked_at.set(999);
+
 		assert!(validate_market_lock(&state, 7, 1_000).is_err());
 	}
 

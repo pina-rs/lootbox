@@ -89,9 +89,11 @@ try {
 			animation,
 		);
 		const prefix = "data:image/png;base64,";
+
 		if (!png.startsWith(prefix)) {
 			throw new Error(`Invalid PNG export for ${name}`);
 		}
+
 		writeFileSync(
 			new URL(`${name}.png`, output),
 			Buffer.from(png.slice(prefix.length), "base64"),

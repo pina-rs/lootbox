@@ -181,6 +181,7 @@ export function requiredServiceBudget(
 		"settlement bounty budget",
 	);
 	const reserve = u64(receiptBudget + bountyBudget, "service reserve");
+
 	return reserve === 0n ? 0n : u64(reserve + vaultRent, "service budget");
 }
 
@@ -191,6 +192,7 @@ function u64(value: bigint, field: string): bigint {
 			`${field} must be a bigint in the u64 range`,
 		);
 	}
+
 	return value;
 }
 
@@ -202,7 +204,9 @@ function assetAddress(asset: PrizeAsset): Address | null {
 	) {
 		return address(asset.mint);
 	}
+
 	if (asset.kind === "prizePool") return address(asset.tree);
+
 	if (asset.kind === "exclusiveNft") return address(asset.collection);
 	return address(asset.asset);
 }
@@ -211,9 +215,11 @@ function assetAmount(asset: PrizeAsset): bigint {
 	if (asset.kind === "sol" || asset.kind === "quoteSol") {
 		return asset.lamports;
 	}
+
 	if (asset.kind === "token" || asset.kind === "quoteToken") {
 		return asset.amount;
 	}
+
 	return 1n;
 }
 
@@ -232,6 +238,7 @@ function copyPrizeAsset(asset: PrizeAsset): PrizeAsset {
 	if (asset.kind === "compressedNft") {
 		return Object.freeze({ ...asset, proof: copyCompressedProof(asset.proof) });
 	}
+
 	if (asset.kind === "prizePool") {
 		return Object.freeze({
 			...asset,
@@ -244,6 +251,7 @@ function copyPrizeAsset(asset: PrizeAsset): PrizeAsset {
 			)),
 		});
 	}
+
 	if (asset.kind === "core") {
 		return Object.freeze({
 			...asset,
@@ -258,6 +266,7 @@ function copyPrizeAsset(asset: PrizeAsset): PrizeAsset {
 				: {}),
 		});
 	}
+
 	return Object.freeze({ ...asset });
 }
 
@@ -271,6 +280,7 @@ export function remainingTemplateBundleCapacity(bundleCount: number): number {
 			`bundle count must be between 0 and ${MAX_TEMPLATE_BUNDLES}`,
 		);
 	}
+
 	return MAX_TEMPLATE_BUNDLES - bundleCount;
 }
 
@@ -286,11 +296,14 @@ export function encodeTemplateText(value: string, length: number): Uint8Array {
 		})
 	) throw new RangeError("template text cannot contain control characters");
 	const encoded = new TextEncoder().encode(value);
+
 	if (encoded.length > length) {
 		throw new RangeError(`template text exceeds ${length} UTF-8 bytes`);
 	}
+
 	const bytes = new Uint8Array(length);
 	bytes.set(encoded);
+
 	return bytes;
 }
 
@@ -320,9 +333,11 @@ export function createTemplatePlan(
 		"settlement bounty",
 	);
 	const resultReceiptsEnabled = input.resultReceiptsEnabled ?? false;
+
 	if (input.name.trim().length === 0) {
 		throw new TemplatePlanError("INVALID_NAME", "template name is required");
 	}
+
 	encodeTemplateText(input.name, 32);
 	encodeTemplateText(uri, 200);
 	if (
@@ -363,6 +378,7 @@ export function createTemplatePlan(
 				"total bundle copies cannot exceed u32::MAX",
 			);
 		}
+
 		const seen = new Set<Address | null>();
 		let prizePools = 0;
 		const assets = bundle.assets.map((inputAsset): PrizeAsset => {
@@ -442,6 +458,7 @@ export function createTemplatePlan(
 					uniqueAssets.add(item.asset);
 				}
 			}
+
 			const identifier = assetAddress(asset);
 			const amount = u64(assetAmount(asset), "prize amount");
 			if (
@@ -474,6 +491,7 @@ export function createTemplatePlan(
 				}
 				uniqueAssets.add(identifier as Address);
 			}
+
 			seen.add(identifier);
 			const deposit = u64(amount * quantity, "prize collateral");
 			const key = `${asset.kind}:${identifier ?? "sol"}`;
@@ -563,6 +581,7 @@ export function templateMintCapacity(
 	mintSupply: bigint,
 ): bigint {
 	u64(mintSupply, "mint supply");
+
 	if (state.status !== 1 || isTreasuryLocked(state)) return 0n;
 	const inventoryCapacity = state.remainingBundles - mintSupply -
 		state.pendingOpenings;
@@ -570,6 +589,7 @@ export function templateMintCapacity(
 	const capacity = inventoryCapacity < lifetimeCapacity
 		? inventoryCapacity
 		: lifetimeCapacity;
+
 	return capacity > 0n ? capacity : 0n;
 }
 

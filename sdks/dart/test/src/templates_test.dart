@@ -39,6 +39,7 @@ void main() {
     leafIndex: 0,
     proof: proof ?? [nft],
   );
+
   group('finite templates', () {
     test('computes full collateral and exact initial odds', () {
       final plan = TemplatePlan(

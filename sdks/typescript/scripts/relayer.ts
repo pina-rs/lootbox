@@ -92,6 +92,7 @@ const claim = args.flag("claim");
 const intervalMs = Number(args.optional("interval-ms") ?? "2000");
 const rpcUrl = await verifiedRpcUrl(cluster, args.optional("rpc"));
 const payer = await loadKeypair(args.required("keypair"));
+
 const client = new LootboxClient(rpcUrl, payer, (message, signature) => {
 	if (signature) log("info", "transaction", { step: message, signature });
 });
@@ -178,6 +179,7 @@ async function advance(
 				seedSlot: opening.data.seedSlot,
 				slot,
 			});
+
 			return false;
 		}
 
@@ -186,17 +188,20 @@ async function advance(
 
 		await client.settle(template, opening, accounts, proof);
 		log("info", "settled", fields);
+
 		return true;
 	}
 
 	if (opening.data.status === STATUS.revealed) {
 		await client.allocate(template, opening);
 		log("info", "allocated", fields);
+
 		return true;
 	}
 
 	await client.claim(opening.address);
 	log("info", "claimed", { ...fields, beneficiary: opening.data.beneficiary });
+
 	return true;
 }
 

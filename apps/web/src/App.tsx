@@ -26,7 +26,6 @@ import {
 	Tag,
 	Trash2,
 } from "lucide-react";
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AssetPicker } from "./lootbox/AssetPicker.js";
 import { LootboxMachine, type MachinePhase } from "./lootbox/Machine.js";
@@ -138,8 +137,8 @@ export default function App() {
 	const [pickerFor, setPickerFor] = useState<number | null>(null);
 	const [hasDraft, setHasDraft] = useState(false);
 	const [draftResumable, setDraftResumable] = useState(false);
-
 	const [busy, setBusy] = useState(false);
+
 	const [connecting, setConnecting] = useState(true);
 	const [error, setError] = useState("");
 	const [notice, setNotice] = useState("");
@@ -149,7 +148,6 @@ export default function App() {
 	);
 	const [wishes, setWishes] = useState<Record<string, string>>({});
 	const [activeReveal, setActiveReveal] = useState<string | null>(null);
-
 	const completeReveal = useCallback(() => setActiveReveal(null), []);
 	const [giftAmount, setGiftAmount] = useState("1");
 	const [destination, setDestination] = useState("");
@@ -158,7 +156,6 @@ export default function App() {
 		{ label: string; signature: string }[]
 	>([]);
 	const selectedId = useRef<Address | undefined>(undefined);
-
 	const pendingAction = useRef(false);
 	const refreshGeneration = useRef(0);
 
@@ -298,7 +295,6 @@ export default function App() {
 				setError(errorMessage(reason));
 			}
 			setBusy(false);
-
 			pendingAction.current = false;
 		}
 	};
@@ -390,7 +386,6 @@ export default function App() {
 			receipt.data.seedSlot + 300n > workspace.chainSlot
 		? receipt.data.seedSlot + 300n - workspace.chainSlot
 		: 0n;
-
 	const forfeitable = receipt?.data.status === 0 && selected &&
 		receipt.data.sequence === selected.data.nextAllocation &&
 		recoverySlots === 0n;

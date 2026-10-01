@@ -26,7 +26,6 @@ import {
 	getBase58Decoder,
 	getBase64Encoder,
 } from "@solana/kit";
-
 import {
 	type ChainOpening,
 	type ChainTemplate,

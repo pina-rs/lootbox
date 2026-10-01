@@ -369,7 +369,6 @@ mod tests {
 			tlv(&mut bytes, ExtensionType::TransferHook, &hook);
 			tlv(&mut bytes, ExtensionType::ScaledUiAmount, &[0; 56]);
 			tlv(&mut bytes, ExtensionType::MetadataPointer, &[0; 64]);
-
 			let mut pausable = [0u8; 33];
 			pausable[..32].copy_from_slice(&self.delegate.to_bytes());
 			pausable[32] = u8::from(self.paused);

@@ -56,7 +56,6 @@ import {
 } from "@solana/kit";
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-
 import {
 	CLASSIC_TOKEN_PROGRAM,
 	createTemplatePlan,

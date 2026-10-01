@@ -6,7 +6,6 @@ import {
 	type TraitVector,
 } from "./layers.ts";
 import { rarityOf } from "./rarity.ts";
-
 import { assertSerial } from "./render.ts";
 
 /**

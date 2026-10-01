@@ -985,7 +985,6 @@ mod tests {
 			Err(lootbox_error(LootboxError::PrizeAlreadyClaimed))
 		);
 		assert_eq!(record_claim(opening, bundle, &Address::default(), 1), Ok(1));
-
 		assert_eq!(opening.status, 3);
 		assert!(record_claim(opening, bundle, &Address::default(), 1).is_err());
 	}
@@ -1168,7 +1167,6 @@ mod tests {
 				opening.eligible_bundle_count.set(3);
 				opening.entropy = entropy;
 				let state = TemplateState::try_from_bytes(&bytes).expect("template");
-
 				let target = select_outcome(&entropy, &Address::default(), &Address::default(), available_in_prefix(&state, 3).expect("inventory")).expect("target");
 				let selected = bundle_for_target(&state, 3, target).expect("outcome");
 				let selected_index = usize::try_from(selected).expect("index");
@@ -1177,7 +1175,6 @@ mod tests {
 				remaining_values.extend_from_slice(state.remaining());
 				let mut allocation_state = AllocationState::from(&*state);
 				let after = allocate(&mut allocation_state, opening, selected, selected_remaining).expect("allocate");
-
 				remaining_values[selected_index].set(after);
 				awarded[usize::try_from(selected).expect("index")] += 1;
 				prop_assert_eq!(allocation_state.pending_openings, total - sequence - 1);

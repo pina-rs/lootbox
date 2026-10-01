@@ -335,7 +335,6 @@ if (
 		"clients/typescript/lootbox_program/package.json",
 	);
 	const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-
 	manifest.name = "@pina-rs/lootbox-program-client";
 	manifest.version = version;
 	manifest.private = true;
@@ -346,7 +345,6 @@ if (
 		"https://github.com/pina-rs/lootbox/tree/main/clients/typescript/lootbox_program";
 	manifest.publishConfig = { access: "public" };
 	manifest.files = ["src"];
-
 	const kitRange = sdkKitRange(root);
 	manifest.dependencies["@solana/program-client-core"] = kitRange;
 	manifest.peerDependencies["@solana/kit"] = kitRange;

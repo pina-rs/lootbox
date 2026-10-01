@@ -1157,7 +1157,6 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMetadataNftPrizeAccounts<'a> {
 			args.asset_index,
 		)?;
 		let template = bundle.template;
-
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
 		drop(opening);
@@ -1234,7 +1233,6 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMetadataNftPrizeAccounts<'a> {
 		)?);
 		let bundle_index =
 			usize::try_from(bundle.index.get()).map_err(|_| ProgramError::InvalidAccountData)?;
-
 		let active_remaining = if bundle.status == BUNDLE_ACTIVE {
 			Some(remaining_at(&state, bundle_index)?)
 		} else {
@@ -1252,7 +1250,6 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMetadataNftPrizeAccounts<'a> {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 		let template = bundle.template;
-
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
 		let signer = seeds.to_signer();
@@ -1362,7 +1359,6 @@ impl<'a> ProcessAccountInfos<'a> for ClaimCoreAssetPrizeAccounts<'a> {
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
-
 		drop(opening);
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
@@ -1438,7 +1434,6 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCoreAssetPrizeAccounts<'a> {
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
-
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
 
@@ -1531,7 +1526,6 @@ impl<'a> ProcessAccountInfos<'a> for ClaimCompressedNftPrizeAccounts<'a> {
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
-
 		drop(opening);
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
@@ -1607,7 +1601,6 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCompressedNftPrizeAccounts<'a> {
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
-
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
 		let context = CompressedTransfer {

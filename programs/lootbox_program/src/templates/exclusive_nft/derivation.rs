@@ -416,7 +416,6 @@ mod tests {
 		scheme_only[..8].copy_from_slice(b"https://");
 		assert!(validate_exclusive_text(&prefix, &symbol, &scheme_only).is_err());
 		let mut spaced = [0u8; 128];
-
 		spaced[..21].copy_from_slice(b"https://example.com/ ");
 		assert!(validate_exclusive_text(&prefix, &symbol, &spaced).is_err());
 	}

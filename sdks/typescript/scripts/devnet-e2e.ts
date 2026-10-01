@@ -35,7 +35,6 @@ import {
 	LootboxClient,
 	SWITCHBOARD_PROGRAM,
 } from "../src/index.js";
-
 import { installPatientFetch, loadKeypair, verifiedRpcUrl } from "./cli.js";
 
 const LAMPORTS_PER_SOL = 1_000_000_000n;

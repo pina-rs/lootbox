@@ -2282,7 +2282,6 @@ impl<'a> ProcessAccountInfos<'a> for MintTemplateBoxesAccounts<'a> {
 			self.template,
 			&TemplateStatePatch::new().total_minted(minted),
 		)?;
-
 		let signer = seeds.to_signer();
 
 		token_2022::instructions::MintTo::new(

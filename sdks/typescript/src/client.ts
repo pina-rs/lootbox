@@ -81,7 +81,6 @@ export const NOOP_PROGRAM = address(
 export const MPL_ACCOUNT_COMPRESSION_PROGRAM = address(
 	"mcmt6YrQEMKw8Mw43FmpRLmf7BqRnFMKmAcbxE3xkAW",
 );
-
 /** MPL Noop log wrapper, which Bubblegum V2 trees use. */
 export const MPL_NOOP_PROGRAM = address(
 	"mnoopTCrg4p8ry25e4bcWA9XZjbNjMTfgYVGGEdRsf3",
@@ -98,9 +97,9 @@ const INSTRUCTIONS_SYSVAR = address(
 const ASSOCIATED_TOKEN_PROGRAM = token.ASSOCIATED_TOKEN_PROGRAM_ADDRESS;
 const SLOT_HASHES = address("SysvarS1otHashes111111111111111111111111111");
 const WRAPPED_SOL = address("So11111111111111111111111111111111111111112");
-
 const LOOKUP_TABLE = address("AddressLookupTab1e1111111111111111111111111");
 const utf8 = new TextEncoder();
+
 const addressBytes = getAddressEncoder();
 const commitment = "processed" as const;
 const PRIZE_POOL_MANIFEST_DOMAIN = utf8.encode(
@@ -3546,7 +3545,6 @@ export class LootboxClient {
 							logWrapper: NOOP_PROGRAM,
 							pluginAccounts: CORE_PROGRAM,
 						});
-
 						instructions = [replaceGeneratedTail(
 							claim,
 							resolved.pluginAccounts ?? [],
@@ -3610,7 +3608,6 @@ export class LootboxClient {
 				opening = current;
 				continue;
 			}
-
 			opening = await generated.fetchTemplateOpeningState(
 				this.rpc,
 				openingAddress,

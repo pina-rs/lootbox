@@ -54,8 +54,8 @@ export function AssetPicker({ owner, onClose, onPick }: Props) {
 	const [tokens, setTokens] = useState(emptyTokens);
 	const [nfts, setNfts] = useState(emptyNfts);
 	const [loading, setLoading] = useState(false);
-
 	const [error, setError] = useState("");
+
 	const [manualKind, setManualKind] = useState<"token" | "nft">("token");
 	const [manualMint, setManualMint] = useState("");
 	const [manualLabel, setManualLabel] = useState("");
@@ -65,7 +65,6 @@ export function AssetPicker({ owner, onClose, onPick }: Props) {
 	>(
 		[],
 	);
-
 	const [resolvingPool, setResolvingPool] = useState(false);
 	const poolRequest = useRef(0);
 	const searchRequest = useRef(0);

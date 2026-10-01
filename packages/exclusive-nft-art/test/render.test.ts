@@ -8,7 +8,6 @@ import {
 	renderExclusiveNft,
 	type TraitVector,
 } from "../src/index.ts";
-
 import { assertWellFormedXml } from "./xml.ts";
 
 const STILL_BUDGET = 60 * 1024;

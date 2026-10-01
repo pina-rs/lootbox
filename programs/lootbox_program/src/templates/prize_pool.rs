@@ -1019,7 +1019,6 @@ impl<'a> ProcessAccountInfos<'a> for CreatePrizePoolAccounts<'a> {
 		{
 			return Err(lootbox_error(LootboxError::InvalidPrizePool));
 		}
-
 		let bundle_address = *self.bundle.address();
 		let quantity = bundle.quantity.get();
 		drop(bundle);
@@ -1127,7 +1126,6 @@ impl<'a> ProcessAccountInfos<'a> for PreparePrizePoolItemAccounts<'a> {
 		item.tree_index.set(args.index.get());
 		item.pool_index.set(pool_index);
 		item.status = PRIZE_POOL_ITEM_PREPARED;
-
 		item.bump = args.item_bump;
 		drop(item);
 		update_pool(
@@ -1219,7 +1217,6 @@ impl<'a> ProcessAccountInfos<'a> for DepositPrizePoolItemAccounts<'a> {
 		}
 		let pool_index = pool.deposit_cursor.get();
 		let previous_manifest = pool.manifest_accumulator;
-
 		let mut bitmap = AllocVec::with_capacity(pool.unavailable().len() + 1);
 		bitmap.extend_from_slice(pool.unavailable());
 
@@ -1242,7 +1239,6 @@ impl<'a> ProcessAccountInfos<'a> for DepositPrizePoolItemAccounts<'a> {
 		{
 			return Err(lootbox_error(LootboxError::PrizePoolItemMismatch));
 		}
-
 		let semantic_metadata_hash = item.semantic_metadata_hash;
 		drop(item);
 		let next_manifest = next_pool_manifest(
@@ -1329,7 +1325,6 @@ impl<'a> ProcessAccountInfos<'a> for SealPrizePoolAccounts<'a> {
 		let asset_index = pool.asset_index;
 		let tree = pool.tree;
 		let manifest_accumulator = pool.manifest_accumulator;
-
 		let quantity = pool.quantity.get();
 		let version = pool
 			.version
@@ -1419,9 +1414,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimPrizePoolItemAccounts<'a> {
 		let pool_index = opening.selected_pool_item.get();
 		let pool_address = *self.prize_pool.address();
 		let pool_data = self.prize_pool.try_borrow()?;
-
 		let pool = PrizePoolState::try_from_bytes(&pool_data)?;
-
 		assert_prize_pool(self.prize_pool, &pool, self.bundle.address())?;
 
 		if pool.status != PRIZE_POOL_SEALED
@@ -1441,7 +1434,6 @@ impl<'a> ProcessAccountInfos<'a> for ClaimPrizePoolItemAccounts<'a> {
 			.checked_add(1)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
 		let pool_bump = pool.bump;
-
 		let pool_bundle = pool.bundle;
 		let pool_asset_index = pool.asset_index;
 		let pool_quantity = pool.quantity.get();
@@ -1565,7 +1557,6 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimPrizePoolItemAccounts<'a> {
 			args.index.get(),
 		)?;
 		let previous_manifest = item.previous_manifest_accumulator;
-
 		drop(item);
 
 		let pool_bump = pool.bump;
@@ -1590,12 +1581,10 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimPrizePoolItemAccounts<'a> {
 				.checked_sub(1)
 				.ok_or(ProgramError::ArithmeticOverflow)?;
 			let mut bitmap = AllocVec::with_capacity(cursor.div_ceil(8) as usize);
-
 			bitmap.extend_from_slice(
 				&pool.unavailable()[..usize::try_from(cursor.div_ceil(8))
 					.map_err(|_| ProgramError::InvalidAccountData)?],
 			);
-
 			drop(bundle);
 			drop(pool_data);
 			drop(template_data);
@@ -1751,7 +1740,6 @@ impl<'a> ProcessAccountInfos<'a> for ClosePrizePoolAccounts<'a> {
 			&& bundle.status == BUNDLE_FUNDING
 			&& u64::from(pool.reclaimed_count.get()) == pool.quantity.get()
 			&& bundle.reclaimed_mask & (1 << pool.asset_index) != 0;
-
 		let active_terminal = if pool.status == PRIZE_POOL_SEALED && bundle.status == BUNDLE_ACTIVE
 		{
 			let remaining = template_ref
@@ -2054,7 +2042,6 @@ mod tests {
 		metadata.extend_from_slice(&1u32.to_le_bytes());
 		let creator_start = metadata.len();
 		metadata.extend_from_slice(&[9; 32]);
-
 		metadata.extend_from_slice(&[1, 100]);
 
 		let inner = keccak_hashv(&[&metadata]);

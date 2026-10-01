@@ -21,7 +21,6 @@ import {
 	type LaunchConfig,
 	readLaunchConfig,
 } from "./config.js";
-
 import {
 	ELIGIBILITY_STATEMENT,
 	NOT_AFFILIATED,
@@ -570,8 +569,8 @@ export default function LaunchApp() {
 	const [series, setSeries] = useState<Load<SeriesSnapshot> | null>(null);
 	const [options, setOptions] = useState<readonly WalletOption[]>([]);
 	const [wallet, setWallet] = useState<ConnectedWallet | null>(null);
-
 	const [balance, setBalance] = useState<bigint | null>(null);
+
 	const [pending, setPending] = useState<Address | null>(null);
 	const [opening, dispatch] = useReducer(openingReducer, initialOpening);
 	const [claimSignature, setClaimSignature] = useState<string | null>(null);
@@ -579,7 +578,6 @@ export default function LaunchApp() {
 	const [sendTo, setSendTo] = useState("");
 	const [sendCount, setSendCount] = useState("1");
 	const [sendState, setSendState] = useState<Load<string> | null>(null);
-
 	const inFlight = useRef(false);
 	const signatures = useRef<Map<string, string>>(new Map());
 

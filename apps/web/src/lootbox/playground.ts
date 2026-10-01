@@ -1310,7 +1310,6 @@ export async function settleOpenings(
 						!opening || opening.data.status >= 2 ||
 						reconciledTemplate.data.nextAllocation > snapshot.data.sequence
 					) continue;
-
 					throw allocationReason;
 				}
 			}

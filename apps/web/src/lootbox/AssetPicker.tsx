@@ -6,7 +6,6 @@ import {
 	Layers3,
 	LockKeyhole,
 	Pencil,
-
 	Search,
 	ShieldAlert,
 	Sparkles,
@@ -15,7 +14,6 @@ import {
 import { useEffect, useRef, useState } from "react";
 import {
 	type AssetSearchResponse,
-
 	type DraftAsset,
 	loadPrizePoolItem,
 	LOCAL_PRIZE_POOL_MAX,

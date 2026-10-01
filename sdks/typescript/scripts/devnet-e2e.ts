@@ -27,7 +27,6 @@ import {
 	type Signature,
 } from "@solana/kit";
 import {
-
 	CLASSIC_TOKEN_PROGRAM,
 	createSwitchboardOracle,
 	createTemplatePlan,

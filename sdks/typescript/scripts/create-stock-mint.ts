@@ -20,7 +20,6 @@ import {
 	getInitializeMint2Instruction,
 	getMintSize,
 	getMintToCheckedInstruction,
-
 	getPostInitializeInstructionsForMintExtensions,
 	getPreInitializeInstructionsForMintExtensions,
 	TOKEN_2022_PROGRAM_ADDRESS,
@@ -29,7 +28,6 @@ import {
 	address,
 	appendTransactionMessageInstructions,
 	createSolanaRpc,
-
 	createTransactionMessage,
 	generateKeyPairSigner,
 	getBase64EncodedWireTransaction,

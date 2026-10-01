@@ -6,7 +6,6 @@ import {
 	decodeTemplateText,
 	MAX_TEMPLATE_BUNDLES,
 	remainingTemplateBundleCapacity,
-
 	templateInventory,
 	templateMintCapacity,
 } from "@pina-rs/lootbox";
@@ -19,7 +18,6 @@ import {
 	ChevronDown,
 	Copy,
 	Gift,
-
 	Hammer,
 	Layers3,
 	Plus,
@@ -40,7 +38,6 @@ import {
 	connectPlayground,
 	createDrop,
 	creatorErrors,
-
 	type CreatorInput,
 	type DraftAsset,
 	formatUnits,
@@ -49,7 +46,6 @@ import {
 	makeAsset,
 	makeBundle,
 	parseUnits,
-
 	type Playground,
 	previewInput,
 	savedDraftInfo,
@@ -293,7 +289,6 @@ export default function App() {
 		} catch (reason) {
 			setError(errorMessage(reason));
 		} finally {
-
 			try {
 				await refresh(sandbox);
 				const draft = savedDraftInfo(sandbox);
@@ -404,7 +399,6 @@ export default function App() {
 		: visiblePrize
 		? delivered ? "redeemed" : "revealed"
 		: phase === "received"
-
 		? "received"
 		: "idle";
 	const updateRow = (

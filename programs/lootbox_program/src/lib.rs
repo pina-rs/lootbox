@@ -40,7 +40,6 @@ use switchboard_randomness_cpi::RandomnessClose;
 use switchboard_randomness_cpi::RandomnessCommit;
 use switchboard_randomness_cpi::RandomnessInit;
 use switchboard_randomness_cpi::RandomnessReveal;
-
 use switchboard_randomness_cpi::RandomnessSnapshot;
 use switchboard_randomness_cpi::parse_randomness_account;
 

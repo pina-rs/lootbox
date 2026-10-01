@@ -49,7 +49,6 @@ export function Chest(props: ChestProps) {
 	const phase = state.phase;
 	const reaction = "result" in state && state.result
 		? reactionFor(state.result.tier)
-
 		: null;
 
 	callbacks.current = props;
@@ -127,7 +126,6 @@ export function Chest(props: ChestProps) {
 		: null;
 	const label = armed
 		? "Press and hold to open a box"
-
 		: "Chest. Press to see why it is locked";
 
 	return (

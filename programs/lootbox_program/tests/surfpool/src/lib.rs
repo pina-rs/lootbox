@@ -18,7 +18,6 @@ use pina_test::Pubkey;
 use pina_test::Signer;
 use program_under_test::AddOutcomeInstruction;
 use program_under_test::CreateLootboxInstruction;
-
 use program_under_test::DepositInstruction;
 use program_under_test::ID;
 use program_under_test::LootboxInstruction;
@@ -27,7 +26,6 @@ use program_under_test::MintBoxesInstruction;
 use program_under_test::RANDOMNESS_TIMEOUT_SLOTS;
 use program_under_test::RequestOpenInstruction;
 use program_under_test::SWITCHBOARD_DEVNET_ID;
-
 use program_under_test::SettleOpenInstruction;
 use program_under_test::WithdrawSurplusInstruction;
 use solana_commitment_config::CommitmentConfig;

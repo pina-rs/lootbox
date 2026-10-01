@@ -6,7 +6,6 @@ import test from "node:test";
 import {
 	assertWorkspaceVersions,
 	normalizeDartHashes,
-
 	normalizeDartManifest,
 	normalizeRustEventProjectionTests,
 	normalizeRustManifest,
@@ -15,7 +14,6 @@ import {
 	normalizeTypeScriptEventVersionReads,
 	normalizeTypeScriptTypeArguments,
 	sdkKitRange,
-
 } from "./normalize-generated.mjs";
 
 test("requires every handwritten client to use the workspace version", () => {

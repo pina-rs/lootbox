@@ -32,7 +32,6 @@ import {
 	mplBubblegum,
 	safeFetchTreeConfigFromSeeds,
 	TokenProgramVersion,
-
 	TokenStandard,
 } from "@metaplex-foundation/mpl-bubblegum";
 import { getMerkleTreeSize } from "@metaplex-foundation/spl-account-compression";
@@ -41,7 +40,6 @@ import {
 	type KeypairSigner,
 	none,
 	publicKey,
-
 	signerIdentity,
 	some,
 	type Umi,
@@ -58,7 +56,6 @@ import {
 	installPatientFetch,
 	parseArgs,
 	parseCluster,
-
 	verifiedRpcUrl,
 } from "./cli.js";
 

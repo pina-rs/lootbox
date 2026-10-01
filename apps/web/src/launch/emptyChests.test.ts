@@ -8,7 +8,6 @@ import {
 	emptyChestName,
 	fallbackVariant,
 	parseEmptyChestManifest,
-
 } from "./emptyChests.js";
 
 const OPENING = "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin";

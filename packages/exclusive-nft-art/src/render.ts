@@ -6,7 +6,6 @@ import {
 	chest,
 	LID_PANEL,
 	LID_SILHOUETTE,
-
 	POSTER_LID,
 } from "./art/chest.ts";
 import { contentsRoot } from "./art/contents.ts";
@@ -86,7 +85,6 @@ export function exclusiveNftArt(traits: TraitVector, serial: number): Art[] {
 		: decorationArt(at("decoration"));
 	const effect = plan.hidden.has("effect")
 		? { back: [], front: [] }
-
 		: effectArt(at("effect"), `glints-${serial}`);
 	const stage = group("Stage", {
 		x: STAGE.x,

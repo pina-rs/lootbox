@@ -35,7 +35,6 @@ export {
 	type LayerId,
 	LAYERS,
 	MAX_LAYERS,
-
 	MAX_TRAITS_PER_LAYER,
 	parseVersionedTraits,
 	resolveTraits,
@@ -44,7 +43,6 @@ export {
 	traitCode,
 	traitOf,
 	type TraitVector,
-
 	type VersionedTraits,
 	versionedTraits,
 } from "./layers.ts";

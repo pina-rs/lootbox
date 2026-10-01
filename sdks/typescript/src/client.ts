@@ -6,7 +6,6 @@ import {
 	AccountRole,
 	type AccountSignerMeta,
 	type Address,
-
 	address,
 	appendTransactionMessageInstructions,
 	createSolanaRpc,
@@ -15,7 +14,6 @@ import {
 	getAddressDecoder,
 	getAddressEncoder,
 	getBase64EncodedWireTransaction,
-
 	getBase64Encoder,
 	getProgramDerivedAddress,
 	getU32Encoder,
@@ -124,7 +122,6 @@ export type ChainOpening = Readonly<
 >;
 export type ChainBundle = Readonly<
 	{ address: Address; data: generated.BundleState }
-
 >;
 export type OracleAccounts = Readonly<{
 	queue: Address;
@@ -2515,7 +2512,6 @@ export class LootboxClient {
 				const tokenProgram = asset.kind === "token2022"
 					? BOX_TOKEN_PROGRAM
 					: asset.kind === "quoteToken"
-
 					? await this.tokenProgramForMint(asset.mint)
 					: CLASSIC_TOKEN_PROGRAM;
 				const destination = await this.ata(
@@ -2616,7 +2612,6 @@ export class LootboxClient {
 						reclaim,
 						resolved.pluginAccounts ?? [],
 					)];
-
 				} else if (
 					asset.kind === "compressedNft" &&
 					resolved.kind === "compressedNft"
@@ -3448,7 +3443,6 @@ export class LootboxClient {
 							tokenProgram,
 						}),
 					];
-
 				} else if (
 					["token", "token2022", "nft", "quoteToken"].includes(
 						asset.kind ?? "",
@@ -3474,7 +3468,6 @@ export class LootboxClient {
 						}),
 					];
 				} else {
-
 					const resolved = resolvedAssets[asset.index];
 
 					if (!resolved || prizeIdentifier(resolved) !== asset.mint) {

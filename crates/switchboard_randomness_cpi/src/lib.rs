@@ -49,7 +49,6 @@ pub use discriminators::RandomnessInstruction;
 pub use error::RandomnessError;
 pub use instructions::RandomnessClose;
 pub use instructions::RandomnessCommit;
-
 pub use instructions::RandomnessInit;
 pub use instructions::RandomnessReveal;
 

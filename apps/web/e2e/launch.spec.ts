@@ -10,7 +10,6 @@ import {
 	SPACEX_AMOUNT,
 	STOCKS,
 	timeTravel,
-
 	tokenBalance,
 } from "./support/localnet.js";
 

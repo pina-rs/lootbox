@@ -1421,7 +1421,6 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCoreAssetPrizeAccounts<'a> {
 			usize::try_from(bundle.index.get()).map_err(|_| ProgramError::InvalidAccountData)?;
 		let active_remaining = if bundle.status == BUNDLE_ACTIVE {
 			Some(remaining_at(&state, bundle_index)?)
-
 		} else {
 			None
 		};
@@ -1591,7 +1590,6 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCompressedNftPrizeAccounts<'a> {
 			usize::try_from(bundle.index.get()).map_err(|_| ProgramError::InvalidAccountData)?;
 		let active_remaining = if bundle.status == BUNDLE_ACTIVE {
 			Some(remaining_at(&state, bundle_index)?)
-
 		} else {
 			None
 		};

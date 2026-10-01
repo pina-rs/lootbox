@@ -6,7 +6,6 @@ import {
 	createTemplatePlan,
 	encodeTemplateText,
 	fetchMaybePrizePoolItemState,
-
 	fetchMaybeTemplateState,
 	fetchPrizePoolState,
 	getTemplateOpeningStateDecoder,
@@ -15,7 +14,6 @@ import {
 	MAX_PRIZE_POOL_ITEMS,
 	MAX_TEMPLATE_BUNDLES,
 	type OracleAccounts,
-
 	type OracleProof,
 	type PrizeAsset,
 	type PrizeBundleInput,
@@ -1292,7 +1290,6 @@ export async function settleOpenings(
 				await client.allocate(await client.template(template.address), opening);
 			}
 		} catch (reason) {
-
 			// Settlement is permissionless. A competing relayer winning this race is
 			// progress, not an action failure. Preserve genuine proof/adapter errors.
 			opening = await readCurrent();

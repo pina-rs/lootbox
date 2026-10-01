@@ -8,7 +8,6 @@ import {
 	formatOneIn,
 	LAYERS,
 	rarestTraits,
-
 	rarityOf,
 } from "../src/index.ts";
 

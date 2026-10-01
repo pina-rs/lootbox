@@ -86,7 +86,6 @@ export type PrizeAsset =
 		collection?: Address;
 		pluginAccounts?: readonly AccountMeta[];
 	}>
-
 	| Readonly<{
 		kind: "compressedNft";
 		asset: Address;
@@ -150,7 +149,6 @@ export type TemplatePlanErrorCode =
 	| "INVALID_ASSET"
 	| "DUPLICATE_UNIQUE_ASSET"
 	| "TICKET_LIMIT_EXCEEDED"
-
 	| "OUT_OF_RANGE";
 
 /** Invalid treasury configuration rejected before transaction construction. */

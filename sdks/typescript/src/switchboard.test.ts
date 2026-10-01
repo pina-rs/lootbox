@@ -15,7 +15,6 @@ import {
 	parseSwitchboardRandomness,
 	parseSwitchboardRevealResponse,
 	SWITCHBOARD_PROGRAM,
-
 	SWITCHBOARD_QUEUE,
 	SwitchboardError,
 	switchboardLutSignerAddress,

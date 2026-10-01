@@ -13,7 +13,6 @@ use lootbox_cli::SubmitOutcome;
 use solana_client::rpc_client::RpcClient;
 use solana_commitment_config::CommitmentConfig;
 use solana_instruction::Instruction;
-
 use solana_keypair::Keypair;
 use solana_signer::Signer;
 

@@ -8,7 +8,6 @@ import {
 	ManifestTable,
 	type Network,
 	PlannedTable,
-
 } from "./LaunchApp.js";
 import { buildManifest, snapshotPriceBook } from "./prizes.js";
 import { loadSeries, readClient, type SeriesSnapshot } from "./series.js";

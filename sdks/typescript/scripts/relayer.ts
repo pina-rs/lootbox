@@ -35,7 +35,6 @@ import {
 	LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
 	LootboxClient,
 	SwitchboardError,
-
 	TEMPLATE_OPENING_STATE_DISCRIMINATOR,
 } from "../src/index.js";
 import {
@@ -44,7 +43,6 @@ import {
 	parseArgs,
 	parseCluster,
 	verifiedRpcUrl,
-
 } from "./cli.js";
 
 /** `TemplateOpeningState.template` follows the discriminator and version. */

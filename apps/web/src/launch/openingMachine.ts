@@ -29,7 +29,6 @@ export type OpeningState =
 	| Readonly<{ phase: "revealing"; result: RecordedResult }>
 	| Readonly<{ phase: "revealed"; result: RecordedResult }>
 	| Readonly<{ phase: "claiming"; result: RecordedResult }>
-
 	| Readonly<{
 		phase: "claimed";
 		result: RecordedResult;

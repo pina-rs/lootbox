@@ -6,7 +6,6 @@ import {
 	fetchMaybePrizePoolItemState,
 	fetchTemplateOpeningState,
 	isTreasuryLocked,
-
 	LootboxClient,
 } from "@pina-rs/lootbox";
 import { fetchMaybeMint } from "@solana-program/token-2022";

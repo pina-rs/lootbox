@@ -7,7 +7,6 @@ import {
 	encodeTemplateText,
 	grossForNetTransfer,
 	remainingTemplateBundleCapacity,
-
 	requiredServiceBudget,
 	templateInventory,
 	TemplatePlanError,

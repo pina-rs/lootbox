@@ -6,7 +6,6 @@ import {
 	quoteBoxTrade,
 	remainingExpectedValue,
 	serializeMarketManifest,
-
 } from "@pina-rs/lootbox";
 import {
 	ArrowRightLeft,
@@ -15,7 +14,6 @@ import {
 	ExternalLink,
 	LockKeyhole,
 	Scale,
-
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { formatUnits, parseUnits } from "./playground.js";
@@ -109,7 +107,6 @@ export function MarketDesk({ template, bundles, supply, chainTime }: Props) {
 				outputReserve: quoteLamports,
 				boxIsOutput: false,
 			});
-
 	} catch (reason) {
 		quoteError = reason instanceof Error ? reason.message : "Check pool values";
 	}
@@ -124,7 +121,6 @@ export function MarketDesk({ template, bundles, supply, chainTime }: Props) {
 				? `Market premium: ${
 					formatUnits(price - expectedValue.knownValue)
 				} SOL.`
-
 				: `Market discount: ${
 					formatUnits(expectedValue.knownValue - price)
 				} SOL.`;

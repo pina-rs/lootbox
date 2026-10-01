@@ -872,7 +872,6 @@ fn fulfill(context: &FulfillContext<'_>, value: u8) -> Result<(), String> {
 	if snapshot.authority.as_ref() != context.opening.as_ref()
 		|| snapshot.queue.as_ref() != context.queue.as_ref()
 		|| snapshot.oracle.as_ref() != [0u8; 32].as_slice()
-
 		|| snapshot.reveal_slot <= snapshot.seed_slot
 		|| snapshot.value != [value; 32]
 	{
@@ -2560,7 +2559,6 @@ fn issuer_stock_mint(program: &Harness, delegate: &Pubkey) -> Pubkey {
 	use spl_token_2022_interface::extension::pausable;
 	use spl_token_2022_interface::extension::scaled_ui_amount;
 	use spl_token_2022_interface::extension::transfer_fee;
-
 	use spl_token_2022_interface::extension::transfer_hook;
 	use spl_token_2022_interface::state::AccountState;
 	use spl_token_2022_interface::state::Mint;

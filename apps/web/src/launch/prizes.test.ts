@@ -8,7 +8,6 @@ import {
 	formatOdds,
 	formatUnits,
 	isEmptyBundle,
-
 	plannedLineup,
 	rowContents,
 	rowTitle,

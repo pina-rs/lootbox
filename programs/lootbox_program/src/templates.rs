@@ -435,7 +435,6 @@ fn validate_prize_pool_state(state: &PrizePoolStateRef<'_>) -> ProgramResult {
 			> deposited
 		|| state.unavailable().len() != deposited.div_ceil(8)
 		|| state.unavailable().len() > MAX_PRIZE_POOL_BITMAP_BYTES
-
 		|| state.encoded_len() != state.storage_len()
 		|| state.status > 1
 		|| (state.has_prepared_item.get() && (state.status != 0 || deposited >= quantity))
@@ -2236,7 +2235,6 @@ impl<'a> ProcessAccountInfos<'a> for CancelBundleAccounts<'a> {
 		assert_bundle(self.bundle, self.template.address())?;
 		let bundle = self.bundle.as_account::<BundleState>(&ID)?;
 		let reclaimed = if bundle.funded_assets == 0 {
-
 			0
 		} else {
 			(1u8 << bundle.funded_assets) - 1

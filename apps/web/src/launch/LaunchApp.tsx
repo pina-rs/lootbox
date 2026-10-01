@@ -8,7 +8,6 @@ import {
 	useCallback,
 	useEffect,
 	useMemo,
-
 	useReducer,
 	useRef,
 	useState,
@@ -37,7 +36,6 @@ import {
 	type RecordedResult,
 } from "./openingMachine.js";
 import {
-
 	createPublicOracle,
 	type OracleTransport,
 	PROOF_TIMEOUT_MS,
@@ -46,7 +44,6 @@ import {
 	buildManifest,
 	formatOdds,
 	formatUnits,
-
 	formatUsd,
 	lineTitle,
 	type ManifestRow,
@@ -895,7 +892,6 @@ export default function LaunchApp() {
 			opening.phase === "claiming" || opening.phase === "claimed"
 		? opening.phase
 		: opening.phase === "failed" && result
-
 		? "failed"
 		: null;
 	const explorer = { cluster: config.cluster, rpcUrl: rpcUrl ?? "" };

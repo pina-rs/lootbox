@@ -12,7 +12,6 @@ use super::collections::SPL_NOOP_ID;
 use super::collections::compressed_asset_id;
 use super::collections::invoke_compressed_transfer;
 use super::collections::validate_compressed_accounts;
-
 use super::*;
 
 const PRIZE_POOL_MANIFEST_DOMAIN: &[u8] = b"pina-lootbox-prize-pool-manifest";
@@ -787,7 +786,6 @@ pub(super) fn reserve_prize_pool_slot(bundle: &mut BundleStateZc, pool: &Address
 		|| bundle.decimals[index] != 0
 		|| pool_asset_index(bundle)?.is_some()
 	{
-
 		return Err(lootbox_error(LootboxError::InvalidPrizePool));
 	}
 	bundle.mints[index * 32..(index + 1) * 32].copy_from_slice(pool.as_ref());
@@ -1351,7 +1349,6 @@ impl<'a> ProcessAccountInfos<'a> for SealPrizePoolAccounts<'a> {
 			|| read_slot(&bundle.amounts, index)? != 1
 			|| bundle.decimals.get(index) != Some(&0)
 		{
-
 			return Err(lootbox_error(LootboxError::InvalidPrizePool));
 		}
 		bundle.funded_assets = bundle
@@ -1616,7 +1613,6 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimPrizePoolItemAccounts<'a> {
 			if pool.status != PRIZE_POOL_SEALED
 				|| bundle.kinds.get(asset_index) != Some(&PRIZE_POOL)
 				|| mint_at(&bundle, asset_index)? != pool_address
-
 				|| bitmap_is_set(
 					pool.unavailable(),
 					usize::try_from(args.pool_index.get())
@@ -1747,7 +1743,6 @@ impl<'a> ProcessAccountInfos<'a> for ClosePrizePoolAccounts<'a> {
 		let empty_unsealed = pool.status == PRIZE_POOL_FUNDING
 			&& pool.deposit_cursor.get() == 0
 			&& !pool.has_prepared_item.get()
-
 			&& bundle.funded_assets == pool.asset_index
 			&& bundle.commitments
 				[usize::from(pool.asset_index) * 32..(usize::from(pool.asset_index) + 1) * 32]

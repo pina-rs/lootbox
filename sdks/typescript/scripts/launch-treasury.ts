@@ -48,7 +48,6 @@ import {
 	TOKEN_2022_PROGRAM_ADDRESS,
 } from "@solana-program/token-2022";
 import {
-
 	type Address,
 	address,
 	createKeyPairSignerFromPrivateKeyBytes,
@@ -66,7 +65,6 @@ import {
 	getResultReceiptStateEncoder,
 	grossForNetTransfer,
 	LootboxClient,
-
 	type PrizeAsset,
 	type PrizeBundleInput,
 	requiredServiceBudget,
@@ -75,7 +73,6 @@ import {
 } from "../src/index.js";
 import {
 	installPatientFetch,
-
 	loadKeypair,
 	parseArgs,
 	parseCluster,

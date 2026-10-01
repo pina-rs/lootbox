@@ -19,6 +19,3 @@ solana-instruction = { workspace = true, default-features = true }
 solana-program-error = { workspace = true, default-features = true }
 solana-pubkey = { workspace = true, default-features = true, features = ["curve25519"] }
 thiserror = { workspace = true, default-features = true }
-
-[lints]
-workspace = false

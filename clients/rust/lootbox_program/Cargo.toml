@@ -21,4 +21,4 @@ solana-pubkey = { workspace = true, default-features = true, features = ["curve2
 thiserror = { workspace = true, default-features = true }
 
 [lints]
-workspace = true
+workspace = false

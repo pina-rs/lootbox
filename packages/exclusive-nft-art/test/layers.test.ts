@@ -8,6 +8,7 @@ import { LOCK_ART_COUNT } from "../src/art/locks.ts";
 import { PATTERN_ART_COUNT } from "../src/art/patterns.ts";
 import {
 	FINISHES,
+
 	LAYER,
 	LAYER_COUNT,
 	LAYERS,
@@ -16,6 +17,7 @@ import {
 	parseVersionedTraits,
 	resolveTraits,
 	TRAIT_VECTOR_VERSION,
+
 	traitCode,
 	versionedTraits,
 } from "../src/index.ts";

@@ -7,6 +7,7 @@ import {
 	EXCLUSIVE_TREE_SHAPE,
 	exclusiveMintFeeEscrow,
 	exclusiveName,
+
 	exclusiveNftSeed,
 	exclusiveTraits,
 	exclusiveTreeSpace,

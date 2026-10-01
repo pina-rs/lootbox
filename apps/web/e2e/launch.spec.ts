@@ -10,6 +10,7 @@ import {
 	SPACEX_AMOUNT,
 	STOCKS,
 	timeTravel,
+
 	tokenBalance,
 } from "./support/localnet.js";
 
@@ -85,6 +86,7 @@ async function finishReveal(page: Page) {
 	const card = page.getByTestId("prize-card");
 
 	await expect(skip.or(card).first()).toBeVisible({ timeout: 30_000 });
+
 	await skip.click({ timeout: 1_000 }).catch(() => undefined);
 	await expect(card).toBeVisible();
 }

@@ -6,6 +6,7 @@ import {
 	decodeTemplateText,
 	MAX_TEMPLATE_BUNDLES,
 	remainingTemplateBundleCapacity,
+
 	templateInventory,
 	templateMintCapacity,
 } from "@pina-rs/lootbox";
@@ -18,6 +19,7 @@ import {
 	ChevronDown,
 	Copy,
 	Gift,
+
 	Hammer,
 	Layers3,
 	Plus,
@@ -26,6 +28,7 @@ import {
 	Tag,
 	Trash2,
 } from "lucide-react";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AssetPicker } from "./lootbox/AssetPicker.js";
 import { LootboxMachine, type MachinePhase } from "./lootbox/Machine.js";
@@ -37,6 +40,7 @@ import {
 	connectPlayground,
 	createDrop,
 	creatorErrors,
+
 	type CreatorInput,
 	type DraftAsset,
 	formatUnits,
@@ -45,6 +49,7 @@ import {
 	makeAsset,
 	makeBundle,
 	parseUnits,
+
 	type Playground,
 	previewInput,
 	savedDraftInfo,
@@ -83,6 +88,7 @@ const shortHash = (value: ReadonlyUint8Array) => {
 	if (Array.from(value).every((byte) => byte === 0)) {
 		return "Locks with treasury";
 	}
+
 	const hex = Array.from(value, (byte) => byte.toString(16).padStart(2, "0"))
 		.join("");
 	return `${hex.slice(0, 10)}…${hex.slice(-10)}`;
@@ -136,6 +142,7 @@ export default function App() {
 	const [pickerFor, setPickerFor] = useState<number | null>(null);
 	const [hasDraft, setHasDraft] = useState(false);
 	const [draftResumable, setDraftResumable] = useState(false);
+
 	const [busy, setBusy] = useState(false);
 	const [connecting, setConnecting] = useState(true);
 	const [error, setError] = useState("");
@@ -146,6 +153,7 @@ export default function App() {
 	);
 	const [wishes, setWishes] = useState<Record<string, string>>({});
 	const [activeReveal, setActiveReveal] = useState<string | null>(null);
+
 	const completeReveal = useCallback(() => setActiveReveal(null), []);
 	const [giftAmount, setGiftAmount] = useState("1");
 	const [destination, setDestination] = useState("");
@@ -154,6 +162,7 @@ export default function App() {
 		{ label: string; signature: string }[]
 	>([]);
 	const selectedId = useRef<Address | undefined>(undefined);
+
 	const pendingAction = useRef(false);
 	const refreshGeneration = useRef(0);
 
@@ -198,6 +207,7 @@ export default function App() {
 					selected.address,
 				);
 			}
+
 			setWorkspace({
 				templates,
 				openings,
@@ -240,6 +250,7 @@ export default function App() {
 					"A saved funding manifest needs recovery but cannot be resumed by this client. Keep it until staged assets are reclaimed.",
 				);
 			}
+
 			await refresh(session);
 		} catch (reason) {
 			setError(errorMessage(reason));
@@ -282,6 +293,7 @@ export default function App() {
 		} catch (reason) {
 			setError(errorMessage(reason));
 		} finally {
+
 			try {
 				await refresh(sandbox);
 				const draft = savedDraftInfo(sandbox);
@@ -291,6 +303,7 @@ export default function App() {
 				setError(errorMessage(reason));
 			}
 			setBusy(false);
+
 			pendingAction.current = false;
 		}
 	};
@@ -340,17 +353,21 @@ export default function App() {
 	const closable = delivered || receipt?.data.status === 4;
 	const visiblePrize = receipt && receipt.data.status >= 2 &&
 		(revealed.has(receipt.address) || delivered);
+
 	const prize = visiblePrize
 		? workspace.bundles[receipt.data.selectedBundle]
 		: undefined;
 	function revealPrize(opening: ChainOpening) {
 		const recorded = workspace.bundles[opening.data.selectedBundle];
+
 		if (!recorded) {
 			setError(
 				"The recorded prize is not loaded. Refresh chain state and try again.",
 			);
+
 			return;
 		}
+
 		setRevealed((value) =>
 			new Map(value).set(opening.address, revealOutcome(recorded.address, wish))
 		);
@@ -365,6 +382,7 @@ export default function App() {
 	const revealPending = Boolean(
 		selected && selected.data.opensAt > workspace.chainTime,
 	);
+
 	const recoveryRetired = Boolean(
 		selected && selected.data.status === 2 && !treasuryLocked,
 	);
@@ -377,6 +395,7 @@ export default function App() {
 			receipt.data.seedSlot + 300n > workspace.chainSlot
 		? receipt.data.seedSlot + 300n - workspace.chainSlot
 		: 0n;
+
 	const forfeitable = receipt?.data.status === 0 && selected &&
 		receipt.data.sequence === selected.data.nextAllocation &&
 		recoverySlots === 0n;
@@ -385,6 +404,7 @@ export default function App() {
 		: visiblePrize
 		? delivered ? "redeemed" : "revealed"
 		: phase === "received"
+
 		? "received"
 		: "idle";
 	const updateRow = (
@@ -419,8 +439,10 @@ export default function App() {
 			setError(
 				"This treasury is permanently locked and cannot accept additions.",
 			);
+
 			return;
 		}
+
 		setCreatorMode("append");
 		setInput({
 			name: decodeTemplateText(selected.data.name),
@@ -1423,6 +1445,7 @@ export default function App() {
 											}`,
 										);
 									}
+
 									validateInput(input);
 									if (creatorMode === "append") {
 										if (!selected) {
@@ -1430,6 +1453,7 @@ export default function App() {
 												"Choose a live treasury before adding bundles",
 											);
 										}
+
 										const template = await appendDrop(
 											session,
 											selected,
@@ -1447,6 +1471,7 @@ export default function App() {
 											"Treasury funded and published. Add prizes or lock its exact supply below.",
 										);
 									}
+
 									setHasDraft(false);
 									setPhase("received");
 									setTab("receive");
@@ -1792,6 +1817,7 @@ export default function App() {
 													if (result.template) {
 														selectedId.current = result.template.address;
 													}
+
 													setNotice(result.message);
 													if (!result.draftRetained) {
 														setInput(initialInput);

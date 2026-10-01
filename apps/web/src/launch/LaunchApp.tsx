@@ -8,6 +8,7 @@ import {
 	useCallback,
 	useEffect,
 	useMemo,
+
 	useReducer,
 	useRef,
 	useState,
@@ -21,6 +22,7 @@ import {
 	type LaunchConfig,
 	readLaunchConfig,
 } from "./config.js";
+
 import {
 	ELIGIBILITY_STATEMENT,
 	NOT_AFFILIATED,
@@ -35,6 +37,7 @@ import {
 	type RecordedResult,
 } from "./openingMachine.js";
 import {
+
 	createPublicOracle,
 	type OracleTransport,
 	PROOF_TIMEOUT_MS,
@@ -43,6 +46,7 @@ import {
 	buildManifest,
 	formatOdds,
 	formatUnits,
+
 	formatUsd,
 	lineTitle,
 	type ManifestRow,
@@ -569,6 +573,7 @@ export default function LaunchApp() {
 	const [series, setSeries] = useState<Load<SeriesSnapshot> | null>(null);
 	const [options, setOptions] = useState<readonly WalletOption[]>([]);
 	const [wallet, setWallet] = useState<ConnectedWallet | null>(null);
+
 	const [balance, setBalance] = useState<bigint | null>(null);
 	const [pending, setPending] = useState<Address | null>(null);
 	const [opening, dispatch] = useReducer(openingReducer, initialOpening);
@@ -577,6 +582,7 @@ export default function LaunchApp() {
 	const [sendTo, setSendTo] = useState("");
 	const [sendCount, setSendCount] = useState("1");
 	const [sendState, setSendState] = useState<Load<string> | null>(null);
+
 	const inFlight = useRef(false);
 	const signatures = useRef<Map<string, string>>(new Map());
 
@@ -836,6 +842,7 @@ export default function LaunchApp() {
 				status: "error",
 				message: "Enter a valid Solana address.",
 			});
+
 			return;
 		}
 
@@ -844,6 +851,7 @@ export default function LaunchApp() {
 				status: "error",
 				message: `Choose between 1 and ${boxes.toString()} boxes.`,
 			});
+
 			return;
 		}
 
@@ -887,6 +895,7 @@ export default function LaunchApp() {
 			opening.phase === "claiming" || opening.phase === "claimed"
 		? opening.phase
 		: opening.phase === "failed" && result
+
 		? "failed"
 		: null;
 	const explorer = { cluster: config.cluster, rpcUrl: rpcUrl ?? "" };

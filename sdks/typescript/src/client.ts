@@ -6,6 +6,7 @@ import {
 	AccountRole,
 	type AccountSignerMeta,
 	type Address,
+
 	address,
 	appendTransactionMessageInstructions,
 	createSolanaRpc,
@@ -14,6 +15,7 @@ import {
 	getAddressDecoder,
 	getAddressEncoder,
 	getBase64EncodedWireTransaction,
+
 	getBase64Encoder,
 	getProgramDerivedAddress,
 	getU32Encoder,
@@ -81,6 +83,7 @@ export const NOOP_PROGRAM = address(
 export const MPL_ACCOUNT_COMPRESSION_PROGRAM = address(
 	"mcmt6YrQEMKw8Mw43FmpRLmf7BqRnFMKmAcbxE3xkAW",
 );
+
 /** MPL Noop log wrapper, which Bubblegum V2 trees use. */
 export const MPL_NOOP_PROGRAM = address(
 	"mnoopTCrg4p8ry25e4bcWA9XZjbNjMTfgYVGGEdRsf3",
@@ -97,6 +100,7 @@ const INSTRUCTIONS_SYSVAR = address(
 const ASSOCIATED_TOKEN_PROGRAM = token.ASSOCIATED_TOKEN_PROGRAM_ADDRESS;
 const SLOT_HASHES = address("SysvarS1otHashes111111111111111111111111111");
 const WRAPPED_SOL = address("So11111111111111111111111111111111111111112");
+
 const LOOKUP_TABLE = address("AddressLookupTab1e1111111111111111111111111");
 const utf8 = new TextEncoder();
 const addressBytes = getAddressEncoder();
@@ -120,6 +124,7 @@ export type ChainOpening = Readonly<
 >;
 export type ChainBundle = Readonly<
 	{ address: Address; data: generated.BundleState }
+
 >;
 export type OracleAccounts = Readonly<{
 	queue: Address;
@@ -208,6 +213,7 @@ async function hashParts(
 	const length = parts.reduce((total, part) => total + part.length, 0);
 	const input = new Uint8Array(length);
 	let offset = 0;
+
 	for (const part of parts) {
 		input.set(part, offset);
 		offset += part.length;
@@ -279,27 +285,37 @@ async function prizePoolSemanticMetadataHash(
 	string(32);
 	string(10);
 	string(200);
+
 	if (u16() > 10_000) malformed();
 	boolean(); // primary_sale_happened
+
 	if (boolean()) throw new Error("PrizePool metadata must be immutable");
+
 	if (option()) byte(); // edition_nonce
+
 	if (option()) enumeration(4); // TokenStandard
+
 	if (option()) {
 		normalizeVerification();
 		take(32); // collection key
 	}
+
 	if (option()) {
 		enumeration(3); // UseMethod
 		take(16); // remaining + total
 	}
+
 	enumeration(2); // TokenProgramVersion
 	const creatorCount = u32();
+
 	if (creatorCount > 5) malformed();
+
 	for (let index = 0; index < creatorCount; index += 1) {
 		take(32);
 		normalizeVerification();
 		byte(); // share
 	}
+
 	if (offset !== normalized.length) malformed();
 
 	return hashParts([PRIZE_POOL_METADATA_DOMAIN, normalized]);
@@ -311,6 +327,7 @@ export async function prizePoolManifestAccumulator(
 	items: readonly PrizePoolItem[],
 ): Promise<Uint8Array<ArrayBuffer>> {
 	let accumulator = new Uint8Array(32);
+
 	for (const [poolIndex, item] of items.entries()) {
 		accumulator = await hashParts([
 			PRIZE_POOL_MANIFEST_DOMAIN,
@@ -325,6 +342,7 @@ export async function prizePoolManifestAccumulator(
 			getU32Encoder().encode(item.proof.leafIndex),
 		]);
 	}
+
 	return accumulator;
 }
 
@@ -357,12 +375,15 @@ function transactionAccountCount(
 	instructions: readonly Instruction[],
 ): number {
 	const addresses = new Set<Address>([payer]);
+
 	for (const instruction of instructions) {
 		addresses.add(instruction.programAddress);
+
 		for (const account of instruction.accounts ?? []) {
 			addresses.add(account.address);
 		}
 	}
+
 	return addresses.size;
 }
 
@@ -373,12 +394,14 @@ function instructionBatchFits(
 	if (transactionAccountCount(payer, instructions) > MAX_TRANSACTION_ACCOUNTS) {
 		return false;
 	}
+
 	try {
 		const message = pipe(
 			createTransactionMessage({ version: 0 }),
 			(current) => setTransactionMessageFeePayer(payer, current),
 			(current) => appendTransactionMessageInstructions(instructions, current),
 		);
+
 		return isTransactionMessageWithinSizeLimit(message);
 	} catch {
 		return false;
@@ -395,25 +418,32 @@ export function partitionPrizeDeliveryInstructions(
 ): readonly (readonly Instruction[])[] {
 	const batches: Instruction[][] = [];
 	let current: Instruction[] = [];
+
 	for (const group of assetInstructionGroups) {
 		if (group.length === 0) continue;
 		const candidate = [...current, ...group];
+
 		if (instructionBatchFits(payer, candidate)) {
 			current = candidate;
 			continue;
 		}
+
 		if (current.length > 0) {
 			batches.push(current);
 			current = [];
 		}
+
 		if (!instructionBatchFits(payer, group)) {
 			throw new RangeError(
 				"one prize delivery exceeds Solana transaction limits; shorten its proof with a tree canopy",
 			);
 		}
+
 		current = [...group];
 	}
+
 	if (current.length > 0) batches.push(current);
+
 	return batches;
 }
 
@@ -516,7 +546,9 @@ export async function validateCompressedNftIdentity(
 	if (asset === SYSTEM_PROGRAM) {
 		throw new Error("compressed NFT asset address cannot be the zero address");
 	}
+
 	assertCompressedProofShape(proof);
+
 	if (await compressedAssetAddress(proof.tree, proof.nonce) !== asset) {
 		throw new Error(
 			"compressed NFT address does not match its Bubblegum tree and nonce",
@@ -533,7 +565,9 @@ async function validatePrizePoolPlanIdentities(
 				await validateCompressedNftIdentity(asset.asset, asset.proof);
 				continue;
 			}
+
 			if (asset.kind !== "prizePool") continue;
+
 			for (const item of asset.items) {
 				await validateCompressedNftIdentity(item.asset, item.proof);
 				if (
@@ -560,9 +594,13 @@ function expectedStoredKind(asset: PrizeAsset) {
 	if (asset.kind === "token") {
 		return asset.tokenProgram === BOX_TOKEN_PROGRAM ? "token2022" : "token";
 	}
+
 	if (asset.kind === "quoteSol") return "quoteSol";
+
 	if (asset.kind === "quoteToken") return "quoteToken";
+
 	if (asset.kind === "mintBadge") return "mintBadge";
+
 	if (asset.kind === "nft") return asset.metadata ? "metadataNft" : "nft";
 	return asset.kind;
 }
@@ -573,12 +611,15 @@ function prizeIdentifier(asset: PrizeAsset): Address {
 		asset.kind === "token" || asset.kind === "quoteToken" ||
 		asset.kind === "mintBadge" || asset.kind === "nft"
 	) return asset.mint;
+
 	if (asset.kind === "prizePool") return asset.tree;
+
 	if (asset.kind === "exclusiveNft") {
 		throw new Error(
 			"an Exclusive NFT slot is identified by its attachment PDA",
 		);
 	}
+
 	return asset.asset;
 }
 
@@ -621,6 +662,7 @@ function winnerSignedRoute(
 			"a winner-routed quote needs at least one route instruction",
 		);
 	}
+
 	let winnerSigns = false;
 	const route = input.route.map((instruction) => {
 		if (!instruction.accounts) return instruction;
@@ -641,9 +683,11 @@ function winnerSignedRoute(
 		});
 		return Object.freeze({ ...instruction, accounts: Object.freeze(accounts) });
 	});
+
 	if (!winnerSigns) {
 		throw new Error("the bound winner must sign the appended quote route");
 	}
+
 	return Object.freeze(route);
 }
 
@@ -705,13 +749,17 @@ export function boundedRejectionTarget(
 	if (total <= 0n || total > 0xffff_ffffn) {
 		throw new RangeError("the inventory is outside sampler bounds");
 	}
+
 	const threshold = (1n << 64n) % total;
+
 	for (const candidate of candidates.slice(0, 8)) {
 		if (candidate < 0n || candidate >= 1n << 64n) {
 			throw new RangeError("sampler candidates must be unsigned 64-bit values");
 		}
+
 		if (candidate >= threshold) return candidate % total;
 	}
+
 	throw new Error("entropy rejection exhausted after 8 rounds");
 }
 
@@ -728,10 +776,13 @@ export async function selectTemplateBundle(
 		(sum, item) => sum + item.remaining,
 		0n,
 	);
+
 	if (total <= 0n || total > 0xffff_ffffn) {
 		throw new RangeError("the snapshotted inventory is outside sampler bounds");
 	}
+
 	const candidates: bigint[] = [];
+
 	for (let counter = 0; counter < 8; counter++) {
 		const bytes = Uint8Array.from([
 			...utf8.encode("pina-lootbox-outcome"),
@@ -745,12 +796,16 @@ export async function selectTemplateBundle(
 				.getBigUint64(0, true),
 		);
 	}
+
 	const target = boundedRejectionTarget(candidates, total);
 	let cumulative = 0n;
+
 	for (const item of eligibleInventory) {
 		cumulative += item.remaining;
+
 		if (target < cumulative) return item.index;
 	}
+
 	throw new Error("no outcome for sampled target");
 }
 
@@ -791,20 +846,26 @@ export class LootboxClient {
 				preflightCommitment: commitment,
 			},
 		).send();
+
 		for (let attempt = 0; attempt < 80; attempt++) {
 			const { value } = await this.rpc.getSignatureStatuses([signature]).send();
 			const status = value[0];
+
 			if (status?.err) {
 				throw new Error(
 					`Transaction ${signature} failed: ${JSON.stringify(status.err)}`,
 				);
 			}
+
 			if (status) {
 				this.progress(label, signature);
+
 				return signature;
 			}
+
 			await new Promise((resolve) => setTimeout(resolve, 250));
 		}
+
 		throw new Error(
 			`Confirmation timed out. Refresh chain state before retrying. Signature: ${signature}`,
 		);
@@ -867,9 +928,11 @@ export class LootboxClient {
 		if (asset.kind === "prizePool") {
 			return (await this.prizePoolAddress(bundle, assetIndex))[0];
 		}
+
 		if (asset.kind === "exclusiveNft") {
 			return (await this.exclusiveAttachmentAddress(bundle, assetIndex))[0];
 		}
+
 		return prizeIdentifier(asset);
 	}
 
@@ -908,6 +971,7 @@ export class LootboxClient {
 			collection,
 			{ commitment },
 		);
+
 		if (!state.exists) {
 			const coreCollection = await generateKeyPairSigner();
 			await this.send([generated.getCreateExclusiveCollectionInstruction({
@@ -936,10 +1000,13 @@ export class LootboxClient {
 				{ commitment },
 			);
 		}
+
 		if (!state.exists) throw new Error("the collection did not persist");
+
 		if (state.data.layerCount !== input.layers.length) {
 			throw new Error("saved collection differs from the requested layers");
 		}
+
 		if (state.data.status === 1) return collection;
 
 		for (const [index, layer] of input.layers.entries()) {
@@ -957,13 +1024,16 @@ export class LootboxClient {
 				weights,
 			})], `Load Exclusive NFT layer ${index + 1}`);
 		}
+
 		if (state.data.activeTree === SYSTEM_PROGRAM) {
 			await this.appendExclusiveTree(collection, input.tree);
 		}
+
 		await this.send([generated.getPublishExclusiveCollectionInstruction({
 			admin: this.payer,
 			exclusiveCollection: collection,
 		})], "Publish and freeze Exclusive NFT layers");
+
 		return collection;
 	}
 
@@ -996,6 +1066,7 @@ export class LootboxClient {
 				maxBufferSize: shape.maxBufferSize,
 			}),
 		], "Append Exclusive NFT tree");
+
 		return tree.address;
 	}
 
@@ -1193,14 +1264,17 @@ export class LootboxClient {
 		).send();
 		const templates: ChainTemplate[] = [];
 		const openings: ChainOpening[] = [];
+
 		for (const account of accounts) {
 			const bytes = getBase64Encoder().encode(account.account.data[0]);
+
 			if (bytes[0] === 4) {
 				templates.push({
 					address: account.pubkey,
 					data: generated.getTemplateStateDecoder().decode(bytes),
 				});
 			}
+
 			if (bytes[0] === 6) {
 				openings.push({
 					address: account.pubkey,
@@ -1208,6 +1282,7 @@ export class LootboxClient {
 				});
 			}
 		}
+
 		return { templates, openings };
 	}
 	async boxBalance(owner: Address, mint: Address): Promise<bigint> {
@@ -1216,7 +1291,9 @@ export class LootboxClient {
 			encoding: "base64",
 			commitment,
 		}).send();
+
 		if (!value) return 0n;
+
 		if (value.owner !== BOX_TOKEN_PROGRAM) {
 			throw new Error("unexpected token account owner");
 		}
@@ -1226,6 +1303,7 @@ export class LootboxClient {
 	}
 	async mintSupply(mint: Address): Promise<bigint> {
 		const response = await this.rpc.getTokenSupply(mint, { commitment }).send();
+
 		return BigInt(response.value.amount);
 	}
 	private async tokenProgramForMint(mint: Address): Promise<Address> {
@@ -1237,6 +1315,7 @@ export class LootboxClient {
 			account.value?.owner !== CLASSIC_TOKEN_PROGRAM &&
 			account.value?.owner !== BOX_TOKEN_PROGRAM
 		) throw new Error("quote or badge mint has an unsupported token program");
+
 		return account.value.owner;
 	}
 
@@ -1253,7 +1332,9 @@ export class LootboxClient {
 				"PrizePool funding requires a fresh-proof resolver for every sequential tree write",
 			);
 		}
+
 		const [pool, poolBump] = await this.prizePoolAddress(bundle, assetIndex);
+
 		for (const item of asset.items) {
 			if (
 				item.metadataMutable !== false || item.proof.tree !== asset.tree ||
@@ -1267,10 +1348,12 @@ export class LootboxClient {
 				);
 			}
 		}
+
 		let state = await generated.fetchMaybePrizePoolState(this.rpc, pool, {
 			commitment,
 		});
 		let signature = "";
+
 		if (!state.exists) {
 			signature = await this.send([generated.getCreatePrizePoolInstruction({
 				authority: this.payer,
@@ -1285,6 +1368,7 @@ export class LootboxClient {
 				commitment,
 			});
 		}
+
 		if (!state.exists) throw new Error("PrizePool creation did not persist");
 		if (
 			state.data.authority !== this.payer.address ||
@@ -1298,6 +1382,7 @@ export class LootboxClient {
 			pool,
 			asset.items,
 		);
+
 		if (state.data.status === 1) {
 			if (
 				state.data.depositCursor !== asset.items.length ||
@@ -1320,11 +1405,13 @@ export class LootboxClient {
 					expectedCommitment,
 				)
 			) throw new Error("bundle does not commit to this sealed PrizePool");
+
 			return signature;
 		}
 
 		for (let poolIndex = 0; poolIndex < state.data.depositCursor; poolIndex++) {
 			const planned = asset.items[poolIndex];
+
 			if (!planned) throw new Error("saved PrizePool exceeds the funding plan");
 			const [itemAddress] = await this.prizePoolItemAddress(pool, poolIndex);
 			const item = await generated.fetchPrizePoolItemState(
@@ -1358,9 +1445,11 @@ export class LootboxClient {
 			poolIndex++
 		) {
 			const planned = asset.items[poolIndex];
+
 			if (!planned) {
 				throw new Error("PrizePool funding plan has a missing item");
 			}
+
 			let resolved = await options.resolvePrizePoolProof(planned, {
 				pool,
 				poolIndex,
@@ -1387,10 +1476,12 @@ export class LootboxClient {
 					} changed its identity`,
 				);
 			}
+
 			const [itemAddress, itemBump] = await this.prizePoolItemAddress(
 				pool,
 				poolIndex,
 			);
+
 			if (state.data.hasPreparedItem) {
 				const prepared = await generated.fetchPrizePoolItemState(
 					this.rpc,
@@ -1432,11 +1523,13 @@ export class LootboxClient {
 				state = await generated.fetchMaybePrizePoolState(this.rpc, pool, {
 					commitment,
 				});
+
 				if (!state.exists || !state.data.hasPreparedItem) {
 					throw new Error(
 						"PrizePool metadata verification confirmed without reserving the item",
 					);
 				}
+
 				resolved = await options.resolvePrizePoolProof(planned, {
 					pool,
 					poolIndex,
@@ -1462,6 +1555,7 @@ export class LootboxClient {
 					);
 				}
 			}
+
 			const deposit = generated.getDepositPrizePoolItemInstruction({
 				authority: this.payer,
 				template,
@@ -1507,6 +1601,7 @@ export class LootboxClient {
 				prizePool: pool,
 			})], `Seal PrizePool · bundle ${bundleNumber}`);
 		}
+
 		return signature;
 	}
 
@@ -1519,6 +1614,7 @@ export class LootboxClient {
 		options: TemplateFundingOptions,
 	) {
 		const authority = this.payer.address;
+
 		if (asset.kind === "exclusiveNft") {
 			const [attachment, bump] = await this.exclusiveAttachmentAddress(
 				bundle,
@@ -1539,6 +1635,7 @@ export class LootboxClient {
 				feeVaultBump,
 			})], `Attach Exclusive NFT collection · bundle ${bundleNumber}`);
 		}
+
 		if (asset.kind === "prizePool") {
 			return this.fundPrizePool(
 				asset,
@@ -1549,6 +1646,7 @@ export class LootboxClient {
 				options,
 			);
 		}
+
 		if (asset.kind === "sol") {
 			return this.send([generated.getFundSolPrizeInstruction({
 				authority: this.payer,
@@ -1557,6 +1655,7 @@ export class LootboxClient {
 				lamportsPerWin: asset.lamports,
 			})], `Escrow SOL · bundle ${bundleNumber}`);
 		}
+
 		if (asset.kind === "quoteSol") {
 			return this.send([generated.getFundQuoteSolPrizeInstruction({
 				authority: this.payer,
@@ -1565,6 +1664,7 @@ export class LootboxClient {
 				lamportsPerWin: asset.lamports,
 			})], `Escrow winner-routed SOL quote · bundle ${bundleNumber}`);
 		}
+
 		if (asset.kind === "quoteToken") {
 			const tokenProgram = asset.tokenProgram ?? CLASSIC_TOKEN_PROGRAM;
 			return this.send([
@@ -1581,6 +1681,7 @@ export class LootboxClient {
 				}),
 			], `Escrow winner-routed token quote · bundle ${bundleNumber}`);
 		}
+
 		if (asset.kind === "mintBadge") {
 			return this.send([generated.getFundMintPrizeInstruction({
 				authority: this.payer,
@@ -1590,6 +1691,7 @@ export class LootboxClient {
 				tokenProgram: asset.tokenProgram ?? CLASSIC_TOKEN_PROGRAM,
 			})], `Escrow badge mint authority · bundle ${bundleNumber}`);
 		}
+
 		if (asset.kind === "token" || (asset.kind === "nft" && !asset.metadata)) {
 			const tokenProgram = asset.kind === "token"
 				? asset.tokenProgram ?? CLASSIC_TOKEN_PROGRAM
@@ -1609,11 +1711,14 @@ export class LootboxClient {
 				}),
 			], `Escrow ${asset.kind} · bundle ${bundleNumber}`);
 		}
+
 		if (asset.kind === "nft") {
 			const metadata = asset.metadata;
+
 			if (!metadata) {
 				throw new Error("metadata NFT is missing its metadata PDA");
 			}
+
 			const source = await this.ata(
 				authority,
 				asset.mint,
@@ -1655,6 +1760,7 @@ export class LootboxClient {
 				replaceGeneratedTail(funding, optional),
 			], `Escrow NFT · bundle ${bundleNumber}`);
 		}
+
 		if (asset.kind === "core") {
 			const funding = generated.getFundCoreAssetPrizeInstruction({
 				authority: this.payer,
@@ -1673,6 +1779,7 @@ export class LootboxClient {
 		}
 
 		let compressed = asset;
+
 		if (options.resolveCompressedNftProof) {
 			const resolved = await options.resolveCompressedNftProof(asset, {
 				template,
@@ -1692,6 +1799,7 @@ export class LootboxClient {
 			}
 			compressed = { ...asset, proof: resolved.proof };
 		}
+
 		await validateCompressedNftIdentity(compressed.asset, compressed.proof);
 		const funding = generated.getFundCompressedNftPrizeInstruction({
 			authority: this.payer,
@@ -1710,6 +1818,7 @@ export class LootboxClient {
 			nonce: compressed.proof.nonce,
 			index: compressed.proof.leafIndex,
 		});
+
 		return this.send([
 			replaceGeneratedTail(
 				funding,
@@ -1733,15 +1842,19 @@ export class LootboxClient {
 		const symbol = options.symbol ?? "LOOT";
 		encodeTemplateText(symbol, 10);
 		await validatePrizePoolPlanIdentities(plan);
+
 		if (planContainsPrizePool(plan) && !options.resolvePrizePoolProof) {
 			throw new Error("PrizePool creation requires a fresh-proof resolver");
 		}
+
 		const [template, bump] = await this.templateAddress(id);
 		const authority = this.payer.address;
+
 		const exists = await this.rpc.getAccountInfo(mint.address, {
 			encoding: "base64",
 			commitment,
 		}).send();
+
 		if (!exists.value) {
 			// 234 = base mint + account type/padding + MetadataPointer TLV.
 			// TokenMetadata grows the allocation; prepay its exact encoded size:
@@ -1793,11 +1906,13 @@ export class LootboxClient {
 				}),
 			], "Create immutable box mint");
 		}
+
 		const account = await generated.fetchMaybeTemplateState(
 			this.rpc,
 			template,
 			{ commitment },
 		);
+
 		if (!account.exists) {
 			await this.send([generated.getCreateTemplateInstruction({
 				authority: this.payer,
@@ -1814,6 +1929,7 @@ export class LootboxClient {
 				bump,
 			})], "Create treasury template");
 		}
+
 		let state = await this.template(template);
 		if (
 			state.data.boxMint !== mint.address ||
@@ -1829,19 +1945,25 @@ export class LootboxClient {
 			Array.from(state.data.uri).join() !==
 				Array.from(encodeTemplateText(plan.uri, 200)).join()
 		) throw new Error("saved draft does not match the on-chain template");
+
 		if (state.data.status === 2) throw new Error("template is retired");
+
 		for (const [index, prize] of plan.bundles.entries()) {
 			const [bundle, bundleBump] = await this.bundleAddress(template, index);
+
 			if (index > state.data.bundleCount) {
 				throw new Error("treasury bundle history is not contiguous");
 			}
+
 			let funded = await generated.fetchMaybeBundleState(this.rpc, bundle, {
 				commitment,
 			});
+
 			if (!funded.exists) {
 				if (index < state.data.bundleCount) {
 					throw new Error("an activated bundle account is missing");
 				}
+
 				await this.send([generated.getAddBundleInstruction({
 					authority: this.payer,
 					template,
@@ -1854,11 +1976,13 @@ export class LootboxClient {
 					commitment,
 				});
 			}
+
 			if (!funded.exists) throw new Error("bundle creation did not persist");
 			if (
 				funded.data.quantity !== prize.quantity ||
 				funded.data.assetCount !== prize.assets.length
 			) throw new Error("saved bundle differs from chain");
+
 			for (const [assetIndex, asset] of prize.assets.entries()) {
 				if (assetIndex < funded.data.fundedAssets) {
 					const expectedIdentifier = await this.expectedPrizeIdentifier(
@@ -1872,6 +1996,7 @@ export class LootboxClient {
 						asset,
 						expectedIdentifier,
 					);
+
 					if (asset.kind === "prizePool") {
 						await this.fundPrizePool(
 							asset,
@@ -1882,8 +2007,10 @@ export class LootboxClient {
 							options,
 						);
 					}
+
 					continue;
 				}
+
 				await this.fundAsset(
 					asset,
 					template,
@@ -1895,8 +2022,10 @@ export class LootboxClient {
 				funded = await generated.fetchMaybeBundleState(this.rpc, bundle, {
 					commitment,
 				});
+
 				if (!funded.exists) throw new Error("funded bundle disappeared");
 			}
+
 			if (funded.data.status === 0) {
 				await this.send([generated.getActivateBundleInstruction({
 					authority: this.payer,
@@ -1906,6 +2035,7 @@ export class LootboxClient {
 				state = await this.template(template);
 			}
 		}
+
 		if (state.data.status === 0) {
 			await this.send([
 				generated.getSealTemplateInstruction({
@@ -1914,11 +2044,13 @@ export class LootboxClient {
 				}),
 			], "Publish treasury template");
 		}
+
 		return this.template(template);
 	}
 
 	async mint(template: ChainTemplate, recipient: Address, amount: bigint) {
 		const current = await this.template(template.address);
+
 		if (current.data.lockedAt !== 0n) {
 			throw new Error("the fixed-supply treasury cannot mint more boxes");
 		}
@@ -1944,9 +2076,11 @@ export class LootboxClient {
 		recipient: Address = this.payer.address,
 	): Promise<ChainTemplate> {
 		const current = await this.template(template.address);
+
 		if (current.data.authority !== this.payer.address) {
 			throw new Error("only the treasury creator can lock this series");
 		}
+
 		if (current.data.lockedAt !== 0n) return current;
 
 		const [supply, slot, serviceFunding, creatorBalance] = await Promise.all([
@@ -1955,13 +2089,16 @@ export class LootboxClient {
 			this.serviceFundingQuote(current),
 			this.rpc.getBalance(this.payer.address, { commitment }).send(),
 		]);
+
 		if (creatorBalance.value < serviceFunding.totalCreatorDebit) {
 			throw new Error(
 				`Treasury creator needs at least ${serviceFunding.totalCreatorDebit} lamports for configured result and settlement services`,
 			);
 		}
+
 		const chainTime = await this.rpc.getBlockTime(slot).send() ?? 0n;
 		const readiness = marketLockReadiness(current.data, supply, chainTime);
+
 		if (!readiness.canLock) {
 			throw new Error(`Treasury cannot lock: ${readiness.reasons.join("; ")}`);
 		}
@@ -1974,6 +2111,7 @@ export class LootboxClient {
 			current.address,
 		);
 		const instructions: Instruction[] = [];
+
 		if (readiness.mintRequired > 0n) {
 			instructions.push(
 				await this.createAta(recipient, current.data.boxMint),
@@ -1990,6 +2128,7 @@ export class LootboxClient {
 				}),
 			);
 		}
+
 		instructions.push(generated.getLockTreasuryInstruction({
 			authority: this.payer,
 			template: current.address,
@@ -2000,6 +2139,7 @@ export class LootboxClient {
 		}));
 
 		await this.send(instructions, "Mint exact supply & lock treasury");
+
 		return this.template(current.address);
 	}
 	/** Quote the exact creator-funded service reserve before market lock. */
@@ -2047,15 +2187,18 @@ export class LootboxClient {
 	 */
 	async retireTemplate(template: ChainTemplate): Promise<ChainTemplate> {
 		const current = await this.template(template.address);
+
 		if (current.data.authority !== this.payer.address) {
 			throw new Error("only the treasury creator can retire this series");
 		}
+
 		if (current.data.status === 2) return current;
 
 		await this.send([generated.getRetireTemplateInstruction({
 			authority: this.payer,
 			template: current.address,
 		})], "Retire treasury");
+
 		return this.template(current.address);
 	}
 	/** Return unused creator-funded receipt rent and crank bounties after every
@@ -2086,9 +2229,11 @@ export class LootboxClient {
 	): Promise<ChainTemplate> {
 		const plan = createTemplatePlan({ name: "Treasury append", bundles });
 		await validatePrizePoolPlanIdentities(plan);
+
 		if (planContainsPrizePool(plan) && !options.resolvePrizePoolProof) {
 			throw new Error("PrizePool append requires a fresh-proof resolver");
 		}
+
 		let current = await this.template(template.address);
 		if (
 			current.data.authority !== this.payer.address ||
@@ -2111,12 +2256,14 @@ export class LootboxClient {
 				`treasury additions cannot exceed ${MAX_TEMPLATE_BUNDLES} total bundles`,
 			);
 		}
+
 		for (const [offset, prize] of plan.bundles.entries()) {
 			const index = startBundleCount + offset;
 			const [bundle, bump] = await this.bundleAddress(current.address, index);
 			const existing = await generated.fetchMaybeBundleState(this.rpc, bundle, {
 				commitment,
 			});
+
 			if (!existing.exists) {
 				await this.send([generated.getAddBundleInstruction({
 					authority: this.payer,
@@ -2127,6 +2274,7 @@ export class LootboxClient {
 					bump,
 				})], `Stage treasury addition ${index + 1}`);
 			}
+
 			let draft = await generated.fetchBundleState(this.rpc, bundle, {
 				commitment,
 			});
@@ -2134,6 +2282,7 @@ export class LootboxClient {
 				draft.data.quantity !== prize.quantity ||
 				draft.data.assetCount !== prize.assets.length
 			) throw new Error("the staged append differs from this bundle");
+
 			for (const [assetIndex, asset] of prize.assets.entries()) {
 				if (assetIndex < draft.data.fundedAssets) {
 					const expectedIdentifier = await this.expectedPrizeIdentifier(
@@ -2147,6 +2296,7 @@ export class LootboxClient {
 						asset,
 						expectedIdentifier,
 					);
+
 					if (asset.kind === "prizePool") {
 						await this.fundPrizePool(
 							asset,
@@ -2157,8 +2307,10 @@ export class LootboxClient {
 							options,
 						);
 					}
+
 					continue;
 				}
+
 				await this.fundAsset(
 					asset,
 					current.address,
@@ -2171,6 +2323,7 @@ export class LootboxClient {
 					commitment,
 				});
 			}
+
 			if (draft.data.status === 0) {
 				await this.send([generated.getActivateBundleInstruction({
 					authority: this.payer,
@@ -2178,23 +2331,30 @@ export class LootboxClient {
 					bundle,
 				})], `Publish treasury addition ${index + 1}`);
 			}
+
 			current = await this.template(current.address);
 		}
+
 		return current;
 	}
 	async publishTemplate(template: ChainTemplate): Promise<ChainTemplate> {
 		const current = await this.template(template.address);
+
 		if (current.data.authority !== this.payer.address) {
 			throw new Error("only the treasury creator can publish this template");
 		}
+
 		if (current.data.status === 1) return current;
+
 		if (current.data.status !== 0 || current.data.bundleCount === 0) {
 			throw new Error("only a funded draft treasury can be published");
 		}
+
 		await this.send([generated.getSealTemplateInstruction({
 			authority: this.payer,
 			template: current.address,
 		})], "Publish funded treasury");
+
 		return this.template(current.address);
 	}
 	/** Reclaim every funded asset in the one unpublished bundle at the end of
@@ -2220,15 +2380,19 @@ export class LootboxClient {
 		const staged = await generated.fetchMaybeBundleState(this.rpc, bundle, {
 			commitment,
 		});
+
 		if (!staged.exists) {
 			// A retry after CancelBundle landed but confirmation failed is already
 			// complete. The caller can now discard its local recovery manifest.
 			return current;
 		}
+
 		if (staged.data.status !== 0) {
 			throw new Error("this treasury has no staged bundle to cancel");
 		}
+
 		const partialAssetIndex = staged.data.fundedAssets;
+
 		if (partialAssetIndex < staged.data.assetCount) {
 			const [partialPool] = await this.prizePoolAddress(
 				bundle,
@@ -2239,12 +2403,14 @@ export class LootboxClient {
 				partialPool,
 				{ commitment },
 			);
+
 			if (state.exists) {
 				if (state.data.status === 0 && state.data.hasPreparedItem) {
 					const [preparedItem] = await this.prizePoolItemAddress(
 						partialPool,
 						state.data.depositCursor,
 					);
+
 					await this.send([generated.getCancelPrizePoolItemInstruction({
 						authority: this.payer,
 						template: current.address,
@@ -2257,10 +2423,12 @@ export class LootboxClient {
 						partialPool,
 						{ commitment },
 					);
+
 					if (!state.exists || state.data.hasPreparedItem) {
 						throw new Error("prepared PrizePool item was not cancelled");
 					}
 				}
+
 				if (state.data.status === 0 && state.data.depositCursor === 0) {
 					await this.send([generated.getClosePrizePoolInstruction({
 						authority: this.payer,
@@ -2270,11 +2438,13 @@ export class LootboxClient {
 					})], "Close empty PrizePool reservation");
 				} else {
 					const resolved = resolvedAssets[partialAssetIndex];
+
 					if (!resolved || resolved.kind !== "prizePool") {
 						throw new Error(
 							"the unfinished PrizePool needs its saved item list before it can be reclaimed",
 						);
 					}
+
 					await this.reclaimPrizePool(
 						current,
 						bundle,
@@ -2293,11 +2463,13 @@ export class LootboxClient {
 		) {
 			if (asset.kind === "prizePool") {
 				const resolved = resolvedAssets[asset.index];
+
 				if (!resolved || resolved.kind !== "prizePool") {
 					throw new Error(
 						"the staged PrizePool needs its saved item list before it can be reclaimed",
 					);
 				}
+
 				await this.reclaimPrizePool(
 					current,
 					bundle,
@@ -2307,11 +2479,14 @@ export class LootboxClient {
 				);
 				continue;
 			}
+
 			if ((staged.data.reclaimedMask & (1 << asset.index)) !== 0) continue;
+
 			if (asset.kind === "exclusiveNft") {
 				await this.reclaimExclusiveFees(current, bundle, asset.index);
 				continue;
 			}
+
 			const input = {
 				template: current.address,
 				boxMint: current.data.boxMint,
@@ -2319,6 +2494,7 @@ export class LootboxClient {
 				assetIndex: asset.index,
 			};
 			let instructions: readonly Instruction[];
+
 			if (asset.kind === "sol" || asset.kind === "quoteSol") {
 				instructions = [generated.getReclaimSolPrizeInstruction({
 					authority: this.payer,
@@ -2339,6 +2515,7 @@ export class LootboxClient {
 				const tokenProgram = asset.kind === "token2022"
 					? BOX_TOKEN_PROGRAM
 					: asset.kind === "quoteToken"
+
 					? await this.tokenProgramForMint(asset.mint)
 					: CLASSIC_TOKEN_PROGRAM;
 				const destination = await this.ata(
@@ -2359,6 +2536,7 @@ export class LootboxClient {
 				];
 			} else {
 				const resolved = resolvedAssets[asset.index];
+
 				if (!resolved || prizeIdentifier(resolved) !== asset.mint) {
 					throw new Error(
 						`Staged asset ${
@@ -2366,6 +2544,7 @@ export class LootboxClient {
 						} needs fresh transfer data before it can be reclaimed`,
 					);
 				}
+
 				if (asset.kind === "metadataNft" && resolved.kind === "nft") {
 					const escrow = await this.ata(
 						bundle,
@@ -2437,6 +2616,7 @@ export class LootboxClient {
 						reclaim,
 						resolved.pluginAccounts ?? [],
 					)];
+
 				} else if (
 					asset.kind === "compressedNft" &&
 					resolved.kind === "compressedNft"
@@ -2468,6 +2648,7 @@ export class LootboxClient {
 					);
 				}
 			}
+
 			await this.send(instructions, `Reclaim staged asset ${asset.index + 1}`);
 		}
 
@@ -2476,6 +2657,7 @@ export class LootboxClient {
 			template: current.address,
 			bundle,
 		})], "Cancel staged bundle & recover rent");
+
 		return this.template(current.address);
 	}
 
@@ -2493,6 +2675,7 @@ export class LootboxClient {
 				commitment,
 			},
 		);
+
 		if (!maybePool.exists) return;
 		let pool: Awaited<ReturnType<typeof generated.fetchPrizePoolState>> =
 			maybePool;
@@ -2501,6 +2684,7 @@ export class LootboxClient {
 			pool.data.bundle !== bundle || pool.data.tree !== resolved.tree ||
 			pool.data.quantity !== BigInt(resolved.items.length)
 		) throw new Error("saved PrizePool reclaim plan differs from chain");
+
 		if (pool.data.hasPreparedItem) {
 			const [preparedItem] = await this.prizePoolItemAddress(
 				poolAddress,
@@ -2516,10 +2700,12 @@ export class LootboxClient {
 			pool = await generated.fetchPrizePoolState(this.rpc, poolAddress, {
 				commitment,
 			});
+
 			if (pool.data.hasPreparedItem) {
 				throw new Error("prepared PrizePool item was not cancelled");
 			}
 		}
+
 		const pendingPoolIndexes = Array.from(
 			{ length: pool.data.depositCursor },
 			(_, index) => index,
@@ -2527,6 +2713,7 @@ export class LootboxClient {
 			((pool.data.unavailable[Math.floor(index / 8)] ?? 0) &
 				(1 << (index % 8))) === 0
 		);
+
 		if (pendingPoolIndexes.length > 0 && !options.resolvePrizePoolProof) {
 			throw new Error(
 				"PrizePool recovery requires a fresh-proof resolver for every sequential tree write",
@@ -2538,9 +2725,11 @@ export class LootboxClient {
 		// the root used by the next item.
 		for (const poolIndex of pendingPoolIndexes) {
 			const planned = resolved.items[poolIndex];
+
 			if (!planned) {
 				throw new Error("PrizePool reclaim plan has a missing item");
 			}
+
 			const [itemAddress] = await this.prizePoolItemAddress(
 				poolAddress,
 				poolIndex,
@@ -2571,11 +2760,14 @@ export class LootboxClient {
 			const unavailable =
 				((pool.data.unavailable[Math.floor(poolIndex / 8)] ?? 0) &
 					(1 << (poolIndex % 8))) !== 0;
+
 			if (unavailable) continue;
 			const planned = resolved.items[poolIndex];
+
 			if (!planned) {
 				throw new Error("PrizePool reclaim plan has a missing item");
 			}
+
 			const current = await options.resolvePrizePoolProof!(planned, {
 				pool: poolAddress,
 				poolIndex,
@@ -2583,6 +2775,7 @@ export class LootboxClient {
 				assetIndex: pool.data.assetIndex,
 			});
 			const proof = current.proof;
+
 			const [itemAddress] = await this.prizePoolItemAddress(
 				poolAddress,
 				poolIndex,
@@ -2657,10 +2850,12 @@ export class LootboxClient {
 			encoding: "base64",
 			commitment,
 		}).send();
+
 		if (existing.value) {
 			if (existing.value.owner !== CLASSIC_TOKEN_PROGRAM) {
 				throw new Error("badge mint has unexpected owner");
 			}
+
 			const data = token.getMintDecoder().decode(
 				getBase64Encoder().encode(existing.value.data[0]),
 			);
@@ -2670,12 +2865,15 @@ export class LootboxClient {
 					mintAuthority.value === fundedBundle);
 			const unfundedSupplyMatches = mintAuthority.__option === "Some" &&
 				(mintAuthority.value !== this.payer.address || data.supply === 0n);
+
 			if (
 				data.decimals !== 0 || !authorityMatches || !unfundedSupplyMatches ||
 				data.freezeAuthority.__option !== "None"
 			) throw new Error("badge mint differs from saved draft");
+
 			return mint.address;
 		}
+
 		await this.send([
 			getCreateAccountInstruction({
 				payer: this.payer,
@@ -2691,6 +2889,7 @@ export class LootboxClient {
 				freezeAuthority: null,
 			}, { programAddress: CLASSIC_TOKEN_PROGRAM }),
 		], "Create empty badge mint");
+
 		return mint.address;
 	}
 	/** Create a zero-decimal Token-2022 mint-on-claim badge with on-mint
@@ -2707,10 +2906,12 @@ export class LootboxClient {
 			encoding: "base64",
 			commitment,
 		}).send();
+
 		if (existing.value) {
 			if (existing.value.owner !== BOX_TOKEN_PROGRAM) {
 				throw new Error("badge mint has unexpected owner");
 			}
+
 			const data = token.getMintDecoder().decode(
 				getBase64Encoder().encode(existing.value.data[0]),
 			);
@@ -2732,8 +2933,10 @@ export class LootboxClient {
 				tokenMetadata.symbol !== metadata.symbol ||
 				tokenMetadata.uri !== metadata.uri
 			) throw new Error("badge mint differs from saved draft");
+
 			return mint.address;
 		}
+
 		// Base mint plus MetadataPointer; TokenMetadata grows the account, so
 		// prepay its exact encoded size (see createTemplate).
 		const finalSize = 234 + 4 + 64 + 4 + utf8.encode(metadata.name).length +
@@ -2775,6 +2978,7 @@ export class LootboxClient {
 				newUpdateAuthority: null,
 			}),
 		], "Create immutable badge mint");
+
 		return mint.address;
 	}
 	/** Create a fixed-supply classic token, including a basic one-of-one NFT.
@@ -2789,10 +2993,12 @@ export class LootboxClient {
 			encoding: "base64",
 			commitment,
 		}).send();
+
 		if (existing.value) {
 			if (existing.value.owner !== CLASSIC_TOKEN_PROGRAM) {
 				throw new Error("reward mint has unexpected owner");
 			}
+
 			const data = token.getMintDecoder().decode(
 				getBase64Encoder().encode(existing.value.data[0]),
 			);
@@ -2801,9 +3007,12 @@ export class LootboxClient {
 				data.mintAuthority.__option !== "None" ||
 				data.freezeAuthority.__option !== "None"
 			) throw new Error("reward mint differs from saved draft");
+
 			return mint.address;
 		}
+
 		const program = { programAddress: CLASSIC_TOKEN_PROGRAM };
+
 		await this.send([
 			getCreateAccountInstruction({
 				payer: this.payer,
@@ -2840,6 +3049,7 @@ export class LootboxClient {
 				newAuthority: null,
 			}, program),
 		], "Create fixed-supply test prize");
+
 		return mint.address;
 	}
 	async transfer(template: ChainTemplate, recipient: Address, amount: bigint) {
@@ -2874,9 +3084,11 @@ export class LootboxClient {
 			? await oracleAccounts({ randomness: randomness.address, recentSlot })
 			: oracleAccounts;
 		const consumerContext = request.consumerContext ?? new Uint8Array(32);
+
 		if (consumerContext.length !== 32) {
 			throw new RangeError("consumer context must contain exactly 32 bytes");
 		}
+
 		const [opening, bump] = await getProgramDerivedAddress({
 			programAddress: generated.LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
 			seeds: [
@@ -3000,10 +3212,13 @@ export class LootboxClient {
 		const pools = bundleAssets(bundle.data).filter((asset) =>
 			asset.kind === "prizePool"
 		);
+
 		if (pools.length > 1) {
 			throw new Error("bundle contains multiple PrizePools");
 		}
+
 		const pool = pools[0];
+
 		if (!pool) return generated.getAllocateTemplateOpenInstruction(input);
 		return generated.getAllocatePrizePoolOpenInstruction({
 			...input,
@@ -3023,6 +3238,7 @@ export class LootboxClient {
 		if (proof.value.length !== 32) {
 			throw new RangeError("oracle value must contain exactly 32 bytes");
 		}
+
 		const serviceVault = (await this.serviceVaultAddress(template.address))[0];
 		const revealed: ChainOpening = {
 			address: opening.address,
@@ -3092,22 +3308,30 @@ export class LootboxClient {
 			openingAddress,
 			{ commitment },
 		);
+
 		if (opening.data.status === 3) return;
+
 		if (opening.data.status !== 2) {
 			throw new Error("opening is not allocated yet");
 		}
+
 		const template = opening.data.template;
 		const bundle =
 			(await this.bundleAddress(template, opening.data.selectedBundle))[0];
+
 		const data = await generated.fetchBundleState(this.rpc, bundle, {
 			commitment,
 		});
+
 		for (let attempt = 0; attempt < data.data.assetCount; attempt++) {
 			if (opening.data.status === 3) return;
+
 			if (opening.data.status !== 2) {
 				throw new Error("opening left the allocated state during delivery");
 			}
+
 			const deliveryGroups: (readonly Instruction[])[] = [];
+
 			for (const asset of bundleAssets(data.data)) {
 				if ((opening.data.claimedMask & (1 << asset.index)) !== 0) continue;
 				const input = {
@@ -3118,6 +3342,7 @@ export class LootboxClient {
 					assetIndex: asset.index,
 				};
 				let instructions: readonly Instruction[];
+
 				if (asset.kind === "sol" || asset.kind === "quoteSol") {
 					instructions = [generated.getClaimSolPrizeInstruction(input)];
 				} else if (asset.kind === "exclusiveNft") {
@@ -3128,11 +3353,13 @@ export class LootboxClient {
 						opening.data.selectedPoolAsset !== asset.index
 					) throw new Error("opening has no valid PrizePool assignment");
 					const resolved = resolution.prizePoolItem;
+
 					if (!resolved) {
 						throw new Error(
 							"PrizePool delivery needs fresh DAS proof data for the selected item",
 						);
 					}
+
 					const pool = await generated.fetchPrizePoolState(
 						this.rpc,
 						asset.mint,
@@ -3147,6 +3374,7 @@ export class LootboxClient {
 						itemAddress,
 						{ commitment },
 					);
+
 					if (!item.exists) {
 						const current = await generated.fetchTemplateOpeningState(
 							this.rpc,
@@ -3162,6 +3390,7 @@ export class LootboxClient {
 						}
 						throw new Error("selected PrizePool item account is missing");
 					}
+
 					const proof = resolved.proof;
 					if (
 						pool.data.bundle !== bundle || pool.data.tree !== proof.tree ||
@@ -3219,6 +3448,7 @@ export class LootboxClient {
 							tokenProgram,
 						}),
 					];
+
 				} else if (
 					["token", "token2022", "nft", "quoteToken"].includes(
 						asset.kind ?? "",
@@ -3244,7 +3474,9 @@ export class LootboxClient {
 						}),
 					];
 				} else {
+
 					const resolved = resolvedAssets[asset.index];
+
 					if (!resolved || prizeIdentifier(resolved) !== asset.mint) {
 						throw new Error(
 							`Prize ${
@@ -3252,6 +3484,7 @@ export class LootboxClient {
 							} needs fresh DAS transfer data before it can be delivered`,
 						);
 					}
+
 					if (asset.kind === "metadataNft" && resolved.kind === "nft") {
 						const escrow = await this.ata(
 							bundle,
@@ -3320,6 +3553,7 @@ export class LootboxClient {
 							logWrapper: NOOP_PROGRAM,
 							pluginAccounts: CORE_PROGRAM,
 						});
+
 						instructions = [replaceGeneratedTail(
 							claim,
 							resolved.pluginAccounts ?? [],
@@ -3354,15 +3588,19 @@ export class LootboxClient {
 						);
 					}
 				}
+
 				deliveryGroups.push(instructions);
 			}
+
 			const batch = partitionPrizeDeliveryInstructions(
 				this.payer.address,
 				deliveryGroups,
 			)[0];
+
 			if (!batch) {
 				throw new Error("allocated opening has no unclaimed prize assets");
 			}
+
 			const previousClaimedMask = opening.data.claimedMask;
 			try {
 				await this.send(batch, "Deliver prize bundle batch");
@@ -3379,6 +3617,7 @@ export class LootboxClient {
 				opening = current;
 				continue;
 			}
+
 			opening = await generated.fetchTemplateOpeningState(
 				this.rpc,
 				openingAddress,
@@ -3391,6 +3630,7 @@ export class LootboxClient {
 				throw new Error("prize delivery confirmed without recording progress");
 			}
 		}
+
 		if (opening.data.status === 3) return;
 		throw new Error("prize delivery exceeded the bundle asset limit");
 	}

@@ -6,6 +6,7 @@ import {
 	fetchMaybePrizePoolItemState,
 	fetchTemplateOpeningState,
 	isTreasuryLocked,
+
 	LootboxClient,
 } from "@pina-rs/lootbox";
 import { fetchMaybeMint } from "@solana-program/token-2022";
@@ -117,6 +118,7 @@ async function settleOne(
 	try {
 		if (opening.data.status === 1) {
 			await client.allocate(template, opening);
+
 			return;
 		}
 

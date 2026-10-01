@@ -6,6 +6,7 @@ import {
 	type AccountMeta,
 	AccountRole,
 	type Address,
+
 	address,
 	createNoopSigner,
 	getAddressDecoder,
@@ -14,6 +15,7 @@ import {
 	getU64Encoder,
 	type Instruction,
 	type InstructionWithAccounts,
+
 } from "@solana/kit";
 import { describe, expect, it } from "vitest";
 import {
@@ -74,6 +76,7 @@ function bubblegumMetadata(
 	pushU32(1);
 	parts.push(...new Uint8Array(32).fill(5));
 	parts.push(Number(input.creatorVerified ?? false), 100);
+
 	return Uint8Array.from(parts);
 }
 

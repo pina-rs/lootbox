@@ -20,6 +20,7 @@ void main() {
           as Map<String, dynamic>;
   final prizePoolVector =
       jsonDecode(File('../../tests/vectors/prize-pool.json').readAsStringSync())
+
           as Map<String, dynamic>;
   PrizePoolItem poolItem(
     Address asset, {

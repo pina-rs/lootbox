@@ -48,6 +48,7 @@ import {
 	TOKEN_2022_PROGRAM_ADDRESS,
 } from "@solana-program/token-2022";
 import {
+
 	type Address,
 	address,
 	createKeyPairSignerFromPrivateKeyBytes,
@@ -56,6 +57,7 @@ import {
 } from "@solana/kit";
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+
 import {
 	CLASSIC_TOKEN_PROGRAM,
 	createTemplatePlan,
@@ -64,6 +66,7 @@ import {
 	getResultReceiptStateEncoder,
 	grossForNetTransfer,
 	LootboxClient,
+
 	type PrizeAsset,
 	type PrizeBundleInput,
 	requiredServiceBudget,
@@ -72,6 +75,7 @@ import {
 } from "../src/index.js";
 import {
 	installPatientFetch,
+
 	loadKeypair,
 	parseArgs,
 	parseCluster,
@@ -195,6 +199,7 @@ const rpcUrl = await verifiedRpcUrl(cluster, args.optional("rpc"));
 const rpc = createSolanaRpc(rpcUrl);
 const payer = await loadKeypair(args.required("keypair"));
 const file = readPlan(planPath);
+
 const statePath = args.optional("state") ??
 	planPath.replace(/\.json$/, "") + ".launch.json";
 const state = readOrCreateState(statePath, file);
@@ -234,6 +239,7 @@ for (const bundle of file.bundles) {
 		});
 		// A missing source account holds nothing; any RPC failure propagates.
 		const sourceAccount = await fetchMaybeToken(rpc, source);
+
 		const balance = sourceAccount.exists ? sourceAccount.data.amount : 0n;
 
 		mints.set(key, {
@@ -315,6 +321,7 @@ for (const [bundleIndex, bundle] of file.bundles.entries()) {
 		assets,
 	});
 }
+
 const plan = createTemplatePlan({
 	name: file.name,
 	uri: file.uri,
@@ -345,6 +352,7 @@ console.log(
 		SWITCHBOARD_QUEUE[cluster]
 	}`,
 );
+
 console.log("\nbundles");
 
 for (const [index, bundle] of plan.bundles.entries()) {
@@ -461,6 +469,7 @@ const serviceBudget = requiredServiceBudget(
 		? await rent(0)
 		: 0n,
 );
+
 const recipientAtaRent = await rent(170);
 const fees = 5_000n * BigInt(8 + plan.bundles.length * 3);
 const solTotal = templateRent + bundleRent + boxMintRent + badgeMintRent +
@@ -481,6 +490,7 @@ console.log(
 	}`,
 );
 console.log(`  service budget        ${serviceBudget}`);
+
 console.log(`  recipient box account ${recipientAtaRent}`);
 console.log(`  transaction fees      ${fees}`);
 console.log(

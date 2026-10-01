@@ -27,6 +27,7 @@ import {
 	getBase64Encoder,
 	getProgramDerivedAddress,
 	getU64Encoder,
+
 } from "@solana/kit";
 import type {
 	OracleAccounts,
@@ -102,6 +103,7 @@ export type SwitchboardErrorCode =
 	| "wrongOracle"
 	| "noUsableOracle"
 	| "notCommitted"
+
 	| "alreadyRevealed"
 	| "gateway"
 	| "invalidProof"

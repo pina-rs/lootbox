@@ -8,6 +8,7 @@ import {
 	metadataFor,
 	parseExclusiveNftStem,
 	playerHtml,
+
 	rarestTraits,
 	traitHex,
 } from "../src/index.ts";

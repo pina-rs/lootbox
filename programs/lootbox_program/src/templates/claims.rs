@@ -179,6 +179,7 @@ pub(super) fn assert_template_opening(
 	}
 
 	let seeds = TemplateOpeningState::seeds(template, &opening.randomness).with_bump(opening.bump);
+
 	if *address != create_program_address(&seeds.as_slices(), &ID)? {
 		return Err(ProgramError::InvalidSeeds);
 	}
@@ -194,14 +195,17 @@ fn bundle_for_target(
 	let mut cumulative = 0u64;
 	let count =
 		usize::try_from(eligible_bundle_count).map_err(|_| ProgramError::InvalidAccountData)?;
+
 	if count > MAX_TEMPLATE_BUNDLES {
 		return Err(ProgramError::InvalidAccountData);
 	}
+
 	for index in 0..count {
 		let weight = remaining_at(state, index)?;
 		cumulative = cumulative
 			.checked_add(weight)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
+
 		if target < cumulative {
 			return u32::try_from(index).map_err(|_| ProgramError::InvalidAccountData);
 		}
@@ -278,6 +282,7 @@ impl<'a> ProcessAccountInfos<'a> for AllocateTemplateOpenAccounts<'a> {
 		let receipt_seeds =
 			ResultReceiptState::seeds(self.opening.address(), opening.sequence.get());
 		drop(opening);
+
 		if self
 			.result_receipt
 			.assert_canonical_bump(&receipt_seeds.as_slices(), &ID)?
@@ -322,9 +327,11 @@ impl TemplateAllocationAccounts<'_> {
 		let inventory = available_in_prefix(&state, opening.eligible_bundle_count.get())?;
 		let target = select_outcome(&opening.entropy, &opening.template, &address, inventory)?;
 		let selected = bundle_for_target(&state, opening.eligible_bundle_count.get(), target)?;
+
 		if selected != bundle.index.get() {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
+
 		let index = usize::try_from(selected).map_err(|_| ProgramError::InvalidAccountData)?;
 		let selected_remaining = remaining_at(&state, index)?;
 		reserve_prize_pool_item(
@@ -364,6 +371,7 @@ impl TemplateAllocationAccounts<'_> {
 		}
 
 		let result_receipt_seeds = ResultReceiptState::seeds(&address, opening.sequence.get());
+
 		if self
 			.result_receipt
 			.assert_canonical_bump(&result_receipt_seeds.as_slices(), &ID)?
@@ -488,6 +496,7 @@ pub(super) fn record_claim(
 	let bit = 1u8
 		.checked_shl(u32::from(asset_index))
 		.ok_or(ProgramError::ArithmeticOverflow)?;
+
 	if opening.claimed_mask & bit != 0 {
 		return Err(lootbox_error(LootboxError::PrizeAlreadyClaimed));
 	}
@@ -496,12 +505,14 @@ pub(super) fn record_claim(
 	let claimed = read_slot(&bundle.claimed, index)?
 		.checked_add(1)
 		.ok_or(ProgramError::ArithmeticOverflow)?;
+
 	if claimed > bundle.quantity.get() {
 		return Err(lootbox_error(LootboxError::InvalidState));
 	}
 
 	write_slot(&mut bundle.claimed, index, claimed)?;
 	opening.claimed_mask |= bit;
+
 	if opening.claimed_mask == (1u8 << bundle.asset_count) - 1 {
 		opening.status = 3;
 	}
@@ -627,7 +638,9 @@ impl<'a> ProcessAccountInfos<'a> for ClaimSolPrizeAccounts<'a> {
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&address, &opening, self.template.address())?;
+
 		let index = usize::from(args.asset_index);
+
 		if !matches!(bundle.kinds.get(index), Some(&PRIZE_SOL | &PRIZE_QUOTE_SOL)) {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
@@ -652,6 +665,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimSolPrizeAccounts<'a> {
 			.lamports()
 			.checked_sub(amount)
 			.ok_or_else(|| lootbox_error(LootboxError::Insolvent))?;
+
 		if after < owed {
 			return Err(lootbox_error(LootboxError::Insolvent));
 		}
@@ -670,20 +684,24 @@ impl<'a> ProcessAccountInfos<'a> for ClaimTokenPrizeAccounts<'a> {
 		assert_template(self.template.address(), &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		let token_program = *self.token_program.address();
+
 		if token_program != token::ID && token_program != token_2022::ID {
 			return Err(ProgramError::IncorrectProgramId);
 		}
+
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&address, &opening, self.template.address())?;
 		let index = usize::from(args.asset_index);
 		let kind = bundle.kinds.get(index).copied().unwrap_or(u8::MAX);
+
 		let valid_kind = match kind {
 			PRIZE_TOKEN_2022 => token_program == token_2022::ID,
 			PRIZE_TOKEN | PRIZE_NFT => token_program == token::ID,
 			PRIZE_QUOTE_TOKEN => true,
 			_ => false,
 		};
+
 		if !valid_kind || mint_at(&bundle, index)? != *self.mint.address() {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
@@ -709,6 +727,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimTokenPrizeAccounts<'a> {
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
 		drop(opening);
+
 		let signer = seeds.to_signer();
 
 		if token_program == token_2022::ID {
@@ -746,6 +765,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
 		assert_template(self.template.address(), &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		let token_program = *self.token_program.address();
+
 		if token_program != token::ID && token_program != token_2022::ID {
 			return Err(ProgramError::IncorrectProgramId);
 		}
@@ -754,6 +774,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&address, &opening, self.template.address())?;
 		let index = usize::from(args.asset_index);
+
 		if bundle.kinds.get(index) != Some(&PRIZE_MINT_BADGE)
 			|| mint_at(&bundle, index)? != *self.mint.address()
 			|| read_slot(&bundle.amounts, index)? != 1
@@ -768,6 +789,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
 				token_2022::state::ExtensionType::MetadataPointer,
 				token_2022::state::ExtensionType::TokenMetadata,
 			])?;
+
 		if mint.decimals() != 0
 			|| mint.mint_authority() != Some(&bundle_address)
 			|| mint.freeze_authority().is_some()
@@ -787,14 +809,17 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
 			self.recipient.address(),
 			args.asset_index,
 		)?;
+
 		if amount != 1 {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
+
 		let is_final = read_slot(&bundle.claimed, index)? == bundle.quantity.get();
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
 		drop(opening);
+
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
 
@@ -802,6 +827,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
 			self.token_program.assert_address(&token_2022::ID)?;
 			token_2022::instructions::MintTo::new(self.mint, self.destination, self.bundle, 1)
 				.invoke_signed(&signers)?;
+
 			if is_final {
 				token_2022::instructions::SetAuthority::new(
 					self.mint,
@@ -815,6 +841,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
 			self.token_program.assert_address(&token::ID)?;
 			token::instructions::MintTo::new(self.mint, self.destination, self.bundle, 1)
 				.invoke_signed(&signers)?;
+
 			if is_final {
 				token::instructions::SetAuthority::new(
 					self.mint,
@@ -862,6 +889,7 @@ mod tests {
 		assert_eq!(bundle_for_target(&state, 3, 90), Ok(1));
 		assert_eq!(bundle_for_target(&state, 3, 99), Ok(2));
 		let remaining = [PodU64::from(90), PodU64::from(9), PodU64::ZERO];
+
 		TemplateState::update(
 			&mut bytes,
 			&TemplateStatePatch::new()
@@ -904,6 +932,7 @@ mod tests {
 		let mut receipt = [0; TemplateOpeningState::SIZE];
 		let opening = TemplateOpeningState::initialize(&mut receipt, |_| Ok(())).expect("opening");
 		opening.status = 1;
+
 		opening.sequence.set(1);
 		opening.treasury_revision.set(3);
 		opening.eligible_bundle_count.set(3);
@@ -938,6 +967,7 @@ mod tests {
 		write_slot(&mut bundle.amounts, 1, 1).expect("NFT");
 		let mut receipt = [0; TemplateOpeningState::SIZE];
 		let opening = TemplateOpeningState::initialize(&mut receipt, |_| Ok(())).expect("opening");
+
 		opening.status = 2;
 		let thief = Address::new_from_array([9; 32]);
 		assert_eq!(
@@ -955,6 +985,7 @@ mod tests {
 			Err(lootbox_error(LootboxError::PrizeAlreadyClaimed))
 		);
 		assert_eq!(record_claim(opening, bundle, &Address::default(), 1), Ok(1));
+
 		assert_eq!(opening.status, 3);
 		assert!(record_claim(opening, bundle, &Address::default(), 1).is_err());
 	}
@@ -977,6 +1008,7 @@ mod tests {
 			opening.beneficiary = recipient;
 			opening.selected_bundle.set(bundle.index.get());
 			opening.status = 2;
+
 			assert_eq!(record_claim(opening, bundle, &recipient, 0), Ok(1));
 		}
 
@@ -1104,6 +1136,7 @@ mod tests {
 		assert_eq!(available_in_prefix(&state, 9), Ok(9));
 		assert_eq!(available_in_prefix(&state, 1_024), Ok(1_024));
 		assert_eq!(bundle_for_target(&state, 9, 8), Ok(8));
+
 		assert!(bundle_for_target(&state, 9, 9).is_err());
 		assert_eq!(bundle_for_target(&state, 1_024, 1_023), Ok(1_023));
 	}
@@ -1123,8 +1156,10 @@ mod tests {
 			)
 			.expect("fund pool");
 			let mut awarded = [0u64; 3];
+
 			for sequence in 0..total {
 				let mut receipt = [0; TemplateOpeningState::SIZE];
+
 				let opening =
 					TemplateOpeningState::initialize(&mut receipt, |_| Ok(())).expect("opening");
 				opening.status = 1;
@@ -1133,6 +1168,7 @@ mod tests {
 				opening.eligible_bundle_count.set(3);
 				opening.entropy = entropy;
 				let state = TemplateState::try_from_bytes(&bytes).expect("template");
+
 				let target = select_outcome(&entropy, &Address::default(), &Address::default(), available_in_prefix(&state, 3).expect("inventory")).expect("target");
 				let selected = bundle_for_target(&state, 3, target).expect("outcome");
 				let selected_index = usize::try_from(selected).expect("index");
@@ -1141,6 +1177,7 @@ mod tests {
 				remaining_values.extend_from_slice(state.remaining());
 				let mut allocation_state = AllocationState::from(&*state);
 				let after = allocate(&mut allocation_state, opening, selected, selected_remaining).expect("allocate");
+
 				remaining_values[selected_index].set(after);
 				awarded[usize::try_from(selected).expect("index")] += 1;
 				prop_assert_eq!(allocation_state.pending_openings, total - sequence - 1);
@@ -1156,6 +1193,7 @@ mod tests {
 				)
 				.expect("commit allocation");
 			}
+
 			prop_assert_eq!(awarded, quantities);
 			let state = TemplateState::try_from_bytes(&bytes).expect("template");
 			prop_assert_eq!(available_in_prefix(&state, 3), Ok(0));

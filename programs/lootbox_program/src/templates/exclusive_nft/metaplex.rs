@@ -180,6 +180,7 @@ impl CreateCoreCollection<'_, '_> {
 		data.extend_from_slice(&[1, 1, 0, 0, 0, CORE_PLUGIN_BUBBLEGUM_V2, 0]);
 		// external_plugin_adapters: None
 		data.push(0);
+
 		let instruction = InstructionView {
 			program_id: &MPL_CORE_ID,
 			accounts: &metas,
@@ -249,6 +250,7 @@ impl CreateBubblegumTree<'_> {
 		data[..8].copy_from_slice(&CREATE_TREE_V2_DISCRIMINATOR);
 		data[8..12].copy_from_slice(&self.max_depth.to_le_bytes());
 		data[12..16].copy_from_slice(&self.max_buffer_size.to_le_bytes());
+
 		// public: None, which Bubblegum records as a private tree.
 		data[16] = 0;
 		let instruction = InstructionView {
@@ -302,6 +304,7 @@ pub fn encode_mint_v2_data(metadata: &LeafMetadata<'_>) -> Result<Vec<u8>, Progr
 	data.extend_from_slice(&[0, 0, 0, 0, 1, TOKEN_STANDARD_NON_FUNGIBLE]);
 	// creators: empty Vec<Creator>.
 	data.extend_from_slice(&0u32.to_le_bytes());
+
 	// collection: Some(collection).
 	data.push(1);
 	data.extend_from_slice(metadata.collection.as_ref());
@@ -382,6 +385,7 @@ impl MintBubblegumLeaf<'_, '_> {
 			InstructionAccount::readonly(self.system_program.address()),
 		];
 		let data = encode_mint_v2_data(&self.metadata)?;
+
 		let instruction = InstructionView {
 			program_id: &MPL_BUBBLEGUM_ID,
 			accounts: &metas,
@@ -447,6 +451,7 @@ mod tests {
 		data[72..80].copy_from_slice(&16_384u64.to_le_bytes());
 		data[80..88].copy_from_slice(&7u64.to_le_bytes());
 		data[89] = 1;
+
 		data[90] = TREE_VERSION_V2;
 		let parsed = parse_tree_config(&data).expect("tree config");
 		assert_eq!(parsed.tree_creator, Address::new_from_array(creator));

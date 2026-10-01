@@ -6,6 +6,7 @@ import {
 } from "@solana/kit";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+
 import {
 	createSwitchboardOracle,
 	lookupTableAddress,
@@ -14,6 +15,7 @@ import {
 	parseSwitchboardRandomness,
 	parseSwitchboardRevealResponse,
 	SWITCHBOARD_PROGRAM,
+
 	SWITCHBOARD_QUEUE,
 	SwitchboardError,
 	switchboardLutSignerAddress,
@@ -43,6 +45,7 @@ const randomness = address("7uG6Zb1ezT2kUvhuAB4TYy4fvrnjDvuQYdG8Ru6hPFaQ");
 const rpcUrl = "https://rpc.test";
 const revealUrl =
 	`${fixtures.gatewayReveal.gatewayUri}/gateway/api/v1/randomness_reveal`;
+
 const addressEncoder = getAddressEncoder();
 const base64 = getBase64Decoder();
 

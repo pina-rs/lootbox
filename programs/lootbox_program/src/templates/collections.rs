@@ -540,6 +540,7 @@ fn invoke_metadata_transfer(
 	if optional_accounts.len() != 5 {
 		return Err(ProgramError::NotEnoughAccountKeys);
 	}
+
 	let placeholder = |account: &AccountView| account.address() == &MPL_TOKEN_METADATA_ID;
 	let mut metas = Vec::with_capacity(17);
 	metas.push(InstructionAccount::writable(accounts.source.address()));
@@ -553,6 +554,7 @@ fn invoke_metadata_transfer(
 	metas.push(InstructionAccount::readonly(accounts.mint.address()));
 	metas.push(InstructionAccount::writable(accounts.metadata.address()));
 	metas.push(InstructionAccount::readonly(optional_accounts[0].address()));
+
 	for account in &optional_accounts[1..3] {
 		metas.push(if placeholder(account) {
 			InstructionAccount::readonly(account.address())
@@ -560,6 +562,7 @@ fn invoke_metadata_transfer(
 			InstructionAccount::writable(account.address())
 		});
 	}
+
 	metas.push(InstructionAccount::readonly_signer(
 		accounts.authority.address(),
 	));
@@ -645,12 +648,14 @@ fn validate_core_asset_data(data: &[u8], bundle: &Address) -> ProgramResult {
 	let update_authority = data
 		.get(CORE_UPDATE_AUTHORITY_OFFSET + 1..CORE_UPDATE_AUTHORITY_OFFSET + 33)
 		.ok_or(ProgramError::InvalidAccountData)?;
+
 	if update_authority != bundle.as_ref() {
 		return Err(lootbox_error(LootboxError::InvalidPrize));
 	}
 
 	let mut cursor = CORE_UPDATE_AUTHORITY_OFFSET + 33;
 	let mut strings = 0usize;
+
 	for _ in 0..2 {
 		let length = metadata_string_length(data, &mut cursor)?;
 		strings = strings
@@ -659,6 +664,7 @@ fn validate_core_asset_data(data: &[u8], bundle: &Address) -> ProgramResult {
 		cursor = cursor
 			.checked_add(length)
 			.ok_or(ProgramError::InvalidAccountData)?;
+
 		if cursor > data.len() {
 			return Err(ProgramError::InvalidAccountData);
 		}
@@ -668,6 +674,7 @@ fn validate_core_asset_data(data: &[u8], bundle: &Address) -> ProgramResult {
 		.get(cursor)
 		.copied()
 		.ok_or(ProgramError::InvalidAccountData)?;
+
 	let seq_payload = match seq {
 		0 => 0,
 		1 => 8,
@@ -680,6 +687,7 @@ fn validate_core_asset_data(data: &[u8], bundle: &Address) -> ProgramResult {
 		.checked_add(strings)
 		.and_then(|value| value.checked_add(seq_payload))
 		.ok_or(ProgramError::InvalidAccountData)?;
+
 	if data.len() != expected {
 		return Err(lootbox_error(LootboxError::InvalidPrize));
 	}
@@ -696,6 +704,7 @@ fn metadata_string_length(data: &[u8], cursor: &mut usize) -> Result<usize, Prog
 	*cursor = (*cursor)
 		.checked_add(4)
 		.ok_or(ProgramError::InvalidAccountData)?;
+
 	if *cursor > data.len() {
 		return Err(ProgramError::InvalidAccountData);
 	}
@@ -716,18 +725,22 @@ fn validate_metadata_lock(data: &[u8]) -> ProgramResult {
 	let mut cursor = 33usize
 		.checked_add(32)
 		.ok_or(ProgramError::InvalidAccountData)?;
+
 	for _ in 0..3 {
 		let length = metadata_string_length(data, &mut cursor)?;
 		cursor = cursor
 			.checked_add(length)
 			.ok_or(ProgramError::InvalidAccountData)?;
+
 		if cursor > data.len() {
 			return Err(ProgramError::InvalidAccountData);
 		}
 	}
+
 	cursor = cursor
 		.checked_add(2)
 		.ok_or(ProgramError::InvalidAccountData)?;
+
 	match data.get(cursor) {
 		Some(0) => cursor += 1,
 		Some(1) => {
@@ -744,9 +757,11 @@ fn validate_metadata_lock(data: &[u8]) -> ProgramResult {
 		}
 		_ => return Err(ProgramError::InvalidAccountData),
 	}
+
 	if cursor > data.len() {
 		return Err(ProgramError::InvalidAccountData);
 	}
+
 	// Skip `primary_sale_happened`; the next byte is `is_mutable`.
 	cursor = cursor
 		.checked_add(1)
@@ -766,6 +781,7 @@ fn validate_metadata_accounts(
 	if optional_accounts.len() != 5 {
 		return Err(ProgramError::NotEnoughAccountKeys);
 	}
+
 	// Admission policy: programmable token records and mutable authorization
 	// rules can change after funding and strand a prize. Until those semantics
 	// have dedicated compatibility tests, accept only standard Metadata NFTs.
@@ -787,9 +803,11 @@ fn validate_metadata_accounts(
 		.associated_token_program
 		.assert_address(&associated_token_account::ID)?;
 	let mint_data = accounts.mint.as_token_mint()?;
+
 	if mint_data.supply() != 1 || mint_data.decimals() != 0 {
 		return Err(lootbox_error(LootboxError::InvalidPrize));
 	}
+
 	let (expected_edition, _) = try_find_program_address(
 		&[
 			b"metadata",
@@ -802,6 +820,7 @@ fn validate_metadata_accounts(
 	.ok_or(ProgramError::InvalidSeeds)?;
 	let mint_authority = mint_data.mint_authority();
 	let freeze_authority = mint_data.freeze_authority();
+
 	if !metadata_authority_is_safe(mint_authority, &expected_edition)
 		|| !metadata_authority_is_safe(freeze_authority, &expected_edition)
 	{
@@ -809,11 +828,13 @@ fn validate_metadata_accounts(
 	}
 	let uses_edition_authority = mint_authority.is_some() || freeze_authority.is_some();
 	drop(mint_data);
+
 	if uses_edition_authority {
 		optional_accounts[0]
 			.assert_address(&expected_edition)?
 			.assert_owner(&MPL_TOKEN_METADATA_ID)?;
 	}
+
 	let (expected_metadata, _) = try_find_program_address(
 		&[
 			b"metadata",
@@ -863,6 +884,7 @@ fn invoke_core_transfer(
 		InstructionAccount::readonly(accounts.system_program.address()),
 		InstructionAccount::readonly(accounts.log_wrapper.address()),
 	]);
+
 	for account in plugin_accounts {
 		metas.push(InstructionAccount::new(
 			account.address(),
@@ -870,6 +892,7 @@ fn invoke_core_transfer(
 			account.is_signer(),
 		));
 	}
+
 	let mut views = Vec::with_capacity(7 + plugin_accounts.len());
 	views.extend_from_slice(&[
 		accounts.asset,
@@ -904,9 +927,11 @@ fn validate_core_accounts(
 	// after escrow. Plain, uncollected Core assets have no such mutable
 	// dependency and are the only admitted Core shape for now.
 	collection.assert_address(&MPL_CORE_ID)?;
+
 	if !plugin_accounts.is_empty() {
 		return Err(lootbox_error(LootboxError::InvalidPrize));
 	}
+
 	system_program.assert_address(&system::ID)?;
 	log_wrapper.assert_address(&SPL_NOOP_ID)?;
 
@@ -942,6 +967,7 @@ fn validate_bubblegum_proof_count(length: usize) -> ProgramResult {
 	if length > MAX_BUBBLEGUM_PROOF_ACCOUNTS {
 		return Err(ProgramError::InvalidArgument);
 	}
+
 	Ok(())
 }
 
@@ -966,9 +992,11 @@ pub(super) fn invoke_compressed_transfer(
 		InstructionAccount::readonly(accounts.compression_program.address()),
 		InstructionAccount::readonly(accounts.system_program.address()),
 	]);
+
 	for proof in proof_accounts {
 		metas.push(InstructionAccount::readonly(proof.address()));
 	}
+
 	let mut views = Vec::with_capacity(8 + proof_accounts.len());
 	views.extend_from_slice(&[
 		accounts.tree_config,
@@ -1039,6 +1067,7 @@ impl<'a> ProcessAccountInfos<'a> for FundMetadataNftPrizeAccounts<'a> {
 			self.optional_accounts,
 		)?;
 		let bundle_address = *self.bundle.address();
+
 		drop(self.source.as_associated_token_account(
 			self.authority.address(),
 			self.mint.address(),
@@ -1050,9 +1079,11 @@ impl<'a> ProcessAccountInfos<'a> for FundMetadataNftPrizeAccounts<'a> {
 			&token::ID,
 		)?);
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+
 		if bundle.status != BUNDLE_FUNDING || bundle.quantity.get() != 1 {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
+
 		record_prize(&mut bundle, self.mint.address(), 1, PRIZE_METADATA_NFT, 0)?;
 		drop(bundle);
 
@@ -1099,9 +1130,11 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMetadataNftPrizeAccounts<'a> {
 		let opening_address = *self.opening.address();
 		let bundle_address = *self.bundle.address();
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
+
 		assert_template_opening(&opening_address, &opening, self.template.address())?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
+
 		if bundle.kinds.get(index) != Some(&PRIZE_METADATA_NFT)
 			|| mint_at(&bundle, index)? != *self.mint.address()
 		{
@@ -1124,6 +1157,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMetadataNftPrizeAccounts<'a> {
 			args.asset_index,
 		)?;
 		let template = bundle.template;
+
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
 		drop(opening);
@@ -1178,9 +1212,11 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMetadataNftPrizeAccounts<'a> {
 			&state.box_mint,
 			state.locked_at.get() != 0,
 		)?;
+
 		let bundle_address = *self.bundle.address();
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
+
 		if bundle.kinds.get(index) != Some(&PRIZE_METADATA_NFT)
 			|| mint_at(&bundle, index)? != *self.mint.address()
 		{
@@ -1198,6 +1234,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMetadataNftPrizeAccounts<'a> {
 		)?);
 		let bundle_index =
 			usize::try_from(bundle.index.get()).map_err(|_| ProgramError::InvalidAccountData)?;
+
 		let active_remaining = if bundle.status == BUNDLE_ACTIVE {
 			Some(remaining_at(&state, bundle_index)?)
 		} else {
@@ -1215,6 +1252,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMetadataNftPrizeAccounts<'a> {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 		let template = bundle.template;
+
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
 		let signer = seeds.to_signer();
@@ -1260,10 +1298,13 @@ impl<'a> ProcessAccountInfos<'a> for FundCoreAssetPrizeAccounts<'a> {
 			self.log_wrapper,
 			&bundle_address,
 		)?;
+
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+
 		if bundle.status != BUNDLE_FUNDING || bundle.quantity.get() != 1 {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
+
 		record_prize(&mut bundle, self.asset.address(), 1, PRIZE_CORE_ASSET, 0)?;
 		drop(bundle);
 
@@ -1302,9 +1343,11 @@ impl<'a> ProcessAccountInfos<'a> for ClaimCoreAssetPrizeAccounts<'a> {
 		)?;
 		let opening_address = *self.opening.address();
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
+
 		assert_template_opening(&opening_address, &opening, self.template.address())?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
+
 		if bundle.kinds.get(index) != Some(&PRIZE_CORE_ASSET)
 			|| mint_at(&bundle, index)? != *self.asset.address()
 		{
@@ -1319,6 +1362,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimCoreAssetPrizeAccounts<'a> {
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
+
 		drop(opening);
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
@@ -1358,6 +1402,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCoreAssetPrizeAccounts<'a> {
 			self.log_wrapper,
 			&bundle_address,
 		)?;
+
 		let supply = assert_template_mint(
 			self.box_mint,
 			self.template.address(),
@@ -1366,6 +1411,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCoreAssetPrizeAccounts<'a> {
 		)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
+
 		if bundle.kinds.get(index) != Some(&PRIZE_CORE_ASSET)
 			|| mint_at(&bundle, index)? != *self.asset.address()
 		{
@@ -1375,6 +1421,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCoreAssetPrizeAccounts<'a> {
 			usize::try_from(bundle.index.get()).map_err(|_| ProgramError::InvalidAccountData)?;
 		let active_remaining = if bundle.status == BUNDLE_ACTIVE {
 			Some(remaining_at(&state, bundle_index)?)
+
 		} else {
 			None
 		};
@@ -1392,6 +1439,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCoreAssetPrizeAccounts<'a> {
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
+
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
 
@@ -1422,9 +1470,11 @@ impl<'a> ProcessAccountInfos<'a> for FundCompressedNftPrizeAccounts<'a> {
 		assert_bundle(self.bundle, self.template.address())?;
 		let asset = compressed_asset_id(self.merkle_tree.address(), args.nonce.get())?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+
 		if bundle.status != BUNDLE_FUNDING || bundle.quantity.get() != 1 {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
+
 		record_prize(&mut bundle, &asset, 1, PRIZE_COMPRESSED_NFT, 0)?;
 		drop(bundle);
 		let context = CompressedTransfer {
@@ -1464,8 +1514,10 @@ impl<'a> ProcessAccountInfos<'a> for ClaimCompressedNftPrizeAccounts<'a> {
 		let opening_address = *self.opening.address();
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&opening_address, &opening, self.template.address())?;
+
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
+
 		if bundle.kinds.get(index) != Some(&PRIZE_COMPRESSED_NFT)
 			|| mint_at(&bundle, index)? != asset
 		{
@@ -1480,6 +1532,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimCompressedNftPrizeAccounts<'a> {
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
+
 		drop(opening);
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
@@ -1525,8 +1578,10 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCompressedNftPrizeAccounts<'a> {
 			state.locked_at.get() != 0,
 		)?;
 		let asset = compressed_asset_id(self.merkle_tree.address(), args.nonce.get())?;
+
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
+
 		if bundle.kinds.get(index) != Some(&PRIZE_COMPRESSED_NFT)
 			|| mint_at(&bundle, index)? != asset
 		{
@@ -1536,6 +1591,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCompressedNftPrizeAccounts<'a> {
 			usize::try_from(bundle.index.get()).map_err(|_| ProgramError::InvalidAccountData)?;
 		let active_remaining = if bundle.status == BUNDLE_ACTIVE {
 			Some(remaining_at(&state, bundle_index)?)
+
 		} else {
 			None
 		};
@@ -1553,6 +1609,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimCompressedNftPrizeAccounts<'a> {
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
+
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
 		let context = CompressedTransfer {
@@ -1614,10 +1671,12 @@ mod tests {
 		data.extend_from_slice(owner.as_ref());
 		data.push(CORE_UPDATE_AUTHORITY_ADDRESS_TAG);
 		data.extend_from_slice(bundle.as_ref());
+
 		for value in ["Prize", "https://example.com/prize.json"] {
 			data.extend_from_slice(&(value.len() as u32).to_le_bytes());
 			data.extend_from_slice(value.as_bytes());
 		}
+
 		match seq {
 			Some(sequence) => {
 				data.push(1);
@@ -1625,6 +1684,7 @@ mod tests {
 			}
 			None => data.push(0),
 		}
+
 		data
 	}
 
@@ -1632,6 +1692,7 @@ mod tests {
 	fn plugin_free_core_assets_with_bundle_update_authority_are_admitted() {
 		let owner = Address::new_from_array([3; 32]);
 		let bundle = Address::new_from_array([4; 32]);
+
 		for seq in [None, Some(7)] {
 			assert_eq!(
 				validate_core_asset_data(&core_asset(&owner, &bundle, seq), &bundle),
@@ -1713,12 +1774,15 @@ mod tests {
 		let mut data = alloc::vec![METADATA_V1_KEY];
 		data.extend_from_slice(update_authority.as_ref());
 		data.extend_from_slice(&[9; 32]); // mint
+
 		for value in ["Rare Prize", "RPRZ", "https://example.com/prize.json"] {
 			data.extend_from_slice(&(value.len() as u32).to_le_bytes());
 			data.extend_from_slice(value.as_bytes());
 		}
+
 		data.extend_from_slice(&500u16.to_le_bytes());
 		data.push(0); // no creators
+
 		data.push(0); // primary sale has not happened
 		data.push(u8::from(is_mutable));
 		data
@@ -1739,6 +1803,7 @@ mod tests {
 		creators.push(100);
 		creators.extend_from_slice(&[8u8; 32]);
 		creators.push(0);
+
 		creators.push(50);
 		with_creators.insert(creator_tag, 1);
 		with_creators.splice((creator_tag + 1)..=creator_tag, creators);

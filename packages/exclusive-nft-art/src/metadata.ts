@@ -6,6 +6,7 @@ import {
 	type TraitVector,
 } from "./layers.ts";
 import { rarityOf } from "./rarity.ts";
+
 import { assertSerial } from "./render.ts";
 
 /**
@@ -17,7 +18,6 @@ import { assertSerial } from "./render.ts";
  * `parseExclusiveNftStem`, then serves `metadataFor`, `renderExclusiveNft`,
  * `renderAnimatedExclusiveNft`, and `playerHtml`.
  */
-
 export const EXCLUSIVE_NFT_SYMBOL = "EXCHEST";
 
 export const EXCLUSIVE_NFT_DISCLOSURE =

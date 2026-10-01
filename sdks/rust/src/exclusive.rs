@@ -78,6 +78,7 @@ pub fn validate_exclusive_layers(layers: &[&[u32]]) -> Result<(), ExclusiveNftEr
 
 	for layer in layers {
 		let total = layer.iter().map(|weight| u64::from(*weight)).sum::<u64>();
+
 		if layer.is_empty()
 			|| layer.len() > MAX_EXCLUSIVE_TRAITS
 			|| total == 0
@@ -93,14 +94,17 @@ pub fn validate_exclusive_layers(layers: &[&[u32]]) -> Result<(), ExclusiveNftEr
 /// Unbiased draw in `0..bound` from `sha256(S || "layer" || layer [|| round])`.
 fn layer_draw(seed: &[u8; 32], layer: u8, bound: u64) -> Result<u64, ExclusiveNftError> {
 	let threshold = bound.wrapping_neg() % bound;
+
 	for round in 0..ROUNDS {
 		let digest = if round == 0 {
 			hashv(&[seed, LAYER_LABEL, &[layer]])
 		} else {
 			hashv(&[seed, LAYER_LABEL, &[layer], &[round]])
 		};
+
 		let mut candidate = [0u8; 8];
 		candidate.copy_from_slice(&digest.as_ref()[..8]);
+
 		let candidate = u64::from_le_bytes(candidate);
 
 		if candidate >= threshold {
@@ -188,9 +192,11 @@ mod tests {
 	fn bytes<const N: usize>(value: &serde_json::Value) -> [u8; N] {
 		let text = value.as_str().expect("hex string");
 		let mut bytes = [0u8; N];
+
 		for (index, byte) in bytes.iter_mut().enumerate() {
 			*byte = u8::from_str_radix(&text[index * 2..index * 2 + 2], 16).expect("hex byte");
 		}
+
 		bytes
 	}
 
@@ -205,6 +211,7 @@ mod tests {
 	#[test]
 	fn seeds_traits_and_metadata_match_the_shared_vectors() {
 		let vectors = vectors();
+
 		for seed in vectors["seeds"].as_array().expect("seeds") {
 			assert_eq!(
 				exclusive_nft_seed(
@@ -215,6 +222,7 @@ mod tests {
 				bytes::<32>(&seed["seedHex"]),
 			);
 		}
+
 		for draw in vectors["draws"].as_array().expect("draws") {
 			let tables = draw["layers"]
 				.as_array()
@@ -237,6 +245,7 @@ mod tests {
 				.iter()
 				.map(|value| u8::try_from(value.as_u64().expect("trait")).expect("u8"))
 				.collect::<Vec<_>>();
+
 			assert_eq!(traits, expected, "{}", draw["label"]);
 			let serial = number(&draw["serial"]);
 			assert_eq!(
@@ -260,6 +269,7 @@ mod tests {
 		assert!(validate_exclusive_layers(&[&[1; 65]]).is_err());
 		let one: &[u32] = &[1];
 		assert!(validate_exclusive_layers(&[one; 13]).is_err());
+
 		assert!(exclusive_nft_name("AAAAAAAAAAAAAAAAAAAAA", 9_999_999_999).is_err());
 	}
 

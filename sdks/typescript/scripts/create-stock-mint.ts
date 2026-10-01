@@ -20,6 +20,7 @@ import {
 	getInitializeMint2Instruction,
 	getMintSize,
 	getMintToCheckedInstruction,
+
 	getPostInitializeInstructionsForMintExtensions,
 	getPreInitializeInstructionsForMintExtensions,
 	TOKEN_2022_PROGRAM_ADDRESS,
@@ -28,6 +29,7 @@ import {
 	address,
 	appendTransactionMessageInstructions,
 	createSolanaRpc,
+
 	createTransactionMessage,
 	generateKeyPairSigner,
 	getBase64EncodedWireTransaction,
@@ -57,6 +59,7 @@ const symbol = args.required("symbol");
 const name = args.required("name");
 const decimals = Number(args.optional("decimals") ?? "6");
 const supply = BigInt(args.required("supply"));
+
 const feeBps = Number(args.optional("fee-bps") ?? "100");
 const maxFee = BigInt(args.optional("max-fee") ?? "18446744073709551615");
 const mint = await generateKeyPairSigner();

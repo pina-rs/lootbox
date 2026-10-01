@@ -290,15 +290,18 @@ impl<'a> TemplatePlan<'a> {
 		}
 
 		let mut total_bundles = 0u64;
+
 		for bundle in bundles {
 			validate_bundle(bundle)?;
 			total_bundles = total_bundles
 				.checked_add(bundle.quantity)
 				.ok_or(TemplatePlanError::ArithmeticOverflow)?;
+
 			if total_bundles > MAX_TOTAL_TICKETS {
 				return Err(TemplatePlanError::TicketLimitExceeded);
 			}
 		}
+
 		let unique_identifier_count =
 			bundles
 				.iter()
@@ -308,27 +311,34 @@ impl<'a> TemplatePlan<'a> {
 						PrizeAsset::PrizePool { items, .. } => items.len(),
 						_ => usize::from(asset.is_unique()),
 					};
+
 					count
 						.checked_add(additional)
 						.ok_or(TemplatePlanError::ArithmeticOverflow)
 				})?;
+
 		let mut unique_identifiers = Vec::new();
 		unique_identifiers
 			.try_reserve_exact(unique_identifier_count)
 			.map_err(|_| TemplatePlanError::PlanningCapacityExceeded)?;
+
 		for asset in bundles.iter().flat_map(|bundle| bundle.assets) {
 			match asset {
 				PrizeAsset::PrizePool { items, .. } => {
 					unique_identifiers.extend(items.iter().map(|item| item.asset));
 				}
+
 				_ if asset.is_unique() => {
 					unique_identifiers
 						.push(asset.identifier().ok_or(TemplatePlanError::InvalidAsset)?);
 				}
+
 				_ => {}
 			}
 		}
+
 		unique_identifiers.sort_unstable();
+
 		if unique_identifiers.windows(2).any(|pair| pair[0] == pair[1]) {
 			return Err(TemplatePlanError::DuplicateUniqueAsset);
 		}
@@ -338,6 +348,7 @@ impl<'a> TemplatePlan<'a> {
 			total_bundles,
 			services: ServicePlan::default(),
 		};
+
 		for asset in bundles.iter().flat_map(|bundle| bundle.assets) {
 			plan.required_collateral(asset.identifier())?;
 		}
@@ -400,6 +411,7 @@ impl<'a> TemplatePlan<'a> {
 		} else {
 			0
 		};
+
 		let bounty_budget = self
 			.services
 			.settlement_bounty_lamports
@@ -453,14 +465,17 @@ fn validate_bundle(bundle: &PrizeBundle<'_>) -> Result<(), TemplatePlanError> {
 	if bundle.quantity == 0 {
 		return Err(TemplatePlanError::ZeroQuantity);
 	}
+
 	if bundle.assets.is_empty() || bundle.assets.len() > 4 {
 		return Err(TemplatePlanError::InvalidAssetCount);
 	}
 
 	let mut prize_pool_count = 0;
+
 	for (index, asset) in bundle.assets.iter().enumerate() {
 		if let PrizeAsset::PrizePool { tree, items } = asset {
 			prize_pool_count += 1;
+
 			if prize_pool_count > 1
 				|| items.is_empty()
 				|| items.len() > MAX_PRIZE_POOL_ITEMS as usize
@@ -478,15 +493,18 @@ fn validate_bundle(bundle: &PrizeBundle<'_>) -> Result<(), TemplatePlanError> {
 				return Err(TemplatePlanError::InvalidAsset);
 			}
 		}
+
 		if asset.amount() == 0
 			|| asset.identifier() == Some([0; 32])
 			|| asset.identifier() == Some(WRAPPED_SOL_MINT)
 		{
 			return Err(TemplatePlanError::InvalidAsset);
 		}
+
 		if asset.requires_single_copy() && bundle.quantity != 1 {
 			return Err(TemplatePlanError::DuplicateUniqueAsset);
 		}
+
 		if bundle.assets[..index]
 			.iter()
 			.any(|previous| previous.identifier() == asset.identifier())
@@ -577,6 +595,7 @@ mod tests {
 		};
 		let bundles = [bundle];
 		let plan = TemplatePlan::new(&bundles).expect("valid pool plan");
+
 		assert_eq!(plan.fixed_supply(), vector.valid_quantity);
 		assert_eq!(
 			plan.required_collateral(Some(tree)),
@@ -671,6 +690,7 @@ mod tests {
 			proof: &oversized_proof,
 			..pool_item([6; 32], tree)
 		};
+
 		let invalid_proof = [PrizeAsset::PrizePool {
 			tree,
 			items: core::slice::from_ref(&invalid_proof_item),
@@ -798,6 +818,7 @@ mod tests {
 			quantity: total_bundles,
 			assets: &sol,
 		}];
+
 		let plan = TemplatePlan::new(&bundles).expect("plan");
 		assert_eq!(
 			plan.required_service_budget(result_receipt_rent_lamports, service_vault_rent_lamports),

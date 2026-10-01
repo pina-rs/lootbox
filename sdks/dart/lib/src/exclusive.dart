@@ -37,6 +37,7 @@ List<int> _sha256(List<List<int>> parts) =>
 
 BigInt _u64LittleEndian(List<int> bytes) {
   var value = BigInt.zero;
+
   for (var index = 7; index >= 0; index--) {
     value = (value << 8) | BigInt.from(bytes[index]);
   }
@@ -134,6 +135,7 @@ List<int> exclusiveTraits(List<int> seed, List<List<int>> layers) {
 
     for (var slot = 0; slot < weights.length; slot++) {
       cumulative += BigInt.from(weights[slot]);
+
       if (target < cumulative) {
         traits.add(slot);
         break;

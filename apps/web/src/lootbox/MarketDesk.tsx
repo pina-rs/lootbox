@@ -6,6 +6,7 @@ import {
 	quoteBoxTrade,
 	remainingExpectedValue,
 	serializeMarketManifest,
+
 } from "@pina-rs/lootbox";
 import {
 	ArrowRightLeft,
@@ -14,6 +15,7 @@ import {
 	ExternalLink,
 	LockKeyhole,
 	Scale,
+
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { formatUnits, parseUnits } from "./playground.js";
@@ -27,6 +29,7 @@ type Props = Readonly<{
 
 function solOnlyValue(bundle: ChainBundle): bigint | undefined {
 	const assets = bundleAssets(bundle.data);
+
 	if (!assets.every((asset) => asset.kind === "sol")) return undefined;
 	return assets.reduce((total, asset) => total + asset.amount, 0n);
 }
@@ -36,7 +39,9 @@ function countdown(seconds: bigint): string {
 	const days = seconds / 86_400n;
 	const hours = seconds % 86_400n / 3_600n;
 	const minutes = seconds % 3_600n / 60n;
+
 	if (days > 0n) return `${days}d ${hours}h until reveal`;
+
 	if (hours > 0n) return `${hours}h ${minutes}m until reveal`;
 	return `${minutes}m until reveal`;
 }
@@ -104,6 +109,7 @@ export function MarketDesk({ template, bundles, supply, chainTime }: Props) {
 				outputReserve: quoteLamports,
 				boxIsOutput: false,
 			});
+
 	} catch (reason) {
 		quoteError = reason instanceof Error ? reason.message : "Check pool values";
 	}
@@ -118,6 +124,7 @@ export function MarketDesk({ template, bundles, supply, chainTime }: Props) {
 				? `Market premium: ${
 					formatUnits(price - expectedValue.knownValue)
 				} SOL.`
+
 				: `Market discount: ${
 					formatUnits(expectedValue.knownValue - price)
 				} SOL.`;

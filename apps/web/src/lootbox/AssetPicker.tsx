@@ -6,6 +6,7 @@ import {
 	Layers3,
 	LockKeyhole,
 	Pencil,
+
 	Search,
 	ShieldAlert,
 	Sparkles,
@@ -14,6 +15,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import {
 	type AssetSearchResponse,
+
 	type DraftAsset,
 	loadPrizePoolItem,
 	LOCAL_PRIZE_POOL_MAX,
@@ -54,6 +56,7 @@ export function AssetPicker({ owner, onClose, onPick }: Props) {
 	const [tokens, setTokens] = useState(emptyTokens);
 	const [nfts, setNfts] = useState(emptyNfts);
 	const [loading, setLoading] = useState(false);
+
 	const [error, setError] = useState("");
 	const [manualKind, setManualKind] = useState<"token" | "nft">("token");
 	const [manualMint, setManualMint] = useState("");
@@ -64,6 +67,7 @@ export function AssetPicker({ owner, onClose, onPick }: Props) {
 	>(
 		[],
 	);
+
 	const [resolvingPool, setResolvingPool] = useState(false);
 	const poolRequest = useRef(0);
 	const searchRequest = useRef(0);
@@ -127,6 +131,7 @@ export function AssetPicker({ owner, onClose, onPick }: Props) {
 			setLoading(false);
 			return;
 		}
+
 		const timer = setTimeout(() => {
 			setLoading(true);
 			setError("");
@@ -186,6 +191,7 @@ export function AssetPicker({ owner, onClose, onPick }: Props) {
 			const items = await Promise.all(
 				poolSelection.map((item) => loadPrizePoolItem(item, owner)),
 			);
+
 			if (!mounted.current || request !== poolRequest.current) return;
 			onPick({
 				id: identifier(),
@@ -199,6 +205,7 @@ export function AssetPicker({ owner, onClose, onPick }: Props) {
 				poolItems: items,
 				...(items[0]?.image ? { icon: items[0].image } : {}),
 			});
+
 			dismiss();
 		} catch (reason: unknown) {
 			if (!mounted.current || request !== poolRequest.current) return;

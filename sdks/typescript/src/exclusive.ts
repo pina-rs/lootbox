@@ -44,6 +44,7 @@ async function sha256(
 	const length = parts.reduce((total, part) => total + part.length, 0);
 	const input = new Uint8Array(length);
 	let offset = 0;
+
 	for (const part of parts) {
 		input.set(part, offset);
 		offset += part.length;
@@ -80,6 +81,7 @@ export function validateExclusiveLayers(
 	if (layers.length < 1 || layers.length > MAX_EXCLUSIVE_LAYERS) {
 		throw new ExclusiveNftError("a collection needs 1 to 12 layers");
 	}
+
 	for (const [index, layer] of layers.entries()) {
 		const total = layer.reduce((sum, weight) => sum + BigInt(weight), 0n);
 		if (
@@ -102,14 +104,17 @@ async function layerDraw(
 	bound: bigint,
 ): Promise<bigint> {
 	const threshold = (U64_MAX + 1n - bound) % bound;
+
 	for (let round = 0; round < ROUNDS; round++) {
 		const parts = round === 0
 			? [seed, LAYER_LABEL, Uint8Array.of(layer)]
 			: [seed, LAYER_LABEL, Uint8Array.of(layer), Uint8Array.of(round)];
 		const digest = await sha256(parts);
 		const candidate = new DataView(digest.buffer).getBigUint64(0, true);
+
 		if (candidate >= threshold) return candidate % bound;
 	}
+
 	throw new ExclusiveNftError("entropy rejection exhausted after 8 rounds");
 }
 
@@ -121,8 +126,10 @@ export async function exclusiveTraits(
 	if (seed.length !== 32) {
 		throw new ExclusiveNftError("the seed must be 32 bytes");
 	}
+
 	validateExclusiveLayers(layers);
 	const traits: number[] = [];
+
 	for (const [index, layer] of layers.entries()) {
 		const total = layer.reduce((sum, weight) => sum + BigInt(weight), 0n);
 		const target = await layerDraw(seed, index, total);
@@ -133,6 +140,7 @@ export async function exclusiveTraits(
 		});
 		traits.push(slot);
 	}
+
 	return Object.freeze(traits);
 }
 
@@ -148,15 +156,18 @@ export async function deriveExclusiveTraits(
 	layers: readonly ExclusiveLayer[],
 ): Promise<Readonly<{ seed: Uint8Array; traits: readonly number[] }>> {
 	const seed = await exclusiveNftSeed(template, opening, entropy);
+
 	return Object.freeze({ seed, traits: await exclusiveTraits(seed, layers) });
 }
 
 /** On-chain leaf name `{namePrefix} #{serial}`. */
 export function exclusiveName(namePrefix: string, serial: bigint): string {
 	const name = `${namePrefix} #${serial}`;
+
 	if (utf8.encode(name).length > MAX_EXCLUSIVE_NAME_BYTES) {
 		throw new ExclusiveNftError("the name exceeds Bubblegum's 32-byte cap");
 	}
+
 	return name;
 }
 
@@ -169,6 +180,7 @@ export function exclusiveUri(
 	const hex = traits.map((value) => value.toString(16).padStart(2, "0")).join(
 		"",
 	);
+
 	return `${baseUri}${hex}-${serial}.json`;
 }
 
@@ -182,9 +194,11 @@ export function encodeExclusiveLayer(layer: ExclusiveLayer): Uint8Array {
 	validateExclusiveLayers([layer]);
 	const bytes = new Uint8Array(MAX_EXCLUSIVE_TRAITS * 4);
 	const view = new DataView(bytes.buffer);
+
 	for (const [slot, weight] of layer.entries()) {
 		view.setUint32(slot * 4, weight, true);
 	}
+
 	return bytes;
 }
 
@@ -210,6 +224,7 @@ export function exclusiveTreeSpace(
 	const canopy = canopyDepth === 0
 		? 0n
 		: 32n * ((1n << BigInt(canopyDepth + 1)) - 2n);
+
 	return 2n + 54n + 24n + BigInt(maxBufferSize) * changeLog + rightmostPath +
 		canopy;
 }
@@ -229,8 +244,10 @@ export const EXCLUSIVE_TREE_SHAPE: ExclusiveTreeShape = Object.freeze({
 /** Bubblegum fees an attachment escrows for `quantity` mints. */
 export function exclusiveMintFeeEscrow(quantity: bigint): bigint {
 	const escrow = quantity * BUBBLEGUM_MINT_V2_FEE_LAMPORTS;
+
 	if (quantity < 0n || escrow > U64_MAX) {
 		throw new ExclusiveNftError("the mint-fee escrow exceeds the u64 range");
 	}
+
 	return escrow;
 }

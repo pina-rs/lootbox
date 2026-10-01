@@ -76,6 +76,7 @@ function Preview() {
 }
 
 const root = document.getElementById("root");
+
 if (!root) throw new Error("Missing preview root");
 createRoot(root).render(
 	<StrictMode>

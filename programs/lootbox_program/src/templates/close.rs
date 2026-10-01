@@ -109,12 +109,14 @@ impl<'a> ProcessAccountInfos<'a> for CloseTemplateOpeningAccounts<'a> {
 		if expected_opening != opening_address {
 			return Err(ProgramError::InvalidSeeds);
 		}
+
 		assert_reward_escrow(self.reward_escrow, &randomness_address)?;
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 
 		if randomness.authority != opening_address || randomness.queue != state.oracle_queue {
 			return Err(lootbox_error(LootboxError::InvalidRandomness));
 		}
+
 		drop(opening);
 
 		let opening_signer = opening_seeds_with_bump.to_signer();
@@ -146,10 +148,13 @@ impl<'a> ProcessAccountInfos<'a> for CloseServiceVaultAccounts<'a> {
 		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
+
 		if !has_service_vault(&state) {
 			return Err(lootbox_error(LootboxError::InvalidServiceAccount));
 		}
+
 		assert_service_vault(self.service_vault, &template_address, &state)?;
+
 		let supply = assert_template_mint(
 			self.box_mint,
 			&template_address,
@@ -163,9 +168,11 @@ impl<'a> ProcessAccountInfos<'a> for CloseServiceVaultAccounts<'a> {
 
 		let service_vault_bump = state.service_vault_bump;
 		let balance = self.service_vault.lamports();
+
 		if balance == 0 {
 			return Ok(());
 		}
+
 		let service_vault_bump = [service_vault_bump];
 		let service_vault_signer = PdaSigner::from_slices([
 			SEED_SERVICE_VAULT,

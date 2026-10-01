@@ -55,17 +55,22 @@ pub fn format_text(rendered: &RenderedInstruction) -> String {
 	out.push_str("program: ");
 	out.push_str(&rendered.program_id.to_string());
 	out.push_str("\naccounts:\n");
+
 	for account in &rendered.accounts {
 		out.push_str("  ");
 		out.push_str(&account.pubkey.to_string());
+
 		if account.signer {
 			out.push_str(" [signer]");
 		}
+
 		if account.writable {
 			out.push_str(" [writable]");
 		}
+
 		out.push('\n');
 	}
+
 	out.push_str("data (base64): ");
 	out.push_str(&rendered.data_base64);
 	out.push('\n');

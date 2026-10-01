@@ -27,6 +27,7 @@ import {
 	type Signature,
 } from "@solana/kit";
 import {
+
 	CLASSIC_TOKEN_PROGRAM,
 	createSwitchboardOracle,
 	createTemplatePlan,
@@ -35,6 +36,7 @@ import {
 	LootboxClient,
 	SWITCHBOARD_PROGRAM,
 } from "../src/index.js";
+
 import { installPatientFetch, loadKeypair, verifiedRpcUrl } from "./cli.js";
 
 const LAMPORTS_PER_SOL = 1_000_000_000n;
@@ -261,6 +263,7 @@ const steps: Step[] = [];
 for (const transaction of sent) {
 	steps.push(await measure(transaction));
 }
+
 const format = (lamports: bigint) =>
 	`${lamports < 0n ? "-" : ""}${(lamports < 0n ? -lamports : lamports)}`
 		.padStart(

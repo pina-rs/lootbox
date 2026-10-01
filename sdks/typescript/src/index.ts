@@ -80,6 +80,7 @@ export type PlanErrorCode =
 	| "ZERO_REWARD"
 	| "WEIGHT_LIMIT_EXCEEDED"
 	| "NEGATIVE_REWARD"
+
 	| "OUT_OF_RANGE"
 	| "ARITHMETIC_OVERFLOW"
 	| "UNSAFE_INTEGER";
@@ -126,6 +127,7 @@ export function createLootboxPlan(input: {
 			"maxSupply must be greater than zero",
 		);
 	}
+
 	assertU64(maxSupply, "maxSupply");
 
 	if (input.outcomes.length === 0) {
@@ -168,6 +170,7 @@ export function createLootboxPlan(input: {
 				`outcome ${index} must promise a positive reward so the timeout floor stays positive`,
 			);
 		}
+
 		assertU64(weight, `outcomes[${index}].weight`);
 		assertU64(rewardLamports, `outcomes[${index}].rewardLamports`);
 

@@ -26,6 +26,7 @@ import {
 	getBase58Decoder,
 	getBase64Encoder,
 } from "@solana/kit";
+
 import {
 	type ChainOpening,
 	type ChainTemplate,
@@ -34,6 +35,7 @@ import {
 	LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
 	LootboxClient,
 	SwitchboardError,
+
 	TEMPLATE_OPENING_STATE_DISCRIMINATOR,
 } from "../src/index.js";
 import {
@@ -42,6 +44,7 @@ import {
 	parseArgs,
 	parseCluster,
 	verifiedRpcUrl,
+
 } from "./cli.js";
 
 /** `TemplateOpeningState.template` follows the discriminator and version. */
@@ -92,6 +95,7 @@ const claim = args.flag("claim");
 const intervalMs = Number(args.optional("interval-ms") ?? "2000");
 const rpcUrl = await verifiedRpcUrl(cluster, args.optional("rpc"));
 const payer = await loadKeypair(args.required("keypair"));
+
 const client = new LootboxClient(rpcUrl, payer, (message, signature) => {
 	if (signature) log("info", "transaction", { step: message, signature });
 });
@@ -178,6 +182,7 @@ async function advance(
 				seedSlot: opening.data.seedSlot,
 				slot,
 			});
+
 			return false;
 		}
 
@@ -186,17 +191,20 @@ async function advance(
 
 		await client.settle(template, opening, accounts, proof);
 		log("info", "settled", fields);
+
 		return true;
 	}
 
 	if (opening.data.status === STATUS.revealed) {
 		await client.allocate(template, opening);
 		log("info", "allocated", fields);
+
 		return true;
 	}
 
 	await client.claim(opening.address);
 	log("info", "claimed", { ...fields, beneficiary: opening.data.beneficiary });
+
 	return true;
 }
 

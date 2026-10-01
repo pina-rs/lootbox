@@ -27,6 +27,7 @@ export function normalizeRustVersionEnvelopeTests(source) {
 		/envelope\((\d+) as u8\)/g,
 		"envelope($1_u8)",
 	);
+
 	if (!isInitialVersionContract(withoutCasts)) return withoutCasts;
 	return withoutCasts.replace(
 		/^\t\tlet error = \w+::try_from_bytes\(&envelope\(0_u8\)\)\.err\(\)\.expect\("a stale envelope must fail"\);\n\t\tassert_eq!\(error, \w+::Stale \{ stored: 0 \}\);\n\t\tassert_eq!\(\w+::Stale \{ stored: 0 \}\.to_string\(\), "[^"]*"\);\n/gm,
@@ -85,13 +86,16 @@ export function normalizeTypeScriptEventVersionReads(source) {
 function normalizeDirectory(directory) {
 	for (const entry of readdirSync(directory, { withFileTypes: true })) {
 		const path = join(directory, entry.name);
+
 		if (entry.isDirectory()) {
 			normalizeDirectory(path);
 			continue;
 		}
+
 		if (!entry.name.endsWith(".dart")) continue;
 		const source = readFileSync(path, "utf8");
 		const normalized = normalizeDartHashes(source);
+
 		if (normalized !== source) writeFileSync(path, normalized);
 	}
 }
@@ -99,15 +103,18 @@ function normalizeDirectory(directory) {
 function normalizeTypeScriptDirectory(directory) {
 	for (const entry of readdirSync(directory, { withFileTypes: true })) {
 		const path = join(directory, entry.name);
+
 		if (entry.isDirectory()) {
 			normalizeTypeScriptDirectory(path);
 			continue;
 		}
+
 		if (!entry.name.endsWith(".ts")) continue;
 		const source = readFileSync(path, "utf8");
 		const normalized = normalizeTypeScriptEventVersionReads(
 			normalizeTypeScriptTypeArguments(source),
 		);
+
 		if (normalized !== source) writeFileSync(path, normalized);
 	}
 }
@@ -115,15 +122,18 @@ function normalizeTypeScriptDirectory(directory) {
 function normalizeRustAccounts(directory) {
 	for (const entry of readdirSync(directory, { withFileTypes: true })) {
 		const path = join(directory, entry.name);
+
 		if (entry.isDirectory()) {
 			normalizeRustAccounts(path);
 			continue;
 		}
+
 		if (!entry.name.endsWith(".rs")) continue;
 		const source = readFileSync(path, "utf8");
 		const normalized = normalizeRustVersionEnvelopeGuards(
 			normalizeRustVersionEnvelopeTests(source),
 		);
+
 		if (normalized !== source) writeFileSync(path, normalized);
 	}
 }
@@ -131,9 +141,11 @@ function normalizeRustAccounts(directory) {
 function normalizeRustEvents(directory) {
 	for (const entry of readdirSync(directory, { withFileTypes: true })) {
 		const path = join(directory, entry.name);
+
 		if (!entry.isFile() || !entry.name.endsWith(".rs")) continue;
 		const source = readFileSync(path, "utf8");
 		const normalized = normalizeRustEventProjectionTests(source);
+
 		if (normalized !== source) writeFileSync(path, normalized);
 	}
 }
@@ -143,21 +155,25 @@ export function normalizeRustManifest(source) {
 		.replace(/^name = "[^"]+"$/m, 'name = "lootbox_program_client"')
 		.replace(/version = "[^"]+"/, "version.workspace = true")
 		.replace(/edition = "[^"]+"/, "edition.workspace = true");
+
 	if (!/^name = "lootbox_program_client"$/m.test(manifest)) {
 		manifest = manifest.replace(
 			"[package]\n",
 			'[package]\nname = "lootbox_program_client"\n',
 		);
 	}
+
 	if (!/^publish = false$/m.test(manifest)) {
 		manifest = manifest.replace("[package]\n", "[package]\npublish = false\n");
 	}
+
 	if (!manifest.includes('description = "Generated interface')) {
 		manifest = manifest.replace(
 			"[dependencies]",
 			'description = "Generated interface and CPI helpers for the Pina Lootbox program"\nlicense.workspace = true\nhomepage.workspace = true\nrepository.workspace = true\n\n[dependencies]',
 		);
 	}
+
 	return manifest;
 }
 
@@ -171,9 +187,11 @@ export function normalizeDartManifest(source, version) {
 			/^description: .*$/m,
 			"description: Generated Codama client for the Pina lootbox program.",
 		);
+
 	if (!/^publish_to: none$/m.test(manifest)) {
 		manifest = `publish_to: none\n${manifest}`;
 	}
+
 	if (/^repository:/m.test(manifest)) {
 		manifest = manifest.replace(
 			/^repository:.*$/m,
@@ -185,12 +203,15 @@ export function normalizeDartManifest(source, version) {
 			`$1repository: ${repository}\n`,
 		);
 	}
+
 	return manifest;
 }
 
 function manifestVersion(source, pattern, label) {
 	const version = source.match(pattern)?.[1];
+
 	if (!version) throw new Error(`Cannot read ${label} package version`);
+
 	return version;
 }
 
@@ -210,6 +231,7 @@ export function assertWorkspaceVersions(
 		/^version:\s*([^\s#]+)/m,
 		"Dart SDK",
 	);
+
 	if (cargoVersion !== typescriptVersion || dartVersion !== typescriptVersion) {
 		throw new Error(
 			`Client versions must match: Cargo ${cargoVersion}, Dart ${dartVersion}, TypeScript ${typescriptVersion}`,
@@ -227,14 +249,17 @@ function normalizeRustClient(root) {
 
 	const library = readFileSync(libraryPath, "utf8");
 	let normalizedLibrary = library;
+
 	for (const module of ["cpi", "proof"]) {
 		if (!normalizedLibrary.includes(`pub mod ${module};`)) {
 			normalizedLibrary = `pub mod ${module};\n${normalizedLibrary}`;
 		}
 	}
+
 	if (!normalizedLibrary.includes("pub use proof::*;")) {
 		normalizedLibrary = `${normalizedLibrary.trimEnd()}\npub use proof::*;\n`;
 	}
+
 	if (normalizedLibrary !== library) {
 		writeFileSync(libraryPath, normalizedLibrary);
 	}
@@ -242,6 +267,7 @@ function normalizeRustClient(root) {
 
 function ensureExport(path, statement) {
 	const source = readFileSync(path, "utf8");
+
 	if (!source.includes(statement)) {
 		writeFileSync(path, `${source.trimEnd()}\n${statement}\n`);
 	}
@@ -272,6 +298,7 @@ if (
 		root,
 		"clients/dart/pubspec.yaml",
 	);
+
 	writeFileSync(
 		dartManifestPath,
 		normalizeDartManifest(readFileSync(dartManifestPath, "utf8"), version),
@@ -308,6 +335,7 @@ if (
 		"clients/typescript/lootbox_program/package.json",
 	);
 	const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+
 	manifest.name = "@pina-rs/lootbox-program-client";
 	manifest.version = version;
 	manifest.private = true;
@@ -318,6 +346,7 @@ if (
 		"https://github.com/pina-rs/lootbox/tree/main/clients/typescript/lootbox_program";
 	manifest.publishConfig = { access: "public" };
 	manifest.files = ["src"];
+
 	const kitRange = sdkKitRange(root);
 	manifest.dependencies["@solana/program-client-core"] = kitRange;
 	manifest.peerDependencies["@solana/kit"] = kitRange;
@@ -337,8 +366,10 @@ export function sdkKitRange(root) {
 		readFileSync(resolve(root, "sdks/typescript/package.json"), "utf8"),
 	);
 	const range = sdk.dependencies?.["@solana/kit"];
+
 	if (typeof range !== "string" || range.length === 0) {
 		throw new Error("sdks/typescript/package.json must depend on @solana/kit");
 	}
+
 	return range;
 }

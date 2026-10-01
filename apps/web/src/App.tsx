@@ -342,9 +342,9 @@ export default function App() {
 	]);
 	const delivered = receipt?.data.status === 3;
 	const closable = delivered || receipt?.data.status === 4;
+
 	const visiblePrize = receipt && receipt.data.status >= 2 &&
 		(revealed.has(receipt.address) || delivered);
-
 	const prize = visiblePrize
 		? workspace.bundles[receipt.data.selectedBundle]
 		: undefined;
@@ -373,11 +373,11 @@ export default function App() {
 	const revealPending = Boolean(
 		selected && selected.data.opensAt > workspace.chainTime,
 	);
-
 	const recoveryRetired = Boolean(
 		selected && selected.data.status === 2 && !treasuryLocked,
 	);
 	const holderOpenable = treasuryLocked || recoveryRetired;
+
 	const recoveryAvailable = Boolean(
 		selected && selected.data.status === 1 && !treasuryLocked && !revealPending,
 	);

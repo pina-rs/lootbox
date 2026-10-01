@@ -235,7 +235,6 @@ for (const bundle of file.bundles) {
 		});
 		// A missing source account holds nothing; any RPC failure propagates.
 		const sourceAccount = await fetchMaybeToken(rpc, source);
-
 		const balance = sourceAccount.exists ? sourceAccount.data.amount : 0n;
 
 		mints.set(key, {

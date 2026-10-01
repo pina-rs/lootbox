@@ -1378,8 +1378,8 @@ fn assert_metadata(mint: &AccountView, name: &[u8; 32], uri: &[u8; 200]) -> Prog
 	}
 	let mut strings = metadata.get(64..).ok_or(ProgramError::InvalidAccountData)?;
 	let metadata_name = take_metadata_string(&mut strings)?;
-
 	let _symbol = take_metadata_string(&mut strings)?;
+
 	let metadata_uri = take_metadata_string(&mut strings)?;
 	let name_length = name
 		.iter()

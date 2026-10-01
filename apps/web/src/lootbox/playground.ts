@@ -591,6 +591,7 @@ export function creatorErrors(
 
 	for (const [index, row] of input.rows.entries()) {
 		const key = `row-${index}`;
+
 		check(`${key}-label`, () => {
 			if (
 				!row.label.trim() || new TextEncoder().encode(row.label).length > 64

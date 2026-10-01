@@ -3118,6 +3118,7 @@ export class LootboxClient {
 			consumerContext,
 			bump,
 		})], "Burn box & commit randomness");
+
 		return generated.fetchTemplateOpeningState(this.rpc, opening, {
 			commitment,
 		});

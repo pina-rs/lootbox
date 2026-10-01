@@ -20,7 +20,6 @@ void main() {
           as Map<String, dynamic>;
   final prizePoolVector =
       jsonDecode(File('../../tests/vectors/prize-pool.json').readAsStringSync())
-
           as Map<String, dynamic>;
   PrizePoolItem poolItem(
     Address asset, {
@@ -40,6 +39,7 @@ void main() {
     leafIndex: 0,
     proof: proof ?? [nft],
   );
+
   group('finite templates', () {
     test('computes full collateral and exact initial odds', () {
       final plan = TemplatePlan(

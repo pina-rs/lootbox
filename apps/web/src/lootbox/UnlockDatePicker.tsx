@@ -35,7 +35,6 @@ export function UnlockDatePicker({ value, disabled, error, onChange }: Props) {
 	const windowLength = selected
 		? Math.max(0, selected.getTime() - Date.now())
 		: 0;
-
 	const windowDays = Math.floor(windowLength / 86_400_000);
 	const windowHours = Math.floor(windowLength % 86_400_000 / 3_600_000);
 

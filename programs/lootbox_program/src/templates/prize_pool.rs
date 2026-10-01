@@ -1092,6 +1092,7 @@ impl<'a> ProcessAccountInfos<'a> for PreparePrizePoolItemAccounts<'a> {
 		{
 			return Err(lootbox_error(LootboxError::PrizePoolFull));
 		}
+
 		let pool_index = pool.deposit_cursor.get();
 		let tree = pool.tree;
 		drop(pool_data);
@@ -1216,6 +1217,7 @@ impl<'a> ProcessAccountInfos<'a> for DepositPrizePoolItemAccounts<'a> {
 			return Err(lootbox_error(LootboxError::PrizePoolFull));
 		}
 		let pool_index = pool.deposit_cursor.get();
+
 		let previous_manifest = pool.manifest_accumulator;
 		let mut bitmap = AllocVec::with_capacity(pool.unavailable().len() + 1);
 		bitmap.extend_from_slice(pool.unavailable());
@@ -1241,6 +1243,7 @@ impl<'a> ProcessAccountInfos<'a> for DepositPrizePoolItemAccounts<'a> {
 		}
 		let semantic_metadata_hash = item.semantic_metadata_hash;
 		drop(item);
+
 		let next_manifest = next_pool_manifest(
 			&previous_manifest,
 			&pool_address,
@@ -1359,6 +1362,7 @@ impl<'a> ProcessAccountInfos<'a> for SealPrizePoolAccounts<'a> {
 			version,
 		);
 		bundle.commitments[index * 32..(index + 1) * 32].copy_from_slice(&commitment);
+
 		drop(bundle);
 		update_pool(
 			self.prize_pool,
@@ -1470,7 +1474,6 @@ impl<'a> ProcessAccountInfos<'a> for ClaimPrizePoolItemAccounts<'a> {
 		{
 			return Err(lootbox_error(LootboxError::InvalidPrizePool));
 		}
-
 		record_claim(
 			&mut opening,
 			&mut bundle,
@@ -1479,6 +1482,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimPrizePoolItemAccounts<'a> {
 		)?;
 		drop(bundle);
 		drop(opening);
+
 		update_pool(
 			self.prize_pool,
 			&PrizePoolStatePatch::new().claimed_count(claimed_count),

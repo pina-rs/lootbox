@@ -42,7 +42,6 @@ impl<'a> AccountSpec<'a> {
 		if !view.is_writable() {
 			return Err(ProgramError::InvalidAccountData);
 		}
-
 		Ok(Self {
 			view,
 			writable: true,
@@ -61,7 +60,6 @@ fn assert_proof_bound(length: usize) -> ProgramResult {
 	if length > MAX_BUBBLEGUM_PROOF_ACCOUNTS {
 		return Err(ProgramError::InvalidArgument);
 	}
-
 	Ok(())
 }
 
@@ -77,14 +75,11 @@ fn invoke_with_proof(
 		.len()
 		.checked_add(proof_accounts.len())
 		.ok_or(ProgramError::InvalidArgument)?;
-
 	if count > MAX_CPI_ACCOUNTS {
 		return Err(ProgramError::InvalidArgument);
 	}
-
 	let mut instruction_accounts = Vec::with_capacity(count);
 	let mut account_views = Vec::with_capacity(count);
-
 	for account in fixed {
 		instruction_accounts.push(InstructionAccount::new(
 			account.view.address(),
@@ -93,12 +88,10 @@ fn invoke_with_proof(
 		));
 		account_views.push(account.view);
 	}
-
 	for account in proof_accounts {
 		instruction_accounts.push(InstructionAccount::readonly(account.address()));
 		account_views.push(account);
 	}
-
 	let instruction = InstructionView {
 		program_id: program.address(),
 		accounts: &instruction_accounts,

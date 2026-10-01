@@ -11,7 +11,6 @@ Instruction withBubblegumProofAccounts(
   Iterable<Address> proofAccounts,
 ) {
   final proof = List<Address>.unmodifiable(proofAccounts);
-
   if (proof.length > maxBubblegumProofAccounts) {
     throw RangeError.range(
       proof.length,
@@ -20,9 +19,7 @@ Instruction withBubblegumProofAccounts(
       'proofAccounts',
     );
   }
-
   final accounts = instruction.accounts;
-
   if (accounts == null || accounts.isEmpty) {
     throw StateError('instruction has no generated proof placeholder');
   }

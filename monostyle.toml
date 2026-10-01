@@ -24,4 +24,7 @@ patterns = [
 	"packages/exclusive-nft-art/src/art/**",
 	"packages/exclusive-nft-art/src/layers.ts",
 	"tests/fixtures/**",
+	# Pina-rendered program clients and the generated ABI layout test.
+	"clients/**/src/generated/**",
+	"programs/*/tests/abi_layout.rs",
 ]

@@ -38,12 +38,7 @@ pub struct CreateExclusiveCollection {
 }
 
 impl CreateExclusiveCollection {
-	pub fn new(
-		admin: solana_pubkey::Pubkey,
-		exclusive_collection: solana_pubkey::Pubkey,
-		core_collection: solana_pubkey::Pubkey,
-		core_program: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(admin: solana_pubkey::Pubkey, exclusive_collection: solana_pubkey::Pubkey, core_collection: solana_pubkey::Pubkey, core_program: solana_pubkey::Pubkey) -> Self {
 		Self {
 			admin,
 			exclusive_collection,
@@ -53,10 +48,7 @@ impl CreateExclusiveCollection {
 		}
 	}
 
-	pub fn instruction(
-		&self,
-		data: CreateExclusiveCollectionInstructionData,
-	) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: CreateExclusiveCollectionInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -68,22 +60,10 @@ impl CreateExclusiveCollection {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.admin, true));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.exclusive_collection,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.core_collection,
-			true,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.core_program,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.system_program,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new(self.exclusive_collection, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.core_collection, true));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.core_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -99,21 +79,15 @@ pub struct CreateExclusiveCollectionInstructionData {
 }
 
 impl CreateExclusiveCollectionInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut CreateExclusiveCollectionInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes =
-			vec![0u8; core::mem::size_of::<CreateExclusiveCollectionInstructionWireZc>()];
-		<CreateExclusiveCollectionInstructionWire as pina::PinaPodFixed>::initialize(
-			&mut bytes,
-			|data| {
-				configure(data);
-				data.discriminator = CREATE_EXCLUSIVE_COLLECTION_DISCRIMINATOR;
-				data.migration_version = CREATE_EXCLUSIVE_COLLECTION_MIGRATION_VERSION;
-				Ok(())
-			},
-		)
-		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+	pub fn new(configure: impl FnOnce(&mut CreateExclusiveCollectionInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+		let mut bytes = vec![0u8; core::mem::size_of::<CreateExclusiveCollectionInstructionWireZc>()];
+		<CreateExclusiveCollectionInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
+			configure(data);
+			data.discriminator = CREATE_EXCLUSIVE_COLLECTION_DISCRIMINATOR;
+			data.migration_version = CREATE_EXCLUSIVE_COLLECTION_MIGRATION_VERSION;
+			Ok(())
+		})
+			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

@@ -6,6 +6,7 @@
 	clippy::empty_line_after_doc_comments,
 	clippy::too_many_arguments
 )]
+
 #![allow(rustdoc::broken_intra_doc_links)]
 
 use pina::Address;
@@ -42,7 +43,8 @@ impl ExclusiveAttachmentState {
 	/// Whether `data` carries this account's discriminator.
 	#[inline(always)]
 	pub fn matches(data: &[u8]) -> bool {
-		data.len() >= 2 && data[..2] == EXCLUSIVE_ATTACHMENT_STATE_DISCRIMINATOR
+		data.len() >= 2
+			&& data[..2] == EXCLUSIVE_ATTACHMENT_STATE_DISCRIMINATOR
 	}
 
 	/// Reads this account's fields from the account's data.
@@ -57,26 +59,35 @@ impl ExclusiveAttachmentState {
 		let mut cursor = 0usize;
 		cursor += 2;
 
-		let template = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let template = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let bundle = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let bundle = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let collection = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let collection = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let layers_hash: [u8; 32] = data.get(cursor..cursor + 32)?.try_into().ok()?;
+		let layers_hash: [u8; 32] = data.get(cursor..cursor + 32)?
+		.try_into().ok()?;
 		cursor += 32;
-		let quantity: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let quantity: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let minted: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let minted: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let mint_fee_lamports: u64 =
-			u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let mint_fee_lamports: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let asset_index: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
+		let asset_index: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
+		.try_into().ok()?);
 		cursor += 1;
-		let bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
+		let bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
+		.try_into().ok()?);
 		cursor += 1;
-		let fee_vault_bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
+		let fee_vault_bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
+		.try_into().ok()?);
 
 		Some(ExclusiveAttachmentState {
 			template,

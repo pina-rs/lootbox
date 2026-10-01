@@ -12,7 +12,7 @@
 #[derive(pina::PinaPod)]
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct ExclusiveNftMintedEvent {
-	/// Emitted once per minted Exclusive Lootbox NFT.
+/// Emitted once per minted Exclusive Lootbox NFT.
 	pub discriminator: u8,
 	pub migration_version: u8,
 	/// Template PDA of the claimed opening.
@@ -48,9 +48,7 @@ impl ExclusiveNftMintedEvent {
 	/// Read one current-version event record from transaction-log bytes.
 	///
 	/// Logs carry the record base64-encoded after `Program data: `; pass the decoded bytes here. Historical and future records are rejected; `try_from_bytes` tells them apart, and `project_from_bytes` projects historical records when this client ships their transitions.
-	pub fn from_bytes(
-		data: &[u8],
-	) -> Result<&ExclusiveNftMintedEventZc, solana_program_error::ProgramError> {
+	pub fn from_bytes(data: &[u8]) -> Result<&ExclusiveNftMintedEventZc, solana_program_error::ProgramError> {
 		let event = <Self as pina::PinaPodFixed>::read_exact(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidArgument)?;
 		if event.discriminator != EXCLUSIVE_NFT_MINTED_EVENT_DISCRIMINATOR {
@@ -78,21 +76,14 @@ impl core::fmt::Display for ExclusiveNftMintedEventVersionError {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		match self {
 			Self::InvalidData => write!(f, "invalid ExclusiveNftMintedEvent event data"),
-			Self::Stale { stored } => {
-				write!(
-					f,
-					"event migration version mismatch: expected 0, received {stored} (the log \
-					 predates this client; project it with the checked-in event history or decode \
-					 it with a client generated from the schema that wrote it)"
-				)
-			}
-			Self::Future { stored } => {
-				write!(
-					f,
-					"event migration version mismatch: expected 0, received {stored} (the log was \
-					 written by a newer program; upgrade this client)"
-				)
-			}
+			Self::Stale { stored } => write!(
+				f,
+				"event migration version mismatch: expected 0, received {stored} (the log predates this client; project it with the checked-in event history or decode it with a client generated from the schema that wrote it)"
+			),
+			Self::Future { stored } => write!(
+				f,
+				"event migration version mismatch: expected 0, received {stored} (the log was written by a newer program; upgrade this client)"
+			),
 		}
 	}
 }
@@ -110,9 +101,7 @@ impl ExclusiveNftMintedEvent {
 			return Err(ExclusiveNftMintedEventVersionError::InvalidData);
 		}
 		if event.migration_version > EXCLUSIVE_NFT_MINTED_EVENT_MIGRATION_VERSION {
-			return Err(ExclusiveNftMintedEventVersionError::Future {
-				stored: event.migration_version,
-			});
+			return Err(ExclusiveNftMintedEventVersionError::Future { stored: event.migration_version });
 		}
 		Ok(event)
 	}
@@ -135,28 +124,18 @@ impl core::fmt::Display for ExclusiveNftMintedEventProjectionError {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		match self {
 			Self::InvalidData => write!(f, "invalid ExclusiveNftMintedEvent event data"),
-			Self::InvalidLength { stored } => {
-				write!(
-					f,
-					"event migration version mismatch: expected 0, received {stored} (the log \
-					 length does not match the v{stored} schema)"
-				)
-			}
-			Self::Manual { from, to } => {
-				write!(
-					f,
-					"event migration version mismatch: expected 0, received {from} (the v{from} \
-					 to v{to} transition is manual, so only an on-chain projection or a client \
-					 generated from that schema can represent it)"
-				)
-			}
-			Self::Unknown { stored } => {
-				write!(
-					f,
-					"event migration version mismatch: expected 0, received {stored} (this client \
-					 has no checked-in projection for it)"
-				)
-			}
+			Self::InvalidLength { stored } => write!(
+				f,
+				"event migration version mismatch: expected 0, received {stored} (the log length does not match the v{stored} schema)"
+			),
+			Self::Manual { from, to } => write!(
+				f,
+				"event migration version mismatch: expected 0, received {from} (the v{from} to v{to} transition is manual, so only an on-chain projection or a client generated from that schema can represent it)"
+			),
+			Self::Unknown { stored } => write!(
+				f,
+				"event migration version mismatch: expected 0, received {stored} (this client has no checked-in projection for it)"
+			),
 		}
 	}
 }
@@ -198,14 +177,9 @@ impl ProjectedExclusiveNftMintedEvent {
 
 /// Adjacent projections from the checked-in migration manifest: `(from, to, automatic, source payload size, destination payload size, moves)`.
 #[allow(clippy::type_complexity)]
-const EXCLUSIVE_NFT_MINTED_EVENT_PROJECTION_STEPS: &[(
-	u32,
-	u32,
-	bool,
-	usize,
-	usize,
-	&[(usize, usize, usize)],
-)] = &[];
+const EXCLUSIVE_NFT_MINTED_EVENT_PROJECTION_STEPS: &[(u32, u32, bool, usize, usize, &[(usize, usize, usize)])] = &[
+
+];
 
 impl ExclusiveNftMintedEvent {
 	/// Project current or historical event bytes into the current shape, mirroring the runtime's `normalize_event_data`.
@@ -227,32 +201,22 @@ impl ExclusiveNftMintedEvent {
 		);
 		let expected = EXCLUSIVE_NFT_MINTED_EVENT_MIGRATION_VERSION;
 		if version > expected {
-			return Err(ExclusiveNftMintedEventProjectionError::Unknown {
-				stored: u32::from(version),
-			});
+			return Err(ExclusiveNftMintedEventProjectionError::Unknown { stored: u32::from(version) });
 		}
 		let source_version = version;
 		let mut payload = data[2..].to_vec();
 		while version != expected {
-			let Some((from, to, automatic, source_size, destination_size, moves)) =
-				EXCLUSIVE_NFT_MINTED_EVENT_PROJECTION_STEPS
-					.iter()
-					.find(|(from, ..)| *from == u32::from(version))
+			let Some((from, to, automatic, source_size, destination_size, moves)) = EXCLUSIVE_NFT_MINTED_EVENT_PROJECTION_STEPS
+				.iter()
+				.find(|(from, ..)| *from == u32::from(version))
 			else {
-				return Err(ExclusiveNftMintedEventProjectionError::Unknown {
-					stored: u32::from(version),
-				});
+				return Err(ExclusiveNftMintedEventProjectionError::Unknown { stored: u32::from(version) });
 			};
 			if !*automatic {
-				return Err(ExclusiveNftMintedEventProjectionError::Manual {
-					from: *from,
-					to: *to,
-				});
+				return Err(ExclusiveNftMintedEventProjectionError::Manual { from: *from, to: *to });
 			}
 			if payload.len() != *source_size {
-				return Err(ExclusiveNftMintedEventProjectionError::InvalidLength {
-					stored: u32::from(version),
-				});
+				return Err(ExclusiveNftMintedEventProjectionError::InvalidLength { stored: u32::from(version) });
 			}
 			let mut destination = vec![0_u8; *destination_size];
 			for (source_offset, destination_offset, size) in *moves {
@@ -282,7 +246,8 @@ mod exclusive_nft_minted_event_projection_tests {
 	fn record(version: u8, payload: &[u8]) -> Vec<u8> {
 		let mut data = vec![0_u8; 2 + payload.len()];
 		data[..1].copy_from_slice(&[1]);
-		data[1..2].copy_from_slice(&version.to_le_bytes()[..1]);
+		data[1..2]
+			.copy_from_slice(&version.to_le_bytes()[..1]);
 		data[2..].copy_from_slice(payload);
 		data
 	}
@@ -292,12 +257,7 @@ mod exclusive_nft_minted_event_projection_tests {
 		let future: u8 = 1;
 		let error = ExclusiveNftMintedEvent::project_from_bytes(&record(future, &[]))
 			.expect_err("a future version must fail");
-		assert_eq!(
-			error,
-			ExclusiveNftMintedEventProjectionError::Unknown {
-				stored: u32::from(future)
-			}
-		);
+		assert_eq!(error, ExclusiveNftMintedEventProjectionError::Unknown { stored: u32::from(future) });
 	}
 
 	#[test]

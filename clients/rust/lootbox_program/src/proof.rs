@@ -17,7 +17,6 @@ pub fn with_bubblegum_proof_accounts(
 	if proof_accounts.len() > MAX_BUBBLEGUM_PROOF_ACCOUNTS {
 		return Err(ProgramError::InvalidArgument);
 	}
-
 	instruction
 		.accounts
 		.pop()

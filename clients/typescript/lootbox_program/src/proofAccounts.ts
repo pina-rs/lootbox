@@ -25,7 +25,6 @@ export function withBubblegumProofAccounts<TProgram extends string>(
 			`Bubblegum proofs may contain at most ${MAX_BUBBLEGUM_PROOF_ACCOUNTS} accounts`,
 		);
 	}
-
 	if (instruction.accounts.length === 0) {
 		throw new RangeError("instruction has no generated proof placeholder");
 	}

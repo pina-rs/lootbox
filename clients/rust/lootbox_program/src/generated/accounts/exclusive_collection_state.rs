@@ -12,11 +12,11 @@
 #[derive(pina::PinaPod)]
 #[pinapod(crate = pina::pinapod, no_inherent)]
 pub struct ExclusiveCollectionState {
-	/// A protocol-level Exclusive Lootbox NFT collection shared by many lootboxes.
-	///
-	/// Drafts accept layer tables from the admin. Publishing freezes them under
-	/// `layers_hash`; afterwards the admin can only append trees. Every mint
-	/// takes the next global serial and lands in `active_tree`.
+/// A protocol-level Exclusive Lootbox NFT collection shared by many lootboxes.
+///
+/// Drafts accept layer tables from the admin. Publishing freezes them under
+/// `layers_hash`; afterwards the admin can only append trees. Every mint
+/// takes the next global serial and lands in `active_tree`.
 	pub discriminator: u8,
 	pub migration_version: u8,
 	/// Loads layers, appends trees, and publishes; a multisig on mainnet.
@@ -95,9 +95,7 @@ impl ExclusiveCollectionState {
 		.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)
 	}
 
-	pub fn from_bytes(
-		data: &[u8],
-	) -> Result<&ExclusiveCollectionStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes(data: &[u8]) -> Result<&ExclusiveCollectionStateZc, solana_program_error::ProgramError> {
 		let account = <Self as pina::PinaPodFixed>::read_exact(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != EXCLUSIVE_COLLECTION_STATE_DISCRIMINATOR {
@@ -109,9 +107,7 @@ impl ExclusiveCollectionState {
 		Ok(account)
 	}
 
-	pub fn from_bytes_mut(
-		data: &mut [u8],
-	) -> Result<&mut ExclusiveCollectionStateZc, solana_program_error::ProgramError> {
+	pub fn from_bytes_mut(data: &mut [u8]) -> Result<&mut ExclusiveCollectionStateZc, solana_program_error::ProgramError> {
 		let account = <Self as pina::PinaPodFixed>::read_exact_mut(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidAccountData)?;
 		if account.discriminator != EXCLUSIVE_COLLECTION_STATE_DISCRIMINATOR {
@@ -125,10 +121,7 @@ impl ExclusiveCollectionState {
 }
 
 impl ExclusiveCollectionState {
-	pub fn find_pda(
-		admin: &solana_pubkey::Pubkey,
-		collection_id: u64,
-	) -> (solana_pubkey::Pubkey, u8) {
+	pub fn find_pda(admin: &solana_pubkey::Pubkey, collection_id: u64) -> (solana_pubkey::Pubkey, u8) {
 		solana_pubkey::Pubkey::find_program_address(
 			&[
 				"exclusive-collection".as_bytes(),
@@ -139,11 +132,7 @@ impl ExclusiveCollectionState {
 		)
 	}
 
-	pub fn create_pda(
-		admin: &solana_pubkey::Pubkey,
-		collection_id: u64,
-		bump: u8,
-	) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
+	pub fn create_pda(admin: &solana_pubkey::Pubkey, collection_id: u64, bump: u8) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
 		solana_pubkey::Pubkey::create_program_address(
 			&[
 				"exclusive-collection".as_bytes(),
@@ -156,6 +145,7 @@ impl ExclusiveCollectionState {
 	}
 }
 
+
 /// Whether raw account bytes are stale for this contract: the envelope names this account's discriminator and carries a version older than
 /// [`EXCLUSIVE_COLLECTION_STATE_MIGRATION_VERSION`]. Current or foreign bytes return false; decoding explains the difference.
 ///
@@ -163,6 +153,7 @@ impl ExclusiveCollectionState {
 pub fn exclusive_collection_state_needs_migration(_data: &[u8]) -> bool {
 	false
 }
+
 
 /// Why `ExclusiveCollectionState::try_from_bytes` rejected account bytes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -179,21 +170,14 @@ impl core::fmt::Display for ExclusiveCollectionStateVersionError {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		match self {
 			Self::InvalidData => write!(f, "invalid ExclusiveCollectionState account data"),
-			Self::Stale { stored } => {
-				write!(
-					f,
-					"migration version mismatch: expected 0, received {stored} (the data predates \
-					 this client; migrate it by sending a transaction to the program, or decode \
-					 it with a client generated from an older IDL)"
-				)
-			}
-			Self::Future { stored } => {
-				write!(
-					f,
-					"migration version mismatch: expected 0, received {stored} (the data was \
-					 written by a newer program; upgrade this client)"
-				)
-			}
+			Self::Stale { stored } => write!(
+				f,
+				"migration version mismatch: expected 0, received {stored} (the data predates this client; migrate it by sending a transaction to the program, or decode it with a client generated from an older IDL)"
+			),
+			Self::Future { stored } => write!(
+				f,
+				"migration version mismatch: expected 0, received {stored} (the data was written by a newer program; upgrade this client)"
+			),
 		}
 	}
 }
@@ -209,9 +193,7 @@ impl ExclusiveCollectionState {
 			return Err(ExclusiveCollectionStateVersionError::InvalidData);
 		}
 		if account.migration_version > EXCLUSIVE_COLLECTION_STATE_MIGRATION_VERSION {
-			return Err(ExclusiveCollectionStateVersionError::Future {
-				stored: account.migration_version,
-			});
+			return Err(ExclusiveCollectionStateVersionError::Future { stored: account.migration_version });
 		}
 		Ok(account)
 	}
@@ -230,18 +212,9 @@ mod exclusive_collection_state_version_error_tests {
 
 	#[test]
 	fn stale_and_future_versions_are_distinguishable() {
-		let error = ExclusiveCollectionState::try_from_bytes(&envelope(1_u8))
-			.err()
-			.expect("a future envelope must fail");
-		assert_eq!(
-			error,
-			ExclusiveCollectionStateVersionError::Future { stored: 1 }
-		);
-		assert_eq!(
-			ExclusiveCollectionStateVersionError::Future { stored: 1 }.to_string(),
-			"migration version mismatch: expected 0, received 1 (the data was written by a newer \
-			 program; upgrade this client)"
-		);
+		let error = ExclusiveCollectionState::try_from_bytes(&envelope(1_u8)).err().expect("a future envelope must fail");
+		assert_eq!(error, ExclusiveCollectionStateVersionError::Future { stored: 1 });
+		assert_eq!(ExclusiveCollectionStateVersionError::Future { stored: 1 }.to_string(), "migration version mismatch: expected 0, received 1 (the data was written by a newer program; upgrade this client)");
 		assert!(
 			ExclusiveCollectionState::try_from_bytes(&envelope(0_u8)).is_ok(),
 			"the current version must decode",

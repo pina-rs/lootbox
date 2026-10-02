@@ -15,11 +15,9 @@ String _hex(List<int> bytes) =>
     bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
 
 void main() {
-  final vectors =
-      jsonDecode(
-            File('../../tests/vectors/exclusive-nft.json').readAsStringSync(),
-          )
-          as Map<String, dynamic>;
+  final vectors = jsonDecode(
+    File('../../tests/vectors/exclusive-nft.json').readAsStringSync(),
+  ) as Map<String, dynamic>;
   final decoder = getAddressDecoder();
   Address addressOf(String hex) =>
       decoder.decode(Uint8List.fromList(_bytes(hex)));

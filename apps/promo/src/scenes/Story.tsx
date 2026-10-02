@@ -7,9 +7,6 @@ import {
 	AbsoluteFill,
 	Easing,
 	interpolate,
-	OffthreadVideo,
-	Sequence,
-	staticFile,
 	useCurrentFrame,
 	useVideoConfig,
 } from "remotion";
@@ -17,11 +14,13 @@ import {
 import { DEMO_WALLETS } from "../data/demo.ts";
 import { Bubble } from "../kit/Bubble.tsx";
 import { Chest } from "../kit/Chest.tsx";
+import { chestFlowFrame } from "../kit/chestFlow.ts";
 import { Coin } from "../kit/Coin.tsx";
 import {
 	blinks,
 	BOUNCE,
 	enter,
+	FPS,
 	mix,
 	POP,
 	progress,
@@ -268,10 +267,15 @@ export function StoryOpen() {
 	const hold = 24;
 	const pop = 74;
 	const charge = progress(frame, hold, pop - hold, (t) => t);
-	const shake = frame >= hold && frame < pop
-		? Math.sin(frame * 2.3) * (1 + charge * 4)
-		: 0;
 	const ringRadius = size * 0.62;
+	// The lid flies open 0.62 s into the big-prize reveal.
+	const burst = pop + Math.round(0.62 * FPS);
+	const chest = chestFlowFrame({
+		holdAt: hold / FPS,
+		waitAt: pop / FPS,
+		revealAt: pop / FPS,
+		reaction: "big-prize",
+	}, frame / FPS);
 
 	return (
 		<AbsoluteFill>
@@ -309,15 +313,7 @@ export function StoryOpen() {
 								strokeDashoffset={1 - charge}
 							/>
 						</svg>
-						<Chest
-							x={width / 2}
-							y={height * 0.55 + size * 0.42}
-							size={size}
-							rotate={shake}
-							squash={{ x: 1 + charge * 0.08, y: 1 - charge * 0.1 }}
-							open={charge * 0.4}
-							look={{ x: 0, y: -1 }}
-						/>
+
 						<Bubble
 							text="Now hold me…"
 							at={4}
@@ -329,33 +325,24 @@ export function StoryOpen() {
 						/>
 					</>
 				)
-				: (
-					<Sequence from={pop} layout="none">
-						<OffthreadVideo
-							src={staticFile("chest/big-prize.mp4")}
-							muted
-							style={{
-								position: "absolute",
-								left: (width - size * 1.4) / 2,
-								top: height * 0.55 - size * 0.78,
-								width: size * 1.4,
-								height: size * 1.4,
-								mixBlendMode: "darken",
-							}}
-						/>
-					</Sequence>
-				)}
+				: null}
+			<Chest
+				x={width / 2}
+				y={height * 0.55 + size * 0.42}
+				size={size}
+				frame={chest}
+			/>
 			<SparkleBurst
 				x={width / 2}
 				y={height * 0.4}
-				at={pop + 22}
+				at={burst}
 				radius={size * 0.7}
 				size={size * 0.06}
 			/>
 			<Confetti
 				x={width / 2}
 				y={height * 0.45}
-				at={pop + 24}
+				at={burst + 2}
 				count={80}
 				seed="story"
 			/>
@@ -376,8 +363,8 @@ export function StoryOpen() {
 				1 SOL!
 			</div>
 			<Sfx name="drumroll" at={hold} volume={0.55} />
-			<Sfx name="chest-creak" at={pop + 10} volume={0.5} />
-			<Sfx name="fanfare-short" at={pop + 26} volume={0.7} />
+			<Sfx name="chest-creak" at={pop + 12} volume={0.5} />
+			<Sfx name="fanfare-short" at={burst + 4} volume={0.7} />
 		</AbsoluteFill>
 	);
 }

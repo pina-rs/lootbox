@@ -16,7 +16,7 @@ export function LootboxCard({ card }: Readonly<{ card: Card }>) {
 		>
 			<div className="box-card-art">
 				<img
-					src={card.coverUrl ?? "/chest/chest-closed.webp"}
+					src={card.coverUrl ?? "/chest.svg"}
 					alt=""
 					loading="lazy"
 					width={400}

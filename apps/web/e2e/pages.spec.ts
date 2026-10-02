@@ -56,10 +56,6 @@ test("a base-path build resolves every asset and route", async ({ page, request 
 
 	for (
 		const file of [
-			"animations/cartoon-chest/big-prize.webm",
-			"animations/cartoon-chest/small-prize.mp4",
-			"animations/cartoon-chest/disappointed.webm",
-			"animations/cartoon-chest/disappointed-final.webp",
 			"metadata/box.png",
 			"metadata/empty-box.png",
 			"nft/empty-chest/0.png",

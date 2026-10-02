@@ -15,6 +15,7 @@ import { type ReactNode, useState } from "react";
 import { useRevalidator } from "react-router";
 import { friendlyError } from "../lib/errors.js";
 
+import { LivelyChest } from "../components/LivelyChest.js";
 import { toBase64 } from "../lib/bytes.js";
 import { usePublicConfig } from "../lib/public-config.js";
 import { buildSiwsMessage } from "../lib/siws.js";
@@ -217,7 +218,7 @@ export function RequireSignIn(
 
 	return (
 		<section className="card gate" aria-labelledby="gate-title">
-			<img src="/chest/chest-closed.webp" alt="" width={120} height={120} />
+			<LivelyChest className="gate-chest" />
 			<h2 id="gate-title">
 				{account ? "One quick signature" : "Connect your wallet"}
 			</h2>

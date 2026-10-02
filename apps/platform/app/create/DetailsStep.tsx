@@ -65,7 +65,7 @@ function CoverUpload(
 			<div className="cover-drop">
 				<img
 					className="cover-preview"
-					src={coverKey ? `/media/${coverKey}` : "/chest/chest-closed.webp"}
+					src={coverKey ? `/media/${coverKey}` : "/chest.svg"}
 					alt={coverKey ? "Your cover art" : ""}
 					width={96}
 					height={96}

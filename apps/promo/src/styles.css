@@ -1,0 +1,21 @@
+/*
+ * The videos load the site's own fonts, tokens, and component styles, so a
+ * frame of lootbox.so in a video is lootbox.so. Transitions stay off: every
+ * frame is drawn from props.
+ */
+@import "@fontsource/bungee/400.css";
+@import "@fontsource-variable/nunito/index.css";
+@import "@pina-rs/lootbox-ui/tokens.css";
+@import "@pina-rs/lootbox-ui/styles.css";
+@import "@pina-rs/lootbox-platform/styles.css";
+
+*,
+*::before,
+*::after {
+	transition: none !important;
+	animation: none !important;
+}
+
+body {
+	background: var(--ivory);
+}

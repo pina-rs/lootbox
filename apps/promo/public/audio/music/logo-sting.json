@@ -1,0 +1,45 @@
+{
+	"title": "logo-sting",
+	"bpm": 120,
+	"beatsPerBar": 4,
+	"beatSeconds": 0.5,
+	"barSeconds": 2,
+	"sampleRate": 48000,
+	"durationSeconds": 4,
+	"swing": null,
+	"sections": [
+		{
+			"name": "sting",
+			"startBar": 1,
+			"bars": 2,
+			"startSeconds": 0,
+			"endSeconds": 4
+		}
+	],
+	"bars": [
+		{
+			"bar": 1,
+			"startSeconds": 0,
+			"section": "sting"
+		},
+		{
+			"bar": 2,
+			"startSeconds": 2,
+			"section": "sting"
+		}
+	],
+	"markers": [
+		{
+			"name": "sparkle",
+			"seconds": 0
+		},
+		{
+			"name": "thunk",
+			"seconds": 0.5
+		},
+		{
+			"name": "bloom",
+			"seconds": 0.52
+		}
+	]
+}

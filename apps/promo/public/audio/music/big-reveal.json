@@ -1,0 +1,141 @@
+{
+	"title": "big-reveal",
+	"bpm": 124,
+	"beatsPerBar": 4,
+	"beatSeconds": 0.4839,
+	"barSeconds": 1.9355,
+	"sampleRate": 48000,
+	"durationSeconds": 33.4678,
+	"swing": null,
+	"sections": [
+		{
+			"name": "intro",
+			"startBar": 1,
+			"bars": 4,
+			"startSeconds": 0,
+			"endSeconds": 7.7419
+		},
+		{
+			"name": "build",
+			"startBar": 5,
+			"bars": 4,
+			"startSeconds": 7.7419,
+			"endSeconds": 15.4839
+		},
+		{
+			"name": "drop",
+			"startBar": 9,
+			"bars": 8,
+			"startSeconds": 15.4839,
+			"endSeconds": 30.9677
+		},
+		{
+			"name": "sting",
+			"startBar": 17,
+			"bars": 1,
+			"startSeconds": 30.9677,
+			"endSeconds": 32.9032
+		}
+	],
+	"bars": [
+		{
+			"bar": 1,
+			"startSeconds": 0,
+			"section": "intro"
+		},
+		{
+			"bar": 2,
+			"startSeconds": 1.9355,
+			"section": "intro"
+		},
+		{
+			"bar": 3,
+			"startSeconds": 3.871,
+			"section": "intro"
+		},
+		{
+			"bar": 4,
+			"startSeconds": 5.8065,
+			"section": "intro"
+		},
+		{
+			"bar": 5,
+			"startSeconds": 7.7419,
+			"section": "build"
+		},
+		{
+			"bar": 6,
+			"startSeconds": 9.6774,
+			"section": "build"
+		},
+		{
+			"bar": 7,
+			"startSeconds": 11.6129,
+			"section": "build"
+		},
+		{
+			"bar": 8,
+			"startSeconds": 13.5484,
+			"section": "build"
+		},
+		{
+			"bar": 9,
+			"startSeconds": 15.4839,
+			"section": "drop"
+		},
+		{
+			"bar": 10,
+			"startSeconds": 17.4194,
+			"section": "drop"
+		},
+		{
+			"bar": 11,
+			"startSeconds": 19.3548,
+			"section": "drop"
+		},
+		{
+			"bar": 12,
+			"startSeconds": 21.2903,
+			"section": "drop"
+		},
+		{
+			"bar": 13,
+			"startSeconds": 23.2258,
+			"section": "drop"
+		},
+		{
+			"bar": 14,
+			"startSeconds": 25.1613,
+			"section": "drop"
+		},
+		{
+			"bar": 15,
+			"startSeconds": 27.0968,
+			"section": "drop"
+		},
+		{
+			"bar": 16,
+			"startSeconds": 29.0323,
+			"section": "drop"
+		},
+		{
+			"bar": 17,
+			"startSeconds": 30.9677,
+			"section": "sting"
+		}
+	],
+	"markers": [
+		{
+			"name": "build",
+			"seconds": 7.7419
+		},
+		{
+			"name": "impact",
+			"seconds": 15.4839
+		},
+		{
+			"name": "sting",
+			"seconds": 30.9677
+		}
+	]
+}

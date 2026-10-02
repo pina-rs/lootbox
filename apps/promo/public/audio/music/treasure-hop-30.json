@@ -1,0 +1,99 @@
+{
+	"title": "treasure-hop-30",
+	"bpm": 116,
+	"beatsPerBar": 4,
+	"beatSeconds": 0.5172,
+	"barSeconds": 2.069,
+	"sampleRate": 48000,
+	"durationSeconds": 23.0896,
+	"swing": {
+		"unit": 0.25,
+		"ratio": 0.56
+	},
+	"sections": [
+		{
+			"name": "intro",
+			"startBar": 1,
+			"bars": 2,
+			"startSeconds": 0,
+			"endSeconds": 4.1379
+		},
+		{
+			"name": "B",
+			"startBar": 3,
+			"bars": 8,
+			"startSeconds": 4.1379,
+			"endSeconds": 20.6897
+		},
+		{
+			"name": "final hit",
+			"startBar": 11,
+			"bars": 1,
+			"startSeconds": 20.6897,
+			"endSeconds": 22.7586
+		}
+	],
+	"bars": [
+		{
+			"bar": 1,
+			"startSeconds": 0,
+			"section": "intro"
+		},
+		{
+			"bar": 2,
+			"startSeconds": 2.069,
+			"section": "intro"
+		},
+		{
+			"bar": 3,
+			"startSeconds": 4.1379,
+			"section": "B"
+		},
+		{
+			"bar": 4,
+			"startSeconds": 6.2069,
+			"section": "B"
+		},
+		{
+			"bar": 5,
+			"startSeconds": 8.2759,
+			"section": "B"
+		},
+		{
+			"bar": 6,
+			"startSeconds": 10.3448,
+			"section": "B"
+		},
+		{
+			"bar": 7,
+			"startSeconds": 12.4138,
+			"section": "B"
+		},
+		{
+			"bar": 8,
+			"startSeconds": 14.4828,
+			"section": "B"
+		},
+		{
+			"bar": 9,
+			"startSeconds": 16.5517,
+			"section": "B"
+		},
+		{
+			"bar": 10,
+			"startSeconds": 18.6207,
+			"section": "B"
+		},
+		{
+			"bar": 11,
+			"startSeconds": 20.6897,
+			"section": "final hit"
+		}
+	],
+	"markers": [
+		{
+			"name": "final hit",
+			"seconds": 20.6897
+		}
+	]
+}

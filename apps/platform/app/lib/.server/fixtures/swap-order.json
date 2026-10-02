@@ -1,0 +1,12 @@
+{
+	"mode": "ultra",
+	"inputMint": "So11111111111111111111111111111111111111112",
+	"outputMint": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6XKj7D3WpqkDmzPK",
+	"inAmount": "14000000",
+	"outAmount": "100160000000",
+	"priceImpactPct": "0.0012",
+	"slippageBps": 50,
+	"swapType": "aggregator",
+	"requestId": "fixture-request-0001",
+	"transaction": null
+}

@@ -1,0 +1,84 @@
+{
+	"nodes": [
+		{
+			"id": "c133dd2d-9614-4cd8-bda0-65b3d63c2685",
+			"name": "Xerox xStock",
+			"symbol": "XRXx",
+			"underlyingSymbol": "XRX",
+			"description": "Xerox xStock",
+			"logo": "https://xstocks-metadata.backed.fi/logos/tokens/XRXx.png",
+			"deployments": [
+				{
+					"address": "XsensupeZBdHxZtdnLptf1UfWpVyancWcit7qWFYZrJ",
+					"network": "Solana",
+					"supportsAtomicSwaps": true,
+					"stablecoins": [
+						{
+							"symbol": "USDC",
+							"currency": "USD",
+							"network": "Solana",
+							"address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+							"decimals": 6,
+							"issuance": true,
+							"redemption": true,
+							"supportsAtomicSwaps": true,
+							"solanaTokenProgram": "TokenProgram"
+						},
+						{
+							"symbol": "USDG",
+							"currency": "USD",
+							"network": "Solana",
+							"address": "2u1tszSeqZ3qBWF3uNGPFc8TzMk2tdiwknnRMWGWjGWH",
+							"decimals": 6,
+							"issuance": true,
+							"redemption": true,
+							"supportsAtomicSwaps": true
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": "88e16a58-9b96-46eb-9093-f0ae602ae5cd",
+			"name": "Fluence Energy xStock",
+			"symbol": "FLNCx",
+			"underlyingSymbol": "FLNC",
+			"description": "Fluence Energy xStock",
+			"logo": "https://xstocks-metadata.backed.fi/logos/tokens/FLNCx.png",
+			"deployments": [
+				{
+					"address": "Xsc5BxL1ucvrQNXZqW3CT8M9gWTko1LPSLLkSVzGe9h",
+					"network": "Solana",
+					"supportsAtomicSwaps": true,
+					"stablecoins": [
+						{
+							"symbol": "USDC",
+							"currency": "USD",
+							"network": "Solana",
+							"address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+							"decimals": 6,
+							"issuance": true,
+							"redemption": true,
+							"supportsAtomicSwaps": true,
+							"solanaTokenProgram": "TokenProgram"
+						},
+						{
+							"symbol": "USDG",
+							"currency": "USD",
+							"network": "Solana",
+							"address": "2u1tszSeqZ3qBWF3uNGPFc8TzMk2tdiwknnRMWGWjGWH",
+							"decimals": 6,
+							"issuance": true,
+							"redemption": true,
+							"supportsAtomicSwaps": true
+						}
+					]
+				}
+			]
+		}
+	],
+	"page": {
+		"currentPage": 0,
+		"hasNextPage": false
+	}
+}

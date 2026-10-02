@@ -254,6 +254,7 @@ in
       node --test tools/normalize-generated.test.mjs
       cargo test --workspace --all-features
       pnpm --dir sdks/typescript test
+      pnpm --dir apps/platform test
       (cd sdks/dart && dart test)
     '';
     "test:coverage".exec = ''
@@ -287,6 +288,15 @@ in
       set -euo pipefail
       pnpm --dir apps/web test
       pnpm --dir apps/web test:e2e
+    '';
+    # lootbox.so end to end: a production Worker build in Miniflare against
+    # local Surfpool with the pinned Metaplex programs (Exclusive Lootbox NFTs).
+    "test:platform".exec = ''
+      set -euo pipefail
+      build:program
+      build:test-programs
+      fetch:metaplex-programs
+      pnpm --dir apps/platform test:e2e
     '';
     "lint:all".exec = ''
       set -euo pipefail
@@ -335,6 +345,7 @@ in
       dprint check
       pnpm --dir sdks/typescript check
       pnpm --dir apps/web lint
+      pnpm --dir apps/platform check
       (cd sdks/dart && dart analyze --fatal-infos --fatal-warnings)
       ${custom.monochange}/bin/monochange check
     '';

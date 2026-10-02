@@ -1,0 +1,32 @@
+// End-to-end configuration: local Surfpool only, with the cron relayer on.
+// `e2e/prepare.ts` writes the matching `.dev.vars` (a throwaway relayer key).
+{
+	"$schema": "../node_modules/wrangler/config-schema.json",
+	"name": "lootbox-platform",
+	"main": "../workers/app.ts",
+	"compatibility_date": "2026-09-20",
+	"compatibility_flags": ["nodejs_compat"],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "lootbox",
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "../migrations"
+		}
+	],
+	"r2_buckets": [{ "binding": "MEDIA", "bucket_name": "lootbox-media" }],
+	"triggers": { "crons": ["* * * * *"] },
+	"vars": {
+		"PUBLIC_ORIGIN": "",
+		"DEFAULT_CLUSTER": "localnet",
+		"ENABLED_CLUSTERS": "localnet",
+		"RPC_URL_DEVNET": "https://api.devnet.solana.com",
+		"RPC_URL_MAINNET": "",
+		"LOCALNET_CONTROL_URL": "http://127.0.0.1:8898",
+		"RELAYER_CLUSTERS": "localnet",
+		"RELAYER_CLAIM": "false",
+		"FEATURE_EXCLUSIVE_NFTS": "true",
+		"FEATURE_NFT_PRIZES": "false",
+		"CATALOG_FIXTURES": "true"
+	}
+}

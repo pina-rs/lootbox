@@ -1,5 +1,7 @@
 import "@fontsource/bungee/400.css";
 import "@fontsource-variable/nunito/index.css";
+import "@pina-rs/lootbox-ui/tokens.css";
+import "@pina-rs/lootbox-ui/styles.css";
 import "./styles/app.css";
 
 import {

@@ -1,0 +1,290 @@
+/*
+ * Styles for @pina-rs/lootbox-ui components. They read the tokens in
+ * tokens.css. Transitions sit under `.ui-animated` so a video, which draws
+ * every frame from props, can leave them off.
+ */
+
+/* Odds strip */
+
+.odds-strip {
+	display: grid;
+	gap: 12px;
+	margin: 0;
+}
+
+.odds-strip-bar {
+	display: flex;
+	gap: 3px;
+	block-size: 28px;
+	padding: 3px;
+	border: var(--border);
+	border-radius: 999px;
+	background: var(--paper);
+	box-shadow: var(--shadow-s);
+	overflow: hidden;
+}
+
+.odds-strip-segment {
+	flex-basis: 0;
+	min-inline-size: 6px;
+	border-radius: 999px;
+	background: var(--tone);
+	box-shadow: inset 0 -4px 0 rgb(0 0 0 / 0.12);
+}
+
+.ui-animated .odds-strip-segment {
+	transition: flex-grow 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.odds-strip-empty {
+	flex: 1;
+	border-radius: 999px;
+	background: repeating-linear-gradient(
+		-45deg,
+		var(--ivory),
+		var(--ivory) 6px,
+		var(--ivory-deep) 6px,
+		var(--ivory-deep) 12px
+	);
+}
+
+.odds-strip [data-tone="gold"] {
+	--tone: var(--gold);
+}
+
+.odds-strip [data-tone="teal"] {
+	--tone: var(--teal-bright);
+}
+
+.odds-strip [data-tone="lock"] {
+	--tone: var(--lock);
+}
+
+.odds-strip [data-tone="plum"] {
+	--tone: #9a74c9;
+}
+
+.odds-strip [data-tone="sky"] {
+	--tone: var(--sky);
+}
+
+.odds-strip [data-tone="ivory"] {
+	--tone: var(--ivory-deep);
+}
+
+.odds-strip-legend ul {
+	display: grid;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.odds-strip-legend li {
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	gap: 10px;
+	align-items: center;
+	font-size: 15px;
+}
+
+.odds-strip-swatch {
+	inline-size: 14px;
+	block-size: 14px;
+	border: 2px solid var(--ink);
+	border-radius: 50%;
+	background: var(--tone);
+}
+
+.odds-strip-label {
+	overflow: hidden;
+	font-weight: 800;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.odds-strip-count {
+	color: var(--ink-soft);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+/* Curve chart */
+
+.curve-chart {
+	display: block;
+	inline-size: 100%;
+	block-size: auto;
+	overflow: visible;
+}
+
+.curve-chart-base {
+	stroke: var(--ink);
+	stroke-width: 2.5;
+}
+
+.curve-chart-box {
+	fill: var(--paper);
+	stroke: var(--ink);
+	stroke-width: 2;
+}
+
+.curve-chart-sold {
+	fill: var(--teal-bright);
+	stroke: var(--ink);
+	stroke-width: 2;
+}
+
+.curve-chart-preview {
+	fill: var(--gold);
+	stroke: var(--ink);
+	stroke-width: 2;
+}
+
+.curve-chart-preview[data-side="sell"] {
+	fill: var(--lock);
+}
+
+.ui-animated .curve-chart-sold,
+.ui-animated .curve-chart-preview {
+	transition: y 220ms ease, height 220ms ease;
+}
+
+.curve-chart-marker path {
+	fill: var(--ink);
+}
+
+.curve-chart-marker text {
+	fill: var(--ink);
+	font: 400 15px/1 var(--display);
+}
+
+.curve-chart-axis {
+	fill: var(--muted);
+	font: 800 12px/1 var(--body);
+}
+
+/* Stepper */
+
+.stepper {
+	display: grid;
+	gap: 6px;
+}
+
+.stepper-label {
+	font-weight: 800;
+}
+
+.stepper-control {
+	display: inline-grid;
+	grid-template-columns: 44px minmax(56px, 88px) 44px;
+	align-items: stretch;
+	justify-self: start;
+	border: var(--border);
+	border-radius: 999px;
+	background: var(--white);
+	box-shadow: var(--shadow-s);
+	overflow: hidden;
+}
+
+.stepper-control button {
+	border: 0;
+	background: var(--gold);
+	color: var(--ink);
+	font: 400 20px/1 var(--display);
+	cursor: pointer;
+}
+
+.stepper-control button:first-child {
+	border-inline-end: var(--border);
+}
+
+.stepper-control button:last-child {
+	border-inline-start: var(--border);
+}
+
+.stepper-control button:disabled {
+	background: var(--ivory-deep);
+	color: var(--muted);
+	cursor: not-allowed;
+}
+
+.stepper-control input {
+	min-inline-size: 0;
+	min-block-size: 44px;
+	border: 0;
+	background: transparent;
+	color: var(--ink);
+	font: 400 20px/1 var(--display);
+	text-align: center;
+	appearance: textfield;
+}
+
+.stepper-control input::-webkit-inner-spin-button,
+.stepper-control input::-webkit-outer-spin-button {
+	margin: 0;
+	appearance: none;
+}
+
+.stepper-control input:focus-visible {
+	outline: 3px solid var(--focus);
+	outline-offset: -3px;
+}
+
+/* Action cards */
+
+.action-card {
+	display: grid;
+	gap: 16px;
+	align-content: start;
+	padding: 20px;
+	border: var(--border);
+	border-radius: var(--radius-l);
+	background: var(--paper);
+	box-shadow: var(--shadow);
+}
+
+.action-card-head {
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	gap: 14px;
+	align-items: center;
+}
+
+.action-card-head h3 {
+	font: 400 20px/1.1 var(--display);
+}
+
+.action-card-head p {
+	margin-block-start: 4px;
+	color: var(--ink-soft);
+	font-size: 15px;
+}
+
+.action-card-icon {
+	flex: none;
+	padding: 4px;
+	border: 2px solid var(--ink);
+	border-radius: var(--radius);
+	background: var(--ivory);
+}
+
+.action-card[data-kind="curve"] .action-card-icon {
+	background: var(--accent-soft);
+}
+
+.action-card-status {
+	align-self: start;
+	padding: 3px 10px;
+	border: 2px solid var(--ink);
+	border-radius: 999px;
+	background: var(--gold);
+	font-size: 13px;
+	font-weight: 900;
+	white-space: nowrap;
+}
+
+.action-card-body {
+	display: grid;
+	gap: 14px;
+}

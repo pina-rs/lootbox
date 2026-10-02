@@ -12,6 +12,8 @@ export type PublicConfig = Readonly<{
 	features: Readonly<{
 		exclusiveNfts: boolean;
 		nftPrizes: boolean;
+		/** Selling boxes on a bonding curve (see docs/box-curves.md). */
+		boxCurves: boolean;
 		/** "Buy with SOL" through Jupiter (mainnet, or recorded fixtures). */
 		swaps: boolean;
 	}>;

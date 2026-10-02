@@ -50,6 +50,8 @@ type Props = Readonly<{
 	prizes: readonly PrizeView[];
 	reveal: "unlocked" | "sealed" | "open" | "retired";
 	secondsToReveal: number;
+	/** Changes when boxes move elsewhere on the page, e.g. a curve trade. */
+	balanceKey?: string;
 }>;
 
 const SETTLE_ATTEMPTS = 40;
@@ -81,8 +83,16 @@ function useReducedMotion(): boolean {
 }
 
 export function HolderPanel(
-	{ account, cluster, template, boxMint, prizes, reveal, secondsToReveal }:
-		Props,
+	{
+		account,
+		cluster,
+		template,
+		boxMint,
+		prizes,
+		reveal,
+		secondsToReveal,
+		balanceKey,
+	}: Props,
 ) {
 	const signer = useWalletAccountTransactionSigner(
 		account,
@@ -124,7 +134,7 @@ export function HolderPanel(
 		return () => {
 			live = false;
 		};
-	}, [client, owner, boxMint, template, cluster.rpcUrl, version]);
+	}, [client, owner, boxMint, template, cluster.rpcUrl, version, balanceKey]);
 
 	const prizeFor = (index: number) =>
 		prizes.find((prize) => prize.index === index);

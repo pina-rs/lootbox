@@ -2,13 +2,13 @@
  * Step 2: prize bundles. A bundle is one to four prizes won together; its
  * copy count is how many boxes can win it. Odds update as you type.
  */
-import { useState } from "react";
-
+import { OddsStrip, Stepper } from "@pina-rs/lootbox-ui";
 import type { UiWalletAccount } from "@wallet-standard/react";
+import { useState } from "react";
 
 import { compactUsd } from "../lib/catalog.js";
 import type { Holding } from "../lib/holdings.js";
-import { describeAsset, describeChance } from "../lib/plan.js";
+import { describeAsset } from "../lib/plan.js";
 import { usePublicConfig } from "../lib/public-config.js";
 import type { DraftAsset, DraftBundle } from "../lib/schemas.js";
 import type { WizardAction } from "./draft.js";
@@ -117,31 +117,18 @@ export function BundlesStep(
 										update(bundle.id, { label: event.currentTarget.value })}
 								/>
 							</div>
-							<div className="field">
-								<label htmlFor={`copies-${bundle.id}`}>Boxes</label>
-								<input
-									id={`copies-${bundle.id}`}
-									type="number"
-									min={1}
-									max={100000}
-									inputMode="numeric"
-									value={bundle.quantity}
-									disabled={hasUnique(bundle)}
-									aria-describedby={hasUnique(bundle)
-										? `unique-${bundle.id}`
-										: undefined}
-									onChange={(event) =>
-										update(bundle.id, {
-											quantity: Math.max(
-												1,
-												Math.min(
-													100_000,
-													Math.floor(Number(event.currentTarget.value) || 1),
-												),
-											),
-										})}
-								/>
-							</div>
+							<Stepper
+								label="Boxes"
+								showLabel
+								value={bundle.quantity}
+								min={1}
+								max={100_000}
+								disabled={hasUnique(bundle)}
+								onChange={(quantity) => update(bundle.id, { quantity })}
+								{...(hasUnique(bundle)
+									? { describedBy: `unique-${bundle.id}` }
+									: {})}
+							/>
 							<button
 								type="button"
 								className="icon-button"
@@ -243,30 +230,16 @@ export function BundlesStep(
 						} boxes. Each is one equal ticket.`}
 				</p>
 				{total > 0n && (
-					<table className="odds" data-testid="odds-preview">
-						<thead>
-							<tr>
-								<th scope="col">Bundle</th>
-								<th scope="col" className="num">Boxes</th>
-								<th scope="col" className="num">Chance</th>
-							</tr>
-						</thead>
-						<tbody>
-							{bundles.map((bundle) => (
-								<tr key={bundle.id}>
-									<td className="prize-name">{bundle.label}</td>
-									<td className="num">
-										{bundle.quantity.toLocaleString("en-US")}
-									</td>
-									<td className="num">
-										<strong>
-											{describeChance(BigInt(bundle.quantity), total)}
-										</strong>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
+					<div data-testid="odds-preview">
+						<OddsStrip
+							className="ui-animated"
+							segments={bundles.map((bundle) => ({
+								key: bundle.id,
+								label: bundle.label || "Unnamed bundle",
+								count: bundle.quantity,
+							}))}
+						/>
+					</div>
 				)}
 				{problem && <p className="form-error" role="status">{problem}</p>}
 			</aside>

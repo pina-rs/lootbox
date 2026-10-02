@@ -29,10 +29,15 @@ enum LootboxProgramAccount {
   prizePoolItemState,
   exclusiveCollectionState,
   exclusiveAttachmentState,
+  boxCurveState,
 }
 
 /// Known instructions for the LootboxProgram program.
 enum LootboxProgramInstruction {
+  openBoxCurve,
+  buyCurveBoxes,
+  sellCurveBoxes,
+  closeBoxCurve,
   createLootbox,
   addOutcome,
   deposit,
@@ -97,6 +102,22 @@ enum LootboxProgramInstruction {
 
 /// Identifies the type of a LootboxProgram instruction.
 LootboxProgramInstruction identifyLootboxProgramInstruction(Uint8List data) {
+  if (containsBytes(data, getU8Encoder().encode(60), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.openBoxCurve;
+  }
+  if (containsBytes(data, getU8Encoder().encode(61), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.buyCurveBoxes;
+  }
+  if (containsBytes(data, getU8Encoder().encode(62), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.sellCurveBoxes;
+  }
+  if (containsBytes(data, getU8Encoder().encode(63), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.closeBoxCurve;
+  }
   if (containsBytes(data, getU8Encoder().encode(0), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.createLootbox;
@@ -349,6 +370,38 @@ sealed class ParsedLootboxProgramInstruction {
   const ParsedLootboxProgramInstruction(this.instructionType);
 
   final LootboxProgramInstruction instructionType;
+}
+
+/// A parsed OpenBoxCurve instruction.
+final class ParsedOpenBoxCurve extends ParsedLootboxProgramInstruction {
+  const ParsedOpenBoxCurve({required this.data})
+    : super(LootboxProgramInstruction.openBoxCurve);
+
+  final OpenBoxCurveInstructionData data;
+}
+
+/// A parsed BuyCurveBoxes instruction.
+final class ParsedBuyCurveBoxes extends ParsedLootboxProgramInstruction {
+  const ParsedBuyCurveBoxes({required this.data})
+    : super(LootboxProgramInstruction.buyCurveBoxes);
+
+  final BuyCurveBoxesInstructionData data;
+}
+
+/// A parsed SellCurveBoxes instruction.
+final class ParsedSellCurveBoxes extends ParsedLootboxProgramInstruction {
+  const ParsedSellCurveBoxes({required this.data})
+    : super(LootboxProgramInstruction.sellCurveBoxes);
+
+  final SellCurveBoxesInstructionData data;
+}
+
+/// A parsed CloseBoxCurve instruction.
+final class ParsedCloseBoxCurve extends ParsedLootboxProgramInstruction {
+  const ParsedCloseBoxCurve({required this.data})
+    : super(LootboxProgramInstruction.closeBoxCurve);
+
+  final CloseBoxCurveInstructionData data;
 }
 
 /// A parsed CreateLootbox instruction.
@@ -847,6 +900,18 @@ ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
   return switch (identifyLootboxProgramInstruction(
     instruction.data ?? Uint8List(0),
   )) {
+    LootboxProgramInstruction.openBoxCurve => ParsedOpenBoxCurve(
+      data: parseOpenBoxCurveInstruction(instruction),
+    ),
+    LootboxProgramInstruction.buyCurveBoxes => ParsedBuyCurveBoxes(
+      data: parseBuyCurveBoxesInstruction(instruction),
+    ),
+    LootboxProgramInstruction.sellCurveBoxes => ParsedSellCurveBoxes(
+      data: parseSellCurveBoxesInstruction(instruction),
+    ),
+    LootboxProgramInstruction.closeBoxCurve => ParsedCloseBoxCurve(
+      data: parseCloseBoxCurveInstruction(instruction),
+    ),
     LootboxProgramInstruction.createLootbox => ParsedCreateLootbox(
       data: parseCreateLootboxInstruction(instruction),
     ),

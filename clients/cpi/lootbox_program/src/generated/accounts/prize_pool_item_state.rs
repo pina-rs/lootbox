@@ -6,7 +6,6 @@
 	clippy::empty_line_after_doc_comments,
 	clippy::too_many_arguments
 )]
-
 #![allow(rustdoc::broken_intra_doc_links)]
 
 use pina::Address;
@@ -43,8 +42,7 @@ impl PrizePoolItemState {
 	/// Whether `data` carries this account's discriminator.
 	#[inline(always)]
 	pub fn matches(data: &[u8]) -> bool {
-		data.len() >= 2
-			&& data[..2] == PRIZE_POOL_ITEM_STATE_DISCRIMINATOR
+		data.len() >= 2 && data[..2] == PRIZE_POOL_ITEM_STATE_DISCRIMINATOR
 	}
 
 	/// Reads this account's fields from the account's data.
@@ -59,38 +57,28 @@ impl PrizePoolItemState {
 		let mut cursor = 0usize;
 		cursor += 2;
 
-		let pool = Address::new_from_array(data.get(cursor..cursor + 32)?
-		.try_into().ok()?);
+		let pool = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
 		cursor += 32;
-		let asset = Address::new_from_array(data.get(cursor..cursor + 32)?
-		.try_into().ok()?);
+		let asset = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
 		cursor += 32;
-		let data_hash: [u8; 32] = data.get(cursor..cursor + 32)?
-		.try_into().ok()?;
+		let data_hash: [u8; 32] = data.get(cursor..cursor + 32)?.try_into().ok()?;
 		cursor += 32;
-		let creator_hash: [u8; 32] = data.get(cursor..cursor + 32)?
-		.try_into().ok()?;
+		let creator_hash: [u8; 32] = data.get(cursor..cursor + 32)?.try_into().ok()?;
 		cursor += 32;
-		let semantic_metadata_hash: [u8; 32] = data.get(cursor..cursor + 32)?
-		.try_into().ok()?;
+		let semantic_metadata_hash: [u8; 32] = data.get(cursor..cursor + 32)?.try_into().ok()?;
 		cursor += 32;
-		let previous_manifest_accumulator: [u8; 32] = data.get(cursor..cursor + 32)?
-		.try_into().ok()?;
+		let previous_manifest_accumulator: [u8; 32] =
+			data.get(cursor..cursor + 32)?.try_into().ok()?;
 		cursor += 32;
-		let nonce: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
-		.try_into().ok()?);
+		let nonce: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
 		cursor += 8;
-		let tree_index: u32 = u32::from_le_bytes(data.get(cursor..cursor + 4)?
-		.try_into().ok()?);
+		let tree_index: u32 = u32::from_le_bytes(data.get(cursor..cursor + 4)?.try_into().ok()?);
 		cursor += 4;
-		let pool_index: u32 = u32::from_le_bytes(data.get(cursor..cursor + 4)?
-		.try_into().ok()?);
+		let pool_index: u32 = u32::from_le_bytes(data.get(cursor..cursor + 4)?.try_into().ok()?);
 		cursor += 4;
-		let status: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
-		.try_into().ok()?);
+		let status: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
 		cursor += 1;
-		let bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
-		.try_into().ok()?);
+		let bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
 
 		Some(PrizePoolItemState {
 			pool,

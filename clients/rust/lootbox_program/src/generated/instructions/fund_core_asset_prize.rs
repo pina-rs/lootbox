@@ -47,7 +47,17 @@ pub struct FundCoreAssetPrize {
 }
 
 impl FundCoreAssetPrize {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, asset: solana_pubkey::Pubkey, collection: solana_pubkey::Pubkey, core_program: solana_pubkey::Pubkey, system_program: solana_pubkey::Pubkey, log_wrapper: solana_pubkey::Pubkey, plugin_accounts: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		authority: solana_pubkey::Pubkey,
+		template: solana_pubkey::Pubkey,
+		bundle: solana_pubkey::Pubkey,
+		asset: solana_pubkey::Pubkey,
+		collection: solana_pubkey::Pubkey,
+		core_program: solana_pubkey::Pubkey,
+		system_program: solana_pubkey::Pubkey,
+		log_wrapper: solana_pubkey::Pubkey,
+		plugin_accounts: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			authority,
 			template,
@@ -61,7 +71,10 @@ impl FundCoreAssetPrize {
 		}
 	}
 
-	pub fn instruction(&self, data: FundCoreAssetPrizeInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: FundCoreAssetPrizeInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -73,14 +86,32 @@ impl FundCoreAssetPrize {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(9 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.template,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.asset, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.collection, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.core_program, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.log_wrapper, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.plugin_accounts, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.collection,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.core_program,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.system_program,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.log_wrapper,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.plugin_accounts,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -96,7 +127,9 @@ pub struct FundCoreAssetPrizeInstructionData {
 }
 
 impl FundCoreAssetPrizeInstructionData {
-	pub fn new(configure: impl FnOnce(&mut FundCoreAssetPrizeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut FundCoreAssetPrizeInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<FundCoreAssetPrizeInstructionWireZc>()];
 		<FundCoreAssetPrizeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
@@ -104,7 +137,7 @@ impl FundCoreAssetPrizeInstructionData {
 			data.migration_version = FUND_CORE_ASSET_PRIZE_MIGRATION_VERSION;
 			Ok(())
 		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

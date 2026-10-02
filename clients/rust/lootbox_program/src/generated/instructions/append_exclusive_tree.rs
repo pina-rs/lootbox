@@ -43,7 +43,15 @@ pub struct AppendExclusiveTree {
 }
 
 impl AppendExclusiveTree {
-	pub fn new(admin: solana_pubkey::Pubkey, exclusive_collection: solana_pubkey::Pubkey, tree_config: solana_pubkey::Pubkey, merkle_tree: solana_pubkey::Pubkey, bubblegum_program: solana_pubkey::Pubkey, log_wrapper: solana_pubkey::Pubkey, compression_program: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		admin: solana_pubkey::Pubkey,
+		exclusive_collection: solana_pubkey::Pubkey,
+		tree_config: solana_pubkey::Pubkey,
+		merkle_tree: solana_pubkey::Pubkey,
+		bubblegum_program: solana_pubkey::Pubkey,
+		log_wrapper: solana_pubkey::Pubkey,
+		compression_program: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			admin,
 			exclusive_collection,
@@ -56,7 +64,10 @@ impl AppendExclusiveTree {
 		}
 	}
 
-	pub fn instruction(&self, data: AppendExclusiveTreeInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: AppendExclusiveTreeInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -68,13 +79,34 @@ impl AppendExclusiveTree {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.admin, true));
-		accounts.push(solana_instruction::AccountMeta::new(self.exclusive_collection, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.tree_config, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.merkle_tree, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.bubblegum_program, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.log_wrapper, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.compression_program, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.exclusive_collection,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.tree_config,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.merkle_tree,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.bubblegum_program,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.log_wrapper,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.compression_program,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.system_program,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -90,15 +122,20 @@ pub struct AppendExclusiveTreeInstructionData {
 }
 
 impl AppendExclusiveTreeInstructionData {
-	pub fn new(configure: impl FnOnce(&mut AppendExclusiveTreeInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut AppendExclusiveTreeInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<AppendExclusiveTreeInstructionWireZc>()];
-		<AppendExclusiveTreeInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
-			configure(data);
-			data.discriminator = APPEND_EXCLUSIVE_TREE_DISCRIMINATOR;
-			data.migration_version = APPEND_EXCLUSIVE_TREE_MIGRATION_VERSION;
-			Ok(())
-		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		<AppendExclusiveTreeInstructionWire as pina::PinaPodFixed>::initialize(
+			&mut bytes,
+			|data| {
+				configure(data);
+				data.discriminator = APPEND_EXCLUSIVE_TREE_DISCRIMINATOR;
+				data.migration_version = APPEND_EXCLUSIVE_TREE_MIGRATION_VERSION;
+				Ok(())
+			},
+		)
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

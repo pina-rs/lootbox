@@ -7,4 +7,5 @@
  */
 
 export * from "./logs";
+export * from './boxCurveTradedEvent';
 export * from './exclusiveNftMintedEvent';

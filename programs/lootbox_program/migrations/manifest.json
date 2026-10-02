@@ -853,6 +853,73 @@
 				}
 			]
 		},
+		"account:1:0c": {
+			"identity": {
+				"kind": "account",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "0c"
+			},
+			"rustName": "BoxCurveState",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "template",
+								"rustType": "Address"
+							},
+							{
+								"name": "box_mint",
+								"rustType": "Address"
+							},
+							{
+								"name": "authority",
+								"rustType": "Address"
+							},
+							{
+								"name": "inventory",
+								"rustType": "u64"
+							},
+							{
+								"name": "sold",
+								"rustType": "u64"
+							},
+							{
+								"name": "start_price",
+								"rustType": "u64"
+							},
+							{
+								"name": "price_step",
+								"rustType": "u64"
+							},
+							{
+								"name": "reserve",
+								"rustType": "u64"
+							},
+							{
+								"name": "closes_at",
+								"rustType": "i64"
+							},
+							{
+								"name": "sold_out_at",
+								"rustType": "i64"
+							},
+							{
+								"name": "fee_bps",
+								"rustType": "u16"
+							},
+							{
+								"name": "bump",
+								"rustType": "u8"
+							}
+						],
+						"codec": "pinaPodV2"
+					},
+					"transition": null
+				}
+			]
+		},
 		"event:1:01": {
 			"identity": {
 				"kind": "event",
@@ -903,6 +970,53 @@
 							},
 							{
 								"name": "layer_count",
+								"rustType": "u8"
+							}
+						],
+						"codec": "pinaPodV2"
+					},
+					"transition": null
+				}
+			]
+		},
+		"event:1:02": {
+			"identity": {
+				"kind": "event",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "02"
+			},
+			"rustName": "BoxCurveTradedEvent",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "curve",
+								"rustType": "Address"
+							},
+							{
+								"name": "trader",
+								"rustType": "Address"
+							},
+							{
+								"name": "count",
+								"rustType": "u64"
+							},
+							{
+								"name": "lamports",
+								"rustType": "u64"
+							},
+							{
+								"name": "fee",
+								"rustType": "u64"
+							},
+							{
+								"name": "sold_after",
+								"rustType": "u64"
+							},
+							{
+								"name": "side",
 								"rustType": "u8"
 							}
 						],
@@ -6463,6 +6577,389 @@
 								"signer": false,
 								"optional": false,
 								"defaultValue": "publicKey:11111111111111111111111111111111",
+								"pda": null
+							}
+						]
+					},
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:3c": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "3c"
+			},
+			"rustName": "OpenBoxCurveInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "inventory",
+								"rustType": "u64"
+							},
+							{
+								"name": "start_price",
+								"rustType": "u64"
+							},
+							{
+								"name": "price_step",
+								"rustType": "u64"
+							},
+							{
+								"name": "fee_bps",
+								"rustType": "u16"
+							},
+							{
+								"name": "bump",
+								"rustType": "u8"
+							}
+						],
+						"codec": "pinaPodV2"
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "box_mint",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "source_box_account",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "box_curve",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": "box_curve"
+							},
+							{
+								"name": "curve_box_account",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "system_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:11111111111111111111111111111111",
+								"pda": null
+							},
+							{
+								"name": "box_token_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+								"pda": null
+							}
+						]
+					},
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:3d": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "3d"
+			},
+			"rustName": "BuyCurveBoxesInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "count",
+								"rustType": "u64"
+							},
+							{
+								"name": "max_lamports",
+								"rustType": "u64"
+							}
+						],
+						"codec": "pinaPodV2"
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "buyer",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "box_curve",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "box_mint",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "curve_box_account",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "destination_box_account",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "system_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:11111111111111111111111111111111",
+								"pda": null
+							},
+							{
+								"name": "box_token_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+								"pda": null
+							}
+						]
+					},
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:3e": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "3e"
+			},
+			"rustName": "SellCurveBoxesInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "count",
+								"rustType": "u64"
+							},
+							{
+								"name": "min_lamports",
+								"rustType": "u64"
+							}
+						],
+						"codec": "pinaPodV2"
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "seller",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "box_curve",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "box_mint",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "source_box_account",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "curve_box_account",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "box_token_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+								"pda": null
+							}
+						]
+					},
+					"transition": null
+				}
+			]
+		},
+		"instruction:1:3f": {
+			"identity": {
+				"kind": "instruction",
+				"discriminatorBytes": 1,
+				"discriminatorHex": "3f"
+			},
+			"rustName": "CloseBoxCurveInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [],
+						"codec": "pinaPodV2"
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": true,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "template",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "box_curve",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "box_mint",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "curve_box_account",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "destination_box_account",
+								"writable": true,
+								"signer": false,
+								"optional": false,
+								"defaultValue": null,
+								"pda": null
+							},
+							{
+								"name": "box_token_program",
+								"writable": false,
+								"signer": false,
+								"optional": false,
+								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
 								"pda": null
 							}
 						]

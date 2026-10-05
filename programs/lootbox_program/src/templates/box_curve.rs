@@ -379,9 +379,11 @@ impl<'a> ProcessAccountInfos<'a> for OpenBoxCurveAccounts<'a> {
 		if state.locked_at.get() == 0 {
 			return Err(lootbox_error(LootboxError::TreasuryUnlocked));
 		}
+
 		if state.status != TEMPLATE_LIVE {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
+
 		if sysvars::clock::Clock::get()?.unix_timestamp >= state.opens_at.get() {
 			return Err(lootbox_error(LootboxError::BoxCurveClosed));
 		}
@@ -418,6 +420,7 @@ impl<'a> ProcessAccountInfos<'a> for OpenBoxCurveAccounts<'a> {
 		curve.start_price.set(args.start_price.get());
 		curve.price_step.set(args.price_step.get());
 		curve.closes_at.set(state.opens_at.get());
+
 		curve.fee_bps.set(args.fee_bps.get());
 		curve.bump = args.bump;
 		drop(curve);
@@ -444,6 +447,7 @@ impl<'a> ProcessAccountInfos<'a> for BuyCurveBoxesAccounts<'a> {
 		assert_trading(&curve, now)?;
 		self.box_mint.assert_address(&curve.box_mint)?;
 		assert_authority_address(self.authority, &curve.authority)?;
+
 		assert_curve_box_account(self.curve_box_account, &curve_address, &curve.box_mint)?;
 		assert_box_account(self.destination_box_account, &curve.box_mint)?;
 
@@ -452,6 +456,7 @@ impl<'a> ProcessAccountInfos<'a> for BuyCurveBoxesAccounts<'a> {
 			.lamports
 			.checked_add(trade.fee)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
+
 		if total > args.max_lamports.get() {
 			return Err(lootbox_error(LootboxError::BoxCurveSlippage));
 		}
@@ -462,6 +467,7 @@ impl<'a> ProcessAccountInfos<'a> for BuyCurveBoxesAccounts<'a> {
 			lamports: trade.lamports,
 		}
 		.invoke()?;
+
 		if trade.fee > 0 {
 			system::instructions::Transfer {
 				from: self.buyer,
@@ -479,12 +485,14 @@ impl<'a> ProcessAccountInfos<'a> for BuyCurveBoxesAccounts<'a> {
 			.ok_or(ProgramError::ArithmeticOverflow)?;
 		let mut state = self.box_curve.as_account_mut::<BoxCurveState>(&ID)?;
 		state.sold.set(trade.sold_after);
+
 		if sold_out {
 			state.reserve.set(0);
 			state.sold_out_at.set(now);
 		} else {
 			state.reserve.set(reserve);
 		}
+
 		drop(state);
 
 		let seeds = BoxCurveState::seeds(&template_address).with_bump(curve.bump);
@@ -503,6 +511,7 @@ impl<'a> ProcessAccountInfos<'a> for BuyCurveBoxesAccounts<'a> {
 		if sold_out {
 			self.box_curve.send_owned(&ID, reserve, self.authority)?;
 		}
+
 		assert_curve_solvent(self.box_curve, if sold_out { 0 } else { reserve })?;
 
 		BoxCurveTradedEvent::emit(|event| {
@@ -528,6 +537,7 @@ impl<'a> ProcessAccountInfos<'a> for SellCurveBoxesAccounts<'a> {
 		self.box_mint.assert_address(&curve.box_mint)?;
 		assert_authority_address(self.authority, &curve.authority)?;
 		assert_curve_box_account(self.curve_box_account, &curve_address, &curve.box_mint)?;
+
 		assert_box_account(self.source_box_account, &curve.box_mint)?;
 
 		let trade = quote_curve_sell(&curve, args.count.get())?;
@@ -535,9 +545,11 @@ impl<'a> ProcessAccountInfos<'a> for SellCurveBoxesAccounts<'a> {
 			.lamports
 			.checked_sub(trade.fee)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
+
 		if payout < args.min_lamports.get() {
 			return Err(lootbox_error(LootboxError::BoxCurveSlippage));
 		}
+
 		let reserve = curve
 			.reserve
 			.get()
@@ -560,9 +572,11 @@ impl<'a> ProcessAccountInfos<'a> for SellCurveBoxesAccounts<'a> {
 		drop(state);
 
 		self.box_curve.send_owned(&ID, payout, self.seller)?;
+
 		if trade.fee > 0 {
 			self.box_curve.send_owned(&ID, trade.fee, self.authority)?;
 		}
+
 		assert_curve_solvent(self.box_curve, reserve)?;
 
 		BoxCurveTradedEvent::emit(|event| {
@@ -588,10 +602,12 @@ impl<'a> ProcessAccountInfos<'a> for CloseBoxCurveAccounts<'a> {
 		assert_authority_address(self.authority, &curve.authority)?;
 		self.box_mint.assert_address(&curve.box_mint)?;
 		assert_curve_box_account(self.curve_box_account, &curve_address, &curve.box_mint)?;
+
 		assert_box_account(self.destination_box_account, &curve.box_mint)?;
 
 		let now = sysvars::clock::Clock::get()?.unix_timestamp;
 		let finished = curve.sold_out_at.get() != 0 || now >= curve.closes_at.get();
+
 		if !finished && curve.sold.get() != 0 {
 			return Err(lootbox_error(LootboxError::BoxCurveTrading));
 		}
@@ -602,6 +618,7 @@ impl<'a> ProcessAccountInfos<'a> for CloseBoxCurveAccounts<'a> {
 			.amount();
 		let seeds = BoxCurveState::seeds(&template_address).with_bump(curve.bump);
 		let signer = seeds.to_signer();
+
 		if leftover > 0 {
 			token_2022::instructions::TransferChecked::new(
 				self.curve_box_account,
@@ -613,6 +630,7 @@ impl<'a> ProcessAccountInfos<'a> for CloseBoxCurveAccounts<'a> {
 			)
 			.invoke_signed(&[signer.as_signer()])?;
 		}
+
 		token_2022::instructions::CloseAccount::new(
 			self.curve_box_account,
 			self.authority,
@@ -735,6 +753,7 @@ mod tests {
 			} else {
 				quote_curve_sell(&state, count)
 			};
+
 			let expected = &case["expected"];
 
 			if expected.get("error").is_some() {
@@ -778,6 +797,7 @@ mod tests {
 				"{}",
 				case["name"]
 			);
+
 			if accepted {
 				assert_eq!(step, vector_u64(&case["expected"]["priceStep"]));
 				assert_eq!(

@@ -7,9 +7,9 @@ import 'package:test/test.dart';
 BigInt _big(Object? value) => BigInt.parse('$value');
 
 void main() {
-  final vectors =
-      jsonDecode(File('../../tests/vectors/box-curve.json').readAsStringSync())
-          as Map<String, dynamic>;
+  final vectors = jsonDecode(
+    File('../../tests/vectors/box-curve.json').readAsStringSync(),
+  ) as Map<String, dynamic>;
 
   group('box curve pricing', () {
     test('publishes the program bounds', () {

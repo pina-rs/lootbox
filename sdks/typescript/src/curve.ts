@@ -4,7 +4,6 @@
  * `startPrice + priceStep * k`. Pinned by `tests/vectors/box-curve.json`,
  * which the program and the Rust and Dart SDKs share.
  */
-
 const U64_MAX = (1n << 64n) - 1n;
 
 /** Fewest boxes a curve may sell. */
@@ -168,14 +167,17 @@ export function planBoxCurve(
 			`a curve needs at least ${MIN_CURVE_INVENTORY} boxes to find a price`,
 		);
 	}
+
 	if (startPrice < MIN_CURVE_START_PRICE) {
 		throw new BoxCurveError(
 			`the first box must cost at least ${MIN_CURVE_START_PRICE} lamports`,
 		);
 	}
+
 	if (endPrice < startPrice) {
 		throw new BoxCurveError("the last box cannot cost less than the first");
 	}
+
 	if (!Number.isInteger(feeBps) || feeBps < 0 || feeBps > MAX_CURVE_FEE_BPS) {
 		throw new BoxCurveError(
 			`the fee must be 0 to ${MAX_CURVE_FEE_BPS} basis points`,

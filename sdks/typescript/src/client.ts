@@ -3074,9 +3074,11 @@ export class LootboxClient {
 		plan: BoxCurvePlan,
 	): Promise<ChainBoxCurve> {
 		const current = await this.template(template.address);
+
 		if (current.data.authority !== this.payer.address) {
 			throw new Error("only the lootbox creator can open its curve");
 		}
+
 		if (current.data.lockedAt === 0n) {
 			throw new Error("lock the lootbox before opening a curve");
 		}
@@ -3171,9 +3173,11 @@ export class LootboxClient {
 		destination: Address = this.payer.address,
 	): Promise<string> {
 		const curve = await this.requireBoxCurve(template.address);
+
 		if (curve.data.authority !== this.payer.address) {
 			throw new Error("only the lootbox creator can close its curve");
 		}
+
 		const { boxMint } = curve.data;
 
 		return this.send([
@@ -3192,6 +3196,7 @@ export class LootboxClient {
 
 	private async requireBoxCurve(template: Address): Promise<ChainBoxCurve> {
 		const curve = await this.boxCurve(template);
+
 		if (!curve) throw new Error("this lootbox has no open box curve");
 
 		return curve;
@@ -3697,6 +3702,7 @@ export class LootboxClient {
 							logWrapper: NOOP_PROGRAM,
 							pluginAccounts: CORE_PROGRAM,
 						});
+
 						instructions = [replaceGeneratedTail(
 							claim,
 							resolved.pluginAccounts ?? [],
@@ -3760,6 +3766,7 @@ export class LootboxClient {
 				opening = current;
 				continue;
 			}
+
 			opening = await generated.fetchTemplateOpeningState(
 				this.rpc,
 				openingAddress,

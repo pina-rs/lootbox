@@ -268,6 +268,7 @@ mod tests {
 			} else {
 				quote_curve_sell(&curve, count)
 			};
+
 			let expected = &case["expected"];
 			let wanted = if expected.get("error").is_some() {
 				Err(BoxCurveError::InvalidBoxCurve)

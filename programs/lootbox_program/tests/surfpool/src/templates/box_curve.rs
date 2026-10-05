@@ -54,6 +54,7 @@ fn published_lootbox(program: &Harness, supply: u64) -> LockedLootbox {
 		.expect("create template");
 	let bundle = add_bundle(program, template, 0, supply, 1);
 	fund_sol(program, template, bundle, 100_000).expect("fund SOL prize");
+
 	activate_bundle(program, template, bundle);
 	program
 		.send(

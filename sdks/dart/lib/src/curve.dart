@@ -197,16 +197,19 @@ BoxCurvePlan planBoxCurve({
       'a curve needs at least $minCurveInventory boxes to find a price',
     );
   }
+
   if (startPrice < minCurveStartPrice) {
     throw BoxCurveException(
       'the first box must cost at least $minCurveStartPrice lamports',
     );
   }
+
   if (endPrice < startPrice) {
     throw const BoxCurveException(
       'the last box cannot cost less than the first',
     );
   }
+
   if (feeBps < 0 || feeBps > maxCurveFeeBps) {
     throw const BoxCurveException(
       'the fee must be 0 to $maxCurveFeeBps basis points',

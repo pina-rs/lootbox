@@ -32,6 +32,7 @@ pub struct Migrate {
 	pub prize_pool_item_state: Option<solana_pubkey::Pubkey>,
 	pub exclusive_collection_state: Option<solana_pubkey::Pubkey>,
 	pub exclusive_attachment_state: Option<solana_pubkey::Pubkey>,
+	pub box_curve_state: Option<solana_pubkey::Pubkey>,
 }
 
 impl Migrate {
@@ -50,6 +51,7 @@ impl Migrate {
 			prize_pool_item_state: None,
 			exclusive_collection_state: None,
 			exclusive_attachment_state: None,
+			box_curve_state: None,
 		}
 	}
 
@@ -68,7 +70,7 @@ impl Migrate {
 		&self,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(13 + remaining_accounts.len());
+		let mut accounts = Vec::with_capacity(14 + remaining_accounts.len());
 		if let Some(payer) = self.payer {
 			accounts.push(solana_instruction::AccountMeta::new(payer, true));
 		} else {
@@ -163,6 +165,14 @@ impl Migrate {
 		}
 		if let Some(exclusive_attachment_state) = self.exclusive_attachment_state {
 			accounts.push(solana_instruction::AccountMeta::new(exclusive_attachment_state, false));
+		} else {
+			accounts.push(solana_instruction::AccountMeta::new_readonly(
+				crate::LOOTBOX_PROGRAM_ID,
+				false,
+			));
+		}
+		if let Some(box_curve_state) = self.box_curve_state {
+			accounts.push(solana_instruction::AccountMeta::new(box_curve_state, false));
 		} else {
 			accounts.push(solana_instruction::AccountMeta::new_readonly(
 				crate::LOOTBOX_PROGRAM_ID,

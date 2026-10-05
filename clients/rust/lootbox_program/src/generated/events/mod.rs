@@ -9,5 +9,7 @@
 )]
 
 pub(crate) mod r#exclusive_nft_minted_event;
+pub(crate) mod r#box_curve_traded_event;
 
 pub use self::r#exclusive_nft_minted_event::*;
+pub use self::r#box_curve_traded_event::*;

@@ -152,6 +152,23 @@ const int lootboxProgramErrorInvalidExclusiveCollection = 0x23; // 35
 /// Message: "The Exclusive NFT collection is not accepting new attachments now."
 const int lootboxProgramErrorExclusiveAttachWindowClosed = 0x24; // 36
 
+/// The box curve's terms, accounts, or trade size are invalid.
+/// Message: "The box curve's terms, accounts, or trade size are invalid."
+const int lootboxProgramErrorInvalidBoxCurve = 0x25; // 37
+
+/// The box curve has sold out, or the lootbox's reveal closed trading.
+/// Message: "The box curve has sold out, or the lootbox's reveal closed trading."
+const int lootboxProgramErrorBoxCurveClosed = 0x26; // 38
+
+/// The trade costs more, or returns less, than the caller allowed.
+/// Message: "The trade costs more, or returns less, than the caller allowed."
+const int lootboxProgramErrorBoxCurveSlippage = 0x27; // 39
+
+/// A curve with boxes sold can close only after it sells out or trading
+/// closes.
+/// Message: "A curve with boxes sold can close only after it sells out or trading"
+const int lootboxProgramErrorBoxCurveTrading = 0x28; // 40
+
 /// Map of error codes to human-readable messages.
 const Map<int, String> _lootboxProgramErrorMessages = {
   lootboxProgramErrorUnauthorized:
@@ -223,6 +240,14 @@ const Map<int, String> _lootboxProgramErrorMessages = {
       'The Exclusive NFT collection, attachment, layers, or tree is invalid.',
   lootboxProgramErrorExclusiveAttachWindowClosed:
       'The Exclusive NFT collection is not accepting new attachments now.',
+  lootboxProgramErrorInvalidBoxCurve:
+      'The box curve\'s terms, accounts, or trade size are invalid.',
+  lootboxProgramErrorBoxCurveClosed:
+      'The box curve has sold out, or the lootbox\'s reveal closed trading.',
+  lootboxProgramErrorBoxCurveSlippage:
+      'The trade costs more, or returns less, than the caller allowed.',
+  lootboxProgramErrorBoxCurveTrading:
+      'A curve with boxes sold can close only after it sells out or trading',
 };
 
 /// Get the error message for a LootboxProgram program error code.

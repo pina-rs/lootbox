@@ -776,6 +776,66 @@
 				}
 			]
 		},
+		"account:1:0c": {
+			"rustName": "BoxCurveState",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "template",
+								"rustType": "Address"
+							},
+							{
+								"name": "box_mint",
+								"rustType": "Address"
+							},
+							{
+								"name": "authority",
+								"rustType": "Address"
+							},
+							{
+								"name": "inventory",
+								"rustType": "u64"
+							},
+							{
+								"name": "sold",
+								"rustType": "u64"
+							},
+							{
+								"name": "start_price",
+								"rustType": "u64"
+							},
+							{
+								"name": "price_step",
+								"rustType": "u64"
+							},
+							{
+								"name": "reserve",
+								"rustType": "u64"
+							},
+							{
+								"name": "closes_at",
+								"rustType": "i64"
+							},
+							{
+								"name": "sold_out_at",
+								"rustType": "i64"
+							},
+							{
+								"name": "fee_bps",
+								"rustType": "u16"
+							},
+							{
+								"name": "bump",
+								"rustType": "u8"
+							}
+						]
+					}
+				}
+			]
+		},
 		"event:1:01": {
 			"rustName": "ExclusiveNftMintedEvent",
 			"versions": [
@@ -821,6 +881,46 @@
 							},
 							{
 								"name": "layer_count",
+								"rustType": "u8"
+							}
+						]
+					}
+				}
+			]
+		},
+		"event:1:02": {
+			"rustName": "BoxCurveTradedEvent",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "curve",
+								"rustType": "Address"
+							},
+							{
+								"name": "trader",
+								"rustType": "Address"
+							},
+							{
+								"name": "count",
+								"rustType": "u64"
+							},
+							{
+								"name": "lamports",
+								"rustType": "u64"
+							},
+							{
+								"name": "fee",
+								"rustType": "u64"
+							},
+							{
+								"name": "sold_after",
+								"rustType": "u64"
+							},
+							{
+								"name": "side",
 								"rustType": "u8"
 							}
 						]
@@ -3962,6 +4062,233 @@
 							{
 								"name": "system_program",
 								"defaultValue": "publicKey:11111111111111111111111111111111"
+							}
+						]
+					}
+				}
+			]
+		},
+		"instruction:1:3c": {
+			"rustName": "OpenBoxCurveInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "inventory",
+								"rustType": "u64"
+							},
+							{
+								"name": "start_price",
+								"rustType": "u64"
+							},
+							{
+								"name": "price_step",
+								"rustType": "u64"
+							},
+							{
+								"name": "fee_bps",
+								"rustType": "u16"
+							},
+							{
+								"name": "bump",
+								"rustType": "u8"
+							}
+						]
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": true
+							},
+							{
+								"name": "template"
+							},
+							{
+								"name": "box_mint"
+							},
+							{
+								"name": "source_box_account",
+								"writable": true
+							},
+							{
+								"name": "box_curve",
+								"writable": true,
+								"pda": "box_curve"
+							},
+							{
+								"name": "curve_box_account",
+								"writable": true
+							},
+							{
+								"name": "system_program",
+								"defaultValue": "publicKey:11111111111111111111111111111111"
+							},
+							{
+								"name": "box_token_program",
+								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+							}
+						]
+					}
+				}
+			]
+		},
+		"instruction:1:3d": {
+			"rustName": "BuyCurveBoxesInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "count",
+								"rustType": "u64"
+							},
+							{
+								"name": "max_lamports",
+								"rustType": "u64"
+							}
+						]
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "buyer",
+								"writable": true,
+								"signer": true
+							},
+							{
+								"name": "template"
+							},
+							{
+								"name": "box_curve",
+								"writable": true,
+								"pda": "box_curve"
+							},
+							{
+								"name": "box_mint"
+							},
+							{
+								"name": "curve_box_account",
+								"writable": true
+							},
+							{
+								"name": "destination_box_account",
+								"writable": true
+							},
+							{
+								"name": "authority",
+								"writable": true
+							},
+							{
+								"name": "system_program",
+								"defaultValue": "publicKey:11111111111111111111111111111111"
+							},
+							{
+								"name": "box_token_program",
+								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+							}
+						]
+					}
+				}
+			]
+		},
+		"instruction:1:3e": {
+			"rustName": "SellCurveBoxesInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "count",
+								"rustType": "u64"
+							},
+							{
+								"name": "min_lamports",
+								"rustType": "u64"
+							}
+						]
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "seller",
+								"writable": true,
+								"signer": true
+							},
+							{
+								"name": "template"
+							},
+							{
+								"name": "box_curve",
+								"writable": true,
+								"pda": "box_curve"
+							},
+							{
+								"name": "box_mint"
+							},
+							{
+								"name": "source_box_account",
+								"writable": true
+							},
+							{
+								"name": "curve_box_account",
+								"writable": true
+							},
+							{
+								"name": "authority",
+								"writable": true
+							},
+							{
+								"name": "box_token_program",
+								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+							}
+						]
+					}
+				}
+			]
+		},
+		"instruction:1:3f": {
+			"rustName": "CloseBoxCurveInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": []
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "authority",
+								"writable": true,
+								"signer": true
+							},
+							{
+								"name": "template"
+							},
+							{
+								"name": "box_curve",
+								"writable": true,
+								"pda": "box_curve"
+							},
+							{
+								"name": "box_mint"
+							},
+							{
+								"name": "curve_box_account",
+								"writable": true
+							},
+							{
+								"name": "destination_box_account",
+								"writable": true
+							},
+							{
+								"name": "box_token_program",
+								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
 							}
 						]
 					}

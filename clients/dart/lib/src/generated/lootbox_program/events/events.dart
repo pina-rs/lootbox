@@ -3,9 +3,11 @@
 
 export 'event_log.dart';
 export 'exclusive_nft_minted_event.dart';
+export 'box_curve_traded_event.dart';
 
 import 'event_log.dart';
 import 'exclusive_nft_minted_event.dart';
+import 'box_curve_traded_event.dart';
 
 /// The program whose invocation frames emit the events decoded here.
 const lootboxProgramEventSourceAddress =
@@ -58,6 +60,11 @@ List<LootboxProgramEvent> parseLootboxProgramEventsFromLogs(
       discovered.add(exclusiveNftMintedEvent);
       continue;
     }
+    final boxCurveTradedEvent = parseBoxCurveTradedEventEventFromLog(log);
+    if (boxCurveTradedEvent != null) {
+      discovered.add(boxCurveTradedEvent);
+      continue;
+    }
     final unknownVersion = _unrecognizedEventVersion(log);
     if (unknownVersion != null) {
       throw RangeError(unknownVersion);
@@ -77,6 +84,11 @@ String? _unrecognizedEventVersion(String log) {
     return bytes.length < 2
         ? 'event "exclusiveNftMintedEvent" log is too short for its version envelope'
         : 'event "exclusiveNftMintedEvent" log carries migration version ${bytes[1]}, which this client cannot decode; regenerate it';
+  }
+  if (bytes.length >= 1 && bytes[0] == 2) {
+    return bytes.length < 2
+        ? 'event "boxCurveTradedEvent" log is too short for its version envelope'
+        : 'event "boxCurveTradedEvent" log carries migration version ${bytes[1]}, which this client cannot decode; regenerate it';
   }
   return null;
 }

@@ -3,14 +3,15 @@
  * humanisation, crackle, coin scatter) draws from a `Random` seeded from a
  * string label, so `node render.ts` produces byte-identical audio every run.
  */
-
 /** FNV-1a 32-bit hash, used to turn readable labels into seeds. */
 export function hashLabel(label: string): number {
 	let hash = 0x811c9dc5;
+
 	for (let index = 0; index < label.length; index += 1) {
 		hash ^= label.charCodeAt(index);
 		hash = Math.imul(hash, 0x01000193);
 	}
+
 	return hash >>> 0;
 }
 
@@ -32,6 +33,7 @@ export class Random {
 		let t = this.#state;
 		t = Math.imul(t ^ (t >>> 15), t | 1);
 		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+
 		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 	}
 
@@ -58,6 +60,7 @@ export class Random {
 	gaussian(): number {
 		const u = Math.max(this.next(), 1e-12);
 		const v = this.next();
+
 		return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 	}
 

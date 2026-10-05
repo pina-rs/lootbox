@@ -7,7 +7,6 @@
  *   -> ffmpeg two-pass loudnorm -> out/music/*.wav -> AAC .m4a
  *   -> cue sheet JSON, waveform PNG, analysis, checks, out/report.md
  */
-
 import {
 	copyFileSync,
 	existsSync,
@@ -102,9 +101,11 @@ const MUSIC: readonly MusicJob[] = [
 
 function renderMusic(job: MusicJob, checks: Check[]): MusicSummary {
 	const song = job.render();
+
 	if (song.keep === undefined) {
 		fadeStereoEdges(song.mix, 0, END_FADE_SECONDS);
 	}
+
 	const mastered = master(song.mix, MUSIC_MASTER);
 	const { buffer: masteredBuffer, ...masterStats } = mastered;
 	const delivered = song.keep === undefined
@@ -128,9 +129,11 @@ function renderMusic(job: MusicJob, checks: Check[]): MusicSummary {
 	const m4a = song.keep === undefined
 		? join(DIRECTORIES.music, `${job.name}.m4a`)
 		: null;
+
 	if (m4a !== null) {
 		encodeAac(wav, m4a);
 	}
+
 	waveform(wav, join(DIRECTORIES.waveforms, `${job.name}.png`));
 
 	const final = readWav(wav);
@@ -190,6 +193,7 @@ function renderMusic(job: MusicJob, checks: Check[]): MusicSummary {
 			} s`,
 		},
 	);
+
 	if (loopSeamDb !== undefined) {
 		checks.push({
 			file: `music/${job.name}.wav`,
@@ -198,6 +202,7 @@ function renderMusic(job: MusicJob, checks: Check[]): MusicSummary {
 			detail: `${loopSeamDb.toFixed(1)} dBFS max seam difference`,
 		});
 	}
+
 	return summary;
 }
 
@@ -217,6 +222,7 @@ function renderSfx(effect: SoundEffect, checks: Check[]): SfxSummary {
 		...sfxChecks(`sfx/${name}.wav`, summary.wav, true),
 		...sfxChecks(`sfx/${name}.m4a`, summary.m4a, false),
 	);
+
 	return summary;
 }
 
@@ -227,6 +233,7 @@ function main(): void {
 		...MUSIC.map((job) => job.name),
 		...SOUND_EFFECTS.map((effect) => effect.name),
 	]);
+
 	for (const name of only) {
 		if (!known.has(name)) {
 			throw new Error(
@@ -234,15 +241,18 @@ function main(): void {
 			);
 		}
 	}
+
 	if (only.size === 0) {
 		rmSync(OUT, { recursive: true, force: true });
 	}
+
 	for (const directory of [WORK, ...Object.values(DIRECTORIES)]) {
 		mkdirSync(directory, { recursive: true });
 	}
 
 	const checks: Check[] = [];
 	const music: MusicSummary[] = [];
+
 	for (const job of MUSIC.filter((item) => selected(item.name))) {
 		const started = performance.now();
 		music.push(renderMusic(job, checks));
@@ -255,7 +265,9 @@ function main(): void {
 			} dBTP  (${((performance.now() - started) / 1000).toFixed(1)} s)`,
 		);
 	}
+
 	const sfx: SfxSummary[] = [];
+
 	for (const effect of SOUND_EFFECTS.filter((item) => selected(item.name))) {
 		sfx.push(renderSfx(effect, checks));
 		const item = sfx[sfx.length - 1];
@@ -268,17 +280,21 @@ function main(): void {
 
 	writeFileSync(join(OUT, "report.md"), buildReport(music, sfx, checks));
 	const failures = checks.filter((item) => !item.passed);
+
 	if (failures.length === 0) {
 		publish(music.map((item) => item.name), sfx.map((item) => item.name));
 	}
+
 	console.log(
 		`\n${
 			checks.length - failures.length
 		}/${checks.length} checks passed. Report: ${join(OUT, "report.md")}`,
 	);
+
 	for (const failure of failures) {
 		console.error(`FAIL ${failure.file}: ${failure.name} — ${failure.detail}`);
 	}
+
 	process.exitCode = failures.length === 0 ? 0 : 1;
 }
 
@@ -290,6 +306,7 @@ function publish(
 	for (const kind of ["music", "sfx"] as const) {
 		mkdirSync(join(PUBLIC, kind), { recursive: true });
 	}
+
 	for (const name of musicNames) {
 		for (const extension of [".m4a", ".json"]) {
 			const source = join(DIRECTORIES.music, name + extension);
@@ -299,12 +316,14 @@ function publish(
 			}
 		}
 	}
+
 	for (const name of sfxNames) {
 		copyFileSync(
 			join(DIRECTORIES.sfx, `${name}.m4a`),
 			join(PUBLIC, "sfx", `${name}.m4a`),
 		);
 	}
+
 	console.log(`Published to ${PUBLIC}`);
 }
 

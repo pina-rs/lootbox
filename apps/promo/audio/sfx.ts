@@ -4,7 +4,6 @@
  * them. They share the music's timbres (marimba, FM bells, brass) so a video
  * that mixes both still sounds like one brand.
  */
-
 import {
 	addVoice,
 	createStereo,
@@ -42,9 +41,9 @@ export interface SoundEffect {
 }
 
 // --- Helpers ----------------------------------------------------------------
-
 function stereoOf(mono: Float32Array, pan = 0): Stereo {
 	const [left, right] = panGains(pan);
+
 	return {
 		left: mono.map((sample) => sample * left),
 		right: mono.map((sample) => sample * right),
@@ -73,6 +72,7 @@ function withRoom(dry: Stereo, wet: number, roomSize = 0.5): Stereo {
 		highCutHz: 9000,
 	});
 	mixInto(dry, tail, wet);
+
 	return dry;
 }
 
@@ -82,14 +82,15 @@ function synth(
 	sample: (time: number, index: number) => number,
 ): Float32Array {
 	const out = new Float32Array(toSamples(seconds));
+
 	for (let index = 0; index < out.length; index += 1) {
 		out[index] = sample(index / SAMPLE_RATE, index);
 	}
+
 	return out;
 }
 
 // --- UI ---------------------------------------------------------------------
-
 function uiClick(): Stereo {
 	const random = Random.from("sfx/ui-click");
 	const noise = filterInPlace(whiteNoise(random, toSamples(0.06)), {
@@ -101,6 +102,7 @@ function uiClick(): Stereo {
 			0.4 * Math.sin(TAU * 1150 * time) * Math.exp(-time / 0.006);
 		return tone + noise[index] * 0.5 * Math.exp(-time / 0.0008);
 	});
+
 	return stereoOf(fadeEdges(out, 0.0002, 0.01));
 }
 
@@ -125,6 +127,7 @@ function uiPop(): Stereo {
 	const out = createStereo(toSamples(0.28));
 	place(out, bubble(0.22, 380, 1150, 0.05, 0.04), 0, 1, -0.1);
 	place(out, bubble(0.16, 700, 1700, 0.035, 0.03), 0.045, 0.35, 0.2);
+
 	return withRoom(out, 0.12, 0.3);
 }
 
@@ -155,11 +158,11 @@ function typeTick(): Stereo {
 			0.5 * Math.sin(TAU * 170 * time) * Math.exp(-time / 0.008) +
 			0.25 * Math.sin(TAU * 1100 * time) * Math.exp(-time / 0.004);
 	});
+
 	return stereoOf(fadeEdges(out, 0.0002, 0.01));
 }
 
 // --- Motion -----------------------------------------------------------------
-
 /** Air rushing past: band-passed noise whose centre and level follow a swell, panning across. */
 function whoosh(reverse: boolean): () => Stereo {
 	return () => {
@@ -187,6 +190,7 @@ function whoosh(reverse: boolean): () => Stereo {
 				reverse ? 0.7 - 1.4 * progress : -0.8 + 1.6 * progress,
 			);
 			out.left[index] = air * swell * left;
+
 			out.right[index] = air * swell * right;
 		}
 		return fadeStereoEdges(out, 0.01, reverse ? 0.012 : 0.05);
@@ -194,7 +198,6 @@ function whoosh(reverse: boolean): () => Stereo {
 }
 
 // --- Treasure ---------------------------------------------------------------
-
 /** One struck coin: plate-like inharmonic partials plus a contact click. */
 function coinStrike(random: Random, hz: number): Float32Array {
 	const partials = [
@@ -216,6 +219,7 @@ function coinStrike(random: Random, hz: number): Float32Array {
 		return ring * 0.5 +
 			(index < click.length ? click[index] * Math.exp(-time / 0.001) * 0.4 : 0);
 	});
+
 	return fadeEdges(out, 0.0002, 0.05);
 }
 
@@ -224,6 +228,7 @@ function coinClink(): Stereo {
 	const out = createStereo(toSamples(0.7));
 	place(out, coinStrike(random, 2050), 0, 1, -0.1);
 	place(out, coinStrike(random, 2130), 0.085, 0.6, 0.15);
+
 	return withRoom(out, 0.1, 0.35);
 }
 
@@ -232,6 +237,7 @@ function coinsCascade(): Stereo {
 	const out = createStereo(toSamples(1.9));
 	const times = Array.from({ length: 28 }, () => 1.3 * random.next() ** 1.7)
 		.sort((a, b) => a - b);
+
 	for (const time of times) {
 		place(
 			out,
@@ -241,6 +247,7 @@ function coinsCascade(): Stereo {
 			random.range(-0.8, 0.8),
 		);
 	}
+
 	return fadeStereoEdges(withRoom(out, 0.18, 0.45), 0.001, 0.1);
 }
 
@@ -264,11 +271,11 @@ function sparkle(): Stereo {
 		0.5,
 		0,
 	);
+
 	return fadeStereoEdges(withRoom(out, 0.3, 0.6), 0.0005, 0.15);
 }
 
 // --- Chest ------------------------------------------------------------------
-
 /**
  * Cartoon hinge: stick-slip impulses whose rate climbs (32 → 95 per second)
  * ring three wooden resonances, so the creak rises like a curious "hmm?".
@@ -279,20 +286,25 @@ function chestCreak(): Stereo {
 	const length = toSamples(seconds);
 	const excitation = new Float32Array(length);
 	let time = 0.02;
+
 	while (time < seconds - 0.15) {
 		const progress = time / seconds;
 		excitation[toSamples(time)] = random.range(0.8, 1.2);
+
 		time += (1 / (32 + 63 * progress ** 1.2)) * random.range(0.88, 1.12);
 	}
+
 	const resonators = [
 		{ filter: new Svf("bandpass"), hz: 820, q: 9, gain: 1 },
 		{ filter: new Svf("bandpass"), hz: 1640, q: 7, gain: 0.5 },
 		{ filter: new Svf("bandpass"), hz: 460, q: 5, gain: 0.7 },
 	];
 	const out = new Float32Array(length);
+
 	for (let index = 0; index < length; index += 1) {
 		const progress = index / length;
 		let sum = 0;
+
 		for (const resonator of resonators) {
 			sum += resonator.filter.process(
 				excitation[index],
@@ -300,12 +312,15 @@ function chestCreak(): Stereo {
 				resonator.q,
 			) * resonator.gain;
 		}
+
 		const envelope = Math.min(1, index / toSamples(0.05)) *
 			Math.min(1, (length - index) / toSamples(0.15));
 		out[index] = sum * envelope;
 	}
+
 	const stereo = stereoOf(fadeEdges(out, 0.005, 0.02), -0.1);
 	place(stereo, tom(random, 380, 0.35), 0.78, 0.4, 0.1);
+
 	return withRoom(stereo, 0.1, 0.4);
 }
 
@@ -335,6 +350,7 @@ export function chestThud(): Stereo {
 		) / 1.8;
 	});
 	const out = stereoOf(fadeEdges(body, 0.0005, 0.05));
+
 	for (const [time, hz] of [[0.03, 3200], [0.055, 3650], [0.07, 2900]]) {
 		place(
 			out,
@@ -344,6 +360,7 @@ export function chestThud(): Stereo {
 			random.range(-0.5, 0.5),
 		);
 	}
+
 	return withRoom(out, 0.08, 0.35);
 }
 
@@ -371,20 +388,22 @@ function lockClick(): Stereo {
 	const out = createStereo(toSamples(0.3));
 	place(out, click(0.6), 0, 1, 0.1);
 	place(out, click(1), 0.075, 1, -0.05);
+
 	return withRoom(out, 0.06, 0.3);
 }
 
 // --- Moments ----------------------------------------------------------------
-
 function drumroll(): Stereo {
 	const random = Random.from("sfx/drumroll");
 	const out = createStereo(toSamples(3.6));
 	let time = 0;
 	let stroke = 0;
+
 	while (time < 2) {
 		const progress = time / 2;
 		const velocity = (0.2 + 0.8 * progress ** 1.5) *
 			(stroke % 2 === 0 ? 1 : 0.82) * random.range(0.92, 1.05);
+
 		place(
 			out,
 			snare(random, Math.min(1, velocity), {
@@ -399,9 +418,11 @@ function drumroll(): Stereo {
 		time += 0.058 - 0.018 * progress;
 		stroke += 1;
 	}
+
 	place(out, crash(random, 1), 2, 0.75);
 	place(out, kick(random, 1, { startHz: 150, endHz: 48, decay: 0.3 }), 2, 0.9);
 	place(out, snare(random, 1, { tuneHz: 205, decay: 0.14 }), 2, 0.7);
+
 	return fadeStereoEdges(withRoom(out, 0.15, 0.55), 0.001, 0.4);
 }
 
@@ -409,6 +430,7 @@ function fanfareShort(): Stereo {
 	const random = Random.from("sfx/fanfare-short");
 	const out = createStereo(toSamples(1.5));
 	const pickup = ["G3", "B3", "D4", "G4"];
+
 	for (const start of [0, 0.1, 0.2]) {
 		for (const name of pickup) {
 			place(
@@ -420,7 +442,9 @@ function fanfareShort(): Stereo {
 			);
 		}
 	}
+
 	const final = ["C3", "C4", "E4", "G4", "C5", "E5"];
+
 	for (const name of final) {
 		place(
 			out,
@@ -430,8 +454,10 @@ function fanfareShort(): Stereo {
 			(midi(name) - 62) / 30,
 		);
 	}
+
 	place(out, tom(random, 98, 0.9), 0.32, 0.8);
 	place(out, crash(random, 0.5), 0.32, 0.35);
+
 	return fadeStereoEdges(withRoom(out, 0.2, 0.55), 0.001, 0.25);
 }
 
@@ -470,6 +496,7 @@ function aww(): Stereo {
 		});
 		place(out, fadeEdges(voice, 0.001, 0.02), note.start, 0.9, 0);
 	});
+
 	return withRoom(out, 0.1, 0.4);
 }
 
@@ -490,6 +517,7 @@ function cashRegister(): Stereo {
 		0.9,
 		-0.1,
 	);
+
 	for (let click = 0; click < 4; click += 1) {
 		const rattle = filterInPlace(whiteNoise(random, toSamples(0.02)), {
 			kind: "highpass",
@@ -503,10 +531,12 @@ function cashRegister(): Stereo {
 			0.2,
 		);
 	}
+
 	const drawer = filterInPlace(whiteNoise(random, toSamples(0.12)), {
 		kind: "lowpass",
 		frequency: 1500,
 	});
+
 	place(
 		out,
 		synth(
@@ -531,6 +561,7 @@ function cashRegister(): Stereo {
 		);
 	}
 	place(out, fmPing(5274, 1.41, 1.5, 0.25, 1.2), 0.1, 0.15, 0);
+
 	return fadeStereoEdges(withRoom(out, 0.2, 0.5), 0.0005, 0.2);
 }
 
@@ -547,6 +578,7 @@ function notification(): Stereo {
 		place(out, marimba(note), start, 1, start === 0 ? -0.15 : 0.15);
 		place(out, bell(note), start, 0.35, start === 0 ? -0.15 : 0.15);
 	}
+
 	return fadeStereoEdges(withRoom(out, 0.15, 0.45), 0.0005, 0.15);
 }
 

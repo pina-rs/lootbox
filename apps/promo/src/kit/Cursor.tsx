@@ -23,6 +23,7 @@ export function Cursor(
 	const first = keys[0];
 
 	if (!first || frame < first.frame - 8) return null;
+
 	if (hideAfter !== undefined && frame > hideAfter + 8) return null;
 
 	const frames = keys.map((key) => key.frame);

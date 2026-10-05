@@ -22,6 +22,7 @@ export function Tap(
 	const last = taps.at(-1);
 
 	if (first === undefined || last === undefined) return null;
+
 	if (frame < first - 14 || frame > last + 14) return null;
 
 	const arrive = progress(frame, first - 14, 10);

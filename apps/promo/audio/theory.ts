@@ -2,7 +2,6 @@
  * Music theory helpers: note names, chord symbols, automatic voice leading and
  * a compact phrase notation so melodies read like sheet music in the song files.
  */
-
 const LETTERS: Readonly<Record<string, number>> = {
 	C: 0,
 	D: 2,
@@ -16,10 +15,13 @@ const LETTERS: Readonly<Record<string, number>> = {
 /** "C4" -> 60, "Bb3" -> 58, "F#5" -> 78. */
 export function midi(name: string): number {
 	const match = /^([A-G])(#|b)?(-?\d)$/.exec(name);
+
 	if (match === null) {
 		throw new Error(`Bad note name: ${name}`);
 	}
+
 	const accidental = match[2] === "#" ? 1 : match[2] === "b" ? -1 : 0;
+
 	return 12 * (Number(match[3]) + 1) + LETTERS[match[1]] + accidental;
 }
 
@@ -59,20 +61,24 @@ export interface Chord {
 export function chord(symbol: string): Chord {
 	const match = /^([A-G][#b]?)([^/]*)(?:\/([A-G][#b]?))?$/.exec(symbol);
 	const intervals = match === null ? undefined : QUALITIES[match[2]];
+
 	if (match === null || intervals === undefined) {
 		throw new Error(`Unknown chord symbol: ${symbol}`);
 	}
+
 	const root = pitchClass(match[1]);
 	const bass = match[3] === undefined ? root : pitchClass(match[3]);
 	const tones = [
 		...new Set(intervals.map((interval) => (root + interval) % 12)),
 	];
+
 	return { symbol, root, bass, tones };
 }
 
 /** The MIDI note of pitch class `pc` nearest to `near`. */
 export function nearestPitch(pc: number, near: number): number {
 	const base = near - (((near % 12) - pc + 12) % 12);
+
 	return near - base > 6 ? base + 12 : base;
 }
 
@@ -114,20 +120,25 @@ export function voiceLead(
 		if (depth === options.length) {
 			const voicing = [...picked].sort((a, b) => a - b);
 			let cost = 0;
+
 			for (let index = 1; index < voicing.length; index += 1) {
 				const gap = voicing[index] - voicing[index - 1];
+
 				if (gap === 0) {
 					return;
 				}
+
 				if (gap <= 2 && voicing[index - 1] < 55) {
 					cost += 6;
 				} else if (gap === 1 && voicing[index - 1] < 60) {
 					cost += 4;
 				}
 			}
+
 			if (voicing[voicing.length - 1] - voicing[0] > 16) {
 				cost += 3;
 			}
+
 			if (previous === null || previous.length === 0) {
 				cost += Math.abs(
 					voicing.reduce((sum, note) => sum + note, 0) / voicing.length -
@@ -143,24 +154,29 @@ export function voiceLead(
 					notes.reduce((sum, note) => sum + note, 0) / notes.length;
 				cost += Math.abs(mean(voicing) - mean(previous)) * voicing.length;
 			}
+
 			if (cost < bestCost) {
 				bestCost = cost;
 				best = voicing;
 			}
+
 			return;
 		}
 		for (const note of options[depth]) {
 			picked.push(note);
 			visit(depth + 1, picked);
+
 			picked.pop();
 		}
 	};
 	visit(0, []);
+
 	if (best.length === 0) {
 		throw new Error(
 			`No voicing for ${target.symbol} in ${range.low}..${range.high}`,
 		);
 	}
+
 	return best;
 }
 
@@ -183,12 +199,16 @@ export interface PhraseNote {
 export function phrase(text: string, defaultVelocity = 0.8): PhraseNote[] {
 	const notes: PhraseNote[] = [];
 	let beat = 0;
+
 	for (const token of text.trim().split(/\s+/)) {
 		const match = /^([A-Gr][#b]?-?\d?)\/([\d.]+)(?:@([\d.]+))?$/.exec(token);
+
 		if (match === null) {
 			throw new Error(`Bad phrase token: ${token}`);
 		}
+
 		const length = Number(match[2]);
+
 		if (match[1] !== "r") {
 			notes.push({
 				beat,
@@ -197,7 +217,9 @@ export function phrase(text: string, defaultVelocity = 0.8): PhraseNote[] {
 				velocity: match[3] === undefined ? defaultVelocity : Number(match[3]),
 			});
 		}
+
 		beat += length;
 	}
+
 	return notes;
 }

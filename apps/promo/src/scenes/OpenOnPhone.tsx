@@ -199,6 +199,7 @@ export function OpenOnPhone(
 	const arrive = enter(frame, 0, SNAP);
 	const charge = progress(frame, HOLD, CHARGED - HOLD, (t) => t);
 	const busy = frame >= CHARGED && frame < REVEAL;
+
 	const shake = frame >= HOLD && frame < REVEAL
 		? Math.sin(frame * 2.3) * (1 + charge * 3) +
 			(busy ? Math.sin(frame * 0.9) * 3 : 0)

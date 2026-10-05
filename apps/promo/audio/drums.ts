@@ -3,7 +3,6 @@
  * tambourine, rim, toms, crash, reverse cymbal, riser, impact and vinyl
  * crackle. Everything is built from oscillators and seeded noise.
  */
-
 import {
 	fadeEdges,
 	fadeStereoEdges,
@@ -35,33 +34,41 @@ function metal(length: number, tune: number, random: Random): Float32Array {
 		dt: (hz * tune * (1 + random.bipolar() * 0.004)) / SAMPLE_RATE,
 		phase: random.next(),
 	}));
+
 	for (let index = 0; index < length; index += 1) {
 		let sum = 0;
+
 		for (const voice of voices) {
 			sum += pulseWave(voice.phase, voice.dt, 0.5);
 			voice.phase = advance(voice.phase, voice.dt);
 		}
+
 		out[index] = sum / voices.length;
 	}
+
 	return out;
 }
 
 /** Scales a hit so its peak equals `velocity`: voices arrive level-matched and buses do the balancing. */
 function atPeak(buffer: Float32Array, velocity: number): Float32Array {
 	let peak = 0;
+
 	for (const sample of buffer) {
 		peak = Math.max(peak, Math.abs(sample));
 	}
+
 	if (peak > 0) {
 		for (let index = 0; index < buffer.length; index += 1) {
 			buffer[index] *= velocity / peak;
 		}
 	}
+
 	return buffer;
 }
 
 function stereoAtPeak(buffer: Stereo, velocity: number): Stereo {
 	let peak = 0;
+
 	for (let index = 0; index < buffer.left.length; index += 1) {
 		peak = Math.max(
 			peak,
@@ -69,11 +76,14 @@ function stereoAtPeak(buffer: Stereo, velocity: number): Stereo {
 			Math.abs(buffer.right[index]),
 		);
 	}
+
 	const gain = peak > 0 ? velocity / peak : 0;
+
 	for (let index = 0; index < buffer.left.length; index += 1) {
 		buffer.left[index] *= gain;
 		buffer.right[index] *= gain;
 	}
+
 	return buffer;
 }
 
@@ -101,6 +111,7 @@ export function kick(
 	const out = new Float32Array(length);
 	const clickFilter = new Svf("highpass");
 	let phase = 0;
+
 	for (let index = 0; index < length; index += 1) {
 		const seconds = index / SAMPLE_RATE;
 		const hz = endHz + (startHz - endHz) * Math.exp(-seconds / 0.03);
@@ -110,9 +121,11 @@ export function kick(
 		phase = advance(phase, hz / SAMPLE_RATE);
 		const transient = clickFilter.process(random.bipolar(), 1800, 0.7) *
 			Math.exp(-seconds / 0.0025) * click;
+
 		out[index] = (Math.tanh((body + transient) * drive) / Math.tanh(drive)) *
 			velocity;
 	}
+
 	return fadeEdges(out, 0, 0.02);
 }
 
@@ -139,6 +152,7 @@ export function snare(
 	}, { kind: "peaking", frequency: 5200, q: 0.9, gainDb: 4 });
 	let phaseA = 0;
 	let phaseB = 0;
+
 	for (let index = 0; index < length; index += 1) {
 		const seconds = index / SAMPLE_RATE;
 		const drop = 1 + 0.3 * Math.exp(-seconds / 0.012);
@@ -151,6 +165,7 @@ export function snare(
 			0.75;
 		out[index] = body * 0.65 + wires;
 	}
+
 	return atPeak(fadeEdges(out, 0, 0.02), velocity);
 }
 
@@ -164,19 +179,24 @@ export function clap(random: Random, velocity: number): Float32Array {
 	}, { kind: "highpass", frequency: 500 });
 	const bursts = [0, 0.0095, 0.019, 0.0305];
 	const out = new Float32Array(length);
+
 	for (let index = 0; index < length; index += 1) {
 		const seconds = index / SAMPLE_RATE;
 		let envelope = 0;
+
 		for (const start of bursts) {
 			if (seconds >= start) {
 				envelope += Math.exp(-(seconds - start) / 0.0032);
 			}
 		}
+
 		if (seconds >= 0.03) {
 			envelope += 0.55 * Math.exp(-(seconds - 0.03) / 0.12);
 		}
+
 		out[index] = noise[index] * envelope;
 	}
+
 	return atPeak(fadeEdges(out, 0.0003, 0.02), velocity);
 }
 
@@ -191,14 +211,17 @@ export function hat(
 	const tone = metal(length, 1, random);
 	const noise = whiteNoise(random, length);
 	const out = new Float32Array(length);
+
 	for (let index = 0; index < length; index += 1) {
 		out[index] = (tone[index] * 0.6 + noise[index] * 0.5) *
 			percussive(0.0008, tau, index / SAMPLE_RATE);
 	}
+
 	filterInPlace(out, { kind: "bandpass", frequency: 9500, q: 0.8 }, {
 		kind: "highpass",
 		frequency: 6800,
 	});
+
 	return atPeak(fadeEdges(out, 0.0003, open ? 0.05 : 0.01), velocity);
 }
 
@@ -210,6 +233,7 @@ export function shaker(random: Random, velocity: number): Float32Array {
 		frequency: 6500,
 		q: 1.2,
 	}, { kind: "highpass", frequency: 3500 });
+
 	for (let index = 0; index < length; index += 1) {
 		const seconds = index / SAMPLE_RATE;
 		const envelope = seconds < 0.012
@@ -217,6 +241,7 @@ export function shaker(random: Random, velocity: number): Float32Array {
 			: Math.exp(-(seconds - 0.012) / 0.035);
 		out[index] *= envelope;
 	}
+
 	return atPeak(fadeEdges(out, 0, 0.01), velocity);
 }
 
@@ -232,22 +257,29 @@ export function tambourine(random: Random, velocity: number): Float32Array {
 		frequency: 7000,
 	});
 	const out = new Float32Array(length);
+
 	for (let index = 0; index < length; index += 1) {
 		const seconds = index / SAMPLE_RATE;
 		let rattle = 0;
+
 		for (let strike = 0; strike < 4; strike += 1) {
 			const start = strike * 0.0065;
+
 			if (seconds >= start) {
 				rattle += Math.exp(-(seconds - start) / 0.012) * 0.7 ** strike;
 			}
 		}
+
 		let ring = 0;
+
 		for (const partial of partials) {
 			ring += Math.sin(TAU * partial.hz * seconds) *
 				Math.exp(-seconds / partial.tau);
 		}
+
 		out[index] = ring * 0.12 * (0.4 + rattle) + noise[index] * 0.5 * rattle;
 	}
+
 	return atPeak(fadeEdges(out, 0.0003, 0.02), velocity);
 }
 
@@ -255,6 +287,7 @@ export function tambourine(random: Random, velocity: number): Float32Array {
 export function rim(random: Random, velocity: number): Float32Array {
 	const length = toSamples(0.08);
 	const out = new Float32Array(length);
+
 	for (let index = 0; index < length; index += 1) {
 		const seconds = index / SAMPLE_RATE;
 		const tone = Math.sin(TAU * 1650 * seconds) * 0.5 +
@@ -262,6 +295,7 @@ export function rim(random: Random, velocity: number): Float32Array {
 		out[index] = tone * Math.exp(-seconds / 0.011) +
 			random.bipolar() * Math.exp(-seconds / 0.0015) * 0.4;
 	}
+
 	return atPeak(fadeEdges(out, 0.0002, 0.01), velocity);
 }
 
@@ -278,6 +312,7 @@ export function tom(
 	});
 	const out = new Float32Array(length);
 	let phase = 0;
+
 	for (let index = 0; index < length; index += 1) {
 		const seconds = index / SAMPLE_RATE;
 		const body = Math.sin(TAU * phase) * percussive(0.001, 0.19, seconds);
@@ -289,6 +324,7 @@ export function tom(
 			(body + stick[index] * 0.25 * Math.exp(-seconds / 0.02)) * 1.3,
 		) / 1.3;
 	}
+
 	return atPeak(fadeEdges(out, 0.0003, 0.03), velocity);
 }
 
@@ -306,6 +342,7 @@ export function crash(random: Random, velocity: number, seconds = 3.2): Stereo {
 				0.5 * Math.exp(-time / 0.08);
 			out[index] = (tone[index] * 0.45 + noise[index] * 0.6) * envelope;
 		}
+
 		filterInPlace(out, { kind: "highpass", frequency: 3400 }, {
 			kind: "lowpass",
 			frequency: 14_000,
@@ -369,6 +406,7 @@ export function impact(random: Random, velocity: number): Stereo {
 	const length = toSamples(3.2);
 	const boom = new Float32Array(length);
 	let phase = 0;
+
 	for (let index = 0; index < length; index += 1) {
 		const seconds = index / SAMPLE_RATE;
 		boom[index] = (Math.tanh(
@@ -376,6 +414,7 @@ export function impact(random: Random, velocity: number): Stereo {
 		) / 1.8) * 0.9;
 		phase = advance(phase, (32 + 70 * Math.exp(-seconds / 0.11)) / SAMPLE_RATE);
 	}
+
 	const cymbal = crash(random, 0.7, 3.2);
 	const thump = (label: string): Float32Array => {
 		const noise = filterInPlace(whiteNoise(random.fork(label), length), {
@@ -389,10 +428,12 @@ export function impact(random: Random, velocity: number): Stereo {
 	};
 	const left = thump("impact-left");
 	const right = thump("impact-right");
+
 	for (let index = 0; index < length; index += 1) {
 		left[index] += boom[index] + cymbal.left[index];
 		right[index] += boom[index] + cymbal.right[index];
 	}
+
 	return stereoAtPeak(fadeStereoEdges({ left, right }, 0.0003, 0.3), velocity);
 }
 
@@ -409,12 +450,15 @@ export function vinylCrackle(
 	const left = new Float32Array(length);
 	const right = new Float32Array(length);
 	let time = 0;
+
 	while (true) {
 		time += -Math.log(Math.max(random.next(), 1e-9)) / popsPerSecond;
 		const start = toSamples(time);
+
 		if (start >= length) {
 			break;
 		}
+
 		const size = random.integer(8, 60);
 		const amplitude = 0.12 * Math.exp(-random.next() * 3);
 		const pan = random.next();
@@ -429,14 +473,17 @@ export function vinylCrackle(
 			right[start + offset] += value * pan;
 		}
 	}
+
 	for (const channel of [left, right]) {
 		for (let index = 0; index < length; index += 1) {
 			channel[index] += random.bipolar() * 0.004;
 		}
+
 		new Biquad({ kind: "highpass", frequency: 3500, q: 0.7 }).processInPlace(
 			channel,
 		);
 		new Biquad({ kind: "lowpass", frequency: 11_000 }).processInPlace(channel);
 	}
+
 	return { left, right };
 }

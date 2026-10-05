@@ -3,7 +3,6 @@
  * line is said and which animated insert covers it. Times are seconds from
  * the first word. When a real recording arrives, retime these to the take.
  */
-
 export type Insert =
 	| "lock"
 	| "builder"

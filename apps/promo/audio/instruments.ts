@@ -4,7 +4,6 @@
  * the brand has one recognisable palette: FM marimba, FM keys, FM bells,
  * a soft square lead, triangle/sub basses, supersaw chords and synth brass.
  */
-
 import { fadeEdges, SAMPLE_RATE, type Stereo, toSamples } from "./buffer.ts";
 import {
 	type Adsr,
@@ -58,6 +57,7 @@ export function marimba(note: Note): Float32Array {
 		out,
 		0.85 * velocity ** 1.3,
 	);
+
 	if (hz * 3.98 < 15_000) {
 		renderFm(
 			{
@@ -72,6 +72,7 @@ export function marimba(note: Note): Float32Array {
 			0.1 * velocity,
 		);
 	}
+
 	return fadeEdges(out, 0.0005, 0.012);
 }
 
@@ -114,6 +115,7 @@ export function electricPiano(note: Note, brightness = 1): Stereo {
 		);
 		return fadeEdges(out, 0.001, 0.01);
 	};
+
 	return { left: channel(-3.5), right: channel(3.5) };
 }
 
@@ -147,6 +149,7 @@ export function bell(note: Note): Float32Array {
 		out,
 		0.18 * velocity,
 	);
+
 	return fadeEdges(out, 0.0005, 0.02);
 }
 
@@ -173,6 +176,7 @@ export function squareLead(
 	const vibratoDepth = options.vibratoCents ?? 16;
 	let phaseA = 0;
 	let phaseB = 0.37;
+
 	for (let index = 0; index < out.length; index += 1) {
 		const seconds = index / SAMPLE_RATE;
 		const glide = options.glideFrom === undefined ? 1 : 2 **
@@ -184,6 +188,7 @@ export function squareLead(
 		const frequency = hz * glide * vibrato;
 		const dtA = frequency / SAMPLE_RATE;
 		const dtB = (frequency * centsToRatio(7)) / SAMPLE_RATE;
+
 		const raw = pulseWave(phaseA, dtA, 0.42) * 0.6 +
 			pulseWave(phaseB, dtB, 0.5) * 0.4;
 		phaseA = advance(phaseA, dtA);
@@ -196,6 +201,7 @@ export function squareLead(
 		out[index] = filter.process(raw, cutoff, 0.75) * level * 0.5 *
 			note.velocity ** 1.1;
 	}
+
 	return fadeEdges(out, 0.001, 0.006);
 }
 
@@ -212,14 +218,17 @@ export function triangleBass(note: Note): Float32Array {
 	const filter = new Svf("lowpass");
 	let phase = 0;
 	let subPhase = 0;
+
 	for (let index = 0; index < out.length; index += 1) {
 		const raw = triangleWave(phase) * 0.75 + Math.sin(TAU * subPhase) * 0.55;
 		phase = advance(phase, hz / SAMPLE_RATE);
+
 		subPhase = advance(subPhase, hz / 2 / SAMPLE_RATE);
 		const shaped = Math.tanh(raw * 1.6) / 1.6;
 		out[index] = filter.process(shaped, Math.min(1800, hz * 7), 0.7) *
 			envelope[index] * note.velocity;
 	}
+
 	return fadeEdges(out, 0.002, 0.008);
 }
 
@@ -234,6 +243,7 @@ export function subBass(note: Note, glideFrom?: number): Float32Array {
 	}, note.seconds);
 	const out = new Float32Array(envelope.length);
 	let phase = 0;
+
 	for (let index = 0; index < out.length; index += 1) {
 		const seconds = index / SAMPLE_RATE;
 		const glide = glideFrom === undefined
@@ -241,8 +251,10 @@ export function subBass(note: Note, glideFrom?: number): Float32Array {
 			: 2 ** (((glideFrom - note.midi) / 12) * Math.exp(-seconds / 0.03));
 		out[index] = (Math.tanh(Math.sin(TAU * phase) * 2.2) / 1.6) *
 			envelope[index] * note.velocity;
+
 		phase = advance(phase, (hz * glide) / SAMPLE_RATE);
 	}
+
 	return fadeEdges(out, 0.003, 0.01);
 }
 
@@ -275,22 +287,26 @@ export function supersaw(
 		gain: offset === 0 ? 0.3 : 0.2,
 	}));
 	const filters = [new Svf("lowpass"), new Svf("lowpass")];
+
 	for (let index = 0; index < envelope.length; index += 1) {
 		const seconds = index / SAMPLE_RATE;
 		let sumLeft = 0;
 		let sumRight = 0;
+
 		for (const voice of voices) {
 			const value = sawWave(voice.phase, voice.dt) * voice.gain;
 			voice.phase = advance(voice.phase, voice.dt);
 			sumLeft += value * (1 - voice.pan) * 0.5;
 			sumRight += value * (1 + voice.pan) * 0.5;
 		}
+
 		const cutoff = options.cutoffHz *
 			(1 + options.filterBoost * Math.exp(-seconds / options.filterDecay));
 		const level = envelope[index] * note.velocity;
 		left[index] = filters[0].process(sumLeft, cutoff, 0.8) * level;
 		right[index] = filters[1].process(sumRight, cutoff, 0.8) * level;
 	}
+
 	return {
 		left: fadeEdges(left, 0.001, 0.008),
 		right: fadeEdges(right, 0.001, 0.008),
@@ -321,9 +337,11 @@ export function pluckBass(note: Note): Float32Array {
 	const filter = new Svf("lowpass");
 	let phase = 0;
 	let subPhase = 0;
+
 	for (let index = 0; index < out.length; index += 1) {
 		const seconds = index / SAMPLE_RATE;
 		const dt = hz / SAMPLE_RATE;
+
 		const raw = sawWave(phase, dt) * 0.55 +
 			pulseWave(subPhase, dt / 2, 0.5) * 0.45;
 		phase = advance(phase, dt);
@@ -332,6 +350,7 @@ export function pluckBass(note: Note): Float32Array {
 		out[index] = (Math.tanh(filter.process(raw, cutoff, 1.1) * 1.8) / 1.8) *
 			envelope[index] * note.velocity;
 	}
+
 	return fadeEdges(out, 0.001, 0.006);
 }
 
@@ -348,25 +367,30 @@ export function brass(note: Note): Float32Array {
 	const filter = new Svf("lowpass");
 	const phases = [0, 0.31, 0.67];
 	const detune = [-7, 0, 6];
+
 	for (let index = 0; index < out.length; index += 1) {
 		const seconds = index / SAMPLE_RATE;
 		const scoop = centsToRatio(-45 * Math.exp(-seconds / 0.035));
+
 		const vibrato = centsToRatio(
 			10 * clamp((seconds - 0.25) / 0.2, 0, 1) * Math.sin(TAU * 5.6 * seconds),
 		);
 		let raw = 0;
+
 		for (let voice = 0; voice < phases.length; voice += 1) {
 			const dt = (hz * scoop * vibrato * centsToRatio(detune[voice])) /
 				SAMPLE_RATE;
 			raw += sawWave(phases[voice], dt) / phases.length;
 			phases[voice] = advance(phases[voice], dt);
 		}
+
 		const swell = clamp(seconds / 0.06, 0, 1) *
 			(0.55 + 0.45 * Math.exp(-Math.max(0, seconds - 0.06) / 0.25));
 		const cutoff = Math.min(12_000, hz * (1.3 + 7 * swell * note.velocity));
 		out[index] = filter.process(raw, cutoff, 0.9) * envelope[index] *
 			note.velocity;
 	}
+
 	return fadeEdges(out, 0.001, 0.01);
 }
 
@@ -396,5 +420,6 @@ export function fmPing(
 		out,
 		1,
 	);
+
 	return fadeEdges(out, 0.0004, Math.min(0.02, seconds / 4));
 }

@@ -2,7 +2,6 @@
  * Delivery checks run on the finished files. Each returns a named pass/fail
  * with the measured value, so the report shows evidence rather than claims.
  */
-
 import type { Stereo } from "./buffer.ts";
 import type { LevelAnalysis } from "./ffmpeg.ts";
 
@@ -99,9 +98,11 @@ export function alignmentLag(
 	searchSamples = 256,
 ): number {
 	let peak = 0;
+
 	for (const sample of reference.left) {
 		peak = Math.max(peak, Math.abs(sample));
 	}
+
 	const onset = reference.left.findIndex((sample) =>
 		Math.abs(sample) > peak * 0.1
 	);
@@ -111,16 +112,20 @@ export function alignmentLag(
 	const stop = Math.min(end, start + 48_000);
 	let bestLag = 0;
 	let bestScore = Number.NEGATIVE_INFINITY;
+
 	for (let lag = -searchSamples; lag <= searchSamples; lag += 1) {
 		let score = 0;
+
 		for (let index = start; index < stop; index += 1) {
 			score += reference.left[index] * candidate.left[index + lag];
 		}
+
 		if (score > bestScore) {
 			bestScore = score;
 			bestLag = lag;
 		}
 	}
+
 	return bestLag;
 }
 
@@ -146,5 +151,6 @@ export function loopSeamError(
 			Math.abs(buffer.right[start + index] - buffer.right[end + index]),
 		);
 	}
+
 	return error;
 }

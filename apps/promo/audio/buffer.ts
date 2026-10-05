@@ -3,7 +3,6 @@
  * allocation, placing a rendered voice onto a bus with constant-power panning,
  * click-free edge fades, and level conversions.
  */
-
 export const SAMPLE_RATE = 48_000;
 
 export interface Stereo {
@@ -37,6 +36,7 @@ export function gainToDb(gain: number): number {
 /** Constant-power pan law; `pan` runs from -1 (left) to 1 (right). */
 export function panGains(pan: number): readonly [number, number] {
 	const angle = ((Math.min(1, Math.max(-1, pan)) + 1) * Math.PI) / 4;
+
 	return [Math.cos(angle) * Math.SQRT2, Math.sin(angle) * Math.SQRT2];
 }
 
@@ -52,20 +52,26 @@ export function addVoice(
 	pan: number,
 ): void {
 	const start = Math.max(0, offset);
+
 	if (isStereo(voice)) {
 		const [panLeft, panRight] = pan === 0 ? [1, 1] : panGains(pan);
 		const end = Math.min(target.left.length, offset + voice.left.length);
+
 		for (let index = start; index < end; index += 1) {
 			const source = index - offset;
 			target.left[index] += voice.left[source] * gain * panLeft;
 			target.right[index] += voice.right[source] * gain * panRight;
 		}
+
 		return;
 	}
+
 	const [panLeft, panRight] = panGains(pan);
 	const end = Math.min(target.left.length, offset + voice.length);
+
 	for (let index = start; index < end; index += 1) {
 		const sample = voice[index - offset] * gain;
+
 		target.left[index] += sample * panLeft;
 		target.right[index] += sample * panRight;
 	}
@@ -74,6 +80,7 @@ export function addVoice(
 /** Adds `source` into `target` sample-for-sample, scaled by `gain`. */
 export function mixInto(target: Stereo, source: Stereo, gain: number): void {
 	const length = Math.min(target.left.length, source.left.length);
+
 	for (let index = 0; index < length; index += 1) {
 		target.left[index] += source.left[index] * gain;
 		target.right[index] += source.right[index] * gain;
@@ -91,13 +98,16 @@ export function fadeEdges(
 ): Float32Array {
 	const fadeIn = Math.min(buffer.length, toSamples(fadeInSeconds));
 	const fadeOut = Math.min(buffer.length, toSamples(fadeOutSeconds));
+
 	for (let index = 0; index < fadeIn; index += 1) {
 		buffer[index] *= 0.5 - 0.5 * Math.cos((Math.PI * index) / fadeIn);
 	}
+
 	for (let index = 0; index < fadeOut; index += 1) {
 		buffer[buffer.length - 1 - index] *= 0.5 -
 			0.5 * Math.cos((Math.PI * index) / fadeOut);
 	}
+
 	return buffer;
 }
 
@@ -108,6 +118,7 @@ export function fadeStereoEdges(
 ): Stereo {
 	fadeEdges(buffer.left, fadeInSeconds, fadeOutSeconds);
 	fadeEdges(buffer.right, fadeInSeconds, fadeOutSeconds);
+
 	return buffer;
 }
 

@@ -40,6 +40,7 @@ export function Airdrop() {
 		.join("\n");
 	const cost = enter(frame, COST, POP);
 	const sent = frame >= FLY + 20;
+
 	const gridLeft = width * 0.54;
 	const gridTop = height * 0.18;
 	const cell = width * 0.064;

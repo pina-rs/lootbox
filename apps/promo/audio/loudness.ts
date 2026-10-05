@@ -3,7 +3,6 @@
  * true-peak envelope. The JS master bus uses these to land close to the
  * target before ffmpeg's two-pass loudnorm does the final, linear trim.
  */
-
 import { SAMPLE_RATE, type Stereo } from "./buffer.ts";
 
 /** K-weighting coefficients published in BS.1770 for 48 kHz. */
@@ -22,7 +21,9 @@ function kWeightedSquares(channel: Float32Array): Float64Array {
 	let u1 = 0;
 	let u2 = 0;
 	let z1 = 0;
+
 	let z2 = 0;
+
 	for (let index = 0; index < channel.length; index += 1) {
 		const x = channel[index];
 		const y = PRE_FILTER.b[0] * x + PRE_FILTER.b[1] * x1 +
@@ -39,6 +40,7 @@ function kWeightedSquares(channel: Float32Array): Float64Array {
 		z1 = z;
 		out[index] = z * z;
 	}
+
 	return out;
 }
 
@@ -49,30 +51,39 @@ export function integratedLoudness(buffer: Stereo): number {
 	const right = kWeightedSquares(buffer.right);
 	const hops = Math.floor(left.length / hop);
 	const hopEnergy = new Float64Array(hops);
+
 	for (let block = 0; block < hops; block += 1) {
 		let sum = 0;
+
 		for (let index = block * hop; index < (block + 1) * hop; index += 1) {
 			sum += left[index] + right[index];
 		}
+
 		hopEnergy[block] = sum;
 	}
+
 	const blocks: number[] = [];
+
 	for (let start = 0; start + 4 <= hops; start += 1) {
 		blocks.push(
 			(hopEnergy[start] + hopEnergy[start + 1] + hopEnergy[start + 2] +
 				hopEnergy[start + 3]) / (4 * hop),
 		);
 	}
+
 	const toLufs = (meanSquare: number): number =>
 		-0.691 + 10 * Math.log10(Math.max(meanSquare, 1e-20));
 	const absolute = blocks.filter((energy) => toLufs(energy) > -70);
+
 	if (absolute.length === 0) {
 		return -70;
 	}
+
 	const relativeGate = toLufs(
 		absolute.reduce((sum, energy) => sum + energy, 0) / absolute.length,
 	) - 10;
 	const gated = absolute.filter((energy) => toLufs(energy) > relativeGate);
+
 	return toLufs(gated.reduce((sum, energy) => sum + energy, 0) / gated.length);
 }
 
@@ -91,6 +102,7 @@ const INTERPOLATION_WEIGHTS = OVERSAMPLE_PHASES.map((fraction) => {
 			0.08 * Math.cos(4 * Math.PI * position);
 		weights.push(sinc * window);
 	}
+
 	const total = weights.reduce((sum, weight) => sum + weight, 0);
 	return weights.map((weight) => weight / total);
 });
@@ -103,22 +115,29 @@ export function truePeakEnvelope(buffer: Stereo): Float32Array {
 	const length = buffer.left.length;
 	const envelope = new Float32Array(length);
 	const firstOffset = -INTERPOLATION_TAPS / 2 + 1;
+
 	for (const channel of [buffer.left, buffer.right]) {
 		for (let index = 0; index < length; index += 1) {
 			let peak = Math.abs(channel[index]);
+
 			for (const weights of INTERPOLATION_WEIGHTS) {
 				let value = 0;
+
 				for (let tap = 0; tap < INTERPOLATION_TAPS; tap += 1) {
 					const source = index + firstOffset + tap;
+
 					if (source >= 0 && source < length) {
 						value += channel[source] * weights[tap];
 					}
 				}
+
 				peak = Math.max(peak, Math.abs(value));
 			}
+
 			envelope[index] = Math.max(envelope[index], peak);
 		}
 	}
+
 	return envelope;
 }
 

@@ -3,14 +3,12 @@
  * delay, tanh saturation, kick-keyed sidechain ducking and tape wow/flutter.
  * Reverb and delay return wet-only buffers; the mixer decides return levels.
  */
-
 import { createStereo, SAMPLE_RATE, type Stereo, toSamples } from "./buffer.ts";
 import { Biquad, TAU } from "./dsp.ts";
 
 // ---------------------------------------------------------------------------
 // Reverb (Jezar's Freeverb topology, tunings rescaled from 44.1 to 48 kHz)
 // ---------------------------------------------------------------------------
-
 const COMB_TUNINGS = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617];
 const ALLPASS_TUNINGS = [556, 441, 341, 225];
 const STEREO_SPREAD = 23;
@@ -34,6 +32,7 @@ class Comb {
 		this.#store = output * (1 - this.#damping) + this.#store * this.#damping;
 		this.#buffer[this.#index] = input + this.#store * this.#feedback;
 		this.#index = (this.#index + 1) % this.#buffer.length;
+
 		return output;
 	}
 }
@@ -50,6 +49,7 @@ class Allpass {
 		const delayed = this.#buffer[this.#index];
 		this.#buffer[this.#index] = input + delayed * 0.5;
 		this.#index = (this.#index + 1) % this.#buffer.length;
+
 		return delayed - input;
 	}
 }
@@ -89,6 +89,7 @@ export function reverb(input: Stereo, settings: ReverbSettings): Stereo {
 	});
 	const preDelay = Math.max(1, toSamples(settings.preDelayMs / 1000));
 	const delayLine = new Float32Array(preDelay);
+
 	const wet1 = settings.width / 2 + 0.5;
 	const wet2 = (1 - settings.width) / 2;
 	const out = createStereo(length);
@@ -101,27 +102,33 @@ export function reverb(input: Stereo, settings: ReverbSettings): Stereo {
 		);
 		const excitation = delayed * 0.03;
 		const channelOut = [0, 0];
+
 		for (let channel = 0; channel < 2; channel += 1) {
 			const tank = tanks[channel];
+
 			let sum = 0;
+
 			for (const comb of tank.combs) {
 				sum += comb.process(excitation);
 			}
+
 			for (const allpass of tank.allpasses) {
 				sum = allpass.process(sum);
 			}
+
 			channelOut[channel] = sum;
 		}
+
 		out.left[index] = channelOut[0] * wet1 + channelOut[1] * wet2;
 		out.right[index] = channelOut[1] * wet1 + channelOut[0] * wet2;
 	}
+
 	return out;
 }
 
 // ---------------------------------------------------------------------------
 // Tempo-synced delay
 // ---------------------------------------------------------------------------
-
 export interface DelaySettings {
 	readonly bpm: number;
 	readonly leftBeats: number;
@@ -143,8 +150,10 @@ export function tempoDelay(input: Stereo, settings: DelaySettings): Stereo {
 		high: new Biquad({ kind: "lowpass", frequency: settings.highCutHz }),
 	}));
 	const out = createStereo(input.left.length);
+
 	for (let index = 0; index < input.left.length; index += 1) {
 		const leftSlot = index % leftLength;
+
 		const rightSlot = index % rightLength;
 		const leftOut = leftLine[leftSlot];
 		const rightOut = rightLine[rightSlot];
@@ -158,18 +167,19 @@ export function tempoDelay(input: Stereo, settings: DelaySettings): Stereo {
 		out.left[index] = leftOut;
 		out.right[index] = rightOut;
 	}
+
 	return out;
 }
 
 // ---------------------------------------------------------------------------
 // Saturation, sidechain, wow
 // ---------------------------------------------------------------------------
-
 /** tanh soft clipping with unity small-signal gain, so it only rounds peaks. */
 export function saturate(buffer: Float32Array, drive: number): Float32Array {
 	for (let index = 0; index < buffer.length; index += 1) {
 		buffer[index] = Math.tanh(buffer[index] * drive) / drive;
 	}
+
 	return buffer;
 }
 
@@ -187,6 +197,7 @@ export function sidechainKey(
 	const key = new Float32Array(source.left.length);
 	let level = 0;
 	let peak = 0;
+
 	for (let index = 0; index < key.length; index += 1) {
 		const rectified = Math.max(
 			Math.abs(source.left[index]),
@@ -197,11 +208,13 @@ export function sidechainKey(
 		key[index] = level;
 		peak = Math.max(peak, level);
 	}
+
 	if (peak > 0) {
 		for (let index = 0; index < key.length; index += 1) {
 			key[index] = Math.min(1, key[index] / (peak * 0.6));
 		}
 	}
+
 	return key;
 }
 
@@ -232,6 +245,7 @@ function readFractional(buffer: Float32Array, position: number): number {
 	const p1 = at(0);
 	const p2 = at(1);
 	const p3 = at(2);
+
 	return p1 +
 		0.5 * fraction *
 			(p2 - p0 +
@@ -249,6 +263,7 @@ function readFractional(buffer: Float32Array, position: number): number {
 export function tapeWow(buffer: Stereo, settings: WowSettings): Stereo {
 	const out = createStereo(buffer.left.length);
 	const msToSamples = 0.001 * SAMPLE_RATE;
+
 	for (let index = 0; index < buffer.left.length; index += 1) {
 		const seconds = index / SAMPLE_RATE;
 		const wow = settings.wowMs * Math.sin(TAU * settings.wowHz * seconds);
@@ -256,6 +271,7 @@ export function tapeWow(buffer: Stereo, settings: WowSettings): Stereo {
 			Math.sin(TAU * settings.flutterHz * seconds + 1.3);
 		const skew = settings.flutterMs *
 			Math.sin(TAU * settings.flutterHz * seconds + 2.9);
+
 		out.left[index] = readFractional(
 			buffer.left,
 			index + (wow + flutter) * msToSamples,
@@ -265,5 +281,6 @@ export function tapeWow(buffer: Stereo, settings: WowSettings): Stereo {
 			index + (wow + skew) * msToSamples,
 		);
 	}
+
 	return out;
 }

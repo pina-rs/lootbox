@@ -3,7 +3,6 @@
  * file, the JS master bus and loudnorm decisions, per-bus balance, and the
  * pass/fail list from `checks.ts`.
  */
-
 import type { Check } from "./checks.ts";
 import type { LevelAnalysis, LoudnormReport } from "./ffmpeg.ts";
 import type { MasterResult } from "./mastering.ts";
@@ -133,5 +132,6 @@ export function buildReport(
 		),
 		"",
 	];
+
 	return lines.join("\n");
 }

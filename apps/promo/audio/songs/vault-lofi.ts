@@ -4,7 +4,6 @@
  * dusty drums, vinyl crackle and tape wow. The keys and snare are carved out
  * around 2–3 kHz so a voice sits on top without fighting for presence.
  */
-
 import { SAMPLE_RATE, toSamples } from "../buffer.ts";
 import { hat, kick, rim, snare, vinylCrackle } from "../drums.ts";
 import type { BiquadSpec } from "../dsp.ts";
@@ -124,6 +123,7 @@ class Combo {
 			: barInSection % 2 === 0
 			? [[0, 1.6], [2.5, 1.3]]
 			: [[0, 2.3], [3.25, 0.6]];
+
 		for (const [beat, length] of hits) {
 			const symbol = chords.length === 2 ? chords[beat < 2 ? 0 : 1] : chords[0];
 			this.#voicing = voiceLead(this.#voicing, chord(symbol), {
@@ -170,17 +170,23 @@ class Combo {
 			};
 			this.stage.add("bass", bar, beat, subBass(note, glideFrom));
 		};
+
 		if (chords.length === 2) {
 			play(0, rootOf(chords[0]), 1.8, 0.9);
 			play(2, rootOf(chords[1]), 1.8, 0.9);
+
 			return;
 		}
+
 		const root = rootOf(chords[0]);
 		const target = rootOf(next);
+
 		if (sparse) {
 			play(0, root, 3.6, 0.85);
+
 			return;
 		}
+
 		play(0, root, 1.4, 0.95);
 		play(2.5, root + 12, 0.45, 0.6);
 		const fifth = nearestPitch((chord(chords[0]).root + 7) % 12, target);
@@ -192,6 +198,7 @@ class Combo {
 		const kicks = barInSection % 2 === 0
 			? [[0, 0.95], [1.75, 0.5], [2.5, 0.85]]
 			: [[0, 0.95], [0.75, 0.45], [2.5, 0.8], [3.25, 0.55]];
+
 		for (const [beat, velocity] of kicks) {
 			this.stage.add(
 				"kick",
@@ -206,6 +213,7 @@ class Combo {
 				}),
 			);
 		}
+
 		for (const beat of [1, 3]) {
 			this.stage.add(
 				"snare",
@@ -218,6 +226,7 @@ class Combo {
 				}),
 			);
 		}
+
 		if (barInSection % 4 === 3 || random.chance(0.3)) {
 			this.stage.add(
 				"snare",
@@ -230,6 +239,7 @@ class Combo {
 				}),
 			);
 		}
+
 		for (let step = 0; step < 8; step += 1) {
 			const velocity = step % 2 === 1 ? 0.62 : 0.4;
 			this.stage.add(
@@ -240,6 +250,7 @@ class Combo {
 				1,
 				0.25,
 			);
+
 			if (busy && step % 2 === 1 && random.chance(0.35)) {
 				this.stage.add(
 					"hats",
@@ -251,6 +262,7 @@ class Combo {
 				);
 			}
 		}
+
 		if (busy && barInSection % 2 === 1) {
 			this.stage.add(
 				"hats",
@@ -261,6 +273,7 @@ class Combo {
 				0.25,
 			);
 		}
+
 		if (barInSection === bars - 1) {
 			this.stage.add(
 				"snare",
@@ -286,6 +299,7 @@ class Combo {
 				-0.15,
 			);
 		}
+
 		for (let step = 0; step < 8; step += 1) {
 			this.stage.add(
 				"hats",
@@ -375,15 +389,18 @@ function renderSection(
 		: next?.chords[0][0] ?? "F6add9");
 	const tail = section.kind === "ending" ? ENDING_TAIL_SECONDS : 0;
 	combo.crackle(startBar, section.bars, tail);
+
 	for (let offset = 0; offset < section.bars; offset += 1) {
 		const bar = startBar + offset;
 		const chords = section.chords[offset];
 		switch (section.kind) {
 			case "intro":
 				combo.keys(bar, chords, offset, 0.55);
+
 				if (offset >= 2) {
 					combo.bass(bar, chords, nextChordAt(offset), true);
 				}
+
 				if (offset === section.bars - 1) {
 					combo.stage.add(
 						"snare",
@@ -396,6 +413,7 @@ function renderSection(
 						}),
 					);
 				}
+
 				break;
 			case "core":
 				combo.keys(
@@ -406,18 +424,22 @@ function renderSection(
 				);
 				combo.bass(bar, chords, nextChordAt(offset), false);
 				combo.drums(bar, offset, section.bars, section.melody !== undefined);
+
 				if (section.melody !== undefined) {
 					combo.melody(bar, section.melody[offset]);
 				}
+
 				break;
 			case "breakdown":
 				combo.keys(bar, chords, offset, 0.5);
 				combo.bass(bar, chords, nextChordAt(offset), true);
+
 				if (offset < section.bars - 1) {
 					combo.rims(bar);
 				} else {
 					combo.drums(bar, offset, section.bars, false);
 				}
+
 				break;
 			case "ending":
 				if (offset === 0) {
@@ -431,6 +453,7 @@ function renderSection(
 						seconds: combo.stage.timeline.straight(bar, 0),
 					});
 				}
+
 				break;
 		}
 	}
@@ -442,9 +465,11 @@ function keysCutoff(
 ): (seconds: number) => number {
 	const intro = spans.find((span) => span.name === "intro");
 	const breakdown = spans.find((span) => span.name === "breakdown");
+
 	return (seconds) => {
 		if (intro !== undefined) {
 			const end = TIMELINE.straight(intro.startBar + intro.bars, 0);
+
 			if (seconds < end) {
 				return 700 * (20_000 / 700) ** (seconds / end) ** 3;
 			}
@@ -452,11 +477,13 @@ function keysCutoff(
 		if (breakdown !== undefined) {
 			const start = TIMELINE.straight(breakdown.startBar, 0);
 			const end = TIMELINE.straight(breakdown.startBar + breakdown.bars, 0);
+
 			if (seconds >= start && seconds < end) {
 				const reopen = Math.max(
 					0,
 					(seconds - (end - TIMELINE.barSeconds)) / TIMELINE.barSeconds,
 				);
+
 				return 1800 * (20_000 / 1800) ** (reopen ** 2);
 			}
 		}
@@ -573,6 +600,7 @@ export function renderVaultLofi(title: string): SongRender {
 		seconds: TIMELINE.straight(core.startBar + core.bars, 0),
 	});
 	const { mix: buffer, stemLoudness } = mix(stage, spans, true);
+
 	return {
 		title,
 		timeline: TIMELINE,
@@ -616,6 +644,7 @@ export function renderVaultLofiLoop(title: string): SongRender {
 	);
 	const { mix: buffer, stemLoudness } = mix(stage, spans, false);
 	const kept = spans[1];
+
 	return {
 		title,
 		timeline: TIMELINE,

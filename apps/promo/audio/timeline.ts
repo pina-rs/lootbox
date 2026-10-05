@@ -2,7 +2,6 @@
  * Musical time: the bar/beat grid, swing, humanisation, and the cue sheet
  * that tells a video editor where every bar and section starts.
  */
-
 import { SAMPLE_RATE } from "./buffer.ts";
 import type { Random } from "./random.ts";
 
@@ -21,6 +20,7 @@ export function swingBeat(beat: number, swing: Swing | null): number {
 	if (swing === null) {
 		return beat;
 	}
+
 	const pair = swing.unit * 2;
 	const base = Math.floor(beat / pair) * pair;
 	const within = beat - base;
@@ -28,6 +28,7 @@ export function swingBeat(beat: number, swing: Swing | null): number {
 	const warped = within <= swing.unit
 		? (within / swing.unit) * split
 		: split + ((within - swing.unit) / swing.unit) * (pair - split);
+
 	return base + warped;
 }
 

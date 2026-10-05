@@ -4,7 +4,6 @@
  * C major (add9) bloom with a twinkling shimmer tail (render.ts fades the
  * last 0.6 s so it closes exactly at 4.0 s).
  */
-
 import {
 	bell,
 	electricPiano,
@@ -47,6 +46,7 @@ export function renderLogoSting(title: string): SongRender {
 	session.add("thunk", thunk, chestThud());
 
 	const bloomStart = thunk + 0.02;
+
 	for (const name of BLOOM) {
 		const note: Note = { midi: midi(name), velocity: 0.85, seconds: 1.9 };
 		session.add(
@@ -66,6 +66,7 @@ export function renderLogoSting(title: string): SongRender {
 			electricPiano({ ...note, velocity: 0.7, seconds: 2.2 }),
 		);
 	}
+
 	for (const name of ["C5", "E5", "G5", "C6"]) {
 		session.add(
 			"sparkle",
@@ -75,6 +76,7 @@ export function renderLogoSting(title: string): SongRender {
 			(midi(name) - 76) / 20,
 		);
 	}
+
 	session.add(
 		"bass",
 		bloomStart,
@@ -82,6 +84,7 @@ export function renderLogoSting(title: string): SongRender {
 	);
 
 	let time = bloomStart + 0.15;
+
 	while (time < LENGTH_SECONDS - 0.7) {
 		const progress = (time - bloomStart) / (LENGTH_SECONDS - bloomStart);
 		const name = SHIMMER[random.integer(0, SHIMMER.length - 1)];
@@ -133,6 +136,7 @@ export function renderLogoSting(title: string): SongRender {
 		{ name: "thunk", seconds: thunk },
 		{ name: "bloom", seconds: bloomStart },
 	];
+
 	return {
 		title,
 		timeline: TIMELINE,

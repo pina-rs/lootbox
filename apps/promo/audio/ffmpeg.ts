@@ -3,7 +3,6 @@
  * and level analysis, and waveform pictures. Every call is synchronous and
  * throws with ffmpeg's own error output if the process fails.
  */
-
 import { spawnSync } from "node:child_process";
 
 function run(
@@ -18,9 +17,11 @@ function run(
 			maxBuffer: 256 * 1024 * 1024,
 		},
 	);
+
 	if (result.error !== undefined) {
 		throw result.error;
 	}
+
 	if (result.status !== 0) {
 		throw new Error(
 			`${command} ${args.join(" ")} exited with ${result.status}:\n${
@@ -28,6 +29,7 @@ function run(
 			}`,
 		);
 	}
+
 	return { stdout: result.stdout, stderr: result.stderr };
 }
 
@@ -53,9 +55,11 @@ export interface LoudnormReport {
 function parseLoudnorm(stderr: string): LoudnormReport {
 	const start = stderr.lastIndexOf("{");
 	const end = stderr.lastIndexOf("}");
+
 	if (start < 0 || end < start) {
 		throw new Error(`loudnorm printed no JSON:\n${stderr.slice(-2000)}`);
 	}
+
 	const parsed: unknown = JSON.parse(stderr.slice(start, end + 1));
 	const field = (key: keyof LoudnormReport): string => {
 		const value: unknown = typeof parsed === "object" && parsed !== null
@@ -66,6 +70,7 @@ function parseLoudnorm(stderr: string): LoudnormReport {
 		}
 		return value;
 	};
+
 	return {
 		input_i: field("input_i"),
 		input_tp: field("input_tp"),
@@ -138,6 +143,7 @@ export function loudnormTwoPass(
 			output,
 		]).stderr,
 	);
+
 	return { first, second };
 }
 
@@ -170,9 +176,11 @@ export interface LevelAnalysis {
 
 function number(pattern: RegExp, text: string, label: string): number {
 	const match = pattern.exec(text);
+
 	if (match === null) {
 		throw new Error(`Could not read ${label} from ffmpeg output`);
 	}
+
 	return match[1] === "-inf" ? Number.NEGATIVE_INFINITY : Number(match[1]);
 }
 
@@ -212,7 +220,9 @@ export function analyze(path: string): LevelAnalysis {
 	const offsets = [...stats.matchAll(/DC offset:\s+(-?[\d.e+-]+)/g)].map((
 		match,
 	) => Math.abs(Number(match[1])));
+
 	const gated = duration >= 0.4 && integrated > -70;
+
 	return {
 		durationSeconds: duration,
 		integratedLufs: gated ? integrated : null,

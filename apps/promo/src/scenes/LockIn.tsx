@@ -66,6 +66,7 @@ export function LockIn(
 			easing: Easing.in(Easing.cubic),
 			extrapolateRight: "clamp",
 		});
+
 	const peek = frame > 128 ? enter(frame, 128, BOUNCE) * 0.9 : 0;
 	const inFlight = COINS.find((coin) =>
 		frame >= coin.at && frame < coin.at + FLIGHT

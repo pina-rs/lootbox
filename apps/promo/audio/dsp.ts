@@ -3,7 +3,6 @@
  * voice, exponential envelopes, and filters (RBJ biquads for static EQ, a
  * topology-preserving state-variable filter for anything that sweeps).
  */
-
 import { SAMPLE_RATE } from "./buffer.ts";
 import type { Random } from "./random.ts";
 
@@ -22,17 +21,20 @@ export function centsToRatio(cents: number): number {
 // Oscillators. Each takes a phase in [0, 1) and the per-sample phase increment
 // `dt` (frequency / sample rate) so callers can modulate pitch freely.
 // ---------------------------------------------------------------------------
-
 /** Polynomial band-limited step residual (Välimäki & Huovilainen). */
 export function polyBlep(phase: number, dt: number): number {
 	if (phase < dt) {
 		const t = phase / dt;
+
 		return t + t - t * t - 1;
 	}
+
 	if (phase > 1 - dt) {
 		const t = (phase - 1) / dt;
+
 		return t * t + t + t + 1;
 	}
+
 	return 0;
 }
 
@@ -45,6 +47,7 @@ export function pulseWave(phase: number, dt: number, width: number): number {
 	let value = phase < width ? 1 : -1;
 	value += polyBlep(phase, dt);
 	value -= polyBlep((phase - width + 1) % 1, dt);
+
 	return value - (2 * width - 1);
 }
 
@@ -59,6 +62,7 @@ export function triangleWave(phase: number): number {
 /** Advances a phase accumulator, wrapping into [0, 1). */
 export function advance(phase: number, dt: number): number {
 	const next = phase + dt;
+
 	return next >= 1 ? next - Math.floor(next) : next;
 }
 
@@ -72,6 +76,7 @@ export function bandLimitedIndex(
 	modulatorHz: number,
 ): number {
 	const ceiling = (NYQUIST - 4000 - carrierHz) / modulatorHz - 1;
+
 	return Math.max(0, Math.min(index, ceiling));
 }
 
@@ -98,6 +103,7 @@ export function renderFm(
 	let carrierPhase = pair.startPhase ?? 0;
 	let modulatorPhase = 0;
 	const modulatorHz = pair.carrierHz * pair.ratio;
+
 	for (let index = 0; index < length; index += 1) {
 		const seconds = index / SAMPLE_RATE;
 		const pitch = pair.pitch === undefined ? 1 : pair.pitch(seconds);
@@ -122,16 +128,17 @@ export function renderFm(
 
 export function whiteNoise(random: Random, length: number): Float32Array {
 	const out = new Float32Array(length);
+
 	for (let index = 0; index < length; index += 1) {
 		out[index] = random.bipolar();
 	}
+
 	return out;
 }
 
 // ---------------------------------------------------------------------------
 // Envelopes
 // ---------------------------------------------------------------------------
-
 export interface Adsr {
 	/** Seconds. */
 	readonly attack: number;
@@ -158,6 +165,7 @@ export function adsr(shape: Adsr, gateSeconds: number): Float32Array {
 	const release = Math.max(1, Math.round(shape.release * SAMPLE_RATE));
 	const out = new Float32Array(gate + release);
 	let level = 0;
+
 	for (let index = 0; index < gate; index += 1) {
 		if (index < attack) {
 			level = 1 - expFall(index / attack, 2.5);
@@ -167,11 +175,14 @@ export function adsr(shape: Adsr, gateSeconds: number): Float32Array {
 		} else {
 			level = shape.sustain;
 		}
+
 		out[index] = level;
 	}
+
 	for (let index = 0; index < release; index += 1) {
 		out[gate + index] = level * expFall(index / release, 5);
 	}
+
 	return out;
 }
 
@@ -184,13 +195,13 @@ export function percussive(
 	if (seconds < attackSeconds) {
 		return seconds / attackSeconds;
 	}
+
 	return Math.exp(-(seconds - attackSeconds) / tauSeconds);
 }
 
 // ---------------------------------------------------------------------------
 // Filters
 // ---------------------------------------------------------------------------
-
 export type BiquadKind =
 	| "lowpass"
 	| "highpass"
@@ -225,6 +236,7 @@ export class Biquad {
 		const amplitude = 10 ** ((spec.gainDb ?? 0) / 40);
 		let b0: number;
 		let b1: number;
+
 		let b2: number;
 		let a0: number;
 		let a1: number;
@@ -278,6 +290,7 @@ export class Biquad {
 		const output = this.#b0 * input + this.#z1;
 		this.#z1 = this.#b1 * input - this.#a1 * output + this.#z2;
 		this.#z2 = this.#b2 * input - this.#a2 * output;
+
 		return output;
 	}
 
@@ -285,6 +298,7 @@ export class Biquad {
 		for (let index = 0; index < buffer.length; index += 1) {
 			buffer[index] = this.process(buffer[index]);
 		}
+
 		return buffer;
 	}
 }
@@ -296,6 +310,7 @@ export function filterInPlace(
 	for (const spec of specs) {
 		new Biquad(spec).processInPlace(buffer);
 	}
+
 	return buffer;
 }
 
@@ -348,6 +363,7 @@ export function sweepInPlace(
 	q: number,
 ): Float32Array {
 	const filter = new Svf(mode);
+
 	for (let index = 0; index < buffer.length; index += 1) {
 		buffer[index] = filter.process(
 			buffer[index],
@@ -355,5 +371,6 @@ export function sweepInPlace(
 			q,
 		);
 	}
+
 	return buffer;
 }

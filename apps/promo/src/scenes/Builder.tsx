@@ -56,6 +56,7 @@ function typed(text: string, frame: number, start: number): string {
 
 function countAt(bundle: DemoBundle, beat: Beat, frame: number): number {
 	if (frame < beat.add) return 0;
+
 	if (bundle.boxes === 1 || frame < beat.countFrom) return 1;
 
 	return Math.round(
@@ -232,6 +233,7 @@ export function Builder() {
 		extrapolateRight: "clamp",
 	});
 	const highlight = progress(frame, HIGHLIGHT, 12);
+
 	const segments = STAGED.filter(({ beat }) => frame >= beat.add).map((
 		{ bundle, beat },
 	) => ({

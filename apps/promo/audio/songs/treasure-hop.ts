@@ -4,7 +4,6 @@
  * tune, and every edit is built by re-arranging sections, never by cutting
  * audio, so each version ends on a real, ringing final chord.
  */
-
 import {
 	clap,
 	crash,
@@ -44,7 +43,6 @@ interface Section {
 }
 
 // --- Harmony ----------------------------------------------------------------
-
 const A_CHORDS: readonly ChordBar[] = [
 	["C"],
 	["G/B"],
@@ -72,7 +70,6 @@ const BREAKDOWN_CHORDS: readonly ChordBar[] = [["Am"], ["F"], ["Dm7"], [
 ]];
 
 // --- Melody -----------------------------------------------------------------
-
 /** The hook: a bouncing call (bar 1) and a stepwise answer (bar 2), sequenced through the progression. */
 const HOOK = [
 	"G4/.75 C5/.75 E5/.5 G5/.5 E5/.5 D5/.5 C5/.5 D5/.5 B4/.5 G4/.5 A4/1 B4/1.5",
@@ -98,7 +95,6 @@ const TUNE = [
 const TUNE_TO_HIT = [...TUNE.slice(0, 7), "G5/1 F5/.5 D5/.5 B4/1 G4/1"];
 
 // --- Arrangements -------------------------------------------------------------
-
 export const TREASURE_HOP: readonly Section[] = [
 	{
 		name: "intro",
@@ -148,7 +144,6 @@ export const TREASURE_HOP_15: readonly Section[] = [
 ];
 
 // --- Parts ------------------------------------------------------------------
-
 /** The chord sounding at `beat` of a bar. */
 function chordAt(bar: ChordBar, beat: number): string {
 	return bar.length === 1 || beat < 2 ? bar[0] : bar[1];
@@ -164,6 +159,7 @@ class Voicings {
 			high,
 		});
 		this.#previous.set(part, voicing);
+
 		return voicing;
 	}
 }
@@ -181,6 +177,7 @@ function approach(from: number, target: number): number {
 	if (Math.abs(target - from) <= 2) {
 		return from + 7 <= 50 ? from + 7 : from - 5;
 	}
+
 	return target > from ? target - 1 : target + 1;
 }
 
@@ -194,6 +191,7 @@ class Band {
 
 	marimbaArpeggio(bar: number, chords: ChordBar, velocity: number): void {
 		const pattern = [0, 1, 2, 3, 1, 2, 3, 2];
+
 		for (let step = 0; step < 8; step += 1) {
 			const beat = step / 2;
 			const voicing = this.voicings.voice("arp", chordAt(chords, beat), 55, 72);
@@ -301,6 +299,7 @@ class Band {
 
 	pad(bar: number, chords: ChordBar): void {
 		const halves = chords.length === 1 ? [0] : [0, 2];
+
 		for (const start of halves) {
 			const beats = chords.length === 1 ? 4 : 2;
 			for (
@@ -330,7 +329,6 @@ class Band {
 	}
 
 	// --- Drums --------------------------------------------------------------
-
 	kick(bar: number, beat: number, velocity = 0.95): void {
 		this.stage.add(
 			"kick",
@@ -398,6 +396,7 @@ class Band {
 	tomFill(bar: number, fromBeat: number): void {
 		const pitches = [220, 196, 165, 147, 131, 110, 98, 87];
 		const steps = (4 - fromBeat) * 4;
+
 		for (let step = 0; step < steps; step += 1) {
 			const hz = pitches[Math.floor((step / steps) * pitches.length)];
 			this.stage.add(
@@ -423,14 +422,17 @@ class Band {
 			: barInSection % 2 === 0
 			? [0, 1.5, 2]
 			: [0, 2, 2.75];
+
 		for (const beat of kicks) {
 			if (!(sectionEnd && beat >= 3)) {
 				this.kick(bar, beat);
 			}
 		}
+
 		this.clap(bar, 1);
 		this.clap(bar, 3);
 		this.shakers(bar, energy === 2 ? 1 : 0.8);
+
 		if (energy === 2) {
 			this.tambourine(bar);
 			this.stage.add(
@@ -442,10 +444,12 @@ class Band {
 				0.3,
 			);
 		}
+
 		if (phraseEnd && !sectionEnd) {
 			this.kick(bar, 3.5, 0.7);
 			this.clap(bar, 3.75, 0.55);
 		}
+
 		if (sectionEnd) {
 			this.tomFill(bar, 3);
 		}
@@ -483,6 +487,7 @@ class Band {
 			0,
 			false,
 		);
+
 		for (const midi of [55, 60, 64, 67]) {
 			this.stage.add(
 				"pad",
@@ -497,6 +502,7 @@ class Band {
 				false,
 			);
 		}
+
 		this.kick(bar, 0, 1);
 		this.clap(bar, 0, 0.8);
 		this.crash(bar, 1);
@@ -513,16 +519,17 @@ class Band {
 }
 
 // --- Sections -------------------------------------------------------------
-
 function nextChord(
 	sections: readonly Section[],
 	sectionIndex: number,
 	barInSection: number,
 ): string {
 	const section = sections[sectionIndex];
+
 	if (barInSection + 1 < section.chords.length) {
 		return section.chords[barInSection + 1][0];
 	}
+
 	return sections[sectionIndex + 1]?.chords[0][0] ?? "C";
 }
 
@@ -537,9 +544,11 @@ function renderSection(
 	const stage = band.stage;
 	const drumsEnter = section.kind === "a" || section.kind === "b" ||
 		section.kind === "outro";
+
 	if (sectionIndex > 0 && drumsEnter) {
 		band.crash(startBar);
 	}
+
 	for (let offset = 0; offset < section.bars; offset += 1) {
 		const bar = startBar + offset;
 		const chords = section.chords[offset];
@@ -550,18 +559,23 @@ function renderSection(
 				break;
 			case "a": {
 				const energy = section.energy ?? 1;
+
 				if (offset % 2 === 0 && section.hook !== undefined) {
 					const text = section.hook[(offset / 2) % section.hook.length];
 					band.marimbaHook(bar, text);
+
 					if (section.leadDoubles === true) {
 						band.lead(bar, text, 0.75);
 					}
 				}
+
 				band.bass(bar, chords, next, false);
 				band.groove(bar, offset, section.bars, energy);
+
 				if (energy === 2) {
 					band.pad(bar, chords);
 				}
+
 				break;
 			}
 			case "b":
@@ -575,6 +589,7 @@ function renderSection(
 				band.marimbaArpeggio(bar, chords, 0.6);
 				band.bass(bar, chords, next, true);
 				band.pad(bar, chords);
+
 				if (offset === section.bars - 2) {
 					stage.add(
 						"fx",
@@ -586,11 +601,13 @@ function renderSection(
 						false,
 					);
 				}
+
 				if (offset === section.bars - 1) {
 					for (let step = 0; step < 12; step += 1) {
 						const beat = step < 4 ? step * 0.5 : 2 + (step - 4) * 0.25;
 						band.clap(bar, beat, 0.35 + 0.6 * (step / 11));
 					}
+
 					stage.add(
 						"fx",
 						bar,
@@ -601,6 +618,7 @@ function renderSection(
 						false,
 					);
 				}
+
 				break;
 			case "outro":
 				if (offset === 0) {
@@ -617,6 +635,7 @@ function renderSection(
 						seconds: stage.timeline.straight(bar, 0),
 					});
 				}
+
 				break;
 			case "hit":
 				band.finalHit(bar);
@@ -703,6 +722,7 @@ export function renderTreasureHop(
 			returnDb: -3,
 		},
 	});
+
 	return {
 		title,
 		timeline: TIMELINE,

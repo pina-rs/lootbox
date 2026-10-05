@@ -18,6 +18,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function patch(entry: unknown): void {
 	if (Array.isArray(entry)) {
 		entry.forEach(patch);
+
 		return;
 	}
 

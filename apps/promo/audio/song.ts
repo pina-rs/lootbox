@@ -3,7 +3,6 @@
  * swung notes on the mixer, arrangement layout, and the `SongRender` shape the
  * render pipeline consumes.
  */
-
 import type { Stereo, Voice } from "./buffer.ts";
 import type { Note } from "./instruments.ts";
 import { Session } from "./mixer.ts";
@@ -81,6 +80,7 @@ export class Stage {
 			bar + bars,
 			beat - bars * this.timeline.beatsPerBar,
 		);
+
 		return humanize ? this.#humanizer.time(seconds) : seconds;
 	}
 
@@ -116,6 +116,7 @@ export class Stage {
 		options: PhraseOptions = {},
 	): void {
 		let previous: PhraseNote | null = null;
+
 		for (const written of phrase(text)) {
 			const note = {
 				...written,
@@ -147,9 +148,11 @@ export function layout<
 >(sections: readonly T[]): { spans: SectionSpan[]; totalBars: number } {
 	const spans: SectionSpan[] = [];
 	let bar = 0;
+
 	for (const section of sections) {
 		spans.push({ name: section.name, startBar: bar, bars: section.bars });
 		bar += section.bars;
 	}
+
 	return { spans, totalBars: bar };
 }

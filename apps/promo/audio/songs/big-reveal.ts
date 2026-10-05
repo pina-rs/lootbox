@@ -4,7 +4,6 @@
  * filter), one big impact, an eight-bar drop with pumping saw chords, rolling
  * bass and a marimba-doubled lead hook, then a ringing sting.
  */
-
 import {
 	clap,
 	crash,
@@ -99,12 +98,14 @@ class Crew {
 			low: 55,
 			high: 74,
 		});
+
 		return this.#voicing;
 	}
 
 	/** Short saw-chord pulses on a grid of `step` beats. */
 	pulses(bar: number, symbol: string, step: number, velocity: number): void {
 		const notes = this.#chordNotes(symbol);
+
 		for (let beat = 0; beat < 4; beat += step) {
 			for (const midi of notes) {
 				const note: Note = {
@@ -161,6 +162,7 @@ class Crew {
 	bassPulse(bar: number, symbol: string, rolling: boolean, next: string): void {
 		const root = pitchAtOrAbove(chord(symbol).bass, 33);
 		const steps = rolling ? [0.25, 0.5, 0.75] : [0.5];
+
 		for (let beat = 0; beat < 4; beat += 1) {
 			for (const offset of steps) {
 				const lastStep = rolling && beat === 3 && offset === 0.75;
@@ -259,6 +261,7 @@ class Crew {
 		for (let beat = 0; beat < 4; beat += 1) {
 			this.kick(bar, beat);
 		}
+
 		for (const beat of [1, 3]) {
 			this.stage.add(
 				"clap",
@@ -268,6 +271,7 @@ class Crew {
 			);
 			this.snare(bar, beat, 0.6);
 		}
+
 		this.hats(bar);
 	}
 
@@ -296,6 +300,7 @@ class Crew {
 				false,
 			);
 		}
+
 		this.stage.add(
 			"lead",
 			bar,
@@ -333,6 +338,7 @@ function renderSection(
 	): string => (offset + 1 < section.bars
 		? section.chords[offset + 1][0]
 		: sections[index + 1]?.chords[0][0] ?? "C");
+
 	for (let offset = 0; offset < section.bars; offset += 1) {
 		const bar = startBar + offset;
 		const symbol = section.chords[offset][0];
@@ -340,22 +346,27 @@ function renderSection(
 			case "intro":
 				crew.pulses(bar, symbol, 0.5, 0.7);
 				crew.bassPulse(bar, symbol, false, next(offset));
+
 				for (let beat = 0; beat < 4; beat += 1) {
 					crew.kick(bar, beat, 0.75);
 				}
+
 				if (offset >= 2) {
 					crew.hats(bar);
 				}
+
 				break;
 			case "build": {
 				const stepByBar = [1, 0.5, 0.25, 0.125];
 				const step = stepByBar[offset];
 				crew.pulses(bar, symbol, offset < 2 ? 0.5 : 0.25, 0.75);
 				const rollEnd = offset === section.bars - 1 ? 3.5 : 4;
+
 				for (let beat = 0; beat < rollEnd; beat += step) {
 					const progress = (offset * 4 + beat) / (section.bars * 4);
 					crew.snare(bar, beat, 0.3 + 0.65 * progress, 190 + 150 * progress);
 				}
+
 				if (offset < 2) {
 					for (let beat = 0; beat < 4; beat += 1) {
 						crew.kick(bar, beat, 0.85);
@@ -365,6 +376,7 @@ function renderSection(
 						crew.kick(bar, beat, 0.6 + beat * 0.08);
 					}
 				}
+
 				if (offset === 0) {
 					stage.add(
 						"fx",
@@ -380,6 +392,7 @@ function renderSection(
 						seconds: stage.timeline.straight(bar, 0),
 					});
 				}
+
 				if (offset === section.bars - 1) {
 					stage.add(
 						"fx",
@@ -391,6 +404,7 @@ function renderSection(
 						false,
 					);
 				}
+
 				break;
 			}
 			case "drop":
@@ -401,18 +415,22 @@ function renderSection(
 						seconds: stage.timeline.straight(bar, 0),
 					});
 				}
+
 				if (offset === 4) {
 					stage.add("crash", bar, 0, crash(stage.random, 0.8), 1, 0, false);
 				}
+
 				crew.chord(bar, symbol, 4);
 				crew.bassPulse(bar, symbol, true, next(offset));
 				crew.hook(bar, HOOK[offset]);
 				crew.groove(bar);
+
 				if (offset === 3) {
 					for (let beat = 3; beat < 4; beat += 0.25) {
 						crew.snare(bar, beat, 0.5 + (beat - 3) * 0.4);
 					}
 				}
+
 				if (offset === section.bars - 1) {
 					[196, 165, 131, 110].forEach((hz, step) => {
 						stage.add(
@@ -425,6 +443,7 @@ function renderSection(
 						);
 					});
 				}
+
 				break;
 			case "sting":
 				crew.sting(bar);
@@ -442,6 +461,7 @@ function sawCutoff(spans: readonly SectionSpan[]): (seconds: number) => number {
 	const build = spans[1];
 	const introEnd = TIMELINE.straight(intro.startBar + intro.bars, 0);
 	const buildEnd = TIMELINE.straight(build.startBar + build.bars, 0);
+
 	return (seconds) => {
 		if (seconds < introEnd) {
 			return 450 * (1800 / 450) ** (seconds / introEnd);
@@ -516,6 +536,7 @@ export function renderBigReveal(title: string): SongRender {
 			duck: 0.4,
 		},
 	});
+
 	return {
 		title,
 		timeline: TIMELINE,

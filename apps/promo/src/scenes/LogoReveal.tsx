@@ -101,6 +101,7 @@ export function LogoReveal(
 		extrapolateRight: "clamp",
 	});
 	const lid = frame < LID ? 0 : enter(frame, LID, BOUNCE);
+
 	const settled = progress(frame, LETTERS + 20, 16);
 	const facing = layout === "stacked" ? { x: 0, y: 1 } : { x: 1, y: 0.1 };
 	const chestLook = {

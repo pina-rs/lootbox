@@ -3,7 +3,6 @@
  * has no dependencies. The reader exists to verify ffmpeg's mastered output
  * (alignment, DC, clipping) with the same code that wrote the pre-master.
  */
-
 import { readFileSync, writeFileSync } from "node:fs";
 import { SAMPLE_RATE, type Stereo } from "./buffer.ts";
 
@@ -25,6 +24,7 @@ export function encodeWav(buffer: Stereo): Buffer {
 	out.write("fmt ", 12, "ascii");
 	out.writeUInt32LE(16, 16);
 	out.writeUInt16LE(1, 20);
+
 	out.writeUInt16LE(CHANNELS, 22);
 	out.writeUInt32LE(SAMPLE_RATE, 24);
 	out.writeUInt32LE(SAMPLE_RATE * CHANNELS * BYTES_PER_SAMPLE, 28);
@@ -34,14 +34,17 @@ export function encodeWav(buffer: Stereo): Buffer {
 	out.writeUInt32LE(dataBytes, 40);
 
 	let position = 44;
+
 	for (let frame = 0; frame < frames; frame += 1) {
 		for (const channel of [buffer.left, buffer.right]) {
 			const sample = channel[frame];
+
 			if (!(Math.abs(sample) <= 1)) {
 				throw new Error(
 					`Sample ${sample} at frame ${frame} is outside [-1, 1]`,
 				);
 			}
+
 			out.writeIntLE(
 				Math.max(-MAX_24 - 1, Math.min(MAX_24, Math.round(sample * MAX_24))),
 				position,
@@ -50,6 +53,7 @@ export function encodeWav(buffer: Stereo): Buffer {
 			position += BYTES_PER_SAMPLE;
 		}
 	}
+
 	return out;
 }
 
@@ -68,10 +72,12 @@ export function readWav(path: string): Stereo {
 	}
 	let offset = 12;
 	let format: { channels: number; bits: number; rate: number } | null = null;
+
 	while (offset + 8 <= bytes.length) {
 		const id = bytes.toString("ascii", offset, offset + 4);
 		const size = bytes.readUInt32LE(offset + 4);
 		const body = offset + 8;
+
 		if (id === "fmt ") {
 			format = {
 				channels: bytes.readUInt16LE(body + 2),
@@ -79,6 +85,7 @@ export function readWav(path: string): Stereo {
 				bits: bytes.readUInt16LE(body + 14),
 			};
 		}
+
 		if (id === "data") {
 			if (
 				format === null || format.channels !== CHANNELS || format.bits !== 24 ||
@@ -96,14 +103,18 @@ export function readWav(path: string): Stereo {
 			const left = new Float32Array(frames);
 			const right = new Float32Array(frames);
 			let position = body;
+
 			for (let frame = 0; frame < frames; frame += 1) {
 				left[frame] = bytes.readIntLE(position, 3) / (MAX_24 + 1);
 				right[frame] = bytes.readIntLE(position + 3, 3) / (MAX_24 + 1);
 				position += CHANNELS * BYTES_PER_SAMPLE;
 			}
+
 			return { left, right };
 		}
+
 		offset = body + size + (size % 2);
 	}
+
 	throw new Error(`${path} has no data chunk`);
 }

@@ -1,10 +1,6 @@
 [project]
 program = "."
 
-[migrations]
-version-type = "u8"
-auto = true
-
 [clients]
 # Pina forbids `..` in manifest paths. The repository's `generate:clients`
 # wrapper overrides this with the top-level `clients/` directory.

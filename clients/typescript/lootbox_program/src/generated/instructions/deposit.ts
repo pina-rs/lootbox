@@ -8,7 +8,8 @@
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
+import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
+import { findVaultPda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const DEPOSIT_DISCRIMINATOR = 2;
@@ -40,6 +41,48 @@ export function getDepositInstructionDataDecoder(): FixedSizeDecoder<DepositInst
 
 export function getDepositInstructionDataCodec(): FixedSizeCodec<DepositInstructionDataArgs, DepositInstructionData> {
     return combineCodec(getDepositInstructionDataEncoder(), getDepositInstructionDataDecoder());
+}
+
+export type DepositAsyncInput<TAccountDepositor extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
+  /**
+ * Any wallet funding the vault. Writable signer; the lamports come from
+ * it.
+ */
+depositor: TAccountDepositor;
+/** Lootbox whose vault receives the deposit; its PDA is revalidated. */
+lootbox: TAccountLootbox;
+/** Vault PDA of `lootbox` that receives the lamports. Writable. */
+vault?: TAccountVault;
+/** System program, invoked for the transfer. */
+systemProgram?: TAccountSystemProgram;
+lamports: DepositInstructionDataArgs["lamports"];
+}
+
+export async function getDepositInstructionAsync<TAccountDepositor extends InstructionSignerInput, TAccountLootbox extends InstructionAccountInput, TAccountVault extends InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: DepositAsyncInput<TAccountDepositor, TAccountLootbox, TAccountVault, TAccountSystemProgram>, config?: { programAddress?: TProgramAddress } ): Promise<DepositInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountDepositor, InstructionAccountInputAddress<TAccountDepositor>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>>> {
+  // Program address.
+const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
+
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
+ // Original accounts.
+const originalAccounts = { depositor: { value: input.depositor ?? null, isSigner: true, isWritable: true }, lootbox: { value: input.lootbox ?? null, isSigner: false, isWritable: false }, vault: { value: input.vault ?? null, isSigner: false, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isSigner: false, isWritable: false } }
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
+
+
+// Original args.
+const args = { ...input,  };
+
+
+// Resolve default values.
+if (!accounts.vault.value) {
+accounts.vault.value = await findVaultPda({ lootbox: getAddressFromResolvedInstructionAccount("lootbox", accounts.lootbox.value) }, { programAddress });
+}
+if (!accounts.systemProgram.value) {
+accounts.systemProgram.value = '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+}
+
+return Object.freeze({ accounts: [getAccountMeta("depositor", accounts.depositor), getAccountMeta("lootbox", accounts.lootbox), getAccountMeta("vault", accounts.vault), getAccountMeta("systemProgram", accounts.systemProgram)], data: getDepositInstructionDataEncoder().encode(args as DepositInstructionDataArgs), programAddress } as DepositInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountDepositor, InstructionAccountInputAddress<TAccountDepositor>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>>);
 }
 
 export type DepositInput<TAccountDepositor extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {

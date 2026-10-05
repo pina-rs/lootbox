@@ -8,7 +8,8 @@
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
+import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
+import { findServiceVaultPda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const CLOSE_SERVICE_VAULT_DISCRIMINATOR = 38;
@@ -36,6 +37,45 @@ export function getCloseServiceVaultInstructionDataDecoder(): FixedSizeDecoder<C
 
 export function getCloseServiceVaultInstructionDataCodec(): FixedSizeCodec<CloseServiceVaultInstructionDataArgs, CloseServiceVaultInstructionData> {
     return combineCodec(getCloseServiceVaultInstructionDataEncoder(), getCloseServiceVaultInstructionDataDecoder());
+}
+
+export type CloseServiceVaultAsyncInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
+  /** Template authority; signs and receives the vault balance. */
+authority: TAccountAuthority;
+/** Retired template PDA with no pending openings. */
+template: TAccountTemplate;
+/** Template's box mint; its supply must be zero. */
+boxMint: TAccountBoxMint;
+/**
+ * System-owned service vault PDA from `["service-vault", template]` with
+ * the template's stored bump; signs the transfer out.
+ */
+serviceVault?: TAccountServiceVault;
+/** System program, invoked for the lamport transfer. */
+systemProgram?: TAccountSystemProgram;
+}
+
+export async function getCloseServiceVaultInstructionAsync<TAccountAuthority extends InstructionSignerInput, TAccountTemplate extends InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: CloseServiceVaultAsyncInput<TAccountAuthority, TAccountTemplate, TAccountBoxMint, TAccountServiceVault, TAccountSystemProgram>, config?: { programAddress?: TProgramAddress } ): Promise<CloseServiceVaultInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountServiceVault, InstructionAccountInputAddress<TAccountServiceVault>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>>> {
+  // Program address.
+const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
+
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
+ // Original accounts.
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: true }, template: { value: input.template ?? null, isSigner: false, isWritable: false }, boxMint: { value: input.boxMint ?? null, isSigner: false, isWritable: false }, serviceVault: { value: input.serviceVault ?? null, isSigner: false, isWritable: true }, systemProgram: { value: input.systemProgram ?? null, isSigner: false, isWritable: false } }
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
+
+
+// Resolve default values.
+if (!accounts.serviceVault.value) {
+accounts.serviceVault.value = await findServiceVaultPda({ template: getAddressFromResolvedInstructionAccount("template", accounts.template.value) }, { programAddress });
+}
+if (!accounts.systemProgram.value) {
+accounts.systemProgram.value = '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+}
+
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("serviceVault", accounts.serviceVault), getAccountMeta("systemProgram", accounts.systemProgram)], data: getCloseServiceVaultInstructionDataEncoder().encode({}), programAddress } as CloseServiceVaultInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountServiceVault, InstructionAccountInputAddress<TAccountServiceVault>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>>);
 }
 
 export type CloseServiceVaultInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {

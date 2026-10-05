@@ -131,10 +131,10 @@ export const VAULT_STATE_MIGRATION_VERSION = 0;
  * reported by the decoder when the account is decoded.
  *
  * ```ts
- * const { data } = await fetchEncodedAccount(rpc, address);
- * if (vaultStateNeedsMigration(data)) {
+ * const account = await fetchEncodedAccount(rpc, address);
+ * if (account.exists && vaultStateNeedsMigration(account.data)) {
  * 	// Migrate first, then retry the instruction that failed.
- * 	await send(getMigrateInstruction({ vaultState: address, payer }).make());
+ * 	await send(getMigrateInstruction({ vaultState: address, payer }));
  * }
  * ```
  */

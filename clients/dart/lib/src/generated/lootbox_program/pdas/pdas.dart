@@ -4,11 +4,13 @@
 export 'bundle.dart';
 export 'exclusive_attachment.dart';
 export 'exclusive_collection.dart';
+export 'fee_vault.dart';
 export 'lootbox.dart';
 export 'opening.dart';
 export 'prize_pool.dart';
 export 'prize_pool_item.dart';
 export 'result_receipt.dart';
+export 'service_vault.dart';
 export 'template.dart';
 export 'template_opening.dart';
 export 'vault.dart';

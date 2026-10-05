@@ -71,11 +71,14 @@ pub struct RequestOpen {
 }
 
 impl RequestOpen {
-	pub fn new(owner: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, owner_box_account: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, oracle_lut_signer: solana_pubkey::Pubkey, oracle_lut: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey, address_lookup_table_program: solana_pubkey::Pubkey) -> Self {
+	pub fn new(owner: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, owner_box_account: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, oracle_lut_signer: solana_pubkey::Pubkey, oracle_lut: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey, address_lookup_table_program: solana_pubkey::Pubkey) -> Self {
 		Self {
 			owner,
 			lootbox,
-			vault,
+			vault: solana_pubkey::Pubkey::find_program_address(
+				&["vault".as_bytes(), lootbox.as_ref()],
+				&crate::LOOTBOX_PROGRAM_ID,
+			).0,
 			box_mint,
 			owner_box_account,
 			opening: solana_pubkey::Pubkey::find_program_address(

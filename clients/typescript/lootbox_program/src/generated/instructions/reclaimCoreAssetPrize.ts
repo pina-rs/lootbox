@@ -19,7 +19,7 @@ export const RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR2 = 0;
 
 export function getReclaimCoreAssetPrizeDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR2); }
 
-export type ReclaimCoreAssetPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountAsset extends string | AccountMeta<string> = string, TAccountCollection extends string | AccountMeta<string> = string, TAccountCoreProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = string, TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountPluginAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+export type ReclaimCoreAssetPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountAsset extends string | AccountMeta<string> = string, TAccountCollection extends string | AccountMeta<string> = string, TAccountCoreProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountPluginAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountAsset extends string ? WritableAccount<TAccountAsset> : TAccountAsset, TAccountCollection extends string ? ReadonlyAccount<TAccountCollection> : TAccountCollection, TAccountCoreProgram extends string ? ReadonlyAccount<TAccountCoreProgram> : TAccountCoreProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountPluginAccounts extends string ? ReadonlyAccount<TAccountPluginAccounts> : TAccountPluginAccounts, ...TRemainingAccounts]>;
 
 export type ReclaimCoreAssetPrizeInstructionData = { discriminator: number; migrationVersion: number;
@@ -73,7 +73,7 @@ collection: TAccountCollection;
 /** Metaplex Core program, invoked to transfer the asset. */
 coreProgram: TAccountCoreProgram;
 /** System program, forwarded to Core. */
-systemProgram: TAccountSystemProgram;
+systemProgram?: TAccountSystemProgram;
 /** SPL Noop program, forwarded to Core as its log wrapper. */
 logWrapper: TAccountLogWrapper;
 /**
@@ -100,7 +100,10 @@ const accounts = originalAccounts as Record<keyof typeof originalAccounts, Resol
 const args = { ...input,  };
 
 
-
+// Resolve default values.
+if (!accounts.systemProgram.value) {
+accounts.systemProgram.value = '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+}
 
 return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("template", accounts.template), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("bundle", accounts.bundle), getAccountMeta("asset", accounts.asset), getAccountMeta("collection", accounts.collection), getAccountMeta("coreProgram", accounts.coreProgram), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("logWrapper", accounts.logWrapper), getAccountMeta("pluginAccounts", accounts.pluginAccounts)], data: getReclaimCoreAssetPrizeInstructionDataEncoder().encode(args as ReclaimCoreAssetPrizeInstructionDataArgs), programAddress } as ReclaimCoreAssetPrizeInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountBundle, InstructionAccountInputAddress<TAccountBundle>>, ResolvedInstructionAccountMeta<TAccountAsset, InstructionAccountInputAddress<TAccountAsset>>, ResolvedInstructionAccountMeta<TAccountCollection, InstructionAccountInputAddress<TAccountCollection>>, ResolvedInstructionAccountMeta<TAccountCoreProgram, InstructionAccountInputAddress<TAccountCoreProgram>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>, ResolvedInstructionAccountMeta<TAccountLogWrapper, InstructionAccountInputAddress<TAccountLogWrapper>>, ResolvedInstructionAccountMeta<TAccountPluginAccounts, InstructionAccountInputAddress<TAccountPluginAccounts>>>);
 }

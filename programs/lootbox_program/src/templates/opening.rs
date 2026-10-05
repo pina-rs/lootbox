@@ -310,12 +310,8 @@ fn pay_settlement_bounty(
 	}
 
 	system_program.assert_address(&system::ID)?;
-	let service_vault_bump = [state.service_vault_bump];
-	let service_vault_signer = PdaSigner::from_slices([
-		SEED_SERVICE_VAULT,
-		template.as_ref(),
-		service_vault_bump.as_slice(),
-	]);
+	let service_vault_seeds = ServiceVault::seeds(template).with_bump(state.service_vault_bump);
+	let service_vault_signer = service_vault_seeds.to_signer();
 	system::instructions::Transfer {
 		from: service_vault,
 		to: recipient,

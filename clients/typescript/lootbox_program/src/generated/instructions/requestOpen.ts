@@ -9,7 +9,7 @@
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
 import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
-import { findOpeningPda } from '../pdas';
+import { findOpeningPda, findVaultPda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const REQUEST_OPEN_DISCRIMINATOR = 5;
@@ -71,7 +71,7 @@ lootbox: TAccountLootbox;
  * Vault PDA of `lootbox`, read to prove the pending opening stays fully
  * collateralized.
  */
-vault: TAccountVault;
+vault?: TAccountVault;
 /** The lootbox's box mint. Writable; one box is burned. */
 boxMint: TAccountBoxMint;
 /**
@@ -151,6 +151,9 @@ const args = { ...input,  };
 
 
 // Resolve default values.
+if (!accounts.vault.value) {
+accounts.vault.value = await findVaultPda({ lootbox: getAddressFromResolvedInstructionAccount("lootbox", accounts.lootbox.value) }, { programAddress });
+}
 if (!accounts.opening.value) {
 accounts.opening.value = await findOpeningPda({ lootbox: getAddressFromResolvedInstructionAccount("lootbox", accounts.lootbox.value), randomness: getAddressFromResolvedInstructionAccount("randomness", accounts.randomness.value) }, { programAddress });
 }

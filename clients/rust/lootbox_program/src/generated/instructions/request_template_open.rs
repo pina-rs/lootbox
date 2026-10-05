@@ -85,14 +85,17 @@ pub struct RequestTemplateOpen {
 }
 
 impl RequestTemplateOpen {
-	pub fn new(box_authority: solana_pubkey::Pubkey, payer: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, box_account: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, oracle_lut_signer: solana_pubkey::Pubkey, oracle_lut: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey, address_lookup_table_program: solana_pubkey::Pubkey) -> Self {
+	pub fn new(box_authority: solana_pubkey::Pubkey, payer: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, box_account: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, oracle_lut_signer: solana_pubkey::Pubkey, oracle_lut: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey, address_lookup_table_program: solana_pubkey::Pubkey) -> Self {
 		Self {
 			box_authority,
 			payer,
 			template,
 			box_mint,
 			box_account,
-			opening,
+			opening: solana_pubkey::Pubkey::find_program_address(
+				&["template-opening".as_bytes(), template.as_ref(), randomness.as_ref()],
+				&crate::LOOTBOX_PROGRAM_ID,
+			).0,
 			randomness,
 			reward_escrow,
 			oracle_queue,

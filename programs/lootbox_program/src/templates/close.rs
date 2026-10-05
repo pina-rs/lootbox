@@ -173,12 +173,9 @@ impl<'a> ProcessAccountInfos<'a> for CloseServiceVaultAccounts<'a> {
 			return Ok(());
 		}
 
-		let service_vault_bump = [service_vault_bump];
-		let service_vault_signer = PdaSigner::from_slices([
-			SEED_SERVICE_VAULT,
-			template_address.as_ref(),
-			service_vault_bump.as_slice(),
-		]);
+		let service_vault_seeds =
+			ServiceVault::seeds(&template_address).with_bump(service_vault_bump);
+		let service_vault_signer = service_vault_seeds.to_signer();
 		system::instructions::Transfer {
 			from: self.service_vault,
 			to: self.authority,

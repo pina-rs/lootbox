@@ -1,5 +1,5 @@
 {
-	"abiVersion": "0.20",
+	"abiVersion": "0.21",
 	"programId": "LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E",
 	"versionType": "u8",
 	"auto": [
@@ -9,11 +9,6 @@
 	],
 	"contracts": {
 		"account:1:01": {
-			"identity": {
-				"kind": "account",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "01"
-			},
 			"rustName": "LootboxState",
 			"versions": [
 				{
@@ -92,19 +87,12 @@
 								"name": "vault_bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
-					},
-					"transition": null
+						]
+					}
 				}
 			]
 		},
 		"account:1:02": {
-			"identity": {
-				"kind": "account",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "02"
-			},
 			"rustName": "VaultState",
 			"versions": [
 				{
@@ -123,19 +111,12 @@
 								"name": "bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
-					},
-					"transition": null
+						]
+					}
 				}
 			]
 		},
 		"account:1:03": {
-			"identity": {
-				"kind": "account",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "03"
-			},
 			"rustName": "OpeningState",
 			"versions": [
 				{
@@ -174,19 +155,12 @@
 								"name": "bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
-					},
-					"transition": null
+						]
+					}
 				}
 			]
 		},
 		"account:1:04": {
-			"identity": {
-				"kind": "account",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "04"
-			},
 			"rustName": "TemplateState",
 			"versions": [
 				{
@@ -305,19 +279,12 @@
 								"name": "remaining",
 								"rustType": "Vec<u64, 1024>"
 							}
-						],
-						"codec": "pinaPodV2"
-					},
-					"transition": null
+						]
+					}
 				}
 			]
 		},
 		"account:1:05": {
-			"identity": {
-				"kind": "account",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "05"
-			},
 			"rustName": "BundleState",
 			"versions": [
 				{
@@ -388,19 +355,12 @@
 								"name": "bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
-					},
-					"transition": null
+						]
+					}
 				}
 			]
 		},
 		"account:1:06": {
-			"identity": {
-				"kind": "account",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "06"
-			},
 			"rustName": "TemplateOpeningState",
 			"versions": [
 				{
@@ -483,19 +443,12 @@
 								"name": "bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
-					},
-					"transition": null
+						]
+					}
 				}
 			]
 		},
 		"account:1:07": {
-			"identity": {
-				"kind": "account",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "07"
-			},
 			"rustName": "ResultReceiptState",
 			"versions": [
 				{
@@ -558,19 +511,12 @@
 								"name": "bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
-					},
-					"transition": null
+						]
+					}
 				}
 			]
 		},
 		"account:1:08": {
-			"identity": {
-				"kind": "account",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "08"
-			},
 			"rustName": "PrizePoolState",
 			"versions": [
 				{
@@ -637,19 +583,12 @@
 								"name": "unavailable",
 								"rustType": "Vec<u8, 512>"
 							}
-						],
-						"codec": "pinaPodV2"
-					},
-					"transition": null
+						]
+					}
 				}
 			]
 		},
 		"account:1:09": {
-			"identity": {
-				"kind": "account",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "09"
-			},
 			"rustName": "PrizePoolItemState",
 			"versions": [
 				{
@@ -700,19 +639,12 @@
 								"name": "bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
-					},
-					"transition": null
+						]
+					}
 				}
 			]
 		},
 		"account:1:0a": {
-			"identity": {
-				"kind": "account",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "0a"
-			},
 			"rustName": "ExclusiveCollectionState",
 			"versions": [
 				{
@@ -787,19 +719,12 @@
 								"name": "bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
-					},
-					"transition": null
+						]
+					}
 				}
 			]
 		},
 		"account:1:0b": {
-			"identity": {
-				"kind": "account",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "0b"
-			},
 			"rustName": "ExclusiveAttachmentState",
 			"versions": [
 				{
@@ -846,19 +771,12 @@
 								"name": "fee_vault_bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
-					},
-					"transition": null
+						]
+					}
 				}
 			]
 		},
 		"event:1:01": {
-			"identity": {
-				"kind": "event",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "01"
-			},
 			"rustName": "ExclusiveNftMintedEvent",
 			"versions": [
 				{
@@ -905,19 +823,12 @@
 								"name": "layer_count",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
-					},
-					"transition": null
+						]
+					}
 				}
 			]
 		},
 		"instruction:1:00": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "00"
-			},
 			"rustName": "CreateLootboxInstruction",
 			"versions": [
 				{
@@ -948,71 +859,42 @@
 								"name": "vault_bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "box_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "box_mint"
 							},
 							{
 								"name": "lootbox",
 								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
 								"pda": "lootbox"
 							},
 							{
 								"name": "vault",
 								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
 								"pda": "vault"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							},
 							{
 								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:01": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "01"
-			},
 			"rustName": "AddOutcomeInstruction",
 			"versions": [
 				{
@@ -1027,39 +909,24 @@
 								"name": "reward_lamports",
 								"rustType": "u64"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "lootbox",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:02": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "02"
-			},
 			"rustName": "DepositInstruction",
 			"versions": [
 				{
@@ -1070,93 +937,55 @@
 								"name": "lamports",
 								"rustType": "u64"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "depositor",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "lootbox",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "lootbox"
 							},
 							{
 								"name": "vault",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:03": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "03"
-			},
 			"rustName": "SealInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "lootbox",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:04": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "04"
-			},
 			"rustName": "MintBoxesInstruction",
 			"versions": [
 				{
@@ -1167,71 +996,39 @@
 								"name": "amount",
 								"rustType": "u64"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "lootbox",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "vault",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "vault"
 							},
 							{
 								"name": "box_mint",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "recipient_box_account",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:05": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "05"
-			},
 			"rustName": "RequestOpenInstruction",
 			"versions": [
 				{
@@ -1246,183 +1043,92 @@
 								"name": "bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "owner",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "lootbox",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "vault",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "vault"
 							},
 							{
 								"name": "box_mint",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "owner_box_account",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "opening",
 								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
 								"pda": "opening"
 							},
 							{
 								"name": "randomness",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "reward_escrow",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "oracle_queue",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "oracle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "recent_slot_hashes",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "recent_slot_hashes"
 							},
 							{
-								"name": "oracle_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_program"
 							},
 							{
-								"name": "oracle_program_state",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_program_state"
 							},
 							{
-								"name": "oracle_lut_signer",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_lut_signer"
 							},
 							{
 								"name": "oracle_lut",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "associated_token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
-								"pda": null
+								"defaultValue": "publicKey:ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
 							},
 							{
-								"name": "wrapped_sol_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "wrapped_sol_mint"
 							},
 							{
-								"name": "address_lookup_table_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "address_lookup_table_program"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							},
 							{
 								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:06": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "06"
-			},
 			"rustName": "SettleOpenInstruction",
 			"versions": [
 				{
@@ -1441,363 +1147,180 @@
 								"name": "value",
 								"rustType": "[u8; 32]"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "recipient",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "payer",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "lootbox",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "vault",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "box_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "box_mint"
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "randomness",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "oracle_queue",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_queue"
 							},
 							{
-								"name": "oracle",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle"
 							},
 							{
 								"name": "oracle_stats",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "recent_slot_hashes",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "recent_slot_hashes"
 							},
 							{
-								"name": "oracle_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_program"
 							},
 							{
 								"name": "reward_escrow",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "oracle_program_state",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_program_state"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							},
 							{
 								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 							},
 							{
-								"name": "wrapped_sol_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "wrapped_sol_mint"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:07": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "07"
-			},
 			"rustName": "RefundOpenInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "recipient",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "lootbox",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "vault",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "box_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "box_mint"
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "randomness",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "randomness"
 							},
 							{
-								"name": "clock",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "clock"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:08": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "08"
-			},
 			"rustName": "CloseOpeningInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "recipient",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "lootbox",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "lootbox"
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "randomness",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "reward_escrow",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "oracle_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_program"
 							},
 							{
-								"name": "oracle_program_state",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_program_state"
 							},
 							{
 								"name": "oracle_lut",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "oracle_lut_signer",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_lut_signer"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							},
 							{
 								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 							},
 							{
-								"name": "wrapped_sol_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "wrapped_sol_mint"
 							},
 							{
-								"name": "address_lookup_table_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "address_lookup_table_program"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:09": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "09"
-			},
 			"rustName": "WithdrawSurplusInstruction",
 			"versions": [
 				{
@@ -1808,55 +1331,31 @@
 								"name": "lamports",
 								"rustType": "u64"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "lootbox",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "lootbox"
 							},
 							{
 								"name": "vault",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "box_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "box_mint"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:0a": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "0a"
-			},
 			"rustName": "CreateTemplateInstruction",
 			"versions": [
 				{
@@ -1899,63 +1398,37 @@
 								"name": "bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "template",
 								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
 								"pda": "template"
 							},
 							{
-								"name": "box_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "box_mint"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							},
 							{
 								"name": "box_token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
-								"pda": null
+								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:0b": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "0b"
-			},
 			"rustName": "AddBundleInstruction",
 			"versions": [
 				{
@@ -1974,55 +1447,34 @@
 								"name": "bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
 								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
 								"pda": "bundle"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:0c": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "0c"
-			},
 			"rustName": "FundSolPrizeInstruction",
 			"versions": [
 				{
@@ -2033,55 +1485,33 @@
 								"name": "lamports_per_win",
 								"rustType": "u64"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:0d": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "0d"
-			},
 			"rustName": "FundTokenPrizeInstruction",
 			"versions": [
 				{
@@ -2096,117 +1526,66 @@
 								"name": "is_nft",
 								"rustType": "bool"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "mint"
 							},
 							{
 								"name": "source",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "escrow",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:0e": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "0e"
-			},
 			"rustName": "SealTemplateInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:0f": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "0f"
-			},
 			"rustName": "MintTemplateBoxesInstruction",
 			"versions": [
 				{
@@ -2217,63 +1596,35 @@
 								"name": "amount",
 								"rustType": "u64"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "box_mint",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "recipient_box_account",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "box_token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "box_token_program"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:10": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "10"
-			},
 			"rustName": "RequestTemplateOpenInstruction",
 			"versions": [
 				{
@@ -2300,191 +1651,97 @@
 								"name": "bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "box_authority",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "payer",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "box_mint",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "box_account",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "opening",
 								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
 								"pda": "opening"
 							},
 							{
 								"name": "randomness",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "reward_escrow",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "oracle_queue",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "oracle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "recent_slot_hashes",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "recent_slot_hashes"
 							},
 							{
-								"name": "oracle_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_program"
 							},
 							{
-								"name": "oracle_program_state",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_program_state"
 							},
 							{
-								"name": "oracle_lut_signer",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_lut_signer"
 							},
 							{
 								"name": "oracle_lut",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "associated_token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
-								"pda": null
+								"defaultValue": "publicKey:ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
 							},
 							{
-								"name": "wrapped_sol_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "wrapped_sol_mint"
 							},
 							{
-								"name": "address_lookup_table_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "address_lookup_table_program"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							},
 							{
 								"name": "box_token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
-								"pda": null
+								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
 							},
 							{
 								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:11": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "11"
-			},
 			"rustName": "FulfillTemplateOpenInstruction",
 			"versions": [
 				{
@@ -2503,143 +1760,71 @@
 								"name": "value",
 								"rustType": "[u8; 32]"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "payer",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "service_vault",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "randomness",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "oracle_queue",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_queue"
 							},
 							{
-								"name": "oracle",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle"
 							},
 							{
 								"name": "oracle_stats",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "recent_slot_hashes",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "recent_slot_hashes"
 							},
 							{
-								"name": "oracle_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_program"
 							},
 							{
 								"name": "reward_escrow",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "oracle_program_state",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_program_state"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							},
 							{
 								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 							},
 							{
-								"name": "wrapped_sol_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "wrapped_sol_mint"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:12": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "12"
-			},
 			"rustName": "AllocateTemplateOpenInstruction",
 			"versions": [
 				{
@@ -2650,71 +1835,39 @@
 								"name": "result_receipt_bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "bundle",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "bundle"
 							},
 							{
 								"name": "service_vault",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "result_receipt",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:13": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "13"
-			},
 			"rustName": "ClaimSolPrizeInstruction",
 			"versions": [
 				{
@@ -2725,55 +1878,31 @@
 								"name": "asset_index",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "recipient",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:14": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "14"
-			},
 			"rustName": "ClaimTokenPrizeInstruction",
 			"versions": [
 				{
@@ -2784,125 +1913,68 @@
 								"name": "asset_index",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "recipient",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "recipient"
 							},
 							{
-								"name": "mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "mint"
 							},
 							{
 								"name": "escrow",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "destination",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:15": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "15"
-			},
 			"rustName": "RetireTemplateInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:16": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "16"
-			},
 			"rustName": "ReclaimSolPrizeInstruction",
 			"versions": [
 				{
@@ -2913,55 +1985,31 @@
 								"name": "asset_index",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
-								"name": "box_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "box_mint"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:17": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "17"
-			},
 			"rustName": "ReclaimTokenPrizeInstruction",
 			"versions": [
 				{
@@ -2972,439 +2020,225 @@
 								"name": "asset_index",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
-								"name": "box_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "box_mint"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "mint"
 							},
 							{
 								"name": "escrow",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "destination",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:18": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "18"
-			},
 			"rustName": "CloseTemplateOpeningInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "rent_refund",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "randomness",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "reward_escrow",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "oracle_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_program"
 							},
 							{
-								"name": "oracle_program_state",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_program_state"
 							},
 							{
 								"name": "oracle_lut",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "oracle_lut_signer",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "oracle_lut_signer"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							},
 							{
 								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 							},
 							{
-								"name": "wrapped_sol_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "wrapped_sol_mint"
 							},
 							{
-								"name": "address_lookup_table_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "address_lookup_table_program"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:19": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "19"
-			},
 			"rustName": "ActivateBundleInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:1a": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "1a"
-			},
 			"rustName": "CancelBundleInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:1b": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "1b"
-			},
 			"rustName": "FundMetadataNftPrizeInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "mint"
 							},
 							{
 								"name": "source",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "escrow",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "metadata",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "token_metadata_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "token_metadata_program"
 							},
 							{
-								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "system_program"
 							},
 							{
-								"name": "instructions_sysvar",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "instructions_sysvar"
 							},
 							{
-								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "token_program"
 							},
 							{
-								"name": "associated_token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "associated_token_program"
 							},
 							{
-								"name": "optional_accounts",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "optional_accounts"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:1c": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "1c"
-			},
 			"rustName": "ClaimMetadataNftPrizeInstruction",
 			"versions": [
 				{
@@ -3415,143 +2249,68 @@
 								"name": "asset_index",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "payer",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "recipient",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "recipient"
 							},
 							{
-								"name": "mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "mint"
 							},
 							{
 								"name": "escrow",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "destination",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "metadata",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "token_metadata_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "token_metadata_program"
 							},
 							{
-								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "system_program"
 							},
 							{
-								"name": "instructions_sysvar",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "instructions_sysvar"
 							},
 							{
-								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "token_program"
 							},
 							{
-								"name": "associated_token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "associated_token_program"
 							},
 							{
-								"name": "optional_accounts",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "optional_accounts"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:1d": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "1d"
-			},
 			"rustName": "ReclaimMetadataNftPrizeInstruction",
 			"versions": [
 				{
@@ -3562,229 +2321,110 @@
 								"name": "asset_index",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
-								"name": "box_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "box_mint"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "mint"
 							},
 							{
 								"name": "escrow",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "destination",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "metadata",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "token_metadata_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "token_metadata_program"
 							},
 							{
-								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "system_program"
 							},
 							{
-								"name": "instructions_sysvar",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "instructions_sysvar"
 							},
 							{
-								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "token_program"
 							},
 							{
-								"name": "associated_token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "associated_token_program"
 							},
 							{
-								"name": "optional_accounts",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "optional_accounts"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:1e": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "1e"
-			},
 			"rustName": "FundCoreAssetPrizeInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "asset",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "collection",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "collection"
 							},
 							{
-								"name": "core_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "core_program"
 							},
 							{
-								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "system_program"
 							},
 							{
-								"name": "log_wrapper",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "log_wrapper"
 							},
 							{
-								"name": "plugin_accounts",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "plugin_accounts"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:1f": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "1f"
-			},
 			"rustName": "ClaimCoreAssetPrizeInstruction",
 			"versions": [
 				{
@@ -3795,111 +2435,54 @@
 								"name": "asset_index",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "payer",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "recipient",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "recipient"
 							},
 							{
 								"name": "asset",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "collection",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "collection"
 							},
 							{
-								"name": "core_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "core_program"
 							},
 							{
-								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "system_program"
 							},
 							{
-								"name": "log_wrapper",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "log_wrapper"
 							},
 							{
-								"name": "plugin_accounts",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "plugin_accounts"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:20": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "20"
-			},
 			"rustName": "ReclaimCoreAssetPrizeInstruction",
 			"versions": [
 				{
@@ -3910,103 +2493,50 @@
 								"name": "asset_index",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
-								"name": "box_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "box_mint"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "asset",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "collection",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "collection"
 							},
 							{
-								"name": "core_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "core_program"
 							},
 							{
-								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "system_program"
 							},
 							{
-								"name": "log_wrapper",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "log_wrapper"
 							},
 							{
-								"name": "plugin_accounts",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "plugin_accounts"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:21": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "21"
-			},
 			"rustName": "FundCompressedNftPrizeInstruction",
 			"versions": [
 				{
@@ -4033,103 +2563,49 @@
 								"name": "index",
 								"rustType": "u32"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "tree_config",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "tree_config"
 							},
 							{
 								"name": "merkle_tree",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "bubblegum_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "bubblegum_program"
 							},
 							{
-								"name": "log_wrapper",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "log_wrapper"
 							},
 							{
-								"name": "compression_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "compression_program"
 							},
 							{
-								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "system_program"
 							},
 							{
-								"name": "proof_accounts",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "proof_accounts"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:22": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "22"
-			},
 			"rustName": "ClaimCompressedNftPrizeInstruction",
 			"versions": [
 				{
@@ -4160,111 +2636,52 @@
 								"name": "index",
 								"rustType": "u32"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "recipient",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "recipient"
 							},
 							{
-								"name": "tree_config",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "tree_config"
 							},
 							{
 								"name": "merkle_tree",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "bubblegum_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "bubblegum_program"
 							},
 							{
-								"name": "log_wrapper",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "log_wrapper"
 							},
 							{
-								"name": "compression_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "compression_program"
 							},
 							{
-								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "system_program"
 							},
 							{
-								"name": "proof_accounts",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "proof_accounts"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:23": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "23"
-			},
 			"rustName": "ReclaimCompressedNftPrizeInstruction",
 			"versions": [
 				{
@@ -4295,189 +2712,95 @@
 								"name": "index",
 								"rustType": "u32"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
-								"name": "box_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "box_mint"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "tree_config",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "tree_config"
 							},
 							{
 								"name": "merkle_tree",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "bubblegum_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "bubblegum_program"
 							},
 							{
-								"name": "log_wrapper",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "log_wrapper"
 							},
 							{
-								"name": "compression_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "compression_program"
 							},
 							{
-								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "system_program"
 							},
 							{
-								"name": "proof_accounts",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "proof_accounts"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:24": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "24"
-			},
 			"rustName": "ForfeitTemplateOpenInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "caller",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "beneficiary",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "service_vault",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "randomness",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "randomness"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:25": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "25"
-			},
 			"rustName": "LockTreasuryInstruction",
 			"versions": [
 				{
@@ -4488,141 +2811,79 @@
 								"name": "service_vault_bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "box_mint",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
 								"pda": "bundle"
 							},
 							{
 								"name": "service_vault",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							},
 							{
 								"name": "box_token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
-								"pda": null
+								"defaultValue": "publicKey:TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:26": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "26"
-			},
 			"rustName": "CloseServiceVaultInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
-								"name": "box_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "box_mint"
 							},
 							{
 								"name": "service_vault",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:27": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "27"
-			},
 			"rustName": "FundQuoteSolPrizeInstruction",
 			"versions": [
 				{
@@ -4633,55 +2894,33 @@
 								"name": "lamports_per_win",
 								"rustType": "u64"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:28": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "28"
-			},
 			"rustName": "FundQuoteTokenPrizeInstruction",
 			"versions": [
 				{
@@ -4692,141 +2931,78 @@
 								"name": "amount_per_win",
 								"rustType": "u64"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "mint"
 							},
 							{
 								"name": "source",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "escrow",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:29": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "29"
-			},
 			"rustName": "FundMintPrizeInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "mint",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:2a": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "2a"
-			},
 			"rustName": "ClaimMintPrizeInstruction",
 			"versions": [
 				{
@@ -4837,79 +3013,42 @@
 								"name": "asset_index",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "recipient",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "recipient"
 							},
 							{
 								"name": "mint",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "destination",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:2b": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "2b"
-			},
 			"rustName": "ReclaimMintPrizeInstruction",
 			"versions": [
 				{
@@ -4920,71 +3059,38 @@
 								"name": "asset_index",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
-								"name": "box_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "box_mint"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "mint",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "token_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-								"pda": null
+								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:2c": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "2c"
-			},
 			"rustName": "CreatePrizePoolInstruction",
 			"versions": [
 				{
@@ -4999,71 +3105,40 @@
 								"name": "bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "prize_pool",
 								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
 								"pda": "prize_pool"
 							},
 							{
-								"name": "merkle_tree",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "merkle_tree"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:2d": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "2d"
-			},
 			"rustName": "DepositPrizePoolItemInstruction",
 			"versions": [
 				{
@@ -5090,173 +3165,88 @@
 								"name": "index",
 								"rustType": "u32"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
-								"name": "bundle",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "bundle"
 							},
 							{
 								"name": "prize_pool",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "prize_pool_item",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "tree_config",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "tree_config"
 							},
 							{
 								"name": "merkle_tree",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "bubblegum_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "bubblegum_program"
 							},
 							{
-								"name": "log_wrapper",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "log_wrapper"
 							},
 							{
-								"name": "compression_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "compression_program"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							},
 							{
-								"name": "proof_accounts",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "proof_accounts"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:2e": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "2e"
-			},
 			"rustName": "SealPrizePoolInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "prize_pool",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:2f": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "2f"
-			},
 			"rustName": "AllocatePrizePoolOpenInstruction",
 			"versions": [
 				{
@@ -5267,79 +3257,43 @@
 								"name": "result_receipt_bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "template",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "bundle",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "bundle"
 							},
 							{
 								"name": "prize_pool",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "service_vault",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "result_receipt",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:30": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "30"
-			},
 			"rustName": "ClaimPrizePoolItemInstruction",
 			"versions": [
 				{
@@ -5374,135 +3328,65 @@
 								"name": "metadata",
 								"rustType": "Vec<u8, 512>"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "prize_pool",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "prize_pool_item",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "recipient",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "recipient"
 							},
 							{
 								"name": "rent_refund",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "tree_config",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "tree_config"
 							},
 							{
 								"name": "merkle_tree",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "bubblegum_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "bubblegum_program"
 							},
 							{
-								"name": "log_wrapper",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "log_wrapper"
 							},
 							{
-								"name": "compression_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "compression_program"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							},
 							{
-								"name": "proof_accounts",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "proof_accounts"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:31": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "31"
-			},
 			"rustName": "ReclaimPrizePoolItemInstruction",
 			"versions": [
 				{
@@ -5537,181 +3421,93 @@
 								"name": "metadata",
 								"rustType": "Vec<u8, 512>"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
-								"name": "box_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "box_mint"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "prize_pool",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "prize_pool_item",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "tree_config",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "tree_config"
 							},
 							{
 								"name": "merkle_tree",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "bubblegum_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "bubblegum_program"
 							},
 							{
-								"name": "log_wrapper",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "log_wrapper"
 							},
 							{
-								"name": "compression_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "compression_program"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							},
 							{
-								"name": "proof_accounts",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "proof_accounts"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:32": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "32"
-			},
 			"rustName": "ClosePrizePoolInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "prize_pool",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:33": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "33"
-			},
 			"rustName": "PreparePrizePoolItemInstruction",
 			"versions": [
 				{
@@ -5742,133 +3538,74 @@
 								"name": "metadata",
 								"rustType": "Vec<u8, 512>"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
-								"name": "bundle",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "bundle"
 							},
 							{
 								"name": "prize_pool",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "prize_pool_item",
 								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
 								"pda": "prize_pool_item"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:34": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "34"
-			},
 			"rustName": "CancelPrizePoolItemInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
-								"name": "bundle",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "bundle"
 							},
 							{
 								"name": "prize_pool",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "prize_pool_item",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:35": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "35"
-			},
 			"rustName": "CreateExclusiveCollectionInstruction",
 			"versions": [
 				{
@@ -5907,63 +3644,38 @@
 								"name": "base_uri",
 								"rustType": "[u8; 128]"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "admin",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "exclusive_collection",
 								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
 								"pda": "exclusive_collection"
 							},
 							{
 								"name": "core_collection",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "core_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "core_program"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:36": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "36"
-			},
 			"rustName": "SetExclusiveLayerInstruction",
 			"versions": [
 				{
@@ -5982,39 +3694,24 @@
 								"name": "weights",
 								"rustType": "[u8; 256]"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "admin",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "exclusive_collection",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:37": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "37"
-			},
 			"rustName": "AppendExclusiveTreeInstruction",
 			"versions": [
 				{
@@ -6029,125 +3726,69 @@
 								"name": "max_buffer_size",
 								"rustType": "u32"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "admin",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "exclusive_collection",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "tree_config",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "merkle_tree",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "bubblegum_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "bubblegum_program"
 							},
 							{
-								"name": "log_wrapper",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "log_wrapper"
 							},
 							{
-								"name": "compression_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "compression_program"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:38": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "38"
-			},
 			"rustName": "PublishExclusiveCollectionInstruction",
 			"versions": [
 				{
 					"schema": {
 						"layout": "fixed",
-						"fields": [],
-						"codec": "pinaPodV2"
+						"fields": []
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "admin",
-								"writable": false,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
 								"name": "exclusive_collection",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:39": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "39"
-			},
 			"rustName": "AttachExclusiveNftInstruction",
 			"versions": [
 				{
@@ -6166,79 +3807,44 @@
 								"name": "fee_vault_bump",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "exclusive_collection",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "exclusive_collection"
 							},
 							{
 								"name": "exclusive_attachment",
 								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
 								"pda": "exclusive_attachment"
 							},
 							{
 								"name": "fee_vault",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:3a": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "3a"
-			},
 			"rustName": "ClaimExclusiveNftInstruction",
 			"versions": [
 				{
@@ -6249,151 +3855,73 @@
 								"name": "asset_index",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
 								"name": "opening",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "exclusive_attachment",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "fee_vault",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "exclusive_collection",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "recipient",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "recipient"
 							},
 							{
 								"name": "tree_config",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "merkle_tree",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "core_collection",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
-								"name": "core_cpi_signer",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "core_cpi_signer"
 							},
 							{
-								"name": "bubblegum_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "bubblegum_program"
 							},
 							{
-								"name": "core_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "core_program"
 							},
 							{
-								"name": "log_wrapper",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "log_wrapper"
 							},
 							{
-								"name": "compression_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "compression_program"
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		},
 		"instruction:1:3b": {
-			"identity": {
-				"kind": "instruction",
-				"discriminatorBytes": 1,
-				"discriminatorHex": "3b"
-			},
 			"rustName": "ReclaimExclusiveFeesInstruction",
 			"versions": [
 				{
@@ -6404,70 +3932,39 @@
 								"name": "asset_index",
 								"rustType": "u8"
 							}
-						],
-						"codec": "pinaPodV2"
+						]
 					},
 					"process": {
 						"accounts": [
 							{
 								"name": "authority",
 								"writable": true,
-								"signer": true,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"signer": true
 							},
 							{
-								"name": "template",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "template"
 							},
 							{
-								"name": "box_mint",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"name": "box_mint"
 							},
 							{
 								"name": "bundle",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "exclusive_attachment",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "fee_vault",
-								"writable": true,
-								"signer": false,
-								"optional": false,
-								"defaultValue": null,
-								"pda": null
+								"writable": true
 							},
 							{
 								"name": "system_program",
-								"writable": false,
-								"signer": false,
-								"optional": false,
-								"defaultValue": "publicKey:11111111111111111111111111111111",
-								"pda": null
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							}
 						]
-					},
-					"transition": null
+					}
 				}
 			]
 		}

@@ -9,6 +9,7 @@ type Props = Readonly<{
 
 function localValue(date: Date): string {
 	const shifted = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+
 	return shifted.toISOString().slice(0, 16);
 }
 function afterHours(hours: number) {
@@ -19,6 +20,7 @@ function nextFriday() {
 	const distance = ((5 - date.getDay() + 7) % 7) || 7;
 	date.setDate(date.getDate() + distance);
 	date.setHours(12, 0, 0, 0);
+
 	return localValue(date);
 }
 

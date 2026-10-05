@@ -47,12 +47,30 @@ caller: TAccountCaller;
 /**
  * Bound destination of the forfeit bounty: the creator-funded service
  * budget compensates the beneficiary whose box burned, never the crank.
+ * Must match the opening's stored beneficiary.
  */
 beneficiary: TAccountBeneficiary;
+/**
+ * Template treasury, validated by its PDA seeds; its pending-opening count
+ * falls and its FIFO allocation cursor advances.
+ */
 template: TAccountTemplate;
+/**
+ * Service vault PDA at `["service-vault", template]`; validated only when
+ * receipts or bounties are enabled, and pays the settlement bounty.
+ */
 serviceVault: TAccountServiceVault;
+/**
+ * Pending opening at the FIFO head, validated by its PDA seeds; moves to
+ * the forfeited status and is not closed here.
+ */
 opening: TAccountOpening;
+/**
+ * Switchboard randomness bound to the opening; must still be unrevealed at
+ * the committed seed slot, which starts the timeout.
+ */
 randomness: TAccountRandomness;
+/** System program, used for the bounty transfer. */
 systemProgram?: TAccountSystemProgram;
 }
 
@@ -86,12 +104,30 @@ caller: TAccountMetas[0];
 /**
  * Bound destination of the forfeit bounty: the creator-funded service
  * budget compensates the beneficiary whose box burned, never the crank.
+ * Must match the opening's stored beneficiary.
  */
 beneficiary: TAccountMetas[1];
+/**
+ * Template treasury, validated by its PDA seeds; its pending-opening count
+ * falls and its FIFO allocation cursor advances.
+ */
 template: TAccountMetas[2];
+/**
+ * Service vault PDA at `["service-vault", template]`; validated only when
+ * receipts or bounties are enabled, and pays the settlement bounty.
+ */
 serviceVault: TAccountMetas[3];
+/**
+ * Pending opening at the FIFO head, validated by its PDA seeds; moves to
+ * the forfeited status and is not closed here.
+ */
 opening: TAccountMetas[4];
+/**
+ * Switchboard randomness bound to the opening; must still be unrevealed at
+ * the committed seed slot, which starts the timeout.
+ */
 randomness: TAccountMetas[5];
+/** System program, used for the bounty transfer. */
 systemProgram: TAccountMetas[6];
 };
 data: ForfeitTemplateOpenInstructionData; };

@@ -8,17 +8,31 @@
 	clippy::too_many_arguments
 )]
 
+/// Admit one immutable compressed NFT's metadata as the pool's next item.
+///
+/// The template authority signs while the treasury is unlocked and not
+/// retired, the bundle is funding with this pool as its current slot, and the
+/// pool is funding, below its quantity, and has no prepared item. Recomputes
+/// both leaf hashes from `metadata`, rejects mutable metadata, and creates the
+/// `PrizePoolItemState` PDA at `deposit_cursor` in the prepared state.
 pub const PREPARE_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 51u8;
 pub const PREPARE_PRIZE_POOL_ITEM_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct PreparePrizePoolItem {
+	/// Template authority; signs and pays the item rent.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	pub template: solana_pubkey::Pubkey,
+	/// Funding bundle PDA whose current slot holds `prize_pool`.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Funding `PrizePoolState` PDA; `has_prepared_item` is set.
 	pub prize_pool: solana_pubkey::Pubkey,
+	/// Empty item PDA `["prize-pool-item", prize_pool, deposit_cursor]`,
+	/// created here in the prepared state.
 	pub prize_pool_item: solana_pubkey::Pubkey,
+	/// System program, invoked to create the item account.
 	pub system_program: solana_pubkey::Pubkey,
 }
 
@@ -86,10 +100,20 @@ impl PreparePrizePoolItemInstructionData {
 pub struct PreparePrizePoolItemInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Canonical bump of the item PDA
+	/// `["prize-pool-item", prize_pool, deposit_cursor]`; any other value fails.
 	pub item_bump: u8,
+	/// Leaf data hash; must equal `keccak(keccak(metadata) ||
+	/// seller_fee_basis_points)` recomputed from `metadata`.
 	pub data_hash: [u8; 32],
+	/// Leaf creator hash; must equal the keccak hash of the creators encoded
+	/// in `metadata`.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce; derives the asset ID `["asset", tree, nonce]` under
+	/// Bubblegum using the pool's pinned tree.
 	pub nonce: u64,
+	/// Leaf index in the pool's tree, stored for the later transfer.
 	pub index: u32,
+	/// Canonical Borsh serialization of Bubblegum V1 `MetadataArgs`.
 	pub metadata: pina::Vec<u8, 512>,
 }

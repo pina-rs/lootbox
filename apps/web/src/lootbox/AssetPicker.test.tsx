@@ -12,6 +12,7 @@ const beta = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 const mutable = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6XKj7D3WpqkDmzPK";
 const delegated = "4Nd1mYUc7QbTEnYUNQhTxYRYgP5gN9Z8RzBf8nGvXw4X";
 const outsider = "Aio4gaXjXzJNVLtzwtNVmSqGKpANtXhybbkhtAC94ji2";
+
 const dataHash = "cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK";
 const creatorHash = "noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV";
 
@@ -117,6 +118,7 @@ describe("PrizePool asset composer", () => {
 					metadata: "AQ==",
 				});
 			}
+
 			throw new Error(`Unexpected request: ${url}`);
 		});
 		vi.stubGlobal("fetch", fetch);

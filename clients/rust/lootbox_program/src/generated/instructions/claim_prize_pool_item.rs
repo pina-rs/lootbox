@@ -8,27 +8,49 @@
 	clippy::too_many_arguments
 )]
 
+/// Deliver an opening's reserved prize pool leaf to its beneficiary.
+///
+/// Permissionless to relay. The opening must be allocated to this bundle with
+/// a pool assignment for `asset_index`, and the current metadata must match
+/// the item's semantic commitment. The pool PDA signs a Bubblegum transfer to
+/// the recipient, the claim is recorded, and the item PDA closes to the pool
+/// authority.
 pub const CLAIM_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 48u8;
 pub const CLAIM_PRIZE_POOL_ITEM_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ClaimPrizePoolItem {
+	/// Template PDA that owns the opening and bundle.
 	pub template: solana_pubkey::Pubkey,
+	/// Allocated opening PDA with a pool assignment; its claim bit is set.
 	pub opening: solana_pubkey::Pubkey,
+	/// Bundle PDA the opening was allocated to; its claimed count advances.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Sealed `PrizePoolState` PDA; signs the transfer and counts the claim.
 	pub prize_pool: solana_pubkey::Pubkey,
+	/// Item PDA at the opening's `selected_pool_item`, closed here.
 	pub prize_pool_item: solana_pubkey::Pubkey,
+	/// Opening's bound beneficiary; becomes the leaf owner.
 	pub recipient: solana_pubkey::Pubkey,
 	/// Receives the closed per-item PDA rent; fixed to the pool creator.
 	pub rent_refund: solana_pubkey::Pubkey,
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	pub tree_config: solana_pubkey::Pubkey,
+	/// Pool's pinned tree that holds the leaf; Bubblegum rewrites it.
 	pub merkle_tree: solana_pubkey::Pubkey,
+	/// Bubblegum program, invoked to transfer the compressed NFT.
 	pub bubblegum_program: solana_pubkey::Pubkey,
+	/// SPL Noop program used by Bubblegum as its log wrapper.
 	pub log_wrapper: solana_pubkey::Pubkey,
+	/// SPL Account Compression program that owns `merkle_tree`.
 	pub compression_program: solana_pubkey::Pubkey,
+	/// System program, passed to Bubblegum.
 	pub system_program: solana_pubkey::Pubkey,
 	/// Merkle proof nodes in leaf-to-root order.
+	///
+	/// Passed as zero through 16 readonly remaining accounts; the tree's canopy
+	/// supplies the rest of the path.
 	pub proof_accounts: solana_pubkey::Pubkey,
 }
 
@@ -112,11 +134,19 @@ impl ClaimPrizePoolItemInstructionData {
 pub struct ClaimPrizePoolItemInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Manifest slot of the pool; must equal the opening's
+	/// `selected_pool_asset` and the pool's `asset_index`.
 	pub asset_index: u8,
+	/// Merkle root that Bubblegum verifies the proof against.
 	pub root: [u8; 32],
+	/// Current leaf data hash; must be recomputed from `metadata`.
 	pub data_hash: [u8; 32],
+	/// Current leaf creator hash; must be recomputed from `metadata`.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce; must equal the item's nonce and derive its asset ID.
 	pub nonce: u64,
+	/// Leaf index in the pool's tree; must equal the item's tree index.
 	pub index: u32,
+	/// Current canonical Bubblegum V1 `MetadataArgs` Borsh preimage.
 	pub metadata: pina::Vec<u8, 512>,
 }

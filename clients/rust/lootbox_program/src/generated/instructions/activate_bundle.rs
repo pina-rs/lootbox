@@ -8,15 +8,26 @@
 	clippy::too_many_arguments
 )]
 
+/// Appends a fully funded staged bundle to the template's live inventory.
+///
+/// The template authority signs and pays rent for one more eight-byte inventory
+/// slot. The treasury must be unlocked and not retired. It increments the
+/// revision, extends the manifest accumulator, and adds the bundle's copies to
+/// mint capacity.
 pub const ACTIVATE_BUNDLE_DISCRIMINATOR: u8 = 25u8;
 pub const ACTIVATE_BUNDLE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ActivateBundle {
+	/// Template authority; signs and pays rent for the template's larger size.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA that must be unlocked and not retired; grows by one
+	/// inventory slot here.
 	pub template: solana_pubkey::Pubkey,
+	/// Fully funded staged bundle PDA at index `bundle_count`; becomes active.
 	pub bundle: solana_pubkey::Pubkey,
+	/// System program, invoked to fund the template's rent increase.
 	pub system_program: solana_pubkey::Pubkey,
 }
 

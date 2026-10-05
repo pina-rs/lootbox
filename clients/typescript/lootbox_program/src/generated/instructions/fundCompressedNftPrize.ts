@@ -22,9 +22,41 @@ export function getFundCompressedNftPrizeDiscriminator2Bytes(): ReadonlyUint8Arr
 export type FundCompressedNftPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountTreeConfig extends string | AccountMeta<string> = string, TAccountMerkleTree extends string | AccountMeta<string> = string, TAccountBubblegumProgram extends string | AccountMeta<string> = string, TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountCompressionProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = string, TAccountProofAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountTreeConfig extends string ? ReadonlyAccount<TAccountTreeConfig> : TAccountTreeConfig, TAccountMerkleTree extends string ? WritableAccount<TAccountMerkleTree> : TAccountMerkleTree, TAccountBubblegumProgram extends string ? ReadonlyAccount<TAccountBubblegumProgram> : TAccountBubblegumProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountCompressionProgram extends string ? ReadonlyAccount<TAccountCompressionProgram> : TAccountCompressionProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountProofAccounts extends string ? ReadonlyAccount<TAccountProofAccounts> : TAccountProofAccounts, ...TRemainingAccounts]>;
 
-export type FundCompressedNftPrizeInstructionData = { discriminator: number; migrationVersion: number; root: ReadonlyUint8Array; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: bigint; index: number;  };
+export type FundCompressedNftPrizeInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Merkle root the proof was built against; Bubblegum verifies the leaf
+ * against it.
+ */
+root: ReadonlyUint8Array;
+/** Bubblegum hash of the leaf's metadata, forwarded to rebuild the leaf. */
+dataHash: ReadonlyUint8Array;
+/** Bubblegum hash of the leaf's creators, forwarded to rebuild the leaf. */
+creatorHash: ReadonlyUint8Array;
+/**
+ * Leaf nonce. With `merkle_tree` it derives the asset ID recorded in the
+ * bundle.
+ */
+nonce: bigint;
+/** Leaf position in `merkle_tree`, forwarded to Bubblegum. */
+index: number;  };
 
-export type FundCompressedNftPrizeInstructionDataArgs = { root: ReadonlyUint8Array; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: number | bigint; index: number;  };
+export type FundCompressedNftPrizeInstructionDataArgs = {
+/**
+ * Merkle root the proof was built against; Bubblegum verifies the leaf
+ * against it.
+ */
+root: ReadonlyUint8Array;
+/** Bubblegum hash of the leaf's metadata, forwarded to rebuild the leaf. */
+dataHash: ReadonlyUint8Array;
+/** Bubblegum hash of the leaf's creators, forwarded to rebuild the leaf. */
+creatorHash: ReadonlyUint8Array;
+/**
+ * Leaf nonce. With `merkle_tree` it derives the asset ID recorded in the
+ * bundle.
+ */
+nonce: number | bigint;
+/** Leaf position in `merkle_tree`, forwarded to Bubblegum. */
+index: number;  };
 
 export function getFundCompressedNftPrizeInstructionDataEncoder(): FixedSizeEncoder<FundCompressedNftPrizeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['root', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()]]), (value) => ({ ...value, discriminator: 33, migrationVersion: 0 }));
@@ -39,16 +71,37 @@ export function getFundCompressedNftPrizeInstructionDataCodec(): FixedSizeCodec<
 }
 
 export type FundCompressedNftPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountTreeConfig extends InstructionAccountInput = InstructionAccountInput, TAccountMerkleTree extends InstructionAccountInput = InstructionAccountInput, TAccountBubblegumProgram extends InstructionAccountInput = InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput = InstructionAccountInput, TAccountCompressionProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountProofAccounts extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Template authority. Signs the Bubblegum transfer as both leaf owner and
+ * leaf delegate.
+ */
+authority: TAccountAuthority;
+/** Template PDA owned by this program; must be unlocked and not retired. */
 template: TAccountTemplate;
+/**
+ * Funding bundle PDA of `template` with a quantity of one. Records the
+ * asset ID and becomes the leaf owner.
+ */
 bundle: TAccountBundle;
+/** Bubblegum tree config of `merkle_tree`, validated by Bubblegum. */
 treeConfig: TAccountTreeConfig;
+/**
+ * Concurrent Merkle tree holding the leaf; with `nonce` it derives the
+ * recorded asset ID.
+ */
 merkleTree: TAccountMerkleTree;
+/** Metaplex Bubblegum program, invoked to transfer the leaf. */
 bubblegumProgram: TAccountBubblegumProgram;
+/** SPL Noop program, forwarded to Bubblegum as its log wrapper. */
 logWrapper: TAccountLogWrapper;
+/** SPL Account Compression program, forwarded to Bubblegum. */
 compressionProgram: TAccountCompressionProgram;
+/** System program, forwarded to Bubblegum. */
 systemProgram: TAccountSystemProgram;
-/** Merkle proof nodes in leaf-to-root order. */
+/**
+ * Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+ * canopy.
+ */
 proofAccounts: TAccountProofAccounts;
 root: FundCompressedNftPrizeInstructionDataArgs["root"];
 dataHash: FundCompressedNftPrizeInstructionDataArgs["dataHash"];
@@ -80,16 +133,37 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedFundCompressedNftPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template authority. Signs the Bubblegum transfer as both leaf owner and
+ * leaf delegate.
+ */
 authority: TAccountMetas[0];
+/** Template PDA owned by this program; must be unlocked and not retired. */
 template: TAccountMetas[1];
+/**
+ * Funding bundle PDA of `template` with a quantity of one. Records the
+ * asset ID and becomes the leaf owner.
+ */
 bundle: TAccountMetas[2];
+/** Bubblegum tree config of `merkle_tree`, validated by Bubblegum. */
 treeConfig: TAccountMetas[3];
+/**
+ * Concurrent Merkle tree holding the leaf; with `nonce` it derives the
+ * recorded asset ID.
+ */
 merkleTree: TAccountMetas[4];
+/** Metaplex Bubblegum program, invoked to transfer the leaf. */
 bubblegumProgram: TAccountMetas[5];
+/** SPL Noop program, forwarded to Bubblegum as its log wrapper. */
 logWrapper: TAccountMetas[6];
+/** SPL Account Compression program, forwarded to Bubblegum. */
 compressionProgram: TAccountMetas[7];
+/** System program, forwarded to Bubblegum. */
 systemProgram: TAccountMetas[8];
-/** Merkle proof nodes in leaf-to-root order. */
+/**
+ * Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+ * canopy.
+ */
 proofAccounts: TAccountMetas[9];
 };
 data: FundCompressedNftPrizeInstructionData; };

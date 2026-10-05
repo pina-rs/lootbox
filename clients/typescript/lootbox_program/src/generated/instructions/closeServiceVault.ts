@@ -39,10 +39,18 @@ export function getCloseServiceVaultInstructionDataCodec(): FixedSizeCodec<Close
 }
 
 export type CloseServiceVaultInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs and receives the vault balance. */
+authority: TAccountAuthority;
+/** Retired template PDA with no pending openings. */
 template: TAccountTemplate;
+/** Template's box mint; its supply must be zero. */
 boxMint: TAccountBoxMint;
+/**
+ * System-owned service vault PDA from `["service-vault", template]` with
+ * the template's stored bump; signs the transfer out.
+ */
 serviceVault: TAccountServiceVault;
+/** System program, invoked for the lamport transfer. */
 systemProgram?: TAccountSystemProgram;
 }
 
@@ -68,10 +76,18 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedCloseServiceVaultInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs and receives the vault balance. */
 authority: TAccountMetas[0];
+/** Retired template PDA with no pending openings. */
 template: TAccountMetas[1];
+/** Template's box mint; its supply must be zero. */
 boxMint: TAccountMetas[2];
+/**
+ * System-owned service vault PDA from `["service-vault", template]` with
+ * the template's stored bump; signs the transfer out.
+ */
 serviceVault: TAccountMetas[3];
+/** System program, invoked for the lamport transfer. */
 systemProgram: TAccountMetas[4];
 };
 data: CloseServiceVaultInstructionData; };

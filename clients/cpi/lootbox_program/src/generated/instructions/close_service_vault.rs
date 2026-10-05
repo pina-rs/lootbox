@@ -18,27 +18,40 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Returns a retired, fully settled template's service vault balance to its
+/// authority.
+///
+/// The template authority signs. The template must have receipts or bounties
+/// configured, be retired, have no pending openings, and have zero box supply.
+/// The whole balance, including unused prepaid service funds and the rent
+/// reserve, moves to the authority; an empty vault is a no-op.
 /// CPI call for the `close_service_vault` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct CloseServiceVault<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs and receives the vault balance.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Retired template PDA with no pending openings.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// Template's box mint; its supply must be zero.
 	/// Required privileges: read-only.
 	pub box_mint: &'account AccountView,
 
 	/// CPI account `serviceVault`.
+	/// System-owned service vault PDA from `["service-vault", template]` with
+	/// the template's stored bump; signs the transfer out.
 	/// Required privileges: writable.
 	pub service_vault: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked for the lamport transfer.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 

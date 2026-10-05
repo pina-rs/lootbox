@@ -8,13 +8,18 @@
 	clippy::too_many_arguments
 )]
 
+/// Publishes a draft template as live.
+///
+/// The template authority signs, and at least one bundle must be activated.
 pub const SEAL_TEMPLATE_DISCRIMINATOR: u8 = 14u8;
 pub const SEAL_TEMPLATE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct SealTemplate {
+	/// Template authority; signs.
 	pub authority: solana_pubkey::Pubkey,
+	/// Draft template PDA whose status becomes live.
 	pub template: solana_pubkey::Pubkey,
 }
 

@@ -22,9 +22,29 @@ export function getFundTokenPrizeDiscriminator2Bytes(): ReadonlyUint8Array { ret
 export type FundTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountSource extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountSource extends string ? WritableAccount<TAccountSource> : TAccountSource, TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type FundTokenPrizeInstructionData = { discriminator: number; migrationVersion: number; amountPerWin: bigint; isNft: boolean;  };
+export type FundTokenPrizeInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Base units delivered per win; must be positive. A transfer-fee mint
+ * charges the funder the gross amount so escrow nets this total.
+ */
+amountPerWin: bigint;
+/**
+ * Records a classic SPL NFT: requires SPL Token, supply one, zero decimals,
+ * revoked mint authority, and a one-copy bundle paying one unit.
+ */
+isNft: boolean;  };
 
-export type FundTokenPrizeInstructionDataArgs = { amountPerWin: number | bigint; isNft: boolean;  };
+export type FundTokenPrizeInstructionDataArgs = {
+/**
+ * Base units delivered per win; must be positive. A transfer-fee mint
+ * charges the funder the gross amount so escrow nets this total.
+ */
+amountPerWin: number | bigint;
+/**
+ * Records a classic SPL NFT: requires SPL Token, supply one, zero decimals,
+ * revoked mint authority, and a one-copy bundle paying one unit.
+ */
+isNft: boolean;  };
 
 export function getFundTokenPrizeInstructionDataEncoder(): FixedSizeEncoder<FundTokenPrizeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['amountPerWin', getU64Encoder()], ['isNft', getBooleanEncoder()]]), (value) => ({ ...value, discriminator: 13, migrationVersion: 0 }));
@@ -39,12 +59,31 @@ export function getFundTokenPrizeInstructionDataCodec(): FixedSizeCodec<FundToke
 }
 
 export type FundTokenPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountSource extends InstructionAccountInput = InstructionAccountInput, TAccountEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs the token transfer from `source`. */
+authority: TAccountAuthority;
+/**
+ * Template PDA that must be unlocked and not retired; read only by the
+ * handler.
+ */
 template: TAccountTemplate;
+/** Funding bundle PDA of this template that records the prize. */
 bundle: TAccountBundle;
+/**
+ * Prize mint owned by `token_program`; not wrapped SOL. Classic mints need
+ * no freeze authority; Token-2022 mints must pass the prize allowlist.
+ */
 mint: TAccountMint;
+/** Token account debited for the deposit, including any transfer fee. */
 source: TAccountSource;
+/**
+ * Bundle's associated token account for `mint`; must have no delegate or
+ * close authority and must not be frozen.
+ */
 escrow: TAccountEscrow;
+/**
+ * SPL Token or Token-2022 program that owns `mint`, invoked for the
+ * transfer.
+ */
 tokenProgram?: TAccountTokenProgram;
 amountPerWin: FundTokenPrizeInstructionDataArgs["amountPerWin"];
 isNft: FundTokenPrizeInstructionDataArgs["isNft"];
@@ -76,12 +115,31 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedFundTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs the token transfer from `source`. */
 authority: TAccountMetas[0];
+/**
+ * Template PDA that must be unlocked and not retired; read only by the
+ * handler.
+ */
 template: TAccountMetas[1];
+/** Funding bundle PDA of this template that records the prize. */
 bundle: TAccountMetas[2];
+/**
+ * Prize mint owned by `token_program`; not wrapped SOL. Classic mints need
+ * no freeze authority; Token-2022 mints must pass the prize allowlist.
+ */
 mint: TAccountMetas[3];
+/** Token account debited for the deposit, including any transfer fee. */
 source: TAccountMetas[4];
+/**
+ * Bundle's associated token account for `mint`; must have no delegate or
+ * close authority and must not be frozen.
+ */
 escrow: TAccountMetas[5];
+/**
+ * SPL Token or Token-2022 program that owns `mint`, invoked for the
+ * transfer.
+ */
 tokenProgram: TAccountMetas[6];
 };
 data: FundTokenPrizeInstructionData; };

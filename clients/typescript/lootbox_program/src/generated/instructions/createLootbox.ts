@@ -23,9 +23,63 @@ export function getCreateLootboxDiscriminator2Bytes(): ReadonlyUint8Array { retu
 export type CreateLootboxInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountLootbox extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountLootbox extends string ? WritableAccount<TAccountLootbox> : TAccountLootbox, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type CreateLootboxInstructionData = { discriminator: number; migrationVersion: number; id: bigint; maxSupply: bigint; oracleProgram: Address; oracleQueue: Address; bump: number; vaultBump: number;  };
+export type CreateLootboxInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Creator-chosen identifier that distinguishes this authority's lootboxes;
+ * a seed of the lootbox PDA.
+ */
+id: bigint;
+/** Lifetime cap on boxes minted. Rejected with `SupplyExceeded` when zero. */
+maxSupply: bigint;
+/**
+ * Switchboard On-Demand program that will own randomness accounts; must be
+ * the mainnet or devnet program ID.
+ */
+oracleProgram: Address;
+/**
+ * Switchboard queue that every opening's randomness must be bound to.
+ * Stored as given; each opening checks it.
+ */
+oracleQueue: Address;
+/**
+ * Canonical bump of the lootbox PDA; rejected unless it equals the derived
+ * canonical bump.
+ */
+bump: number;
+/**
+ * Canonical bump of the vault PDA; rejected unless it equals the derived
+ * canonical bump.
+ */
+vaultBump: number;  };
 
-export type CreateLootboxInstructionDataArgs = { id: number | bigint; maxSupply: number | bigint; oracleProgram: Address; oracleQueue: Address; bump: number; vaultBump: number;  };
+export type CreateLootboxInstructionDataArgs = {
+/**
+ * Creator-chosen identifier that distinguishes this authority's lootboxes;
+ * a seed of the lootbox PDA.
+ */
+id: number | bigint;
+/** Lifetime cap on boxes minted. Rejected with `SupplyExceeded` when zero. */
+maxSupply: number | bigint;
+/**
+ * Switchboard On-Demand program that will own randomness accounts; must be
+ * the mainnet or devnet program ID.
+ */
+oracleProgram: Address;
+/**
+ * Switchboard queue that every opening's randomness must be bound to.
+ * Stored as given; each opening checks it.
+ */
+oracleQueue: Address;
+/**
+ * Canonical bump of the lootbox PDA; rejected unless it equals the derived
+ * canonical bump.
+ */
+bump: number;
+/**
+ * Canonical bump of the vault PDA; rejected unless it equals the derived
+ * canonical bump.
+ */
+vaultBump: number;  };
 
 export function getCreateLootboxInstructionDataEncoder(): FixedSizeEncoder<CreateLootboxInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['id', getU64Encoder()], ['maxSupply', getU64Encoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['bump', getU8Encoder()], ['vaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 0, migrationVersion: 0 }));
@@ -40,11 +94,26 @@ export function getCreateLootboxInstructionDataCodec(): FixedSizeCodec<CreateLoo
 }
 
 export type CreateLootboxAsyncInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Creator that becomes the lootbox authority and pays rent for the lootbox
+ * and vault accounts. Signer; seed of the lootbox PDA.
+ */
+authority: TAccountAuthority;
+/**
+ * Existing classic SPL mint for the boxes. Must have zero decimals, zero
+ * supply, the lootbox PDA as mint authority, and no freeze authority.
+ */
 boxMint: TAccountBoxMint;
+/** Lootbox PDA `["lootbox", authority, id]`, created here. */
 lootbox: TAccountLootbox;
+/**
+ * Vault PDA `["vault", lootbox]`, created here; its post-creation balance
+ * becomes the rent reserve.
+ */
 vault?: TAccountVault;
+/** System program, invoked to create the lootbox and vault accounts. */
 systemProgram?: TAccountSystemProgram;
+/** SPL Token program that owns the box mint. */
 tokenProgram?: TAccountTokenProgram;
 id: CreateLootboxInstructionDataArgs["id"];
 maxSupply: CreateLootboxInstructionDataArgs["maxSupply"];
@@ -85,11 +154,26 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 }
 
 export type CreateLootboxInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Creator that becomes the lootbox authority and pays rent for the lootbox
+ * and vault accounts. Signer; seed of the lootbox PDA.
+ */
+authority: TAccountAuthority;
+/**
+ * Existing classic SPL mint for the boxes. Must have zero decimals, zero
+ * supply, the lootbox PDA as mint authority, and no freeze authority.
+ */
 boxMint: TAccountBoxMint;
+/** Lootbox PDA `["lootbox", authority, id]`, created here. */
 lootbox: TAccountLootbox;
+/**
+ * Vault PDA `["vault", lootbox]`, created here; its post-creation balance
+ * becomes the rent reserve.
+ */
 vault: TAccountVault;
+/** System program, invoked to create the lootbox and vault accounts. */
 systemProgram?: TAccountSystemProgram;
+/** SPL Token program that owns the box mint. */
 tokenProgram?: TAccountTokenProgram;
 id: CreateLootboxInstructionDataArgs["id"];
 maxSupply: CreateLootboxInstructionDataArgs["maxSupply"];
@@ -128,11 +212,26 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedCreateLootboxInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Creator that becomes the lootbox authority and pays rent for the lootbox
+ * and vault accounts. Signer; seed of the lootbox PDA.
+ */
 authority: TAccountMetas[0];
+/**
+ * Existing classic SPL mint for the boxes. Must have zero decimals, zero
+ * supply, the lootbox PDA as mint authority, and no freeze authority.
+ */
 boxMint: TAccountMetas[1];
+/** Lootbox PDA `["lootbox", authority, id]`, created here. */
 lootbox: TAccountMetas[2];
+/**
+ * Vault PDA `["vault", lootbox]`, created here; its post-creation balance
+ * becomes the rent reserve.
+ */
 vault: TAccountMetas[3];
+/** System program, invoked to create the lootbox and vault accounts. */
 systemProgram: TAccountMetas[4];
+/** SPL Token program that owns the box mint. */
 tokenProgram: TAccountMetas[5];
 };
 data: CreateLootboxInstructionData; };

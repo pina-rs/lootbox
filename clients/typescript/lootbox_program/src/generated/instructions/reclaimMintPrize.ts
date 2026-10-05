@@ -22,9 +22,21 @@ export function getReclaimMintPrizeDiscriminator2Bytes(): ReadonlyUint8Array { r
 export type ReclaimMintPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountMint extends string ? WritableAccount<TAccountMint> : TAccountMint, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type ReclaimMintPrizeInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number;  };
+export type ReclaimMintPrizeInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Asset slot within the bundle; must be below its funded asset count,
+ * hold a `PRIZE_MINT_BADGE` asset with an amount of one, and not be
+ * reclaimed already.
+ */
+assetIndex: number;  };
 
-export type ReclaimMintPrizeInstructionDataArgs = { assetIndex: number;  };
+export type ReclaimMintPrizeInstructionDataArgs = {
+/**
+ * Asset slot within the bundle; must be below its funded asset count,
+ * hold a `PRIZE_MINT_BADGE` asset with an amount of one, and not be
+ * reclaimed already.
+ */
+assetIndex: number;  };
 
 export function getReclaimMintPrizeInstructionDataEncoder(): FixedSizeEncoder<ReclaimMintPrizeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 43, migrationVersion: 0 }));
@@ -39,11 +51,33 @@ export function getReclaimMintPrizeInstructionDataCodec(): FixedSizeCodec<Reclai
 }
 
 export type ReclaimMintPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Template authority; must sign and match the authority recorded on the
+ * template.
+ */
+authority: TAccountAuthority;
+/**
+ * Template treasury, validated by its PDA seeds; supplies the status,
+ * pending-opening count, and remaining inventory of the bundle.
+ */
 template: TAccountTemplate;
+/**
+ * Template's box mint, validated against the template; its live supply
+ * must be zero to reclaim from an active bundle.
+ */
 boxMint: TAccountBoxMint;
+/**
+ * Bundle PDA of this template; records the asset as reclaimed and signs
+ * the authority revocation.
+ */
 bundle: TAccountBundle;
+/**
+ * Badge mint recorded in the bundle's asset slot; must have zero decimals,
+ * the bundle as mint authority, no freeze authority, and only metadata
+ * extensions. Its mint authority is revoked once every copy is released.
+ */
 mint: TAccountMint;
+/** SPL Token or Token-2022 program that owns `mint`. */
 tokenProgram?: TAccountTokenProgram;
 assetIndex: ReclaimMintPrizeInstructionDataArgs["assetIndex"];
 }
@@ -74,11 +108,33 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedReclaimMintPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template authority; must sign and match the authority recorded on the
+ * template.
+ */
 authority: TAccountMetas[0];
+/**
+ * Template treasury, validated by its PDA seeds; supplies the status,
+ * pending-opening count, and remaining inventory of the bundle.
+ */
 template: TAccountMetas[1];
+/**
+ * Template's box mint, validated against the template; its live supply
+ * must be zero to reclaim from an active bundle.
+ */
 boxMint: TAccountMetas[2];
+/**
+ * Bundle PDA of this template; records the asset as reclaimed and signs
+ * the authority revocation.
+ */
 bundle: TAccountMetas[3];
+/**
+ * Badge mint recorded in the bundle's asset slot; must have zero decimals,
+ * the bundle as mint authority, no freeze authority, and only metadata
+ * extensions. Its mint authority is revoked once every copy is released.
+ */
 mint: TAccountMetas[4];
+/** SPL Token or Token-2022 program that owns `mint`. */
 tokenProgram: TAccountMetas[5];
 };
 data: ReclaimMintPrizeInstructionData; };

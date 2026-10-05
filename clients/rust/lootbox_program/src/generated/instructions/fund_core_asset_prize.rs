@@ -8,21 +8,41 @@
 	clippy::too_many_arguments
 )]
 
+/// Escrows a plain Metaplex Core asset into a funding bundle.
+///
+/// The template authority signs as the asset's owner while the template is
+/// unlocked and not retired. The bundle must be funding with a quantity of one.
+/// The asset must be uncollected, carry no plugins, and already name the bundle
+/// PDA as its update authority. Ownership moves to the bundle, and the asset
+/// address is recorded in the bundle's next unfunded slot.
 pub const FUND_CORE_ASSET_PRIZE_DISCRIMINATOR: u8 = 30u8;
 pub const FUND_CORE_ASSET_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct FundCoreAssetPrize {
+	/// Template authority. Signs the Core transfer as the asset's owner and pays
+	/// for it.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA owned by this program; must be unlocked and not retired.
 	pub template: solana_pubkey::Pubkey,
+	/// Funding bundle PDA of `template` with a quantity of one. Records the
+	/// asset and becomes its owner.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Core asset owned by the Core program, serialized as a plugin-free
+	/// `AssetV1` whose update authority is `bundle`.
 	pub asset: solana_pubkey::Pubkey,
+	/// Must be the Core program address, Core's placeholder for no collection;
+	/// collection-bound assets are rejected.
 	pub collection: solana_pubkey::Pubkey,
+	/// Metaplex Core program, invoked to transfer the asset.
 	pub core_program: solana_pubkey::Pubkey,
+	/// System program, forwarded to Core.
 	pub system_program: solana_pubkey::Pubkey,
+	/// SPL Noop program, forwarded to Core as its log wrapper.
 	pub log_wrapper: solana_pubkey::Pubkey,
-	/// Core plugin and external-adapter accounts, preserving client flags.
+	/// Core plugin and external-adapter accounts, forwarded with their client
+	/// flags. Must be empty: any account here fails with `InvalidPrize`.
 	pub plugin_accounts: solana_pubkey::Pubkey,
 }
 

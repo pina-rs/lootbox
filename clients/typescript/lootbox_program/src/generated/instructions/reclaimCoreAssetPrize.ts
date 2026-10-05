@@ -22,9 +22,19 @@ export function getReclaimCoreAssetPrizeDiscriminator2Bytes(): ReadonlyUint8Arra
 export type ReclaimCoreAssetPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountAsset extends string | AccountMeta<string> = string, TAccountCollection extends string | AccountMeta<string> = string, TAccountCoreProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = string, TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountPluginAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountAsset extends string ? WritableAccount<TAccountAsset> : TAccountAsset, TAccountCollection extends string ? ReadonlyAccount<TAccountCollection> : TAccountCollection, TAccountCoreProgram extends string ? ReadonlyAccount<TAccountCoreProgram> : TAccountCoreProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountPluginAccounts extends string ? ReadonlyAccount<TAccountPluginAccounts> : TAccountPluginAccounts, ...TRemainingAccounts]>;
 
-export type ReclaimCoreAssetPrizeInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number;  };
+export type ReclaimCoreAssetPrizeInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Bundle slot holding the asset. Must be below the bundle's
+ * `funded_assets` and hold a Core asset whose address is `asset`.
+ */
+assetIndex: number;  };
 
-export type ReclaimCoreAssetPrizeInstructionDataArgs = { assetIndex: number;  };
+export type ReclaimCoreAssetPrizeInstructionDataArgs = {
+/**
+ * Bundle slot holding the asset. Must be below the bundle's
+ * `funded_assets` and hold a Core asset whose address is `asset`.
+ */
+assetIndex: number;  };
 
 export function getReclaimCoreAssetPrizeInstructionDataEncoder(): FixedSizeEncoder<ReclaimCoreAssetPrizeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 32, migrationVersion: 0 }));
@@ -39,16 +49,37 @@ export function getReclaimCoreAssetPrizeInstructionDataCodec(): FixedSizeCodec<R
 }
 
 export type ReclaimCoreAssetPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountAsset extends InstructionAccountInput = InstructionAccountInput, TAccountCollection extends InstructionAccountInput = InstructionAccountInput, TAccountCoreProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput = InstructionAccountInput, TAccountPluginAccounts extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority. Receives the asset and pays for the Core transfer. */
+authority: TAccountAuthority;
+/** Template PDA of this program. */
 template: TAccountTemplate;
+/**
+ * The template's Token-2022 box mint; its supply must be zero to reclaim
+ * from an active bundle.
+ */
 boxMint: TAccountBoxMint;
+/**
+ * Bundle PDA of `template` that owns the asset, signs the transfer, and
+ * records the reclaim.
+ */
 bundle: TAccountBundle;
+/**
+ * Core asset stored in the reclaimed slot; revalidated as plugin-free with
+ * `bundle` as update authority.
+ */
 asset: TAccountAsset;
+/** Must be the Core program address, Core's placeholder for no collection. */
 collection: TAccountCollection;
+/** Metaplex Core program, invoked to transfer the asset. */
 coreProgram: TAccountCoreProgram;
+/** System program, forwarded to Core. */
 systemProgram: TAccountSystemProgram;
+/** SPL Noop program, forwarded to Core as its log wrapper. */
 logWrapper: TAccountLogWrapper;
-/** Core plugin and external-adapter accounts, preserving client flags. */
+/**
+ * Core plugin and external-adapter accounts, forwarded with their client
+ * flags. Must be empty: any account here fails with `InvalidPrize`.
+ */
 pluginAccounts: TAccountPluginAccounts;
 assetIndex: ReclaimCoreAssetPrizeInstructionDataArgs["assetIndex"];
 }
@@ -76,16 +107,37 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedReclaimCoreAssetPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority. Receives the asset and pays for the Core transfer. */
 authority: TAccountMetas[0];
+/** Template PDA of this program. */
 template: TAccountMetas[1];
+/**
+ * The template's Token-2022 box mint; its supply must be zero to reclaim
+ * from an active bundle.
+ */
 boxMint: TAccountMetas[2];
+/**
+ * Bundle PDA of `template` that owns the asset, signs the transfer, and
+ * records the reclaim.
+ */
 bundle: TAccountMetas[3];
+/**
+ * Core asset stored in the reclaimed slot; revalidated as plugin-free with
+ * `bundle` as update authority.
+ */
 asset: TAccountMetas[4];
+/** Must be the Core program address, Core's placeholder for no collection. */
 collection: TAccountMetas[5];
+/** Metaplex Core program, invoked to transfer the asset. */
 coreProgram: TAccountMetas[6];
+/** System program, forwarded to Core. */
 systemProgram: TAccountMetas[7];
+/** SPL Noop program, forwarded to Core as its log wrapper. */
 logWrapper: TAccountMetas[8];
-/** Core plugin and external-adapter accounts, preserving client flags. */
+/**
+ * Core plugin and external-adapter accounts, forwarded with their client
+ * flags. Must be empty: any account here fails with `InvalidPrize`.
+ */
 pluginAccounts: TAccountMetas[9];
 };
 data: ReclaimCoreAssetPrizeInstructionData; };

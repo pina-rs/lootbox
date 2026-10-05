@@ -39,9 +39,16 @@ export function getSealPrizePoolInstructionDataCodec(): FixedSizeCodec<SealPrize
 }
 
 export type SealPrizePoolInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs. */
+authority: TAccountAuthority;
+/** Template PDA; its treasury must be unlocked and not retired. */
 template: TAccountTemplate;
+/**
+ * Funding bundle PDA; receives the pool commitment and advances
+ * `funded_assets`.
+ */
 bundle: TAccountBundle;
+/** Fully deposited `PrizePoolState` PDA; becomes sealed. */
 prizePool: TAccountPrizePool;
 }
 
@@ -64,9 +71,16 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedSealPrizePoolInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs. */
 authority: TAccountMetas[0];
+/** Template PDA; its treasury must be unlocked and not retired. */
 template: TAccountMetas[1];
+/**
+ * Funding bundle PDA; receives the pool commitment and advances
+ * `funded_assets`.
+ */
 bundle: TAccountMetas[2];
+/** Fully deposited `PrizePoolState` PDA; becomes sealed. */
 prizePool: TAccountMetas[3];
 };
 data: SealPrizePoolInstructionData; };

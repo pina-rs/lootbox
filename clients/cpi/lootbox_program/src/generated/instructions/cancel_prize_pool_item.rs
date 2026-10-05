@@ -18,27 +18,38 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Close the pool's prepared item before its leaf is transferred.
+///
+/// The template authority signs while the treasury is unlocked and the bundle
+/// is funding. The pool must be funding with a prepared item at
+/// `deposit_cursor`. Clears `has_prepared_item` and closes the item PDA,
+/// returning its rent to the authority; deposited items are never touched.
 /// CPI call for the `cancel_prize_pool_item` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct CancelPrizePoolItem<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs and receives the closed item's rent.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA; its treasury must be unlocked.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Funding bundle PDA of `template`.
 	/// Required privileges: read-only.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `prizePool`.
+	/// Funding `PrizePoolState` PDA; `has_prepared_item` is cleared.
 	/// Required privileges: writable.
 	pub prize_pool: &'account AccountView,
 
 	/// CPI account `prizePoolItem`.
+	/// Prepared item PDA at the pool's `deposit_cursor`, closed here.
 	/// Required privileges: writable.
 	pub prize_pool_item: &'account AccountView,
 

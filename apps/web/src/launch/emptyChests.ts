@@ -8,7 +8,6 @@
  *
  * This module has no imports so the asset build scripts can load it directly.
  */
-
 export type EmptyChest = Readonly<{
 	variant: number;
 	/** Fits the 32-byte Bubblegum name as `Empty Chest #N — <short>`. */

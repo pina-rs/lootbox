@@ -22,9 +22,29 @@ export function getCreatePrizePoolDiscriminator2Bytes(): ReadonlyUint8Array { re
 export type CreatePrizePoolInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountPrizePool extends string | AccountMeta<string> = string, TAccountMerkleTree extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountPrizePool extends string ? WritableAccount<TAccountPrizePool> : TAccountPrizePool, TAccountMerkleTree extends string ? ReadonlyAccount<TAccountMerkleTree> : TAccountMerkleTree, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type CreatePrizePoolInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number; bump: number;  };
+export type CreatePrizePoolInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Manifest slot to reserve; must equal the bundle's `funded_assets` and be
+ * below its `asset_count`.
+ */
+assetIndex: number;
+/**
+ * Canonical bump of the `PrizePoolState` PDA
+ * `["prize-pool", bundle, asset_index]`; any other value fails.
+ */
+bump: number;  };
 
-export type CreatePrizePoolInstructionDataArgs = { assetIndex: number; bump: number;  };
+export type CreatePrizePoolInstructionDataArgs = {
+/**
+ * Manifest slot to reserve; must equal the bundle's `funded_assets` and be
+ * below its `asset_count`.
+ */
+assetIndex: number;
+/**
+ * Canonical bump of the `PrizePoolState` PDA
+ * `["prize-pool", bundle, asset_index]`; any other value fails.
+ */
+bump: number;  };
 
 export function getCreatePrizePoolInstructionDataEncoder(): FixedSizeEncoder<CreatePrizePoolInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 44, migrationVersion: 0 }));
@@ -39,11 +59,26 @@ export function getCreatePrizePoolInstructionDataCodec(): FixedSizeCodec<CreateP
 }
 
 export type CreatePrizePoolInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput = InstructionAccountInput, TAccountMerkleTree extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Template authority; signs, pays the pool rent, and is recorded as the
+ * pool's `authority`.
+ */
+authority: TAccountAuthority;
+/** Template PDA; its treasury must be unlocked and not retired. */
 template: TAccountTemplate;
+/** Funding bundle PDA of `template` whose next slot the pool reserves. */
 bundle: TAccountBundle;
+/**
+ * Empty `PrizePoolState` PDA `["prize-pool", bundle, asset_index]`,
+ * created here.
+ */
 prizePool: TAccountPrizePool;
+/**
+ * Bubblegum tree that every pool leaf must come from; only its nonzero
+ * address is recorded.
+ */
 merkleTree: TAccountMerkleTree;
+/** System program, invoked to create the pool account. */
 systemProgram?: TAccountSystemProgram;
 assetIndex: CreatePrizePoolInstructionDataArgs["assetIndex"];
 bump: CreatePrizePoolInstructionDataArgs["bump"];
@@ -75,11 +110,26 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedCreatePrizePoolInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template authority; signs, pays the pool rent, and is recorded as the
+ * pool's `authority`.
+ */
 authority: TAccountMetas[0];
+/** Template PDA; its treasury must be unlocked and not retired. */
 template: TAccountMetas[1];
+/** Funding bundle PDA of `template` whose next slot the pool reserves. */
 bundle: TAccountMetas[2];
+/**
+ * Empty `PrizePoolState` PDA `["prize-pool", bundle, asset_index]`,
+ * created here.
+ */
 prizePool: TAccountMetas[3];
+/**
+ * Bubblegum tree that every pool leaf must come from; only its nonzero
+ * address is recorded.
+ */
 merkleTree: TAccountMetas[4];
+/** System program, invoked to create the pool account. */
 systemProgram: TAccountMetas[5];
 };
 data: CreatePrizePoolInstructionData; };

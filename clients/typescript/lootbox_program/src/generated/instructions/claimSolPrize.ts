@@ -22,9 +22,21 @@ export function getClaimSolPrizeDiscriminator2Bytes(): ReadonlyUint8Array { retu
 export type ClaimSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountRecipient extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountRecipient extends string ? WritableAccount<TAccountRecipient> : TAccountRecipient, ...TRemainingAccounts]>;
 
-export type ClaimSolPrizeInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number;  };
+export type ClaimSolPrizeInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Asset slot within the selected bundle; must be below its asset count,
+ * hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and be unclaimed by this
+ * opening.
+ */
+assetIndex: number;  };
 
-export type ClaimSolPrizeInstructionDataArgs = { assetIndex: number;  };
+export type ClaimSolPrizeInstructionDataArgs = {
+/**
+ * Asset slot within the selected bundle; must be below its asset count,
+ * hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and be unclaimed by this
+ * opening.
+ */
+assetIndex: number;  };
 
 export function getClaimSolPrizeInstructionDataEncoder(): FixedSizeEncoder<ClaimSolPrizeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 19, migrationVersion: 0 }));
@@ -39,9 +51,25 @@ export function getClaimSolPrizeInstructionDataCodec(): FixedSizeCodec<ClaimSolP
 }
 
 export type ClaimSolPrizeInput<TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountRecipient extends InstructionAccountInput = InstructionAccountInput> =  {
-  template: TAccountTemplate;
+  /**
+ * Template treasury, validated by its PDA seeds; binds the bundle and the
+ * opening.
+ */
+template: TAccountTemplate;
+/**
+ * Allocated opening of this template, validated by its PDA seeds; records
+ * the claimed asset.
+ */
 opening: TAccountOpening;
+/**
+ * Bundle PDA the opening selected; advances the asset's release count and
+ * pays the lamports directly.
+ */
 bundle: TAccountBundle;
+/**
+ * Opening beneficiary; rejected unless it matches the stored beneficiary.
+ * Receives the lamports.
+ */
 recipient: TAccountRecipient;
 assetIndex: ClaimSolPrizeInstructionDataArgs["assetIndex"];
 }
@@ -69,9 +97,25 @@ return Object.freeze({ accounts: [getAccountMeta("template", accounts.template),
 
 export type ParsedClaimSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template treasury, validated by its PDA seeds; binds the bundle and the
+ * opening.
+ */
 template: TAccountMetas[0];
+/**
+ * Allocated opening of this template, validated by its PDA seeds; records
+ * the claimed asset.
+ */
 opening: TAccountMetas[1];
+/**
+ * Bundle PDA the opening selected; advances the asset's release count and
+ * pays the lamports directly.
+ */
 bundle: TAccountMetas[2];
+/**
+ * Opening beneficiary; rejected unless it matches the stored beneficiary.
+ * Receives the lamports.
+ */
 recipient: TAccountMetas[3];
 };
 data: ClaimSolPrizeInstructionData; };

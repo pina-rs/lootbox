@@ -22,9 +22,13 @@ export function getDepositDiscriminator2Bytes(): ReadonlyUint8Array { return get
 export type DepositInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountDepositor extends string | AccountMeta<string> = string, TAccountLootbox extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountDepositor extends string ? WritableSignerAccount<TAccountDepositor> & AccountSignerMeta<TAccountDepositor> : TAccountDepositor, TAccountLootbox extends string ? ReadonlyAccount<TAccountLootbox> : TAccountLootbox, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type DepositInstructionData = { discriminator: number; migrationVersion: number; lamports: bigint;  };
+export type DepositInstructionData = { discriminator: number; migrationVersion: number;
+/** Amount to transfer into the vault, in lamports; must be nonzero. */
+lamports: bigint;  };
 
-export type DepositInstructionDataArgs = { lamports: number | bigint;  };
+export type DepositInstructionDataArgs = {
+/** Amount to transfer into the vault, in lamports; must be nonzero. */
+lamports: number | bigint;  };
 
 export function getDepositInstructionDataEncoder(): FixedSizeEncoder<DepositInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['lamports', getU64Encoder()]]), (value) => ({ ...value, discriminator: 2, migrationVersion: 0 }));
@@ -39,9 +43,16 @@ export function getDepositInstructionDataCodec(): FixedSizeCodec<DepositInstruct
 }
 
 export type DepositInput<TAccountDepositor extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  depositor: TAccountDepositor;
+  /**
+ * Any wallet funding the vault. Writable signer; the lamports come from
+ * it.
+ */
+depositor: TAccountDepositor;
+/** Lootbox whose vault receives the deposit; its PDA is revalidated. */
 lootbox: TAccountLootbox;
+/** Vault PDA of `lootbox` that receives the lamports. Writable. */
 vault: TAccountVault;
+/** System program, invoked for the transfer. */
 systemProgram?: TAccountSystemProgram;
 lamports: DepositInstructionDataArgs["lamports"];
 }
@@ -72,9 +83,16 @@ return Object.freeze({ accounts: [getAccountMeta("depositor", accounts.depositor
 
 export type ParsedDepositInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Any wallet funding the vault. Writable signer; the lamports come from
+ * it.
+ */
 depositor: TAccountMetas[0];
+/** Lootbox whose vault receives the deposit; its PDA is revalidated. */
 lootbox: TAccountMetas[1];
+/** Vault PDA of `lootbox` that receives the lamports. Writable. */
 vault: TAccountMetas[2];
+/** System program, invoked for the transfer. */
 systemProgram: TAccountMetas[3];
 };
 data: DepositInstructionData; };

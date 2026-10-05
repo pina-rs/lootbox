@@ -8,16 +8,32 @@
 	clippy::too_many_arguments
 )]
 
+/// Hands an empty badge mint's authority to a funding bundle for mint-on-claim
+/// delivery.
+///
+/// The template authority, which must be the mint's current mint authority,
+/// signs. The mint needs zero supply and decimals, no freeze authority, and
+/// immutable metadata if any. Mint authority moves to the bundle PDA and one
+/// badge is recorded per win.
 pub const FUND_MINT_PRIZE_DISCRIMINATOR: u8 = 41u8;
 pub const FUND_MINT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct FundMintPrize {
+	/// Template authority and current mint authority of `mint`; signs the
+	/// authority handoff.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA that must be unlocked and not retired; read only by the
+	/// handler.
 	pub template: solana_pubkey::Pubkey,
+	/// Funding bundle PDA of this template that becomes the mint authority.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Empty zero-decimal badge mint with no freeze authority; its mint
+	/// authority changes here.
 	pub mint: solana_pubkey::Pubkey,
+	/// SPL Token or Token-2022 program that owns `mint`, invoked to set the
+	/// authority.
 	pub token_program: solana_pubkey::Pubkey,
 }
 

@@ -24,13 +24,17 @@ export function marketLockReadiness(
 		: 0n;
 
 	if (state.status !== 1) reasons.push("the treasury must be live");
+
 	if (state.lockedAt !== 0n) reasons.push("the treasury is already locked");
+
 	if (state.bundleCount === 0 || state.totalBundles === 0n) {
 		reasons.push("at least one active prize-bundle copy is required");
 	}
+
 	if (state.opensAt <= chainTime) {
 		reasons.push("the reveal date must still be in the future");
 	}
+
 	if (state.remainingBundles !== state.totalBundles) {
 		reasons.push("no prize-bundle copy may be drawn before locking");
 	}
@@ -38,9 +42,11 @@ export function marketLockReadiness(
 		state.pendingOpenings !== 0n || state.nextRequest !== 0n ||
 		state.nextAllocation !== 0n
 	) reasons.push("there must be no opening history before locking");
+
 	if (state.totalMinted > state.totalBundles) {
 		reasons.push("lifetime issuance exceeds prize-bundle copies");
 	}
+
 	if (mintSupply !== state.totalMinted) {
 		reasons.push("an issued box was burned outside the opening flow");
 	}

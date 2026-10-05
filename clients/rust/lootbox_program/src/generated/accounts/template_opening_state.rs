@@ -15,33 +15,53 @@ pub struct TemplateOpeningState {
 /// A burned box, its verified entropy, and independently claimable winning assets.
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Template PDA whose box was burned; seeds this PDA.
 	pub template: solana_pubkey::Pubkey,
 	/// Authority that owned and burned the box.
 	pub box_authority: solana_pubkey::Pubkey,
 	/// Immutable destination for every prize claim.
+	/// Also receives the forfeiture bounty when the opening expires.
 	pub beneficiary: solana_pubkey::Pubkey,
-	/// Account that receives opening rent when the lifecycle is closed.
+	/// Request payer, which receives the opening and randomness account rent
+	/// when `closeTemplateOpening` closes the lifecycle.
 	pub rent_refund: solana_pubkey::Pubkey,
 	/// Optional program expected to consume the result receipt.
+	/// The zero address means no consumer is bound.
 	pub consumer_program: solana_pubkey::Pubkey,
 	/// Consumer-selected correlation key, fixed before randomness is known.
+	/// Must be zero when no consumer program is bound.
 	pub consumer_context: [u8; 32],
+	/// Switchboard randomness account created by the request; seeds this PDA,
+	/// which is its authority.
 	pub randomness: solana_pubkey::Pubkey,
+	/// FIFO position taken from the template's `next_request`.
 	pub sequence: u64,
+	/// Switchboard seed slot recorded at commit. Fulfillment must match it, and
+	/// forfeiture is allowed 300 slots after it.
 	pub seed_slot: u64,
+	/// Revealed randomness value persisted by `fulfillTemplateOpen`; zero
+	/// until verified. Allocation derives the outcome from it.
 	pub entropy: [u8; 32],
 	/// Treasury revision and bundle prefix fixed before the box is burned.
+	/// Allocation rejects bundles activated at a later revision.
 	pub treasury_revision: u64,
+	/// Template `bundle_count` at request time; allocation draws only from
+	/// this prefix of bundles.
 	pub eligible_bundle_count: u32,
 	/// 0 committed, 1 verified, 2 allocated, 3 delivered, 4 forfeited.
 	pub status: u8,
+	/// Index of the bundle won, set by allocation.
 	pub selected_bundle: u32,
 	/// Local item index reserved from a prize pool during allocation.
 	pub selected_pool_item: u32,
 	/// Manifest slot containing the prize pool when `has_pool_assignment` is set.
 	pub selected_pool_asset: u8,
+	/// Whether allocation reserved a prize pool item for this opening.
 	pub has_pool_assignment: bool,
+	/// Bit `i` is set once asset slot `i` is claimed. The opening becomes
+	/// delivered when every slot of the selected bundle is set.
 	pub claimed_mask: u8,
+	/// Canonical bump of this opening PDA.
 	pub bump: u8,
 }
 

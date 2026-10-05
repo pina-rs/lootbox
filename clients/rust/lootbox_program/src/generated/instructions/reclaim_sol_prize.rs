@@ -8,15 +8,31 @@
 	clippy::too_many_arguments
 )]
 
+/// Returns undrawn native SOL inventory of one bundle asset to the template
+/// authority.
+///
+/// Signed by the template authority. A funding bundle releases its full
+/// quantity; an active bundle releases only its remaining undrawn copies and
+/// requires a retired template with zero box supply and zero pending openings.
+/// Allocated but unclaimed copies stay escrowed, and each asset is reclaimed
+/// at most once.
 pub const RECLAIM_SOL_PRIZE_DISCRIMINATOR: u8 = 22u8;
 pub const RECLAIM_SOL_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ReclaimSolPrize {
+	/// Template authority; must sign and match the authority recorded on the
+	/// template. Receives the reclaimed lamports.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template treasury, validated by its PDA seeds; supplies the status,
+	/// pending-opening count, and remaining inventory of the bundle.
 	pub template: solana_pubkey::Pubkey,
+	/// Template's box mint, validated against the template; its live supply
+	/// must be zero to reclaim from an active bundle.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// Bundle PDA of this template; records the asset as reclaimed and pays
+	/// the lamports directly.
 	pub bundle: solana_pubkey::Pubkey,
 }
 
@@ -80,5 +96,8 @@ impl ReclaimSolPrizeInstructionData {
 pub struct ReclaimSolPrizeInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Asset slot within the bundle; must be below its funded asset count,
+	/// hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and not be reclaimed
+	/// already.
 	pub asset_index: u8,
 }

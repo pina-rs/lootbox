@@ -2,40 +2,80 @@
 
 use super::*;
 
+/// Closes a delivered or forfeited template opening and its Switchboard
+/// accounts.
+///
+/// Permissionless: no signer is required. The opening PDA signs Switchboard's
+/// `randomness_close`, which returns the randomness rent to the opening, and
+/// the opening is then closed to its recorded `rent_refund` account.
 #[instruction(discriminator = LootboxInstruction::CloseTemplateOpening, migrations)]
 pub struct CloseTemplateOpeningInstruction {}
 
+/// Returns a retired, fully settled template's service vault balance to its
+/// authority.
+///
+/// The template authority signs. The template must have receipts or bounties
+/// configured, be retired, have no pending openings, and have zero box supply.
+/// The whole balance, including unused prepaid service funds and the rent
+/// reserve, moves to the authority; an empty vault is a no-op.
 #[instruction(discriminator = LootboxInstruction::CloseServiceVault, migrations)]
 pub struct CloseServiceVaultInstruction {}
 
+/// Accounts for `closeTemplateOpening`.
 #[derive(Accounts, Debug)]
 pub struct CloseTemplateOpeningAccounts<'a> {
+	/// Opening's recorded `rent_refund`, the original request payer; receives
+	/// the opening and randomness rent.
 	pub rent_refund: &'a mut AccountView,
+	/// Template PDA that owns the opening and pins the oracle program and
+	/// queue.
 	pub template: &'a AccountView,
+	/// Opening PDA from `["template-opening", template, randomness]` with
+	/// status delivered or forfeited; signs the oracle close and is closed here.
 	pub opening: &'a mut AccountView,
+	/// Opening's Switchboard randomness account, whose authority must be the
+	/// opening and whose queue must match the template; closed by the oracle.
 	pub randomness: &'a mut AccountView,
+	/// Wrapped-SOL associated token account of `randomness`; closed by the
+	/// oracle.
 	pub reward_escrow: &'a mut AccountView,
+	/// Switchboard On-Demand program; must equal the template's
+	/// `oracle_program`.
 	pub oracle_program: &'a AccountView,
+	/// Switchboard program state, passed through to the oracle.
 	pub oracle_program_state: &'a AccountView,
+	/// Switchboard address lookup table, passed through to the oracle.
 	pub oracle_lut: &'a mut AccountView,
+	/// Switchboard lookup-table signer, passed through to the oracle.
 	pub oracle_lut_signer: &'a AccountView,
+	/// System program required by the oracle close.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
+	/// SPL Token program that owns the reward escrow.
 	#[pina(validate(address = token::ID))]
 	pub token_program: &'a AccountView,
+	/// Wrapped-SOL mint backing the reward escrow.
 	#[pina(validate(address = WRAPPED_SOL_MINT_ID))]
 	pub wrapped_sol_mint: &'a AccountView,
+	/// Address Lookup Table program required by the oracle close.
 	#[pina(validate(address = ADDRESS_LOOKUP_TABLE_PROGRAM_ID))]
 	pub address_lookup_table_program: &'a AccountView,
 }
 
+/// Accounts for `closeServiceVault`.
 #[derive(Accounts, Debug)]
 pub struct CloseServiceVaultAccounts<'a> {
+	/// Template authority; signs and receives the vault balance.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Retired template PDA with no pending openings.
 	pub template: &'a AccountView,
+	/// Template's box mint; its supply must be zero.
 	pub box_mint: &'a AccountView,
+	/// System-owned service vault PDA from `["service-vault", template]` with
+	/// the template's stored bump; signs the transfer out.
 	pub service_vault: &'a mut AccountView,
+	/// System program, invoked for the lamport transfer.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
@@ -69,12 +109,14 @@ impl<'a> ProcessAccountInfos<'a> for CloseTemplateOpeningAccounts<'a> {
 		if expected_opening != opening_address {
 			return Err(ProgramError::InvalidSeeds);
 		}
+
 		assert_reward_escrow(self.reward_escrow, &randomness_address)?;
 		let randomness = parse_randomness(self.randomness, &state.oracle_program)?;
 
 		if randomness.authority != opening_address || randomness.queue != state.oracle_queue {
 			return Err(lootbox_error(LootboxError::InvalidRandomness));
 		}
+
 		drop(opening);
 
 		let opening_signer = opening_seeds_with_bump.to_signer();
@@ -106,10 +148,13 @@ impl<'a> ProcessAccountInfos<'a> for CloseServiceVaultAccounts<'a> {
 		let state = as_template(self.template)?;
 		assert_template(&template_address, &state)?;
 		assert_template_authority(self.authority, &state)?;
+
 		if !has_service_vault(&state) {
 			return Err(lootbox_error(LootboxError::InvalidServiceAccount));
 		}
+
 		assert_service_vault(self.service_vault, &template_address, &state)?;
+
 		let supply = assert_template_mint(
 			self.box_mint,
 			&template_address,
@@ -123,9 +168,11 @@ impl<'a> ProcessAccountInfos<'a> for CloseServiceVaultAccounts<'a> {
 
 		let service_vault_bump = state.service_vault_bump;
 		let balance = self.service_vault.lamports();
+
 		if balance == 0 {
 			return Ok(());
 		}
+
 		let service_vault_bump = [service_vault_bump];
 		let service_vault_signer = PdaSigner::from_slices([
 			SEED_SERVICE_VAULT,

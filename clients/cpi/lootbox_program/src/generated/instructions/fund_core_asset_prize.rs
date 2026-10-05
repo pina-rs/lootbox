@@ -18,44 +18,64 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Escrows a plain Metaplex Core asset into a funding bundle.
+///
+/// The template authority signs as the asset's owner while the template is
+/// unlocked and not retired. The bundle must be funding with a quantity of one.
+/// The asset must be uncollected, carry no plugins, and already name the bundle
+/// PDA as its update authority. Ownership moves to the bundle, and the asset
+/// address is recorded in the bundle's next unfunded slot.
 /// CPI call for the `fund_core_asset_prize` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct FundCoreAssetPrize<'account> {
 	/// CPI account `authority`.
+	/// Template authority. Signs the Core transfer as the asset's owner and pays
+	/// for it.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA owned by this program; must be unlocked and not retired.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Funding bundle PDA of `template` with a quantity of one. Records the
+	/// asset and becomes its owner.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `asset`.
+	/// Core asset owned by the Core program, serialized as a plugin-free
+	/// `AssetV1` whose update authority is `bundle`.
 	/// Required privileges: writable.
 	pub asset: &'account AccountView,
 
 	/// CPI account `collection`.
+	/// Must be the Core program address, Core's placeholder for no collection;
+	/// collection-bound assets are rejected.
 	/// Required privileges: read-only.
 	pub collection: &'account AccountView,
 
 	/// CPI account `coreProgram`.
+	/// Metaplex Core program, invoked to transfer the asset.
 	/// Required privileges: read-only.
 	pub core_program: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, forwarded to Core.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
 	/// CPI account `logWrapper`.
+	/// SPL Noop program, forwarded to Core as its log wrapper.
 	/// Required privileges: read-only.
 	pub log_wrapper: &'account AccountView,
 
 	/// CPI account `pluginAccounts`.
-	/// Core plugin and external-adapter accounts, preserving client flags.
+	/// Core plugin and external-adapter accounts, forwarded with their client
+	/// flags. Must be empty: any account here fails with `InvalidPrize`.
 	/// Required privileges: read-only.
 	pub plugin_accounts: &'account AccountView,
 

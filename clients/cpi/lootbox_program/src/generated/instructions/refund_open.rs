@@ -18,35 +18,48 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Finalizes a pending opening at the lootbox's minimum reward, signed by the
+/// opening's recipient. Allowed only while the randomness is unrevealed and at
+/// least `RANDOMNESS_TIMEOUT_SLOTS` slots after the commitment's seed slot.
 /// CPI call for the `refund_open` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct RefundOpen<'account> {
 	/// CPI account `recipient`.
+	/// Opening's stored recipient. Writable signer; receives the minimum
+	/// reward.
 	/// Required privileges: writable and signer.
 	pub recipient: &'account AccountView,
 
 	/// CPI account `lootbox`.
+	/// Lootbox of the opening; `pending_openings` falls and `refunded` grows.
 	/// Required privileges: writable.
 	pub lootbox: &'account AccountView,
 
 	/// CPI account `vault`.
+	/// Vault PDA of `lootbox` that pays the minimum reward; must keep its rent
+	/// reserve plus the remaining liability.
 	/// Required privileges: writable.
 	pub vault: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// The lootbox's box mint, read for the live supply in the liability check.
 	/// Required privileges: read-only.
 	pub box_mint: &'account AccountView,
 
 	/// CPI account `opening`.
+	/// Pending opening PDA bound to `lootbox`, `randomness`, and `recipient`;
+	/// records the refund.
 	/// Required privileges: writable.
 	pub opening: &'account AccountView,
 
 	/// CPI account `randomness`.
+	/// Opening's Switchboard randomness account; must still be unrevealed.
 	/// Required privileges: read-only.
 	pub randomness: &'account AccountView,
 
 	/// CPI account `clock`.
+	/// Clock sysvar, validated in the handler and read for the current slot.
 	/// Required privileges: read-only.
 	pub clock: &'account AccountView,
 

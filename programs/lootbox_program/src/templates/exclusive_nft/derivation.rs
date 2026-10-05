@@ -39,7 +39,10 @@ const ROUNDS: u8 = 8;
 /// Trait index chosen in each layer, bottom to top.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ExclusiveTraits {
+	/// Number of the collection's layers that hold a drawn trait.
 	pub layer_count: u8,
+	/// Drawn trait index per layer, bottom to top; `exclusive_traits` leaves
+	/// entries at or past `layer_count` zero.
 	pub traits: [u8; MAX_EXCLUSIVE_LAYERS],
 }
 
@@ -116,6 +119,7 @@ pub fn validate_exclusive_layer(
 	let total = (0..count)
 		.map(|index| weight_at(weights, index))
 		.sum::<u64>();
+
 	if total == 0 || total > MAX_TOTAL_WEIGHT {
 		return Err(lootbox_error(LootboxError::InvalidWeight));
 	}
@@ -138,6 +142,7 @@ pub fn exclusive_traits(
 	}
 
 	let mut traits = [0u8; MAX_EXCLUSIVE_LAYERS];
+
 	for layer in 0..layer_count {
 		let index = usize::from(layer);
 		let count = usize::from(trait_counts[index]);
@@ -152,6 +157,7 @@ pub fn exclusive_traits(
 
 		for slot in 0..count {
 			cumulative += weight_at(table, slot);
+
 			if target < cumulative {
 				chosen = u8::try_from(slot).ok();
 				break;
@@ -200,10 +206,12 @@ impl<const N: usize> BoundedText<N> {
 	fn push_decimal(&mut self, mut value: u64) -> ProgramResult {
 		let mut digits = [0u8; 20];
 		let mut start = digits.len();
+
 		loop {
 			start -= 1;
 			digits[start] = b'0' + (value % 10) as u8;
 			value /= 10;
+
 			if value == 0 {
 				break;
 			}
@@ -246,12 +254,14 @@ pub fn exclusive_nft_uri(
 ) -> Result<BoundedText<MAX_EXCLUSIVE_URI_BYTES>, ProgramError> {
 	let mut uri = BoundedText::default();
 	uri.push_text(base_uri)?;
+
 	for value in traits.as_slice() {
 		uri.push_text(&[
 			HEX_DIGITS[usize::from(value >> 4)],
 			HEX_DIGITS[usize::from(value & 0x0f)],
 		])?;
 	}
+
 	uri.push_text(b"-")?;
 	uri.push_decimal(serial)?;
 	uri.push_text(URI_SUFFIX)?;
@@ -296,21 +306,26 @@ mod tests {
 	fn table(layers: &[&[u32]]) -> ([u8; MAX_EXCLUSIVE_LAYERS], Vec<u8>) {
 		let mut counts = [0u8; MAX_EXCLUSIVE_LAYERS];
 		let mut weights = alloc::vec![0u8; EXCLUSIVE_WEIGHT_TABLE_BYTES];
+
 		for (layer, values) in layers.iter().enumerate() {
 			counts[layer] = u8::try_from(values.len()).expect("trait count");
+
 			for (slot, weight) in values.iter().enumerate() {
 				let start = layer * EXCLUSIVE_LAYER_WEIGHT_BYTES + slot * 4;
 				weights[start..start + 4].copy_from_slice(&weight.to_le_bytes());
 			}
 		}
+
 		(counts, weights)
 	}
 
 	fn layer_bytes(values: &[u32]) -> [u8; EXCLUSIVE_LAYER_WEIGHT_BYTES] {
 		let mut bytes = [0u8; EXCLUSIVE_LAYER_WEIGHT_BYTES];
+
 		for (slot, weight) in values.iter().enumerate() {
 			bytes[slot * 4..slot * 4 + 4].copy_from_slice(&weight.to_le_bytes());
 		}
+
 		bytes
 	}
 
@@ -335,6 +350,7 @@ mod tests {
 	#[test]
 	fn a_single_drawable_trait_always_wins() {
 		let (counts, weights) = table(&[&[0, 0, 9, 0], &[5, 0], &[1]]);
+
 		for seed in [[0u8; 32], [7; 32], [255; 32]] {
 			let traits = exclusive_traits(&seed, &counts, &weights, 3).expect("traits");
 			assert_eq!(traits.as_slice(), &[2, 0, 0]);
@@ -346,6 +362,7 @@ mod tests {
 		let seed = [42u8; 32];
 		let (counts, weights) = table(&[&[1; 64], &[1; 64]]);
 		let traits = exclusive_traits(&seed, &counts, &weights, 2).expect("traits");
+
 		for layer in 0..2u8 {
 			let digest = hashv(&[&seed, b"layer".as_slice(), &[layer]]);
 			let expected =
@@ -390,6 +407,7 @@ mod tests {
 		assert_eq!(validate_exclusive_text(&prefix, &symbol, &base), Ok(()));
 		prefix[20] = b'A';
 		assert!(validate_exclusive_text(&prefix, &symbol, &base).is_err());
+
 		prefix[20] = 0;
 		let mut insecure = [0u8; 128];
 		insecure[..19].copy_from_slice(b"http://example.com/");
@@ -421,9 +439,11 @@ mod tests {
 	fn vector_bytes<const N: usize>(value: &serde_json::Value) -> [u8; N] {
 		let text = value.as_str().expect("hex string");
 		let mut bytes = [0u8; N];
+
 		for (index, byte) in bytes.iter_mut().enumerate() {
 			*byte = u8::from_str_radix(&text[index * 2..index * 2 + 2], 16).expect("hex byte");
 		}
+
 		bytes
 	}
 
@@ -458,6 +478,7 @@ mod tests {
 			"../../../../../tests/vectors/exclusive-nft.json"
 		))
 		.expect("exclusive NFT vectors");
+
 		for seed in vectors["seeds"].as_array().expect("seeds") {
 			assert_eq!(
 				exclusive_nft_seed(
@@ -468,6 +489,7 @@ mod tests {
 				vector_bytes::<32>(&seed["seedHex"]),
 			);
 		}
+
 		for draw in vectors["draws"].as_array().expect("draws") {
 			let (counts, weights, layer_count) = vector_layers(&draw["layers"]);
 			let traits = exclusive_traits(
@@ -488,6 +510,7 @@ mod tests {
 				.as_str()
 				.and_then(|value| value.parse().ok())
 				.expect("serial");
+
 			let uri = exclusive_nft_uri(
 				draw["baseUri"].as_str().expect("base").as_bytes(),
 				&traits,
@@ -534,6 +557,7 @@ mod tests {
 			bound in 1u64..=MAX_TOTAL_WEIGHT,
 		) {
 			let threshold = bound.wrapping_neg() % bound;
+
 			match accept_uniform_candidate(candidate, bound) {
 				Some(index) => {
 					prop_assert!(candidate >= threshold);
@@ -541,6 +565,7 @@ mod tests {
 				}
 				None => prop_assert!(candidate < threshold),
 			}
+
 			// The accepted band has exactly `bound * floor(2^64 / bound)`
 			// candidates, so every residue has the same number of preimages.
 			let accepted = u128::from(u64::MAX) + 1 - u128::from(threshold);
@@ -560,8 +585,10 @@ mod tests {
 			// trait's slots exactly `weight` times: the pick is proportional.
 			let start = threshold + u64::from(offset) * total;
 			let mut hits = alloc::vec![0u64; weights.len()];
+
 			for candidate in start..start + total {
 				let target = accept_uniform_candidate(candidate, total).unwrap();
+
 				let mut cumulative = 0;
 				let slot = weights
 					.iter()
@@ -572,6 +599,7 @@ mod tests {
 					.unwrap();
 				hits[slot] += 1;
 			}
+
 			prop_assert_eq!(hits, weights.iter().map(|weight| u64::from(*weight)).collect::<Vec<_>>());
 		}
 	}

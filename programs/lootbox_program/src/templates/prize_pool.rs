@@ -22,213 +22,411 @@ const PRIZE_POOL_FUNDING: u8 = 0;
 const PRIZE_POOL_SEALED: u8 = 1;
 const PRIZE_POOL_ITEM_PREPARED: u8 = 0;
 const PRIZE_POOL_ITEM_DEPOSITED: u8 = 1;
+
 const MAX_BUBBLEGUM_NAME_BYTES: usize = 32;
 const MAX_BUBBLEGUM_SYMBOL_BYTES: usize = 10;
 const MAX_BUBBLEGUM_URI_BYTES: usize = 200;
 const MAX_BUBBLEGUM_CREATORS: usize = 5;
 
+/// Create a funding prize pool for the bundle's next unfunded manifest slot.
+///
+/// The template authority signs while the treasury is unlocked and not
+/// retired, and the bundle is funding with a quantity from 1 through 4,096.
+/// Creates the compact `PrizePoolState` PDA, pins its tree and quantity, and
+/// reserves the slot as kind `PRIZE_POOL` with amount 1; a bundle holds at
+/// most one pool.
 #[instruction(discriminator = LootboxInstruction::CreatePrizePool, migrations)]
 pub struct CreatePrizePoolInstruction {
+	/// Manifest slot to reserve; must equal the bundle's `funded_assets` and be
+	/// below its `asset_count`.
 	pub asset_index: u8,
+	/// Canonical bump of the `PrizePoolState` PDA
+	/// `["prize-pool", bundle, asset_index]`; any other value fails.
 	pub bump: u8,
 }
 
+/// Transfer the prepared compressed NFT into prize pool custody.
+///
+/// The template authority signs as the current leaf owner while the treasury
+/// is unlocked and not retired, the bundle is funding, and the pool has a
+/// prepared item at `deposit_cursor`. The arguments must match that item.
+/// Bubblegum moves the leaf to the pool PDA; the item becomes deposited, and
+/// the pool advances its cursor, manifest accumulator, and bitmap.
 #[instruction(discriminator = LootboxInstruction::DepositPrizePoolItem, migrations)]
 pub struct DepositPrizePoolItemInstruction {
+	/// Merkle root that Bubblegum verifies the proof against.
 	pub root: [u8; 32],
+	/// Current leaf data hash; must equal the prepared item's snapshot.
 	pub data_hash: [u8; 32],
+	/// Current leaf creator hash; must equal the prepared item's snapshot.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce; with `merkle_tree` it must derive the prepared asset ID.
 	pub nonce: u64,
+	/// Leaf index in `merkle_tree`; must equal the prepared item's tree index.
 	pub index: u32,
 }
 
+/// Admit one immutable compressed NFT's metadata as the pool's next item.
+///
+/// The template authority signs while the treasury is unlocked and not
+/// retired, the bundle is funding with this pool as its current slot, and the
+/// pool is funding, below its quantity, and has no prepared item. Recomputes
+/// both leaf hashes from `metadata`, rejects mutable metadata, and creates the
+/// `PrizePoolItemState` PDA at `deposit_cursor` in the prepared state.
 #[instruction(discriminator = LootboxInstruction::PreparePrizePoolItem, migrations)]
 pub struct PreparePrizePoolItemInstruction {
+	/// Canonical bump of the item PDA
+	/// `["prize-pool-item", prize_pool, deposit_cursor]`; any other value fails.
 	pub item_bump: u8,
+	/// Leaf data hash; must equal `keccak(keccak(metadata) ||
+	/// seller_fee_basis_points)` recomputed from `metadata`.
 	pub data_hash: [u8; 32],
+	/// Leaf creator hash; must equal the keccak hash of the creators encoded
+	/// in `metadata`.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce; derives the asset ID `["asset", tree, nonce]` under
+	/// Bubblegum using the pool's pinned tree.
 	pub nonce: u64,
+	/// Leaf index in the pool's tree, stored for the later transfer.
 	pub index: u32,
 	/// Canonical Borsh serialization of Bubblegum V1 `MetadataArgs`.
 	pub metadata: Vec<u8, 512>,
 }
 
+/// Close the pool's prepared item before its leaf is transferred.
+///
+/// The template authority signs while the treasury is unlocked and the bundle
+/// is funding. The pool must be funding with a prepared item at
+/// `deposit_cursor`. Clears `has_prepared_item` and closes the item PDA,
+/// returning its rent to the authority; deposited items are never touched.
 #[instruction(discriminator = LootboxInstruction::CancelPrizePoolItem, migrations)]
 pub struct CancelPrizePoolItemInstruction {}
 
+/// Seal a fully deposited prize pool into its bundle slot.
+///
+/// The template authority signs while the treasury is unlocked and not
+/// retired. The pool must be funding with `deposit_cursor == quantity` and no
+/// prepared item. Writes the domain-separated pool commitment into the bundle
+/// slot, advances the bundle's `funded_assets`, and marks the pool sealed.
 #[instruction(discriminator = LootboxInstruction::SealPrizePool, migrations)]
 pub struct SealPrizePoolInstruction {}
 
+/// Allocate a verified opening whose drawn bundle contains a prize pool.
+///
+/// Permissionless. The opening must be verified and next in allocation order,
+/// and the bundle must be active and selected by the opening's entropy. Also
+/// reserves one entropy-selected unassigned pool item for the opening, then
+/// marks it allocated and optionally creates its result receipt.
 #[instruction(discriminator = LootboxInstruction::AllocatePrizePoolOpen, migrations)]
 pub struct AllocatePrizePoolOpenInstruction {
+	/// Canonical bump of the result receipt PDA
+	/// `["result-receipt", opening, sequence]`; checked even when result
+	/// receipts are disabled.
 	pub result_receipt_bump: u8,
 }
 
+/// Deliver an opening's reserved prize pool leaf to its beneficiary.
+///
+/// Permissionless to relay. The opening must be allocated to this bundle with
+/// a pool assignment for `asset_index`, and the current metadata must match
+/// the item's semantic commitment. The pool PDA signs a Bubblegum transfer to
+/// the recipient, the claim is recorded, and the item PDA closes to the pool
+/// authority.
 #[instruction(discriminator = LootboxInstruction::ClaimPrizePoolItem, migrations)]
 pub struct ClaimPrizePoolItemInstruction {
+	/// Manifest slot of the pool; must equal the opening's
+	/// `selected_pool_asset` and the pool's `asset_index`.
 	pub asset_index: u8,
+	/// Merkle root that Bubblegum verifies the proof against.
 	pub root: [u8; 32],
+	/// Current leaf data hash; must be recomputed from `metadata`.
 	pub data_hash: [u8; 32],
+	/// Current leaf creator hash; must be recomputed from `metadata`.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce; must equal the item's nonce and derive its asset ID.
 	pub nonce: u64,
+	/// Leaf index in the pool's tree; must equal the item's tree index.
 	pub index: u32,
 	/// Current canonical Bubblegum V1 `MetadataArgs` Borsh preimage.
 	pub metadata: Vec<u8, 512>,
 }
 
+/// Return an unassigned deposited leaf to the template authority.
+///
+/// The template authority signs. An unsealed pool, with an unlocked treasury,
+/// a funding bundle, and no prepared item, releases only its last deposit and
+/// restores the prior accumulator. A sealed pool releases an unassigned item
+/// while its bundle is funding with an unlocked treasury, or after the
+/// template retires with zero box supply and no pending openings. The pool PDA
+/// signs the Bubblegum transfer and the item PDA closes to the authority.
 #[instruction(discriminator = LootboxInstruction::ReclaimPrizePoolItem, migrations)]
 pub struct ReclaimPrizePoolItemInstruction {
+	/// Local index of the item within the pool; must be below
+	/// `deposit_cursor`, and equal `deposit_cursor - 1` while unsealed.
 	pub pool_index: u32,
+	/// Merkle root that Bubblegum verifies the proof against.
 	pub root: [u8; 32],
+	/// Current leaf data hash; must be recomputed from `metadata`.
 	pub data_hash: [u8; 32],
+	/// Current leaf creator hash; must be recomputed from `metadata`.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce; must equal the item's nonce and derive its asset ID.
 	pub nonce: u64,
+	/// Leaf index in the pool's tree; must equal the item's tree index.
 	pub index: u32,
 	/// Current canonical Bubblegum V1 `MetadataArgs` Borsh preimage.
 	pub metadata: Vec<u8, 512>,
 }
 
+/// Close a prize pool that holds no outstanding leaves.
+///
+/// The template authority signs. Accepts an empty unsealed pool, a sealed pool
+/// in a funding bundle whose every item was reclaimed, or a sealed pool in a
+/// retired active bundle whose every item was claimed or reclaimed. The first
+/// two require an unlocked treasury and clear the bundle slot. The pool
+/// account closes and its rent returns to the authority.
 #[instruction(discriminator = LootboxInstruction::ClosePrizePool, migrations)]
 pub struct ClosePrizePoolInstruction {}
 
+/// Accounts for `createPrizePool`.
 #[derive(Accounts, Debug)]
 pub struct CreatePrizePoolAccounts<'a> {
+	/// Template authority; signs, pays the pool rent, and is recorded as the
+	/// pool's `authority`.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	pub template: &'a AccountView,
+	/// Funding bundle PDA of `template` whose next slot the pool reserves.
 	pub bundle: &'a mut AccountView,
+	/// Empty `PrizePoolState` PDA `["prize-pool", bundle, asset_index]`,
+	/// created here.
 	#[pina(validate(empty))]
 	pub prize_pool: &'a mut AccountView,
+	/// Bubblegum tree that every pool leaf must come from; only its nonzero
+	/// address is recorded.
 	pub merkle_tree: &'a AccountView,
+	/// System program, invoked to create the pool account.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
+/// Accounts for `depositPrizePoolItem`.
 #[derive(Accounts, Debug)]
 pub struct DepositPrizePoolItemAccounts<'a> {
+	/// Template authority; signs as the current leaf owner and pays rent for
+	/// bitmap growth.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	pub template: &'a AccountView,
+	/// Funding bundle PDA whose current slot holds `prize_pool`.
 	pub bundle: &'a AccountView,
+	/// Funding `PrizePoolState` PDA that receives the leaf; its cursor,
+	/// accumulator, and bitmap advance.
 	pub prize_pool: &'a mut AccountView,
+	/// Prepared item PDA at the pool's `deposit_cursor`; marked deposited.
 	pub prize_pool_item: &'a mut AccountView,
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	pub tree_config: &'a AccountView,
+	/// Pool's pinned tree that holds the leaf; Bubblegum rewrites it.
 	pub merkle_tree: &'a mut AccountView,
+	/// Bubblegum program, invoked to transfer the compressed NFT.
 	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
 	pub bubblegum_program: &'a AccountView,
+	/// SPL Noop program used by Bubblegum as its log wrapper.
 	#[pina(validate(address = SPL_NOOP_ID))]
 	pub log_wrapper: &'a AccountView,
+	/// SPL Account Compression program that owns `merkle_tree`.
 	#[pina(validate(address = SPL_ACCOUNT_COMPRESSION_ID))]
 	pub compression_program: &'a AccountView,
+	/// System program, passed to Bubblegum.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 	/// Merkle proof nodes in leaf-to-root order.
+	///
+	/// Passed as zero through 16 readonly remaining accounts; the tree's canopy
+	/// supplies the rest of the path.
 	#[pina(remaining)]
 	pub proof_accounts: &'a [AccountView],
 }
 
+/// Accounts for `preparePrizePoolItem`.
 #[derive(Accounts, Debug)]
 pub struct PreparePrizePoolItemAccounts<'a> {
+	/// Template authority; signs and pays the item rent.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	pub template: &'a AccountView,
+	/// Funding bundle PDA whose current slot holds `prize_pool`.
 	pub bundle: &'a AccountView,
+	/// Funding `PrizePoolState` PDA; `has_prepared_item` is set.
 	pub prize_pool: &'a mut AccountView,
+	/// Empty item PDA `["prize-pool-item", prize_pool, deposit_cursor]`,
+	/// created here in the prepared state.
 	#[pina(validate(empty))]
 	pub prize_pool_item: &'a mut AccountView,
+	/// System program, invoked to create the item account.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
+/// Accounts for `cancelPrizePoolItem`.
 #[derive(Accounts, Debug)]
 pub struct CancelPrizePoolItemAccounts<'a> {
+	/// Template authority; signs and receives the closed item's rent.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA; its treasury must be unlocked.
 	pub template: &'a AccountView,
+	/// Funding bundle PDA of `template`.
 	pub bundle: &'a AccountView,
+	/// Funding `PrizePoolState` PDA; `has_prepared_item` is cleared.
 	pub prize_pool: &'a mut AccountView,
+	/// Prepared item PDA at the pool's `deposit_cursor`, closed here.
 	pub prize_pool_item: &'a mut AccountView,
 }
 
+/// Accounts for `sealPrizePool`.
 #[derive(Accounts, Debug)]
 pub struct SealPrizePoolAccounts<'a> {
+	/// Template authority; signs.
 	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	pub template: &'a AccountView,
+	/// Funding bundle PDA; receives the pool commitment and advances
+	/// `funded_assets`.
 	pub bundle: &'a mut AccountView,
+	/// Fully deposited `PrizePoolState` PDA; becomes sealed.
 	pub prize_pool: &'a mut AccountView,
 }
 
+/// Accounts for `allocatePrizePoolOpen`.
 #[derive(Accounts, Debug)]
 pub struct AllocatePrizePoolOpenAccounts<'a> {
+	/// Template PDA; its remaining inventory and allocation counters update.
 	pub template: &'a mut AccountView,
+	/// Verified `TemplateOpeningState` PDA next in allocation order; becomes
+	/// allocated and records the reserved pool item.
 	pub opening: &'a mut AccountView,
+	/// Active bundle PDA selected by the opening's entropy.
 	pub bundle: &'a AccountView,
+	/// Sealed `PrizePoolState` PDA in `bundle`; reserves one item.
 	pub prize_pool: &'a mut AccountView,
 	/// Creator-funded when permanent result receipts are enabled.
+	///
+	/// Template service vault PDA `["service-vault", template]`, validated when
+	/// receipts or settlement bounties are enabled; pays the receipt rent.
 	pub service_vault: &'a mut AccountView,
 	/// Created only when enabled in the locked treasury configuration.
+	///
+	/// Must be the empty PDA `["result-receipt", opening, sequence]`.
 	#[pina(validate(empty))]
 	pub result_receipt: &'a mut AccountView,
+	/// System program, invoked to fund and create the result receipt.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
 
+/// Accounts for `claimPrizePoolItem`.
 #[derive(Accounts, Debug)]
 pub struct ClaimPrizePoolItemAccounts<'a> {
+	/// Template PDA that owns the opening and bundle.
 	pub template: &'a AccountView,
+	/// Allocated opening PDA with a pool assignment; its claim bit is set.
 	pub opening: &'a mut AccountView,
+	/// Bundle PDA the opening was allocated to; its claimed count advances.
 	pub bundle: &'a mut AccountView,
+	/// Sealed `PrizePoolState` PDA; signs the transfer and counts the claim.
 	pub prize_pool: &'a mut AccountView,
+	/// Item PDA at the opening's `selected_pool_item`, closed here.
 	pub prize_pool_item: &'a mut AccountView,
+	/// Opening's bound beneficiary; becomes the leaf owner.
 	pub recipient: &'a AccountView,
 	/// Receives the closed per-item PDA rent; fixed to the pool creator.
 	pub rent_refund: &'a mut AccountView,
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	pub tree_config: &'a AccountView,
+	/// Pool's pinned tree that holds the leaf; Bubblegum rewrites it.
 	pub merkle_tree: &'a mut AccountView,
+	/// Bubblegum program, invoked to transfer the compressed NFT.
 	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
 	pub bubblegum_program: &'a AccountView,
+	/// SPL Noop program used by Bubblegum as its log wrapper.
 	#[pina(validate(address = SPL_NOOP_ID))]
 	pub log_wrapper: &'a AccountView,
+	/// SPL Account Compression program that owns `merkle_tree`.
 	#[pina(validate(address = SPL_ACCOUNT_COMPRESSION_ID))]
 	pub compression_program: &'a AccountView,
+	/// System program, passed to Bubblegum.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 	/// Merkle proof nodes in leaf-to-root order.
+	///
+	/// Passed as zero through 16 readonly remaining accounts; the tree's canopy
+	/// supplies the rest of the path.
 	#[pina(remaining)]
 	pub proof_accounts: &'a [AccountView],
 }
 
+/// Accounts for `reclaimPrizePoolItem`.
 #[derive(Accounts, Debug)]
 pub struct ReclaimPrizePoolItemAccounts<'a> {
+	/// Template authority; signs, receives the leaf and the item rent, and
+	/// receives rent freed by shrinking an unsealed pool.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA that owns `bundle`.
 	pub template: &'a AccountView,
+	/// Template's Token-2022 box mint; its supply must be zero for an active
+	/// bundle. Read only when the pool is sealed.
 	pub box_mint: &'a AccountView,
+	/// Bundle PDA; a sealed reclaim advances the slot's released count and
+	/// may set its reclaimed bit.
 	pub bundle: &'a mut AccountView,
+	/// `PrizePoolState` PDA that signs the transfer; its cursor rewinds or its
+	/// reclaimed count advances.
 	pub prize_pool: &'a mut AccountView,
+	/// Deposited item PDA at `pool_index`, closed here.
 	pub prize_pool_item: &'a mut AccountView,
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	pub tree_config: &'a AccountView,
+	/// Pool's pinned tree that holds the leaf; Bubblegum rewrites it.
 	pub merkle_tree: &'a mut AccountView,
+	/// Bubblegum program, invoked to transfer the compressed NFT.
 	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
 	pub bubblegum_program: &'a AccountView,
+	/// SPL Noop program used by Bubblegum as its log wrapper.
 	#[pina(validate(address = SPL_NOOP_ID))]
 	pub log_wrapper: &'a AccountView,
+	/// SPL Account Compression program that owns `merkle_tree`.
 	#[pina(validate(address = SPL_ACCOUNT_COMPRESSION_ID))]
 	pub compression_program: &'a AccountView,
+	/// System program, passed to Bubblegum.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 	/// Merkle proof nodes in leaf-to-root order.
+	///
+	/// Passed as zero through 16 readonly remaining accounts; the tree's canopy
+	/// supplies the rest of the path.
 	#[pina(remaining)]
 	pub proof_accounts: &'a [AccountView],
 }
 
+/// Accounts for `closePrizePool`.
 #[derive(Accounts, Debug)]
 pub struct ClosePrizePoolAccounts<'a> {
+	/// Template authority; signs and receives the pool rent.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template PDA that owns `bundle`.
 	pub template: &'a AccountView,
+	/// Bundle PDA; its pool slot is cleared unless the pool is terminal in an
+	/// active bundle.
 	pub bundle: &'a mut AccountView,
+	/// `PrizePoolState` PDA, closed here.
 	pub prize_pool: &'a mut AccountView,
 }
 
@@ -240,7 +438,9 @@ fn assert_prize_pool(
 	if pool.bundle != *bundle {
 		return Err(lootbox_error(LootboxError::InvalidPrizePool));
 	}
+
 	let seeds = PrizePoolState::seeds(bundle, pool.asset_index).with_bump(pool.bump);
+
 	if *account.address() != create_program_address(&seeds.as_slices(), &ID)? {
 		return Err(ProgramError::InvalidSeeds);
 	}
@@ -257,7 +457,9 @@ fn assert_pool_item(
 	if item.pool != *pool || item.pool_index.get() != pool_index {
 		return Err(lootbox_error(LootboxError::InvalidPrizePool));
 	}
+
 	let seeds = PrizePoolItemState::seeds(pool, pool_index).with_bump(item.bump);
+
 	if *account.address() != create_program_address(&seeds.as_slices(), &ID)? {
 		return Err(ProgramError::InvalidSeeds);
 	}
@@ -277,6 +479,7 @@ fn set_bitmap(bitmap: &mut [u8], index: usize) -> ProgramResult {
 		.get_mut(index / 8)
 		.ok_or_else(|| lootbox_error(LootboxError::InvalidPrizePool))?;
 	let bit = 1 << (index % 8);
+
 	if *byte & bit != 0 {
 		return Err(lootbox_error(LootboxError::PrizePoolItemUnavailable));
 	}
@@ -341,9 +544,11 @@ impl<'a> MetadataCursor<'a> {
 
 	fn string(&mut self, max_bytes: usize) -> ProgramResult {
 		let length = usize::try_from(self.u32()?).map_err(|_| invalid_prize_pool_metadata())?;
+
 		if length > max_bytes {
 			return Err(invalid_prize_pool_metadata());
 		}
+
 		core::str::from_utf8(self.take(length)?)
 			.map(|_| ())
 			.map_err(|_| invalid_prize_pool_metadata())
@@ -390,40 +595,52 @@ fn metadata_identity(
 	cursor.string(MAX_BUBBLEGUM_SYMBOL_BYTES)?;
 	cursor.string(MAX_BUBBLEGUM_URI_BYTES)?;
 	let seller_fee_basis_points = cursor.u16()?;
+
 	if seller_fee_basis_points > 10_000 {
 		return Err(invalid_prize_pool_metadata());
 	}
+
 	cursor.boolean()?; // primary_sale_happened
 	let is_mutable = cursor.boolean()?;
+
 	if cursor.option_tag()? {
 		cursor.byte()?; // edition_nonce
 	}
+
 	if cursor.option_tag()? {
 		cursor.enum_byte(4)?; // TokenStandard
 	}
+
 	if cursor.option_tag()? {
 		verification_offsets.push(cursor.offset);
 		cursor.boolean()?;
 		cursor.take(32)?; // Collection key
 	}
+
 	if cursor.option_tag()? {
 		cursor.enum_byte(3)?; // UseMethod
 		cursor.take(16)?; // remaining + total
 	}
+
 	cursor.enum_byte(2)?; // TokenProgramVersion
 	let creator_count =
 		usize::try_from(cursor.u32()?).map_err(|_| invalid_prize_pool_metadata())?;
+
 	if creator_count > MAX_BUBBLEGUM_CREATORS {
 		return Err(invalid_prize_pool_metadata());
 	}
+
 	let creator_start = cursor.offset;
+
 	for _ in 0..creator_count {
 		cursor.take(32)?;
 		verification_offsets.push(cursor.offset);
 		cursor.boolean()?;
 		cursor.byte()?;
 	}
+
 	let creator_end = cursor.offset;
+
 	if cursor.offset != metadata.len() {
 		return Err(invalid_prize_pool_metadata());
 	}
@@ -432,20 +649,24 @@ fn metadata_identity(
 	let computed_data_hash =
 		keccak_hashv(&[inner.as_ref(), &seller_fee_basis_points.to_le_bytes()]);
 	let computed_creator_hash = keccak_hashv(&[&metadata[creator_start..creator_end]]);
+
 	if computed_data_hash.as_ref() != data_hash || computed_creator_hash.as_ref() != creator_hash {
 		return Err(invalid_prize_pool_metadata());
 	}
+
 	if is_mutable {
 		return Err(lootbox_error(LootboxError::MutablePrizePoolItem));
 	}
 
 	let mut normalized = AllocVec::with_capacity(metadata.len());
 	normalized.extend_from_slice(metadata);
+
 	for offset in verification_offsets {
 		*normalized
 			.get_mut(offset)
 			.ok_or_else(invalid_prize_pool_metadata)? = 0;
 	}
+
 	Ok(MetadataIdentity {
 		semantic_hash: hashv(&[PRIZE_POOL_METADATA_DOMAIN, &normalized]).to_bytes(),
 	})
@@ -523,9 +744,11 @@ fn assert_pool_commitment(
 		pool.asset_index,
 		pool.version.get(),
 	);
+
 	if stored != expected {
 		return Err(lootbox_error(LootboxError::InvalidPrizePool));
 	}
+
 	Ok(())
 }
 
@@ -539,6 +762,7 @@ fn assert_item_identity(
 	index: u32,
 ) -> ProgramResult {
 	let metadata = metadata_identity(metadata, data_hash, creator_hash)?;
+
 	if item.asset != compressed_asset_id(tree, nonce)?
 		|| item.nonce.get() != nonce
 		|| item.tree_index.get() != index
@@ -553,6 +777,7 @@ fn assert_item_identity(
 
 pub(super) fn reserve_prize_pool_slot(bundle: &mut BundleStateZc, pool: &Address) -> ProgramResult {
 	let index = usize::from(bundle.funded_assets);
+
 	if index >= usize::from(bundle.asset_count)
 		|| bundle.kinds[index] != 0
 		|| mint_at(bundle, index)? != Address::default()
@@ -576,6 +801,7 @@ fn clear_prize_pool_slot(
 	pool: &Address,
 ) -> ProgramResult {
 	let index = usize::from(asset_index);
+
 	if bundle.kinds.get(index) != Some(&PRIZE_POOL)
 		|| mint_at(bundle, index)? != *pool
 		|| read_slot(&bundle.amounts, index)? != 1
@@ -595,6 +821,7 @@ fn update_pool(account: &mut AccountView, patch: &PrizePoolStatePatch<'_>) -> Pr
 	account.assert_owner(&ID)?;
 	let mut data = account.try_borrow_mut()?;
 	let encoded = PrizePoolState::update(&mut data, patch)?;
+
 	if encoded != data.len() {
 		return Err(ProgramError::InvalidAccountData);
 	}
@@ -604,6 +831,7 @@ fn update_pool(account: &mut AccountView, patch: &PrizePoolStatePatch<'_>) -> Pr
 
 fn pool_asset_index(bundle: &BundleStateZc) -> Result<Option<u8>, ProgramError> {
 	let mut found = None;
+
 	for (index, kind) in bundle
 		.kinds
 		.iter()
@@ -614,6 +842,7 @@ fn pool_asset_index(bundle: &BundleStateZc) -> Result<Option<u8>, ProgramError> 
 			if found.is_some() {
 				return Err(lootbox_error(LootboxError::InvalidPrizePool));
 			}
+
 			found = Some(u8::try_from(index).map_err(|_| ProgramError::InvalidAccountData)?);
 		}
 	}
@@ -629,6 +858,7 @@ fn select_pool_target(
 	if available == 0 || available > MAX_PRIZE_POOL_ITEMS as u64 {
 		return Err(lootbox_error(LootboxError::PrizePoolItemUnavailable));
 	}
+
 	for counter in 0u8..8 {
 		let counter_bytes = [counter];
 		let hash = hashv(&[
@@ -643,21 +873,25 @@ fn select_pool_target(
 			return Ok(target);
 		}
 	}
+
 	Err(lootbox_error(LootboxError::EntropyRejectionExhausted))
 }
 
 fn item_for_rank(bitmap: &[u8], quantity: usize, rank: u64) -> Result<u32, ProgramError> {
 	let mut seen = 0u64;
+
 	for index in 0..quantity {
 		if !bitmap_is_set(bitmap, index)? {
 			if seen == rank {
 				return u32::try_from(index).map_err(|_| ProgramError::InvalidAccountData);
 			}
+
 			seen = seen
 				.checked_add(1)
 				.ok_or(ProgramError::ArithmeticOverflow)?;
 		}
 	}
+
 	Err(lootbox_error(LootboxError::PrizePoolItemUnavailable))
 }
 
@@ -699,10 +933,12 @@ pub(super) fn reserve_prize_pool_item(
 		if pool_account.is_some() {
 			return Err(lootbox_error(LootboxError::InvalidPrizePool));
 		}
+
 		return Ok(());
 	};
 	let pool_account = pool_account.ok_or_else(|| lootbox_error(LootboxError::InvalidPrizePool))?;
 	let pool_address = *pool_account.address();
+
 	if mint_at(bundle, usize::from(asset_index))? != pool_address
 		|| read_slot(&bundle.amounts, usize::from(asset_index))? != 1
 	{
@@ -711,6 +947,7 @@ pub(super) fn reserve_prize_pool_item(
 	let pool_data = pool_account.try_borrow()?;
 	let pool = PrizePoolState::try_from_bytes(&pool_data)?;
 	assert_prize_pool(pool_account, &pool, bundle_address)?;
+
 	if pool.status != PRIZE_POOL_SEALED
 		|| pool.asset_index != asset_index
 		|| pool.quantity.get() != bundle.quantity.get()
@@ -726,9 +963,11 @@ pub(super) fn reserve_prize_pool_item(
 		.get()
 		.checked_sub(unavailable)
 		.ok_or(ProgramError::ArithmeticOverflow)?;
+
 	if available != selected_remaining {
 		return Err(lootbox_error(LootboxError::InvalidPrizePool));
 	}
+
 	let target = select_pool_target(&opening.entropy, &pool_address, opening_address, available)?;
 	let quantity =
 		usize::try_from(pool.quantity.get()).map_err(|_| ProgramError::InvalidAccountData)?;
@@ -770,6 +1009,7 @@ impl<'a> ProcessAccountInfos<'a> for CreatePrizePoolAccounts<'a> {
 		let bundle = self.bundle.as_account::<BundleState>(&ID)?;
 		let quantity = usize::try_from(bundle.quantity.get())
 			.map_err(|_| lootbox_error(LootboxError::InvalidPrizePool))?;
+
 		if bundle.status != BUNDLE_FUNDING
 			|| args.asset_index != bundle.funded_assets
 			|| args.asset_index >= bundle.asset_count
@@ -784,6 +1024,7 @@ impl<'a> ProcessAccountInfos<'a> for CreatePrizePoolAccounts<'a> {
 		drop(bundle);
 
 		let seeds = PrizePoolState::seeds(&bundle_address, args.asset_index);
+
 		if self
 			.prize_pool
 			.assert_canonical_bump(&seeds.as_slices(), &ID)?
@@ -825,6 +1066,7 @@ impl<'a> ProcessAccountInfos<'a> for PreparePrizePoolItemAccounts<'a> {
 		assert_bundle(self.bundle, self.template.address())?;
 		let bundle = self.bundle.as_account::<BundleState>(&ID)?;
 		let bundle_address = *self.bundle.address();
+
 		if bundle.status != BUNDLE_FUNDING
 			|| bundle.funded_assets >= bundle.asset_count
 			|| bundle.kinds.get(usize::from(bundle.funded_assets)) != Some(&PRIZE_POOL)
@@ -843,17 +1085,20 @@ impl<'a> ProcessAccountInfos<'a> for PreparePrizePoolItemAccounts<'a> {
 		let pool_data = self.prize_pool.try_borrow()?;
 		let pool = PrizePoolState::try_from_bytes(&pool_data)?;
 		assert_prize_pool(self.prize_pool, &pool, &bundle_address)?;
+
 		if pool.status != PRIZE_POOL_FUNDING
 			|| pool.has_prepared_item.get()
 			|| u64::from(pool.deposit_cursor.get()) >= pool.quantity.get()
 		{
 			return Err(lootbox_error(LootboxError::PrizePoolFull));
 		}
+
 		let pool_index = pool.deposit_cursor.get();
 		let tree = pool.tree;
 		drop(pool_data);
 
 		let item_seeds = PrizePoolItemState::seeds(&pool_address, pool_index);
+
 		if self
 			.prize_pool_item
 			.assert_canonical_bump(&item_seeds.as_slices(), &ID)?
@@ -873,6 +1118,7 @@ impl<'a> ProcessAccountInfos<'a> for PreparePrizePoolItemAccounts<'a> {
 			.prize_pool_item
 			.as_account_mut::<PrizePoolItemState>(&ID)?;
 		item.pool = pool_address;
+
 		item.asset = compressed_asset_id(&tree, args.nonce.get())?;
 		item.data_hash = args.data_hash;
 		item.creator_hash = args.creator_hash;
@@ -902,26 +1148,32 @@ impl<'a> ProcessAccountInfos<'a> for CancelPrizePoolItemAccounts<'a> {
 		assert_bundle(self.bundle, self.template.address())?;
 		let bundle = self.bundle.as_account::<BundleState>(&ID)?;
 		let bundle_address = *self.bundle.address();
+
 		if bundle.status != BUNDLE_FUNDING {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
+
 		drop(bundle);
 
 		let pool_address = *self.prize_pool.address();
 		let pool_data = self.prize_pool.try_borrow()?;
 		let pool = PrizePoolState::try_from_bytes(&pool_data)?;
 		assert_prize_pool(self.prize_pool, &pool, &bundle_address)?;
+
 		if pool.status != PRIZE_POOL_FUNDING || !pool.has_prepared_item.get() {
 			return Err(lootbox_error(LootboxError::InvalidPrizePool));
 		}
+
 		let pool_index = pool.deposit_cursor.get();
 		drop(pool_data);
 
 		let item = self.prize_pool_item.as_account::<PrizePoolItemState>(&ID)?;
 		assert_pool_item(self.prize_pool_item, &item, &pool_address, pool_index)?;
+
 		if item.status != PRIZE_POOL_ITEM_PREPARED {
 			return Err(lootbox_error(LootboxError::InvalidPrizePool));
 		}
+
 		drop(item);
 		update_pool(
 			self.prize_pool,
@@ -942,6 +1194,7 @@ impl<'a> ProcessAccountInfos<'a> for DepositPrizePoolItemAccounts<'a> {
 		assert_bundle(self.bundle, self.template.address())?;
 		let bundle = self.bundle.as_account::<BundleState>(&ID)?;
 		let bundle_address = *self.bundle.address();
+
 		if bundle.status != BUNDLE_FUNDING
 			|| bundle.funded_assets >= bundle.asset_count
 			|| bundle.kinds.get(usize::from(bundle.funded_assets)) != Some(&PRIZE_POOL)
@@ -955,6 +1208,7 @@ impl<'a> ProcessAccountInfos<'a> for DepositPrizePoolItemAccounts<'a> {
 		let pool_data = self.prize_pool.try_borrow()?;
 		let pool = PrizePoolState::try_from_bytes(&pool_data)?;
 		assert_prize_pool(self.prize_pool, &pool, &bundle_address)?;
+
 		if pool.status != PRIZE_POOL_FUNDING
 			|| !pool.has_prepared_item.get()
 			|| u64::from(pool.deposit_cursor.get()) >= pool.quantity.get()
@@ -963,17 +1217,21 @@ impl<'a> ProcessAccountInfos<'a> for DepositPrizePoolItemAccounts<'a> {
 			return Err(lootbox_error(LootboxError::PrizePoolFull));
 		}
 		let pool_index = pool.deposit_cursor.get();
+
 		let previous_manifest = pool.manifest_accumulator;
 		let mut bitmap = AllocVec::with_capacity(pool.unavailable().len() + 1);
 		bitmap.extend_from_slice(pool.unavailable());
+
 		if usize::try_from(pool_index).map_err(|_| ProgramError::InvalidAccountData)? % 8 == 0 {
 			bitmap.push(0);
 		}
+
 		drop(pool_data);
 
 		let item = self.prize_pool_item.as_account::<PrizePoolItemState>(&ID)?;
 		assert_pool_item(self.prize_pool_item, &item, &pool_address, pool_index)?;
 		let asset = compressed_asset_id(self.merkle_tree.address(), args.nonce.get())?;
+
 		if item.status != PRIZE_POOL_ITEM_PREPARED
 			|| item.asset != asset
 			|| item.data_hash != args.data_hash
@@ -985,6 +1243,7 @@ impl<'a> ProcessAccountInfos<'a> for DepositPrizePoolItemAccounts<'a> {
 		}
 		let semantic_metadata_hash = item.semantic_metadata_hash;
 		drop(item);
+
 		let next_manifest = next_pool_manifest(
 			&previous_manifest,
 			&pool_address,
@@ -1056,8 +1315,10 @@ impl<'a> ProcessAccountInfos<'a> for SealPrizePoolAccounts<'a> {
 		assert_bundle(self.bundle, self.template.address())?;
 		let bundle_address = *self.bundle.address();
 		let pool_data = self.prize_pool.try_borrow()?;
+
 		let pool = PrizePoolState::try_from_bytes(&pool_data)?;
 		assert_prize_pool(self.prize_pool, &pool, &bundle_address)?;
+
 		if pool.status != PRIZE_POOL_FUNDING
 			|| pool.has_prepared_item.get()
 			|| u64::from(pool.deposit_cursor.get()) != pool.quantity.get()
@@ -1077,6 +1338,7 @@ impl<'a> ProcessAccountInfos<'a> for SealPrizePoolAccounts<'a> {
 
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(asset_index);
+
 		if bundle.status != BUNDLE_FUNDING
 			|| bundle.funded_assets != asset_index
 			|| bundle.kinds.get(index) != Some(&PRIZE_POOL)
@@ -1100,6 +1362,7 @@ impl<'a> ProcessAccountInfos<'a> for SealPrizePoolAccounts<'a> {
 			version,
 		);
 		bundle.commitments[index * 32..(index + 1) * 32].copy_from_slice(&commitment);
+
 		drop(bundle);
 		update_pool(
 			self.prize_pool,
@@ -1117,6 +1380,7 @@ impl<'a> ProcessAccountInfos<'a> for AllocatePrizePoolOpenAccounts<'a> {
 		let receipt_seeds =
 			ResultReceiptState::seeds(self.opening.address(), opening.sequence.get());
 		drop(opening);
+
 		if self
 			.result_receipt
 			.assert_canonical_bump(&receipt_seeds.as_slices(), &ID)?
@@ -1144,6 +1408,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimPrizePoolItemAccounts<'a> {
 		let opening_address = *self.opening.address();
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&opening_address, &opening, self.template.address())?;
+
 		if !opening.has_pool_assignment.get()
 			|| opening.selected_pool_asset != args.asset_index
 			|| opening.beneficiary != *self.recipient.address()
@@ -1155,6 +1420,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimPrizePoolItemAccounts<'a> {
 		let pool_data = self.prize_pool.try_borrow()?;
 		let pool = PrizePoolState::try_from_bytes(&pool_data)?;
 		assert_prize_pool(self.prize_pool, &pool, self.bundle.address())?;
+
 		if pool.status != PRIZE_POOL_SEALED
 			|| pool.asset_index != args.asset_index
 			|| pool.tree != *self.merkle_tree.address()
@@ -1200,6 +1466,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimPrizePoolItemAccounts<'a> {
 
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
+
 		if bundle.kinds.get(index) != Some(&PRIZE_POOL)
 			|| mint_at(&bundle, index)? != pool_address
 			|| bundle.quantity.get() != pool_quantity
@@ -1215,6 +1482,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimPrizePoolItemAccounts<'a> {
 		)?;
 		drop(bundle);
 		drop(opening);
+
 		update_pool(
 			self.prize_pool,
 			&PrizePoolStatePatch::new().claimed_count(claimed_count),
@@ -1266,9 +1534,11 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimPrizePoolItemAccounts<'a> {
 		assert_bundle(self.bundle, self.template.address())?;
 		let bundle_address = *self.bundle.address();
 		let pool_address = *self.prize_pool.address();
+
 		let pool_data = self.prize_pool.try_borrow()?;
 		let pool = PrizePoolState::try_from_bytes(&pool_data)?;
 		assert_prize_pool(self.prize_pool, &pool, &bundle_address)?;
+
 		if pool.tree != *self.merkle_tree.address()
 			|| args.pool_index.get() >= pool.deposit_cursor.get()
 		{
@@ -1298,8 +1568,10 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimPrizePoolItemAccounts<'a> {
 		let pool_asset_index = pool.asset_index;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let asset_index = usize::from(pool.asset_index);
+
 		if pool.status == PRIZE_POOL_FUNDING {
 			assert_treasury_unlocked(&template)?;
+
 			if bundle.status != BUNDLE_FUNDING
 				|| pool.has_prepared_item.get()
 				|| bundle.funded_assets != pool.asset_index
@@ -1348,6 +1620,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimPrizePoolItemAccounts<'a> {
 				&template.box_mint,
 				template.locked_at.get() != 0,
 			)?;
+
 			let expected_reclaims = match bundle.status {
 				BUNDLE_FUNDING => {
 					assert_treasury_unlocked(&template)?;
@@ -1366,24 +1639,31 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimPrizePoolItemAccounts<'a> {
 				}
 				_ => return Err(lootbox_error(LootboxError::InvalidState)),
 			};
+
 			let reclaimed_count = pool
 				.reclaimed_count
 				.get()
 				.checked_add(1)
 				.ok_or(ProgramError::ArithmeticOverflow)?;
+
 			if u64::from(reclaimed_count) > expected_reclaims {
 				return Err(lootbox_error(LootboxError::InvalidState));
 			}
+
 			let released = read_slot(&bundle.claimed, asset_index)?
 				.checked_add(1)
 				.ok_or(ProgramError::ArithmeticOverflow)?;
+
 			if released > bundle.quantity.get() {
 				return Err(lootbox_error(LootboxError::InvalidState));
 			}
+
 			write_slot(&mut bundle.claimed, asset_index, released)?;
+
 			if u64::from(reclaimed_count) == expected_reclaims {
 				bundle.reclaimed_mask |= 1u8 << pool.asset_index;
 			}
+
 			let mut bitmap = AllocVec::with_capacity(pool.unavailable().len());
 			bitmap.extend_from_slice(pool.unavailable());
 			set_bitmap(
@@ -1447,6 +1727,7 @@ impl<'a> ProcessAccountInfos<'a> for ClosePrizePoolAccounts<'a> {
 		assert_template(self.template.address(), &template)?;
 		assert_template_authority(self.authority, &template)?;
 		assert_bundle(self.bundle, self.template.address())?;
+
 		let bundle_address = *self.bundle.address();
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let pool_data = self.prize_pool.try_borrow()?;
@@ -1488,18 +1769,23 @@ impl<'a> ProcessAccountInfos<'a> for ClosePrizePoolAccounts<'a> {
 		} else {
 			false
 		};
+
 		if !empty_unsealed && !recovered_sealed && !active_terminal {
 			return Err(lootbox_error(LootboxError::InvalidState));
 		}
+
 		if !active_terminal {
 			assert_treasury_unlocked(&template)?;
 		}
+
 		if recovered_sealed || active_terminal {
 			assert_pool_commitment(&bundle, self.prize_pool.address(), &pool)?;
 		}
+
 		if !active_terminal {
 			clear_prize_pool_slot(&mut bundle, pool.asset_index, self.prize_pool.address())?;
 		}
+
 		drop(pool_data);
 		drop(bundle);
 		drop(template_data);
@@ -1525,11 +1811,13 @@ mod proofs {
 		assert_eq!(byte & (1 << selected), 0);
 
 		let mut before = 0;
+
 		for index in 0..selected {
 			if byte & (1 << index) == 0 {
 				before += 1;
 			}
 		}
+
 		assert_eq!(before, rank);
 	}
 
@@ -1554,11 +1842,13 @@ mod tests {
 
 	fn bitmap(values: &[bool]) -> AllocVec<u8> {
 		let mut bytes = vec![0; values.len().div_ceil(8)];
+
 		for (index, value) in values.iter().enumerate() {
 			if *value {
 				bytes[index / 8] |= 1 << (index % 8);
 			}
 		}
+
 		bytes
 	}
 
@@ -1570,12 +1860,14 @@ mod tests {
 				let expected: AllocVec<_> = (0..quantity)
 					.filter(|index| unavailable[0] & (1 << index) == 0)
 					.collect();
+
 				for (rank, expected_index) in expected.iter().enumerate() {
 					assert_eq!(
 						item_for_rank(&unavailable, quantity, rank as u64),
 						Ok(*expected_index as u32),
 					);
 				}
+
 				assert!(item_for_rank(&unavailable, quantity, expected.len() as u64).is_err());
 			}
 		}
@@ -1745,6 +2037,7 @@ mod tests {
 		metadata.push(0); // primary sale
 		metadata.push(u8::from(is_mutable));
 		metadata.push(0); // edition nonce
+
 		metadata.extend_from_slice(&[1, 0]); // NonFungible token standard
 		metadata.extend_from_slice(&[1, 1]); // verified collection
 		metadata.extend_from_slice(&[8; 32]);
@@ -1793,6 +2086,7 @@ mod tests {
 		let item = PrizePoolItemState::initialize(&mut bytes, |_| Ok(())).expect("item");
 		item.asset = compressed_asset_id(&tree, nonce).expect("asset PDA");
 		item.data_hash = data_hash;
+
 		item.creator_hash = creator_hash;
 		item.semantic_metadata_hash = identity.semantic_hash;
 		item.nonce.set(nonce);

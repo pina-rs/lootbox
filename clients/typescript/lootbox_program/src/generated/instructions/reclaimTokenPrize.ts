@@ -22,9 +22,21 @@ export function getReclaimTokenPrizeDiscriminator2Bytes(): ReadonlyUint8Array { 
 export type ReclaimTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountDestination extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow, TAccountDestination extends string ? WritableAccount<TAccountDestination> : TAccountDestination, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type ReclaimTokenPrizeInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number;  };
+export type ReclaimTokenPrizeInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Asset slot within the bundle; must be below its funded asset count,
+ * hold a `PRIZE_TOKEN`, `PRIZE_NFT`, `PRIZE_TOKEN_2022`, or
+ * `PRIZE_QUOTE_TOKEN` asset, and not be reclaimed already.
+ */
+assetIndex: number;  };
 
-export type ReclaimTokenPrizeInstructionDataArgs = { assetIndex: number;  };
+export type ReclaimTokenPrizeInstructionDataArgs = {
+/**
+ * Asset slot within the bundle; must be below its funded asset count,
+ * hold a `PRIZE_TOKEN`, `PRIZE_NFT`, `PRIZE_TOKEN_2022`, or
+ * `PRIZE_QUOTE_TOKEN` asset, and not be reclaimed already.
+ */
+assetIndex: number;  };
 
 export function getReclaimTokenPrizeInstructionDataEncoder(): FixedSizeEncoder<ReclaimTokenPrizeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 23, migrationVersion: 0 }));
@@ -39,13 +51,43 @@ export function getReclaimTokenPrizeInstructionDataCodec(): FixedSizeCodec<Recla
 }
 
 export type ReclaimTokenPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountDestination extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Template authority; must sign and match the authority recorded on the
+ * template. Owns `destination`.
+ */
+authority: TAccountAuthority;
+/**
+ * Template treasury, validated by its PDA seeds; supplies the status,
+ * pending-opening count, and remaining inventory of the bundle.
+ */
 template: TAccountTemplate;
+/**
+ * Template's box mint, validated against the template; its live supply
+ * must be zero to reclaim from an active bundle.
+ */
 boxMint: TAccountBoxMint;
+/**
+ * Bundle PDA of this template; records the asset as reclaimed and signs
+ * the transfer as escrow owner.
+ */
 bundle: TAccountBundle;
+/** Prize mint; must match the mint recorded in the bundle's asset slot. */
 mint: TAccountMint;
+/**
+ * Bundle's associated token account for `mint` under `token_program`;
+ * source of the transfer.
+ */
 escrow: TAccountEscrow;
+/**
+ * Authority's existing associated token account for `mint` under
+ * `token_program`; receives the tokens.
+ */
 destination: TAccountDestination;
+/**
+ * SPL Token or Token-2022 program matching the asset kind: SPL Token for
+ * `PRIZE_TOKEN` and `PRIZE_NFT`, Token-2022 for `PRIZE_TOKEN_2022`, and
+ * either for `PRIZE_QUOTE_TOKEN`.
+ */
 tokenProgram?: TAccountTokenProgram;
 assetIndex: ReclaimTokenPrizeInstructionDataArgs["assetIndex"];
 }
@@ -76,13 +118,43 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedReclaimTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template authority; must sign and match the authority recorded on the
+ * template. Owns `destination`.
+ */
 authority: TAccountMetas[0];
+/**
+ * Template treasury, validated by its PDA seeds; supplies the status,
+ * pending-opening count, and remaining inventory of the bundle.
+ */
 template: TAccountMetas[1];
+/**
+ * Template's box mint, validated against the template; its live supply
+ * must be zero to reclaim from an active bundle.
+ */
 boxMint: TAccountMetas[2];
+/**
+ * Bundle PDA of this template; records the asset as reclaimed and signs
+ * the transfer as escrow owner.
+ */
 bundle: TAccountMetas[3];
+/** Prize mint; must match the mint recorded in the bundle's asset slot. */
 mint: TAccountMetas[4];
+/**
+ * Bundle's associated token account for `mint` under `token_program`;
+ * source of the transfer.
+ */
 escrow: TAccountMetas[5];
+/**
+ * Authority's existing associated token account for `mint` under
+ * `token_program`; receives the tokens.
+ */
 destination: TAccountMetas[6];
+/**
+ * SPL Token or Token-2022 program matching the asset kind: SPL Token for
+ * `PRIZE_TOKEN` and `PRIZE_NFT`, Token-2022 for `PRIZE_TOKEN_2022`, and
+ * either for `PRIZE_QUOTE_TOKEN`.
+ */
 tokenProgram: TAccountMetas[7];
 };
 data: ReclaimTokenPrizeInstructionData; };

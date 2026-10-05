@@ -18,52 +18,73 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Returns an undrawn Bubblegum compressed NFT from bundle escrow to the
+/// template authority.
+///
+/// The template authority signs. A funding bundle is always reclaimable; an
+/// active bundle is reclaimable only after the template is retired, the box
+/// supply is zero, no openings are pending, and its copy was never drawn. Sets
+/// the slot's reclaimed bit so it cannot be reclaimed twice.
 /// CPI call for the `reclaim_compressed_nft_prize` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct ReclaimCompressedNftPrize<'account> {
 	/// CPI account `authority`.
+	/// Template authority; receives the leaf.
 	/// Required privileges: read-only and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA of this program.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// The template's Token-2022 box mint; its supply must be zero to reclaim
+	/// from an active bundle.
 	/// Required privileges: read-only.
 	pub box_mint: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Bundle PDA of `template` that owns the leaf, signs the transfer, and
+	/// records the reclaim.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `treeConfig`.
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	/// Required privileges: read-only.
 	pub tree_config: &'account AccountView,
 
 	/// CPI account `merkleTree`.
+	/// Concurrent Merkle tree holding the leaf; with `nonce` it must derive the
+	/// slot's stored asset ID.
 	/// Required privileges: writable.
 	pub merkle_tree: &'account AccountView,
 
 	/// CPI account `bubblegumProgram`.
+	/// Metaplex Bubblegum program, invoked to transfer the leaf.
 	/// Required privileges: read-only.
 	pub bubblegum_program: &'account AccountView,
 
 	/// CPI account `logWrapper`.
+	/// SPL Noop program, forwarded to Bubblegum as its log wrapper.
 	/// Required privileges: read-only.
 	pub log_wrapper: &'account AccountView,
 
 	/// CPI account `compressionProgram`.
+	/// SPL Account Compression program, forwarded to Bubblegum.
 	/// Required privileges: read-only.
 	pub compression_program: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, forwarded to Bubblegum.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
 	/// CPI account `proofAccounts`.
-	/// Merkle proof nodes in leaf-to-root order.
+	/// Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+	/// canopy.
 	/// Required privileges: read-only.
 	pub proof_accounts: &'account AccountView,
 
@@ -75,21 +96,31 @@ pub struct ReclaimCompressedNftPrize<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct ReclaimCompressedNftPrizeIx {
 	/// Instruction argument `assetIndex`.
+	/// Bundle slot holding the compressed NFT. Must be below the bundle's
+	/// `funded_assets` and hold the asset ID derived from `merkle_tree` and
+	/// `nonce`.
 	pub asset_index: u8,
 
 	/// Instruction argument `root`.
+	/// Merkle root the proof was built against; Bubblegum verifies the leaf
+	/// against it.
 	pub root: [u8; 32],
 
 	/// Instruction argument `dataHash`.
+	/// Bubblegum hash of the leaf's metadata, forwarded to rebuild the leaf.
 	pub data_hash: [u8; 32],
 
 	/// Instruction argument `creatorHash`.
+	/// Bubblegum hash of the leaf's creators, forwarded to rebuild the leaf.
 	pub creator_hash: [u8; 32],
 
 	/// Instruction argument `nonce`.
+	/// Leaf nonce. With `merkle_tree` it derives the asset ID, which must match
+	/// the slot's stored asset.
 	pub nonce: u64,
 
 	/// Instruction argument `index`.
+	/// Leaf position in `merkle_tree`, forwarded to Bubblegum.
 	pub index: u32,
 }
 

@@ -39,7 +39,9 @@ export function getSealTemplateInstructionDataCodec(): FixedSizeCodec<SealTempla
 }
 
 export type SealTemplateInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs. */
+authority: TAccountAuthority;
+/** Draft template PDA whose status becomes live. */
 template: TAccountTemplate;
 }
 
@@ -62,7 +64,9 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedSealTemplateInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs. */
 authority: TAccountMetas[0];
+/** Draft template PDA whose status becomes live. */
 template: TAccountMetas[1];
 };
 data: SealTemplateInstructionData; };

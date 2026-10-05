@@ -46,8 +46,8 @@ final class TemplatePlanException implements Exception {
   String toString() => 'TemplatePlanException(${code.name}): $message';
 }
 
-/// A typed treasury asset. Ownership, extensions, plugins, and Merkle proofs
-/// are validated by the corresponding on-chain transfer adapter.
+/// One compressed NFT leaf deposited into a prize pool, with the metadata
+/// preimage and Merkle proof needed to admit and deposit it on chain.
 final class PrizePoolItem {
   PrizePoolItem({
     required this.asset,
@@ -203,12 +203,14 @@ final class TemplatePlan {
       settlementBountyLamports ?? BigInt.zero,
       'settlement bounty',
     );
+
     if (bundles.isEmpty || bundles.length > maxTemplateBundles) {
       throw TemplatePlanException(
         TemplatePlanErrorCode.invalidBundleCount,
         'a template needs between one and $maxTemplateBundles bundles',
       );
     }
+
     var totalBundles = BigInt.zero;
     final treasury = <Address?, BigInt>{};
     final uniqueAssets = <Address>{};
@@ -224,14 +226,17 @@ final class TemplatePlan {
         );
       }
       totalBundles = _u64(totalBundles + bundle.quantity, 'total bundles');
+
       if (totalBundles > _ticketMax) {
         throw const TemplatePlanException(
           TemplatePlanErrorCode.ticketLimitExceeded,
           'total bundle copies cannot exceed u32::MAX',
         );
       }
+
       final seen = <Address?>{};
       var prizePoolCount = 0;
+
       for (final asset in bundle.assets) {
         if (asset.kind == PrizeKind.prizePool) {
           prizePoolCount++;
@@ -244,6 +249,7 @@ final class TemplatePlan {
               'a bundle supports one prize pool with exactly one item per ticket',
             );
           }
+
           for (final item in asset.poolItems) {
             if (item.metadataMutable ||
                 item.asset.value == '11111111111111111111111111111111' ||
@@ -271,6 +277,7 @@ final class TemplatePlan {
             }
           }
         }
+
         _u64(asset.amount, 'prize amount');
         if (asset.amount == BigInt.zero ||
             !seen.add(asset.identifier) ||

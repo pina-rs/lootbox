@@ -8,15 +8,27 @@
 	clippy::too_many_arguments
 )]
 
+/// Close a prize pool that holds no outstanding leaves.
+///
+/// The template authority signs. Accepts an empty unsealed pool, a sealed pool
+/// in a funding bundle whose every item was reclaimed, or a sealed pool in a
+/// retired active bundle whose every item was claimed or reclaimed. The first
+/// two require an unlocked treasury and clear the bundle slot. The pool
+/// account closes and its rent returns to the authority.
 pub const CLOSE_PRIZE_POOL_DISCRIMINATOR: u8 = 50u8;
 pub const CLOSE_PRIZE_POOL_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ClosePrizePool {
+	/// Template authority; signs and receives the pool rent.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA that owns `bundle`.
 	pub template: solana_pubkey::Pubkey,
+	/// Bundle PDA; its pool slot is cleared unless the pool is terminal in an
+	/// active bundle.
 	pub bundle: solana_pubkey::Pubkey,
+	/// `PrizePoolState` PDA, closed here.
 	pub prize_pool: solana_pubkey::Pubkey,
 }
 

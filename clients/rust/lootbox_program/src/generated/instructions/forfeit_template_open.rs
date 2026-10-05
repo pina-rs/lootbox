@@ -8,6 +8,13 @@
 	clippy::too_many_arguments
 )]
 
+/// Forfeits the FIFO head opening after its reveal timed out, so later
+/// openings can allocate.
+///
+/// Permissionless: any signer may call once `RANDOMNESS_TIMEOUT_SLOTS` slots
+/// have passed since the committed seed slot and the randomness is still
+/// unrevealed. Consumes no inventory, never remints the box, and never changes
+/// the beneficiary; pays any configured settlement bounty to the beneficiary.
 pub const FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 36u8;
 pub const FORFEIT_TEMPLATE_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
@@ -19,11 +26,21 @@ pub struct ForfeitTemplateOpen {
 	pub caller: solana_pubkey::Pubkey,
 	/// Bound destination of the forfeit bounty: the creator-funded service
 	/// budget compensates the beneficiary whose box burned, never the crank.
+	/// Must match the opening's stored beneficiary.
 	pub beneficiary: solana_pubkey::Pubkey,
+	/// Template treasury, validated by its PDA seeds; its pending-opening count
+	/// falls and its FIFO allocation cursor advances.
 	pub template: solana_pubkey::Pubkey,
+	/// Service vault PDA at `["service-vault", template]`; validated only when
+	/// receipts or bounties are enabled, and pays the settlement bounty.
 	pub service_vault: solana_pubkey::Pubkey,
+	/// Pending opening at the FIFO head, validated by its PDA seeds; moves to
+	/// the forfeited status and is not closed here.
 	pub opening: solana_pubkey::Pubkey,
+	/// Switchboard randomness bound to the opening; must still be unrevealed at
+	/// the committed seed slot, which starts the timeout.
 	pub randomness: solana_pubkey::Pubkey,
+	/// System program, used for the bounty transfer.
 	pub system_program: solana_pubkey::Pubkey,
 }
 

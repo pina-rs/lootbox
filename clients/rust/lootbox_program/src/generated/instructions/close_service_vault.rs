@@ -8,16 +8,29 @@
 	clippy::too_many_arguments
 )]
 
+/// Returns a retired, fully settled template's service vault balance to its
+/// authority.
+///
+/// The template authority signs. The template must have receipts or bounties
+/// configured, be retired, have no pending openings, and have zero box supply.
+/// The whole balance, including unused prepaid service funds and the rent
+/// reserve, moves to the authority; an empty vault is a no-op.
 pub const CLOSE_SERVICE_VAULT_DISCRIMINATOR: u8 = 38u8;
 pub const CLOSE_SERVICE_VAULT_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct CloseServiceVault {
+	/// Template authority; signs and receives the vault balance.
 	pub authority: solana_pubkey::Pubkey,
+	/// Retired template PDA with no pending openings.
 	pub template: solana_pubkey::Pubkey,
+	/// Template's box mint; its supply must be zero.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// System-owned service vault PDA from `["service-vault", template]` with
+	/// the template's stored bump; signs the transfer out.
 	pub service_vault: solana_pubkey::Pubkey,
+	/// System program, invoked for the lamport transfer.
 	pub system_program: solana_pubkey::Pubkey,
 }
 

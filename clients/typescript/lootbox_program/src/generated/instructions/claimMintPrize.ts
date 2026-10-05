@@ -22,9 +22,21 @@ export function getClaimMintPrizeDiscriminator2Bytes(): ReadonlyUint8Array { ret
 export type ClaimMintPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountRecipient extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountDestination extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountRecipient extends string ? ReadonlyAccount<TAccountRecipient> : TAccountRecipient, TAccountMint extends string ? WritableAccount<TAccountMint> : TAccountMint, TAccountDestination extends string ? WritableAccount<TAccountDestination> : TAccountDestination, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type ClaimMintPrizeInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number;  };
+export type ClaimMintPrizeInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Asset slot within the selected bundle; must be below its asset count,
+ * hold a `PRIZE_MINT_BADGE` asset with an amount of one, and be unclaimed
+ * by this opening.
+ */
+assetIndex: number;  };
 
-export type ClaimMintPrizeInstructionDataArgs = { assetIndex: number;  };
+export type ClaimMintPrizeInstructionDataArgs = {
+/**
+ * Asset slot within the selected bundle; must be below its asset count,
+ * hold a `PRIZE_MINT_BADGE` asset with an amount of one, and be unclaimed
+ * by this opening.
+ */
+assetIndex: number;  };
 
 export function getClaimMintPrizeInstructionDataEncoder(): FixedSizeEncoder<ClaimMintPrizeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 42, migrationVersion: 0 }));
@@ -39,12 +51,38 @@ export function getClaimMintPrizeInstructionDataCodec(): FixedSizeCodec<ClaimMin
 }
 
 export type ClaimMintPrizeInput<TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountRecipient extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountDestination extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  template: TAccountTemplate;
+  /**
+ * Template treasury, validated by its PDA seeds; binds the bundle and the
+ * opening.
+ */
+template: TAccountTemplate;
+/**
+ * Allocated opening of this template, validated by its PDA seeds; records
+ * the claimed asset.
+ */
 opening: TAccountOpening;
+/**
+ * Bundle PDA the opening selected; advances the asset's release count and
+ * signs as mint authority.
+ */
 bundle: TAccountBundle;
+/**
+ * Opening beneficiary; rejected unless it matches the stored beneficiary.
+ * The badge goes to `destination`, not this account.
+ */
 recipient: TAccountRecipient;
+/**
+ * Badge mint recorded in the bundle's asset slot; must have zero decimals,
+ * the bundle as mint authority, no freeze authority, and only metadata
+ * extensions. Its mint authority is revoked after the final copy.
+ */
 mint: TAccountMint;
+/**
+ * Beneficiary's existing associated token account for `mint` under
+ * `token_program`; receives one badge.
+ */
 destination: TAccountDestination;
+/** SPL Token or Token-2022 program that owns `mint`. */
 tokenProgram?: TAccountTokenProgram;
 assetIndex: ClaimMintPrizeInstructionDataArgs["assetIndex"];
 }
@@ -75,12 +113,38 @@ return Object.freeze({ accounts: [getAccountMeta("template", accounts.template),
 
 export type ParsedClaimMintPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template treasury, validated by its PDA seeds; binds the bundle and the
+ * opening.
+ */
 template: TAccountMetas[0];
+/**
+ * Allocated opening of this template, validated by its PDA seeds; records
+ * the claimed asset.
+ */
 opening: TAccountMetas[1];
+/**
+ * Bundle PDA the opening selected; advances the asset's release count and
+ * signs as mint authority.
+ */
 bundle: TAccountMetas[2];
+/**
+ * Opening beneficiary; rejected unless it matches the stored beneficiary.
+ * The badge goes to `destination`, not this account.
+ */
 recipient: TAccountMetas[3];
+/**
+ * Badge mint recorded in the bundle's asset slot; must have zero decimals,
+ * the bundle as mint authority, no freeze authority, and only metadata
+ * extensions. Its mint authority is revoked after the final copy.
+ */
 mint: TAccountMetas[4];
+/**
+ * Beneficiary's existing associated token account for `mint` under
+ * `token_program`; receives one badge.
+ */
 destination: TAccountMetas[5];
+/** SPL Token or Token-2022 program that owns `mint`. */
 tokenProgram: TAccountMetas[6];
 };
 data: ClaimMintPrizeInstructionData; };

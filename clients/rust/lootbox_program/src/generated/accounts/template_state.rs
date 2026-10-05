@@ -16,48 +16,83 @@ pub struct TemplateState {
 /// Immutable template terms and the live finite inventory.
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Creator that signs every administrative instruction and seeds this PDA.
+	/// Receives staging rent, reclaimed inventory, and the closed service vault.
 	pub authority: solana_pubkey::Pubkey,
+	/// Zero-decimal Token-2022 mint whose tokens are unopened boxes. This PDA
+	/// holds its mint authority until `lockTreasury` revokes it.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// Switchboard On-Demand program, mainnet or devnet, fixed at creation.
+	/// Every randomness account must be owned by this program.
 	pub oracle_program: solana_pubkey::Pubkey,
+	/// Nonzero Switchboard queue that every opening's randomness must use.
 	pub oracle_queue: solana_pubkey::Pubkey,
+	/// Creator-chosen identifier that seeds this PDA beside `authority`.
 	pub id: u64,
+	/// Non-negative reveal time in unix seconds. Openings fail before it, and
+	/// `lockTreasury` must run strictly before it.
 	pub opens_at: i64,
 	/// Timestamp at which the creator irreversibly fixed inventory and supply.
 	/// Zero means the treasury is still editable.
 	pub locked_at: i64,
 	/// Total bundle tickets ever activated. This is the lifetime issuance cap.
+	/// It never decreases, never exceeds `u32::MAX`, and equals the fixed box
+	/// supply once the treasury is locked.
 	pub total_bundles: u64,
+	/// Boxes ever minted by `mintTemplateBoxes`; burns do not reduce it. Must
+	/// equal `total_bundles` before the treasury can lock.
 	pub total_minted: u64,
+	/// Undrawn tickets across all activated bundles, equal to the sum of
+	/// `remaining`. Activation adds a bundle's quantity; each allocation
+	/// removes one.
 	pub remaining_bundles: u64,
+	/// Burned boxes awaiting allocation or forfeiture. A request adds one; an
+	/// allocation or forfeiture removes one.
 	pub pending_openings: u64,
+	/// Sequence assigned to the next opening request; increments per request.
 	pub next_request: u64,
+	/// Sequence of the FIFO head. Allocation and forfeiture accept only the
+	/// opening with this sequence, then increment it.
 	pub next_allocation: u64,
 	/// Increments after every activated append; snapshotted by each opening.
 	pub revision: u64,
 	/// Incremental commitment to every activated bundle in append order.
 	pub manifest_accumulator: [u8; 32],
 	/// Final treasury commitment. Zero until the treasury is locked.
+	/// Copied into every result receipt.
 	pub manifest_hash: [u8; 32],
-	/// Reward paid from the creator-funded service vault to a successful crank.
+	/// Lamports paid from the creator-funded service vault to the payer of a
+	/// successful fulfillment or to the beneficiary of a forfeiture. Zero
+	/// disables bounties; retiring an unlocked template resets it to zero.
 	pub settlement_bounty_lamports: u64,
 	/// Rent prepaid for each optional immutable result receipt at market lock.
+	/// Zero when receipts are disabled or the treasury is unlocked.
 	pub result_receipt_rent_lamports: u64,
 	/// Receipt allocations still covered by the isolated service vault.
+	/// Set to `total_bundles` at lock when receipts are enabled.
 	pub remaining_result_receipts: u64,
 	/// Settlement or forfeiture cranks still covered by the service vault.
+	/// Set to `total_bundles` at lock when the bounty is nonzero.
 	pub remaining_settlement_bounties: u64,
 	/// Null-padded UTF-8 display name; never used for authorization.
+	/// Must be nonblank and match the box mint's metadata name at creation.
 	pub name: [u8; 32],
 	/// Null-padded UTF-8 metadata URI; terms on chain remain authoritative.
+	/// Must match the box mint's metadata URI at creation.
 	pub uri: [u8; 200],
+	/// Number of activated bundles, the length of `remaining`, and the index
+	/// of the next bundle PDA. At most 1,024.
 	pub bundle_count: u32,
 	/// 0 draft, 1 live, 2 retired. `locked_at` independently records the
 	/// irreversible market lock so retirement never erases that fact.
 	pub status: u8,
 	/// Whether allocation creates a permanent result receipt at creator expense.
+	/// Retiring an unlocked template clears it because no receipt was funded.
 	pub result_receipts_enabled: bool,
+	/// Canonical bump of this template PDA.
 	pub bump: u8,
 	/// Canonical service vault bump, fixed when the treasury is locked.
+	/// Zero before the lock.
 	pub service_vault_bump: u8,
 	/// Undrawn inventory per append-only bundle. Only activated slots occupy
 	/// account bytes; slots are never removed because openings snapshot indices.

@@ -22,9 +22,13 @@ export function getClaimExclusiveNftDiscriminator2Bytes(): ReadonlyUint8Array { 
 export type ClaimExclusiveNftInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountExclusiveAttachment extends string | AccountMeta<string> = string, TAccountFeeVault extends string | AccountMeta<string> = string, TAccountExclusiveCollection extends string | AccountMeta<string> = string, TAccountRecipient extends string | AccountMeta<string> = string, TAccountTreeConfig extends string | AccountMeta<string> = string, TAccountMerkleTree extends string | AccountMeta<string> = string, TAccountCoreCollection extends string | AccountMeta<string> = string, TAccountCoreCpiSigner extends string | AccountMeta<string> = string, TAccountBubblegumProgram extends string | AccountMeta<string> = string, TAccountCoreProgram extends string | AccountMeta<string> = string, TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountCompressionProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountExclusiveAttachment extends string ? WritableAccount<TAccountExclusiveAttachment> : TAccountExclusiveAttachment, TAccountFeeVault extends string ? WritableAccount<TAccountFeeVault> : TAccountFeeVault, TAccountExclusiveCollection extends string ? WritableAccount<TAccountExclusiveCollection> : TAccountExclusiveCollection, TAccountRecipient extends string ? ReadonlyAccount<TAccountRecipient> : TAccountRecipient, TAccountTreeConfig extends string ? WritableAccount<TAccountTreeConfig> : TAccountTreeConfig, TAccountMerkleTree extends string ? WritableAccount<TAccountMerkleTree> : TAccountMerkleTree, TAccountCoreCollection extends string ? WritableAccount<TAccountCoreCollection> : TAccountCoreCollection, TAccountCoreCpiSigner extends string ? ReadonlyAccount<TAccountCoreCpiSigner> : TAccountCoreCpiSigner, TAccountBubblegumProgram extends string ? ReadonlyAccount<TAccountBubblegumProgram> : TAccountBubblegumProgram, TAccountCoreProgram extends string ? ReadonlyAccount<TAccountCoreProgram> : TAccountCoreProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountCompressionProgram extends string ? ReadonlyAccount<TAccountCompressionProgram> : TAccountCompressionProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type ClaimExclusiveNftInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number;  };
+export type ClaimExclusiveNftInstructionData = { discriminator: number; migrationVersion: number;
+/** Manifest slot bound to the attachment. */
+assetIndex: number;  };
 
-export type ClaimExclusiveNftInstructionDataArgs = { assetIndex: number;  };
+export type ClaimExclusiveNftInstructionDataArgs = {
+/** Manifest slot bound to the attachment. */
+assetIndex: number;  };
 
 export function getClaimExclusiveNftInstructionDataEncoder(): FixedSizeEncoder<ClaimExclusiveNftInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 58, migrationVersion: 0 }));
@@ -39,23 +43,50 @@ export function getClaimExclusiveNftInstructionDataCodec(): FixedSizeCodec<Claim
 }
 
 export type ClaimExclusiveNftInput<TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountExclusiveAttachment extends InstructionAccountInput = InstructionAccountInput, TAccountFeeVault extends InstructionAccountInput = InstructionAccountInput, TAccountExclusiveCollection extends InstructionAccountInput = InstructionAccountInput, TAccountRecipient extends InstructionAccountInput = InstructionAccountInput, TAccountTreeConfig extends InstructionAccountInput = InstructionAccountInput, TAccountMerkleTree extends InstructionAccountInput = InstructionAccountInput, TAccountCoreCollection extends InstructionAccountInput = InstructionAccountInput, TAccountCoreCpiSigner extends InstructionAccountInput = InstructionAccountInput, TAccountBubblegumProgram extends InstructionAccountInput = InstructionAccountInput, TAccountCoreProgram extends InstructionAccountInput = InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput = InstructionAccountInput, TAccountCompressionProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  template: TAccountTemplate;
+  /** Template PDA that owns the opening and bundle. */
+template: TAccountTemplate;
+/**
+ * Allocated opening PDA; its claim bit is set and its entropy seeds the
+ * traits.
+ */
 opening: TAccountOpening;
+/** Bundle PDA the opening was allocated to; its claimed count advances. */
 bundle: TAccountBundle;
+/** Attachment PDA committed in the bundle slot; its `minted` advances. */
 exclusiveAttachment: TAccountExclusiveAttachment;
-/** Pays Bubblegum's per-mint fee from the creator's escrow. */
+/**
+ * Pays Bubblegum's per-mint fee from the creator's escrow.
+ *
+ * Canonical `["exclusive-fee-vault", attachment]` PDA; signs as payer.
+ */
 feeVault: TAccountFeeVault;
+/**
+ * Published collection PDA named by the attachment; signs as tree and
+ * collection authority and advances its serial.
+ */
 exclusiveCollection: TAccountExclusiveCollection;
 /** Must be the opening's bound beneficiary; becomes the leaf owner. */
 recipient: TAccountRecipient;
+/**
+ * Canonical Bubblegum tree config PDA of `merkle_tree`; supplies the leaf
+ * nonce and receives the mint fee.
+ */
 treeConfig: TAccountTreeConfig;
+/** The collection's `active_tree`, which receives the new leaf. */
 merkleTree: TAccountMerkleTree;
+/** The collection's Core collection, which the leaf joins. */
 coreCollection: TAccountCoreCollection;
+/** Bubblegum's fixed Core CPI signer PDA. */
 coreCpiSigner: TAccountCoreCpiSigner;
+/** Bubblegum program, invoked to mint the leaf. */
 bubblegumProgram: TAccountBubblegumProgram;
+/** Metaplex Core program, invoked by Bubblegum for the collection. */
 coreProgram: TAccountCoreProgram;
+/** MPL Noop program used by Bubblegum as its log wrapper. */
 logWrapper: TAccountLogWrapper;
+/** MPL Account Compression program that owns `merkle_tree`. */
 compressionProgram: TAccountCompressionProgram;
+/** System program, passed to Bubblegum. */
 systemProgram?: TAccountSystemProgram;
 assetIndex: ClaimExclusiveNftInstructionDataArgs["assetIndex"];
 }
@@ -86,23 +117,50 @@ return Object.freeze({ accounts: [getAccountMeta("template", accounts.template),
 
 export type ParsedClaimExclusiveNftInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template PDA that owns the opening and bundle. */
 template: TAccountMetas[0];
+/**
+ * Allocated opening PDA; its claim bit is set and its entropy seeds the
+ * traits.
+ */
 opening: TAccountMetas[1];
+/** Bundle PDA the opening was allocated to; its claimed count advances. */
 bundle: TAccountMetas[2];
+/** Attachment PDA committed in the bundle slot; its `minted` advances. */
 exclusiveAttachment: TAccountMetas[3];
-/** Pays Bubblegum's per-mint fee from the creator's escrow. */
+/**
+ * Pays Bubblegum's per-mint fee from the creator's escrow.
+ *
+ * Canonical `["exclusive-fee-vault", attachment]` PDA; signs as payer.
+ */
 feeVault: TAccountMetas[4];
+/**
+ * Published collection PDA named by the attachment; signs as tree and
+ * collection authority and advances its serial.
+ */
 exclusiveCollection: TAccountMetas[5];
 /** Must be the opening's bound beneficiary; becomes the leaf owner. */
 recipient: TAccountMetas[6];
+/**
+ * Canonical Bubblegum tree config PDA of `merkle_tree`; supplies the leaf
+ * nonce and receives the mint fee.
+ */
 treeConfig: TAccountMetas[7];
+/** The collection's `active_tree`, which receives the new leaf. */
 merkleTree: TAccountMetas[8];
+/** The collection's Core collection, which the leaf joins. */
 coreCollection: TAccountMetas[9];
+/** Bubblegum's fixed Core CPI signer PDA. */
 coreCpiSigner: TAccountMetas[10];
+/** Bubblegum program, invoked to mint the leaf. */
 bubblegumProgram: TAccountMetas[11];
+/** Metaplex Core program, invoked by Bubblegum for the collection. */
 coreProgram: TAccountMetas[12];
+/** MPL Noop program used by Bubblegum as its log wrapper. */
 logWrapper: TAccountMetas[13];
+/** MPL Account Compression program that owns `merkle_tree`. */
 compressionProgram: TAccountMetas[14];
+/** System program, passed to Bubblegum. */
 systemProgram: TAccountMetas[15];
 };
 data: ClaimExclusiveNftInstructionData; };

@@ -8,24 +8,49 @@
 	clippy::too_many_arguments
 )]
 
+/// Closes a delivered or forfeited template opening and its Switchboard
+/// accounts.
+///
+/// Permissionless: no signer is required. The opening PDA signs Switchboard's
+/// `randomness_close`, which returns the randomness rent to the opening, and
+/// the opening is then closed to its recorded `rent_refund` account.
 pub const CLOSE_TEMPLATE_OPENING_DISCRIMINATOR: u8 = 24u8;
 pub const CLOSE_TEMPLATE_OPENING_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct CloseTemplateOpening {
+	/// Opening's recorded `rent_refund`, the original request payer; receives
+	/// the opening and randomness rent.
 	pub rent_refund: solana_pubkey::Pubkey,
+	/// Template PDA that owns the opening and pins the oracle program and
+	/// queue.
 	pub template: solana_pubkey::Pubkey,
+	/// Opening PDA from `["template-opening", template, randomness]` with
+	/// status delivered or forfeited; signs the oracle close and is closed here.
 	pub opening: solana_pubkey::Pubkey,
+	/// Opening's Switchboard randomness account, whose authority must be the
+	/// opening and whose queue must match the template; closed by the oracle.
 	pub randomness: solana_pubkey::Pubkey,
+	/// Wrapped-SOL associated token account of `randomness`; closed by the
+	/// oracle.
 	pub reward_escrow: solana_pubkey::Pubkey,
+	/// Switchboard On-Demand program; must equal the template's
+	/// `oracle_program`.
 	pub oracle_program: solana_pubkey::Pubkey,
+	/// Switchboard program state, passed through to the oracle.
 	pub oracle_program_state: solana_pubkey::Pubkey,
+	/// Switchboard address lookup table, passed through to the oracle.
 	pub oracle_lut: solana_pubkey::Pubkey,
+	/// Switchboard lookup-table signer, passed through to the oracle.
 	pub oracle_lut_signer: solana_pubkey::Pubkey,
+	/// System program required by the oracle close.
 	pub system_program: solana_pubkey::Pubkey,
+	/// SPL Token program that owns the reward escrow.
 	pub token_program: solana_pubkey::Pubkey,
+	/// Wrapped-SOL mint backing the reward escrow.
 	pub wrapped_sol_mint: solana_pubkey::Pubkey,
+	/// Address Lookup Table program required by the oracle close.
 	pub address_lookup_table_program: solana_pubkey::Pubkey,
 }
 

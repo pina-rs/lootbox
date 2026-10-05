@@ -4721,9 +4721,9 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
 name = "pina"
-version = "0.21.0"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf3c682d04204791549744f8646d0dd7a0bf987cca79995aa5ed493237f01cb0"
+checksum = "7fdb941c462859804a8e526b144c7d455bb577658a819c5ef328a38231ee49d9"
 dependencies = [
  "pastey",
  "pina_macros",
@@ -4755,9 +4755,9 @@ dependencies = [
 
 [[package]]
 name = "pina_macros"
-version = "0.21.0"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01cace5e0701d6d571d4506a14cb0fb7d8c813e4b3cec611ff9dd003db7c8001"
+checksum = "cf38a3ee7dea623d683c4aed454d475015143606c802f74e02d1d5359c6c430b"
 dependencies = [
  "darling 0.24.1",
  "heck 0.5.0",
@@ -4769,9 +4769,9 @@ dependencies = [
 
 [[package]]
 name = "pina_test"
-version = "0.21.0"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "772c11c27295c420bc1cc80ac9c10908a24b61abfd525940c83f8db564b9af31"
+checksum = "0e1c5d0191541295e88fb1540b51999834bcc8dd0fd667a7d320eeeb9d551f3f"
 dependencies = [
  "base64 0.23.1",
  "serde_json",
@@ -11871,9 +11871,9 @@ dependencies = [
 
 [[package]]
 name = "yoke-derive"
-version = "0.8.3"
+version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33811428bee40dbceb6d545e95754741d17a6aef9a4849f0fd62e2ba4f412a78"
+checksum = "ec8ebde2db3681e8c9980cc27822030e68752690ddfa9473e739aeb4dbde6d71"
 dependencies = [
  "proc-macro2",
  "quote",

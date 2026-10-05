@@ -570,6 +570,7 @@ export default function LaunchApp() {
 	const [options, setOptions] = useState<readonly WalletOption[]>([]);
 	const [wallet, setWallet] = useState<ConnectedWallet | null>(null);
 	const [balance, setBalance] = useState<bigint | null>(null);
+
 	const [pending, setPending] = useState<Address | null>(null);
 	const [opening, dispatch] = useReducer(openingReducer, initialOpening);
 	const [claimSignature, setClaimSignature] = useState<string | null>(null);
@@ -836,6 +837,7 @@ export default function LaunchApp() {
 				status: "error",
 				message: "Enter a valid Solana address.",
 			});
+
 			return;
 		}
 
@@ -844,6 +846,7 @@ export default function LaunchApp() {
 				status: "error",
 				message: `Choose between 1 and ${boxes.toString()} boxes.`,
 			});
+
 			return;
 		}
 

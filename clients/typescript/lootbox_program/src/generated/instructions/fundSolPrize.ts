@@ -22,9 +22,13 @@ export function getFundSolPrizeDiscriminator2Bytes(): ReadonlyUint8Array { retur
 export type FundSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type FundSolPrizeInstructionData = { discriminator: number; migrationVersion: number; lamportsPerWin: bigint;  };
+export type FundSolPrizeInstructionData = { discriminator: number; migrationVersion: number;
+/** Lamports delivered per win; must be positive. */
+lamportsPerWin: bigint;  };
 
-export type FundSolPrizeInstructionDataArgs = { lamportsPerWin: number | bigint;  };
+export type FundSolPrizeInstructionDataArgs = {
+/** Lamports delivered per win; must be positive. */
+lamportsPerWin: number | bigint;  };
 
 export function getFundSolPrizeInstructionDataEncoder(): FixedSizeEncoder<FundSolPrizeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['lamportsPerWin', getU64Encoder()]]), (value) => ({ ...value, discriminator: 12, migrationVersion: 0 }));
@@ -39,9 +43,16 @@ export function getFundSolPrizeInstructionDataCodec(): FixedSizeCodec<FundSolPri
 }
 
 export type FundSolPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs and pays the escrowed lamports. */
+authority: TAccountAuthority;
+/**
+ * Template PDA that must be unlocked and not retired; read only by the
+ * handler.
+ */
 template: TAccountTemplate;
+/** Funding bundle PDA of this template that receives the lamports. */
 bundle: TAccountBundle;
+/** System program, invoked for the lamport transfer. */
 systemProgram?: TAccountSystemProgram;
 lamportsPerWin: FundSolPrizeInstructionDataArgs["lamportsPerWin"];
 }
@@ -72,9 +83,16 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedFundSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs and pays the escrowed lamports. */
 authority: TAccountMetas[0];
+/**
+ * Template PDA that must be unlocked and not retired; read only by the
+ * handler.
+ */
 template: TAccountMetas[1];
+/** Funding bundle PDA of this template that receives the lamports. */
 bundle: TAccountMetas[2];
+/** System program, invoked for the lamport transfer. */
 systemProgram: TAccountMetas[3];
 };
 data: FundSolPrizeInstructionData; };

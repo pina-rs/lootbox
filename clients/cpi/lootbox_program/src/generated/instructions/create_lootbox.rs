@@ -19,31 +19,44 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Creates a lootbox definition PDA and its SOL vault PDA, both paid for by the
+/// signing authority. The box mint must be an existing classic SPL mint with
+/// zero decimals, zero supply, the lootbox PDA as mint authority, and no freeze
+/// authority. The new lootbox is unsealed and has no outcomes.
 /// CPI call for the `create_lootbox` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct CreateLootbox<'account, 'argument> {
 	/// CPI account `authority`.
+	/// Creator that becomes the lootbox authority and pays rent for the lootbox
+	/// and vault accounts. Signer; seed of the lootbox PDA.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `boxMint`.
+	/// Existing classic SPL mint for the boxes. Must have zero decimals, zero
+	/// supply, the lootbox PDA as mint authority, and no freeze authority.
 	/// Required privileges: read-only.
 	pub box_mint: &'account AccountView,
 
 	/// CPI account `lootbox`.
+	/// Lootbox PDA `["lootbox", authority, id]`, created here.
 	/// Required privileges: writable.
 	pub lootbox: &'account AccountView,
 
 	/// CPI account `vault`.
+	/// Vault PDA `["vault", lootbox]`, created here; its post-creation balance
+	/// becomes the rent reserve.
 	/// Required privileges: writable.
 	pub vault: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked to create the lootbox and vault accounts.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
 	/// CPI account `tokenProgram`.
+	/// SPL Token program that owns the box mint.
 	/// Required privileges: read-only.
 	pub token_program: &'account AccountView,
 
@@ -55,21 +68,32 @@ pub struct CreateLootbox<'account, 'argument> {
 #[derive(Clone, Copy, Debug)]
 pub struct CreateLootboxIx<'argument> {
 	/// Instruction argument `id`.
+	/// Creator-chosen identifier that distinguishes this authority's lootboxes;
+	/// a seed of the lootbox PDA.
 	pub id: u64,
 
 	/// Instruction argument `maxSupply`.
+	/// Lifetime cap on boxes minted. Rejected with `SupplyExceeded` when zero.
 	pub max_supply: u64,
 
 	/// Instruction argument `oracleProgram`.
+	/// Switchboard On-Demand program that will own randomness accounts; must be
+	/// the mainnet or devnet program ID.
 	pub oracle_program: &'argument Address,
 
 	/// Instruction argument `oracleQueue`.
+	/// Switchboard queue that every opening's randomness must be bound to.
+	/// Stored as given; each opening checks it.
 	pub oracle_queue: &'argument Address,
 
 	/// Instruction argument `bump`.
+	/// Canonical bump of the lootbox PDA; rejected unless it equals the derived
+	/// canonical bump.
 	pub bump: u8,
 
 	/// Instruction argument `vaultBump`.
+	/// Canonical bump of the vault PDA; rejected unless it equals the derived
+	/// canonical bump.
 	pub vault_bump: u8,
 }
 

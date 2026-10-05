@@ -18,27 +18,40 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Bind the bundle's next slot to a published Exclusive NFT collection.
+///
+/// The template authority signs and pays while the treasury is unlocked and
+/// not retired, the bundle is funding, and the collection's attach window is
+/// open. Creates the attachment PDA, records the slot as kind
+/// `PRIZE_EXCLUSIVE_NFT` with its commitment, and tops up the fee vault to
+/// `quantity × 90,000` lamports plus its rent-exempt minimum.
 /// CPI call for the `attach_exclusive_nft` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct AttachExclusiveNft<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs and pays the attachment rent and fee top-up.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA; its treasury must be unlocked and not retired.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Funding bundle PDA of `template`; its next slot is bound here.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `exclusiveCollection`.
+	/// Published collection PDA whose attach window is open.
 	/// Required privileges: read-only.
 	pub exclusive_collection: &'account AccountView,
 
 	/// CPI account `exclusiveAttachment`.
+	/// Empty attachment PDA `["exclusive-attachment", bundle, asset_index]`,
+	/// created here.
 	/// Required privileges: writable.
 	pub exclusive_attachment: &'account AccountView,
 
@@ -49,6 +62,7 @@ pub struct AttachExclusiveNft<'account> {
 	pub fee_vault: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked to create the attachment and fund the vault.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
@@ -60,12 +74,17 @@ pub struct AttachExclusiveNft<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct AttachExclusiveNftIx {
 	/// Instruction argument `assetIndex`.
+	/// Manifest slot to bind; must equal the bundle's `funded_assets`.
 	pub asset_index: u8,
 
 	/// Instruction argument `bump`.
+	/// Canonical bump of the attachment PDA
+	/// `["exclusive-attachment", bundle, asset_index]`; any other value fails.
 	pub bump: u8,
 
 	/// Instruction argument `feeVaultBump`.
+	/// Canonical bump of the fee vault PDA
+	/// `["exclusive-fee-vault", attachment]`; any other value fails.
 	pub fee_vault_bump: u8,
 }
 

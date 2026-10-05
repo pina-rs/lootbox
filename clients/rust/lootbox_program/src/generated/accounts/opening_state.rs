@@ -15,13 +15,26 @@ pub struct OpeningState {
 /// Receipt binding a burned box to one unrevealed randomness commitment.
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Lootbox whose box was burned. A PDA seed.
 	pub lootbox: solana_pubkey::Pubkey,
+	/// Box owner that requested the opening. The only address that may receive
+	/// the reward, sign a refund, or receive the closed receipt's rent.
 	pub recipient: solana_pubkey::Pubkey,
+	/// Switchboard randomness account committed for this opening, with this
+	/// PDA as its authority. A PDA seed.
 	pub randomness: solana_pubkey::Pubkey,
+	/// Slot Switchboard recorded when the randomness was committed. The reveal
+	/// must match it, and a refund opens `RANDOMNESS_TIMEOUT_SLOTS` later.
 	pub seed_slot: u64,
+	/// Lamports paid to the recipient. Zero while pending; set to the selected
+	/// reward on settlement or to the minimum reward on refund.
 	pub reward_lamports: u64,
+	/// Index of the paid outcome in the lootbox's outcome table. Zero while
+	/// pending; on refund, the index of the minimum reward.
 	pub selected_outcome: u8,
+	/// Lifecycle status: `0` pending, `1` settled, `2` refunded.
 	pub status: u8,
+	/// Canonical bump of this opening PDA.
 	pub bump: u8,
 }
 

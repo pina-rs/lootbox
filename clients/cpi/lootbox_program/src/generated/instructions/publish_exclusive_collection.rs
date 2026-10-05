@@ -18,15 +18,22 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Freeze a draft collection's terms and open it to attachments.
+///
+/// The collection admin signs once. Requires an appended tree and valid
+/// layers, with every slot of unused layers zero. Stores `layers_hash` and
+/// marks the collection published; its tables can never change afterwards.
 /// CPI call for the `publish_exclusive_collection` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct PublishExclusiveCollection<'account> {
 	/// CPI account `admin`.
+	/// Collection admin; signs.
 	/// Required privileges: read-only and signer.
 	pub admin: &'account AccountView,
 
 	/// CPI account `exclusiveCollection`.
+	/// Draft collection PDA that becomes published.
 	/// Required privileges: writable.
 	pub exclusive_collection: &'account AccountView,
 

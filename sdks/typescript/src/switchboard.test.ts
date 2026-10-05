@@ -43,6 +43,7 @@ const randomness = address("7uG6Zb1ezT2kUvhuAB4TYy4fvrnjDvuQYdG8Ru6hPFaQ");
 const rpcUrl = "https://rpc.test";
 const revealUrl =
 	`${fixtures.gatewayReveal.gatewayUri}/gateway/api/v1/randomness_reveal`;
+
 const addressEncoder = getAddressEncoder();
 const base64 = getBase64Decoder();
 

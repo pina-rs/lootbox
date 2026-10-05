@@ -18,27 +18,43 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Hands an empty badge mint's authority to a funding bundle for mint-on-claim
+/// delivery.
+///
+/// The template authority, which must be the mint's current mint authority,
+/// signs. The mint needs zero supply and decimals, no freeze authority, and
+/// immutable metadata if any. Mint authority moves to the bundle PDA and one
+/// badge is recorded per win.
 /// CPI call for the `fund_mint_prize` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct FundMintPrize<'account> {
 	/// CPI account `authority`.
+	/// Template authority and current mint authority of `mint`; signs the
+	/// authority handoff.
 	/// Required privileges: read-only and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA that must be unlocked and not retired; read only by the
+	/// handler.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Funding bundle PDA of this template that becomes the mint authority.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `mint`.
+	/// Empty zero-decimal badge mint with no freeze authority; its mint
+	/// authority changes here.
 	/// Required privileges: writable.
 	pub mint: &'account AccountView,
 
 	/// CPI account `tokenProgram`.
+	/// SPL Token or Token-2022 program that owns `mint`, invoked to set the
+	/// authority.
 	/// Required privileges: read-only.
 	pub token_program: &'account AccountView,
 

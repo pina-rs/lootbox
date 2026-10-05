@@ -22,9 +22,75 @@ export function getCreateTemplateDiscriminator2Bytes(): ReadonlyUint8Array { ret
 export type CreateTemplateInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountBoxTokenProgram extends string | AccountMeta<string> = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, ...TRemainingAccounts]>;
 
-export type CreateTemplateInstructionData = { discriminator: number; migrationVersion: number; id: bigint; opensAt: bigint; oracleProgram: Address; oracleQueue: Address; name: ReadonlyUint8Array; uri: ReadonlyUint8Array; settlementBountyLamports: bigint; resultReceiptsEnabled: boolean; bump: number;  };
+export type CreateTemplateInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Creator-chosen identifier that seeds the template PDA beside the
+ * authority.
+ */
+id: bigint;
+/** Reveal time in unix seconds; rejected when negative. */
+opensAt: bigint;
+/** Switchboard On-Demand program; must be the mainnet or devnet ID. */
+oracleProgram: Address;
+/** Switchboard queue for every opening's randomness; must be nonzero. */
+oracleQueue: Address;
+/**
+ * Null-padded UTF-8 display name; must be nonblank, free of control
+ * characters, and equal to the box mint's metadata name.
+ */
+name: ReadonlyUint8Array;
+/**
+ * Null-padded UTF-8 metadata URI; may be empty, must be free of control
+ * characters, and must equal the box mint's metadata URI.
+ */
+uri: ReadonlyUint8Array;
+/**
+ * Lamports paid per fulfilled or forfeited opening from the service
+ * vault; zero disables bounties.
+ */
+settlementBountyLamports: bigint;
+/** Whether each allocation creates a creator-funded result receipt. */
+resultReceiptsEnabled: boolean;
+/**
+ * Canonical bump of the template PDA; rejected unless it equals the
+ * derived canonical bump.
+ */
+bump: number;  };
 
-export type CreateTemplateInstructionDataArgs = { id: number | bigint; opensAt: number | bigint; oracleProgram: Address; oracleQueue: Address; name: ReadonlyUint8Array; uri: ReadonlyUint8Array; settlementBountyLamports: number | bigint; resultReceiptsEnabled: boolean; bump: number;  };
+export type CreateTemplateInstructionDataArgs = {
+/**
+ * Creator-chosen identifier that seeds the template PDA beside the
+ * authority.
+ */
+id: number | bigint;
+/** Reveal time in unix seconds; rejected when negative. */
+opensAt: number | bigint;
+/** Switchboard On-Demand program; must be the mainnet or devnet ID. */
+oracleProgram: Address;
+/** Switchboard queue for every opening's randomness; must be nonzero. */
+oracleQueue: Address;
+/**
+ * Null-padded UTF-8 display name; must be nonblank, free of control
+ * characters, and equal to the box mint's metadata name.
+ */
+name: ReadonlyUint8Array;
+/**
+ * Null-padded UTF-8 metadata URI; may be empty, must be free of control
+ * characters, and must equal the box mint's metadata URI.
+ */
+uri: ReadonlyUint8Array;
+/**
+ * Lamports paid per fulfilled or forfeited opening from the service
+ * vault; zero disables bounties.
+ */
+settlementBountyLamports: number | bigint;
+/** Whether each allocation creates a creator-funded result receipt. */
+resultReceiptsEnabled: boolean;
+/**
+ * Canonical bump of the template PDA; rejected unless it equals the
+ * derived canonical bump.
+ */
+bump: number;  };
 
 export function getCreateTemplateInstructionDataEncoder(): FixedSizeEncoder<CreateTemplateInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['id', getU64Encoder()], ['opensAt', getI64Encoder()], ['oracleProgram', getAddressEncoder()], ['oracleQueue', getAddressEncoder()], ['name', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['uri', fixPinaPodEncoderSize(getBytesEncoder(), 200)], ['settlementBountyLamports', getU64Encoder()], ['resultReceiptsEnabled', getBooleanEncoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 10, migrationVersion: 0 }));
@@ -39,10 +105,21 @@ export function getCreateTemplateInstructionDataCodec(): FixedSizeCodec<CreateTe
 }
 
 export type CreateTemplateInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountBoxTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Creator; signs, pays the template rent, and becomes its authority. */
+authority: TAccountAuthority;
+/**
+ * Template PDA created here from `["template", authority, id]`; must be
+ * empty.
+ */
 template: TAccountTemplate;
+/**
+ * Empty Token-2022 box mint whose mint authority is the template PDA and
+ * whose metadata pointer and immutable metadata point at itself.
+ */
 boxMint: TAccountBoxMint;
+/** System program, invoked to create the template account. */
 systemProgram?: TAccountSystemProgram;
+/** Token-2022 program that must own the box mint. */
 boxTokenProgram?: TAccountBoxTokenProgram;
 id: CreateTemplateInstructionDataArgs["id"];
 opensAt: CreateTemplateInstructionDataArgs["opensAt"];
@@ -84,10 +161,21 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedCreateTemplateInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Creator; signs, pays the template rent, and becomes its authority. */
 authority: TAccountMetas[0];
+/**
+ * Template PDA created here from `["template", authority, id]`; must be
+ * empty.
+ */
 template: TAccountMetas[1];
+/**
+ * Empty Token-2022 box mint whose mint authority is the template PDA and
+ * whose metadata pointer and immutable metadata point at itself.
+ */
 boxMint: TAccountMetas[2];
+/** System program, invoked to create the template account. */
 systemProgram: TAccountMetas[3];
+/** Token-2022 program that must own the box mint. */
 boxTokenProgram: TAccountMetas[4];
 };
 data: CreateTemplateInstructionData; };

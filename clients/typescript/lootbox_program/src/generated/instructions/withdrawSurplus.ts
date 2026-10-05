@@ -22,9 +22,13 @@ export function getWithdrawSurplusDiscriminator2Bytes(): ReadonlyUint8Array { re
 export type WithdrawSurplusInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountLootbox extends string | AccountMeta<string> = string, TAccountVault extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountLootbox extends string ? ReadonlyAccount<TAccountLootbox> : TAccountLootbox, TAccountVault extends string ? WritableAccount<TAccountVault> : TAccountVault, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, ...TRemainingAccounts]>;
 
-export type WithdrawSurplusInstructionData = { discriminator: number; migrationVersion: number; lamports: bigint;  };
+export type WithdrawSurplusInstructionData = { discriminator: number; migrationVersion: number;
+/** Amount to withdraw, in lamports. Zero is accepted as a no-op. */
+lamports: bigint;  };
 
-export type WithdrawSurplusInstructionDataArgs = { lamports: number | bigint;  };
+export type WithdrawSurplusInstructionDataArgs = {
+/** Amount to withdraw, in lamports. Zero is accepted as a no-op. */
+lamports: number | bigint;  };
 
 export function getWithdrawSurplusInstructionDataEncoder(): FixedSizeEncoder<WithdrawSurplusInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['lamports', getU64Encoder()]]), (value) => ({ ...value, discriminator: 9, migrationVersion: 0 }));
@@ -39,9 +43,16 @@ export function getWithdrawSurplusInstructionDataCodec(): FixedSizeCodec<Withdra
 }
 
 export type WithdrawSurplusInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Lootbox authority. Writable signer; must match the stored authority and
+ * receives the lamports.
+ */
+authority: TAccountAuthority;
+/** Lootbox whose vault is drawn from. */
 lootbox: TAccountLootbox;
+/** Vault PDA of `lootbox` that pays the withdrawal. Writable. */
 vault: TAccountVault;
+/** The lootbox's box mint, read for the live supply in the liability check. */
 boxMint: TAccountBoxMint;
 lamports: WithdrawSurplusInstructionDataArgs["lamports"];
 }
@@ -69,9 +80,16 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedWithdrawSurplusInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Lootbox authority. Writable signer; must match the stored authority and
+ * receives the lamports.
+ */
 authority: TAccountMetas[0];
+/** Lootbox whose vault is drawn from. */
 lootbox: TAccountMetas[1];
+/** Vault PDA of `lootbox` that pays the withdrawal. Writable. */
 vault: TAccountMetas[2];
+/** The lootbox's box mint, read for the live supply in the liability check. */
 boxMint: TAccountMetas[3];
 };
 data: WithdrawSurplusInstructionData; };

@@ -18,28 +18,43 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Create a draft Exclusive Lootbox NFT collection and its Core collection.
+///
+/// The admin signs and pays. Validates the text fields, a layer count from 1
+/// through 12, and an attach window that opens before it closes. Creates the
+/// `ExclusiveCollectionState` PDA and a Core collection, named after the
+/// prefix with the URI `{base_uri}collection.json`, whose update authority is
+/// that PDA.
 /// CPI call for the `create_exclusive_collection` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct CreateExclusiveCollection<'account> {
 	/// CPI account `admin`.
+	/// Collection admin; signs, pays both accounts' rent, and is recorded as
+	/// `admin`.
 	/// Required privileges: writable and signer.
 	pub admin: &'account AccountView,
 
 	/// CPI account `exclusiveCollection`.
+	/// Empty collection PDA `["exclusive-collection", admin, collection_id]`,
+	/// created here.
 	/// Required privileges: writable.
 	pub exclusive_collection: &'account AccountView,
 
 	/// CPI account `coreCollection`.
 	/// Fresh Core collection keypair; its update authority becomes the PDA.
+	///
+	/// Signs, and is created here by Core.
 	/// Required privileges: writable and signer.
 	pub core_collection: &'account AccountView,
 
 	/// CPI account `coreProgram`.
+	/// Metaplex Core program, invoked to create the collection.
 	/// Required privileges: read-only.
 	pub core_program: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, invoked to create both accounts.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
@@ -51,27 +66,39 @@ pub struct CreateExclusiveCollection<'account> {
 #[derive(Clone, Copy, Debug)]
 pub struct CreateExclusiveCollectionIx {
 	/// Instruction argument `collectionId`.
+	/// Admin-chosen identifier in the PDA seeds, so one admin can own several
+	/// collections.
 	pub collection_id: u64,
 
 	/// Instruction argument `attachOpensAt`.
+	/// Unix time in seconds from which bundles may attach; must be earlier
+	/// than `attach_closes_at`.
 	pub attach_opens_at: i64,
 
 	/// Instruction argument `attachClosesAt`.
+	/// Unix time in seconds from which bundles may no longer attach.
 	pub attach_closes_at: i64,
 
 	/// Instruction argument `layerCount`.
+	/// Number of trait layers, from 1 through 12.
 	pub layer_count: u8,
 
 	/// Instruction argument `bump`.
+	/// Canonical bump of the collection PDA
+	/// `["exclusive-collection", admin, collection_id]`; any other value fails.
 	pub bump: u8,
 
 	/// Instruction argument `namePrefix`.
+	/// Null-padded UTF-8 name prefix of at most 20 bytes.
 	pub name_prefix: [u8; 32],
 
 	/// Instruction argument `symbol`.
+	/// Null-padded UTF-8 symbol.
 	pub symbol: [u8; 10],
 
 	/// Instruction argument `baseUri`.
+	/// Null-padded metadata URI base; must start with `https://`, continue
+	/// past it, and contain no spaces.
 	pub base_uri: [u8; 128],
 }
 

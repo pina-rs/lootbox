@@ -18,15 +18,20 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Publishes a draft template as live.
+///
+/// The template authority signs, and at least one bundle must be activated.
 /// CPI call for the `seal_template` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct SealTemplate<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs.
 	/// Required privileges: read-only and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Draft template PDA whose status becomes live.
 	/// Required privileges: writable.
 	pub template: &'account AccountView,
 

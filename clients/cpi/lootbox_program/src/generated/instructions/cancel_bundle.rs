@@ -18,19 +18,27 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Closes the staged tail bundle once it is unfunded or fully reclaimed.
+///
+/// The template authority signs and receives the bundle's rent. The treasury
+/// must be unlocked, though a retired template is allowed. No slot may be
+/// reserved or hold a prize pool.
 /// CPI call for the `cancel_bundle` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct CancelBundle<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs and receives the closed bundle's rent.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Unlocked template PDA, which may be retired.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Staged bundle PDA at index `bundle_count`; closed here.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 

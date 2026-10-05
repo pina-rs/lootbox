@@ -22,9 +22,29 @@ export function getDepositPrizePoolItemDiscriminator2Bytes(): ReadonlyUint8Array
 export type DepositPrizePoolItemInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountPrizePool extends string | AccountMeta<string> = string, TAccountPrizePoolItem extends string | AccountMeta<string> = string, TAccountTreeConfig extends string | AccountMeta<string> = string, TAccountMerkleTree extends string | AccountMeta<string> = string, TAccountBubblegumProgram extends string | AccountMeta<string> = string, TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountCompressionProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountProofAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? ReadonlyAccount<TAccountBundle> : TAccountBundle, TAccountPrizePool extends string ? WritableAccount<TAccountPrizePool> : TAccountPrizePool, TAccountPrizePoolItem extends string ? WritableAccount<TAccountPrizePoolItem> : TAccountPrizePoolItem, TAccountTreeConfig extends string ? ReadonlyAccount<TAccountTreeConfig> : TAccountTreeConfig, TAccountMerkleTree extends string ? WritableAccount<TAccountMerkleTree> : TAccountMerkleTree, TAccountBubblegumProgram extends string ? ReadonlyAccount<TAccountBubblegumProgram> : TAccountBubblegumProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountCompressionProgram extends string ? ReadonlyAccount<TAccountCompressionProgram> : TAccountCompressionProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountProofAccounts extends string ? ReadonlyAccount<TAccountProofAccounts> : TAccountProofAccounts, ...TRemainingAccounts]>;
 
-export type DepositPrizePoolItemInstructionData = { discriminator: number; migrationVersion: number; root: ReadonlyUint8Array; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: bigint; index: number;  };
+export type DepositPrizePoolItemInstructionData = { discriminator: number; migrationVersion: number;
+/** Merkle root that Bubblegum verifies the proof against. */
+root: ReadonlyUint8Array;
+/** Current leaf data hash; must equal the prepared item's snapshot. */
+dataHash: ReadonlyUint8Array;
+/** Current leaf creator hash; must equal the prepared item's snapshot. */
+creatorHash: ReadonlyUint8Array;
+/** Leaf nonce; with `merkle_tree` it must derive the prepared asset ID. */
+nonce: bigint;
+/** Leaf index in `merkle_tree`; must equal the prepared item's tree index. */
+index: number;  };
 
-export type DepositPrizePoolItemInstructionDataArgs = { root: ReadonlyUint8Array; dataHash: ReadonlyUint8Array; creatorHash: ReadonlyUint8Array; nonce: number | bigint; index: number;  };
+export type DepositPrizePoolItemInstructionDataArgs = {
+/** Merkle root that Bubblegum verifies the proof against. */
+root: ReadonlyUint8Array;
+/** Current leaf data hash; must equal the prepared item's snapshot. */
+dataHash: ReadonlyUint8Array;
+/** Current leaf creator hash; must equal the prepared item's snapshot. */
+creatorHash: ReadonlyUint8Array;
+/** Leaf nonce; with `merkle_tree` it must derive the prepared asset ID. */
+nonce: number | bigint;
+/** Leaf index in `merkle_tree`; must equal the prepared item's tree index. */
+index: number;  };
 
 export function getDepositPrizePoolItemInstructionDataEncoder(): FixedSizeEncoder<DepositPrizePoolItemInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['root', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()]]), (value) => ({ ...value, discriminator: 45, migrationVersion: 0 }));
@@ -39,18 +59,40 @@ export function getDepositPrizePoolItemInstructionDataCodec(): FixedSizeCodec<De
 }
 
 export type DepositPrizePoolItemInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePool extends InstructionAccountInput = InstructionAccountInput, TAccountPrizePoolItem extends InstructionAccountInput = InstructionAccountInput, TAccountTreeConfig extends InstructionAccountInput = InstructionAccountInput, TAccountMerkleTree extends InstructionAccountInput = InstructionAccountInput, TAccountBubblegumProgram extends InstructionAccountInput = InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput = InstructionAccountInput, TAccountCompressionProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountProofAccounts extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Template authority; signs as the current leaf owner and pays rent for
+ * bitmap growth.
+ */
+authority: TAccountAuthority;
+/** Template PDA; its treasury must be unlocked and not retired. */
 template: TAccountTemplate;
+/** Funding bundle PDA whose current slot holds `prize_pool`. */
 bundle: TAccountBundle;
+/**
+ * Funding `PrizePoolState` PDA that receives the leaf; its cursor,
+ * accumulator, and bitmap advance.
+ */
 prizePool: TAccountPrizePool;
+/** Prepared item PDA at the pool's `deposit_cursor`; marked deposited. */
 prizePoolItem: TAccountPrizePoolItem;
+/** Bubblegum tree config of `merkle_tree`, validated by Bubblegum. */
 treeConfig: TAccountTreeConfig;
+/** Pool's pinned tree that holds the leaf; Bubblegum rewrites it. */
 merkleTree: TAccountMerkleTree;
+/** Bubblegum program, invoked to transfer the compressed NFT. */
 bubblegumProgram: TAccountBubblegumProgram;
+/** SPL Noop program used by Bubblegum as its log wrapper. */
 logWrapper: TAccountLogWrapper;
+/** SPL Account Compression program that owns `merkle_tree`. */
 compressionProgram: TAccountCompressionProgram;
+/** System program, passed to Bubblegum. */
 systemProgram?: TAccountSystemProgram;
-/** Merkle proof nodes in leaf-to-root order. */
+/**
+ * Merkle proof nodes in leaf-to-root order.
+ *
+ * Passed as zero through 16 readonly remaining accounts; the tree's canopy
+ * supplies the rest of the path.
+ */
 proofAccounts: TAccountProofAccounts;
 root: DepositPrizePoolItemInstructionDataArgs["root"];
 dataHash: DepositPrizePoolItemInstructionDataArgs["dataHash"];
@@ -85,18 +127,40 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedDepositPrizePoolItemInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template authority; signs as the current leaf owner and pays rent for
+ * bitmap growth.
+ */
 authority: TAccountMetas[0];
+/** Template PDA; its treasury must be unlocked and not retired. */
 template: TAccountMetas[1];
+/** Funding bundle PDA whose current slot holds `prize_pool`. */
 bundle: TAccountMetas[2];
+/**
+ * Funding `PrizePoolState` PDA that receives the leaf; its cursor,
+ * accumulator, and bitmap advance.
+ */
 prizePool: TAccountMetas[3];
+/** Prepared item PDA at the pool's `deposit_cursor`; marked deposited. */
 prizePoolItem: TAccountMetas[4];
+/** Bubblegum tree config of `merkle_tree`, validated by Bubblegum. */
 treeConfig: TAccountMetas[5];
+/** Pool's pinned tree that holds the leaf; Bubblegum rewrites it. */
 merkleTree: TAccountMetas[6];
+/** Bubblegum program, invoked to transfer the compressed NFT. */
 bubblegumProgram: TAccountMetas[7];
+/** SPL Noop program used by Bubblegum as its log wrapper. */
 logWrapper: TAccountMetas[8];
+/** SPL Account Compression program that owns `merkle_tree`. */
 compressionProgram: TAccountMetas[9];
+/** System program, passed to Bubblegum. */
 systemProgram: TAccountMetas[10];
-/** Merkle proof nodes in leaf-to-root order. */
+/**
+ * Merkle proof nodes in leaf-to-root order.
+ *
+ * Passed as zero through 16 readonly remaining accounts; the tree's canopy
+ * supplies the rest of the path.
+ */
 proofAccounts: TAccountMetas[11];
 };
 data: DepositPrizePoolItemInstructionData; };

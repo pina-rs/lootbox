@@ -2,36 +2,89 @@
 
 use super::*;
 
+/// Allocates the FIFO head opening's prize by drawing one bundle copy without
+/// replacement from its verified entropy.
+///
+/// Permissionless and signer-free. Requires a verified opening holding the
+/// next allocation sequence; the draw spans only the bundle prefix and treasury
+/// revision snapshotted at request. Consumes one inventory unit, advances the
+/// FIFO cursor, and creates a result receipt when receipts are enabled. Bundles
+/// holding a prize pool must use `AllocatePrizePoolOpen` instead.
 #[instruction(discriminator = LootboxInstruction::AllocateTemplateOpen, migrations)]
 pub struct AllocateTemplateOpenInstruction {
+	/// Canonical bump of the result receipt PDA; rejected unless it equals the
+	/// derived canonical bump, even when result receipts are disabled.
 	pub result_receipt_bump: u8,
 }
 
+/// Pays one native SOL asset of an allocated bundle to the opening's
+/// beneficiary.
+///
+/// Permissionless and signer-free: anyone may crank the claim, but lamports
+/// move only to the bound beneficiary. Each asset is claimable once per
+/// opening, and the opening becomes delivered after its last asset is claimed.
+/// Fails if the bundle would drop below the asset's unreleased amount plus its
+/// rent reserve.
 #[instruction(discriminator = LootboxInstruction::ClaimSolPrize, migrations)]
 pub struct ClaimSolPrizeInstruction {
+	/// Asset slot within the selected bundle; must be below its asset count,
+	/// hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and be unclaimed by this
+	/// opening.
 	pub asset_index: u8,
 }
 
+/// Transfers one fungible or NFT token asset of an allocated bundle from its
+/// escrow to the beneficiary's associated token account.
+///
+/// Permissionless and signer-free: anyone may crank the claim, but tokens move
+/// only to the bound beneficiary. Each asset is claimable once per opening, and
+/// the opening becomes delivered after its last asset is claimed.
 #[instruction(discriminator = LootboxInstruction::ClaimTokenPrize, migrations)]
 pub struct ClaimTokenPrizeInstruction {
+	/// Asset slot within the selected bundle; must be below its asset count,
+	/// hold a `PRIZE_TOKEN`, `PRIZE_NFT`, `PRIZE_TOKEN_2022`, or
+	/// `PRIZE_QUOTE_TOKEN` asset, and be unclaimed by this opening.
 	pub asset_index: u8,
 }
 
+/// Mints one mint-badge copy of an allocated bundle to the beneficiary's
+/// associated token account.
+///
+/// Permissionless and signer-free: anyone may crank the claim, but the badge
+/// goes only to the bound beneficiary. Each asset is claimable once per
+/// opening; the claim that releases the final copy revokes the bundle's mint
+/// authority.
 #[instruction(discriminator = LootboxInstruction::ClaimMintPrize, migrations)]
 pub struct ClaimMintPrizeInstruction {
+	/// Asset slot within the selected bundle; must be below its asset count,
+	/// hold a `PRIZE_MINT_BADGE` asset with an amount of one, and be unclaimed
+	/// by this opening.
 	pub asset_index: u8,
 }
 
+/// Accounts for `allocateTemplateOpen`.
 #[derive(Accounts, Debug)]
 pub struct AllocateTemplateOpenAccounts<'a> {
+	/// Template treasury, validated by its PDA seeds; its remaining inventory,
+	/// pending-opening count, FIFO cursor, and receipt budget are updated.
 	pub template: &'a mut AccountView,
+	/// Verified opening at the FIFO head, validated by its PDA seeds; records
+	/// the selected bundle and moves to the allocated status.
 	pub opening: &'a mut AccountView,
+	/// Active bundle at the index the opening's entropy selects; rejected
+	/// unless it belongs to the template and was active at the opening's
+	/// treasury revision.
 	pub bundle: &'a AccountView,
-	/// Creator-funded when permanent result receipts are enabled.
+	/// Creator-funded service vault PDA at `["service-vault", template]`;
+	/// validated only when receipts or bounties are enabled, and pays the
+	/// result receipt's rent.
 	pub service_vault: &'a mut AccountView,
+	/// Result receipt PDA at `["result-receipt", opening, sequence]`; must be
+	/// empty and match the canonical address even when receipts are disabled.
 	/// Created only when enabled in the locked treasury configuration.
 	#[pina(validate(empty))]
 	pub result_receipt: &'a mut AccountView,
+	/// System program, used to fund and create the result receipt.
 	#[pina(validate(address = system::ID))]
 	pub system_program: &'a AccountView,
 }
@@ -44,34 +97,75 @@ pub(super) struct TemplateAllocationAccounts<'a> {
 	pub result_receipt: &'a mut AccountView,
 }
 
+/// Accounts for `claimSolPrize`.
 #[derive(Accounts, Debug)]
 pub struct ClaimSolPrizeAccounts<'a> {
+	/// Template treasury, validated by its PDA seeds; binds the bundle and the
+	/// opening.
 	pub template: &'a AccountView,
+	/// Allocated opening of this template, validated by its PDA seeds; records
+	/// the claimed asset.
 	pub opening: &'a mut AccountView,
+	/// Bundle PDA the opening selected; advances the asset's release count and
+	/// pays the lamports directly.
 	pub bundle: &'a mut AccountView,
+	/// Opening beneficiary; rejected unless it matches the stored beneficiary.
+	/// Receives the lamports.
 	pub recipient: &'a mut AccountView,
 }
 
+/// Accounts for `claimTokenPrize`.
 #[derive(Accounts, Debug)]
 pub struct ClaimTokenPrizeAccounts<'a> {
+	/// Template treasury, validated by its PDA seeds; binds the bundle and the
+	/// opening.
 	pub template: &'a AccountView,
+	/// Allocated opening of this template, validated by its PDA seeds; records
+	/// the claimed asset.
 	pub opening: &'a mut AccountView,
+	/// Bundle PDA the opening selected; advances the asset's release count and
+	/// signs the transfer as escrow owner.
 	pub bundle: &'a mut AccountView,
+	/// Opening beneficiary; rejected unless it matches the stored beneficiary.
+	/// Tokens go to `destination`, not this account.
 	pub recipient: &'a AccountView,
+	/// Prize mint; must match the mint recorded in the bundle's asset slot.
 	pub mint: &'a AccountView,
+	/// Bundle's associated token account for `mint` under `token_program`;
+	/// source of the transfer.
 	pub escrow: &'a mut AccountView,
+	/// Beneficiary's existing associated token account for `mint` under
+	/// `token_program`; receives the tokens.
 	pub destination: &'a mut AccountView,
+	/// SPL Token or Token-2022 program matching the asset kind: SPL Token for
+	/// `PRIZE_TOKEN` and `PRIZE_NFT`, Token-2022 for `PRIZE_TOKEN_2022`, and
+	/// either for `PRIZE_QUOTE_TOKEN`.
 	pub token_program: &'a AccountView,
 }
 
+/// Accounts for `claimMintPrize`.
 #[derive(Accounts, Debug)]
 pub struct ClaimMintPrizeAccounts<'a> {
+	/// Template treasury, validated by its PDA seeds; binds the bundle and the
+	/// opening.
 	pub template: &'a AccountView,
+	/// Allocated opening of this template, validated by its PDA seeds; records
+	/// the claimed asset.
 	pub opening: &'a mut AccountView,
+	/// Bundle PDA the opening selected; advances the asset's release count and
+	/// signs as mint authority.
 	pub bundle: &'a mut AccountView,
+	/// Opening beneficiary; rejected unless it matches the stored beneficiary.
+	/// The badge goes to `destination`, not this account.
 	pub recipient: &'a AccountView,
+	/// Badge mint recorded in the bundle's asset slot; must have zero decimals,
+	/// the bundle as mint authority, no freeze authority, and only metadata
+	/// extensions. Its mint authority is revoked after the final copy.
 	pub mint: &'a mut AccountView,
+	/// Beneficiary's existing associated token account for `mint` under
+	/// `token_program`; receives one badge.
 	pub destination: &'a mut AccountView,
+	/// SPL Token or Token-2022 program that owns `mint`.
 	pub token_program: &'a AccountView,
 }
 
@@ -85,6 +179,7 @@ pub(super) fn assert_template_opening(
 	}
 
 	let seeds = TemplateOpeningState::seeds(template, &opening.randomness).with_bump(opening.bump);
+
 	if *address != create_program_address(&seeds.as_slices(), &ID)? {
 		return Err(ProgramError::InvalidSeeds);
 	}
@@ -100,14 +195,17 @@ fn bundle_for_target(
 	let mut cumulative = 0u64;
 	let count =
 		usize::try_from(eligible_bundle_count).map_err(|_| ProgramError::InvalidAccountData)?;
+
 	if count > MAX_TEMPLATE_BUNDLES {
 		return Err(ProgramError::InvalidAccountData);
 	}
+
 	for index in 0..count {
 		let weight = remaining_at(state, index)?;
 		cumulative = cumulative
 			.checked_add(weight)
 			.ok_or(ProgramError::ArithmeticOverflow)?;
+
 		if target < cumulative {
 			return u32::try_from(index).map_err(|_| ProgramError::InvalidAccountData);
 		}
@@ -184,6 +282,7 @@ impl<'a> ProcessAccountInfos<'a> for AllocateTemplateOpenAccounts<'a> {
 		let receipt_seeds =
 			ResultReceiptState::seeds(self.opening.address(), opening.sequence.get());
 		drop(opening);
+
 		if self
 			.result_receipt
 			.assert_canonical_bump(&receipt_seeds.as_slices(), &ID)?
@@ -228,9 +327,11 @@ impl TemplateAllocationAccounts<'_> {
 		let inventory = available_in_prefix(&state, opening.eligible_bundle_count.get())?;
 		let target = select_outcome(&opening.entropy, &opening.template, &address, inventory)?;
 		let selected = bundle_for_target(&state, opening.eligible_bundle_count.get(), target)?;
+
 		if selected != bundle.index.get() {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
+
 		let index = usize::try_from(selected).map_err(|_| ProgramError::InvalidAccountData)?;
 		let selected_remaining = remaining_at(&state, index)?;
 		reserve_prize_pool_item(
@@ -270,6 +371,7 @@ impl TemplateAllocationAccounts<'_> {
 		}
 
 		let result_receipt_seeds = ResultReceiptState::seeds(&address, opening.sequence.get());
+
 		if self
 			.result_receipt
 			.assert_canonical_bump(&result_receipt_seeds.as_slices(), &ID)?
@@ -394,6 +496,7 @@ pub(super) fn record_claim(
 	let bit = 1u8
 		.checked_shl(u32::from(asset_index))
 		.ok_or(ProgramError::ArithmeticOverflow)?;
+
 	if opening.claimed_mask & bit != 0 {
 		return Err(lootbox_error(LootboxError::PrizeAlreadyClaimed));
 	}
@@ -402,12 +505,14 @@ pub(super) fn record_claim(
 	let claimed = read_slot(&bundle.claimed, index)?
 		.checked_add(1)
 		.ok_or(ProgramError::ArithmeticOverflow)?;
+
 	if claimed > bundle.quantity.get() {
 		return Err(lootbox_error(LootboxError::InvalidState));
 	}
 
 	write_slot(&mut bundle.claimed, index, claimed)?;
 	opening.claimed_mask |= bit;
+
 	if opening.claimed_mask == (1u8 << bundle.asset_count) - 1 {
 		opening.status = 3;
 	}
@@ -533,7 +638,9 @@ impl<'a> ProcessAccountInfos<'a> for ClaimSolPrizeAccounts<'a> {
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&address, &opening, self.template.address())?;
+
 		let index = usize::from(args.asset_index);
+
 		if !matches!(bundle.kinds.get(index), Some(&PRIZE_SOL | &PRIZE_QUOTE_SOL)) {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
@@ -558,6 +665,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimSolPrizeAccounts<'a> {
 			.lamports()
 			.checked_sub(amount)
 			.ok_or_else(|| lootbox_error(LootboxError::Insolvent))?;
+
 		if after < owed {
 			return Err(lootbox_error(LootboxError::Insolvent));
 		}
@@ -576,20 +684,24 @@ impl<'a> ProcessAccountInfos<'a> for ClaimTokenPrizeAccounts<'a> {
 		assert_template(self.template.address(), &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		let token_program = *self.token_program.address();
+
 		if token_program != token::ID && token_program != token_2022::ID {
 			return Err(ProgramError::IncorrectProgramId);
 		}
+
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&address, &opening, self.template.address())?;
 		let index = usize::from(args.asset_index);
 		let kind = bundle.kinds.get(index).copied().unwrap_or(u8::MAX);
+
 		let valid_kind = match kind {
 			PRIZE_TOKEN_2022 => token_program == token_2022::ID,
 			PRIZE_TOKEN | PRIZE_NFT => token_program == token::ID,
 			PRIZE_QUOTE_TOKEN => true,
 			_ => false,
 		};
+
 		if !valid_kind || mint_at(&bundle, index)? != *self.mint.address() {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
@@ -615,6 +727,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimTokenPrizeAccounts<'a> {
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
 		drop(opening);
+
 		let signer = seeds.to_signer();
 
 		if token_program == token_2022::ID {
@@ -652,6 +765,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
 		assert_template(self.template.address(), &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		let token_program = *self.token_program.address();
+
 		if token_program != token::ID && token_program != token_2022::ID {
 			return Err(ProgramError::IncorrectProgramId);
 		}
@@ -660,6 +774,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
 		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
 		assert_template_opening(&address, &opening, self.template.address())?;
 		let index = usize::from(args.asset_index);
+
 		if bundle.kinds.get(index) != Some(&PRIZE_MINT_BADGE)
 			|| mint_at(&bundle, index)? != *self.mint.address()
 			|| read_slot(&bundle.amounts, index)? != 1
@@ -674,6 +789,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
 				token_2022::state::ExtensionType::MetadataPointer,
 				token_2022::state::ExtensionType::TokenMetadata,
 			])?;
+
 		if mint.decimals() != 0
 			|| mint.mint_authority() != Some(&bundle_address)
 			|| mint.freeze_authority().is_some()
@@ -693,14 +809,17 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
 			self.recipient.address(),
 			args.asset_index,
 		)?;
+
 		if amount != 1 {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
+
 		let is_final = read_slot(&bundle.claimed, index)? == bundle.quantity.get();
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
 		drop(opening);
+
 		let signer = seeds.to_signer();
 		let signers = [signer.as_signer()];
 
@@ -708,6 +827,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
 			self.token_program.assert_address(&token_2022::ID)?;
 			token_2022::instructions::MintTo::new(self.mint, self.destination, self.bundle, 1)
 				.invoke_signed(&signers)?;
+
 			if is_final {
 				token_2022::instructions::SetAuthority::new(
 					self.mint,
@@ -721,6 +841,7 @@ impl<'a> ProcessAccountInfos<'a> for ClaimMintPrizeAccounts<'a> {
 			self.token_program.assert_address(&token::ID)?;
 			token::instructions::MintTo::new(self.mint, self.destination, self.bundle, 1)
 				.invoke_signed(&signers)?;
+
 			if is_final {
 				token::instructions::SetAuthority::new(
 					self.mint,
@@ -768,6 +889,7 @@ mod tests {
 		assert_eq!(bundle_for_target(&state, 3, 90), Ok(1));
 		assert_eq!(bundle_for_target(&state, 3, 99), Ok(2));
 		let remaining = [PodU64::from(90), PodU64::from(9), PodU64::ZERO];
+
 		TemplateState::update(
 			&mut bytes,
 			&TemplateStatePatch::new()
@@ -844,6 +966,7 @@ mod tests {
 		write_slot(&mut bundle.amounts, 1, 1).expect("NFT");
 		let mut receipt = [0; TemplateOpeningState::SIZE];
 		let opening = TemplateOpeningState::initialize(&mut receipt, |_| Ok(())).expect("opening");
+
 		opening.status = 2;
 		let thief = Address::new_from_array([9; 32]);
 		assert_eq!(
@@ -883,6 +1006,7 @@ mod tests {
 			opening.beneficiary = recipient;
 			opening.selected_bundle.set(bundle.index.get());
 			opening.status = 2;
+
 			assert_eq!(record_claim(opening, bundle, &recipient, 0), Ok(1));
 		}
 
@@ -1010,6 +1134,7 @@ mod tests {
 		assert_eq!(available_in_prefix(&state, 9), Ok(9));
 		assert_eq!(available_in_prefix(&state, 1_024), Ok(1_024));
 		assert_eq!(bundle_for_target(&state, 9, 8), Ok(8));
+
 		assert!(bundle_for_target(&state, 9, 9).is_err());
 		assert_eq!(bundle_for_target(&state, 1_024, 1_023), Ok(1_023));
 	}
@@ -1029,8 +1154,10 @@ mod tests {
 			)
 			.expect("fund pool");
 			let mut awarded = [0u64; 3];
+
 			for sequence in 0..total {
 				let mut receipt = [0; TemplateOpeningState::SIZE];
+
 				let opening =
 					TemplateOpeningState::initialize(&mut receipt, |_| Ok(())).expect("opening");
 				opening.status = 1;
@@ -1062,6 +1189,7 @@ mod tests {
 				)
 				.expect("commit allocation");
 			}
+
 			prop_assert_eq!(awarded, quantities);
 			let state = TemplateState::try_from_bytes(&bytes).expect("template");
 			prop_assert_eq!(available_in_prefix(&state, 3), Ok(0));

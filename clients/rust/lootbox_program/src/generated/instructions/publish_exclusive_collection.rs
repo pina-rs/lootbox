@@ -8,13 +8,20 @@
 	clippy::too_many_arguments
 )]
 
+/// Freeze a draft collection's terms and open it to attachments.
+///
+/// The collection admin signs once. Requires an appended tree and valid
+/// layers, with every slot of unused layers zero. Stores `layers_hash` and
+/// marks the collection published; its tables can never change afterwards.
 pub const PUBLISH_EXCLUSIVE_COLLECTION_DISCRIMINATOR: u8 = 56u8;
 pub const PUBLISH_EXCLUSIVE_COLLECTION_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct PublishExclusiveCollection {
+	/// Collection admin; signs.
 	pub admin: solana_pubkey::Pubkey,
+	/// Draft collection PDA that becomes published.
 	pub exclusive_collection: solana_pubkey::Pubkey,
 }
 

@@ -18,31 +18,44 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Deliver an opening's reserved prize pool leaf to its beneficiary.
+///
+/// Permissionless to relay. The opening must be allocated to this bundle with
+/// a pool assignment for `asset_index`, and the current metadata must match
+/// the item's semantic commitment. The pool PDA signs a Bubblegum transfer to
+/// the recipient, the claim is recorded, and the item PDA closes to the pool
+/// authority.
 /// CPI call for the `claim_prize_pool_item` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct ClaimPrizePoolItem<'account, 'argument> {
 	/// CPI account `template`.
+	/// Template PDA that owns the opening and bundle.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `opening`.
+	/// Allocated opening PDA with a pool assignment; its claim bit is set.
 	/// Required privileges: writable.
 	pub opening: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Bundle PDA the opening was allocated to; its claimed count advances.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `prizePool`.
+	/// Sealed `PrizePoolState` PDA; signs the transfer and counts the claim.
 	/// Required privileges: writable.
 	pub prize_pool: &'account AccountView,
 
 	/// CPI account `prizePoolItem`.
+	/// Item PDA at the opening's `selected_pool_item`, closed here.
 	/// Required privileges: writable.
 	pub prize_pool_item: &'account AccountView,
 
 	/// CPI account `recipient`.
+	/// Opening's bound beneficiary; becomes the leaf owner.
 	/// Required privileges: read-only.
 	pub recipient: &'account AccountView,
 
@@ -52,31 +65,40 @@ pub struct ClaimPrizePoolItem<'account, 'argument> {
 	pub rent_refund: &'account AccountView,
 
 	/// CPI account `treeConfig`.
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	/// Required privileges: read-only.
 	pub tree_config: &'account AccountView,
 
 	/// CPI account `merkleTree`.
+	/// Pool's pinned tree that holds the leaf; Bubblegum rewrites it.
 	/// Required privileges: writable.
 	pub merkle_tree: &'account AccountView,
 
 	/// CPI account `bubblegumProgram`.
+	/// Bubblegum program, invoked to transfer the compressed NFT.
 	/// Required privileges: read-only.
 	pub bubblegum_program: &'account AccountView,
 
 	/// CPI account `logWrapper`.
+	/// SPL Noop program used by Bubblegum as its log wrapper.
 	/// Required privileges: read-only.
 	pub log_wrapper: &'account AccountView,
 
 	/// CPI account `compressionProgram`.
+	/// SPL Account Compression program that owns `merkle_tree`.
 	/// Required privileges: read-only.
 	pub compression_program: &'account AccountView,
 
 	/// CPI account `systemProgram`.
+	/// System program, passed to Bubblegum.
 	/// Required privileges: read-only.
 	pub system_program: &'account AccountView,
 
 	/// CPI account `proofAccounts`.
 	/// Merkle proof nodes in leaf-to-root order.
+	///
+	/// Passed as zero through 16 readonly remaining accounts; the tree's canopy
+	/// supplies the rest of the path.
 	/// Required privileges: read-only.
 	pub proof_accounts: &'account AccountView,
 
@@ -88,24 +110,32 @@ pub struct ClaimPrizePoolItem<'account, 'argument> {
 #[derive(Clone, Copy, Debug)]
 pub struct ClaimPrizePoolItemIx<'argument> {
 	/// Instruction argument `assetIndex`.
+	/// Manifest slot of the pool; must equal the opening's
+	/// `selected_pool_asset` and the pool's `asset_index`.
 	pub asset_index: u8,
 
 	/// Instruction argument `root`.
+	/// Merkle root that Bubblegum verifies the proof against.
 	pub root: [u8; 32],
 
 	/// Instruction argument `dataHash`.
+	/// Current leaf data hash; must be recomputed from `metadata`.
 	pub data_hash: [u8; 32],
 
 	/// Instruction argument `creatorHash`.
+	/// Current leaf creator hash; must be recomputed from `metadata`.
 	pub creator_hash: [u8; 32],
 
 	/// Instruction argument `nonce`.
+	/// Leaf nonce; must equal the item's nonce and derive its asset ID.
 	pub nonce: u64,
 
 	/// Instruction argument `index`.
+	/// Leaf index in the pool's tree; must equal the item's tree index.
 	pub index: u32,
 
 	/// Instruction argument `metadata`.
+	/// Current canonical Bubblegum V1 `MetadataArgs` Borsh preimage.
 	pub metadata: &'argument [u8],
 }
 

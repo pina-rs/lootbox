@@ -19,19 +19,31 @@ pub struct ExclusiveAttachmentState {
 /// its submitter only the transaction fee.
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Template PDA whose bundle attached; set at attach time.
 	pub template: solana_pubkey::Pubkey,
+	/// Bundle PDA whose slot this attachment fills; part of the PDA seeds.
 	pub bundle: solana_pubkey::Pubkey,
+	/// `ExclusiveCollectionState` PDA that every claim mints from.
 	pub collection: solana_pubkey::Pubkey,
 	/// The collection's frozen `layers_hash` at attach time.
 	pub layers_hash: [u8; 32],
 	/// Copies the bound bundle slot can ever mint.
+	///
+	/// Copied from the bundle's quantity at attach time.
 	pub quantity: u64,
 	/// Copies minted through this attachment.
+	///
+	/// Incremented on each claim and never exceeds `quantity`.
 	pub minted: u64,
 	/// Bubblegum mint fee escrowed per copy.
+	///
+	/// Lamports; fixed at attach time to Bubblegum V2's 90,000-lamport fee.
 	pub mint_fee_lamports: u64,
+	/// Bundle manifest slot bound to the collection; part of the PDA seeds.
 	pub asset_index: u8,
+	/// Canonical bump of this PDA `["exclusive-attachment", bundle, asset_index]`.
 	pub bump: u8,
+	/// Canonical bump of the fee vault PDA `["exclusive-fee-vault", attachment]`.
 	pub fee_vault_bump: u8,
 }
 

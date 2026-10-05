@@ -22,9 +22,13 @@ export function getReclaimExclusiveFeesDiscriminator2Bytes(): ReadonlyUint8Array
 export type ReclaimExclusiveFeesInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountExclusiveAttachment extends string | AccountMeta<string> = string, TAccountFeeVault extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountExclusiveAttachment extends string ? WritableAccount<TAccountExclusiveAttachment> : TAccountExclusiveAttachment, TAccountFeeVault extends string ? WritableAccount<TAccountFeeVault> : TAccountFeeVault, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type ReclaimExclusiveFeesInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number;  };
+export type ReclaimExclusiveFeesInstructionData = { discriminator: number; migrationVersion: number;
+/** Manifest slot bound to the attachment. */
+assetIndex: number;  };
 
-export type ReclaimExclusiveFeesInstructionDataArgs = { assetIndex: number;  };
+export type ReclaimExclusiveFeesInstructionDataArgs = {
+/** Manifest slot bound to the attachment. */
+assetIndex: number;  };
 
 export function getReclaimExclusiveFeesInstructionDataEncoder(): FixedSizeEncoder<ReclaimExclusiveFeesInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 59, migrationVersion: 0 }));
@@ -39,12 +43,28 @@ export function getReclaimExclusiveFeesInstructionDataCodec(): FixedSizeCodec<Re
 }
 
 export type ReclaimExclusiveFeesInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountExclusiveAttachment extends InstructionAccountInput = InstructionAccountInput, TAccountFeeVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Template authority; signs and receives released fees and, for a staged
+ * bundle, the attachment rent.
+ */
+authority: TAccountAuthority;
+/** Template PDA that owns `bundle`. */
 template: TAccountTemplate;
+/**
+ * Template's Token-2022 box mint; its supply must be zero to recover an
+ * active bundle.
+ */
 boxMint: TAccountBoxMint;
+/** Bundle PDA; the slot's undrawn copies are released on first recovery. */
 bundle: TAccountBundle;
+/** Attachment PDA committed in the bundle slot; closed for a staged bundle. */
 exclusiveAttachment: TAccountExclusiveAttachment;
+/**
+ * Canonical zero-data `["exclusive-fee-vault", attachment]` PDA; signs
+ * the withdrawal.
+ */
 feeVault: TAccountFeeVault;
+/** System program, invoked to withdraw from the fee vault. */
 systemProgram?: TAccountSystemProgram;
 assetIndex: ReclaimExclusiveFeesInstructionDataArgs["assetIndex"];
 }
@@ -75,12 +95,28 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedReclaimExclusiveFeesInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template authority; signs and receives released fees and, for a staged
+ * bundle, the attachment rent.
+ */
 authority: TAccountMetas[0];
+/** Template PDA that owns `bundle`. */
 template: TAccountMetas[1];
+/**
+ * Template's Token-2022 box mint; its supply must be zero to recover an
+ * active bundle.
+ */
 boxMint: TAccountMetas[2];
+/** Bundle PDA; the slot's undrawn copies are released on first recovery. */
 bundle: TAccountMetas[3];
+/** Attachment PDA committed in the bundle slot; closed for a staged bundle. */
 exclusiveAttachment: TAccountMetas[4];
+/**
+ * Canonical zero-data `["exclusive-fee-vault", attachment]` PDA; signs
+ * the withdrawal.
+ */
 feeVault: TAccountMetas[5];
+/** System program, invoked to withdraw from the fee vault. */
 systemProgram: TAccountMetas[6];
 };
 data: ReclaimExclusiveFeesInstructionData; };

@@ -50,12 +50,14 @@ const metaplexPrograms = [
 const mockedPrograms = metaplexDirectory
 	? [compressionProgram, noopProgram]
 	: [bubblegumProgram, compressionProgram, noopProgram];
+
 for (const fixtureId of mockedPrograms) {
 	surfnet.deploy({
 		programId: fixtureId,
 		soPath: resolve(root, "target/deploy/mock_bubblegum.so"),
 	});
 }
+
 if (metaplexDirectory) {
 	for (const programId of metaplexPrograms) {
 		surfnet.deploy({

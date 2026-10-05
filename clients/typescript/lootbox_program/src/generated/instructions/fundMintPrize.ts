@@ -39,10 +39,27 @@ export function getFundMintPrizeInstructionDataCodec(): FixedSizeCodec<FundMintP
 }
 
 export type FundMintPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Template authority and current mint authority of `mint`; signs the
+ * authority handoff.
+ */
+authority: TAccountAuthority;
+/**
+ * Template PDA that must be unlocked and not retired; read only by the
+ * handler.
+ */
 template: TAccountTemplate;
+/** Funding bundle PDA of this template that becomes the mint authority. */
 bundle: TAccountBundle;
+/**
+ * Empty zero-decimal badge mint with no freeze authority; its mint
+ * authority changes here.
+ */
 mint: TAccountMint;
+/**
+ * SPL Token or Token-2022 program that owns `mint`, invoked to set the
+ * authority.
+ */
 tokenProgram?: TAccountTokenProgram;
 }
 
@@ -68,10 +85,27 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedFundMintPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template authority and current mint authority of `mint`; signs the
+ * authority handoff.
+ */
 authority: TAccountMetas[0];
+/**
+ * Template PDA that must be unlocked and not retired; read only by the
+ * handler.
+ */
 template: TAccountMetas[1];
+/** Funding bundle PDA of this template that becomes the mint authority. */
 bundle: TAccountMetas[2];
+/**
+ * Empty zero-decimal badge mint with no freeze authority; its mint
+ * authority changes here.
+ */
 mint: TAccountMetas[3];
+/**
+ * SPL Token or Token-2022 program that owns `mint`, invoked to set the
+ * authority.
+ */
 tokenProgram: TAccountMetas[4];
 };
 data: FundMintPrizeInstructionData; };

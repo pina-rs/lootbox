@@ -8,23 +8,45 @@
 	clippy::too_many_arguments
 )]
 
+/// Delivers an allocated Bubblegum compressed NFT from bundle escrow to the
+/// opening's beneficiary.
+///
+/// Permissionless: no signer is required because the bundle PDA signs the
+/// transfer and the recipient is fixed by the opening. The opening must be
+/// allocated to `bundle`, and the slot must not be claimed yet. Sets the slot's
+/// claim bit on the opening and marks the opening delivered once every slot is
+/// claimed.
 pub const CLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: u8 = 34u8;
 pub const CLAIM_COMPRESSED_NFT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ClaimCompressedNftPrize {
+	/// Template PDA owned by this program.
 	pub template: solana_pubkey::Pubkey,
+	/// Allocated template opening PDA of `template` whose selected bundle is
+	/// `bundle`. Records the slot's claim bit.
 	pub opening: solana_pubkey::Pubkey,
+	/// Bundle PDA of `template` that owns the leaf, signs the transfer, and
+	/// counts the claim.
 	pub bundle: solana_pubkey::Pubkey,
+	/// The opening's beneficiary and new owner of the leaf.
 	pub recipient: solana_pubkey::Pubkey,
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
 	pub tree_config: solana_pubkey::Pubkey,
+	/// Concurrent Merkle tree holding the leaf; with `nonce` it must derive the
+	/// slot's stored asset ID.
 	pub merkle_tree: solana_pubkey::Pubkey,
+	/// Metaplex Bubblegum program, invoked to transfer the leaf.
 	pub bubblegum_program: solana_pubkey::Pubkey,
+	/// SPL Noop program, forwarded to Bubblegum as its log wrapper.
 	pub log_wrapper: solana_pubkey::Pubkey,
+	/// SPL Account Compression program, forwarded to Bubblegum.
 	pub compression_program: solana_pubkey::Pubkey,
+	/// System program, forwarded to Bubblegum.
 	pub system_program: solana_pubkey::Pubkey,
-	/// Merkle proof nodes in leaf-to-root order.
+	/// Merkle proof nodes in leaf-to-root order, at most 16; deeper trees need
+	/// canopy.
 	pub proof_accounts: solana_pubkey::Pubkey,
 }
 
@@ -102,10 +124,20 @@ impl ClaimCompressedNftPrizeInstructionData {
 pub struct ClaimCompressedNftPrizeInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Bundle slot holding the compressed NFT. Must be below the bundle's
+	/// `asset_count` and hold the asset ID derived from `merkle_tree` and
+	/// `nonce`.
 	pub asset_index: u8,
+	/// Merkle root the proof was built against; Bubblegum verifies the leaf
+	/// against it.
 	pub root: [u8; 32],
+	/// Bubblegum hash of the leaf's metadata, forwarded to rebuild the leaf.
 	pub data_hash: [u8; 32],
+	/// Bubblegum hash of the leaf's creators, forwarded to rebuild the leaf.
 	pub creator_hash: [u8; 32],
+	/// Leaf nonce. With `merkle_tree` it derives the asset ID, which must match
+	/// the slot's stored asset.
 	pub nonce: u64,
+	/// Leaf position in `merkle_tree`, forwarded to Bubblegum.
 	pub index: u32,
 }

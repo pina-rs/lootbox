@@ -47,6 +47,7 @@ fn deploy_metaplex_programs(program: &Harness) {
 		std::env::var_os("METAPLEX_PROGRAMS_DIR")
 			.expect("METAPLEX_PROGRAMS_DIR; run `devenv shell -- test:surfpool`"),
 	);
+
 	for id in METAPLEX_PROGRAMS {
 		program
 			.deploy_program(pubkey(id), &directory.join(format!("{id}.so")))
@@ -66,6 +67,7 @@ fn fixture_weight(layer: usize, slot: usize) -> u32 {
 	if layer == 4 && slot == 0 {
 		return 5_000_000;
 	}
+
 	let rank = u32::try_from(slot + 1).expect("slot");
 	(1_000_000 / (rank * rank)).max(1)
 }
@@ -73,13 +75,16 @@ fn fixture_weight(layer: usize, slot: usize) -> u32 {
 fn fixture_table() -> ([u8; 12], Vec<u8>) {
 	let mut counts = [0u8; 12];
 	let mut weights = vec![0u8; 12 * 256];
+
 	for (layer, count) in FIXTURE_TRAITS.iter().enumerate() {
 		counts[layer] = *count;
+
 		for slot in 0..usize::from(*count) {
 			let start = layer * 256 + slot * 4;
 			weights[start..start + 4].copy_from_slice(&fixture_weight(layer, slot).to_le_bytes());
 		}
 	}
+
 	(counts, weights)
 }
 
@@ -108,6 +113,7 @@ fn publish_collection(program: &Harness, attach_closes_at: i64) -> CollectionCon
 	args.collection_id.set(COLLECTION_ID);
 	args.attach_opens_at.set(chain_timestamp(program) - 10);
 	args.attach_closes_at.set(attach_closes_at);
+
 	args.layer_count = u8::try_from(FIXTURE_TRAITS.len()).expect("layers");
 	args.bump = bump;
 	args.name_prefix = padded(NAME_PREFIX);
@@ -130,6 +136,7 @@ fn publish_collection(program: &Harness, attach_closes_at: i64) -> CollectionCon
 		.expect("create the collection and its PDA-controlled Core collection");
 
 	let (counts, weights) = fixture_table();
+
 	for layer in 0..FIXTURE_TRAITS.len() {
 		let mut data = vec![0; SetExclusiveLayerInstruction::SIZE];
 		let args =
@@ -138,6 +145,7 @@ fn publish_collection(program: &Harness, attach_closes_at: i64) -> CollectionCon
 		args.trait_count = counts[layer];
 		args.weights
 			.copy_from_slice(&weights[layer * 256..(layer + 1) * 256]);
+
 		program
 			.send(
 				&data,
@@ -345,6 +353,7 @@ fn expected_metadata(name: &str, uri: &str, collection: &Pubkey) -> Vec<u8> {
 	bytes.extend_from_slice(&0u32.to_le_bytes());
 	bytes.push(1);
 	bytes.extend_from_slice(collection.as_ref());
+
 	bytes
 }
 
@@ -572,6 +581,7 @@ fn exclusive_nfts_mint_layered_traits_to_the_bound_beneficiary() {
 				.expect("commit opening");
 			openings.push((opening, randomness.pubkey()));
 		}
+
 		program
 			.send_with_signers(
 				token_ix::burn_checked(

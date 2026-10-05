@@ -22,9 +22,27 @@ export function getFulfillTemplateOpenDiscriminator2Bytes(): ReadonlyUint8Array 
 export type FulfillTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountPayer extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountServiceVault extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountRandomness extends string | AccountMeta<string> = string, TAccountOracleQueue extends string | AccountMeta<string> = string, TAccountOracle extends string | AccountMeta<string> = string, TAccountOracleStats extends string | AccountMeta<string> = string, TAccountRecentSlotHashes extends string | AccountMeta<string> = string, TAccountOracleProgram extends string | AccountMeta<string> = string, TAccountRewardEscrow extends string | AccountMeta<string> = string, TAccountOracleProgramState extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TAccountWrappedSolMint extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountPayer extends string ? WritableSignerAccount<TAccountPayer> & AccountSignerMeta<TAccountPayer> : TAccountPayer, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountServiceVault extends string ? WritableAccount<TAccountServiceVault> : TAccountServiceVault, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountRandomness extends string ? WritableAccount<TAccountRandomness> : TAccountRandomness, TAccountOracleQueue extends string ? ReadonlyAccount<TAccountOracleQueue> : TAccountOracleQueue, TAccountOracle extends string ? ReadonlyAccount<TAccountOracle> : TAccountOracle, TAccountOracleStats extends string ? WritableAccount<TAccountOracleStats> : TAccountOracleStats, TAccountRecentSlotHashes extends string ? ReadonlyAccount<TAccountRecentSlotHashes> : TAccountRecentSlotHashes, TAccountOracleProgram extends string ? ReadonlyAccount<TAccountOracleProgram> : TAccountOracleProgram, TAccountRewardEscrow extends string ? WritableAccount<TAccountRewardEscrow> : TAccountRewardEscrow, TAccountOracleProgramState extends string ? ReadonlyAccount<TAccountOracleProgramState> : TAccountOracleProgramState, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, TAccountWrappedSolMint extends string ? ReadonlyAccount<TAccountWrappedSolMint> : TAccountWrappedSolMint, ...TRemainingAccounts]>;
 
-export type FulfillTemplateOpenInstructionData = { discriminator: number; migrationVersion: number; signature: ReadonlyUint8Array; recoveryId: number; value: ReadonlyUint8Array;  };
+export type FulfillTemplateOpenInstructionData = { discriminator: number; migrationVersion: number;
+/** Switchboard enclave signature returned by the randomness gateway. */
+signature: ReadonlyUint8Array;
+/** Secp256k1 recovery identifier returned by the randomness gateway. */
+recoveryId: number;
+/**
+ * Revealed value covered by `signature`; rejected unless Switchboard
+ * stores exactly this value on the randomness account.
+ */
+value: ReadonlyUint8Array;  };
 
-export type FulfillTemplateOpenInstructionDataArgs = { signature: ReadonlyUint8Array; recoveryId: number; value: ReadonlyUint8Array;  };
+export type FulfillTemplateOpenInstructionDataArgs = {
+/** Switchboard enclave signature returned by the randomness gateway. */
+signature: ReadonlyUint8Array;
+/** Secp256k1 recovery identifier returned by the randomness gateway. */
+recoveryId: number;
+/**
+ * Revealed value covered by `signature`; rejected unless Switchboard
+ * stores exactly this value on the randomness account.
+ */
+value: ReadonlyUint8Array;  };
 
 export function getFulfillTemplateOpenInstructionDataEncoder(): FixedSizeEncoder<FulfillTemplateOpenInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['signature', fixPinaPodEncoderSize(getBytesEncoder(), 64)], ['recoveryId', getU8Encoder()], ['value', fixPinaPodEncoderSize(getBytesEncoder(), 32)]]), (value) => ({ ...value, discriminator: 17, migrationVersion: 0 }));
@@ -39,20 +57,59 @@ export function getFulfillTemplateOpenInstructionDataCodec(): FixedSizeCodec<Ful
 }
 
 export type FulfillTemplateOpenInput<TAccountPayer extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountRandomness extends InstructionAccountInput = InstructionAccountInput, TAccountOracleQueue extends InstructionAccountInput = InstructionAccountInput, TAccountOracle extends InstructionAccountInput = InstructionAccountInput, TAccountOracleStats extends InstructionAccountInput = InstructionAccountInput, TAccountRecentSlotHashes extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgram extends InstructionAccountInput = InstructionAccountInput, TAccountRewardEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgramState extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountWrappedSolMint extends InstructionAccountInput = InstructionAccountInput> =  {
-  payer: TAccountPayer;
+  /**
+ * Submits the proof and funds Switchboard's reveal bookkeeping; receives
+ * the settlement bounty when one is configured.
+ */
+payer: TAccountPayer;
+/**
+ * Template treasury, validated by its PDA seeds; its remaining
+ * settlement-bounty count is written back.
+ */
 template: TAccountTemplate;
+/**
+ * Service vault PDA at `["service-vault", template]`; validated only when
+ * receipts or bounties are enabled, and pays the settlement bounty.
+ */
 serviceVault: TAccountServiceVault;
+/**
+ * Pending opening PDA for `template` and `randomness`; signs the reveal as
+ * the randomness authority, then stores the entropy and becomes verified.
+ */
 opening: TAccountOpening;
+/**
+ * Switchboard randomness bound to the opening; must be committed at the
+ * opening's seed slot and not yet revealed.
+ */
 randomness: TAccountRandomness;
+/** Switchboard queue; must match the queue recorded on the template. */
 oracleQueue: TAccountOracleQueue;
+/**
+ * Oracle bound at commit time; rejected unless it matches the oracle
+ * recorded on `randomness`.
+ */
 oracle: TAccountOracle;
+/** Oracle stats account, updated by Switchboard `randomness_reveal`. */
 oracleStats: TAccountOracleStats;
+/** Slot hashes sysvar, read by Switchboard `randomness_reveal`. */
 recentSlotHashes: TAccountRecentSlotHashes;
+/**
+ * Switchboard On-Demand program; must match the oracle program recorded on
+ * the template.
+ */
 oracleProgram: TAccountOracleProgram;
+/**
+ * Switchboard reward escrow for `randomness`; rejected unless it is the
+ * wrapped-SOL associated token account of `randomness`.
+ */
 rewardEscrow: TAccountRewardEscrow;
+/** Switchboard program state, passed to `randomness_reveal`. */
 oracleProgramState: TAccountOracleProgramState;
+/** System program, used by Switchboard and for the bounty transfer. */
 systemProgram?: TAccountSystemProgram;
+/** SPL Token program backing the wrapped-SOL reward escrow. */
 tokenProgram?: TAccountTokenProgram;
+/** Wrapped SOL mint backing the reward escrow. */
 wrappedSolMint: TAccountWrappedSolMint;
 signature: FulfillTemplateOpenInstructionDataArgs["signature"];
 recoveryId: FulfillTemplateOpenInstructionDataArgs["recoveryId"];
@@ -88,20 +145,59 @@ return Object.freeze({ accounts: [getAccountMeta("payer", accounts.payer), getAc
 
 export type ParsedFulfillTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Submits the proof and funds Switchboard's reveal bookkeeping; receives
+ * the settlement bounty when one is configured.
+ */
 payer: TAccountMetas[0];
+/**
+ * Template treasury, validated by its PDA seeds; its remaining
+ * settlement-bounty count is written back.
+ */
 template: TAccountMetas[1];
+/**
+ * Service vault PDA at `["service-vault", template]`; validated only when
+ * receipts or bounties are enabled, and pays the settlement bounty.
+ */
 serviceVault: TAccountMetas[2];
+/**
+ * Pending opening PDA for `template` and `randomness`; signs the reveal as
+ * the randomness authority, then stores the entropy and becomes verified.
+ */
 opening: TAccountMetas[3];
+/**
+ * Switchboard randomness bound to the opening; must be committed at the
+ * opening's seed slot and not yet revealed.
+ */
 randomness: TAccountMetas[4];
+/** Switchboard queue; must match the queue recorded on the template. */
 oracleQueue: TAccountMetas[5];
+/**
+ * Oracle bound at commit time; rejected unless it matches the oracle
+ * recorded on `randomness`.
+ */
 oracle: TAccountMetas[6];
+/** Oracle stats account, updated by Switchboard `randomness_reveal`. */
 oracleStats: TAccountMetas[7];
+/** Slot hashes sysvar, read by Switchboard `randomness_reveal`. */
 recentSlotHashes: TAccountMetas[8];
+/**
+ * Switchboard On-Demand program; must match the oracle program recorded on
+ * the template.
+ */
 oracleProgram: TAccountMetas[9];
+/**
+ * Switchboard reward escrow for `randomness`; rejected unless it is the
+ * wrapped-SOL associated token account of `randomness`.
+ */
 rewardEscrow: TAccountMetas[10];
+/** Switchboard program state, passed to `randomness_reveal`. */
 oracleProgramState: TAccountMetas[11];
+/** System program, used by Switchboard and for the bounty transfer. */
 systemProgram: TAccountMetas[12];
+/** SPL Token program backing the wrapped-SOL reward escrow. */
 tokenProgram: TAccountMetas[13];
+/** Wrapped SOL mint backing the reward escrow. */
 wrappedSolMint: TAccountMetas[14];
 };
 data: FulfillTemplateOpenInstructionData; };

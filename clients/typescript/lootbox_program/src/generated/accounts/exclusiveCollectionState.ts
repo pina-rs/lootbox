@@ -26,60 +26,146 @@ export function getExclusiveCollectionStateDiscriminator2Bytes(): ReadonlyUint8A
  * takes the next global serial and lands in `active_tree`.
  */
 export type ExclusiveCollectionState = { discriminator: number; migrationVersion: number;
-/** Loads layers, appends trees, and publishes; a multisig on mainnet. */
+/**
+ * Loads layers, appends trees, and publishes; a multisig on mainnet.
+ *
+ * Part of the PDA seeds, so it can never change.
+ */
 admin: Address;
 /** Metaplex Core collection whose update authority is this PDA. */
 coreCollection: Address;
-/** Bubblegum V2 tree that receives the next mint; zero until appended. */
+/**
+ * Bubblegum V2 tree that receives the next mint; zero until appended.
+ *
+ * Each `appendExclusiveTree` replaces it, and claims must mint into it.
+ */
 activeTree: Address;
 /** Commitment to every frozen term; zero until published. */
-layersHash: ReadonlyUint8Array; collectionId: bigint;
+layersHash: ReadonlyUint8Array;
+/**
+ * Admin-chosen identifier that separates this admin's collections in the
+ * PDA seeds; set at creation.
+ */
+collectionId: bigint;
 /** Editions minted so far; the next global serial is `minted + 1`. */
 minted: bigint;
-/** Unix time from which bundles may attach. */
+/**
+ * Unix time from which bundles may attach.
+ *
+ * Seconds, inclusive; set at creation and earlier than `attach_closes_at`.
+ */
 attachOpensAt: bigint;
-/** Unix time from which bundles may no longer attach. */
-attachClosesAt: bigint; treeCount: number;
-/** Trait count of each layer, bottom to top. */
+/**
+ * Unix time from which bundles may no longer attach.
+ *
+ * Seconds, exclusive; checked only when a bundle attaches.
+ */
+attachClosesAt: bigint;
+/** Trees appended so far; incremented by each `appendExclusiveTree`. */
+treeCount: number;
+/**
+ * Trait count of each layer, bottom to top.
+ *
+ * Each configured layer has 1 through 64 traits; entries at or above
+ * `layer_count` must be zero at publication.
+ */
 traitCounts: ReadonlyUint8Array;
 /** Twelve layers of sixty-four little-endian `u32` trait weights. */
 weights: ReadonlyUint8Array;
-/** Null-padded UTF-8 name prefix; minted names are `{prefix} #{serial}`. */
+/**
+ * Null-padded UTF-8 name prefix; minted names are `{prefix} #{serial}`.
+ *
+ * At most 20 bytes, so any ten-digit serial fits the 32-byte name cap.
+ */
 namePrefix: ReadonlyUint8Array;
 /** Null-padded UTF-8 symbol. */
 symbol: ReadonlyUint8Array;
 /** Null-padded `https://` base of every metadata URI. */
-baseUri: ReadonlyUint8Array; layerCount: number;
-/** 0 draft, 1 published. */
-status: number; bump: number;  };
+baseUri: ReadonlyUint8Array;
+/** Number of trait layers, from 1 through 12; fixed at creation. */
+layerCount: number;
+/**
+ * 0 draft, 1 published.
+ *
+ * `publishExclusiveCollection` moves it from draft to published once.
+ */
+status: number;
+/**
+ * Canonical bump of this PDA
+ * `["exclusive-collection", admin, collection_id]`.
+ */
+bump: number;  };
 
 export type ExclusiveCollectionStateArgs = {
-/** Loads layers, appends trees, and publishes; a multisig on mainnet. */
+/**
+ * Loads layers, appends trees, and publishes; a multisig on mainnet.
+ *
+ * Part of the PDA seeds, so it can never change.
+ */
 admin: Address;
 /** Metaplex Core collection whose update authority is this PDA. */
 coreCollection: Address;
-/** Bubblegum V2 tree that receives the next mint; zero until appended. */
+/**
+ * Bubblegum V2 tree that receives the next mint; zero until appended.
+ *
+ * Each `appendExclusiveTree` replaces it, and claims must mint into it.
+ */
 activeTree: Address;
 /** Commitment to every frozen term; zero until published. */
-layersHash: ReadonlyUint8Array; collectionId: number | bigint;
+layersHash: ReadonlyUint8Array;
+/**
+ * Admin-chosen identifier that separates this admin's collections in the
+ * PDA seeds; set at creation.
+ */
+collectionId: number | bigint;
 /** Editions minted so far; the next global serial is `minted + 1`. */
 minted: number | bigint;
-/** Unix time from which bundles may attach. */
+/**
+ * Unix time from which bundles may attach.
+ *
+ * Seconds, inclusive; set at creation and earlier than `attach_closes_at`.
+ */
 attachOpensAt: number | bigint;
-/** Unix time from which bundles may no longer attach. */
-attachClosesAt: number | bigint; treeCount: number;
-/** Trait count of each layer, bottom to top. */
+/**
+ * Unix time from which bundles may no longer attach.
+ *
+ * Seconds, exclusive; checked only when a bundle attaches.
+ */
+attachClosesAt: number | bigint;
+/** Trees appended so far; incremented by each `appendExclusiveTree`. */
+treeCount: number;
+/**
+ * Trait count of each layer, bottom to top.
+ *
+ * Each configured layer has 1 through 64 traits; entries at or above
+ * `layer_count` must be zero at publication.
+ */
 traitCounts: ReadonlyUint8Array;
 /** Twelve layers of sixty-four little-endian `u32` trait weights. */
 weights: ReadonlyUint8Array;
-/** Null-padded UTF-8 name prefix; minted names are `{prefix} #{serial}`. */
+/**
+ * Null-padded UTF-8 name prefix; minted names are `{prefix} #{serial}`.
+ *
+ * At most 20 bytes, so any ten-digit serial fits the 32-byte name cap.
+ */
 namePrefix: ReadonlyUint8Array;
 /** Null-padded UTF-8 symbol. */
 symbol: ReadonlyUint8Array;
 /** Null-padded `https://` base of every metadata URI. */
-baseUri: ReadonlyUint8Array; layerCount: number;
-/** 0 draft, 1 published. */
-status: number; bump: number;  };
+baseUri: ReadonlyUint8Array;
+/** Number of trait layers, from 1 through 12; fixed at creation. */
+layerCount: number;
+/**
+ * 0 draft, 1 published.
+ *
+ * `publishExclusiveCollection` moves it from draft to published once.
+ */
+status: number;
+/**
+ * Canonical bump of this PDA
+ * `["exclusive-collection", admin, collection_id]`.
+ */
+bump: number;  };
 
 /** Gets the encoder for {@link ExclusiveCollectionStateArgs} account data. */
 export function getExclusiveCollectionStateEncoder(): FixedSizeEncoder<ExclusiveCollectionStateArgs> {

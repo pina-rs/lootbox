@@ -8,16 +8,28 @@
 	clippy::too_many_arguments
 )]
 
+/// Creates a draft treasury template PDA bound to an empty Token-2022 box mint.
+///
+/// The creator signs and pays rent. The box mint must have zero supply and
+/// decimals, no freeze authority, this template PDA as mint authority, and
+/// immutable on-mint metadata whose name and URI match the arguments.
 pub const CREATE_TEMPLATE_DISCRIMINATOR: u8 = 10u8;
 pub const CREATE_TEMPLATE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct CreateTemplate {
+	/// Creator; signs, pays the template rent, and becomes its authority.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA created here from `["template", authority, id]`; must be
+	/// empty.
 	pub template: solana_pubkey::Pubkey,
+	/// Empty Token-2022 box mint whose mint authority is the template PDA and
+	/// whose metadata pointer and immutable metadata point at itself.
 	pub box_mint: solana_pubkey::Pubkey,
+	/// System program, invoked to create the template account.
 	pub system_program: solana_pubkey::Pubkey,
+	/// Token-2022 program that must own the box mint.
 	pub box_token_program: solana_pubkey::Pubkey,
 }
 
@@ -83,13 +95,27 @@ impl CreateTemplateInstructionData {
 pub struct CreateTemplateInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Creator-chosen identifier that seeds the template PDA beside the
+	/// authority.
 	pub id: u64,
+	/// Reveal time in unix seconds; rejected when negative.
 	pub opens_at: i64,
+	/// Switchboard On-Demand program; must be the mainnet or devnet ID.
 	pub oracle_program: solana_pubkey::Pubkey,
+	/// Switchboard queue for every opening's randomness; must be nonzero.
 	pub oracle_queue: solana_pubkey::Pubkey,
+	/// Null-padded UTF-8 display name; must be nonblank, free of control
+	/// characters, and equal to the box mint's metadata name.
 	pub name: [u8; 32],
+	/// Null-padded UTF-8 metadata URI; may be empty, must be free of control
+	/// characters, and must equal the box mint's metadata URI.
 	pub uri: [u8; 200],
+	/// Lamports paid per fulfilled or forfeited opening from the service
+	/// vault; zero disables bounties.
 	pub settlement_bounty_lamports: u64,
+	/// Whether each allocation creates a creator-funded result receipt.
 	pub result_receipts_enabled: bool,
+	/// Canonical bump of the template PDA; rejected unless it equals the
+	/// derived canonical bump.
 	pub bump: u8,
 }

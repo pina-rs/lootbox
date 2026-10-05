@@ -11,6 +11,10 @@ use crate::error::CliError;
 
 /// Builds the wire-encoded instruction for one subcommand.
 pub trait InstructionBuilder {
+	/// Validates the locally encoded arguments and returns the instruction, or
+	/// the `CliError` for the first argument that fails. Program-side checks,
+	/// such as canonical bumps and manifest slots, run only on chain, so `Ok`
+	/// does not guarantee the program accepts the instruction.
 	fn build(&self) -> Result<Instruction, CliError>;
 }
 
@@ -38,6 +42,7 @@ fn replace_proof_tail(
 			actual: proof_accounts.len(),
 		});
 	}
+
 	instruction.accounts.pop();
 	instruction.accounts.extend(
 		proof_accounts
@@ -53,6 +58,7 @@ fn canonical_result_receipt(
 	override_address: Option<Pubkey>,
 ) -> Result<(Pubkey, u8), CliError> {
 	let (expected, bump) = generated_accounts::ResultReceiptState::find_pda(opening, sequence);
+
 	if let Some(actual) = override_address
 		&& actual != expected
 	{
@@ -65,6 +71,7 @@ fn canonical_result_receipt(
 /// Parses a fixed-size hex argument (`0x` prefix optional).
 fn hex_arg<const N: usize>(value: &str, field: &'static str) -> Result<[u8; N], CliError> {
 	let digits = value.strip_prefix("0x").unwrap_or(value);
+
 	if digits.len() != N * 2 {
 		return Err(CliError::InvalidHexLength {
 			field,
@@ -74,6 +81,7 @@ fn hex_arg<const N: usize>(value: &str, field: &'static str) -> Result<[u8; N], 
 	}
 
 	let mut out = [0u8; N];
+
 	for (index, pair) in digits.as_bytes().as_chunks::<2>().0.iter().enumerate() {
 		let byte = std::str::from_utf8(pair)
 			.ok()
@@ -92,13 +100,16 @@ fn hex_arg<const N: usize>(value: &str, field: &'static str) -> Result<[u8; N], 
 /// Parses a bounded variable-size hex argument (`0x` prefix optional).
 fn bounded_hex_arg(value: &str, field: &'static str, limit: usize) -> Result<Vec<u8>, CliError> {
 	let digits = value.strip_prefix("0x").unwrap_or(value);
+
 	if !digits.len().is_multiple_of(2) {
 		return Err(CliError::InvalidHexEncoding {
 			field,
 			value: value.to_string(),
 		});
 	}
+
 	let actual = digits.len() / 2;
+
 	if actual == 0 || actual > limit {
 		return Err(CliError::ByteArgumentLength {
 			field,
@@ -106,6 +117,7 @@ fn bounded_hex_arg(value: &str, field: &'static str, limit: usize) -> Result<Vec
 			actual,
 		});
 	}
+
 	digits
 		.as_bytes()
 		.as_chunks::<2>()
@@ -128,6 +140,7 @@ fn bounded_hex_arg(value: &str, field: &'static str, limit: usize) -> Result<Vec
 /// Packs a text argument into a zero-padded fixed-size wire field.
 fn text_arg<const N: usize>(value: &str, field: &'static str) -> Result<[u8; N], CliError> {
 	let bytes = value.as_bytes();
+
 	if bytes.len() > N {
 		return Err(CliError::TextTooLong {
 			field,
@@ -145,7 +158,6 @@ fn text_arg<const N: usize>(value: &str, field: &'static str) -> Result<[u8; N],
 // ---------------------------------------------------------------------------
 // lootbox lifecycle
 // ---------------------------------------------------------------------------
-
 /// Arguments for `create-lootbox`.
 #[derive(Debug, clap::Args)]
 pub struct CreateLootboxArgs {
@@ -654,7 +666,6 @@ impl InstructionBuilder for WithdrawSurplusArgs {
 // ---------------------------------------------------------------------------
 // treasury template lifecycle
 // ---------------------------------------------------------------------------
-
 /// Arguments for `create-template`.
 #[derive(Debug, clap::Args)]
 pub struct CreateTemplateArgs {
@@ -709,6 +720,7 @@ impl InstructionBuilder for CreateTemplateArgs {
 		let oracle_queue = self.oracle_queue;
 		let name = text_arg::<32>(&self.name, "name")?;
 		let uri = text_arg::<200>(&self.uri, "uri")?;
+
 		let bump = self.bump();
 		let data = generated::CreateTemplateInstructionData::new(|wire| {
 			wire.id = id.into();
@@ -755,6 +767,7 @@ pub struct AddBundleArgs {
 impl InstructionBuilder for AddBundleArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
 		let remaining = self.remaining_writable.len() + self.remaining_readonly.len();
+
 		if remaining != self.asset_count as usize {
 			return Err(CliError::AssetCountMismatch {
 				declared: self.asset_count as usize,
@@ -2177,22 +2190,28 @@ impl InstructionBuilder for ReclaimCompressedNftPrizeArgs {
 // ---------------------------------------------------------------------------
 // PrizePool lifecycle
 // ---------------------------------------------------------------------------
-
 /// Arguments for `create-prize-pool`.
 #[derive(Debug, clap::Args)]
 pub struct CreatePrizePoolArgs {
+	/// Template authority; signs and pays the pool rent.
 	#[arg(long)]
 	pub authority: Pubkey,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	#[arg(long)]
 	pub template: Pubkey,
+	/// Funding bundle PDA whose next unfunded manifest slot the pool reserves.
 	#[arg(long)]
 	pub bundle: Pubkey,
+	/// Empty prize pool PDA `["prize-pool", bundle, asset_index]`, created here.
 	#[arg(long)]
 	pub prize_pool: Pubkey,
+	/// Bubblegum Merkle tree that every pool leaf must come from.
 	#[arg(long)]
 	pub merkle_tree: Pubkey,
+	/// Manifest slot to reserve; must equal the bundle's funded asset count.
 	#[arg(long)]
 	pub asset_index: u8,
+	/// Canonical prize pool PDA bump; the program rejects any other value.
 	#[arg(long)]
 	pub bump: u8,
 }
@@ -2217,24 +2236,34 @@ impl InstructionBuilder for CreatePrizePoolArgs {
 /// Arguments for `prepare-prize-pool-item`.
 #[derive(Debug, clap::Args)]
 pub struct PreparePrizePoolItemArgs {
+	/// Template authority; signs and pays the item rent.
 	#[arg(long)]
 	pub authority: Pubkey,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	#[arg(long)]
 	pub template: Pubkey,
+	/// Funding bundle PDA whose current slot holds the prize pool.
 	#[arg(long)]
 	pub bundle: Pubkey,
+	/// Funding prize pool PDA that admits the item; it must have no prepared item.
 	#[arg(long)]
 	pub prize_pool: Pubkey,
+	/// Empty item PDA `["prize-pool-item", prize_pool, deposit_cursor]`, created here.
 	#[arg(long)]
 	pub prize_pool_item: Pubkey,
+	/// Canonical item PDA bump; the program rejects any other value.
 	#[arg(long)]
 	pub item_bump: u8,
+	/// Leaf data hash (32 bytes, hex); must match the hash recomputed from the metadata.
 	#[arg(long)]
 	pub data_hash: String,
+	/// Leaf creator hash (32 bytes, hex); must match the creators in the metadata.
 	#[arg(long)]
 	pub creator_hash: String,
+	/// Leaf nonce; derives the asset ID under the pool's pinned tree.
 	#[arg(long)]
 	pub nonce: u64,
+	/// Leaf index in the pool's pinned tree, stored for the later deposit.
 	#[arg(long)]
 	pub index: u32,
 	/// Canonical Bubblegum V1 `MetadataArgs` Borsh bytes, hex encoded.
@@ -2271,36 +2300,52 @@ impl InstructionBuilder for PreparePrizePoolItemArgs {
 /// Arguments for `deposit-prize-pool-item`.
 #[derive(Debug, clap::Args)]
 pub struct DepositPrizePoolItemArgs {
+	/// Template authority; signs as the current leaf owner.
 	#[arg(long)]
 	pub authority: Pubkey,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	#[arg(long)]
 	pub template: Pubkey,
+	/// Funding bundle PDA whose current slot holds the prize pool.
 	#[arg(long)]
 	pub bundle: Pubkey,
+	/// Funding prize pool PDA that takes custody of the leaf.
 	#[arg(long)]
 	pub prize_pool: Pubkey,
+	/// Prepared item PDA at the pool's deposit cursor.
 	#[arg(long)]
 	pub prize_pool_item: Pubkey,
+	/// Bubblegum tree config of the Merkle tree.
 	#[arg(long)]
 	pub tree_config: Pubkey,
+	/// Pool's pinned Merkle tree that holds the leaf.
 	#[arg(long)]
 	pub merkle_tree: Pubkey,
+	/// Bubblegum program.
 	#[arg(long)]
 	pub bubblegum_program: Pubkey,
+	/// SPL Noop program used by Bubblegum as its log wrapper.
 	#[arg(long)]
 	pub log_wrapper: Pubkey,
+	/// SPL Account Compression program that owns the Merkle tree.
 	#[arg(long)]
 	pub compression_program: Pubkey,
+	/// Merkle proof node in leaf-to-root order; repeat for up to 16 nodes.
 	#[arg(long = "proof-account")]
 	pub proof_accounts: Vec<Pubkey>,
+	/// Merkle root (32 bytes, hex) that Bubblegum verifies the proof against.
 	#[arg(long)]
 	pub root: String,
+	/// Current leaf data hash (32 bytes, hex); must equal the prepared item's snapshot.
 	#[arg(long)]
 	pub data_hash: String,
+	/// Current leaf creator hash (32 bytes, hex); must equal the prepared item's snapshot.
 	#[arg(long)]
 	pub creator_hash: String,
+	/// Leaf nonce; must derive the prepared item's asset ID.
 	#[arg(long)]
 	pub nonce: u64,
+	/// Leaf index in the Merkle tree; must equal the prepared item's tree index.
 	#[arg(long)]
 	pub index: u32,
 }
@@ -2337,14 +2382,19 @@ impl InstructionBuilder for DepositPrizePoolItemArgs {
 /// Arguments for `cancel-prize-pool-item`.
 #[derive(Debug, clap::Args)]
 pub struct CancelPrizePoolItemArgs {
+	/// Template authority; signs and receives the closed item's rent.
 	#[arg(long)]
 	pub authority: Pubkey,
+	/// Template PDA; its treasury must be unlocked.
 	#[arg(long)]
 	pub template: Pubkey,
+	/// Funding bundle PDA of the template.
 	#[arg(long)]
 	pub bundle: Pubkey,
+	/// Funding prize pool PDA with a prepared item.
 	#[arg(long)]
 	pub prize_pool: Pubkey,
+	/// Prepared item PDA at the pool's deposit cursor, closed here.
 	#[arg(long)]
 	pub prize_pool_item: Pubkey,
 }
@@ -2366,12 +2416,16 @@ impl InstructionBuilder for CancelPrizePoolItemArgs {
 /// Arguments for `seal-prize-pool`.
 #[derive(Debug, clap::Args)]
 pub struct SealPrizePoolArgs {
+	/// Template authority; signs.
 	#[arg(long)]
 	pub authority: Pubkey,
+	/// Template PDA; its treasury must be unlocked and not retired.
 	#[arg(long)]
 	pub template: Pubkey,
+	/// Funding bundle PDA that records the pool commitment in its slot.
 	#[arg(long)]
 	pub bundle: Pubkey,
+	/// Fully deposited prize pool PDA with no prepared item, sealed here.
 	#[arg(long)]
 	pub prize_pool: Pubkey,
 }
@@ -2392,18 +2446,25 @@ impl InstructionBuilder for SealPrizePoolArgs {
 /// Arguments for `allocate-prize-pool-open`.
 #[derive(Debug, clap::Args)]
 pub struct AllocatePrizePoolOpenArgs {
+	/// Template PDA that owns the opening and bundle.
 	#[arg(long)]
 	pub template: Pubkey,
+	/// Verified template-opening receipt next in allocation order.
 	#[arg(long)]
 	pub opening: Pubkey,
+	/// Active bundle PDA selected by the opening's entropy.
 	#[arg(long)]
 	pub bundle: Pubkey,
+	/// Sealed prize pool PDA in the bundle that reserves one item for the opening.
 	#[arg(long)]
 	pub prize_pool: Pubkey,
+	/// Service vault PDA; pays the result receipt rent when receipts are enabled.
 	#[arg(long)]
 	pub service_vault: Pubkey,
+	/// Opening sequence used to derive its generation-unique result receipt.
 	#[arg(long)]
 	pub sequence: u64,
+	/// Result receipt PDA. Defaults to, and must equal, the canonical PDA for opening + sequence.
 	#[arg(long)]
 	pub result_receipt: Option<Pubkey>,
 }
@@ -2430,42 +2491,61 @@ impl InstructionBuilder for AllocatePrizePoolOpenArgs {
 /// Arguments for `claim-prize-pool-item`.
 #[derive(Debug, clap::Args)]
 pub struct ClaimPrizePoolItemArgs {
+	/// Template PDA that owns the opening and bundle.
 	#[arg(long)]
 	pub template: Pubkey,
+	/// Allocated template-opening receipt with a prize pool assignment.
 	#[arg(long)]
 	pub opening: Pubkey,
+	/// Bundle PDA the opening was allocated to.
 	#[arg(long)]
 	pub bundle: Pubkey,
+	/// Sealed prize pool PDA that signs the transfer.
 	#[arg(long)]
 	pub prize_pool: Pubkey,
+	/// Item PDA reserved for the opening, closed here.
 	#[arg(long)]
 	pub prize_pool_item: Pubkey,
+	/// Opening's bound beneficiary; becomes the leaf owner.
 	#[arg(long)]
 	pub recipient: Pubkey,
+	/// Receives the closed item PDA rent; must be the pool creator.
 	#[arg(long)]
 	pub rent_refund: Pubkey,
+	/// Bubblegum tree config of the Merkle tree.
 	#[arg(long)]
 	pub tree_config: Pubkey,
+	/// Pool's pinned Merkle tree that holds the leaf.
 	#[arg(long)]
 	pub merkle_tree: Pubkey,
+	/// Bubblegum program.
 	#[arg(long)]
 	pub bubblegum_program: Pubkey,
+	/// SPL Noop program used by Bubblegum as its log wrapper.
 	#[arg(long)]
 	pub log_wrapper: Pubkey,
+	/// SPL Account Compression program that owns the Merkle tree.
 	#[arg(long)]
 	pub compression_program: Pubkey,
+	/// Merkle proof node in leaf-to-root order; repeat for up to 16 nodes.
 	#[arg(long = "proof-account")]
 	pub proof_accounts: Vec<Pubkey>,
+	/// Manifest slot of the pool; must equal the opening's selected pool asset.
 	#[arg(long)]
 	pub asset_index: u8,
+	/// Merkle root (32 bytes, hex) that Bubblegum verifies the proof against.
 	#[arg(long)]
 	pub root: String,
+	/// Current leaf data hash (32 bytes, hex); must match the hash recomputed from the metadata.
 	#[arg(long)]
 	pub data_hash: String,
+	/// Current leaf creator hash (32 bytes, hex); must match the creators in the metadata.
 	#[arg(long)]
 	pub creator_hash: String,
+	/// Leaf nonce; must equal the item's nonce.
 	#[arg(long)]
 	pub nonce: u64,
+	/// Leaf index in the Merkle tree; must equal the item's tree index.
 	#[arg(long)]
 	pub index: u32,
 	/// Current canonical Bubblegum V1 `MetadataArgs` Borsh bytes, hex encoded.
@@ -2512,40 +2592,58 @@ impl InstructionBuilder for ClaimPrizePoolItemArgs {
 /// Arguments for `reclaim-prize-pool-item`.
 #[derive(Debug, clap::Args)]
 pub struct ReclaimPrizePoolItemArgs {
+	/// Template authority; signs and receives the leaf and the item rent.
 	#[arg(long)]
 	pub authority: Pubkey,
+	/// Template PDA that owns the bundle.
 	#[arg(long)]
 	pub template: Pubkey,
+	/// Template's box mint; its supply must be zero to reclaim from an active bundle.
 	#[arg(long)]
 	pub box_mint: Pubkey,
+	/// Bundle PDA whose slot holds the prize pool.
 	#[arg(long)]
 	pub bundle: Pubkey,
+	/// Prize pool PDA that signs the transfer.
 	#[arg(long)]
 	pub prize_pool: Pubkey,
+	/// Deposited, unassigned item PDA at the pool index, closed here.
 	#[arg(long)]
 	pub prize_pool_item: Pubkey,
+	/// Bubblegum tree config of the Merkle tree.
 	#[arg(long)]
 	pub tree_config: Pubkey,
+	/// Pool's pinned Merkle tree that holds the leaf.
 	#[arg(long)]
 	pub merkle_tree: Pubkey,
+	/// Bubblegum program.
 	#[arg(long)]
 	pub bubblegum_program: Pubkey,
+	/// SPL Noop program used by Bubblegum as its log wrapper.
 	#[arg(long)]
 	pub log_wrapper: Pubkey,
+	/// SPL Account Compression program that owns the Merkle tree.
 	#[arg(long)]
 	pub compression_program: Pubkey,
+	/// Merkle proof node in leaf-to-root order; repeat for up to 16 nodes.
 	#[arg(long = "proof-account")]
 	pub proof_accounts: Vec<Pubkey>,
+	/// Item index within the pool; must be the last deposit while the pool is unsealed.
 	#[arg(long)]
 	pub pool_index: u32,
+	/// Merkle root (32 bytes, hex) that Bubblegum verifies the proof against.
 	#[arg(long)]
 	pub root: String,
+	/// Current leaf data hash (32 bytes, hex); must match the hash recomputed from the metadata.
 	#[arg(long)]
 	pub data_hash: String,
+	/// Current leaf creator hash (32 bytes, hex); must match the creators in the metadata.
 	#[arg(long)]
 	pub creator_hash: String,
+	/// Leaf nonce; must equal the item's nonce.
 	#[arg(long)]
 	pub nonce: u64,
+	/// Leaf index in the Merkle tree; must equal the item's tree index.
 	#[arg(long)]
 	pub index: u32,
 	/// Current canonical Bubblegum V1 `MetadataArgs` Borsh bytes, hex encoded.
@@ -2591,12 +2689,16 @@ impl InstructionBuilder for ReclaimPrizePoolItemArgs {
 /// Arguments for `close-prize-pool`.
 #[derive(Debug, clap::Args)]
 pub struct ClosePrizePoolArgs {
+	/// Template authority; signs and receives the pool rent.
 	#[arg(long)]
 	pub authority: Pubkey,
+	/// Template PDA that owns the bundle.
 	#[arg(long)]
 	pub template: Pubkey,
+	/// Bundle PDA whose slot holds the prize pool.
 	#[arg(long)]
 	pub bundle: Pubkey,
+	/// Prize pool PDA with no outstanding leaves, closed here.
 	#[arg(long)]
 	pub prize_pool: Pubkey,
 }

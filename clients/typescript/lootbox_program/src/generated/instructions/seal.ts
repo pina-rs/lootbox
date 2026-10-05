@@ -39,7 +39,9 @@ export function getSealInstructionDataCodec(): FixedSizeCodec<SealInstructionDat
 }
 
 export type SealInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Lootbox authority. Signer; must match the stored authority. */
+authority: TAccountAuthority;
+/** Unsealed lootbox with at least one outcome, marked sealed here. */
 lootbox: TAccountLootbox;
 }
 
@@ -62,7 +64,9 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedSealInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Lootbox authority. Signer; must match the stored authority. */
 authority: TAccountMetas[0];
+/** Unsealed lootbox with at least one outcome, marked sealed here. */
 lootbox: TAccountMetas[1];
 };
 data: SealInstructionData; };

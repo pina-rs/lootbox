@@ -19,45 +19,145 @@ export const TEMPLATE_OPENING_STATE_DISCRIMINATOR2 = 0;
 export function getTemplateOpeningStateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(TEMPLATE_OPENING_STATE_DISCRIMINATOR2); }
 
 /** A burned box, its verified entropy, and independently claimable winning assets. */
-export type TemplateOpeningState = { discriminator: number; migrationVersion: number; template: Address;
+export type TemplateOpeningState = { discriminator: number; migrationVersion: number;
+/** Template PDA whose box was burned; seeds this PDA. */
+template: Address;
 /** Authority that owned and burned the box. */
 boxAuthority: Address;
-/** Immutable destination for every prize claim. */
+/**
+ * Immutable destination for every prize claim.
+ * Also receives the forfeiture bounty when the opening expires.
+ */
 beneficiary: Address;
-/** Account that receives opening rent when the lifecycle is closed. */
+/**
+ * Request payer, which receives the opening and randomness account rent
+ * when `closeTemplateOpening` closes the lifecycle.
+ */
 rentRefund: Address;
-/** Optional program expected to consume the result receipt. */
+/**
+ * Optional program expected to consume the result receipt.
+ * The zero address means no consumer is bound.
+ */
 consumerProgram: Address;
-/** Consumer-selected correlation key, fixed before randomness is known. */
-consumerContext: ReadonlyUint8Array; randomness: Address; sequence: bigint; seedSlot: bigint; entropy: ReadonlyUint8Array;
-/** Treasury revision and bundle prefix fixed before the box is burned. */
-treasuryRevision: bigint; eligibleBundleCount: number;
+/**
+ * Consumer-selected correlation key, fixed before randomness is known.
+ * Must be zero when no consumer program is bound.
+ */
+consumerContext: ReadonlyUint8Array;
+/**
+ * Switchboard randomness account created by the request; seeds this PDA,
+ * which is its authority.
+ */
+randomness: Address;
+/** FIFO position taken from the template's `next_request`. */
+sequence: bigint;
+/**
+ * Switchboard seed slot recorded at commit. Fulfillment must match it, and
+ * forfeiture is allowed 300 slots after it.
+ */
+seedSlot: bigint;
+/**
+ * Revealed randomness value persisted by `fulfillTemplateOpen`; zero
+ * until verified. Allocation derives the outcome from it.
+ */
+entropy: ReadonlyUint8Array;
+/**
+ * Treasury revision and bundle prefix fixed before the box is burned.
+ * Allocation rejects bundles activated at a later revision.
+ */
+treasuryRevision: bigint;
+/**
+ * Template `bundle_count` at request time; allocation draws only from
+ * this prefix of bundles.
+ */
+eligibleBundleCount: number;
 /** 0 committed, 1 verified, 2 allocated, 3 delivered, 4 forfeited. */
-status: number; selectedBundle: number;
+status: number;
+/** Index of the bundle won, set by allocation. */
+selectedBundle: number;
 /** Local item index reserved from a prize pool during allocation. */
 selectedPoolItem: number;
 /** Manifest slot containing the prize pool when `has_pool_assignment` is set. */
-selectedPoolAsset: number; hasPoolAssignment: boolean; claimedMask: number; bump: number;  };
+selectedPoolAsset: number;
+/** Whether allocation reserved a prize pool item for this opening. */
+hasPoolAssignment: boolean;
+/**
+ * Bit `i` is set once asset slot `i` is claimed. The opening becomes
+ * delivered when every slot of the selected bundle is set.
+ */
+claimedMask: number;
+/** Canonical bump of this opening PDA. */
+bump: number;  };
 
-export type TemplateOpeningStateArgs = { template: Address;
+export type TemplateOpeningStateArgs = {
+/** Template PDA whose box was burned; seeds this PDA. */
+template: Address;
 /** Authority that owned and burned the box. */
 boxAuthority: Address;
-/** Immutable destination for every prize claim. */
+/**
+ * Immutable destination for every prize claim.
+ * Also receives the forfeiture bounty when the opening expires.
+ */
 beneficiary: Address;
-/** Account that receives opening rent when the lifecycle is closed. */
+/**
+ * Request payer, which receives the opening and randomness account rent
+ * when `closeTemplateOpening` closes the lifecycle.
+ */
 rentRefund: Address;
-/** Optional program expected to consume the result receipt. */
+/**
+ * Optional program expected to consume the result receipt.
+ * The zero address means no consumer is bound.
+ */
 consumerProgram: Address;
-/** Consumer-selected correlation key, fixed before randomness is known. */
-consumerContext: ReadonlyUint8Array; randomness: Address; sequence: number | bigint; seedSlot: number | bigint; entropy: ReadonlyUint8Array;
-/** Treasury revision and bundle prefix fixed before the box is burned. */
-treasuryRevision: number | bigint; eligibleBundleCount: number;
+/**
+ * Consumer-selected correlation key, fixed before randomness is known.
+ * Must be zero when no consumer program is bound.
+ */
+consumerContext: ReadonlyUint8Array;
+/**
+ * Switchboard randomness account created by the request; seeds this PDA,
+ * which is its authority.
+ */
+randomness: Address;
+/** FIFO position taken from the template's `next_request`. */
+sequence: number | bigint;
+/**
+ * Switchboard seed slot recorded at commit. Fulfillment must match it, and
+ * forfeiture is allowed 300 slots after it.
+ */
+seedSlot: number | bigint;
+/**
+ * Revealed randomness value persisted by `fulfillTemplateOpen`; zero
+ * until verified. Allocation derives the outcome from it.
+ */
+entropy: ReadonlyUint8Array;
+/**
+ * Treasury revision and bundle prefix fixed before the box is burned.
+ * Allocation rejects bundles activated at a later revision.
+ */
+treasuryRevision: number | bigint;
+/**
+ * Template `bundle_count` at request time; allocation draws only from
+ * this prefix of bundles.
+ */
+eligibleBundleCount: number;
 /** 0 committed, 1 verified, 2 allocated, 3 delivered, 4 forfeited. */
-status: number; selectedBundle: number;
+status: number;
+/** Index of the bundle won, set by allocation. */
+selectedBundle: number;
 /** Local item index reserved from a prize pool during allocation. */
 selectedPoolItem: number;
 /** Manifest slot containing the prize pool when `has_pool_assignment` is set. */
-selectedPoolAsset: number; hasPoolAssignment: boolean; claimedMask: number; bump: number;  };
+selectedPoolAsset: number;
+/** Whether allocation reserved a prize pool item for this opening. */
+hasPoolAssignment: boolean;
+/**
+ * Bit `i` is set once asset slot `i` is claimed. The opening becomes
+ * delivered when every slot of the selected bundle is set.
+ */
+claimedMask: number;
+/** Canonical bump of this opening PDA. */
+bump: number;  };
 
 /** Gets the encoder for {@link TemplateOpeningStateArgs} account data. */
 export function getTemplateOpeningStateEncoder(): FixedSizeEncoder<TemplateOpeningStateArgs> {

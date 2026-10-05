@@ -22,9 +22,13 @@ export function getMintTemplateBoxesDiscriminator2Bytes(): ReadonlyUint8Array { 
 export type MintTemplateBoxesInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountRecipientBoxAccount extends string | AccountMeta<string> = string, TAccountBoxTokenProgram extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? WritableAccount<TAccountBoxMint> : TAccountBoxMint, TAccountRecipientBoxAccount extends string ? WritableAccount<TAccountRecipientBoxAccount> : TAccountRecipientBoxAccount, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, ...TRemainingAccounts]>;
 
-export type MintTemplateBoxesInstructionData = { discriminator: number; migrationVersion: number; amount: bigint;  };
+export type MintTemplateBoxesInstructionData = { discriminator: number; migrationVersion: number;
+/** Boxes to mint; must be positive. */
+amount: bigint;  };
 
-export type MintTemplateBoxesInstructionDataArgs = { amount: number | bigint;  };
+export type MintTemplateBoxesInstructionDataArgs = {
+/** Boxes to mint; must be positive. */
+amount: number | bigint;  };
 
 export function getMintTemplateBoxesInstructionDataEncoder(): FixedSizeEncoder<MintTemplateBoxesInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['amount', getU64Encoder()]]), (value) => ({ ...value, discriminator: 15, migrationVersion: 0 }));
@@ -39,10 +43,21 @@ export function getMintTemplateBoxesInstructionDataCodec(): FixedSizeCodec<MintT
 }
 
 export type MintTemplateBoxesInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountRecipientBoxAccount extends InstructionAccountInput = InstructionAccountInput, TAccountBoxTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs. */
+authority: TAccountAuthority;
+/**
+ * Live, unlocked template PDA; records the new lifetime mint total and
+ * signs as mint authority.
+ */
 template: TAccountTemplate;
+/** Template's box mint. */
 boxMint: TAccountBoxMint;
+/**
+ * Token-2022 associated token account of its owner for the box mint;
+ * receives the new boxes.
+ */
 recipientBoxAccount: TAccountRecipientBoxAccount;
+/** Token-2022 program, invoked to mint the boxes. */
 boxTokenProgram: TAccountBoxTokenProgram;
 amount: MintTemplateBoxesInstructionDataArgs["amount"];
 }
@@ -70,10 +85,21 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedMintTemplateBoxesInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs. */
 authority: TAccountMetas[0];
+/**
+ * Live, unlocked template PDA; records the new lifetime mint total and
+ * signs as mint authority.
+ */
 template: TAccountMetas[1];
+/** Template's box mint. */
 boxMint: TAccountMetas[2];
+/**
+ * Token-2022 associated token account of its owner for the box mint;
+ * receives the new boxes.
+ */
 recipientBoxAccount: TAccountMetas[3];
+/** Token-2022 program, invoked to mint the boxes. */
 boxTokenProgram: TAccountMetas[4];
 };
 data: MintTemplateBoxesInstructionData; };

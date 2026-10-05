@@ -22,9 +22,23 @@ export function getAppendExclusiveTreeDiscriminator2Bytes(): ReadonlyUint8Array 
 export type AppendExclusiveTreeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAdmin extends string | AccountMeta<string> = string, TAccountExclusiveCollection extends string | AccountMeta<string> = string, TAccountTreeConfig extends string | AccountMeta<string> = string, TAccountMerkleTree extends string | AccountMeta<string> = string, TAccountBubblegumProgram extends string | AccountMeta<string> = string, TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountCompressionProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAdmin extends string ? WritableSignerAccount<TAccountAdmin> & AccountSignerMeta<TAccountAdmin> : TAccountAdmin, TAccountExclusiveCollection extends string ? WritableAccount<TAccountExclusiveCollection> : TAccountExclusiveCollection, TAccountTreeConfig extends string ? WritableAccount<TAccountTreeConfig> : TAccountTreeConfig, TAccountMerkleTree extends string ? WritableAccount<TAccountMerkleTree> : TAccountMerkleTree, TAccountBubblegumProgram extends string ? ReadonlyAccount<TAccountBubblegumProgram> : TAccountBubblegumProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountCompressionProgram extends string ? ReadonlyAccount<TAccountCompressionProgram> : TAccountCompressionProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type AppendExclusiveTreeInstructionData = { discriminator: number; migrationVersion: number; maxDepth: number; maxBufferSize: number;  };
+export type AppendExclusiveTreeInstructionData = { discriminator: number; migrationVersion: number;
+/** Concurrent Merkle tree depth, from 3 through 20. */
+maxDepth: number;
+/**
+ * Concurrent Merkle tree changelog buffer size, passed to Bubblegum and
+ * used in the minimum tree account size.
+ */
+maxBufferSize: number;  };
 
-export type AppendExclusiveTreeInstructionDataArgs = { maxDepth: number; maxBufferSize: number;  };
+export type AppendExclusiveTreeInstructionDataArgs = {
+/** Concurrent Merkle tree depth, from 3 through 20. */
+maxDepth: number;
+/**
+ * Concurrent Merkle tree changelog buffer size, passed to Bubblegum and
+ * used in the minimum tree account size.
+ */
+maxBufferSize: number;  };
 
 export function getAppendExclusiveTreeInstructionDataEncoder(): FixedSizeEncoder<AppendExclusiveTreeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['maxDepth', getU8Encoder()], ['maxBufferSize', getU32Encoder()]]), (value) => ({ ...value, discriminator: 55, migrationVersion: 0 }));
@@ -39,18 +53,28 @@ export function getAppendExclusiveTreeInstructionDataCodec(): FixedSizeCodec<App
 }
 
 export type AppendExclusiveTreeInput<TAccountAdmin extends InstructionSignerInput = InstructionSignerInput, TAccountExclusiveCollection extends InstructionAccountInput = InstructionAccountInput, TAccountTreeConfig extends InstructionAccountInput = InstructionAccountInput, TAccountMerkleTree extends InstructionAccountInput = InstructionAccountInput, TAccountBubblegumProgram extends InstructionAccountInput = InstructionAccountInput, TAccountLogWrapper extends InstructionAccountInput = InstructionAccountInput, TAccountCompressionProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  admin: TAccountAdmin;
+  /** Collection admin; signs and pays the tree config rent. */
+admin: TAccountAdmin;
+/** Collection PDA; signs as tree creator and records the new active tree. */
 exclusiveCollection: TAccountExclusiveCollection;
-/** Bubblegum tree config PDA of `merkle_tree`. */
+/**
+ * Bubblegum tree config PDA of `merkle_tree`.
+ *
+ * Created by Bubblegum here.
+ */
 treeConfig: TAccountTreeConfig;
 /**
  * Pre-allocated, uninitialized MPL Account Compression tree whose size
  * includes a canopy leaving proofs of at most ten nodes.
  */
 merkleTree: TAccountMerkleTree;
+/** Bubblegum program, invoked to create the V2 tree. */
 bubblegumProgram: TAccountBubblegumProgram;
+/** MPL Noop program used by Bubblegum as its log wrapper. */
 logWrapper: TAccountLogWrapper;
+/** MPL Account Compression program that owns `merkle_tree`. */
 compressionProgram: TAccountCompressionProgram;
+/** System program, passed to Bubblegum. */
 systemProgram?: TAccountSystemProgram;
 maxDepth: AppendExclusiveTreeInstructionDataArgs["maxDepth"];
 maxBufferSize: AppendExclusiveTreeInstructionDataArgs["maxBufferSize"];
@@ -82,18 +106,28 @@ return Object.freeze({ accounts: [getAccountMeta("admin", accounts.admin), getAc
 
 export type ParsedAppendExclusiveTreeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Collection admin; signs and pays the tree config rent. */
 admin: TAccountMetas[0];
+/** Collection PDA; signs as tree creator and records the new active tree. */
 exclusiveCollection: TAccountMetas[1];
-/** Bubblegum tree config PDA of `merkle_tree`. */
+/**
+ * Bubblegum tree config PDA of `merkle_tree`.
+ *
+ * Created by Bubblegum here.
+ */
 treeConfig: TAccountMetas[2];
 /**
  * Pre-allocated, uninitialized MPL Account Compression tree whose size
  * includes a canopy leaving proofs of at most ten nodes.
  */
 merkleTree: TAccountMetas[3];
+/** Bubblegum program, invoked to create the V2 tree. */
 bubblegumProgram: TAccountMetas[4];
+/** MPL Noop program used by Bubblegum as its log wrapper. */
 logWrapper: TAccountMetas[5];
+/** MPL Account Compression program that owns `merkle_tree`. */
 compressionProgram: TAccountMetas[6];
+/** System program, passed to Bubblegum. */
 systemProgram: TAccountMetas[7];
 };
 data: AppendExclusiveTreeInstructionData; };

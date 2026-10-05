@@ -22,9 +22,33 @@ export function getAttachExclusiveNftDiscriminator2Bytes(): ReadonlyUint8Array {
 export type AttachExclusiveNftInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountExclusiveCollection extends string | AccountMeta<string> = string, TAccountExclusiveAttachment extends string | AccountMeta<string> = string, TAccountFeeVault extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountExclusiveCollection extends string ? ReadonlyAccount<TAccountExclusiveCollection> : TAccountExclusiveCollection, TAccountExclusiveAttachment extends string ? WritableAccount<TAccountExclusiveAttachment> : TAccountExclusiveAttachment, TAccountFeeVault extends string ? WritableAccount<TAccountFeeVault> : TAccountFeeVault, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type AttachExclusiveNftInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number; bump: number; feeVaultBump: number;  };
+export type AttachExclusiveNftInstructionData = { discriminator: number; migrationVersion: number;
+/** Manifest slot to bind; must equal the bundle's `funded_assets`. */
+assetIndex: number;
+/**
+ * Canonical bump of the attachment PDA
+ * `["exclusive-attachment", bundle, asset_index]`; any other value fails.
+ */
+bump: number;
+/**
+ * Canonical bump of the fee vault PDA
+ * `["exclusive-fee-vault", attachment]`; any other value fails.
+ */
+feeVaultBump: number;  };
 
-export type AttachExclusiveNftInstructionDataArgs = { assetIndex: number; bump: number; feeVaultBump: number;  };
+export type AttachExclusiveNftInstructionDataArgs = {
+/** Manifest slot to bind; must equal the bundle's `funded_assets`. */
+assetIndex: number;
+/**
+ * Canonical bump of the attachment PDA
+ * `["exclusive-attachment", bundle, asset_index]`; any other value fails.
+ */
+bump: number;
+/**
+ * Canonical bump of the fee vault PDA
+ * `["exclusive-fee-vault", attachment]`; any other value fails.
+ */
+feeVaultBump: number;  };
 
 export function getAttachExclusiveNftInstructionDataEncoder(): FixedSizeEncoder<AttachExclusiveNftInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()], ['bump', getU8Encoder()], ['feeVaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 57, migrationVersion: 0 }));
@@ -39,16 +63,25 @@ export function getAttachExclusiveNftInstructionDataCodec(): FixedSizeCodec<Atta
 }
 
 export type AttachExclusiveNftInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountExclusiveCollection extends InstructionAccountInput = InstructionAccountInput, TAccountExclusiveAttachment extends InstructionAccountInput = InstructionAccountInput, TAccountFeeVault extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Template authority; signs and pays the attachment rent and fee top-up. */
+authority: TAccountAuthority;
+/** Template PDA; its treasury must be unlocked and not retired. */
 template: TAccountTemplate;
+/** Funding bundle PDA of `template`; its next slot is bound here. */
 bundle: TAccountBundle;
+/** Published collection PDA whose attach window is open. */
 exclusiveCollection: TAccountExclusiveCollection;
+/**
+ * Empty attachment PDA `["exclusive-attachment", bundle, asset_index]`,
+ * created here.
+ */
 exclusiveAttachment: TAccountExclusiveAttachment;
 /**
  * Zero-data System account PDA that prepays Bubblegum mint fees.
  * Unsolicited lamports are accepted and reduce the required top-up.
  */
 feeVault: TAccountFeeVault;
+/** System program, invoked to create the attachment and fund the vault. */
 systemProgram?: TAccountSystemProgram;
 assetIndex: AttachExclusiveNftInstructionDataArgs["assetIndex"];
 bump: AttachExclusiveNftInstructionDataArgs["bump"];
@@ -81,16 +114,25 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedAttachExclusiveNftInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Template authority; signs and pays the attachment rent and fee top-up. */
 authority: TAccountMetas[0];
+/** Template PDA; its treasury must be unlocked and not retired. */
 template: TAccountMetas[1];
+/** Funding bundle PDA of `template`; its next slot is bound here. */
 bundle: TAccountMetas[2];
+/** Published collection PDA whose attach window is open. */
 exclusiveCollection: TAccountMetas[3];
+/**
+ * Empty attachment PDA `["exclusive-attachment", bundle, asset_index]`,
+ * created here.
+ */
 exclusiveAttachment: TAccountMetas[4];
 /**
  * Zero-data System account PDA that prepays Bubblegum mint fees.
  * Unsolicited lamports are accepted and reduce the required top-up.
  */
 feeVault: TAccountMetas[5];
+/** System program, invoked to create the attachment and fund the vault. */
 systemProgram: TAccountMetas[6];
 };
 data: AttachExclusiveNftInstructionData; };

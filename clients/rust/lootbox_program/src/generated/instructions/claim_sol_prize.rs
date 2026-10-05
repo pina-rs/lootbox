@@ -8,15 +8,31 @@
 	clippy::too_many_arguments
 )]
 
+/// Pays one native SOL asset of an allocated bundle to the opening's
+/// beneficiary.
+///
+/// Permissionless and signer-free: anyone may crank the claim, but lamports
+/// move only to the bound beneficiary. Each asset is claimable once per
+/// opening, and the opening becomes delivered after its last asset is claimed.
+/// Fails if the bundle would drop below the asset's unreleased amount plus its
+/// rent reserve.
 pub const CLAIM_SOL_PRIZE_DISCRIMINATOR: u8 = 19u8;
 pub const CLAIM_SOL_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct ClaimSolPrize {
+	/// Template treasury, validated by its PDA seeds; binds the bundle and the
+	/// opening.
 	pub template: solana_pubkey::Pubkey,
+	/// Allocated opening of this template, validated by its PDA seeds; records
+	/// the claimed asset.
 	pub opening: solana_pubkey::Pubkey,
+	/// Bundle PDA the opening selected; advances the asset's release count and
+	/// pays the lamports directly.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Opening beneficiary; rejected unless it matches the stored beneficiary.
+	/// Receives the lamports.
 	pub recipient: solana_pubkey::Pubkey,
 }
 
@@ -80,5 +96,8 @@ impl ClaimSolPrizeInstructionData {
 pub struct ClaimSolPrizeInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Asset slot within the selected bundle; must be below its asset count,
+	/// hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and be unclaimed by this
+	/// opening.
 	pub asset_index: u8,
 }

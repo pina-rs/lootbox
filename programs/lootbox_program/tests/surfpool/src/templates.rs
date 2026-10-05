@@ -235,6 +235,7 @@ fn fund_token(
 			],
 		))
 		.expect("fund rewards");
+
 	if nft {
 		program
 			.send_instruction(
@@ -250,6 +251,7 @@ fn fund_token(
 			)
 			.expect("make unique NFT");
 	}
+
 	let mut data = vec![0; FundTokenPrizeInstruction::SIZE];
 	let args =
 		FundTokenPrizeInstruction::initialize(&mut data, |_| Ok(())).expect("fund token data");
@@ -353,6 +355,7 @@ fn mock_leaf(nonce: u64, index: u32) -> MockCompressedLeaf {
 
 fn deploy_bubblegum_fixture(program: &Harness) {
 	let artifact = std::env::var("MOCK_BUBBLEGUM_SBF_ARTIFACT").expect("Bubblegum fixture");
+
 	for program_id in [bubblegum_id(), compression_id(), noop_id()] {
 		program
 			.deploy_program(program_id, Path::new(&artifact))
@@ -368,12 +371,14 @@ fn initialize_mock_tree(program: &Harness, leaves: &[MockCompressedLeaf]) -> Key
 			.expect("fixture leaf count")
 			.to_le_bytes(),
 	);
+
 	for leaf in leaves {
 		data.extend_from_slice(&leaf.data_hash);
 		data.extend_from_slice(&leaf.creator_hash);
 		data.extend_from_slice(&leaf.nonce.to_le_bytes());
 		data.extend_from_slice(&leaf.index.to_le_bytes());
 	}
+
 	program
 		.send_with_signers(
 			Instruction::new_with_bytes(
@@ -840,9 +845,11 @@ fn fulfill(context: &FulfillContext<'_>, value: u8) -> Result<(), String> {
 		&context.oracle,
 		context.cpi,
 	);
+
 	for index in [4, 3, 0] {
 		accounts.remove(index);
 	}
+
 	let service_vault = Pubkey::find_program_address(
 		&[b"service-vault", context.template.as_ref()],
 		&context.program.program_id,
@@ -852,6 +859,7 @@ fn fulfill(context: &FulfillContext<'_>, value: u8) -> Result<(), String> {
 	let mut data = vec![0; FulfillTemplateOpenInstruction::SIZE];
 	let args = FulfillTemplateOpenInstruction::initialize(&mut data, |_| Ok(())).expect("fulfill");
 	args.signature.fill(7);
+
 	args.recovery_id = 1;
 	args.value.fill(value);
 	context.program.send_with_signers(
@@ -892,6 +900,7 @@ fn allocate_any(
 ) -> Result<usize, String> {
 	// Exercise wrong-prize account rejection as well as the successful path.
 	let mut failures = Vec::with_capacity(bundles.len());
+
 	for (index, bundle) in bundles.iter().enumerate() {
 		let service_vault = Pubkey::find_program_address(
 			&[b"service-vault", template.as_ref()],
@@ -918,6 +927,7 @@ fn allocate_any(
 			Err(error) => failures.push(format!("bundle {index}: {error}")),
 		}
 	}
+
 	Err(format!(
 		"no bundle can be allocated: {}",
 		failures.join("; ")
@@ -1194,11 +1204,13 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 					)
 					.expect("unlock date");
 			}
+
 			program
 				.send_with_signers(request, &[&recipient, &randomness])
 				.expect("burn and commit");
 			openings.push((opening, randomness.pubkey()));
 		}
+
 		assert_eq!(
 			token_amount(&program.account(&owner_ata).expect("all burned")),
 			0
@@ -1244,6 +1256,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 			)
 			.expect("persist proof independently of allocation order");
 		}
+
 		assert!(
 			program
 				.send(
@@ -1311,6 +1324,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 						provision_ata(&program, &payer, &recipient.pubkey(), reward)
 							.expect("create missing destination");
 					}
+
 					program
 						.send(&data, claim_accounts.clone())
 						.expect("retry pays same asset");
@@ -1347,6 +1361,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 				}
 			}
 		}
+
 		assert_eq!(
 			counts,
 			[3, 2, 1],
@@ -1400,6 +1415,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 				"result receipts outlive closeable opening accounts",
 			);
 		}
+
 		program
 			.send(
 				&[LootboxInstruction::CloseServiceVault as u8, 0],
@@ -1557,6 +1573,7 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 				.expect("commit opening");
 			openings.push((opening, randomness.pubkey()));
 		}
+
 		program.advance_one_slot().expect("oracle delay");
 		for (opening, randomness) in &openings {
 			fulfill(
@@ -1642,6 +1659,7 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 					quote_balance_before
 				);
 			}
+
 			program
 				.send_instruction(quote_claim)
 				.expect("permissionless quote release");
@@ -1696,6 +1714,7 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 					"relayer cannot redirect a minted badge"
 				);
 			}
+
 			program
 				.send_instruction(mint_claim.clone())
 				.expect("mint badge to bound recipient");
@@ -1714,6 +1733,7 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 				assert_eq!(&badge.data[..4], &[0, 0, 0, 0]);
 			}
 		}
+
 		assert_eq!(
 			program
 				.balance(&recipient.pubkey())

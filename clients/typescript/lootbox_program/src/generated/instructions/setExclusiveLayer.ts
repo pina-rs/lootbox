@@ -22,9 +22,35 @@ export function getSetExclusiveLayerDiscriminator2Bytes(): ReadonlyUint8Array { 
 export type SetExclusiveLayerInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAdmin extends string | AccountMeta<string> = string, TAccountExclusiveCollection extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAdmin extends string ? ReadonlySignerAccount<TAccountAdmin> & AccountSignerMeta<TAccountAdmin> : TAccountAdmin, TAccountExclusiveCollection extends string ? WritableAccount<TAccountExclusiveCollection> : TAccountExclusiveCollection, ...TRemainingAccounts]>;
 
-export type SetExclusiveLayerInstructionData = { discriminator: number; migrationVersion: number; layerIndex: number; traitCount: number; weights: ReadonlyUint8Array;  };
+export type SetExclusiveLayerInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Layer to overwrite, counted from 0 at the bottom; must be below the
+ * collection's `layer_count`.
+ */
+layerIndex: number;
+/** Traits in the layer, from 1 through 64. */
+traitCount: number;
+/**
+ * Sixty-four little-endian `u32` weights; slots past `trait_count` are zero.
+ *
+ * The used weights must total from 1 through `u32::MAX`.
+ */
+weights: ReadonlyUint8Array;  };
 
-export type SetExclusiveLayerInstructionDataArgs = { layerIndex: number; traitCount: number; weights: ReadonlyUint8Array;  };
+export type SetExclusiveLayerInstructionDataArgs = {
+/**
+ * Layer to overwrite, counted from 0 at the bottom; must be below the
+ * collection's `layer_count`.
+ */
+layerIndex: number;
+/** Traits in the layer, from 1 through 64. */
+traitCount: number;
+/**
+ * Sixty-four little-endian `u32` weights; slots past `trait_count` are zero.
+ *
+ * The used weights must total from 1 through `u32::MAX`.
+ */
+weights: ReadonlyUint8Array;  };
 
 export function getSetExclusiveLayerInstructionDataEncoder(): FixedSizeEncoder<SetExclusiveLayerInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['layerIndex', getU8Encoder()], ['traitCount', getU8Encoder()], ['weights', fixPinaPodEncoderSize(getBytesEncoder(), 256)]]), (value) => ({ ...value, discriminator: 54, migrationVersion: 0 }));
@@ -39,7 +65,9 @@ export function getSetExclusiveLayerInstructionDataCodec(): FixedSizeCodec<SetEx
 }
 
 export type SetExclusiveLayerInput<TAccountAdmin extends InstructionSignerInput = InstructionSignerInput, TAccountExclusiveCollection extends InstructionAccountInput = InstructionAccountInput> =  {
-  admin: TAccountAdmin;
+  /** Collection admin; signs. */
+admin: TAccountAdmin;
+/** Draft collection PDA whose layer table is overwritten. */
 exclusiveCollection: TAccountExclusiveCollection;
 layerIndex: SetExclusiveLayerInstructionDataArgs["layerIndex"];
 traitCount: SetExclusiveLayerInstructionDataArgs["traitCount"];
@@ -69,7 +97,9 @@ return Object.freeze({ accounts: [getAccountMeta("admin", accounts.admin), getAc
 
 export type ParsedSetExclusiveLayerInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Collection admin; signs. */
 admin: TAccountMetas[0];
+/** Draft collection PDA whose layer table is overwritten. */
 exclusiveCollection: TAccountMetas[1];
 };
 data: SetExclusiveLayerInstructionData; };

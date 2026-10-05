@@ -18,23 +18,34 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Seal a fully deposited prize pool into its bundle slot.
+///
+/// The template authority signs while the treasury is unlocked and not
+/// retired. The pool must be funding with `deposit_cursor == quantity` and no
+/// prepared item. Writes the domain-separated pool commitment into the bundle
+/// slot, advances the bundle's `funded_assets`, and marks the pool sealed.
 /// CPI call for the `seal_prize_pool` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct SealPrizePool<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs.
 	/// Required privileges: read-only and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA; its treasury must be unlocked and not retired.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Funding bundle PDA; receives the pool commitment and advances
+	/// `funded_assets`.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `prizePool`.
+	/// Fully deposited `PrizePoolState` PDA; becomes sealed.
 	/// Required privileges: writable.
 	pub prize_pool: &'account AccountView,
 

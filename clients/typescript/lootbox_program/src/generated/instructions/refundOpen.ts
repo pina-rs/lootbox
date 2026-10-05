@@ -39,12 +39,28 @@ export function getRefundOpenInstructionDataCodec(): FixedSizeCodec<RefundOpenIn
 }
 
 export type RefundOpenInput<TAccountRecipient extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountRandomness extends InstructionAccountInput = InstructionAccountInput, TAccountClock extends InstructionAccountInput = InstructionAccountInput> =  {
-  recipient: TAccountRecipient;
+  /**
+ * Opening's stored recipient. Writable signer; receives the minimum
+ * reward.
+ */
+recipient: TAccountRecipient;
+/** Lootbox of the opening; `pending_openings` falls and `refunded` grows. */
 lootbox: TAccountLootbox;
+/**
+ * Vault PDA of `lootbox` that pays the minimum reward; must keep its rent
+ * reserve plus the remaining liability.
+ */
 vault: TAccountVault;
+/** The lootbox's box mint, read for the live supply in the liability check. */
 boxMint: TAccountBoxMint;
+/**
+ * Pending opening PDA bound to `lootbox`, `randomness`, and `recipient`;
+ * records the refund.
+ */
 opening: TAccountOpening;
+/** Opening's Switchboard randomness account; must still be unrevealed. */
 randomness: TAccountRandomness;
+/** Clock sysvar, validated in the handler and read for the current slot. */
 clock: TAccountClock;
 }
 
@@ -67,12 +83,28 @@ return Object.freeze({ accounts: [getAccountMeta("recipient", accounts.recipient
 
 export type ParsedRefundOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Opening's stored recipient. Writable signer; receives the minimum
+ * reward.
+ */
 recipient: TAccountMetas[0];
+/** Lootbox of the opening; `pending_openings` falls and `refunded` grows. */
 lootbox: TAccountMetas[1];
+/**
+ * Vault PDA of `lootbox` that pays the minimum reward; must keep its rent
+ * reserve plus the remaining liability.
+ */
 vault: TAccountMetas[2];
+/** The lootbox's box mint, read for the live supply in the liability check. */
 boxMint: TAccountMetas[3];
+/**
+ * Pending opening PDA bound to `lootbox`, `randomness`, and `recipient`;
+ * records the refund.
+ */
 opening: TAccountMetas[4];
+/** Opening's Switchboard randomness account; must still be unrevealed. */
 randomness: TAccountMetas[5];
+/** Clock sysvar, validated in the handler and read for the current slot. */
 clock: TAccountMetas[6];
 };
 data: RefundOpenInstructionData; };

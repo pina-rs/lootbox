@@ -25,25 +25,73 @@ export function getExclusiveAttachmentStateDiscriminator2Bytes(): ReadonlyUint8A
  * zero-data fee vault prepaying Bubblegum's per-mint fee, so a claim costs
  * its submitter only the transaction fee.
  */
-export type ExclusiveAttachmentState = { discriminator: number; migrationVersion: number; template: Address; bundle: Address; collection: Address;
+export type ExclusiveAttachmentState = { discriminator: number; migrationVersion: number;
+/** Template PDA whose bundle attached; set at attach time. */
+template: Address;
+/** Bundle PDA whose slot this attachment fills; part of the PDA seeds. */
+bundle: Address;
+/** `ExclusiveCollectionState` PDA that every claim mints from. */
+collection: Address;
 /** The collection's frozen `layers_hash` at attach time. */
 layersHash: ReadonlyUint8Array;
-/** Copies the bound bundle slot can ever mint. */
+/**
+ * Copies the bound bundle slot can ever mint.
+ *
+ * Copied from the bundle's quantity at attach time.
+ */
 quantity: bigint;
-/** Copies minted through this attachment. */
+/**
+ * Copies minted through this attachment.
+ *
+ * Incremented on each claim and never exceeds `quantity`.
+ */
 minted: bigint;
-/** Bubblegum mint fee escrowed per copy. */
-mintFeeLamports: bigint; assetIndex: number; bump: number; feeVaultBump: number;  };
+/**
+ * Bubblegum mint fee escrowed per copy.
+ *
+ * Lamports; fixed at attach time to Bubblegum V2's 90,000-lamport fee.
+ */
+mintFeeLamports: bigint;
+/** Bundle manifest slot bound to the collection; part of the PDA seeds. */
+assetIndex: number;
+/** Canonical bump of this PDA `["exclusive-attachment", bundle, asset_index]`. */
+bump: number;
+/** Canonical bump of the fee vault PDA `["exclusive-fee-vault", attachment]`. */
+feeVaultBump: number;  };
 
-export type ExclusiveAttachmentStateArgs = { template: Address; bundle: Address; collection: Address;
+export type ExclusiveAttachmentStateArgs = {
+/** Template PDA whose bundle attached; set at attach time. */
+template: Address;
+/** Bundle PDA whose slot this attachment fills; part of the PDA seeds. */
+bundle: Address;
+/** `ExclusiveCollectionState` PDA that every claim mints from. */
+collection: Address;
 /** The collection's frozen `layers_hash` at attach time. */
 layersHash: ReadonlyUint8Array;
-/** Copies the bound bundle slot can ever mint. */
+/**
+ * Copies the bound bundle slot can ever mint.
+ *
+ * Copied from the bundle's quantity at attach time.
+ */
 quantity: number | bigint;
-/** Copies minted through this attachment. */
+/**
+ * Copies minted through this attachment.
+ *
+ * Incremented on each claim and never exceeds `quantity`.
+ */
 minted: number | bigint;
-/** Bubblegum mint fee escrowed per copy. */
-mintFeeLamports: number | bigint; assetIndex: number; bump: number; feeVaultBump: number;  };
+/**
+ * Bubblegum mint fee escrowed per copy.
+ *
+ * Lamports; fixed at attach time to Bubblegum V2's 90,000-lamport fee.
+ */
+mintFeeLamports: number | bigint;
+/** Bundle manifest slot bound to the collection; part of the PDA seeds. */
+assetIndex: number;
+/** Canonical bump of this PDA `["exclusive-attachment", bundle, asset_index]`. */
+bump: number;
+/** Canonical bump of the fee vault PDA `["exclusive-fee-vault", attachment]`. */
+feeVaultBump: number;  };
 
 /** Gets the encoder for {@link ExclusiveAttachmentStateArgs} account data. */
 export function getExclusiveAttachmentStateEncoder(): FixedSizeEncoder<ExclusiveAttachmentStateArgs> {

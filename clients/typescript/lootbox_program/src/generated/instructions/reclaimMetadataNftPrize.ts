@@ -22,9 +22,19 @@ export function getReclaimMetadataNftPrizeDiscriminator2Bytes(): ReadonlyUint8Ar
 export type ReclaimMetadataNftPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountDestination extends string | AccountMeta<string> = string, TAccountMetadata extends string | AccountMeta<string> = string, TAccountTokenMetadataProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = string, TAccountInstructionsSysvar extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = string, TAccountAssociatedTokenProgram extends string | AccountMeta<string> = string, TAccountOptionalAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow, TAccountDestination extends string ? WritableAccount<TAccountDestination> : TAccountDestination, TAccountMetadata extends string ? WritableAccount<TAccountMetadata> : TAccountMetadata, TAccountTokenMetadataProgram extends string ? ReadonlyAccount<TAccountTokenMetadataProgram> : TAccountTokenMetadataProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountInstructionsSysvar extends string ? ReadonlyAccount<TAccountInstructionsSysvar> : TAccountInstructionsSysvar, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, TAccountAssociatedTokenProgram extends string ? ReadonlyAccount<TAccountAssociatedTokenProgram> : TAccountAssociatedTokenProgram, TAccountOptionalAccounts extends string ? ReadonlyAccount<TAccountOptionalAccounts> : TAccountOptionalAccounts, ...TRemainingAccounts]>;
 
-export type ReclaimMetadataNftPrizeInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number;  };
+export type ReclaimMetadataNftPrizeInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Bundle slot holding the NFT. Must be below the bundle's `funded_assets`
+ * and hold a Token Metadata NFT whose mint is `mint`.
+ */
+assetIndex: number;  };
 
-export type ReclaimMetadataNftPrizeInstructionDataArgs = { assetIndex: number;  };
+export type ReclaimMetadataNftPrizeInstructionDataArgs = {
+/**
+ * Bundle slot holding the NFT. Must be below the bundle's `funded_assets`
+ * and hold a Token Metadata NFT whose mint is `mint`.
+ */
+assetIndex: number;  };
 
 export function getReclaimMetadataNftPrizeInstructionDataEncoder(): FixedSizeEncoder<ReclaimMetadataNftPrizeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 29, migrationVersion: 0 }));
@@ -39,20 +49,57 @@ export function getReclaimMetadataNftPrizeInstructionDataCodec(): FixedSizeCodec
 }
 
 export type ReclaimMetadataNftPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountDestination extends InstructionAccountInput = InstructionAccountInput, TAccountMetadata extends InstructionAccountInput = InstructionAccountInput, TAccountTokenMetadataProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountInstructionsSysvar extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountAssociatedTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountOptionalAccounts extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Template authority. Receives the NFT and pays for the Token Metadata
+ * transfer.
+ */
+authority: TAccountAuthority;
+/** Template PDA of this program. */
 template: TAccountTemplate;
+/**
+ * The template's Token-2022 box mint; its supply must be zero to reclaim
+ * from an active bundle.
+ */
 boxMint: TAccountBoxMint;
+/**
+ * Bundle PDA of `template` that owns the escrow, signs the transfer, and
+ * records the reclaim.
+ */
 bundle: TAccountBundle;
+/**
+ * NFT mint stored in the reclaimed slot; revalidated as a standard Metadata
+ * NFT.
+ */
 mint: TAccountMint;
+/** The bundle's associated token account for `mint`, which the NFT leaves. */
 escrow: TAccountEscrow;
+/**
+ * The authority's existing associated token account for `mint`, which
+ * receives the NFT.
+ */
 destination: TAccountDestination;
+/**
+ * Canonical Token Metadata PDA of `mint`; must still be revoked and
+ * immutable.
+ */
 metadata: TAccountMetadata;
+/** Metaplex Token Metadata program, invoked to transfer the NFT. */
 tokenMetadataProgram: TAccountTokenMetadataProgram;
+/** System program, forwarded to Token Metadata. */
 systemProgram: TAccountSystemProgram;
+/** Instructions sysvar, forwarded to Token Metadata. */
 instructionsSysvar: TAccountInstructionsSysvar;
+/** Classic SPL Token program, forwarded to Token Metadata. */
 tokenProgram: TAccountTokenProgram;
+/** Associated Token Account program, forwarded to Token Metadata. */
 associatedTokenProgram: TAccountAssociatedTokenProgram;
-/** Edition, source record, destination record, rules program, and rules. */
+/**
+ * Exactly five accounts: the Master Edition PDA, then the source token
+ * record, destination token record, rules program, and rules. The last four
+ * must be the Token Metadata program address, which rejects programmable
+ * NFTs. The edition is validated when `mint` keeps a mint or freeze
+ * authority.
+ */
 optionalAccounts: TAccountOptionalAccounts;
 assetIndex: ReclaimMetadataNftPrizeInstructionDataArgs["assetIndex"];
 }
@@ -80,20 +127,57 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedReclaimMetadataNftPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template authority. Receives the NFT and pays for the Token Metadata
+ * transfer.
+ */
 authority: TAccountMetas[0];
+/** Template PDA of this program. */
 template: TAccountMetas[1];
+/**
+ * The template's Token-2022 box mint; its supply must be zero to reclaim
+ * from an active bundle.
+ */
 boxMint: TAccountMetas[2];
+/**
+ * Bundle PDA of `template` that owns the escrow, signs the transfer, and
+ * records the reclaim.
+ */
 bundle: TAccountMetas[3];
+/**
+ * NFT mint stored in the reclaimed slot; revalidated as a standard Metadata
+ * NFT.
+ */
 mint: TAccountMetas[4];
+/** The bundle's associated token account for `mint`, which the NFT leaves. */
 escrow: TAccountMetas[5];
+/**
+ * The authority's existing associated token account for `mint`, which
+ * receives the NFT.
+ */
 destination: TAccountMetas[6];
+/**
+ * Canonical Token Metadata PDA of `mint`; must still be revoked and
+ * immutable.
+ */
 metadata: TAccountMetas[7];
+/** Metaplex Token Metadata program, invoked to transfer the NFT. */
 tokenMetadataProgram: TAccountMetas[8];
+/** System program, forwarded to Token Metadata. */
 systemProgram: TAccountMetas[9];
+/** Instructions sysvar, forwarded to Token Metadata. */
 instructionsSysvar: TAccountMetas[10];
+/** Classic SPL Token program, forwarded to Token Metadata. */
 tokenProgram: TAccountMetas[11];
+/** Associated Token Account program, forwarded to Token Metadata. */
 associatedTokenProgram: TAccountMetas[12];
-/** Edition, source record, destination record, rules program, and rules. */
+/**
+ * Exactly five accounts: the Master Edition PDA, then the source token
+ * record, destination token record, rules program, and rules. The last four
+ * must be the Token Metadata program address, which rejects programmable
+ * NFTs. The edition is validated when `mint` keeps a mint or freeze
+ * authority.
+ */
 optionalAccounts: TAccountMetas[13];
 };
 data: ReclaimMetadataNftPrizeInstructionData; };

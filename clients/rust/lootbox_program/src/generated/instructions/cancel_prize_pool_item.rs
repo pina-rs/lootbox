@@ -8,16 +8,27 @@
 	clippy::too_many_arguments
 )]
 
+/// Close the pool's prepared item before its leaf is transferred.
+///
+/// The template authority signs while the treasury is unlocked and the bundle
+/// is funding. The pool must be funding with a prepared item at
+/// `deposit_cursor`. Clears `has_prepared_item` and closes the item PDA,
+/// returning its rent to the authority; deposited items are never touched.
 pub const CANCEL_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 52u8;
 pub const CANCEL_PRIZE_POOL_ITEM_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct CancelPrizePoolItem {
+	/// Template authority; signs and receives the closed item's rent.
 	pub authority: solana_pubkey::Pubkey,
+	/// Template PDA; its treasury must be unlocked.
 	pub template: solana_pubkey::Pubkey,
+	/// Funding bundle PDA of `template`.
 	pub bundle: solana_pubkey::Pubkey,
+	/// Funding `PrizePoolState` PDA; `has_prepared_item` is cleared.
 	pub prize_pool: solana_pubkey::Pubkey,
+	/// Prepared item PDA at the pool's `deposit_cursor`, closed here.
 	pub prize_pool_item: solana_pubkey::Pubkey,
 }
 

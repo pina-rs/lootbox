@@ -8,13 +8,20 @@
 	clippy::too_many_arguments
 )]
 
+/// Load one trait layer's weight table into a draft collection.
+///
+/// The collection admin signs while the collection is a draft. Overwrites the
+/// layer's trait count and 64 weight slots; layers load one per instruction
+/// because every table does not fit one transaction.
 pub const SET_EXCLUSIVE_LAYER_DISCRIMINATOR: u8 = 54u8;
 pub const SET_EXCLUSIVE_LAYER_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
 #[derive(Clone, Debug)]
 pub struct SetExclusiveLayer {
+	/// Collection admin; signs.
 	pub admin: solana_pubkey::Pubkey,
+	/// Draft collection PDA whose layer table is overwritten.
 	pub exclusive_collection: solana_pubkey::Pubkey,
 }
 
@@ -74,7 +81,13 @@ impl SetExclusiveLayerInstructionData {
 pub struct SetExclusiveLayerInstructionWire {
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Layer to overwrite, counted from 0 at the bottom; must be below the
+	/// collection's `layer_count`.
 	pub layer_index: u8,
+	/// Traits in the layer, from 1 through 64.
 	pub trait_count: u8,
+	/// Sixty-four little-endian `u32` weights; slots past `trait_count` are zero.
+	///
+	/// The used weights must total from 1 through `u32::MAX`.
 	pub weights: [u8; 256],
 }

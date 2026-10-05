@@ -18,23 +18,35 @@ use pina::Signer;
 
 use crate::ProgramAccount;
 
+/// Close a prize pool that holds no outstanding leaves.
+///
+/// The template authority signs. Accepts an empty unsealed pool, a sealed pool
+/// in a funding bundle whose every item was reclaimed, or a sealed pool in a
+/// retired active bundle whose every item was claimed or reclaimed. The first
+/// two require an unlocked treasury and clear the bundle slot. The pool
+/// account closes and its rent returns to the authority.
 /// CPI call for the `close_prize_pool` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]
 pub struct ClosePrizePool<'account> {
 	/// CPI account `authority`.
+	/// Template authority; signs and receives the pool rent.
 	/// Required privileges: writable and signer.
 	pub authority: &'account AccountView,
 
 	/// CPI account `template`.
+	/// Template PDA that owns `bundle`.
 	/// Required privileges: read-only.
 	pub template: &'account AccountView,
 
 	/// CPI account `bundle`.
+	/// Bundle PDA; its pool slot is cleared unless the pool is terminal in an
+	/// active bundle.
 	/// Required privileges: writable.
 	pub bundle: &'account AccountView,
 
 	/// CPI account `prizePool`.
+	/// `PrizePoolState` PDA, closed here.
 	/// Required privileges: writable.
 	pub prize_pool: &'account AccountView,
 

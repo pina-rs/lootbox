@@ -22,9 +22,21 @@ export function getReclaimSolPrizeDiscriminator2Bytes(): ReadonlyUint8Array { re
 export type ReclaimSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, ...TRemainingAccounts]>;
 
-export type ReclaimSolPrizeInstructionData = { discriminator: number; migrationVersion: number; assetIndex: number;  };
+export type ReclaimSolPrizeInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Asset slot within the bundle; must be below its funded asset count,
+ * hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and not be reclaimed
+ * already.
+ */
+assetIndex: number;  };
 
-export type ReclaimSolPrizeInstructionDataArgs = { assetIndex: number;  };
+export type ReclaimSolPrizeInstructionDataArgs = {
+/**
+ * Asset slot within the bundle; must be below its funded asset count,
+ * hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and not be reclaimed
+ * already.
+ */
+assetIndex: number;  };
 
 export function getReclaimSolPrizeInstructionDataEncoder(): FixedSizeEncoder<ReclaimSolPrizeInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 22, migrationVersion: 0 }));
@@ -39,9 +51,25 @@ export function getReclaimSolPrizeInstructionDataCodec(): FixedSizeCodec<Reclaim
 }
 
 export type ReclaimSolPrizeInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountBundle extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /**
+ * Template authority; must sign and match the authority recorded on the
+ * template. Receives the reclaimed lamports.
+ */
+authority: TAccountAuthority;
+/**
+ * Template treasury, validated by its PDA seeds; supplies the status,
+ * pending-opening count, and remaining inventory of the bundle.
+ */
 template: TAccountTemplate;
+/**
+ * Template's box mint, validated against the template; its live supply
+ * must be zero to reclaim from an active bundle.
+ */
 boxMint: TAccountBoxMint;
+/**
+ * Bundle PDA of this template; records the asset as reclaimed and pays
+ * the lamports directly.
+ */
 bundle: TAccountBundle;
 assetIndex: ReclaimSolPrizeInstructionDataArgs["assetIndex"];
 }
@@ -69,9 +97,25 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedReclaimSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Template authority; must sign and match the authority recorded on the
+ * template. Receives the reclaimed lamports.
+ */
 authority: TAccountMetas[0];
+/**
+ * Template treasury, validated by its PDA seeds; supplies the status,
+ * pending-opening count, and remaining inventory of the bundle.
+ */
 template: TAccountMetas[1];
+/**
+ * Template's box mint, validated against the template; its live supply
+ * must be zero to reclaim from an active bundle.
+ */
 boxMint: TAccountMetas[2];
+/**
+ * Bundle PDA of this template; records the asset as reclaimed and pays
+ * the lamports directly.
+ */
 bundle: TAccountMetas[3];
 };
 data: ReclaimSolPrizeInstructionData; };

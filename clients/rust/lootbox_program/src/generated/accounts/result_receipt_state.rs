@@ -17,19 +17,33 @@ pub struct ResultReceiptState {
 /// No instruction mutates or closes this account after initialization.
 	pub discriminator: u8,
 	pub migration_version: u8,
+	/// Template PDA that allocated the result.
 	pub template: solana_pubkey::Pubkey,
+	/// Opening PDA this receipt records; seeds this PDA.
 	pub opening: solana_pubkey::Pubkey,
+	/// Authority that burned the box, copied from the opening.
 	pub box_authority: solana_pubkey::Pubkey,
+	/// Bound prize destination, copied from the opening.
 	pub beneficiary: solana_pubkey::Pubkey,
+	/// Consumer program bound at request time; the zero address means none.
 	pub consumer_program: solana_pubkey::Pubkey,
+	/// Consumer correlation key bound at request time.
 	pub consumer_context: [u8; 32],
+	/// Template's locked manifest hash at allocation.
 	pub manifest_hash: [u8; 32],
+	/// Switchboard randomness account that supplied the entropy.
 	pub randomness: solana_pubkey::Pubkey,
+	/// FIFO sequence of the opening; seeds this PDA.
 	pub sequence: u64,
+	/// Index of the bundle won.
 	pub selected_bundle: u32,
+	/// Prize pool item index reserved when `has_pool_assignment` is set.
 	pub selected_pool_item: u32,
+	/// Bundle slot holding the prize pool when `has_pool_assignment` is set.
 	pub selected_pool_asset: u8,
+	/// Whether allocation reserved a prize pool item.
 	pub has_pool_assignment: bool,
+	/// Canonical bump of this receipt PDA.
 	pub bump: u8,
 }
 

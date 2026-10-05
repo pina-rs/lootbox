@@ -22,9 +22,65 @@ export function getCreateExclusiveCollectionDiscriminator2Bytes(): ReadonlyUint8
 export type CreateExclusiveCollectionInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAdmin extends string | AccountMeta<string> = string, TAccountExclusiveCollection extends string | AccountMeta<string> = string, TAccountCoreCollection extends string | AccountMeta<string> = string, TAccountCoreProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAdmin extends string ? WritableSignerAccount<TAccountAdmin> & AccountSignerMeta<TAccountAdmin> : TAccountAdmin, TAccountExclusiveCollection extends string ? WritableAccount<TAccountExclusiveCollection> : TAccountExclusiveCollection, TAccountCoreCollection extends string ? WritableSignerAccount<TAccountCoreCollection> & AccountSignerMeta<TAccountCoreCollection> : TAccountCoreCollection, TAccountCoreProgram extends string ? ReadonlyAccount<TAccountCoreProgram> : TAccountCoreProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type CreateExclusiveCollectionInstructionData = { discriminator: number; migrationVersion: number; collectionId: bigint; attachOpensAt: bigint; attachClosesAt: bigint; layerCount: number; bump: number; namePrefix: ReadonlyUint8Array; symbol: ReadonlyUint8Array; baseUri: ReadonlyUint8Array;  };
+export type CreateExclusiveCollectionInstructionData = { discriminator: number; migrationVersion: number;
+/**
+ * Admin-chosen identifier in the PDA seeds, so one admin can own several
+ * collections.
+ */
+collectionId: bigint;
+/**
+ * Unix time in seconds from which bundles may attach; must be earlier
+ * than `attach_closes_at`.
+ */
+attachOpensAt: bigint;
+/** Unix time in seconds from which bundles may no longer attach. */
+attachClosesAt: bigint;
+/** Number of trait layers, from 1 through 12. */
+layerCount: number;
+/**
+ * Canonical bump of the collection PDA
+ * `["exclusive-collection", admin, collection_id]`; any other value fails.
+ */
+bump: number;
+/** Null-padded UTF-8 name prefix of at most 20 bytes. */
+namePrefix: ReadonlyUint8Array;
+/** Null-padded UTF-8 symbol. */
+symbol: ReadonlyUint8Array;
+/**
+ * Null-padded metadata URI base; must start with `https://`, continue
+ * past it, and contain no spaces.
+ */
+baseUri: ReadonlyUint8Array;  };
 
-export type CreateExclusiveCollectionInstructionDataArgs = { collectionId: number | bigint; attachOpensAt: number | bigint; attachClosesAt: number | bigint; layerCount: number; bump: number; namePrefix: ReadonlyUint8Array; symbol: ReadonlyUint8Array; baseUri: ReadonlyUint8Array;  };
+export type CreateExclusiveCollectionInstructionDataArgs = {
+/**
+ * Admin-chosen identifier in the PDA seeds, so one admin can own several
+ * collections.
+ */
+collectionId: number | bigint;
+/**
+ * Unix time in seconds from which bundles may attach; must be earlier
+ * than `attach_closes_at`.
+ */
+attachOpensAt: number | bigint;
+/** Unix time in seconds from which bundles may no longer attach. */
+attachClosesAt: number | bigint;
+/** Number of trait layers, from 1 through 12. */
+layerCount: number;
+/**
+ * Canonical bump of the collection PDA
+ * `["exclusive-collection", admin, collection_id]`; any other value fails.
+ */
+bump: number;
+/** Null-padded UTF-8 name prefix of at most 20 bytes. */
+namePrefix: ReadonlyUint8Array;
+/** Null-padded UTF-8 symbol. */
+symbol: ReadonlyUint8Array;
+/**
+ * Null-padded metadata URI base; must start with `https://`, continue
+ * past it, and contain no spaces.
+ */
+baseUri: ReadonlyUint8Array;  };
 
 export function getCreateExclusiveCollectionInstructionDataEncoder(): FixedSizeEncoder<CreateExclusiveCollectionInstructionDataArgs> {
     return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['collectionId', getU64Encoder()], ['attachOpensAt', getI64Encoder()], ['attachClosesAt', getI64Encoder()], ['layerCount', getU8Encoder()], ['bump', getU8Encoder()], ['namePrefix', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['symbol', fixPinaPodEncoderSize(getBytesEncoder(), 10)], ['baseUri', fixPinaPodEncoderSize(getBytesEncoder(), 128)]]), (value) => ({ ...value, discriminator: 53, migrationVersion: 0 }));
@@ -39,11 +95,25 @@ export function getCreateExclusiveCollectionInstructionDataCodec(): FixedSizeCod
 }
 
 export type CreateExclusiveCollectionInput<TAccountAdmin extends InstructionSignerInput = InstructionSignerInput, TAccountExclusiveCollection extends InstructionAccountInput = InstructionAccountInput, TAccountCoreCollection extends InstructionSignerInput = InstructionSignerInput, TAccountCoreProgram extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  admin: TAccountAdmin;
+  /**
+ * Collection admin; signs, pays both accounts' rent, and is recorded as
+ * `admin`.
+ */
+admin: TAccountAdmin;
+/**
+ * Empty collection PDA `["exclusive-collection", admin, collection_id]`,
+ * created here.
+ */
 exclusiveCollection: TAccountExclusiveCollection;
-/** Fresh Core collection keypair; its update authority becomes the PDA. */
+/**
+ * Fresh Core collection keypair; its update authority becomes the PDA.
+ *
+ * Signs, and is created here by Core.
+ */
 coreCollection: TAccountCoreCollection;
+/** Metaplex Core program, invoked to create the collection. */
 coreProgram: TAccountCoreProgram;
+/** System program, invoked to create both accounts. */
 systemProgram?: TAccountSystemProgram;
 collectionId: CreateExclusiveCollectionInstructionDataArgs["collectionId"];
 attachOpensAt: CreateExclusiveCollectionInstructionDataArgs["attachOpensAt"];
@@ -81,11 +151,25 @@ return Object.freeze({ accounts: [getAccountMeta("admin", accounts.admin), getAc
 
 export type ParsedCreateExclusiveCollectionInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/**
+ * Collection admin; signs, pays both accounts' rent, and is recorded as
+ * `admin`.
+ */
 admin: TAccountMetas[0];
+/**
+ * Empty collection PDA `["exclusive-collection", admin, collection_id]`,
+ * created here.
+ */
 exclusiveCollection: TAccountMetas[1];
-/** Fresh Core collection keypair; its update authority becomes the PDA. */
+/**
+ * Fresh Core collection keypair; its update authority becomes the PDA.
+ *
+ * Signs, and is created here by Core.
+ */
 coreCollection: TAccountMetas[2];
+/** Metaplex Core program, invoked to create the collection. */
 coreProgram: TAccountMetas[3];
+/** System program, invoked to create both accounts. */
 systemProgram: TAccountMetas[4];
 };
 data: CreateExclusiveCollectionInstructionData; };

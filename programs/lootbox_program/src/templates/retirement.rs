@@ -4,61 +4,144 @@ use pina::sysvars::Sysvar;
 
 use super::*;
 
+/// Permanently retires a live template: issuance and every creator mutation
+/// stop, while existing boxes stay openable and prizes stay claimable.
+///
+/// Signed by the template authority. An issued template that is not
+/// market-locked may retire only at or after `opens_at`, as a missed-deadline
+/// recovery; that path also disables result receipts and settlement bounties,
+/// which were never prepaid.
 #[instruction(discriminator = LootboxInstruction::RetireTemplate, migrations)]
 pub struct RetireTemplateInstruction {}
 
+/// Returns undrawn native SOL inventory of one bundle asset to the template
+/// authority.
+///
+/// Signed by the template authority. A funding bundle releases its full
+/// quantity; an active bundle releases only its remaining undrawn copies and
+/// requires a retired template with zero box supply and zero pending openings.
+/// Allocated but unclaimed copies stay escrowed, and each asset is reclaimed
+/// at most once.
 #[instruction(discriminator = LootboxInstruction::ReclaimSolPrize, migrations)]
 pub struct ReclaimSolPrizeInstruction {
+	/// Asset slot within the bundle; must be below its funded asset count,
+	/// hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and not be reclaimed
+	/// already.
 	pub asset_index: u8,
 }
 
+/// Returns undrawn token inventory of one bundle asset from its escrow to the
+/// template authority's associated token account.
+///
+/// Signed by the template authority. A funding bundle releases its full
+/// quantity; an active bundle releases only its remaining undrawn copies and
+/// requires a retired template with zero box supply and zero pending openings.
+/// Allocated but unclaimed copies stay escrowed, and each asset is reclaimed
+/// at most once.
 #[instruction(discriminator = LootboxInstruction::ReclaimTokenPrize, migrations)]
 pub struct ReclaimTokenPrizeInstruction {
+	/// Asset slot within the bundle; must be below its funded asset count,
+	/// hold a `PRIZE_TOKEN`, `PRIZE_NFT`, `PRIZE_TOKEN_2022`, or
+	/// `PRIZE_QUOTE_TOKEN` asset, and not be reclaimed already.
 	pub asset_index: u8,
 }
 
+/// Releases undrawn copies of one mint-badge asset and revokes the bundle's
+/// mint authority once no copies remain claimable.
+///
+/// Signed by the template authority, under the same funding-or-retired rules
+/// as the other reclaims. Mints nothing; when allocated copies are still
+/// unclaimed, only the accounting changes and the final claim later revokes
+/// the authority.
 #[instruction(discriminator = LootboxInstruction::ReclaimMintPrize, migrations)]
 pub struct ReclaimMintPrizeInstruction {
+	/// Asset slot within the bundle; must be below its funded asset count,
+	/// hold a `PRIZE_MINT_BADGE` asset with an amount of one, and not be
+	/// reclaimed already.
 	pub asset_index: u8,
 }
 
+/// Accounts for `retireTemplate`.
 #[derive(Accounts, Debug)]
 pub struct RetireTemplateAccounts<'a> {
+	/// Template authority; must sign and match the authority recorded on the
+	/// template.
 	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
+	/// Live template treasury, validated by its PDA seeds; moves to the retired
+	/// status.
 	pub template: &'a mut AccountView,
 }
 
+/// Accounts for `reclaimSolPrize`.
 #[derive(Accounts, Debug)]
 pub struct ReclaimSolPrizeAccounts<'a> {
+	/// Template authority; must sign and match the authority recorded on the
+	/// template. Receives the reclaimed lamports.
 	#[pina(validate(signer))]
 	pub authority: &'a mut AccountView,
+	/// Template treasury, validated by its PDA seeds; supplies the status,
+	/// pending-opening count, and remaining inventory of the bundle.
 	pub template: &'a AccountView,
+	/// Template's box mint, validated against the template; its live supply
+	/// must be zero to reclaim from an active bundle.
 	pub box_mint: &'a AccountView,
+	/// Bundle PDA of this template; records the asset as reclaimed and pays
+	/// the lamports directly.
 	pub bundle: &'a mut AccountView,
 }
 
+/// Accounts for `reclaimTokenPrize`.
 #[derive(Accounts, Debug)]
 pub struct ReclaimTokenPrizeAccounts<'a> {
+	/// Template authority; must sign and match the authority recorded on the
+	/// template. Owns `destination`.
 	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
+	/// Template treasury, validated by its PDA seeds; supplies the status,
+	/// pending-opening count, and remaining inventory of the bundle.
 	pub template: &'a AccountView,
+	/// Template's box mint, validated against the template; its live supply
+	/// must be zero to reclaim from an active bundle.
 	pub box_mint: &'a AccountView,
+	/// Bundle PDA of this template; records the asset as reclaimed and signs
+	/// the transfer as escrow owner.
 	pub bundle: &'a mut AccountView,
+	/// Prize mint; must match the mint recorded in the bundle's asset slot.
 	pub mint: &'a AccountView,
+	/// Bundle's associated token account for `mint` under `token_program`;
+	/// source of the transfer.
 	pub escrow: &'a mut AccountView,
+	/// Authority's existing associated token account for `mint` under
+	/// `token_program`; receives the tokens.
 	pub destination: &'a mut AccountView,
+	/// SPL Token or Token-2022 program matching the asset kind: SPL Token for
+	/// `PRIZE_TOKEN` and `PRIZE_NFT`, Token-2022 for `PRIZE_TOKEN_2022`, and
+	/// either for `PRIZE_QUOTE_TOKEN`.
 	pub token_program: &'a AccountView,
 }
 
+/// Accounts for `reclaimMintPrize`.
 #[derive(Accounts, Debug)]
 pub struct ReclaimMintPrizeAccounts<'a> {
+	/// Template authority; must sign and match the authority recorded on the
+	/// template.
 	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
+	/// Template treasury, validated by its PDA seeds; supplies the status,
+	/// pending-opening count, and remaining inventory of the bundle.
 	pub template: &'a AccountView,
+	/// Template's box mint, validated against the template; its live supply
+	/// must be zero to reclaim from an active bundle.
 	pub box_mint: &'a AccountView,
+	/// Bundle PDA of this template; records the asset as reclaimed and signs
+	/// the authority revocation.
 	pub bundle: &'a mut AccountView,
+	/// Badge mint recorded in the bundle's asset slot; must have zero decimals,
+	/// the bundle as mint authority, no freeze authority, and only metadata
+	/// extensions. Its mint authority is revoked once every copy is released.
 	pub mint: &'a mut AccountView,
+	/// SPL Token or Token-2022 program that owns `mint`.
 	pub token_program: &'a AccountView,
 }
 
@@ -97,6 +180,7 @@ impl<'a> ProcessAccountInfos<'a> for RetireTemplateAccounts<'a> {
 		} else {
 			TemplateStatePatch::new().status(TEMPLATE_RETIRED)
 		};
+
 		update_template(self.template, &patch)?;
 
 		Ok(())
@@ -120,24 +204,29 @@ pub(super) fn reclaim_amount(
 	let bit = 1u8
 		.checked_shl(u32::from(asset_index))
 		.ok_or(ProgramError::ArithmeticOverflow)?;
+
 	if bundle.reclaimed_mask & bit != 0 {
 		return Err(lootbox_error(LootboxError::PrizeAlreadyClaimed));
 	}
 
 	let index = usize::from(asset_index);
+
 	let unused = match bundle.status {
 		BUNDLE_FUNDING => bundle.quantity.get(),
 		BUNDLE_ACTIVE => {
 			if template_status != TEMPLATE_RETIRED || supply != 0 || pending_openings != 0 {
 				return Err(lootbox_error(LootboxError::InvalidState));
 			}
+
 			active_remaining.ok_or(ProgramError::InvalidAccountData)?
 		}
 		_ => return Err(lootbox_error(LootboxError::InvalidState)),
 	};
+
 	let released = read_slot(&bundle.claimed, index)?
 		.checked_add(unused)
 		.ok_or(ProgramError::ArithmeticOverflow)?;
+
 	if released > bundle.quantity.get() {
 		return Err(lootbox_error(LootboxError::InvalidState));
 	}
@@ -201,7 +290,9 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimSolPrizeAccounts<'a> {
 			state.locked_at.get() != 0,
 		)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+
 		let index = usize::from(args.asset_index);
+
 		if !matches!(bundle.kinds.get(index), Some(&PRIZE_SOL | &PRIZE_QUOTE_SOL)) {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
@@ -213,6 +304,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimSolPrizeAccounts<'a> {
 		} else {
 			None
 		};
+
 		let amount = reclaim_amount(
 			state.status,
 			state.pending_openings.get(),
@@ -228,12 +320,14 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimSolPrizeAccounts<'a> {
 			.and_then(|count| count.checked_mul(read_slot(&bundle.amounts, index).ok()?))
 			.and_then(|value| value.checked_add(bundle.rent_reserve.get()))
 			.ok_or(ProgramError::ArithmeticOverflow)?;
+
 		drop(bundle);
 		let after = self
 			.bundle
 			.lamports()
 			.checked_sub(amount)
 			.ok_or_else(|| lootbox_error(LootboxError::Insolvent))?;
+
 		if after < owed {
 			return Err(lootbox_error(LootboxError::Insolvent));
 		}
@@ -253,9 +347,11 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 		assert_template_authority(self.authority, &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		let token_program = *self.token_program.address();
+
 		if token_program != token::ID && token_program != token_2022::ID {
 			return Err(ProgramError::IncorrectProgramId);
 		}
+
 		let supply = assert_template_mint(
 			self.box_mint,
 			self.template.address(),
@@ -265,12 +361,14 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
 		let kind = bundle.kinds.get(index).copied().unwrap_or(u8::MAX);
+
 		let valid_kind = match kind {
 			PRIZE_TOKEN_2022 => token_program == token_2022::ID,
 			PRIZE_TOKEN | PRIZE_NFT => token_program == token::ID,
 			PRIZE_QUOTE_TOKEN => true,
 			_ => false,
 		};
+
 		if !valid_kind || mint_at(&bundle, index)? != *self.mint.address() {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
@@ -292,6 +390,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 		} else {
 			None
 		};
+
 		let amount = reclaim_amount(
 			state.status,
 			state.pending_openings.get(),
@@ -342,9 +441,11 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMintPrizeAccounts<'a> {
 		assert_template_authority(self.authority, &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		let token_program = *self.token_program.address();
+
 		if token_program != token::ID && token_program != token_2022::ID {
 			return Err(ProgramError::IncorrectProgramId);
 		}
+
 		let supply = assert_template_mint(
 			self.box_mint,
 			self.template.address(),
@@ -354,6 +455,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMintPrizeAccounts<'a> {
 
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
+
 		if bundle.kinds.get(index) != Some(&PRIZE_MINT_BADGE)
 			|| mint_at(&bundle, index)? != *self.mint.address()
 			|| read_slot(&bundle.amounts, index)? != 1
@@ -367,6 +469,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMintPrizeAccounts<'a> {
 				token_2022::state::ExtensionType::MetadataPointer,
 				token_2022::state::ExtensionType::TokenMetadata,
 			])?;
+
 		if mint.decimals() != 0
 			|| mint.mint_authority() != Some(&bundle_address)
 			|| mint.freeze_authority().is_some()
@@ -382,6 +485,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMintPrizeAccounts<'a> {
 		} else {
 			None
 		};
+
 		let _ = reclaim_amount(
 			state.status,
 			state.pending_openings.get(),
@@ -390,11 +494,13 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMintPrizeAccounts<'a> {
 			args.asset_index,
 			active_remaining,
 		)?;
+
 		if read_slot(&bundle.claimed, index)? != bundle.quantity.get() {
 			// Allocated copies remain claimable after retirement. Their claims mint
 			// the final badges and revoke this authority once every copy is released.
 			return Ok(());
 		}
+
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
@@ -450,6 +556,7 @@ mod tests {
 		bundle.funded_assets = 1;
 		bundle.status = BUNDLE_ACTIVE;
 		write_slot(&mut bundle.amounts, 0, 100).expect("amount");
+
 		assert!(
 			reclaim_amount(
 				state.status,

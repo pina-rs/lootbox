@@ -53,12 +53,10 @@ export function useAirdropCost(
 	rpcUrl: string,
 	boxMint: string,
 	recipients: readonly Recipient[],
-): Load<AirdropCost> | null {
+): [Load<AirdropCost> | null, () => void] {
 	// Lists are rebuilt on every keystroke; settle on their content instead.
-	const settled = useSettled(
-		recipients.map((recipient) => recipient.address).join(","),
-		400,
-	);
+	const key = recipients.map((recipient) => recipient.address).join(",");
+	const settled = useSettled(key, 400);
 	const load = useCallback(async () => {
 		const rpc = createSolanaRpc(rpcUrl);
 		const mint = address(boxMint);
@@ -87,9 +85,29 @@ export function useAirdropCost(
 			TOKEN_2022_ACCOUNT_BYTES,
 		).send();
 
-		return airdropCost(owners.length, missing, rent);
+		return {
+			rpcUrl,
+			boxMint,
+			key: settled,
+			cost: airdropCost(owners.length, missing, rent),
+		};
 	}, [rpcUrl, boxMint, settled]);
-	const [state] = useLoad(settled ? load : null);
+	const [state, reload] = useLoad(settled ? load : null);
 
-	return settled ? state : null;
+	if (!key) return [null, reload];
+
+	if (key !== settled) return [{ status: "loading" }, reload];
+
+	if (state.status !== "ready") return [state, reload];
+
+	// A ready result belongs to the request that produced it, including the
+	// render before useLoad's effect notices that the request changed.
+	if (
+		state.value.key !== key || state.value.rpcUrl !== rpcUrl ||
+		state.value.boxMint !== boxMint
+	) {
+		return [{ status: "loading" }, reload];
+	}
+
+	return [{ status: "ready", value: state.value.cost }, reload];
 }

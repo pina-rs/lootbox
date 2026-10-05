@@ -7,7 +7,7 @@
 const KNOWN: readonly Readonly<[RegExp, string]>[] = [
 	[
 		/user rejected|rejected the request|declined/i,
-		"You declined in your wallet. Nothing was sent.",
+		"You declined this request in your wallet.",
 	],
 	[
 		/insufficient lamports|insufficient funds for fee|attempt to debit an account but found no record/i,

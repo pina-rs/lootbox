@@ -36,7 +36,7 @@ export function AirdropCard(
 	const [sent, setSent] = useState<string | null>(null);
 	const file = useRef<HTMLInputElement>(null);
 	const plan = parseDistribution(text);
-	const cost = useAirdropCost(rpcUrl, boxMint, plan.recipients);
+	const [cost, reloadCost] = useAirdropCost(rpcUrl, boxMint, plan.recipients);
 	const short = balance !== null && plan.total > balance;
 	const ready = plan.recipients.length > 0 && plan.errors.length === 0 &&
 		!short;
@@ -55,6 +55,7 @@ export function AirdropCard(
 					value={text}
 					placeholder={"One wallet per line, optionally with a count:\n7xKX…q9 3"}
 					spellCheck={false}
+					disabled={busy}
 					onChange={(event) => setText(event.currentTarget.value)}
 				/>
 				<span className="field-hint">
@@ -62,6 +63,7 @@ export function AirdropCard(
 					<button
 						type="button"
 						className="link-button"
+						disabled={busy}
 						onClick={() => file.current?.click()}
 					>
 						load a CSV
@@ -71,6 +73,7 @@ export function AirdropCard(
 						ref={file}
 						type="file"
 						accept=".csv,.txt,text/csv,text/plain"
+						disabled={busy}
 						hidden
 						onChange={async (event) => {
 							const chosen = event.currentTarget.files?.[0];
@@ -106,6 +109,8 @@ export function AirdropCard(
 											? "transaction"
 											: "transactions"
 									} to sign`
+									: cost?.status === "error"
+									? "Could not check wallets"
 									: "Checking wallets…"}
 							</small>
 						</dt>
@@ -135,6 +140,19 @@ export function AirdropCard(
 					)}
 				</dl>
 			)}
+			{cost?.status === "error" && (
+				<p className="form-error" role="alert">
+					Could not estimate delivery: {cost.message}{" "}
+					<button
+						type="button"
+						className="link-button"
+						disabled={busy}
+						onClick={reloadCost}
+					>
+						Retry estimate
+					</button>
+				</p>
+			)}
 			{short && (
 				<p className="form-error" role="status">
 					You have {balance?.toLocaleString("en-US")} boxes; this list needs
@@ -145,12 +163,13 @@ export function AirdropCard(
 			<button
 				type="button"
 				className="button button-primary"
-				disabled={busy || !ready}
+				disabled={busy || !ready || cost?.status !== "ready"}
 				onClick={() =>
 					void run(async () => {
 						const mint = address(boxMint);
 						const source = await client.ata(address(owner), mint);
 						const groups = batches(plan.recipients);
+						let delivered = 0n;
 
 						for (const [index, group] of groups.entries()) {
 							const instructions: Instruction[] = [];
@@ -183,12 +202,22 @@ export function AirdropCard(
 								instructions,
 								`Send boxes · batch ${index + 1} of ${groups.length}`,
 							);
+							delivered += group.reduce(
+								(total, recipient) => total + recipient.count,
+								0n,
+							);
+							setSent(`Sent ${delivered} of ${plan.total} boxes.`);
+							// Retain only undelivered recipients if a later approval fails.
+							setText(
+								groups.slice(index + 1).flat().map(({ address, count }) =>
+									`${address} ${count}`
+								).join("\n"),
+							);
 						}
 
 						setSent(
 							`Sent ${plan.total} ${plan.total === 1n ? "box" : "boxes"}.`,
 						);
-						setText("");
 					})}
 			>
 				{plan.total === 0n

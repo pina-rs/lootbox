@@ -17,7 +17,11 @@ import {
 	LootboxClient,
 } from "@pina-rs/lootbox";
 import { expect, type Page, test } from "@playwright/test";
-import { address, type KeyPairSigner } from "@solana/kit";
+import {
+	address,
+	generateKeyPairSigner,
+	type KeyPairSigner,
+} from "@solana/kit";
 
 import {
 	chainTime,
@@ -500,6 +504,123 @@ test("a creator sells boxes on a curve and a buyer trades against it", async ({ 
 	expect(curve?.data.reserve).toBe(10_000_000n);
 	expect(errors).toEqual([]);
 	expect(shopperErrors).toEqual([]);
+});
+
+test("an interrupted airdrop resumes only the unsent recipients with a fresh cost", async ({ page }) => {
+	const recipients = await Promise.all(
+		Array.from({ length: 7 }, () => generateKeyPairSigner()),
+	);
+	const retryName = `Retries ${PROJECT_SUFFIX()}`;
+	const rpcEndpoint = new URL(rpcUrl).href;
+	let airdropping = false;
+	let signingRequests = 0;
+
+	await injectTestWallet(page, creator, () => {
+		if (!airdropping) return;
+
+		signingRequests++;
+
+		if (signingRequests === 2) throw new Error("Airdrop approval declined");
+	});
+	await page.goto("/create");
+	await connectAndSignIn(page);
+	await page.getByLabel("Name").fill(retryName);
+	await page.getByRole("button", { name: "Tomorrow" }).click();
+	await page.getByRole("button", { name: "Next" }).click();
+	await page.getByRole("button", { name: "Next" }).click();
+	await page.getByLabel(/Add Exclusive Lootbox NFTs as the consolation prize/)
+		.check();
+	await page.getByLabel("How many boxes").fill("8");
+	await page.getByRole("button", { name: "Review" }).click();
+	await page.getByRole("button", { name: "Continue to launch" }).click();
+	await page.getByRole("button", { name: "Launch lootbox" }).click();
+	await page.waitForURL(/\/l\/retries-/, { timeout: 120_000 });
+
+	const retrySlug = new URL(page.url()).pathname.split("/")[2] ?? "";
+
+	await page.getByRole("navigation", { name: "Lootbox sections" })
+		.getByRole("link", { name: "Manage" }).click();
+	await page.getByLabel(/locking is permanent/).check();
+	await page.getByRole("button", { name: /Lock and mint 8 boxes/ }).click();
+	await expect(page.getByTestId("lock-state")).toHaveText("Locked", {
+		timeout: 60_000,
+	});
+
+	const textarea = page.getByLabel("Recipients");
+	const cost = page.getByTestId("airdrop-cost");
+	const first = recipients[0];
+	const last = recipients[6];
+
+	if (!first || !last) throw new Error("Missing airdrop recipients");
+
+	await page.route(rpcEndpoint, async (route) => {
+		const body: unknown = JSON.parse(route.request().postData() ?? "null");
+
+		if (
+			typeof body === "object" && body !== null && "method" in body &&
+			body.method === "getMinimumBalanceForRentExemption"
+		) {
+			await route.fulfill({ status: 503, body: "RPC unavailable" });
+
+			return;
+		}
+
+		await route.continue();
+	});
+	await textarea.fill(`${first.address} 1`);
+	await expect(page.getByRole("alert")).toContainText(
+		"Could not estimate delivery",
+	);
+	await expect(page.getByRole("button", { name: "Send 1 box" })).toBeDisabled();
+	await page.unroute(rpcEndpoint);
+	await page.getByRole("button", { name: "Retry estimate" }).click();
+	await expect(page.getByRole("button", { name: "Send 1 box" })).toBeEnabled();
+	await page.clock.install();
+	await page.clock.pauseAt(Date.now() + 100);
+	await textarea.fill(
+		recipients.map((recipient) => `${recipient.address} 1`).join("\n"),
+	);
+	await expect(page.getByRole("button", { name: "Send 7 boxes" }))
+		.toBeDisabled();
+	await expect(cost).toContainText("Checking wallets");
+	await expect(cost).not.toContainText("You pay");
+	await textarea.fill("");
+	await expect(cost).not.toBeVisible();
+	await expect(page.getByRole("button", { name: "Send boxes" })).toBeDisabled();
+	await textarea.fill(
+		recipients.map((recipient) => `${recipient.address} 1`).join("\n"),
+	);
+	await page.clock.resume();
+	await expect(page.getByRole("button", { name: "Send 7 boxes" }))
+		.toBeEnabled();
+
+	airdropping = true;
+	await page.getByRole("button", { name: "Send 7 boxes" }).click();
+	await expect(page.getByRole("alert")).toContainText(
+		"You declined this request in your wallet.",
+	);
+	await expect(page.getByTestId("sent")).toHaveText("Sent 6 of 7 boxes.");
+	await expect(textarea).toHaveValue(`${last.address} 1`);
+	await expect(cost).toContainText("1 transaction to sign");
+	await page.getByRole("button", { name: "Send 1 box" }).click();
+	await expect(page.getByTestId("sent")).toHaveText("Sent 1 box.", {
+		timeout: 60_000,
+	});
+	await expect(textarea).toHaveValue("");
+	await expectAccessible(page, "resumed airdrop");
+
+	const retryTemplate = await treasuryOf(page, retrySlug);
+	const client = new LootboxClient(rpcUrl, creator);
+	const state = await client.template(address(retryTemplate));
+
+	expect(
+		await Promise.all(
+			recipients.map((recipient) =>
+				client.boxBalance(recipient.address, state.data.boxMint)
+			),
+		),
+	)
+		.toEqual(Array.from({ length: 7 }, () => 1n));
 });
 
 test("the relayer finishes an abandoned opening after the reveal", async ({ request }) => {

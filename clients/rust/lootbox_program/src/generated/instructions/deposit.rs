@@ -28,11 +28,14 @@ pub struct Deposit {
 }
 
 impl Deposit {
-	pub fn new(depositor: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey) -> Self {
+	pub fn new(depositor: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey) -> Self {
 		Self {
 			depositor,
 			lootbox,
-			vault,
+			vault: solana_pubkey::Pubkey::find_program_address(
+				&["vault".as_bytes(), lootbox.as_ref()],
+				&crate::LOOTBOX_PROGRAM_ID,
+			).0,
 			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
 		}
 	}

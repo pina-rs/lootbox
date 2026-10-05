@@ -45,12 +45,15 @@ pub struct ForfeitTemplateOpen {
 }
 
 impl ForfeitTemplateOpen {
-	pub fn new(caller: solana_pubkey::Pubkey, beneficiary: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, service_vault: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey) -> Self {
+	pub fn new(caller: solana_pubkey::Pubkey, beneficiary: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey) -> Self {
 		Self {
 			caller,
 			beneficiary,
 			template,
-			service_vault,
+			service_vault: solana_pubkey::Pubkey::find_program_address(
+				&["service-vault".as_bytes(), template.as_ref()],
+				&crate::LOOTBOX_PROGRAM_ID,
+			).0,
 			opening,
 			randomness,
 			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),

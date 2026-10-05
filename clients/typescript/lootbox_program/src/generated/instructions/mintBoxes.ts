@@ -8,7 +8,8 @@
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlySignerAccount, type ReadonlyUint8Array, type WritableAccount } from '@solana/kit';
-import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
+import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
+import { findVaultPda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const MINT_BOXES_DISCRIMINATOR = 4;
@@ -40,6 +41,58 @@ export function getMintBoxesInstructionDataDecoder(): FixedSizeDecoder<MintBoxes
 
 export function getMintBoxesInstructionDataCodec(): FixedSizeCodec<MintBoxesInstructionDataArgs, MintBoxesInstructionData> {
     return combineCodec(getMintBoxesInstructionDataEncoder(), getMintBoxesInstructionDataDecoder());
+}
+
+export type MintBoxesAsyncInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountRecipientBoxAccount extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
+  /** Lootbox authority. Signer; must match the stored authority. */
+authority: TAccountAuthority;
+/**
+ * Sealed lootbox whose `total_minted` grows; its PDA signs the mint as
+ * mint authority.
+ */
+lootbox: TAccountLootbox;
+/**
+ * Vault PDA of `lootbox`, read to prove the new supply stays fully
+ * collateralized.
+ */
+vault?: TAccountVault;
+/** The lootbox's box mint. Writable; its supply grows. */
+boxMint: TAccountBoxMint;
+/**
+ * Canonical associated token account of the recipient for the box mint,
+ * which receives the new boxes.
+ */
+recipientBoxAccount: TAccountRecipientBoxAccount;
+/** SPL Token program, invoked to mint the boxes. */
+tokenProgram?: TAccountTokenProgram;
+amount: MintBoxesInstructionDataArgs["amount"];
+}
+
+export async function getMintBoxesInstructionAsync<TAccountAuthority extends InstructionSignerInput, TAccountLootbox extends InstructionAccountInput, TAccountVault extends InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput, TAccountRecipientBoxAccount extends InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: MintBoxesAsyncInput<TAccountAuthority, TAccountLootbox, TAccountVault, TAccountBoxMint, TAccountRecipientBoxAccount, TAccountTokenProgram>, config?: { programAddress?: TProgramAddress } ): Promise<MintBoxesInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountRecipientBoxAccount, InstructionAccountInputAddress<TAccountRecipientBoxAccount>>, ResolvedInstructionAccountMeta<TAccountTokenProgram, InstructionAccountInputAddress<TAccountTokenProgram>>>> {
+  // Program address.
+const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
+
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
+ // Original accounts.
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: false }, lootbox: { value: input.lootbox ?? null, isSigner: false, isWritable: true }, vault: { value: input.vault ?? null, isSigner: false, isWritable: false }, boxMint: { value: input.boxMint ?? null, isSigner: false, isWritable: true }, recipientBoxAccount: { value: input.recipientBoxAccount ?? null, isSigner: false, isWritable: true }, tokenProgram: { value: input.tokenProgram ?? null, isSigner: false, isWritable: false } }
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
+
+
+// Original args.
+const args = { ...input,  };
+
+
+// Resolve default values.
+if (!accounts.vault.value) {
+accounts.vault.value = await findVaultPda({ lootbox: getAddressFromResolvedInstructionAccount("lootbox", accounts.lootbox.value) }, { programAddress });
+}
+if (!accounts.tokenProgram.value) {
+accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+}
+
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("lootbox", accounts.lootbox), getAccountMeta("vault", accounts.vault), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("recipientBoxAccount", accounts.recipientBoxAccount), getAccountMeta("tokenProgram", accounts.tokenProgram)], data: getMintBoxesInstructionDataEncoder().encode(args as MintBoxesInstructionDataArgs), programAddress } as MintBoxesInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountRecipientBoxAccount, InstructionAccountInputAddress<TAccountRecipientBoxAccount>>, ResolvedInstructionAccountMeta<TAccountTokenProgram, InstructionAccountInputAddress<TAccountTokenProgram>>>);
 }
 
 export type MintBoxesInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountRecipientBoxAccount extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {

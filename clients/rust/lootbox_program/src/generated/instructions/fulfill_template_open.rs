@@ -63,11 +63,14 @@ pub struct FulfillTemplateOpen {
 }
 
 impl FulfillTemplateOpen {
-	pub fn new(payer: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, service_vault: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, oracle_stats: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey) -> Self {
+	pub fn new(payer: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, oracle_stats: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey) -> Self {
 		Self {
 			payer,
 			template,
-			service_vault,
+			service_vault: solana_pubkey::Pubkey::find_program_address(
+				&["service-vault".as_bytes(), template.as_ref()],
+				&crate::LOOTBOX_PROGRAM_ID,
+			).0,
 			opening,
 			randomness,
 			oracle_queue,

@@ -137,6 +137,14 @@ pub struct ExclusiveAttachmentState {
 	pub fee_vault_bump: u8,
 }
 
+/// Zero-data System account that prepays Bubblegum's per-mint fee for one
+/// Exclusive NFT attachment.
+///
+/// The program signs for it with these seeds and the canonical bump the
+/// attachment records in `fee_vault_bump`.
+#[pda(seeds = [SEED_EXCLUSIVE_FEE_VAULT, attachment: Address])]
+pub struct FeeVault {}
+
 /// Emitted once per minted Exclusive Lootbox NFT.
 #[event(discriminator = LootboxEventType::ExclusiveNftMinted, migrations)]
 pub struct ExclusiveNftMintedEvent {
@@ -544,13 +552,8 @@ fn assert_attachment(
 
 /// Require the attachment's canonical zero-data System fee vault.
 fn assert_fee_vault(account: &AccountView, attachment: &Address, bump: u8) -> ProgramResult {
-	let bump = [bump];
-	let seeds = [
-		SEED_EXCLUSIVE_FEE_VAULT,
-		attachment.as_ref(),
-		bump.as_slice(),
-	];
-	account.assert_seeds_with_bump(&seeds, &ID)?;
+	let seeds = FeeVault::seeds(attachment).with_bump(bump);
+	account.assert_seeds_with_bump(&seeds.as_slices(), &ID)?;
 
 	if account.owner() != &system::ID || !account.is_data_empty() {
 		return Err(lootbox_error(LootboxError::InvalidExclusiveCollection));
@@ -580,12 +583,8 @@ fn withdraw_fee_vault(
 		return Ok(());
 	}
 
-	let bump = [bump];
-	let signer = PdaSigner::from_slices([
-		SEED_EXCLUSIVE_FEE_VAULT,
-		attachment.as_ref(),
-		bump.as_slice(),
-	]);
+	let seeds = FeeVault::seeds(attachment).with_bump(bump);
+	let signer = seeds.to_signer();
 	system::instructions::Transfer {
 		from: fee_vault,
 		to,
@@ -876,11 +875,11 @@ impl<'a> ProcessAccountInfos<'a> for AttachExclusiveNftAccounts<'a> {
 		{
 			return Err(ProgramError::InvalidSeeds);
 		}
-		let fee_vault_seeds = [SEED_EXCLUSIVE_FEE_VAULT, attachment_address.as_ref()];
+		let fee_vault_seeds = FeeVault::seeds(&attachment_address);
 
 		if self
 			.fee_vault
-			.assert_canonical_bump(&fee_vault_seeds, &ID)?
+			.assert_canonical_bump(&fee_vault_seeds.as_slices(), &ID)?
 			!= args.fee_vault_bump
 		{
 			return Err(ProgramError::InvalidSeeds);
@@ -1020,13 +1019,8 @@ impl<'a> ProcessAccountInfos<'a> for ClaimExclusiveNftAccounts<'a> {
 		let collection_seeds =
 			ExclusiveCollectionState::seeds(&admin, collection_id).with_bump(collection_bump);
 		let collection_signer = collection_seeds.to_signer();
-		let fee_vault_bump = [fee_vault_bump];
-
-		let fee_vault_signer = PdaSigner::from_slices([
-			SEED_EXCLUSIVE_FEE_VAULT,
-			attachment_address.as_ref(),
-			fee_vault_bump.as_slice(),
-		]);
+		let fee_vault_seeds = FeeVault::seeds(&attachment_address).with_bump(fee_vault_bump);
+		let fee_vault_signer = fee_vault_seeds.to_signer();
 
 		MintBubblegumLeaf {
 			tree_config: self.tree_config,

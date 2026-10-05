@@ -61,12 +61,15 @@ pub struct SettleOpen {
 }
 
 impl SettleOpen {
-	pub fn new(recipient: solana_pubkey::Pubkey, payer: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, oracle_stats: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey) -> Self {
+	pub fn new(recipient: solana_pubkey::Pubkey, payer: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, oracle_queue: solana_pubkey::Pubkey, oracle: solana_pubkey::Pubkey, oracle_stats: solana_pubkey::Pubkey, recent_slot_hashes: solana_pubkey::Pubkey, oracle_program: solana_pubkey::Pubkey, reward_escrow: solana_pubkey::Pubkey, oracle_program_state: solana_pubkey::Pubkey, wrapped_sol_mint: solana_pubkey::Pubkey) -> Self {
 		Self {
 			recipient,
 			payer,
 			lootbox,
-			vault,
+			vault: solana_pubkey::Pubkey::find_program_address(
+				&["vault".as_bytes(), lootbox.as_ref()],
+				&crate::LOOTBOX_PROGRAM_ID,
+			).0,
 			box_mint,
 			opening,
 			randomness,

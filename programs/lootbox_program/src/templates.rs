@@ -321,6 +321,14 @@ pub struct ResultReceiptState {
 	pub bump: u8,
 }
 
+/// Zero-data System account that holds a locked template's prepaid
+/// result-receipt rent and settlement bounties.
+///
+/// The program signs for it with these seeds and the canonical bump the
+/// template records in `service_vault_bump` when the treasury is locked.
+#[pda(seeds = [SEED_SERVICE_VAULT, template: Address])]
+pub struct ServiceVault {}
+
 /// Compact, append-only Bubblegum inventory for one bundle manifest slot.
 ///
 /// The account pays only for deposited bitmap bytes: one byte for every eight
@@ -1101,9 +1109,8 @@ fn assert_service_vault(
 		return Ok(());
 	}
 
-	let bump = [state.service_vault_bump];
-	let seeds = [SEED_SERVICE_VAULT, template.as_ref(), bump.as_slice()];
-	account.assert_seeds_with_bump(&seeds, &ID)?;
+	let seeds = ServiceVault::seeds(template).with_bump(state.service_vault_bump);
+	account.assert_seeds_with_bump(&seeds.as_slices(), &ID)?;
 
 	if account.owner() != &system::ID || !account.is_data_empty() {
 		return Err(lootbox_error(LootboxError::InvalidServiceAccount));
@@ -2045,11 +2052,11 @@ impl<'a> ProcessAccountInfos<'a> for LockTreasuryAccounts<'a> {
 		let next_bundle_seeds = BundleState::seeds(&template_address, state.bundle_count.get());
 		self.bundle
 			.assert_canonical_bump(&next_bundle_seeds.as_slices(), &ID)?;
-		let service_vault_seeds = [SEED_SERVICE_VAULT, template_address.as_ref()];
+		let service_vault_seeds = ServiceVault::seeds(&template_address);
 
 		if self
 			.service_vault
-			.assert_canonical_bump(&service_vault_seeds, &ID)?
+			.assert_canonical_bump(&service_vault_seeds.as_slices(), &ID)?
 			!= args.service_vault_bump
 		{
 			return Err(ProgramError::InvalidSeeds);

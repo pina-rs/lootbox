@@ -8,7 +8,8 @@
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
+import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
+import { findServiceVaultPda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR = 36;
@@ -36,6 +37,65 @@ export function getForfeitTemplateOpenInstructionDataDecoder(): FixedSizeDecoder
 
 export function getForfeitTemplateOpenInstructionDataCodec(): FixedSizeCodec<ForfeitTemplateOpenInstructionDataArgs, ForfeitTemplateOpenInstructionData> {
     return combineCodec(getForfeitTemplateOpenInstructionDataEncoder(), getForfeitTemplateOpenInstructionDataDecoder());
+}
+
+export type ForfeitTemplateOpenAsyncInput<TAccountCaller extends InstructionSignerInput = InstructionSignerInput, TAccountBeneficiary extends InstructionAccountInput = InstructionAccountInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountRandomness extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
+  /**
+ * Any signer may advance an expired FIFO head; the stored beneficiary and
+ * their exclusive claim rights are never changed.
+ */
+caller: TAccountCaller;
+/**
+ * Bound destination of the forfeit bounty: the creator-funded service
+ * budget compensates the beneficiary whose box burned, never the crank.
+ * Must match the opening's stored beneficiary.
+ */
+beneficiary: TAccountBeneficiary;
+/**
+ * Template treasury, validated by its PDA seeds; its pending-opening count
+ * falls and its FIFO allocation cursor advances.
+ */
+template: TAccountTemplate;
+/**
+ * Service vault PDA at `["service-vault", template]`; validated only when
+ * receipts or bounties are enabled, and pays the settlement bounty.
+ */
+serviceVault?: TAccountServiceVault;
+/**
+ * Pending opening at the FIFO head, validated by its PDA seeds; moves to
+ * the forfeited status and is not closed here.
+ */
+opening: TAccountOpening;
+/**
+ * Switchboard randomness bound to the opening; must still be unrevealed at
+ * the committed seed slot, which starts the timeout.
+ */
+randomness: TAccountRandomness;
+/** System program, used for the bounty transfer. */
+systemProgram?: TAccountSystemProgram;
+}
+
+export async function getForfeitTemplateOpenInstructionAsync<TAccountCaller extends InstructionSignerInput, TAccountBeneficiary extends InstructionAccountInput, TAccountTemplate extends InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput, TAccountOpening extends InstructionAccountInput, TAccountRandomness extends InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: ForfeitTemplateOpenAsyncInput<TAccountCaller, TAccountBeneficiary, TAccountTemplate, TAccountServiceVault, TAccountOpening, TAccountRandomness, TAccountSystemProgram>, config?: { programAddress?: TProgramAddress } ): Promise<ForfeitTemplateOpenInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountCaller, InstructionAccountInputAddress<TAccountCaller>>, ResolvedInstructionAccountMeta<TAccountBeneficiary, InstructionAccountInputAddress<TAccountBeneficiary>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountServiceVault, InstructionAccountInputAddress<TAccountServiceVault>>, ResolvedInstructionAccountMeta<TAccountOpening, InstructionAccountInputAddress<TAccountOpening>>, ResolvedInstructionAccountMeta<TAccountRandomness, InstructionAccountInputAddress<TAccountRandomness>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>>> {
+  // Program address.
+const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
+
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
+ // Original accounts.
+const originalAccounts = { caller: { value: input.caller ?? null, isSigner: true, isWritable: true }, beneficiary: { value: input.beneficiary ?? null, isSigner: false, isWritable: true }, template: { value: input.template ?? null, isSigner: false, isWritable: true }, serviceVault: { value: input.serviceVault ?? null, isSigner: false, isWritable: true }, opening: { value: input.opening ?? null, isSigner: false, isWritable: true }, randomness: { value: input.randomness ?? null, isSigner: false, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isSigner: false, isWritable: false } }
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
+
+
+// Resolve default values.
+if (!accounts.serviceVault.value) {
+accounts.serviceVault.value = await findServiceVaultPda({ template: getAddressFromResolvedInstructionAccount("template", accounts.template.value) }, { programAddress });
+}
+if (!accounts.systemProgram.value) {
+accounts.systemProgram.value = '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+}
+
+return Object.freeze({ accounts: [getAccountMeta("caller", accounts.caller), getAccountMeta("beneficiary", accounts.beneficiary), getAccountMeta("template", accounts.template), getAccountMeta("serviceVault", accounts.serviceVault), getAccountMeta("opening", accounts.opening), getAccountMeta("randomness", accounts.randomness), getAccountMeta("systemProgram", accounts.systemProgram)], data: getForfeitTemplateOpenInstructionDataEncoder().encode({}), programAddress } as ForfeitTemplateOpenInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountCaller, InstructionAccountInputAddress<TAccountCaller>>, ResolvedInstructionAccountMeta<TAccountBeneficiary, InstructionAccountInputAddress<TAccountBeneficiary>>, ResolvedInstructionAccountMeta<TAccountTemplate, InstructionAccountInputAddress<TAccountTemplate>>, ResolvedInstructionAccountMeta<TAccountServiceVault, InstructionAccountInputAddress<TAccountServiceVault>>, ResolvedInstructionAccountMeta<TAccountOpening, InstructionAccountInputAddress<TAccountOpening>>, ResolvedInstructionAccountMeta<TAccountRandomness, InstructionAccountInputAddress<TAccountRandomness>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>>);
 }
 
 export type ForfeitTemplateOpenInput<TAccountCaller extends InstructionSignerInput = InstructionSignerInput, TAccountBeneficiary extends InstructionAccountInput = InstructionAccountInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput, TAccountServiceVault extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountRandomness extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {

@@ -23,6 +23,7 @@ import { WalletProvider } from "./wallet/WalletProvider.js";
 
 export const links: Route.LinksFunction = () => [
 	{ rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+	{ rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
 ];
 
 export async function loader({ request, context }: Route.LoaderArgs) {

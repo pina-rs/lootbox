@@ -1,56 +1,17 @@
 /**
- * The one persistent navigation bar: logo home, Explore, Create, wallet.
+ * The one persistent navigation bar: logo home, Explore, Create, wallet. The
+ * chest in the logo blinks now and then (CSS, paused for reduced motion).
  */
 import { useSelectedWalletAccount } from "@solana/react";
 import { type UiWallet, useDisconnect } from "@wallet-standard/react";
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useRevalidator } from "react-router";
 
+import { ChestMark, Wordmark } from "@pina-rs/lootbox-brand";
+
 import { shortAddress } from "../lib/bytes.js";
 import { useSession } from "../wallet/session.js";
 import { useHydrated, useWalletUi } from "../wallet/WalletProvider.js";
-
-export function Logo() {
-	return (
-		<svg
-			className="logo-mark"
-			viewBox="0 0 64 64"
-			aria-hidden="true"
-			width={34}
-			height={34}
-		>
-			<path
-				d="M12 30c0-10 8.5-17 20-17s20 7 20 17v4H12z"
-				fill="var(--teal)"
-				stroke="var(--ink)"
-				strokeWidth="3.5"
-				strokeLinejoin="round"
-			/>
-			<rect
-				x="12"
-				y="30"
-				width="40"
-				height="22"
-				rx="3"
-				fill="var(--teal)"
-				stroke="var(--ink)"
-				strokeWidth="3.5"
-			/>
-			<path d="M12 30h40" stroke="var(--gold)" strokeWidth="5" />
-			<rect
-				x="26"
-				y="25"
-				width="12"
-				height="15"
-				rx="3"
-				fill="var(--gold)"
-				stroke="var(--ink)"
-				strokeWidth="3"
-			/>
-			<circle cx="32" cy="31" r="2.2" fill="var(--ink)" />
-		</svg>
-	);
-}
 
 function DisconnectItem(
 	{ wallet, onDone }: Readonly<{ wallet: UiWallet; onDone: () => void }>,
@@ -67,6 +28,7 @@ function DisconnectItem(
 				await disconnect().catch(() => {
 					// Some wallets refuse programmatic disconnects; forget it locally anyway.
 				});
+
 				setAccount(undefined);
 				onDone();
 			}}
@@ -189,8 +151,8 @@ export function TopBar() {
 		<header className="topbar">
 			<div className="topbar-inner">
 				<Link to="/" className="brand" aria-label="lootbox.so home">
-					<Logo />
-					<span className="brand-word">lootbox</span>
+					<ChestMark className="brand-mark" variant="compact" size={38} />
+					<Wordmark className="brand-word" height={17} title="" />
 				</Link>
 				<nav aria-label="Main" className="topnav">
 					<NavLink to="/explore">Explore</NavLink>

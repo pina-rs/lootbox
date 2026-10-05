@@ -22,6 +22,7 @@ export type Secrets = Readonly<{
 	/** `true` serves recorded market data (end-to-end tests only). */
 	CATALOG_FIXTURES?: string;
 	FEATURE_NFT_PRIZES?: string;
+	FEATURE_BOX_CURVES?: string;
 	EXCLUSIVE_COLLECTION_DEVNET?: string;
 	EXCLUSIVE_COLLECTION_MAINNET?: string;
 	EXCLUSIVE_COLLECTION_LOCALNET?: string;
@@ -37,7 +38,12 @@ export type ServerConfig = Readonly<{
 	localnetControlUrl: string | null;
 	relayerClusters: readonly Cluster[];
 	relayerClaim: boolean;
-	features: Readonly<{ exclusiveNfts: boolean; nftPrizes: boolean }>;
+	features: Readonly<{
+		exclusiveNfts: boolean;
+		nftPrizes: boolean;
+		/** Selling boxes on a bonding curve. Paid chances are a lottery in many places. */
+		boxCurves: boolean;
+	}>;
 	/** The Introductory Exclusive Lootbox NFT collection PDA per cluster. */
 	exclusiveCollections: Readonly<Partial<Record<Cluster, string>>>;
 }>;
@@ -90,6 +96,7 @@ export function readServerConfig(env: WorkerEnv): ServerConfig {
 		features: {
 			exclusiveNfts: env.FEATURE_EXCLUSIVE_NFTS === "true",
 			nftPrizes: env.FEATURE_NFT_PRIZES === "true",
+			boxCurves: env.FEATURE_BOX_CURVES === "true",
 		},
 		exclusiveCollections: Object.fromEntries(
 			(

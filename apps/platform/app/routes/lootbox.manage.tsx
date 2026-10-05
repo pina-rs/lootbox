@@ -4,11 +4,7 @@
  * on-chain terms are fixed and only distribution and wind-down remain.
  */
 import { LootboxClient } from "@pina-rs/lootbox";
-import {
-	getCreateAssociatedTokenIdempotentInstruction,
-	getTransferCheckedInstruction,
-} from "@solana-program/token-2022";
-import { address, type Instruction, isAddress } from "@solana/kit";
+import { address, isAddress } from "@solana/kit";
 import { useWalletAccountTransactionSigner } from "@solana/react";
 import type { UiWalletAccount } from "@wallet-standard/react";
 import { useState } from "react";
@@ -24,6 +20,8 @@ import { TxProgress, useTxProgress } from "../components/TxProgress.js";
 import { BundlesStep } from "../create/BundlesStep.js";
 import { useHoldings } from "../create/hooks.js";
 import { prizeInputs } from "../create/launch.js";
+import { type Run } from "../distribute/AirdropCard.js";
+import { HandOut } from "../distribute/HandOut.js";
 import { currentWallet } from "../lib/.server/auth.js";
 import {
 	assertSameOrigin,
@@ -44,7 +42,6 @@ import {
 import { shortAddress } from "../lib/bytes.js";
 import type { LootboxChainView } from "../lib/chain.js";
 import { chainFor, type ClusterInfo } from "../lib/clusters.js";
-import { batches, parseDistribution } from "../lib/distribution.js";
 import { checkPlan, draftBundlesToInputs } from "../lib/plan.js";
 import { useClusterInfo } from "../lib/public-config.js";
 import {
@@ -159,6 +156,18 @@ function CreatorTools(
 	const cluster = useClusterInfo(lootbox.cluster);
 	const wrongWallet = account !== null && account.address !== lootbox.creator;
 
+	if (chain && cluster && account && !wrongWallet) {
+		return (
+			<SigningTools
+				account={account}
+				cluster={cluster}
+				chain={chain}
+				now={now}
+				events={events}
+			/>
+		);
+	}
+
 	return (
 		<div className="two-col">
 			<div className="stack">
@@ -172,19 +181,111 @@ function CreatorTools(
 						creator. Switch wallets to sign on-chain actions.
 					</p>
 				)}
-				{chain && cluster && account && !wrongWallet && (
-					<ChainActions
-						account={account}
-						cluster={cluster}
-						chain={chain}
-						now={now}
-					/>
-				)}
 				{!account && (
 					<p className="notice">
 						Connect the creator wallet to use on-chain actions.
 					</p>
 				)}
+			</div>
+		</div>
+	);
+}
+
+/** One signer, one busy flag, and one progress log for every creator action. */
+function useChainRunner(account: UiWalletAccount, cluster: ClusterInfo) {
+	const signer = useWalletAccountTransactionSigner(
+		account,
+		chainFor(cluster.cluster),
+	);
+	const revalidator = useRevalidator();
+	const { steps, progress, reset } = useTxProgress();
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const client = new LootboxClient(cluster.rpcUrl, signer, progress);
+
+	const run: Run = async (work) => {
+		setBusy(true);
+		setError(null);
+		reset();
+
+		try {
+			await work();
+		} catch (reason) {
+			setError(friendlyError(reason));
+		} finally {
+			setBusy(false);
+			await revalidator.revalidate();
+		}
+	};
+
+	return { client, busy, run, steps, error };
+}
+
+type ChainRunner = ReturnType<typeof useChainRunner>;
+
+function RunProgress(
+	{ runner, cluster }: Readonly<{ runner: ChainRunner; cluster: ClusterInfo }>,
+) {
+	if (runner.steps.length === 0 && !runner.error) return null;
+
+	return (
+		<div className="card stack">
+			<TxProgress steps={runner.steps} cluster={cluster} busy={runner.busy} />
+			{runner.error && <p className="form-error" role="alert">{runner.error}
+			</p>}
+		</div>
+	);
+}
+
+/**
+ * The connected creator's layout. Once the supply is locked, handing boxes
+ * out is the main job, so it spans the page above the page settings.
+ */
+function SigningTools(
+	{ account, cluster, chain, now, events }: Readonly<{
+		account: UiWalletAccount;
+		cluster: ClusterInfo;
+		chain: LootboxChainView;
+		now: number;
+		events: readonly Readonly<
+			{ opening: string; kind: string; message: string; createdAt: number }
+		>[];
+	}>,
+) {
+	const runner = useChainRunner(account, cluster);
+	const handOut = chain.lockedAt > 0 && BigInt(chain.supply) > 0n;
+
+	return (
+		<div className="stack manage-layout">
+			{handOut && (
+				<>
+					<HandOut
+						client={runner.client}
+						rpcUrl={cluster.rpcUrl}
+						chain={chain}
+						owner={account.address}
+						now={now}
+						busy={runner.busy}
+						run={runner.run}
+					/>
+					<RunProgress runner={runner} cluster={cluster} />
+				</>
+			)}
+			<div className="two-col">
+				<div className="stack">
+					<DisplayForm />
+				</div>
+				<div className="stack">
+					<ChainStatus chain={chain} now={now} events={events} />
+					<ChainActions
+						runner={runner}
+						account={account}
+						cluster={cluster}
+						chain={chain}
+						now={now}
+					/>
+					{!handOut && <RunProgress runner={runner} cluster={cluster} />}
+				</div>
 			</div>
 		</div>
 	);
@@ -415,40 +516,17 @@ function ChainStatus(
 }
 
 function ChainActions(
-	{ account, cluster, chain, now }: Readonly<{
+	{ runner, account, cluster, chain, now }: Readonly<{
+		runner: ChainRunner;
 		account: UiWalletAccount;
 		cluster: ClusterInfo;
 		chain: LootboxChainView;
 		now: number;
 	}>,
 ) {
-	const { lootbox } = useLootbox();
-	const signer = useWalletAccountTransactionSigner(
-		account,
-		chainFor(cluster.cluster),
-	);
-	const revalidator = useRevalidator();
-	const { steps, progress, reset } = useTxProgress();
-	const [busy, setBusy] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-	const client = new LootboxClient(cluster.rpcUrl, signer, progress);
+	const { client, busy, run } = runner;
 	const locked = chain.lockedAt > 0;
 	const beforeReveal = now < chain.opensAt;
-
-	const run = async (work: () => Promise<void>) => {
-		setBusy(true);
-		setError(null);
-		reset();
-
-		try {
-			await work();
-		} catch (reason) {
-			setError(friendlyError(reason));
-		} finally {
-			setBusy(false);
-			await revalidator.revalidate();
-		}
-	};
 
 	return (
 		<>
@@ -471,15 +549,6 @@ function ChainActions(
 					run={run}
 				/>
 			)}
-			{locked && BigInt(chain.supply) > 0n && (
-				<DistributePanel
-					client={client}
-					boxMint={lootbox.boxMint}
-					owner={account.address}
-					busy={busy}
-					run={run}
-				/>
-			)}
 			<WindDown
 				client={client}
 				chain={chain}
@@ -487,17 +556,9 @@ function ChainActions(
 				run={run}
 				beforeReveal={beforeReveal}
 			/>
-			{(steps.length > 0 || error) && (
-				<div className="card stack">
-					<TxProgress steps={steps} cluster={cluster} busy={busy} />
-					{error && <p className="form-error" role="alert">{error}</p>}
-				</div>
-			)}
 		</>
 	);
 }
-
-type Run = (work: () => Promise<void>) => Promise<void>;
 
 function AppendBundles(
 	{ client, cluster, account, busy, run }: Readonly<{
@@ -661,107 +722,6 @@ function LockPanel(
 			>
 				Lock and mint {BigInt(chain.totalBundles).toLocaleString("en-US")} boxes
 			</button>
-		</section>
-	);
-}
-
-function DistributePanel(
-	{ client, boxMint, owner, busy, run }: Readonly<{
-		client: LootboxClient;
-		boxMint: string;
-		owner: string;
-		busy: boolean;
-		run: Run;
-	}>,
-) {
-	const [text, setText] = useState("");
-	const [sent, setSent] = useState<string | null>(null);
-	const plan = parseDistribution(text);
-
-	return (
-		<section className="card stack" aria-labelledby="distribute-title">
-			<h2 id="distribute-title">Send boxes</h2>
-			<div className="field">
-				<label htmlFor="distribution">Recipients</label>
-				<textarea
-					id="distribution"
-					value={text}
-					placeholder={"One wallet per line, optionally with a count:\n7xKX…q9 3"}
-					spellCheck={false}
-					onChange={(event) => setText(event.currentTarget.value)}
-				/>
-				<span className="field-hint">
-					Paste a list or a CSV. {plan.recipients.length > 0 &&
-						`${
-							plan.total.toLocaleString("en-US")
-						} boxes to ${plan.recipients.length} wallets.`}
-				</span>
-			</div>
-			{plan.errors.length > 0 && (
-				<ul className="form-error">
-					{plan.errors.slice(0, 5).map((problem) => (
-						<li key={problem}>{problem}</li>
-					))}
-				</ul>
-			)}
-			<button
-				type="button"
-				className="button button-primary"
-				disabled={busy || plan.recipients.length === 0 ||
-					plan.errors.length > 0}
-				onClick={() =>
-					void run(async () => {
-						const mint = address(boxMint);
-						const source = await client.ata(address(owner), mint);
-						const groups = batches(plan.recipients);
-
-						for (const [index, group] of groups.entries()) {
-							const instructions: Instruction[] = [];
-
-							for (const recipient of group) {
-								const destination = await client.ata(
-									address(recipient.address),
-									mint,
-								);
-
-								instructions.push(
-									getCreateAssociatedTokenIdempotentInstruction({
-										payer: client.payer,
-										ata: destination,
-										owner: address(recipient.address),
-										mint,
-									}),
-									getTransferCheckedInstruction({
-										source,
-										mint,
-										destination,
-										authority: client.payer,
-										amount: recipient.count,
-										decimals: 0,
-									}),
-								);
-							}
-
-							await client.send(
-								instructions,
-								`Send boxes · batch ${index + 1} of ${groups.length}`,
-							);
-						}
-
-						setSent(
-							`Sent ${plan.total} ${plan.total === 1n ? "box" : "boxes"}.`,
-						);
-						setText("");
-					})}
-			>
-				{plan.total === 0n
-					? "Send boxes"
-					: `Send ${plan.total.toLocaleString("en-US")} ${
-						plan.total === 1n ? "box" : "boxes"
-					}`}
-			</button>
-			{sent && <p className="notice" role="status" data-testid="sent">{sent}
-			</p>}
 		</section>
 	);
 }

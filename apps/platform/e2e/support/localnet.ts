@@ -160,11 +160,15 @@ export async function testToken(
 export async function injectTestWallet(
 	page: Page,
 	signer: KeyPairSigner,
+	/** Simulate a wallet declining a signing request before it reaches the chain. */
+	beforeSign?: () => void,
 ): Promise<void> {
 	const decoder = getTransactionDecoder();
 	const encoder = getTransactionEncoder();
 
 	await page.exposeBinding("__e2eSign", async (_source, bytes: number[]) => {
+		beforeSign?.();
+
 		const transaction = decoder.decode(Uint8Array.from(bytes));
 		const signed = await partiallySignTransaction(
 			[signer.keyPair],

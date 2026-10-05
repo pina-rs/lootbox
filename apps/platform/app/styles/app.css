@@ -1,46 +1,8 @@
 /*
- * lootbox.so — "the chest on the kitchen table".
- *
- * Warm ivory paper, heavy ink outlines, and chunky offset shadows: the same
- * cel-shaded world as the cartoon chest renders. The ivory is the chest
- * render's own background, so the reaction clips sit on the page seamlessly.
- * Bungee is for identity (titles, numbers that matter); Nunito for reading.
+ * lootbox.so page styles. Design tokens live in @pina-rs/lootbox-ui's
+ * tokens.css and shared components in its styles.css; root.tsx loads both
+ * before this file.
  */
-
-:root {
-	--ivory: #f3edda;
-	--ivory-deep: #e9dfc3;
-	--paper: #fbf8ee;
-	--white: #fffdf7;
-	--ink: #1d1a14;
-	--ink-soft: #4a4336;
-	--muted: #6b6250;
-	--line: #d6caa9;
-	--teal: #146f63;
-	--teal-bright: #34a898;
-	--teal-deep: #0e4f47;
-	--gold: #f0b429;
-	--gold-soft: #f8dc8c;
-	--coral: #b23a31;
-	--plum: #6b3fa0;
-	--focus: #0b63ce;
-	--accent: var(--teal);
-	--accent-soft: #d3ece7;
-
-	--display: "Bungee", "Arial Black", sans-serif;
-	--body: "Nunito Variable", "Nunito", "Trebuchet MS", sans-serif;
-
-	--radius-s: 10px;
-	--radius: 16px;
-	--radius-l: 24px;
-	--shadow-s: 0 3px 0 var(--ink);
-	--shadow: 0 5px 0 var(--ink);
-	--border: 2.5px solid var(--ink);
-	--gutter: 16px;
-	--page: 1120px;
-
-	color-scheme: light;
-}
 
 *,
 *::before,
@@ -877,15 +839,19 @@ textarea[aria-invalid="true"] {
 
 .bundle-head {
 	display: grid;
-	grid-template-columns: 1fr 110px auto;
+	grid-template-columns: 1fr auto auto;
 	gap: 10px;
 	align-items: end;
 }
 
 @media (max-width: 520px) {
 	.bundle-head {
-		grid-template-columns: 1fr 76px auto;
+		grid-template-columns: 1fr auto;
 		gap: 8px;
+	}
+
+	.bundle-head > .field {
+		grid-column: 1 / -1;
 	}
 }
 
@@ -1960,4 +1926,84 @@ textarea[aria-invalid="true"] {
 	border: var(--border);
 	border-radius: var(--radius);
 	box-shadow: var(--shadow-s);
+}
+
+/* Handing boxes out: airdrop lists and box curves */
+
+.hand-out {
+	padding-block-start: 8px;
+}
+
+.hand-out-paths {
+	display: grid;
+	gap: 20px;
+}
+
+@media (min-width: 960px) {
+	.hand-out-paths {
+		grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+		align-items: start;
+	}
+}
+
+.box-split .odds-strip-legend ul {
+	grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.link-button {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--teal-deep);
+	font: inherit;
+	font-weight: 800;
+	text-decoration: underline;
+	text-decoration-thickness: 2px;
+	text-underline-offset: 3px;
+	cursor: pointer;
+}
+
+.trade-row {
+	display: grid;
+	gap: 16px;
+	align-items: end;
+}
+
+@media (min-width: 560px) {
+	.trade-row {
+		grid-template-columns: auto 1fr;
+	}
+}
+
+.trade-quote {
+	display: grid;
+	gap: 4px;
+	margin: 0;
+}
+
+.trade-quote > div {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.trade-quote dt {
+	color: var(--muted);
+	font-weight: 800;
+}
+
+.trade-quote dd {
+	margin: 0;
+	font-weight: 900;
+	white-space: nowrap;
+}
+
+.trade-quote .total {
+	padding-block-start: 6px;
+	border-block-start: 2px solid var(--line);
+	font-size: 18px;
+}
+
+.trade-quote .total dt {
+	color: var(--ink);
 }

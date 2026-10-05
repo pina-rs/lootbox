@@ -109,6 +109,7 @@ export function HolderPanel(
 	const [state, dispatch] = useReducer(openingReducer, initialOpening);
 	const [boxes, setBoxes] = useState<bigint | null>(null);
 	const [openings, setOpenings] = useState<readonly ChainOpening[]>([]);
+
 	const [hint, setHint] = useState<string | null>(null);
 	const [eligible, setEligible] = useState(false);
 	const [version, setVersion] = useState(0);

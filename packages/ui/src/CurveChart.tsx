@@ -97,6 +97,7 @@ export function CurveChart(
 	const nextPrice = startPrice + priceStep * next;
 	const endPrice = startPrice + priceStep * Math.max(0, inventory - 1);
 	const previewFrom = preview?.side === "sell" ? sold - preview.count : sold;
+
 	const previewTo = preview?.side === "sell"
 		? sold
 		: sold + (preview?.count ?? 0);

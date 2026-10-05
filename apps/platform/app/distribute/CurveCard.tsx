@@ -60,6 +60,7 @@ export function solPrizePerBox(
 		const remaining = BigInt(bundle.remaining);
 
 		boxes += remaining;
+
 		for (const asset of bundle.assets) {
 			if (asset.kind === "sol" || asset.kind === "quoteSol") {
 				lamports += BigInt(asset.amount) * remaining;

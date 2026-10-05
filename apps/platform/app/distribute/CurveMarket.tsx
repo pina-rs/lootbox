@@ -96,6 +96,7 @@ function TradeForm(
 	const [gift, setGift] = useState(false);
 	const [friend, setFriend] = useState("");
 	const [busy, setBusy] = useState(false);
+
 	const [error, setError] = useState<string | null>(null);
 	const [done, setDone] = useState<string | null>(null);
 	const sold = Number(curve.sold);

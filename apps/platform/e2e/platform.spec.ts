@@ -98,6 +98,7 @@ const BONK = address("DezXAZ8z7PnrnRJjz3wXBoRgixCa6XKj7D3WpqkDmzPK");
 const OPENAI = address("PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF");
 const USDC = address("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
 let slug: string;
+
 let template: string;
 let boxMint: string;
 const name = `Treasure ${PROJECT_SUFFIX()}`;

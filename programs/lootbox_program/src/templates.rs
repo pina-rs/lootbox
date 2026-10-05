@@ -1232,8 +1232,8 @@ fn locked_manifest_hash(template: &Address, state: &TemplateStateHeader) -> [u8;
 		&result_receipts_enabled,
 		&state.manifest_accumulator,
 	]);
-	let mut result = [0u8; 32];
 
+	let mut result = [0u8; 32];
 	result.copy_from_slice(digest.as_ref());
 
 	result

@@ -932,7 +932,6 @@ mod tests {
 		let mut receipt = [0; TemplateOpeningState::SIZE];
 		let opening = TemplateOpeningState::initialize(&mut receipt, |_| Ok(())).expect("opening");
 		opening.status = 1;
-
 		opening.sequence.set(1);
 		opening.treasury_revision.set(3);
 		opening.eligible_bundle_count.set(3);

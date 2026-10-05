@@ -28,7 +28,9 @@ const COLUMNS: readonly Readonly<{ reaction: ChestReaction; label: string }>[] =
 
 function phaseLabel(t: number): string {
 	if (t < HOLD_AT) return "Waiting for you";
+
 	if (t < WAIT_AT) return "Held down";
+
 	if (t < REVEAL_AT) return "Drawing the prize";
 
 	return "Revealed";

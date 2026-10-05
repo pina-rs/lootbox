@@ -196,6 +196,7 @@ export function OpenOnPhone(
 	const arrive = enter(frame, 0, SNAP);
 	const charge = progress(frame, HOLD, CHARGED - HOLD, (t) => t);
 	const busy = frame >= CHARGED && frame < REVEAL;
+
 	const revealing = frame >= REVEAL;
 	const chest = chestFlowFrame({
 		holdAt: HOLD / FPS,

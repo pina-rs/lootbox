@@ -127,6 +127,7 @@ export function Chest(props: ChestProps) {
 			setNopeAt(performance.now());
 			navigator.vibrate?.([20, 40, 20]);
 			callbacks.current.onBlocked();
+
 			return;
 		}
 

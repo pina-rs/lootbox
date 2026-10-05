@@ -30,9 +30,11 @@ const EPSILON = 1 / 120;
 
 function phaseFrame(flow: ChestFlow, t: number): ChestFrame {
 	if (t < flow.holdAt) return idleFrame(t);
+
 	if (t < flow.waitAt) {
 		return chargeFrame((t - flow.holdAt) / (flow.waitAt - flow.holdAt), t);
 	}
+
 	if (t < flow.revealAt) return waitFrame(t - flow.waitAt);
 
 	const into = t - flow.revealAt;

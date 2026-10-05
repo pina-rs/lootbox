@@ -48,6 +48,7 @@ function track(keys: readonly Key[], t: number): number {
 	const first = keys[0];
 
 	if (!first) return 0;
+
 	if (t <= first[0]) return first[1];
 
 	for (let index = 1; index < keys.length; index++) {
@@ -55,6 +56,7 @@ function track(keys: readonly Key[], t: number): number {
 		const to = keys[index];
 
 		if (!from || !to) break;
+
 		if (t <= to[0]) {
 			const span = to[0] - from[0];
 			const progress = span <= 0 ? 1 : (t - from[0]) / span;

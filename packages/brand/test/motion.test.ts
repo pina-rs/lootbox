@@ -47,6 +47,7 @@ function expectDrawable(frame: ChestFrame): void {
 	expect(frame.blink).toBeLessThanOrEqual(1);
 	expect(frame.lift).toBeGreaterThanOrEqual(0);
 	expect(frame.squash.y).toBeGreaterThan(0.7);
+
 	expect(frame.squash.y).toBeLessThan(1.3);
 }
 

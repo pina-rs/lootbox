@@ -19,7 +19,6 @@ const bubblegumProgram = "BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY";
 const compressionProgram = "cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK";
 const noopProgram = "noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV";
 const port = Number(process.env.LOOTBOX_PLAYGROUND_PORT ?? 8898);
-
 if (!Number.isSafeInteger(port) || port < 1024 || port > 65535) {
 	throw new RangeError("invalid playground port");
 }
@@ -37,14 +36,36 @@ surfnet.deploy({
 	programId: oracleProgram,
 	soPath: resolve(root, "target/deploy/mock_switchboard.so"),
 });
+// With LOOTBOX_METAPLEX_PROGRAMS_DIR (from `fetch:metaplex-programs`), deploy
+// the pinned mainnet Bubblegum V2, Core, MPL Account Compression, and MPL
+// Noop images so Exclusive Lootbox NFTs mint for real. Otherwise the mock
+// Bubblegum fixture stands in for PrizePool journeys.
+const metaplexDirectory = process.env.LOOTBOX_METAPLEX_PROGRAMS_DIR;
+const metaplexPrograms = [
+	bubblegumProgram,
+	"CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d",
+	"mcmt6YrQEMKw8Mw43FmpRLmf7BqRnFMKmAcbxE3xkAW",
+	"mnoopTCrg4p8ry25e4bcWA9XZjbNjMTfgYVGGEdRsf3",
+];
+const mockedPrograms = metaplexDirectory
+	? [compressionProgram, noopProgram]
+	: [bubblegumProgram, compressionProgram, noopProgram];
 
-for (const fixtureId of [bubblegumProgram, compressionProgram, noopProgram]) {
+for (const fixtureId of mockedPrograms) {
 	surfnet.deploy({
 		programId: fixtureId,
 		soPath: resolve(root, "target/deploy/mock_bubblegum.so"),
 	});
 }
 
+if (metaplexDirectory) {
+	for (const programId of metaplexPrograms) {
+		surfnet.deploy({
+			programId,
+			soPath: resolve(metaplexDirectory, `${programId}.so`),
+		});
+	}
+}
 const oracle = Object.fromEntries(
 	[
 		"queue",
@@ -70,7 +91,6 @@ surfnet.setAccount(
 	new Uint8Array(0),
 	oracleProgram,
 );
-
 const config = Object.freeze({
 	network: "surfpool",
 	testOnly: true,
@@ -80,6 +100,7 @@ const config = Object.freeze({
 	rpcUrl: surfnet.rpcUrl,
 	wsUrl: surfnet.wsUrl,
 	oracle,
+	metaplex: Boolean(metaplexDirectory),
 });
 const proofs = new Map();
 const observer = setInterval(() => surfnet.drainEvents(), 100);
@@ -118,22 +139,17 @@ function safeQuery(value, maximum = 120) {
 	) {
 		throw new RangeError("invalid search query");
 	}
-
 	return value.trim();
 }
 
 async function cached(key, load) {
 	const hit = catalogCache.get(key);
-
 	if (hit && Date.now() - hit.at < catalogTtlMs) return hit.value;
 	const value = await load();
-
 	if (catalogCache.size >= 100) {
 		catalogCache.delete(catalogCache.keys().next().value);
 	}
-
 	catalogCache.set(key, { at: Date.now(), value });
-
 	return value;
 }
 
@@ -144,7 +160,6 @@ async function searchTokenCatalog(query) {
 		);
 	const fallback = fallbackTokens.filter(match);
 	const apiKey = process.env.JUPITER_API_KEY;
-
 	if (!apiKey) {
 		return {
 			items: fallback,
@@ -153,7 +168,6 @@ async function searchTokenCatalog(query) {
 				"Add JUPITER_API_KEY for live Jupiter Tokens results; showing a verified starter list.",
 		};
 	}
-
 	try {
 		return await cached(`jupiter:${query.toLowerCase()}`, async () => {
 			const upstream = await fetch(
@@ -170,7 +184,6 @@ async function searchTokenCatalog(query) {
 			if (!Array.isArray(payload)) {
 				throw new TypeError("invalid Jupiter response");
 			}
-
 			const items = payload.slice(0, 20).flatMap((item) => {
 				if (
 					!item || !validAddress(item.id) || typeof item.name !== "string" ||
@@ -204,7 +217,6 @@ async function searchTokenCatalog(query) {
 
 async function searchNftCatalog(owner, query) {
 	const endpoint = process.env.DAS_RPC_URL;
-
 	if (!endpoint) {
 		return {
 			items: [],
@@ -213,7 +225,6 @@ async function searchNftCatalog(owner, query) {
 				"Add a DAS_RPC_URL to search this wallet's Metaplex, Core, and compressed NFTs.",
 		};
 	}
-
 	try {
 		return await cached(`das:${owner}:${query.toLowerCase()}`, async () => {
 			const upstream = await fetch(endpoint, {
@@ -230,12 +241,10 @@ async function searchNftCatalog(owner, query) {
 			if (!upstream.ok) {
 				throw new Error(`DAS provider returned ${upstream.status}`);
 			}
-
 			const payload = await upstream.json();
 			if (payload.error) {
 				throw new Error(String(payload.error.message ?? "DAS RPC error"));
 			}
-
 			const values = payload.result?.items;
 			if (!Array.isArray(values)) throw new TypeError("invalid DAS response");
 			const needle = query.toLowerCase();
@@ -299,17 +308,14 @@ async function searchNftCatalog(owner, query) {
 
 async function nftProof(assetId) {
 	const endpoint = process.env.DAS_RPC_URL;
-
 	if (!endpoint) {
 		throw new Error("DAS_RPC_URL is required for compressed proofs");
 	}
-
 	const umi = createUmi(endpoint).use(dasApi());
 	const resolved = await getAssetWithProof(umi, publicKey(assetId));
 	const asset = resolved.rpcAsset;
 	const proof = resolved.rpcAssetProof;
 	const compression = asset?.compression;
-
 	const ownership = asset?.ownership;
 	const owner = ownership?.owner?.toString();
 	const delegate = ownership?.delegate?.toString();
@@ -334,7 +340,6 @@ async function nftProof(assetId) {
 		proof?.tree_id?.toString() !== compression.tree.toString() ||
 		!Array.isArray(proof?.proof)
 	) throw new Error("asset is not an immutable, provable Bubblegum leaf");
-
 	return {
 		asset: assetId,
 		owner,
@@ -366,13 +371,10 @@ function reply(response, status, value) {
 
 async function body(request) {
 	let text = "";
-
 	for await (const chunk of request) {
 		text += chunk.toString();
-
 		if (text.length > 1024) throw new RangeError("request too large");
 	}
-
 	return JSON.parse(text);
 }
 
@@ -400,7 +402,6 @@ const server = createServer(async (request, response) => {
 		response.end();
 		return;
 	}
-
 	try {
 		surfnet.drainEvents();
 		const url = new URL(request.url ?? "/", `http://127.0.0.1:${port}`);
@@ -431,7 +432,6 @@ const server = createServer(async (request, response) => {
 			if (!input || !validAddress(input.address)) {
 				throw new RangeError("invalid address");
 			}
-
 			surfnet.fundSol(input.address, 100_000_000_000);
 			reply(response, 200, { testOnly: true });
 			return;
@@ -454,7 +454,6 @@ const server = createServer(async (request, response) => {
 			if (!validAddress(randomness)) {
 				throw new RangeError("invalid randomness address");
 			}
-
 			const rpcResponse = await fetch(surfnet.rpcUrl, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -469,12 +468,10 @@ const server = createServer(async (request, response) => {
 			if (account?.owner !== oracleProgram || !Array.isArray(account.data)) {
 				throw new RangeError("no committed randomness account");
 			}
-
 			const bytes = Buffer.from(account.data[0], "base64");
 			if (bytes.length !== 408 || bytes.readBigUInt64LE(104) === 0n) {
 				throw new RangeError("randomness is not committed");
 			}
-
 			let value = proofs.get(randomness);
 			if (!value) {
 				value = bytes.readBigUInt64LE(144) === 0n
@@ -482,7 +479,6 @@ const server = createServer(async (request, response) => {
 					: bytes.subarray(152, 184);
 				proofs.set(randomness, value);
 			}
-
 			// The emulator does not verify enclave signatures. Never use this
 			// endpoint, these accounts, or these proofs on a real Solana network.
 			reply(response, 200, {
@@ -493,7 +489,6 @@ const server = createServer(async (request, response) => {
 			});
 			return;
 		}
-
 		reply(response, 404, { error: "not found" });
 	} catch (error) {
 		reply(response, 400, {

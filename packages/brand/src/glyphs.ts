@@ -8,7 +8,6 @@
  * O's of LOOT can become eyes: the counter is the eye white, and a pupil sits
  * inside it.
  */
-
 export type Glyph = Readonly<{ advance: number; path: string }>;
 
 export const LETTERS = {

@@ -28,6 +28,7 @@ export function roundedPolygon(
 			fixed(corner[0] + (inX / inLength) * r),
 			fixed(corner[1] + (inY / inLength) * r),
 		];
+
 		const end = [
 			fixed(corner[0] + (outX / outLength) * r),
 			fixed(corner[1] + (outY / outLength) * r),

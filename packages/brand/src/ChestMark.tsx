@@ -295,6 +295,7 @@ export function ChestArt(
 	const eyeOffset = style.eyeGap / 2 + eyeRx - 2;
 	const showSparkles = sparkles ?? variant === "full";
 	const bodyPath = roundedPolygon(BODY, 18);
+
 	const ink = palette.ink;
 
 	return (

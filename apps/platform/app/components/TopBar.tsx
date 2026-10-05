@@ -28,6 +28,7 @@ function DisconnectItem(
 				await disconnect().catch(() => {
 					// Some wallets refuse programmatic disconnects; forget it locally anyway.
 				});
+
 				setAccount(undefined);
 				onDone();
 			}}

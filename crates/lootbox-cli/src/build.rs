@@ -242,7 +242,8 @@ pub struct DepositArgs {
 
 impl InstructionBuilder for DepositArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let accounts = generated::Deposit::new(self.depositor, self.lootbox, self.vault);
+		let mut accounts = generated::Deposit::new(self.depositor, self.lootbox);
+		accounts.vault = self.vault;
 		let lamports = self.lamports;
 		let data = generated::DepositInstructionData::new(|wire| {
 			wire.lamports = lamports.into();
@@ -328,13 +329,13 @@ pub struct MintBoxesArgs {
 
 impl InstructionBuilder for MintBoxesArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let accounts = generated::MintBoxes::new(
+		let mut accounts = generated::MintBoxes::new(
 			self.authority,
 			self.lootbox,
-			self.vault,
 			self.box_mint,
 			self.recipient_box_account,
 		);
+		accounts.vault = self.vault;
 		let amount = self.amount;
 		let data = generated::MintBoxesInstructionData::new(|wire| {
 			wire.amount = amount.into();
@@ -405,10 +406,9 @@ pub struct RequestOpenArgs {
 
 impl InstructionBuilder for RequestOpenArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let accounts = generated::RequestOpen::new(
+		let mut accounts = generated::RequestOpen::new(
 			self.owner,
 			self.lootbox,
-			self.vault,
 			self.box_mint,
 			self.owner_box_account,
 			self.randomness,
@@ -423,6 +423,7 @@ impl InstructionBuilder for RequestOpenArgs {
 			self.wrapped_sol_mint,
 			self.address_lookup_table_program,
 		);
+		accounts.vault = self.vault;
 		let recent_slot = self.recent_slot;
 		let bump = self.bump;
 		let data = generated::RequestOpenInstructionData::new(|wire| {
@@ -495,11 +496,10 @@ pub struct SettleOpenArgs {
 
 impl InstructionBuilder for SettleOpenArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let accounts = generated::SettleOpen::new(
+		let mut accounts = generated::SettleOpen::new(
 			self.recipient,
 			self.payer,
 			self.lootbox,
-			self.vault,
 			self.box_mint,
 			self.opening,
 			self.randomness,
@@ -512,6 +512,7 @@ impl InstructionBuilder for SettleOpenArgs {
 			self.oracle_program_state,
 			self.wrapped_sol_mint,
 		);
+		accounts.vault = self.vault;
 		let signature = hex_arg::<64>(&self.signature, "signature")?;
 		let recovery_id = self.recovery_id;
 		let value = hex_arg::<32>(&self.value, "value")?;
@@ -553,15 +554,15 @@ pub struct RefundOpenArgs {
 
 impl InstructionBuilder for RefundOpenArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let accounts = generated::RefundOpen::new(
+		let mut accounts = generated::RefundOpen::new(
 			self.recipient,
 			self.lootbox,
-			self.vault,
 			self.box_mint,
 			self.opening,
 			self.randomness,
 			self.clock,
 		);
+		accounts.vault = self.vault;
 		let data = generated::RefundOpenInstructionData::new(|_wire| {})?;
 
 		Ok(accounts.instruction(data))
@@ -649,12 +650,9 @@ pub struct WithdrawSurplusArgs {
 
 impl InstructionBuilder for WithdrawSurplusArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let accounts = generated::WithdrawSurplus::new(
-			self.authority,
-			self.lootbox,
-			self.vault,
-			self.box_mint,
-		);
+		let mut accounts =
+			generated::WithdrawSurplus::new(self.authority, self.lootbox, self.box_mint);
+		accounts.vault = self.vault;
 		let lamports = self.lamports;
 		let data = generated::WithdrawSurplusInstructionData::new(|wire| {
 			wire.lamports = lamports.into();
@@ -920,13 +918,12 @@ pub struct RequestTemplateOpenArgs {
 
 impl InstructionBuilder for RequestTemplateOpenArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let accounts = generated::RequestTemplateOpen::new(
+		let mut accounts = generated::RequestTemplateOpen::new(
 			self.box_authority,
 			self.payer,
 			self.template,
 			self.box_mint,
 			self.box_account,
-			self.opening,
 			self.randomness,
 			self.reward_escrow,
 			self.oracle_queue,
@@ -939,6 +936,7 @@ impl InstructionBuilder for RequestTemplateOpenArgs {
 			self.wrapped_sol_mint,
 			self.address_lookup_table_program,
 		);
+		accounts.opening = self.opening;
 		let beneficiary = self.beneficiary;
 		let consumer_program = self.consumer_program;
 		let consumer_context = hex_arg::<32>(&self.consumer_context, "consumer_context")?;
@@ -989,6 +987,10 @@ pub struct FulfillTemplateOpenArgs {
 	/// Switchboard On-Demand program.
 	#[arg(long)]
 	pub oracle_program: Pubkey,
+	/// Switchboard reward escrow: the wrapped-SOL associated token account of
+	/// `randomness`.
+	#[arg(long)]
+	pub reward_escrow: Pubkey,
 	/// Switchboard program state.
 	#[arg(long)]
 	pub oracle_program_state: Pubkey,
@@ -1008,11 +1010,9 @@ pub struct FulfillTemplateOpenArgs {
 
 impl InstructionBuilder for FulfillTemplateOpenArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let accounts = generated::FulfillTemplateOpen::new(
+		let mut accounts = generated::FulfillTemplateOpen::new(
 			self.payer,
 			self.template,
-			self.service_vault,
-			self.service_vault,
 			self.opening,
 			self.randomness,
 			self.oracle_queue,
@@ -1020,9 +1020,11 @@ impl InstructionBuilder for FulfillTemplateOpenArgs {
 			self.oracle_stats,
 			self.recent_slot_hashes,
 			self.oracle_program,
+			self.reward_escrow,
 			self.oracle_program_state,
 			self.wrapped_sol_mint,
 		);
+		accounts.service_vault = self.service_vault;
 		let signature = hex_arg::<64>(&self.signature, "signature")?;
 		let recovery_id = self.recovery_id;
 		let value = hex_arg::<32>(&self.value, "value")?;
@@ -1103,14 +1105,14 @@ pub struct ForfeitTemplateOpenArgs {
 
 impl InstructionBuilder for ForfeitTemplateOpenArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let accounts = generated::ForfeitTemplateOpen::new(
+		let mut accounts = generated::ForfeitTemplateOpen::new(
 			self.caller,
 			self.beneficiary,
 			self.template,
-			self.service_vault,
 			self.opening,
 			self.randomness,
 		);
+		accounts.service_vault = self.service_vault;
 		let data = generated::ForfeitTemplateOpenInstructionData::new(|_wire| {})?;
 
 		Ok(accounts.instruction(data))
@@ -1457,17 +1459,17 @@ pub struct FundCoreAssetPrizeArgs {
 
 impl InstructionBuilder for FundCoreAssetPrizeArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let accounts = generated::FundCoreAssetPrize::new(
+		let mut accounts = generated::FundCoreAssetPrize::new(
 			self.authority,
 			self.template,
 			self.bundle,
 			self.asset,
 			self.collection,
 			self.core_program,
-			self.system_program,
 			self.log_wrapper,
 			self.plugin_accounts,
 		);
+		accounts.system_program = self.system_program;
 		let data = generated::FundCoreAssetPrizeInstructionData::new(|_wire| {})?;
 
 		Ok(accounts.instruction(data))
@@ -1761,7 +1763,7 @@ pub struct ClaimCoreAssetPrizeArgs {
 
 impl InstructionBuilder for ClaimCoreAssetPrizeArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let accounts = generated::ClaimCoreAssetPrize::new(
+		let mut accounts = generated::ClaimCoreAssetPrize::new(
 			self.payer,
 			self.template,
 			self.opening,
@@ -1770,10 +1772,10 @@ impl InstructionBuilder for ClaimCoreAssetPrizeArgs {
 			self.asset,
 			self.collection,
 			self.core_program,
-			self.system_program,
 			self.log_wrapper,
 			self.plugin_accounts,
 		);
+		accounts.system_program = self.system_program;
 		let asset_index = self.asset_index;
 		let data = generated::ClaimCoreAssetPrizeInstructionData::new(|wire| {
 			wire.asset_index = asset_index;
@@ -2076,7 +2078,7 @@ pub struct ReclaimCoreAssetPrizeArgs {
 
 impl InstructionBuilder for ReclaimCoreAssetPrizeArgs {
 	fn build(&self) -> Result<Instruction, CliError> {
-		let accounts = generated::ReclaimCoreAssetPrize::new(
+		let mut accounts = generated::ReclaimCoreAssetPrize::new(
 			self.authority,
 			self.template,
 			self.box_mint,
@@ -2084,10 +2086,10 @@ impl InstructionBuilder for ReclaimCoreAssetPrizeArgs {
 			self.asset,
 			self.collection,
 			self.core_program,
-			self.system_program,
 			self.log_wrapper,
 			self.plugin_accounts,
 		);
+		accounts.system_program = self.system_program;
 		let asset_index = self.asset_index;
 		let data = generated::ReclaimCoreAssetPrizeInstructionData::new(|wire| {
 			wire.asset_index = asset_index;

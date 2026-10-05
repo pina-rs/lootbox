@@ -62,5 +62,5 @@ default = []
 bpf-entrypoint = []
 
 [dependencies]
-pina = { version = "0.22.0", default-features = false, features = ["derive"] }
+pina = { version = "0.23.0", default-features = false, features = ["derive"] }
 solana-sha256-hasher = { version = "3.1.0", default-features = false }

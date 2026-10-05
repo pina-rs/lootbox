@@ -130,6 +130,9 @@ fn deposit_builds() {
 	assert_eq!(instruction.data[0], 2);
 	assert_eq!(instruction.data.len(), 2 + 8);
 	assert!(instruction.accounts.iter().any(|meta| meta.is_signer));
+	// The generated builder derives the canonical vault; the CLI sends the
+	// account the caller named instead.
+	assert_eq!(instruction.accounts[2].pubkey, pubkey(PK3));
 }
 
 #[test]
@@ -571,32 +574,37 @@ fn request_template_open_builds() {
 
 #[test]
 fn fulfill_template_open_builds() {
+	let keys: Vec<String> = (1..=12_u8)
+		.map(|byte| Pubkey::new_from_array([byte; 32]).to_string())
+		.collect();
 	let instruction = build_from(&[
 		"fulfill-template-open",
 		"--payer",
-		PK1,
+		&keys[0],
 		"--template",
-		PK2,
-		"--opening",
-		PK3,
+		&keys[1],
 		"--service-vault",
-		PK3,
+		&keys[2],
+		"--opening",
+		&keys[3],
 		"--randomness",
-		PK1,
+		&keys[4],
 		"--oracle-queue",
-		PK2,
+		&keys[5],
 		"--oracle",
-		PK3,
+		&keys[6],
 		"--oracle-stats",
-		PK1,
+		&keys[7],
 		"--recent-slot-hashes",
-		PK2,
+		&keys[8],
 		"--oracle-program",
-		PROGRAM,
+		&keys[9],
+		"--reward-escrow",
+		&keys[10],
 		"--oracle-program-state",
-		PK1,
+		&keys[11],
 		"--wrapped-sol-mint",
-		PK2,
+		"So11111111111111111111111111111111111111112",
 		"--signature",
 		SIG64,
 		"--recovery-id",
@@ -608,6 +616,20 @@ fn fulfill_template_open_builds() {
 
 	assert_eq!(instruction.data[0], 17);
 	assert_eq!(instruction.data.len(), 2 + 64 + 1 + 32);
+
+	// Every named account lands in its own slot, in the program's order.
+	let mut expected: Vec<String> = keys.clone();
+	expected.extend([
+		"11111111111111111111111111111111".to_string(),
+		"TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA".to_string(),
+		"So11111111111111111111111111111111111111112".to_string(),
+	]);
+	let actual: Vec<String> = instruction
+		.accounts
+		.iter()
+		.map(|meta| meta.pubkey.to_string())
+		.collect();
+	assert_eq!(actual, expected);
 }
 
 #[test]

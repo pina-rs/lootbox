@@ -8,7 +8,8 @@
 
 import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
+import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
+import { findVaultPda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const REFUND_OPEN_DISCRIMINATOR = 7;
@@ -36,6 +37,52 @@ export function getRefundOpenInstructionDataDecoder(): FixedSizeDecoder<RefundOp
 
 export function getRefundOpenInstructionDataCodec(): FixedSizeCodec<RefundOpenInstructionDataArgs, RefundOpenInstructionData> {
     return combineCodec(getRefundOpenInstructionDataEncoder(), getRefundOpenInstructionDataDecoder());
+}
+
+export type RefundOpenAsyncInput<TAccountRecipient extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountRandomness extends InstructionAccountInput = InstructionAccountInput, TAccountClock extends InstructionAccountInput = InstructionAccountInput> =  {
+  /**
+ * Opening's stored recipient. Writable signer; receives the minimum
+ * reward.
+ */
+recipient: TAccountRecipient;
+/** Lootbox of the opening; `pending_openings` falls and `refunded` grows. */
+lootbox: TAccountLootbox;
+/**
+ * Vault PDA of `lootbox` that pays the minimum reward; must keep its rent
+ * reserve plus the remaining liability.
+ */
+vault?: TAccountVault;
+/** The lootbox's box mint, read for the live supply in the liability check. */
+boxMint: TAccountBoxMint;
+/**
+ * Pending opening PDA bound to `lootbox`, `randomness`, and `recipient`;
+ * records the refund.
+ */
+opening: TAccountOpening;
+/** Opening's Switchboard randomness account; must still be unrevealed. */
+randomness: TAccountRandomness;
+/** Clock sysvar, validated in the handler and read for the current slot. */
+clock: TAccountClock;
+}
+
+export async function getRefundOpenInstructionAsync<TAccountRecipient extends InstructionSignerInput, TAccountLootbox extends InstructionAccountInput, TAccountVault extends InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput, TAccountOpening extends InstructionAccountInput, TAccountRandomness extends InstructionAccountInput, TAccountClock extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: RefundOpenAsyncInput<TAccountRecipient, TAccountLootbox, TAccountVault, TAccountBoxMint, TAccountOpening, TAccountRandomness, TAccountClock>, config?: { programAddress?: TProgramAddress } ): Promise<RefundOpenInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountRecipient, InstructionAccountInputAddress<TAccountRecipient>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountOpening, InstructionAccountInputAddress<TAccountOpening>>, ResolvedInstructionAccountMeta<TAccountRandomness, InstructionAccountInputAddress<TAccountRandomness>>, ResolvedInstructionAccountMeta<TAccountClock, InstructionAccountInputAddress<TAccountClock>>>> {
+  // Program address.
+const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
+
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
+ // Original accounts.
+const originalAccounts = { recipient: { value: input.recipient ?? null, isSigner: true, isWritable: true }, lootbox: { value: input.lootbox ?? null, isSigner: false, isWritable: true }, vault: { value: input.vault ?? null, isSigner: false, isWritable: true }, boxMint: { value: input.boxMint ?? null, isSigner: false, isWritable: false }, opening: { value: input.opening ?? null, isSigner: false, isWritable: true }, randomness: { value: input.randomness ?? null, isSigner: false, isWritable: false }, clock: { value: input.clock ?? null, isSigner: false, isWritable: false } }
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
+
+
+// Resolve default values.
+if (!accounts.vault.value) {
+accounts.vault.value = await findVaultPda({ lootbox: getAddressFromResolvedInstructionAccount("lootbox", accounts.lootbox.value) }, { programAddress });
+}
+
+return Object.freeze({ accounts: [getAccountMeta("recipient", accounts.recipient), getAccountMeta("lootbox", accounts.lootbox), getAccountMeta("vault", accounts.vault), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("opening", accounts.opening), getAccountMeta("randomness", accounts.randomness), getAccountMeta("clock", accounts.clock)], data: getRefundOpenInstructionDataEncoder().encode({}), programAddress } as RefundOpenInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountRecipient, InstructionAccountInputAddress<TAccountRecipient>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountOpening, InstructionAccountInputAddress<TAccountOpening>>, ResolvedInstructionAccountMeta<TAccountRandomness, InstructionAccountInputAddress<TAccountRandomness>>, ResolvedInstructionAccountMeta<TAccountClock, InstructionAccountInputAddress<TAccountClock>>>);
 }
 
 export type RefundOpenInput<TAccountRecipient extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountRandomness extends InstructionAccountInput = InstructionAccountInput, TAccountClock extends InstructionAccountInput = InstructionAccountInput> =  {

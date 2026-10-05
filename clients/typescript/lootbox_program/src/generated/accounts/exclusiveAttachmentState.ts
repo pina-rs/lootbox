@@ -183,10 +183,10 @@ export const EXCLUSIVE_ATTACHMENT_STATE_MIGRATION_VERSION = 0;
  * reported by the decoder when the account is decoded.
  *
  * ```ts
- * const { data } = await fetchEncodedAccount(rpc, address);
- * if (exclusiveAttachmentStateNeedsMigration(data)) {
+ * const account = await fetchEncodedAccount(rpc, address);
+ * if (account.exists && exclusiveAttachmentStateNeedsMigration(account.data)) {
  * 	// Migrate first, then retry the instruction that failed.
- * 	await send(getMigrateInstruction({ exclusiveAttachmentState: address, payer }).make());
+ * 	await send(getMigrateInstruction({ exclusiveAttachmentState: address, payer }));
  * }
  * ```
  */

@@ -48,7 +48,7 @@ pub struct ReclaimCoreAssetPrize {
 }
 
 impl ReclaimCoreAssetPrize {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, asset: solana_pubkey::Pubkey, collection: solana_pubkey::Pubkey, core_program: solana_pubkey::Pubkey, system_program: solana_pubkey::Pubkey, log_wrapper: solana_pubkey::Pubkey, plugin_accounts: solana_pubkey::Pubkey) -> Self {
+	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, asset: solana_pubkey::Pubkey, collection: solana_pubkey::Pubkey, core_program: solana_pubkey::Pubkey, log_wrapper: solana_pubkey::Pubkey, plugin_accounts: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			template,
@@ -57,7 +57,7 @@ impl ReclaimCoreAssetPrize {
 			asset,
 			collection,
 			core_program,
-			system_program,
+			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
 			log_wrapper,
 			plugin_accounts,
 		}

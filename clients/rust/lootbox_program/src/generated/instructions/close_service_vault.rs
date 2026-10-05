@@ -35,12 +35,15 @@ pub struct CloseServiceVault {
 }
 
 impl CloseServiceVault {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, service_vault: solana_pubkey::Pubkey) -> Self {
+	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey) -> Self {
 		Self {
 			authority,
 			template,
 			box_mint,
-			service_vault,
+			service_vault: solana_pubkey::Pubkey::find_program_address(
+				&["service-vault".as_bytes(), template.as_ref()],
+				&crate::LOOTBOX_PROGRAM_ID,
+			).0,
 			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
 		}
 	}

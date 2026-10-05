@@ -274,9 +274,9 @@ checksum = "2ee67f1008b1ba2321834326597b8e186293b049a023cdef258527550b9935b4"
 
 [[package]]
 name = "pina"
-version = "0.22.0"
+version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fdb941c462859804a8e526b144c7d455bb577658a819c5ef328a38231ee49d9"
+checksum = "937d5c19898fdcd9be7b2373c83c5abbad40e0c1e306d0e51c342344ac608c82"
 dependencies = [
  "pastey",
  "pina_macros",
@@ -284,13 +284,14 @@ dependencies = [
  "pinocchio",
  "pinocchio-system",
  "solana-address",
+ "solana-sha256-hasher",
 ]
 
 [[package]]
 name = "pina_abi"
-version = "0.20.0"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "847f0d022ae1be684674453b47b7fce04523f89b96374490daa9108d5e0cfeaf"
+checksum = "85e168605b50cf7fc310248f6c9717bbf848a288e3225ac365b0bba1199e0c4d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -304,9 +305,9 @@ dependencies = [
 
 [[package]]
 name = "pina_macros"
-version = "0.22.0"
+version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf38a3ee7dea623d683c4aed454d475015143606c802f74e02d1d5359c6c430b"
+checksum = "9d6b81f545bc129957e573007e5264aea184663a09903c2783e03de8af4525ae"
 dependencies = [
  "darling",
  "heck",
@@ -318,9 +319,9 @@ dependencies = [
 
 [[package]]
 name = "pinapod"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63ca818a5961bc811462e252305e681142adb73ae070a68df39eb28e78153564"
+checksum = "ab02c44ec16ca1184f1e97319493cd4068c49b079093213b57287c8cf257ca32"
 dependencies = [
  "pinapod-derive",
  "solana-address",
@@ -329,9 +330,9 @@ dependencies = [
 
 [[package]]
 name = "pinapod-derive"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77fed19e67240497319f9a7b3e01f9e165dda7e46e401e43fd54b7109f9269af"
+checksum = "1e0a194045f246f5e1ce606329e158b3e3b60bd59c057647915d36549d459f51"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",

@@ -8,7 +8,8 @@
 
 import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } from "../pinaPodCodecs";
 import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU8Decoder, getU8Encoder, SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, SolanaError, transformEncoder, type AccountMeta, type AccountSignerMeta, type Address, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type Instruction, type InstructionWithAccounts, type InstructionWithData, type ReadonlyAccount, type ReadonlyUint8Array, type WritableAccount, type WritableSignerAccount } from '@solana/kit';
-import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
+import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
+import { findVaultPda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
 export const SETTLE_OPEN_DISCRIMINATOR = 6;
@@ -54,6 +55,94 @@ export function getSettleOpenInstructionDataDecoder(): FixedSizeDecoder<SettleOp
 
 export function getSettleOpenInstructionDataCodec(): FixedSizeCodec<SettleOpenInstructionDataArgs, SettleOpenInstructionData> {
     return combineCodec(getSettleOpenInstructionDataEncoder(), getSettleOpenInstructionDataDecoder());
+}
+
+export type SettleOpenAsyncInput<TAccountRecipient extends InstructionAccountInput = InstructionAccountInput, TAccountPayer extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountRandomness extends InstructionAccountInput = InstructionAccountInput, TAccountOracleQueue extends InstructionAccountInput = InstructionAccountInput, TAccountOracle extends InstructionAccountInput = InstructionAccountInput, TAccountOracleStats extends InstructionAccountInput = InstructionAccountInput, TAccountRecentSlotHashes extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgram extends InstructionAccountInput = InstructionAccountInput, TAccountRewardEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgramState extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountWrappedSolMint extends InstructionAccountInput = InstructionAccountInput> =  {
+  /**
+ * Opening's stored recipient, which receives the reward lamports. Writable;
+ * need not sign.
+ */
+recipient: TAccountRecipient;
+/**
+ * Relayer that submits the proof. Writable signer; pays Switchboard's
+ * reveal costs.
+ */
+payer: TAccountPayer;
+/** Lootbox of the opening; `pending_openings` falls and `opened` grows. */
+lootbox: TAccountLootbox;
+/**
+ * Vault PDA of `lootbox` that pays the reward; must keep its rent reserve
+ * plus the remaining liability.
+ */
+vault?: TAccountVault;
+/** The lootbox's box mint, read for the live supply in the liability check. */
+boxMint: TAccountBoxMint;
+/**
+ * Pending opening PDA bound to `lootbox`, `randomness`, and `recipient`.
+ * Signs the reveal CPI and records the result.
+ */
+opening: TAccountOpening;
+/**
+ * Opening's committed, unrevealed Switchboard randomness account, revealed
+ * here.
+ */
+randomness: TAccountRandomness;
+/** Switchboard queue; must equal the lootbox's stored queue. */
+oracleQueue: TAccountOracleQueue;
+/** Oracle recorded on the randomness at commit time. */
+oracle: TAccountOracle;
+/** Oracle stats account updated by Switchboard's reveal. */
+oracleStats: TAccountOracleStats;
+/** Slot hashes sysvar, read by Switchboard's reveal. */
+recentSlotHashes: TAccountRecentSlotHashes;
+/** Switchboard program; must equal the lootbox's stored oracle program. */
+oracleProgram: TAccountOracleProgram;
+/**
+ * Wrapped-SOL associated token account of `randomness`, used by
+ * Switchboard as its reward escrow.
+ */
+rewardEscrow: TAccountRewardEscrow;
+/** Switchboard program state, passed through to `randomness_reveal`. */
+oracleProgramState: TAccountOracleProgramState;
+/** System program, passed through to `randomness_reveal`. */
+systemProgram?: TAccountSystemProgram;
+/** SPL Token program backing the reward escrow. */
+tokenProgram?: TAccountTokenProgram;
+/** Wrapped-SOL mint backing the reward escrow. */
+wrappedSolMint: TAccountWrappedSolMint;
+signature: SettleOpenInstructionDataArgs["signature"];
+recoveryId: SettleOpenInstructionDataArgs["recoveryId"];
+value: SettleOpenInstructionDataArgs["value"];
+}
+
+export async function getSettleOpenInstructionAsync<TAccountRecipient extends InstructionAccountInput, TAccountPayer extends InstructionSignerInput, TAccountLootbox extends InstructionAccountInput, TAccountVault extends InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput, TAccountOpening extends InstructionAccountInput, TAccountRandomness extends InstructionAccountInput, TAccountOracleQueue extends InstructionAccountInput, TAccountOracle extends InstructionAccountInput, TAccountOracleStats extends InstructionAccountInput, TAccountRecentSlotHashes extends InstructionAccountInput, TAccountOracleProgram extends InstructionAccountInput, TAccountRewardEscrow extends InstructionAccountInput, TAccountOracleProgramState extends InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput, TAccountWrappedSolMint extends InstructionAccountInput, TProgramAddress extends Address = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS>(input: SettleOpenAsyncInput<TAccountRecipient, TAccountPayer, TAccountLootbox, TAccountVault, TAccountBoxMint, TAccountOpening, TAccountRandomness, TAccountOracleQueue, TAccountOracle, TAccountOracleStats, TAccountRecentSlotHashes, TAccountOracleProgram, TAccountRewardEscrow, TAccountOracleProgramState, TAccountSystemProgram, TAccountTokenProgram, TAccountWrappedSolMint>, config?: { programAddress?: TProgramAddress } ): Promise<SettleOpenInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountRecipient, InstructionAccountInputAddress<TAccountRecipient>>, ResolvedInstructionAccountMeta<TAccountPayer, InstructionAccountInputAddress<TAccountPayer>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountOpening, InstructionAccountInputAddress<TAccountOpening>>, ResolvedInstructionAccountMeta<TAccountRandomness, InstructionAccountInputAddress<TAccountRandomness>>, ResolvedInstructionAccountMeta<TAccountOracleQueue, InstructionAccountInputAddress<TAccountOracleQueue>>, ResolvedInstructionAccountMeta<TAccountOracle, InstructionAccountInputAddress<TAccountOracle>>, ResolvedInstructionAccountMeta<TAccountOracleStats, InstructionAccountInputAddress<TAccountOracleStats>>, ResolvedInstructionAccountMeta<TAccountRecentSlotHashes, InstructionAccountInputAddress<TAccountRecentSlotHashes>>, ResolvedInstructionAccountMeta<TAccountOracleProgram, InstructionAccountInputAddress<TAccountOracleProgram>>, ResolvedInstructionAccountMeta<TAccountRewardEscrow, InstructionAccountInputAddress<TAccountRewardEscrow>>, ResolvedInstructionAccountMeta<TAccountOracleProgramState, InstructionAccountInputAddress<TAccountOracleProgramState>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>, ResolvedInstructionAccountMeta<TAccountTokenProgram, InstructionAccountInputAddress<TAccountTokenProgram>>, ResolvedInstructionAccountMeta<TAccountWrappedSolMint, InstructionAccountInputAddress<TAccountWrappedSolMint>>>> {
+  // Program address.
+const programAddress = config?.programAddress ?? LOOTBOX_PROGRAM_PROGRAM_ADDRESS;
+
+// Account meta helper.
+const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
+
+ // Original accounts.
+const originalAccounts = { recipient: { value: input.recipient ?? null, isSigner: false, isWritable: true }, payer: { value: input.payer ?? null, isSigner: true, isWritable: true }, lootbox: { value: input.lootbox ?? null, isSigner: false, isWritable: true }, vault: { value: input.vault ?? null, isSigner: false, isWritable: true }, boxMint: { value: input.boxMint ?? null, isSigner: false, isWritable: false }, opening: { value: input.opening ?? null, isSigner: false, isWritable: true }, randomness: { value: input.randomness ?? null, isSigner: false, isWritable: true }, oracleQueue: { value: input.oracleQueue ?? null, isSigner: false, isWritable: false }, oracle: { value: input.oracle ?? null, isSigner: false, isWritable: false }, oracleStats: { value: input.oracleStats ?? null, isSigner: false, isWritable: true }, recentSlotHashes: { value: input.recentSlotHashes ?? null, isSigner: false, isWritable: false }, oracleProgram: { value: input.oracleProgram ?? null, isSigner: false, isWritable: false }, rewardEscrow: { value: input.rewardEscrow ?? null, isSigner: false, isWritable: true }, oracleProgramState: { value: input.oracleProgramState ?? null, isSigner: false, isWritable: false }, systemProgram: { value: input.systemProgram ?? null, isSigner: false, isWritable: false }, tokenProgram: { value: input.tokenProgram ?? null, isSigner: false, isWritable: false }, wrappedSolMint: { value: input.wrappedSolMint ?? null, isSigner: false, isWritable: false } }
+const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
+
+
+// Original args.
+const args = { ...input,  };
+
+
+// Resolve default values.
+if (!accounts.vault.value) {
+accounts.vault.value = await findVaultPda({ lootbox: getAddressFromResolvedInstructionAccount("lootbox", accounts.lootbox.value) }, { programAddress });
+}
+if (!accounts.systemProgram.value) {
+accounts.systemProgram.value = '11111111111111111111111111111111' as Address<'11111111111111111111111111111111'>;
+}
+if (!accounts.tokenProgram.value) {
+accounts.tokenProgram.value = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA' as Address<'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'>;
+}
+
+return Object.freeze({ accounts: [getAccountMeta("recipient", accounts.recipient), getAccountMeta("payer", accounts.payer), getAccountMeta("lootbox", accounts.lootbox), getAccountMeta("vault", accounts.vault), getAccountMeta("boxMint", accounts.boxMint), getAccountMeta("opening", accounts.opening), getAccountMeta("randomness", accounts.randomness), getAccountMeta("oracleQueue", accounts.oracleQueue), getAccountMeta("oracle", accounts.oracle), getAccountMeta("oracleStats", accounts.oracleStats), getAccountMeta("recentSlotHashes", accounts.recentSlotHashes), getAccountMeta("oracleProgram", accounts.oracleProgram), getAccountMeta("rewardEscrow", accounts.rewardEscrow), getAccountMeta("oracleProgramState", accounts.oracleProgramState), getAccountMeta("systemProgram", accounts.systemProgram), getAccountMeta("tokenProgram", accounts.tokenProgram), getAccountMeta("wrappedSolMint", accounts.wrappedSolMint)], data: getSettleOpenInstructionDataEncoder().encode(args as SettleOpenInstructionDataArgs), programAddress } as SettleOpenInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountRecipient, InstructionAccountInputAddress<TAccountRecipient>>, ResolvedInstructionAccountMeta<TAccountPayer, InstructionAccountInputAddress<TAccountPayer>>, ResolvedInstructionAccountMeta<TAccountLootbox, InstructionAccountInputAddress<TAccountLootbox>>, ResolvedInstructionAccountMeta<TAccountVault, InstructionAccountInputAddress<TAccountVault>>, ResolvedInstructionAccountMeta<TAccountBoxMint, InstructionAccountInputAddress<TAccountBoxMint>>, ResolvedInstructionAccountMeta<TAccountOpening, InstructionAccountInputAddress<TAccountOpening>>, ResolvedInstructionAccountMeta<TAccountRandomness, InstructionAccountInputAddress<TAccountRandomness>>, ResolvedInstructionAccountMeta<TAccountOracleQueue, InstructionAccountInputAddress<TAccountOracleQueue>>, ResolvedInstructionAccountMeta<TAccountOracle, InstructionAccountInputAddress<TAccountOracle>>, ResolvedInstructionAccountMeta<TAccountOracleStats, InstructionAccountInputAddress<TAccountOracleStats>>, ResolvedInstructionAccountMeta<TAccountRecentSlotHashes, InstructionAccountInputAddress<TAccountRecentSlotHashes>>, ResolvedInstructionAccountMeta<TAccountOracleProgram, InstructionAccountInputAddress<TAccountOracleProgram>>, ResolvedInstructionAccountMeta<TAccountRewardEscrow, InstructionAccountInputAddress<TAccountRewardEscrow>>, ResolvedInstructionAccountMeta<TAccountOracleProgramState, InstructionAccountInputAddress<TAccountOracleProgramState>>, ResolvedInstructionAccountMeta<TAccountSystemProgram, InstructionAccountInputAddress<TAccountSystemProgram>>, ResolvedInstructionAccountMeta<TAccountTokenProgram, InstructionAccountInputAddress<TAccountTokenProgram>>, ResolvedInstructionAccountMeta<TAccountWrappedSolMint, InstructionAccountInputAddress<TAccountWrappedSolMint>>>);
 }
 
 export type SettleOpenInput<TAccountRecipient extends InstructionAccountInput = InstructionAccountInput, TAccountPayer extends InstructionSignerInput = InstructionSignerInput, TAccountLootbox extends InstructionAccountInput = InstructionAccountInput, TAccountVault extends InstructionAccountInput = InstructionAccountInput, TAccountBoxMint extends InstructionAccountInput = InstructionAccountInput, TAccountOpening extends InstructionAccountInput = InstructionAccountInput, TAccountRandomness extends InstructionAccountInput = InstructionAccountInput, TAccountOracleQueue extends InstructionAccountInput = InstructionAccountInput, TAccountOracle extends InstructionAccountInput = InstructionAccountInput, TAccountOracleStats extends InstructionAccountInput = InstructionAccountInput, TAccountRecentSlotHashes extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgram extends InstructionAccountInput = InstructionAccountInput, TAccountRewardEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountOracleProgramState extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput, TAccountTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountWrappedSolMint extends InstructionAccountInput = InstructionAccountInput> =  {

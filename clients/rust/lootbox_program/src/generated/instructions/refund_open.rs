@@ -37,11 +37,14 @@ pub struct RefundOpen {
 }
 
 impl RefundOpen {
-	pub fn new(recipient: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, vault: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, clock: solana_pubkey::Pubkey) -> Self {
+	pub fn new(recipient: solana_pubkey::Pubkey, lootbox: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, randomness: solana_pubkey::Pubkey, clock: solana_pubkey::Pubkey) -> Self {
 		Self {
 			recipient,
 			lootbox,
-			vault,
+			vault: solana_pubkey::Pubkey::find_program_address(
+				&["vault".as_bytes(), lootbox.as_ref()],
+				&crate::LOOTBOX_PROGRAM_ID,
+			).0,
 			box_mint,
 			opening,
 			randomness,

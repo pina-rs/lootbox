@@ -421,12 +421,8 @@ impl TemplateAllocationAccounts<'_> {
 				.replace_remaining(&remaining_values),
 		)?;
 
-		let service_vault_bump = [service_vault_bump];
-		let service_vault_signer = PdaSigner::from_slices([
-			SEED_SERVICE_VAULT,
-			template.as_ref(),
-			service_vault_bump.as_slice(),
-		]);
+		let service_vault_seeds = ServiceVault::seeds(&template).with_bump(service_vault_bump);
+		let service_vault_signer = service_vault_seeds.to_signer();
 		// The isolated vault is a zero-data System account controlled by this PDA,
 		// so its prepaid balance can fund receipt creation through ordinary System
 		// Program CPIs without making the opener sign or pay.

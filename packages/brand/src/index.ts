@@ -1,3 +1,4 @@
+export { ChestFigure, type ChestFigureProps } from "./ChestFigure.tsx";
 export {
 	ChestArt,
 	ChestMark,
@@ -16,6 +17,20 @@ export {
 	type LogoProps,
 	type LogoTone,
 } from "./Logo.tsx";
+export {
+	chargeFrame,
+	type ChestFrame,
+	type ChestReaction,
+	idleFrame,
+	mixFrames,
+	NOPE_SECONDS,
+	nopeFrame,
+	REST_FRAME,
+	restFrame,
+	revealFrame,
+	revealSeconds,
+	waitFrame,
+} from "./motion.ts";
 export { palette, type PaletteColor, typefaces } from "./tokens.ts";
 export {
 	Wordmark,

@@ -206,6 +206,9 @@ importers:
       '@pina-rs/lootbox':
         specifier: workspace:*
         version: link:../../sdks/typescript
+      '@pina-rs/lootbox-brand':
+        specifier: workspace:*
+        version: link:../../packages/brand
       '@rive-app/canvas':
         specifier: ^2.43.1
         version: 2.43.1

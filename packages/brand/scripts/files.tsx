@@ -13,6 +13,7 @@ import {
 	Logo,
 	logoAspect,
 	palette,
+	REST_FRAME,
 	Wordmark,
 	WORDMARK_ASPECT,
 } from "../src/index.ts";
@@ -88,6 +89,7 @@ export function brandFiles(): BrandFile[] {
 	const stackedHeight = 320;
 	const wordHeight = 120;
 	const favicon = svg("favicon", <Favicon />);
+	const boxToken = svg("box", <ChestMark size={512} look={REST_FRAME.look} />);
 
 	return [
 		...vector(
@@ -170,6 +172,28 @@ export function brandFiles(): BrandFile[] {
 				<Tile size={192} ground={palette.ivory} radius={42} />,
 			),
 			width: 192,
+		},
+		// The site's stand-in cover, and the image every box token shows on
+		// lootbox.so and in the Unlisted series.
+		{
+			kind: "svg",
+			path: "../../apps/platform/public/chest.svg",
+			svg: svg(
+				"chest",
+				<ChestMark size={512} look={REST_FRAME.look} title="lootbox" />,
+			),
+		},
+		{
+			kind: "png",
+			path: "../../apps/platform/public/box.png",
+			svg: boxToken,
+			width: 512,
+		},
+		{
+			kind: "png",
+			path: "../../apps/web/public/metadata/box.png",
+			svg: boxToken,
+			width: 512,
 		},
 		{
 			kind: "svg",

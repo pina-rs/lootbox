@@ -172,7 +172,7 @@ export default function LootboxLayout({ loaderData }: Route.ComponentProps) {
 			<section className="lootbox-hero">
 				<div className="lootbox-cover">
 					<img
-						src={lootbox.coverUrl ?? "/chest/chest-closed.webp"}
+						src={lootbox.coverUrl ?? "/chest.svg"}
 						alt={lootbox.coverUrl ? `${lootbox.title} cover art` : ""}
 						width={640}
 						height={640}

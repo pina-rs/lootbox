@@ -1,10 +1,14 @@
 /**
- * The lootbox chest as a character: the brand mark with a body. Position and
- * squash pivot on its feet, so landings look planted and hops push off the
- * floor. Callers compute each value from the frame.
+ * The lootbox chest as a character, placed in composition pixels: the
+ * brand's `ChestFigure`, positioned by its feet. Callers compute each value
+ * from the frame, or take a whole `ChestFrame` from the brand's motion.
  */
-import { ChestMark, type Gaze } from "@pina-rs/lootbox-brand";
-import type { CSSProperties } from "react";
+import {
+	ChestFigure,
+	type ChestFrame,
+	type Gaze,
+	REST_FRAME,
+} from "@pina-rs/lootbox-brand";
 
 export type ChestPose = Readonly<{
 	/** Centre of the feet, in composition pixels. */
@@ -19,66 +23,45 @@ export type ChestPose = Readonly<{
 	blink?: number;
 	sparkles?: boolean;
 	opacity?: number;
-	/** The floor shadow shrinks as the chest rises; pass the height above it. */
+	/** Height of the feet above the floor, in composition pixels. */
 	lift?: number;
+	/** A whole pose from the brand's motion; the fields above override it. */
+	frame?: ChestFrame;
 }>;
+
+/** Where the mark's feet touch the floor, as a fraction of its box. */
+const FEET = 0.886;
 
 export function Chest(
 	{
 		x,
 		y,
 		size,
-		rotate = 0,
-		squash = { x: 1, y: 1 },
-		open = 0,
-		look = { x: 0, y: 0 },
-		blink = 0,
-		sparkles = false,
 		opacity = 1,
-		lift = 0,
+		frame = { ...REST_FRAME, open: 0, look: { x: 0, y: 0 } },
+		...pose
 	}: ChestPose,
 ) {
-	// The mark's feet sit at about 89% of its box height.
-	const feet = size * 0.89;
-	const shadowScale = Math.max(0.35, 1 - lift / (size * 1.6));
-	// A chest far above the floor casts no shadow yet.
-	const shadowOpacity = Math.max(0, Math.min(1, 1.4 - lift / size));
-	const style: CSSProperties = {
-		position: "absolute",
-		left: x - size / 2,
-		top: y - feet - lift,
-		width: size,
-		height: size,
-		opacity,
-		transformOrigin: `50% ${feet}px`,
-		transform: `rotate(${rotate}deg) scale(${squash.x}, ${squash.y})`,
-	};
-
 	return (
-		<>
-			<div
-				style={{
-					position: "absolute",
-					left: x - size * 0.34,
-					top: y - size * 0.03,
-					width: size * 0.68,
-					height: size * 0.06,
-					borderRadius: "50%",
-					background: "rgb(29 26 20 / 0.16)",
-					transform: `scale(${shadowScale})`,
-					opacity: opacity * shadowOpacity,
-				}}
-			/>
-			<div style={style}>
-				<ChestMark
-					size={size}
-					open={open}
-					look={look}
-					blink={blink}
-					sparkles={sparkles}
-					shadow={false}
-				/>
-			</div>
-		</>
+		<ChestFigure
+			frame={{
+				...frame,
+				rotate: pose.rotate ?? frame.rotate,
+				squash: pose.squash ?? frame.squash,
+				open: pose.open ?? frame.open,
+				look: pose.look ?? frame.look,
+				blink: pose.blink ?? frame.blink,
+				sparkles: pose.sparkles ?? frame.sparkles,
+				lift: pose.lift === undefined ? frame.lift : pose.lift / size,
+			}}
+			style={{
+				position: "absolute",
+				left: x - size / 2,
+				top: y - size * FEET,
+				width: size,
+				height: size,
+				opacity,
+			}}
+		/>
 	);
 }

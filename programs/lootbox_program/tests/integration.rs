@@ -15,6 +15,7 @@ fn instruction_discriminators_are_stable() {
 	assert_eq!(LootboxInstruction::FundQuoteSolPrize as u8, 39);
 	assert_eq!(LootboxInstruction::FundQuoteTokenPrize as u8, 40);
 	assert_eq!(LootboxInstruction::FundMintPrize as u8, 41);
+
 	assert_eq!(LootboxInstruction::ClaimMintPrize as u8, 42);
 	assert_eq!(LootboxInstruction::ReclaimMintPrize as u8, 43);
 }

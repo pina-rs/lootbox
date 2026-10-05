@@ -180,6 +180,7 @@ impl<'a> ProcessAccountInfos<'a> for RetireTemplateAccounts<'a> {
 		} else {
 			TemplateStatePatch::new().status(TEMPLATE_RETIRED)
 		};
+
 		update_template(self.template, &patch)?;
 
 		Ok(())
@@ -203,24 +204,29 @@ pub(super) fn reclaim_amount(
 	let bit = 1u8
 		.checked_shl(u32::from(asset_index))
 		.ok_or(ProgramError::ArithmeticOverflow)?;
+
 	if bundle.reclaimed_mask & bit != 0 {
 		return Err(lootbox_error(LootboxError::PrizeAlreadyClaimed));
 	}
 
 	let index = usize::from(asset_index);
+
 	let unused = match bundle.status {
 		BUNDLE_FUNDING => bundle.quantity.get(),
 		BUNDLE_ACTIVE => {
 			if template_status != TEMPLATE_RETIRED || supply != 0 || pending_openings != 0 {
 				return Err(lootbox_error(LootboxError::InvalidState));
 			}
+
 			active_remaining.ok_or(ProgramError::InvalidAccountData)?
 		}
 		_ => return Err(lootbox_error(LootboxError::InvalidState)),
 	};
+
 	let released = read_slot(&bundle.claimed, index)?
 		.checked_add(unused)
 		.ok_or(ProgramError::ArithmeticOverflow)?;
+
 	if released > bundle.quantity.get() {
 		return Err(lootbox_error(LootboxError::InvalidState));
 	}
@@ -284,7 +290,9 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimSolPrizeAccounts<'a> {
 			state.locked_at.get() != 0,
 		)?;
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+
 		let index = usize::from(args.asset_index);
+
 		if !matches!(bundle.kinds.get(index), Some(&PRIZE_SOL | &PRIZE_QUOTE_SOL)) {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
@@ -296,6 +304,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimSolPrizeAccounts<'a> {
 		} else {
 			None
 		};
+
 		let amount = reclaim_amount(
 			state.status,
 			state.pending_openings.get(),
@@ -311,12 +320,14 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimSolPrizeAccounts<'a> {
 			.and_then(|count| count.checked_mul(read_slot(&bundle.amounts, index).ok()?))
 			.and_then(|value| value.checked_add(bundle.rent_reserve.get()))
 			.ok_or(ProgramError::ArithmeticOverflow)?;
+
 		drop(bundle);
 		let after = self
 			.bundle
 			.lamports()
 			.checked_sub(amount)
 			.ok_or_else(|| lootbox_error(LootboxError::Insolvent))?;
+
 		if after < owed {
 			return Err(lootbox_error(LootboxError::Insolvent));
 		}
@@ -336,9 +347,11 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 		assert_template_authority(self.authority, &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		let token_program = *self.token_program.address();
+
 		if token_program != token::ID && token_program != token_2022::ID {
 			return Err(ProgramError::IncorrectProgramId);
 		}
+
 		let supply = assert_template_mint(
 			self.box_mint,
 			self.template.address(),
@@ -348,12 +361,14 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
 		let kind = bundle.kinds.get(index).copied().unwrap_or(u8::MAX);
+
 		let valid_kind = match kind {
 			PRIZE_TOKEN_2022 => token_program == token_2022::ID,
 			PRIZE_TOKEN | PRIZE_NFT => token_program == token::ID,
 			PRIZE_QUOTE_TOKEN => true,
 			_ => false,
 		};
+
 		if !valid_kind || mint_at(&bundle, index)? != *self.mint.address() {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
@@ -375,6 +390,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimTokenPrizeAccounts<'a> {
 		} else {
 			None
 		};
+
 		let amount = reclaim_amount(
 			state.status,
 			state.pending_openings.get(),
@@ -425,9 +441,11 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMintPrizeAccounts<'a> {
 		assert_template_authority(self.authority, &state)?;
 		assert_bundle(self.bundle, self.template.address())?;
 		let token_program = *self.token_program.address();
+
 		if token_program != token::ID && token_program != token_2022::ID {
 			return Err(ProgramError::IncorrectProgramId);
 		}
+
 		let supply = assert_template_mint(
 			self.box_mint,
 			self.template.address(),
@@ -437,6 +455,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMintPrizeAccounts<'a> {
 
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
 		let index = usize::from(args.asset_index);
+
 		if bundle.kinds.get(index) != Some(&PRIZE_MINT_BADGE)
 			|| mint_at(&bundle, index)? != *self.mint.address()
 			|| read_slot(&bundle.amounts, index)? != 1
@@ -450,6 +469,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMintPrizeAccounts<'a> {
 				token_2022::state::ExtensionType::MetadataPointer,
 				token_2022::state::ExtensionType::TokenMetadata,
 			])?;
+
 		if mint.decimals() != 0
 			|| mint.mint_authority() != Some(&bundle_address)
 			|| mint.freeze_authority().is_some()
@@ -465,6 +485,7 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMintPrizeAccounts<'a> {
 		} else {
 			None
 		};
+
 		let _ = reclaim_amount(
 			state.status,
 			state.pending_openings.get(),
@@ -473,11 +494,13 @@ impl<'a> ProcessAccountInfos<'a> for ReclaimMintPrizeAccounts<'a> {
 			args.asset_index,
 			active_remaining,
 		)?;
+
 		if read_slot(&bundle.claimed, index)? != bundle.quantity.get() {
 			// Allocated copies remain claimable after retirement. Their claims mint
 			// the final badges and revoke this authority once every copy is released.
 			return Ok(());
 		}
+
 		let template = bundle.template;
 		let seeds = BundleState::seeds(&template, bundle.index.get()).with_bump(bundle.bump);
 		drop(bundle);
@@ -533,6 +556,7 @@ mod tests {
 		bundle.funded_assets = 1;
 		bundle.status = BUNDLE_ACTIVE;
 		write_slot(&mut bundle.amounts, 0, 100).expect("amount");
+
 		assert!(
 			reclaim_amount(
 				state.status,

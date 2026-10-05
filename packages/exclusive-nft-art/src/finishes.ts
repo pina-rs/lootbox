@@ -8,7 +8,6 @@ import type { Color, FinishSlot } from "./art/model.ts";
  * foil that belong to that material. Everything else a chest can wear lives in
  * its own layer.
  */
-
 /** How loudly the Rive reveal celebrates a finish; each stage includes the ones below. */
 export type RevealDrama =
 	| "dust"

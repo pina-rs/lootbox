@@ -83,6 +83,7 @@ const shortHash = (value: ReadonlyUint8Array) => {
 	if (Array.from(value).every((byte) => byte === 0)) {
 		return "Locks with treasury";
 	}
+
 	const hex = Array.from(value, (byte) => byte.toString(16).padStart(2, "0"))
 		.join("");
 	return `${hex.slice(0, 10)}…${hex.slice(-10)}`;
@@ -137,6 +138,7 @@ export default function App() {
 	const [hasDraft, setHasDraft] = useState(false);
 	const [draftResumable, setDraftResumable] = useState(false);
 	const [busy, setBusy] = useState(false);
+
 	const [connecting, setConnecting] = useState(true);
 	const [error, setError] = useState("");
 	const [notice, setNotice] = useState("");
@@ -198,6 +200,7 @@ export default function App() {
 					selected.address,
 				);
 			}
+
 			setWorkspace({
 				templates,
 				openings,
@@ -240,6 +243,7 @@ export default function App() {
 					"A saved funding manifest needs recovery but cannot be resumed by this client. Keep it until staged assets are reclaimed.",
 				);
 			}
+
 			await refresh(session);
 		} catch (reason) {
 			setError(errorMessage(reason));
@@ -338,6 +342,7 @@ export default function App() {
 	]);
 	const delivered = receipt?.data.status === 3;
 	const closable = delivered || receipt?.data.status === 4;
+
 	const visiblePrize = receipt && receipt.data.status >= 2 &&
 		(revealed.has(receipt.address) || delivered);
 	const prize = visiblePrize
@@ -345,12 +350,15 @@ export default function App() {
 		: undefined;
 	function revealPrize(opening: ChainOpening) {
 		const recorded = workspace.bundles[opening.data.selectedBundle];
+
 		if (!recorded) {
 			setError(
 				"The recorded prize is not loaded. Refresh chain state and try again.",
 			);
+
 			return;
 		}
+
 		setRevealed((value) =>
 			new Map(value).set(opening.address, revealOutcome(recorded.address, wish))
 		);
@@ -369,6 +377,7 @@ export default function App() {
 		selected && selected.data.status === 2 && !treasuryLocked,
 	);
 	const holderOpenable = treasuryLocked || recoveryRetired;
+
 	const recoveryAvailable = Boolean(
 		selected && selected.data.status === 1 && !treasuryLocked && !revealPending,
 	);
@@ -419,8 +428,10 @@ export default function App() {
 			setError(
 				"This treasury is permanently locked and cannot accept additions.",
 			);
+
 			return;
 		}
+
 		setCreatorMode("append");
 		setInput({
 			name: decodeTemplateText(selected.data.name),
@@ -1423,6 +1434,7 @@ export default function App() {
 											}`,
 										);
 									}
+
 									validateInput(input);
 									if (creatorMode === "append") {
 										if (!selected) {
@@ -1430,6 +1442,7 @@ export default function App() {
 												"Choose a live treasury before adding bundles",
 											);
 										}
+
 										const template = await appendDrop(
 											session,
 											selected,
@@ -1447,6 +1460,7 @@ export default function App() {
 											"Treasury funded and published. Add prizes or lock its exact supply below.",
 										);
 									}
+
 									setHasDraft(false);
 									setPhase("received");
 									setTab("receive");
@@ -1792,6 +1806,7 @@ export default function App() {
 													if (result.template) {
 														selectedId.current = result.template.address;
 													}
+
 													setNotice(result.message);
 													if (!result.draftRetained) {
 														setInput(initialInput);

@@ -64,6 +64,7 @@ impl TransferFee {
 		if self.basis_points == 0 || amount == 0 {
 			return Some(0);
 		}
+
 		let raw = u128::from(amount)
 			.checked_mul(u128::from(self.basis_points))?
 			.div_ceil(ONE_IN_BASIS_POINTS);
@@ -88,6 +89,7 @@ impl TransferFee {
 			let raw = u128::from(net)
 				.checked_mul(ONE_IN_BASIS_POINTS)?
 				.div_ceil(ONE_IN_BASIS_POINTS - basis_points);
+
 			if raw - u128::from(net) >= u128::from(self.maximum_fee) {
 				net.checked_add(self.maximum_fee)?
 			} else {
@@ -115,6 +117,7 @@ impl TransferFeeConfig {
 		if value.len() != TRANSFER_FEE_CONFIG_LEN {
 			return Err(ProgramError::InvalidAccountData);
 		}
+
 		let u64_at = |offset: usize| -> Result<u64, ProgramError> {
 			value
 				.get(offset..offset + 8)
@@ -174,6 +177,7 @@ pub(super) fn admit_token_2022_prize(
 		{
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
+
 		return Ok(None);
 	}
 
@@ -183,6 +187,7 @@ pub(super) fn admit_token_2022_prize(
 	{
 		return Err(lootbox_error(LootboxError::InvalidPrize));
 	}
+
 	if extensions.contains(&ExtensionType::DefaultAccountState)
 		&& mint
 			.get_extension::<token_2022::state::DefaultAccountStateExtension>()?
@@ -201,6 +206,7 @@ pub(super) fn admit_token_2022_prize(
 	{
 		return Err(lootbox_error(LootboxError::InvalidPrize));
 	}
+
 	if extensions.contains(&ExtensionType::Pausable)
 		&& bool::from(
 			&mint
@@ -209,6 +215,7 @@ pub(super) fn admit_token_2022_prize(
 		) {
 		return Err(lootbox_error(LootboxError::InvalidPrize));
 	}
+
 	if !extensions.contains(&ExtensionType::TransferFeeConfig) {
 		return Ok(None);
 	}
@@ -225,6 +232,7 @@ fn is_issuer_stock(
 	if !extensions.contains(&ExtensionType::PermanentDelegate) {
 		return Ok(false);
 	}
+
 	let delegate = mint.get_extension::<token_2022::state::PermanentDelegateExtension>()?;
 
 	Ok(delegate
@@ -236,18 +244,23 @@ fn is_issuer_stock(
 /// Return the value bytes of the first `kind` TLV entry on an extended mint.
 fn mint_extension_bytes(data: &[u8], kind: ExtensionType) -> Result<Option<&[u8]>, ProgramError> {
 	let mut entries = data.get(MINT_TLV_START..).unwrap_or_default();
+
 	while entries.len() >= 4 {
 		let entry = u16::from_le_bytes([entries[0], entries[1]]);
+
 		if entry == ExtensionType::Uninitialized as u16 {
 			break;
 		}
+
 		let length = usize::from(u16::from_le_bytes([entries[2], entries[3]]));
 		let value = entries
 			.get(4..4 + length)
 			.ok_or(ProgramError::InvalidAccountData)?;
+
 		if entry == kind as u16 {
 			return Ok(Some(value));
 		}
+
 		entries = &entries[4 + length..];
 	}
 
@@ -277,11 +290,13 @@ mod tests {
 
 	fn fee_config(older: (u64, u64, u16), newer: (u64, u64, u16)) -> [u8; 108] {
 		let mut value = [0u8; 108];
+
 		for (offset, (epoch, maximum_fee, basis_points)) in [(72, older), (90, newer)] {
 			value[offset..offset + 8].copy_from_slice(&epoch.to_le_bytes());
 			value[offset + 8..offset + 16].copy_from_slice(&maximum_fee.to_le_bytes());
 			value[offset + 16..offset + 18].copy_from_slice(&basis_points.to_le_bytes());
 		}
+
 		value
 	}
 
@@ -320,6 +335,7 @@ mod tests {
 			bytes.push(1);
 			bytes.extend_from_slice(&u32::from(self.freeze_authority.is_some()).to_le_bytes());
 			bytes.extend_from_slice(&optional(self.freeze_authority));
+
 			bytes.resize(165, 0);
 			bytes.push(1);
 			tlv(
@@ -332,9 +348,11 @@ mod tests {
 				ExtensionType::DefaultAccountState,
 				&[self.default_state],
 			);
+
 			if let Some(fee) = self.fee {
 				tlv(&mut bytes, ExtensionType::TransferFeeConfig, &fee);
 			}
+
 			tlv(
 				&mut bytes,
 				ExtensionType::ConfidentialTransferMint,
@@ -355,9 +373,11 @@ mod tests {
 			pausable[..32].copy_from_slice(&self.delegate.to_bytes());
 			pausable[32] = u8::from(self.paused);
 			tlv(&mut bytes, ExtensionType::Pausable, &pausable);
+
 			if let Some(extra) = self.extra {
 				tlv(&mut bytes, extra, &[0; 8]);
 			}
+
 			tlv(&mut bytes, ExtensionType::TokenMetadata, &[0; 16]);
 			bytes
 		}
@@ -481,6 +501,7 @@ mod tests {
 			maximum_fee: 0,
 		};
 		assert_eq!(free.gross_for_net(u64::MAX), Some(u64::MAX));
+
 		let everything = TransferFee {
 			basis_points: 10_000,
 			maximum_fee: 5,
@@ -497,6 +518,7 @@ mod tests {
 			maximum_fee in prop_oneof![Just(u64::MAX), Just(0u64), 0u64..1_000_000],
 		) {
 			let schedule = TransferFee { basis_points, maximum_fee };
+
 			if let Some(gross) = schedule.gross_for_net(net) {
 				prop_assert_eq!(gross - schedule.fee(gross).unwrap(), net);
 				// The gross is minimal: one unit less can never credit `net`.
@@ -508,6 +530,7 @@ mod tests {
 				// No fee-paying gross fits in a u64: both the uncapped and the
 				// capped minimum overflow.
 				let capped = u128::from(net) + u128::from(maximum_fee);
+
 				let uncapped = (basis_points < 10_000).then(|| {
 					(u128::from(net) * 10_000).div_ceil(10_000 - u128::from(basis_points))
 				});

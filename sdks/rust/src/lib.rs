@@ -178,6 +178,7 @@ impl LootboxPlan {
 		if weight == 0 {
 			return Err(PlanError::ZeroWeight);
 		}
+
 		if reward_lamports == 0 {
 			return Err(PlanError::ZeroReward);
 		}
@@ -196,6 +197,7 @@ impl LootboxPlan {
 				Some(total) => total,
 				None => return Err(PlanError::ArithmeticOverflow),
 			};
+
 			outcome_index += 1;
 		}
 

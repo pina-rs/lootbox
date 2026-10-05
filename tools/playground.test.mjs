@@ -57,6 +57,7 @@ test("local Surfpool control plane is labeled and rejects untrusted requests", {
 		} catch { /* Native runtime is still starting. */ }
 		await delay(100);
 	}
+
 	assert.ok(config, `service did not start: ${diagnostics}`);
 	assert.equal(config.testOnly, true);
 	assert.equal(config.network, "surfpool");

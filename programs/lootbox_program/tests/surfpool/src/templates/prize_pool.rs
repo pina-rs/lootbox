@@ -196,6 +196,7 @@ fn custody_entropy_and_bound_delivery_resist_adversarial_paths() {
 			)
 			.expect("fresh proof deposits next leaf");
 		}
+
 		assert_eq!(
 			program.account(&pool).expect("funded pool").data.len(),
 			PrizePoolState::MIN_SIZE + 1,
@@ -288,6 +289,7 @@ fn custody_entropy_and_bound_delivery_resist_adversarial_paths() {
 				.expect("burn and commit pool box");
 			openings.push((opening, randomness.pubkey(), entropy));
 		}
+
 		program.advance_one_slot().expect("oracle reveal slot");
 		for (opening, randomness, entropy) in &openings {
 			fulfill(
@@ -416,6 +418,7 @@ fn custody_entropy_and_bound_delivery_resist_adversarial_paths() {
 					mock_metadata(leaves[pool_index].nonce, false),
 				)
 			};
+
 			claim_prize_pool_item(
 				&program,
 				&context,
@@ -438,6 +441,7 @@ fn custody_entropy_and_bound_delivery_resist_adversarial_paths() {
 				"claimed per-item rent is closed to the fixed creator",
 			);
 		}
+
 		assert_eq!(selected, [true; 3]);
 		let tree_account = program.account(&tree_address).expect("delivered tree");
 		for leaf_index in 0..3 {
@@ -448,6 +452,7 @@ fn custody_entropy_and_bound_delivery_resist_adversarial_paths() {
 				"every leaf exits PDA custody only to the recorded recipient",
 			);
 		}
+
 		program.stop().expect("stop Surfpool");
 	});
 }
@@ -662,6 +667,7 @@ fn staged_recovery_is_tail_only_atomic_and_required_before_cancellation() {
 				"recovered item account is closed",
 			);
 		}
+
 		program.stop().expect("stop Surfpool");
 	});
 }

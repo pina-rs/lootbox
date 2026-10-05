@@ -11,6 +11,7 @@ test("funds a real Surfpool treasury, gifts boxes, and delivers every bundle", a
 	if (test.info().project.name === "mobile") {
 		await page.emulateMedia({ reducedMotion: "reduce" });
 	}
+
 	await page.goto("/playground");
 	await expect(page.getByText("SURFPOOL · LOCAL", { exact: true }))
 		.toBeVisible();
@@ -77,6 +78,7 @@ test("funds a real Surfpool treasury, gifts boxes, and delivers every bundle", a
 				{ times: 1 },
 			);
 		}
+
 		await page.getByRole("region", { name: "Gift workspace" }).getByRole(
 			"button",
 			{ name: index ? "Open another gift" : "Open a gift", exact: true },
@@ -87,6 +89,7 @@ test("funds a real Surfpool treasury, gifts boxes, and delivers every bundle", a
 			await page.reload();
 			await page.getByRole("button", { name: "Resume opening" }).click();
 		}
+
 		await expect(page.getByRole("button", { name: "Reveal your winnings" }))
 			.toBeEnabled({ timeout: 30_000 });
 		await expect(page.getByTestId("box-balance")).toHaveText(String(2 - index));
@@ -95,6 +98,7 @@ test("funds a real Surfpool treasury, gifts boxes, and delivers every bundle", a
 			await expect(page.getByRole("button", { name: "Reveal your winnings" }))
 				.toBeEnabled();
 		}
+
 		await page.getByLabel(/Make a wish/).selectOption({ label: "100 tokens" });
 		await page.getByRole("button", { name: "Reveal your winnings" }).click();
 		await expect(page.getByTestId("prize-announcement")).toContainText(
@@ -120,6 +124,7 @@ test("funds a real Surfpool treasury, gifts boxes, and delivers every bundle", a
 				"playing",
 			);
 		}
+
 		// Claiming is never gated on the decorative animation finishing.
 		await page.getByRole("button", { name: "Claim your winnings" }).click();
 		await expect(page.getByRole("heading", { name: "Cargo secured." }))
@@ -129,6 +134,7 @@ test("funds a real Surfpool treasury, gifts boxes, and delivers every bundle", a
 			"redeemed",
 		);
 	}
+
 	expect(prizes.sort()).toEqual(
 		["0.1 SOL", "1 SOL + 2 exclusive NFTs", "100 tokens"].sort(),
 	);

@@ -7,7 +7,6 @@
 //! 408-byte randomness account and performs PDA-authorized commit/reveal
 //! transitions; the lootbox program has no mock branches or privileged testing
 //! instructions.
-
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -51,6 +50,7 @@ const TOKEN_PROGRAM: &str = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 const WRAPPED_SOL_MINT: &str = "So11111111111111111111111111111111111111112";
 const RANDOMNESS_COMMIT_DISCRIMINATOR: [u8; 8] = [52, 170, 152, 201, 179, 133, 242, 141];
 const RANDOMNESS_REVEAL_DISCRIMINATOR: [u8; 8] = [197, 181, 187, 10, 30, 58, 20, 73];
+
 const RANDOMNESS_SPACE: u64 = RANDOMNESS_ACCOUNT_LEN as u64;
 const MINT_SPACE: u64 = 82;
 const FUND: u64 = 50_000_000;
@@ -192,14 +192,17 @@ impl Harness {
 			.map_err(|error| format!("simulate transaction: {error}"))?
 			.value;
 		let logs = result.logs.unwrap_or_default();
+
 		if let Some(error) = result.err {
 			return Err(format!(
 				"simulated transaction failed: {error:?}\n{}",
 				logs.join("\n")
 			));
 		}
+
 		let keys = &transaction.message.account_keys;
 		let mut inner_instructions = Vec::new();
+
 		for set in result.inner_instructions.unwrap_or_default() {
 			for instruction in set.instructions {
 				// RPC nodes render instructions of well-known programs as parsed
@@ -232,6 +235,7 @@ impl Harness {
 						)
 					}
 				};
+
 				let data = bs58::decode(&data)
 					.into_vec()
 					.map_err(|error| format!("decode inner instruction data: {error}"))?;
@@ -815,6 +819,7 @@ fn commit_burn_reveal_and_payout_round_trip() {
 				)
 				.expect("add weighted outcome");
 		}
+
 		assert!(
 			program
 				.send(

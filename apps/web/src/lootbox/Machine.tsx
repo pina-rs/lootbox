@@ -37,11 +37,13 @@ export function LootboxMachine(
 			setPlayback("still");
 			return;
 		}
+
 		const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
 		if (motion.matches) {
 			onRevealComplete?.();
 			return;
 		}
+
 		let disposed = false;
 		let player: Rive | undefined;
 		let observer: ResizeObserver | undefined;

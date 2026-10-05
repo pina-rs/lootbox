@@ -50,6 +50,7 @@ async function resolveChest(
 			console.warn("Empty Chest manifest unavailable", reason);
 			return null;
 		}),
+
 		resolveAsset
 			? resolveAsset(opening).catch((reason: unknown) => {
 				console.warn("Empty Chest asset lookup failed", reason);

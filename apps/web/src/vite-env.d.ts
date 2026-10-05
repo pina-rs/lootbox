@@ -1,5 +1,4 @@
 /// <reference types="vite/client" />
-
 interface ImportMetaEnv {
 	/** `localnet` (default), `devnet`, or `mainnet`. */
 	readonly VITE_SOLANA_CLUSTER?: string;

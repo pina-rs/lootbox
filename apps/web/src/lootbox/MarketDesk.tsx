@@ -27,6 +27,7 @@ type Props = Readonly<{
 
 function solOnlyValue(bundle: ChainBundle): bigint | undefined {
 	const assets = bundleAssets(bundle.data);
+
 	if (!assets.every((asset) => asset.kind === "sol")) return undefined;
 	return assets.reduce((total, asset) => total + asset.amount, 0n);
 }
@@ -36,7 +37,9 @@ function countdown(seconds: bigint): string {
 	const days = seconds / 86_400n;
 	const hours = seconds % 86_400n / 3_600n;
 	const minutes = seconds % 3_600n / 60n;
+
 	if (days > 0n) return `${days}d ${hours}h until reveal`;
+
 	if (hours > 0n) return `${hours}h ${minutes}m until reveal`;
 	return `${minutes}m until reveal`;
 }

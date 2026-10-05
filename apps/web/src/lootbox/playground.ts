@@ -137,12 +137,14 @@ function record(value: unknown): Record<string, unknown> {
 	if (typeof value !== "object" || value === null || Array.isArray(value)) {
 		throw new Error("Invalid sandbox response");
 	}
+
 	return value as Record<string, unknown>;
 }
 function string(value: unknown): string {
 	if (typeof value !== "string") {
 		throw new Error("Missing sandbox configuration");
 	}
+
 	return value;
 }
 function optionalString(value: unknown): string | undefined {
@@ -180,6 +182,7 @@ async function control(
 		signal: AbortSignal.timeout(10_000),
 	});
 	const result = record(await response.json());
+
 	if (!response.ok) {
 		throw new Error(
 			typeof result.error === "string"
@@ -187,6 +190,7 @@ async function control(
 				: "Sandbox request failed",
 		);
 	}
+
 	return result;
 }
 function seed(): number[] {
@@ -207,13 +211,16 @@ function signer(bytes: unknown) {
 			"Invalid saved test wallet. Clear this site's sandbox data to restart.",
 		);
 	}
+
 	return createKeyPairSignerFromPrivateKeyBytes(Uint8Array.from(bytes));
 }
 async function wallet(instance: string, role: string) {
 	const key = `lootbox:test-wallet:${instance}:${role}`;
 	const stored = localStorage.getItem(key);
 	const bytes: unknown = stored ? JSON.parse(stored) : seed();
+
 	if (!stored) localStorage.setItem(key, JSON.stringify(bytes));
+
 	return signer(bytes);
 }
 async function readControlConfig(): Promise<Config> {
@@ -231,6 +238,7 @@ async function readControlConfig(): Promise<Config> {
 	const rpcUrl = string(raw.rpcUrl);
 	assertLoopback(rpcUrl);
 	const oracle = record(raw.oracle);
+
 	return {
 		instanceId: string(raw.instanceId),
 		rpcUrl,
@@ -244,6 +252,7 @@ async function readControlConfig(): Promise<Config> {
 		},
 	};
 }
+
 let connection: Promise<Playground> | undefined;
 export function connectPlayground(): Promise<Playground> {
 	if (connection) return connection;
@@ -280,6 +289,7 @@ export function connectPlayground(): Promise<Playground> {
 	connection.catch(() => {
 		connection = undefined;
 	});
+
 	return connection;
 }
 
@@ -290,10 +300,13 @@ function searchResponse<T>(
 	if (!Array.isArray(raw.items)) {
 		throw new Error("Invalid asset catalog response");
 	}
+
 	const source = raw.source;
+
 	if (source !== "live" && source !== "fallback" && source !== "unavailable") {
 		throw new Error("Invalid asset catalog source");
 	}
+
 	const message = optionalString(raw.message);
 	return Object.freeze({
 		items: Object.freeze(raw.items.map(parser)),
@@ -390,6 +403,7 @@ export async function loadPrizePoolItem(
 			"PrizePool items must be immutable, undelegated compressed NFTs owned by this wallet",
 		);
 	}
+
 	const raw = await control(
 		`/assets/nft-proof?id=${encodeURIComponent(item.id)}`,
 	);
@@ -404,6 +418,7 @@ export async function loadPrizePoolItem(
 		!raw.proof.every((node) => typeof node === "string")
 	) throw new Error("DAS proof changed the selected compressed NFT identity");
 	const metadata = getBase64Encoder().encode(string(raw.metadata));
+
 	if (metadata.length === 0 || metadata.length > 512) {
 		throw new Error("DAS returned an invalid Bubblegum metadata preimage");
 	}
@@ -429,18 +444,23 @@ export function parseUnits(input: string, decimals: number): bigint {
 		!/^\d+(\.\d+)?$/.test(input)
 	) throw new Error("Enter a positive decimal amount");
 	const [whole = "", fraction = ""] = input.split(".");
+
 	if (fraction.length > decimals) {
 		throw new Error(`Use at most ${decimals} decimal places`);
 	}
+
 	const amount = BigInt(whole) * 10n ** BigInt(decimals) +
 		BigInt(fraction.padEnd(decimals, "0") || "0");
+
 	if (amount > U64_MAX) throw new Error("Amount exceeds the token limit");
+
 	return amount;
 }
 export function formatUnits(amount: bigint, decimals = 9): string {
 	const scale = 10n ** BigInt(decimals);
 	const fractional = (amount % scale).toString().padStart(decimals, "0")
 		.replace(/0+$/, "");
+
 	return `${amount / scale}${fractional ? `.${fractional}` : ""}`;
 }
 export function makeAsset(kind: DraftAsset["kind"] = "sol"): DraftAsset {
@@ -454,6 +474,7 @@ export function makeAsset(kind: DraftAsset["kind"] = "sol"): DraftAsset {
 			decimals: 9,
 		};
 	}
+
 	if (kind === "token") {
 		return {
 			id: id(),
@@ -464,6 +485,7 @@ export function makeAsset(kind: DraftAsset["kind"] = "sol"): DraftAsset {
 			decimals: 0,
 		};
 	}
+
 	if (kind === "prizePool") {
 		return {
 			id: id(),
@@ -476,6 +498,7 @@ export function makeAsset(kind: DraftAsset["kind"] = "sol"): DraftAsset {
 			poolItems: [],
 		};
 	}
+
 	return {
 		id: id(),
 		kind,
@@ -491,6 +514,7 @@ export function makeBundle(asset: DraftAsset = makeAsset()): PrizeRow {
 }
 function defaultRevealDate(): string {
 	const date = new Date(Date.now() + 24 * 3_600_000);
+
 	return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
 		.toISOString().slice(0, 16);
 }
@@ -547,21 +571,27 @@ export function creatorErrors(
 		}
 	});
 	const revealTime = Date.parse(input.opensAt);
+
 	if (!input.opensAt || !Number.isFinite(revealTime)) {
 		errors.opensAt = "Choose a valid future reveal date and time";
 	} else if (!options.allowExpiredReveal && revealTime <= Date.now() + 60_000) {
 		errors.opensAt = "Reveal must be at least one minute in the future";
 	}
+
 	check("settlementBountySol", () => {
 		parseUnits(input.settlementBountySol, 9);
 	});
+
 	if (input.rows.length < 1 || input.rows.length > MAX_TEMPLATE_BUNDLES) {
 		errors.bundles = `Use one to ${MAX_TEMPLATE_BUNDLES} bundles`;
 	}
+
 	let totalCopies = 0n;
 	let totalSol = 0n;
+
 	for (const [index, row] of input.rows.entries()) {
 		const key = `row-${index}`;
+
 		check(`${key}-label`, () => {
 			if (
 				!row.label.trim() || new TextEncoder().encode(row.label).length > 64
@@ -575,22 +605,28 @@ export function creatorErrors(
 			if (quantity < 1n || quantity > 1_000_000n) {
 				throw new Error("Copies must be a whole number from 1 to 1,000,000");
 			}
+
 			totalCopies += quantity;
 			if (totalCopies > 0xffff_ffffn) {
 				throw new Error("Total copies exceed u32::MAX");
 			}
 		});
+
 		if (row.assets.length < 1 || row.assets.length > MAX_ASSETS) {
 			errors[`${key}-assets`] = `A bundle needs one to ${MAX_ASSETS} assets`;
 		}
+
 		if (row.assets.filter((asset) => asset.kind === "prizePool").length > 1) {
 			errors[`${key}-assets`] = "A bundle can contain only one PrizePool";
 		}
+
 		const hasUnique = row.assets.some((asset) => asset.kind === "nft");
+
 		if (hasUnique && row.quantity !== "1") {
 			errors[`${key}-quantity`] =
 				"A bundle containing a unique NFT has one copy";
 		}
+
 		for (const [assetIndex, asset] of row.assets.entries()) {
 			const assetKey = `${key}-asset-${assetIndex}`;
 			check(`${assetKey}-amount`, () => {
@@ -604,12 +640,15 @@ export function creatorErrors(
 				}
 				if (asset.kind === "sol") totalSol += collateral;
 			});
+
 			if (asset.kind !== "sol" && asset.mint) {
 				check(`${assetKey}-mint`, () => void address(asset.mint ?? ""));
 			}
+
 			if (asset.source === "manual" && asset.kind !== "sol" && !asset.mint) {
 				errors[`${assetKey}-mint`] = "Enter the asset mint address";
 			}
+
 			if (asset.kind === "prizePool") {
 				const items = asset.poolItems ?? [];
 				if (
@@ -624,9 +663,11 @@ export function creatorErrors(
 			}
 		}
 	}
+
 	if (totalSol > U64_MAX) {
 		errors.bundles = "Combined SOL deposits exceed the token limit";
 	}
+
 	return errors;
 }
 export function validateInput(
@@ -634,6 +675,7 @@ export function validateInput(
 	options: CreatorValidationOptions = {},
 ) {
 	const error = Object.values(creatorErrors(input, options))[0];
+
 	if (error) throw new Error(error);
 }
 export function previewInput(
@@ -657,6 +699,7 @@ export function previewInput(
 			}
 			return quantity;
 		});
+
 		return {
 			sol,
 			tokenAssets,
@@ -684,6 +727,7 @@ function parseDraft(raw: string): Draft {
 			"This saved draft uses an older treasury format and cannot be resumed",
 		);
 	}
+
 	return value as Draft;
 }
 export function savedDraftInfo(
@@ -692,10 +736,12 @@ export function savedDraftInfo(
 	| Readonly<{ input: CreatorInput; mode: Draft["mode"]; template?: string }>
 	| null {
 	const raw = localStorage.getItem(draftKey(sandbox));
+
 	if (!raw) return null;
 	try {
 		const draft = parseDraft(raw);
 		validateInput(draft.input, { allowExpiredReveal: true });
+
 		return {
 			input: draft.input,
 			mode: draft.mode,
@@ -757,6 +803,7 @@ function loadDraft(
 		);
 	}
 	localStorage.setItem(draftKey(sandbox), JSON.stringify(draft));
+
 	return draft;
 }
 
@@ -769,7 +816,9 @@ const prizePoolMetadataKey = (asset: string) =>
 
 function decodeHash(value: string, label: string): Uint8Array {
 	const bytes = getBase58Encoder().encode(value);
+
 	if (bytes.length !== 32) throw new Error(`${label} must decode to 32 bytes`);
+
 	return Uint8Array.from(bytes);
 }
 
@@ -781,14 +830,17 @@ async function mockTreeRoot(
 		commitment: "processed",
 		encoding: "base64",
 	}).send();
+
 	if (!account.value || account.value.owner !== BUBBLEGUM_PROGRAM) {
 		throw new Error("local PrizePool tree is missing or has the wrong owner");
 	}
+
 	const bytes = getBase64Encoder().encode(account.value.data[0]);
 	if (
 		bytes.length < 44 ||
 		!MOCK_TREE_MAGIC.every((byte, index) => bytes[index] === byte)
 	) throw new Error("local PrizePool tree has invalid fixture data");
+
 	return bytes.slice(8, 40);
 }
 
@@ -802,22 +854,27 @@ async function materializePrizePool(
 		commitment: "processed",
 		encoding: "base64",
 	}).send();
+
 	if (!existing.value && materialize) {
 		if (items.length > LOCAL_PRIZE_POOL_MAX) {
 			throw new Error(
 				"The local Bubblegum fixture supports 12 items per demo pool so its initialization fits one Solana transaction; the production protocol supports 4,096",
 			);
 		}
+
 		const data = new Uint8Array(12 + items.length * 76);
 		data.set(MOCK_TREE_INITIALIZE);
 		data.set(getU32Encoder().encode(items.length), 8);
+
 		for (const [index, item] of items.entries()) {
 			const offset = 12 + index * 76;
 			data.set(decodeHash(item.dataHash, "data hash"), offset);
+
 			data.set(decodeHash(item.creatorHash, "creator hash"), offset + 32);
 			data.set(getU64Encoder().encode(BigInt(item.nonce)), offset + 64);
 			data.set(getU32Encoder().encode(item.leafIndex), offset + 72);
 		}
+
 		const initialize: Instruction = Object.freeze({
 			programAddress: BUBBLEGUM_PROGRAM,
 			accounts: Object.freeze([{
@@ -839,6 +896,7 @@ async function materializePrizePool(
 			`Mirror ${items.length} cNFTs into local tree`,
 		);
 	}
+
 	const root = existing.value || materialize
 		? await mockTreeRoot(client, tree.address)
 		: new Uint8Array(32);
@@ -901,16 +959,21 @@ async function localBundles(
 		),
 	);
 	const bundles: PrizeBundleInput[] = [];
+
 	for (const [rowIndex, row] of draft.input.rows.entries()) {
 		const quantity = parseUnits(row.quantity, 0);
 		const assets: PrizeAsset[] = [];
+
 		for (const [assetIndex, asset] of row.assets.entries()) {
 			if (asset.kind === "sol") {
 				assets.push({ kind: "sol", lamports: parseUnits(asset.amount, 9) });
 				continue;
 			}
+
 			const reward = rewards[rowIndex]?.[assetIndex];
+
 			if (!reward) throw new Error("Missing saved reward signer");
+
 			if (asset.kind === "prizePool") {
 				const items = asset.poolItems ?? [];
 				assets.push({
@@ -925,9 +988,11 @@ async function localBundles(
 				});
 				continue;
 			}
+
 			const amount = asset.kind === "nft"
 				? 1n
 				: parseUnits(asset.amount, asset.decimals);
+
 			if (materialize) {
 				await client.createFixedSupplyMint(
 					reward,
@@ -935,6 +1000,7 @@ async function localBundles(
 					asset.kind === "nft" ? 0 : asset.decimals,
 				);
 			}
+
 			assets.push(
 				asset.kind === "nft"
 					? {
@@ -953,8 +1019,10 @@ async function localBundles(
 					},
 			);
 		}
+
 		bundles.push({ label: row.label, quantity, assets });
 	}
+
 	return bundles;
 }
 
@@ -968,9 +1036,11 @@ export async function createDrop(
 ): Promise<ChainTemplate> {
 	validateInput(input);
 	const draft = loadDraft(sandbox, input, "create");
+
 	if (!draft.id || !draft.mint) {
 		throw new Error("Saved treasury draft is incomplete");
 	}
+
 	const plan = createTemplatePlan({
 		name: input.name,
 		uri: input.uri,
@@ -988,6 +1058,7 @@ export async function createDrop(
 		{ resolvePrizePoolProof: mockProofResolver(sandbox.client("creator")) },
 	);
 	localStorage.removeItem(draftKey(sandbox));
+
 	return template;
 }
 export async function appendDrop(
@@ -1004,9 +1075,11 @@ export async function appendDrop(
 		template.address,
 		template.data.bundleCount,
 	);
+
 	if (draft.startBundleCount === undefined) {
 		throw new Error("Saved treasury addition is missing its append position");
 	}
+
 	const bundles = await localBundles(sandbox, draft, progress);
 	const updated = await sandbox.client("creator", progress).appendBundles(
 		template,
@@ -1015,6 +1088,7 @@ export async function appendDrop(
 		{ resolvePrizePoolProof: mockProofResolver(sandbox.client("creator")) },
 	);
 	localStorage.removeItem(draftKey(sandbox));
+
 	return updated;
 }
 
@@ -1033,6 +1107,7 @@ export async function cancelSavedDraft(
 	progress: ClientProgress,
 ): Promise<CancelDraftResult> {
 	const raw = localStorage.getItem(draftKey(sandbox));
+
 	if (!raw) throw new Error("There is no saved funding draft to cancel");
 	const draft = parseDraft(raw);
 	if (
@@ -1052,8 +1127,10 @@ export async function cancelSavedDraft(
 	const account = await fetchMaybeTemplateState(client.rpc, templateAddress, {
 		commitment: "processed",
 	});
+
 	if (!account.exists) {
 		localStorage.removeItem(draftKey(sandbox));
+
 		return {
 			draftRetained: false,
 			message: "Local draft cleared. No treasury funds had reached the chain.",
@@ -1064,12 +1141,15 @@ export async function cancelSavedDraft(
 	const base = draft.mode === "append" ? draft.startBundleCount! : 0;
 	const offset = current.data.bundleCount - base;
 	const bundles = await localBundles(sandbox, draft, progress, false);
+
 	if (offset < 0 || offset > bundles.length) {
 		throw new Error(
 			"Saved funding position does not match the on-chain append history; draft retained",
 		);
 	}
+
 	const stagedAssets = bundles[offset]?.assets;
+
 	if (stagedAssets) {
 		try {
 			current = await client.cancelFundingBundle(current, stagedAssets, {
@@ -1092,9 +1172,12 @@ export async function cancelSavedDraft(
 					"Staged assets were reclaimed. The empty treasury draft remains saved so its on-chain account is not orphaned.",
 			};
 		}
+
 		current = await client.publishTemplate(current);
 	}
+
 	localStorage.removeItem(draftKey(sandbox));
+
 	return {
 		template: current,
 		draftRetained: false,
@@ -1112,6 +1195,7 @@ function proofBytes(value: unknown, length: number): Uint8Array {
 			byte <= 255
 		)
 	) throw new Error("Invalid oracle proof");
+
 	return Uint8Array.from(value);
 }
 
@@ -1122,6 +1206,7 @@ export async function connectLocalNetwork(): Promise<
 	Readonly<{ rpcUrl: string; oracle: OracleTransport }>
 > {
 	const config = await readControlConfig();
+
 	return { rpcUrl: config.rpcUrl, oracle: localOracle(config) };
 }
 
@@ -1134,9 +1219,11 @@ export async function requestLocalFaucet(wallet: Address): Promise<void> {
 /** Ask the local control plane's emulator to sign a reveal for `randomness`. */
 async function fetchMockProof(randomness: Address): Promise<OracleProof> {
 	const proof = await control(`/proof?randomness=${randomness}`);
+
 	if (proof.testOnly !== true || typeof proof.recoveryId !== "number") {
 		throw new Error("Expected an emulator proof");
 	}
+
 	return {
 		signature: proofBytes(proof.signature, 64),
 		recoveryId: proof.recoveryId,
@@ -1170,6 +1257,7 @@ export async function settleOpenings(
 	const pending = openings.filter((opening) =>
 		opening.data.template === template.address && opening.data.status < 2
 	).sort((a, b) => a.data.sequence < b.data.sequence ? -1 : 1);
+
 	for (const snapshot of pending) {
 		const readCurrent = async () => {
 			const account = await client.rpc.getAccountInfo(snapshot.address, {
@@ -1188,6 +1276,7 @@ export async function settleOpenings(
 			};
 		};
 		let opening = await readCurrent();
+
 		if (!opening || opening.data.status >= 2) continue;
 		try {
 			if (opening.data.status === 0) {
@@ -1210,6 +1299,7 @@ export async function settleOpenings(
 				!opening || opening.data.status >= 2 ||
 				currentTemplate.data.nextAllocation > snapshot.data.sequence
 			) continue;
+
 			if (opening.data.status === 1) {
 				try {
 					await client.allocate(currentTemplate, opening);
@@ -1224,6 +1314,7 @@ export async function settleOpenings(
 					throw allocationReason;
 				}
 			}
+
 			throw reason;
 		}
 	}
@@ -1250,6 +1341,7 @@ export async function claimOpening(
 	const opening = getTemplateOpeningStateDecoder().decode(
 		getBase64Encoder().encode(account.value.data[0]),
 	);
+
 	if (opening.status === 3) return;
 	const [bundleAddress] = await client.bundleAddress(
 		opening.template,
@@ -1267,8 +1359,10 @@ export async function claimOpening(
 			asset.kind === "prizePool"
 		)
 		: undefined;
+
 	if (!poolAsset) {
 		await client.claim(address(openingAddress));
+
 		return;
 	}
 	if (
@@ -1276,10 +1370,13 @@ export async function claimOpening(
 	) {
 		throw new Error("Opening has an invalid PrizePool assignment");
 	}
+
 	if ((opening.claimedMask & (1 << poolAsset.index)) !== 0) {
 		await client.claim(address(openingAddress));
+
 		return;
 	}
+
 	const pool = await fetchPrizePoolState(client.rpc, poolAsset.mint, {
 		commitment: "processed",
 	});
@@ -1290,16 +1387,21 @@ export async function claimOpening(
 	const item = await fetchMaybePrizePoolItemState(client.rpc, itemAddress, {
 		commitment: "processed",
 	});
+
 	if (!item.exists) {
 		await client.claim(address(openingAddress));
+
 		return;
 	}
+
 	const metadata = localStorage.getItem(prizePoolMetadataKey(item.data.asset));
+
 	if (!metadata) {
 		throw new Error(
 			"The local PrizePool metadata cache is missing; recover it from DAS before claiming",
 		);
 	}
+
 	await client.claim(address(openingAddress), {
 		prizePoolItem: {
 			asset: item.data.asset,

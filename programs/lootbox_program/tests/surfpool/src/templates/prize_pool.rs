@@ -15,7 +15,7 @@ fn custody_entropy_and_bound_delivery_resist_adversarial_paths() {
 			.fund(&recipient.pubkey(), 100_000_000)
 			.expect("recipient fee funds");
 		let leaves = [mock_leaf(41, 7), mock_leaf(99, 2), mock_leaf(5, 31)];
-		let tree = initialize_mock_tree(&program, &leaves);
+		let tree = initialize_mock_tree(&program, &leaves, 6, 0);
 		let tree_address = tree.pubkey();
 		let (template, template_bump) = Pubkey::find_program_address(
 			&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
@@ -445,7 +445,7 @@ fn custody_entropy_and_bound_delivery_resist_adversarial_paths() {
 		assert_eq!(selected, [true; 3]);
 		let tree_account = program.account(&tree_address).expect("delivered tree");
 		for leaf_index in 0..3 {
-			let owner_offset = 76 + leaf_index * 108;
+			let owner_offset = 80 + 76 + leaf_index * 108;
 			assert_eq!(
 				&tree_account.data[owner_offset..owner_offset + 32],
 				recipient.pubkey().as_ref(),
@@ -467,7 +467,7 @@ fn staged_recovery_is_tail_only_atomic_and_required_before_cancellation() {
 		deploy_bubblegum_fixture(&program);
 		let payer = program.payer();
 		let leaves = [mock_leaf(8, 3), mock_leaf(13, 4)];
-		let tree = initialize_mock_tree(&program, &leaves);
+		let tree = initialize_mock_tree(&program, &leaves, 6, 0);
 		let tree_address = tree.pubkey();
 		let (template, template_bump) = Pubkey::find_program_address(
 			&[b"template", payer.as_ref(), &1_u64.to_le_bytes()],
@@ -667,6 +667,440 @@ fn staged_recovery_is_tail_only_atomic_and_required_before_cancellation() {
 				"recovered item account is closed",
 			);
 		}
+
+		program.stop().expect("stop Surfpool");
+	});
+}
+
+#[test]
+#[ignore = "run with `devenv shell -- test:surfpool`"]
+fn deep_trees_without_enough_canopy_are_rejected_at_admission() {
+	pina_test::run(async {
+		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
+			.await
+			.expect("Surfpool");
+		deploy_bubblegum_fixture(&program);
+		let (queue, _oracle, _cpi) = oracle_fixture(&mut program);
+		let payer = program.payer();
+		let (template, template_bump) = Pubkey::find_program_address(
+			&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
+			&program.program_id,
+		);
+		let mint = mint_with_metadata(&program, &template);
+		let opens_at = chain_timestamp(&program) + 3_600;
+		program
+			.send(
+				&create_template_data(queue, template_bump, opens_at, false),
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new_readonly(mint, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("create template");
+		let bundle = add_bundle(&program, template, 0, 2, 1);
+		let leaves = [mock_leaf(3, 0), mock_leaf(4, 1)];
+
+		// A depth-26 tree with no canopy can force twenty-six proof accounts
+		// after sibling churn; admitting it would strand every claim.
+		let thin = initialize_mock_tree(&program, &leaves, 20, 0);
+		let (thin_pool, thin_bump) = Pubkey::find_program_address(
+			&[b"prize-pool", bundle.as_ref(), &[0u8][..]],
+			&program.program_id,
+		);
+		let mut create = vec![0; CreatePrizePoolInstruction::SIZE];
+		CreatePrizePoolInstruction::initialize(&mut create, |wire| {
+			wire.asset_index = 0;
+			wire.bump = thin_bump;
+			Ok(())
+		})
+		.expect("pool args");
+		assert!(
+			program
+				.send(
+					&create,
+					vec![
+						AccountMeta::new(payer, true),
+						AccountMeta::new_readonly(template, false),
+						AccountMeta::new(bundle, false),
+						AccountMeta::new(thin_pool, false),
+						AccountMeta::new_readonly(thin.pubkey(), false),
+						AccountMeta::new_readonly(Pubkey::default(), false),
+					],
+				)
+				.is_err(),
+			"a thin-canopy deep tree cannot take prize custody",
+		);
+		assert!(
+			program.account(&thin_pool).is_err(),
+			"the rejected tree leaves no pool account behind",
+		);
+
+		// The same depth with a ten-level canopy trims every future proof to
+		// the accepted sixteen accounts and is admitted.
+		let canopied = initialize_mock_tree(&program, &leaves, 20, 4);
+		let (canopied_pool, canopied_bump) = Pubkey::find_program_address(
+			&[b"prize-pool", bundle.as_ref(), &[0u8][..]],
+			&program.program_id,
+		);
+		let mut create = vec![0; CreatePrizePoolInstruction::SIZE];
+		CreatePrizePoolInstruction::initialize(&mut create, |wire| {
+			wire.asset_index = 0;
+			wire.bump = canopied_bump;
+			Ok(())
+		})
+		.expect("pool args");
+		program
+			.send(
+				&create,
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new(bundle, false),
+					AccountMeta::new(canopied_pool, false),
+					AccountMeta::new_readonly(canopied.pubkey(), false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+				],
+			)
+			.expect("a deep tree with enough canopy is admitted");
+
+		program.stop().expect("stop Surfpool");
+	});
+}
+
+#[test]
+#[ignore = "run with `devenv shell -- test:surfpool`"]
+fn pool_rent_recovers_while_stranded_claims_stay_alive() {
+	pina_test::run(async {
+		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
+			.await
+			.expect("Surfpool");
+		deploy_bubblegum_fixture(&program);
+		let (queue, oracle, cpi) = oracle_fixture(&mut program);
+		let payer = program.payer();
+		let recipient = Keypair::new();
+		program
+			.fund(&recipient.pubkey(), 100_000_000)
+			.expect("recipient fee funds");
+		let leaves = [mock_leaf(11, 0), mock_leaf(12, 1)];
+		let tree = initialize_mock_tree(&program, &leaves, 6, 0);
+		let tree_address = tree.pubkey();
+		let (template, template_bump) = Pubkey::find_program_address(
+			&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
+			&program.program_id,
+		);
+		let mint = mint_with_metadata(&program, &template);
+		let creator_ata = box_ata(&program, &payer, &mint);
+		let recipient_ata = box_ata(&program, &recipient.pubkey(), &mint);
+		let opens_at = chain_timestamp(&program) + 3_600;
+		program
+			.send(
+				&create_template_data(queue, template_bump, opens_at, false),
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new_readonly(mint, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("create template");
+		let bundle = add_bundle(&program, template, 0, 2, 1);
+		let (pool, pool_bump) = Pubkey::find_program_address(
+			&[b"prize-pool", bundle.as_ref(), &[0u8][..]],
+			&program.program_id,
+		);
+		let mut create = vec![0; CreatePrizePoolInstruction::SIZE];
+		CreatePrizePoolInstruction::initialize(&mut create, |wire| {
+			wire.asset_index = 0;
+			wire.bump = pool_bump;
+			Ok(())
+		})
+		.expect("pool args");
+		program
+			.send(
+				&create,
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new(bundle, false),
+					AccountMeta::new(pool, false),
+					AccountMeta::new_readonly(tree_address, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+				],
+			)
+			.expect("create pool");
+		let custody = PrizePoolCustodyContext {
+			template,
+			bundle,
+			pool,
+			tree: tree_address,
+		};
+		for (pool_index, leaf) in leaves.iter().copied().enumerate() {
+			prepare_prize_pool_item(
+				&program,
+				template,
+				bundle,
+				pool,
+				u32::try_from(pool_index).expect("pool index"),
+				leaf,
+				&mock_metadata(leaf.nonce, false),
+			)
+			.expect("admit item");
+			transfer_prepared_prize_pool_item(
+				&program,
+				&custody,
+				u32::try_from(pool_index).expect("pool index"),
+				leaf,
+				mock_tree_root(&program, tree_address),
+			)
+			.expect("deposit item");
+		}
+		program
+			.send(
+				&[LootboxInstruction::SealPrizePool as u8, 0],
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new(bundle, false),
+					AccountMeta::new(pool, false),
+				],
+			)
+			.expect("seal pool");
+		activate_bundle(&program, template, bundle);
+		program
+			.send(
+				&[LootboxInstruction::SealTemplate as u8, 0],
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+				],
+			)
+			.expect("publish treasury");
+		program
+			.send(
+				&template_mint_data(2),
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new(mint, false),
+					AccountMeta::new(creator_ata, false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("mint two boxes");
+		lock_treasury(&program, template, mint, 1);
+		program
+			.send_instruction(
+				token_ix::transfer_checked(
+					&token_2022(),
+					&creator_ata,
+					&mint,
+					&recipient_ata,
+					&payer,
+					&[],
+					2,
+					0,
+				)
+				.expect("box transfer"),
+			)
+			.expect("gift boxes");
+		program
+			.surfnet
+			.cheatcodes()
+			.time_travel_to_timestamp(u64::try_from(opens_at + 1).expect("time") * 1_000)
+			.expect("unlock boxes");
+
+		// One box is opened and allocated; its winner deliberately never
+		// claims while the pool exists.
+		let randomness = Keypair::new();
+		let (opening, opening_bump) = Pubkey::find_program_address(
+			&[
+				b"template-opening",
+				template.as_ref(),
+				randomness.pubkey().as_ref(),
+			],
+			&program.program_id,
+		);
+		program
+			.send_with_signers(
+				program.instruction(
+					&template_request_data(opening_bump, recipient.pubkey()),
+					template_request_accounts(&TemplateRequestContext {
+						owner: recipient.pubkey(),
+						template,
+						mint,
+						ata: recipient_ata,
+						opening,
+						randomness: randomness.pubkey(),
+						queue,
+						oracle,
+						cpi: &cpi,
+					}),
+				),
+				&[&recipient, &randomness],
+			)
+			.expect("burn and commit box");
+		program.advance_one_slot().expect("reveal slot");
+		fulfill(
+			&FulfillContext {
+				program: &program,
+				payer: &recipient,
+				template,
+				opening,
+				randomness: randomness.pubkey(),
+				queue,
+				oracle,
+				cpi: &cpi,
+			},
+			3,
+		)
+		.expect("verify entropy");
+		let service_vault = Pubkey::find_program_address(
+			&[b"service-vault", template.as_ref()],
+			&program.program_id,
+		)
+		.0;
+		let (result_receipt, receipt_bump) =
+			result_receipt_address(&program, opening).expect("receipt");
+		let mut allocation = vec![0; AllocatePrizePoolOpenInstruction::SIZE];
+		AllocatePrizePoolOpenInstruction::initialize(&mut allocation, |_| Ok(()))
+			.expect("pool allocation")
+			.result_receipt_bump = receipt_bump;
+		program
+			.send(
+				&allocation,
+				vec![
+					AccountMeta::new(template, false),
+					AccountMeta::new(opening, false),
+					AccountMeta::new_readonly(bundle, false),
+					AccountMeta::new(pool, false),
+					AccountMeta::new(service_vault, false),
+					AccountMeta::new(result_receipt, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+				],
+			)
+			.expect("allocate the pool item");
+		let opening_account = program.account(&opening).expect("allocated opening");
+		let state =
+			TemplateOpeningState::try_from_bytes(&opening_account.data).expect("opening state");
+		let assigned_index =
+			usize::try_from(state.selected_pool_item.get()).expect("assigned index");
+		let recovered_index = 1 - assigned_index;
+
+		// Retire, remove the remaining supply, and recover the unassigned item.
+		program
+			.send(
+				&[LootboxInstruction::RetireTemplate as u8, 0],
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+				],
+			)
+			.expect("retire treasury");
+		program
+			.send_instructions_with_signers(
+				&[token_ix::burn_checked(
+					&token_2022(),
+					&recipient_ata,
+					&mint,
+					&recipient.pubkey(),
+					&[],
+					1,
+					0,
+				)
+				.expect("burn remaining box")],
+				&[&recipient],
+			)
+			.expect("remove outstanding supply");
+		reclaim_prize_pool_item(
+			&program,
+			&custody,
+			mint,
+			u32::try_from(recovered_index).expect("recovered index"),
+			leaves[recovered_index],
+			mock_tree_root(&program, tree_address),
+		)
+		.expect("recover the unassigned item");
+
+		// The pool closes even though the assigned winner never claimed...
+		program
+			.send(
+				&[LootboxInstruction::ClosePrizePool as u8, 0],
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new(bundle, false),
+					AccountMeta::new(pool, false),
+				],
+			)
+			.expect("pool rent recovers with the assigned item unclaimed");
+		assert!(
+			program.account(&pool).is_err(),
+			"the pool account is closed",
+		);
+
+		// ...and the bound beneficiary still delivers the leaf afterwards.
+		let context = PrizePoolClaimContext {
+			template,
+			opening,
+			bundle,
+			pool,
+			tree: tree_address,
+			recipient: recipient.pubkey(),
+			pool_index: u32::try_from(assigned_index).expect("assigned index"),
+		};
+		assert!(
+			claim_stranded_prize_pool_item(
+				&program,
+				&PrizePoolClaimContext {
+					recipient: payer,
+					..context
+				},
+				leaves[assigned_index],
+				&mock_metadata(leaves[assigned_index].nonce, false),
+				mock_tree_root(&program, tree_address),
+			)
+			.is_err(),
+			"the stranded claim cannot be redirected",
+		);
+		claim_stranded_prize_pool_item(
+			&program,
+			&context,
+			leaves[assigned_index],
+			&mock_metadata(leaves[assigned_index].nonce, false),
+			mock_tree_root(&program, tree_address),
+		)
+		.expect("stranded claim delivers after pool closure");
+		assert!(
+			claim_stranded_prize_pool_item(
+				&program,
+				&context,
+				leaves[assigned_index],
+				&mock_metadata(leaves[assigned_index].nonce, false),
+				mock_tree_root(&program, tree_address),
+			)
+			.is_err(),
+			"a stranded item cannot be claimed twice",
+		);
+		let tree_account = program.account(&tree_address).expect("tree");
+		let owner_offset = 80 + 76 + assigned_index * 108;
+		assert_eq!(
+			&tree_account.data[owner_offset..owner_offset + 32],
+			recipient.pubkey().as_ref(),
+			"the leaf exits PDA custody to the bound beneficiary",
+		);
+		assert!(
+			program
+				.account(&prize_pool_item_address(&program, pool, context.pool_index).0)
+				.is_err(),
+			"the stranded item account is closed",
+		);
+		let delivered = program.account(&opening).expect("delivered opening");
+		let state = TemplateOpeningState::try_from_bytes(&delivered.data).expect("opening state");
+		assert_eq!(state.status, 3, "the opening is fully delivered");
 
 		program.stop().expect("stop Surfpool");
 	});

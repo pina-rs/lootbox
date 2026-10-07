@@ -179,6 +179,10 @@ pub enum LootboxProgramError {
 	/// 40 - A curve with boxes sold can close only after it sells out or trading
 	#[error("A curve with boxes sold can close only after it sells out or trading")]
 	BoxCurveTrading = 0x28,
+	/// A Bubblegum tree cannot guarantee claim proofs inside the proof cap.
+	/// 41 - A Bubblegum tree cannot guarantee claim proofs inside the proof cap.
+	#[error("A Bubblegum tree cannot guarantee claim proofs inside the proof cap.")]
+	TreeNotClaimable = 0x29,
 }
 
 impl From<LootboxProgramError> for solana_program_error::ProgramError {

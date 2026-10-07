@@ -30,6 +30,7 @@
     "src/generated/instructions/claim_mint_prize.rs",
     "src/generated/instructions/claim_prize_pool_item.rs",
     "src/generated/instructions/claim_sol_prize.rs",
+    "src/generated/instructions/claim_stranded_prize_pool_item.rs",
     "src/generated/instructions/claim_token_prize.rs",
     "src/generated/instructions/close_box_curve.rs",
     "src/generated/instructions/close_opening.rs",

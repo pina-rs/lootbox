@@ -21,5 +21,10 @@
 	},
 	"devDependencies": {
 		"@solana/surfpool": "1.6.0"
+	},
+	"pnpm": {
+		"overrides": {
+			"sharp": ">=0.35.5"
+		}
 	}
 }

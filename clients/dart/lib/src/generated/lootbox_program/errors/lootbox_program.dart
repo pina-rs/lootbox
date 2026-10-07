@@ -169,6 +169,10 @@ const int lootboxProgramErrorBoxCurveSlippage = 0x27; // 39
 /// Message: "A curve with boxes sold can close only after it sells out or trading"
 const int lootboxProgramErrorBoxCurveTrading = 0x28; // 40
 
+/// A Bubblegum tree cannot guarantee claim proofs inside the proof cap.
+/// Message: "A Bubblegum tree cannot guarantee claim proofs inside the proof cap."
+const int lootboxProgramErrorTreeNotClaimable = 0x29; // 41
+
 /// Map of error codes to human-readable messages.
 const Map<int, String> _lootboxProgramErrorMessages = {
   lootboxProgramErrorUnauthorized:
@@ -248,6 +252,8 @@ const Map<int, String> _lootboxProgramErrorMessages = {
       'The trade costs more, or returns less, than the caller allowed.',
   lootboxProgramErrorBoxCurveTrading:
       'A curve with boxes sold can close only after it sells out or trading',
+  lootboxProgramErrorTreeNotClaimable:
+      'A Bubblegum tree cannot guarantee claim proofs inside the proof cap.',
 };
 
 /// Get the error message for a LootboxProgram program error code.

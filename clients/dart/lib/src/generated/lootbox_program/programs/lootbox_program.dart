@@ -34,6 +34,7 @@ enum LootboxProgramAccount {
 
 /// Known instructions for the LootboxProgram program.
 enum LootboxProgramInstruction {
+  claimStrandedPrizePoolItem,
   openBoxCurve,
   buyCurveBoxes,
   sellCurveBoxes,
@@ -102,6 +103,10 @@ enum LootboxProgramInstruction {
 
 /// Identifies the type of a LootboxProgram instruction.
 LootboxProgramInstruction identifyLootboxProgramInstruction(Uint8List data) {
+  if (containsBytes(data, getU8Encoder().encode(64), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.claimStrandedPrizePoolItem;
+  }
   if (containsBytes(data, getU8Encoder().encode(60), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.openBoxCurve;
@@ -370,6 +375,15 @@ sealed class ParsedLootboxProgramInstruction {
   const ParsedLootboxProgramInstruction(this.instructionType);
 
   final LootboxProgramInstruction instructionType;
+}
+
+/// A parsed ClaimStrandedPrizePoolItem instruction.
+final class ParsedClaimStrandedPrizePoolItem
+    extends ParsedLootboxProgramInstruction {
+  const ParsedClaimStrandedPrizePoolItem({required this.data})
+    : super(LootboxProgramInstruction.claimStrandedPrizePoolItem);
+
+  final ClaimStrandedPrizePoolItemInstructionData data;
 }
 
 /// A parsed OpenBoxCurve instruction.
@@ -900,6 +914,10 @@ ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
   return switch (identifyLootboxProgramInstruction(
     instruction.data ?? Uint8List(0),
   )) {
+    LootboxProgramInstruction.claimStrandedPrizePoolItem =>
+      ParsedClaimStrandedPrizePoolItem(
+        data: parseClaimStrandedPrizePoolItemInstruction(instruction),
+      ),
     LootboxProgramInstruction.openBoxCurve => ParsedOpenBoxCurve(
       data: parseOpenBoxCurveInstruction(instruction),
     ),

@@ -163,6 +163,8 @@ pub enum LootboxError {
 	/// A curve with boxes sold can close only after it sells out or trading
 	/// closes.
 	BoxCurveTrading = 40,
+	/// A Bubblegum tree cannot guarantee claim proofs inside the proof cap.
+	TreeNotClaimable = 41,
 }
 
 /// Single-byte instruction discriminators for every lootbox instruction.
@@ -306,6 +308,8 @@ pub enum LootboxInstruction {
 	BuyCurveBoxes = 61,
 	SellCurveBoxes = 62,
 	CloseBoxCurve = 63,
+	/// Claims an assigned pool item after the pool account has closed.
+	ClaimStrandedPrizePoolItem = 64,
 }
 
 /// Single-byte account discriminators for every lootbox-owned account.
@@ -1868,6 +1872,31 @@ fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> Progra
 	Ok(())
 }
 
+/// Stranded pool-item claims, dispatched out of line.
+///
+/// Follows the box-curve pattern: the main dispatcher's frame has no room for
+/// another account-parsing slot, and the IDL extractor still reads the
+/// canonical arm here.
+mod stranded_pool_dispatch {
+	use super::*;
+
+	#[inline(never)]
+	pub fn process_instruction(
+		program_id: &Address,
+		accounts: &mut [AccountView],
+		data: &[u8],
+	) -> ProgramResult {
+		let instruction: LootboxInstruction = parse_instruction(program_id, &ID, data)?;
+
+		match instruction {
+			LootboxInstruction::ClaimStrandedPrizePoolItem => {
+				ClaimStrandedPrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			_ => Err(ProgramError::InvalidInstructionData),
+		}
+	}
+}
+
 /// Box-curve instructions, dispatched out of line.
 ///
 /// Every arm of the main dispatcher keeps its own account-parsing slots in one
@@ -2077,6 +2106,9 @@ pub fn process_instruction(
 		}
 		LootboxInstruction::ClosePrizePool => {
 			ClosePrizePoolAccounts::try_from((program_id, accounts))?.process(data)
+		}
+		_stranded @ LootboxInstruction::ClaimStrandedPrizePoolItem => {
+			stranded_pool_dispatch::process_instruction(program_id, accounts, data)
 		}
 		LootboxInstruction::CreateExclusiveCollection => {
 			CreateExclusiveCollectionAccounts::try_from((program_id, accounts))?.process(data)

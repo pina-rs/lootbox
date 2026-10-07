@@ -711,11 +711,12 @@ fn deep_trees_without_enough_canopy_are_rejected_at_admission() {
 			&program.program_id,
 		);
 		let mut create = vec![0; CreatePrizePoolInstruction::SIZE];
-		let args =
-			CreatePrizePoolInstruction::initialize(&mut create, |_| Ok(())).expect("pool args");
-		args.asset_index = 0;
-		args.bump = thin_bump;
-		drop(args);
+		CreatePrizePoolInstruction::initialize(&mut create, |wire| {
+			wire.asset_index = 0;
+			wire.bump = thin_bump;
+			Ok(())
+		})
+		.expect("pool args");
 		assert!(
 			program
 				.send(
@@ -745,11 +746,12 @@ fn deep_trees_without_enough_canopy_are_rejected_at_admission() {
 			&program.program_id,
 		);
 		let mut create = vec![0; CreatePrizePoolInstruction::SIZE];
-		let args =
-			CreatePrizePoolInstruction::initialize(&mut create, |_| Ok(())).expect("pool args");
-		args.asset_index = 0;
-		args.bump = canopied_bump;
-		drop(args);
+		CreatePrizePoolInstruction::initialize(&mut create, |wire| {
+			wire.asset_index = 0;
+			wire.bump = canopied_bump;
+			Ok(())
+		})
+		.expect("pool args");
 		program
 			.send(
 				&create,
@@ -811,11 +813,12 @@ fn pool_rent_recovers_while_stranded_claims_stay_alive() {
 			&program.program_id,
 		);
 		let mut create = vec![0; CreatePrizePoolInstruction::SIZE];
-		let args =
-			CreatePrizePoolInstruction::initialize(&mut create, |_| Ok(())).expect("pool args");
-		args.asset_index = 0;
-		args.bump = pool_bump;
-		drop(args);
+		CreatePrizePoolInstruction::initialize(&mut create, |wire| {
+			wire.asset_index = 0;
+			wire.bump = pool_bump;
+			Ok(())
+		})
+		.expect("pool args");
 		program
 			.send(
 				&create,
@@ -835,7 +838,6 @@ fn pool_rent_recovers_while_stranded_claims_stay_alive() {
 			pool,
 			tree: tree_address,
 		};
-		let root = mock_tree_root(&program, tree_address);
 		for (pool_index, leaf) in leaves.iter().copied().enumerate() {
 			prepare_prize_pool_item(
 				&program,
@@ -1050,14 +1052,13 @@ fn pool_rent_recovers_while_stranded_claims_stay_alive() {
 			recipient: recipient.pubkey(),
 			pool_index: u32::try_from(assigned_index).expect("assigned index"),
 		};
-		let mut hijacked = PrizePoolClaimContext {
-			recipient: payer,
-			..context
-		};
 		assert!(
 			claim_stranded_prize_pool_item(
 				&program,
-				&hijacked,
+				&PrizePoolClaimContext {
+					recipient: payer,
+					..context
+				},
 				leaves[assigned_index],
 				&mock_metadata(leaves[assigned_index].nonce, false),
 				mock_tree_root(&program, tree_address),
@@ -1065,7 +1066,6 @@ fn pool_rent_recovers_while_stranded_claims_stay_alive() {
 			.is_err(),
 			"the stranded claim cannot be redirected",
 		);
-		hijacked.recipient = recipient.pubkey();
 		claim_stranded_prize_pool_item(
 			&program,
 			&context,

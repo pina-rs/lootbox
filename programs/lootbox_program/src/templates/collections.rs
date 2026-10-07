@@ -712,6 +712,103 @@ fn metadata_string_length(data: &[u8], cursor: &mut usize) -> Result<usize, Prog
 	usize::try_from(u32::from_le_bytes(prefix)).map_err(|_| ProgramError::InvalidAccountData)
 }
 
+/// `CompressionAccountType::ConcurrentMerkleTree` discriminant.
+const TREE_ACCOUNT_TYPE: u8 = 1;
+/// `ConcurrentMerkleTreeHeaderData::V1` discriminant.
+const TREE_VERSION_V1: u8 = 1;
+/// `CONCURRENT_MERKLE_TREE_HEADER_SIZE_V1` from spl-account-compression.
+const TREE_HEADER_SIZE: usize = 56;
+/// The sequence number, active index, and buffer size of the tree region.
+const TREE_REGION_FIXED: usize = 24;
+/// Fixed bytes around one changelog or rightmost-proof path: the root node,
+/// leaf index, and padding surrounding its `max_depth` nodes.
+const TREE_PER_ENTRY_FIXED: usize = 72;
+
+/// Require a Bubblegum tree whose claims can never outgrow the proof cap.
+///
+/// Proofs are truncated at the canopy, so the longest inclusion proof any
+/// churned sibling can force is `max_depth - canopy_depth` accounts. Trees
+/// that cannot guarantee deliverability inside the accepted proof tail are
+/// rejected when a leaf enters escrow instead of stranding prizes later.
+fn validate_claimable_tree_data(data: &[u8]) -> ProgramResult {
+	if data.first() != Some(&TREE_ACCOUNT_TYPE) || data.get(1) != Some(&TREE_VERSION_V1) {
+		return Err(lootbox_error(LootboxError::InvalidPrize));
+	}
+
+	let read = |offset: usize| -> Result<usize, ProgramError> {
+		let bytes: [u8; 4] = data
+			.get(offset..offset + 4)
+			.and_then(|bytes| bytes.try_into().ok())
+			.ok_or(ProgramError::InvalidAccountData)?;
+		usize::try_from(u32::from_le_bytes(bytes)).map_err(|_| ProgramError::InvalidAccountData)
+	};
+	let max_buffer = read(2)?;
+	let max_depth = read(6)?;
+
+	// The serialized tree region is `sequence, active index, buffer size`
+	// followed by one changelog per buffer slot plus the rightmost proof.
+	let per_entry = TREE_PER_ENTRY_FIXED
+		.checked_add(
+			max_depth
+				.checked_mul(32)
+				.ok_or(ProgramError::InvalidAccountData)?,
+		)
+		.ok_or(ProgramError::InvalidAccountData)?;
+	let entries = max_buffer
+		.checked_add(1)
+		.ok_or(ProgramError::InvalidAccountData)?;
+	let entries_size = entries
+		.checked_mul(per_entry)
+		.ok_or(ProgramError::ArithmeticOverflow)?;
+	let fixed = TREE_HEADER_SIZE
+		.checked_add(TREE_REGION_FIXED)
+		.and_then(|value| value.checked_add(entries_size))
+		.ok_or(ProgramError::InvalidAccountData)?;
+	let tail = data
+		.len()
+		.checked_sub(fixed)
+		.ok_or(lootbox_error(LootboxError::InvalidPrize))?;
+	if tail % 32 != 0 {
+		return Err(lootbox_error(LootboxError::InvalidPrize));
+	}
+
+	// The canopy is a full binary tree without the root, so its node count is
+	// always two below a power of two; a zero-length canopy caches nothing.
+	let canopy_nodes = tail / 32;
+	let canopy_depth = if canopy_nodes == 0 {
+		0
+	} else {
+		let size = canopy_nodes
+			.checked_add(2)
+			.ok_or(ProgramError::InvalidAccountData)?;
+		if size
+			& size
+				.checked_sub(1)
+				.ok_or(ProgramError::InvalidAccountData)?
+			!= 0
+		{
+			return Err(lootbox_error(LootboxError::InvalidPrize));
+		}
+		size.trailing_zeros()
+			.checked_sub(1)
+			.ok_or(ProgramError::InvalidAccountData)? as usize
+	};
+
+	if max_depth
+		.checked_sub(canopy_depth)
+		.is_none_or(|proofs| proofs > MAX_BUBBLEGUM_PROOF_ACCOUNTS)
+	{
+		return Err(lootbox_error(LootboxError::TreeNotClaimable));
+	}
+
+	Ok(())
+}
+
+pub(super) fn assert_claimable_tree(tree: &AccountView) -> ProgramResult {
+	let data = tree.try_borrow()?;
+	validate_claimable_tree_data(&data)
+}
+
 /// Require a Metadata account whose update authority is revoked and whose data
 /// is immutable, so a funded prize cannot have its advertised identity
 /// rewritten after escrow.
@@ -1482,6 +1579,7 @@ impl<'a> ProcessAccountInfos<'a> for FundCompressedNftPrizeAccounts<'a> {
 			system_program: self.system_program,
 		};
 		validate_compressed_accounts(&context)?;
+		assert_claimable_tree(self.merkle_tree)?;
 
 		invoke_compressed_transfer(
 			&context,
@@ -1645,6 +1743,85 @@ mod tests {
 			Some(&MPL_CORE_ID),
 			&MPL_TOKEN_METADATA_ID,
 		));
+	}
+
+	fn tree_account(max_depth: u32, max_buffer: u32, canopy_nodes: usize) -> Vec<u8> {
+		let per_entry = TREE_PER_ENTRY_FIXED + 32 * max_depth as usize;
+		let mut data = alloc::vec![0u8; TREE_HEADER_SIZE + TREE_REGION_FIXED
+			+ (max_buffer as usize + 1) * per_entry
+			+ canopy_nodes * 32];
+		data[0] = TREE_ACCOUNT_TYPE;
+		data[1] = TREE_VERSION_V1;
+		data[2..6].copy_from_slice(&max_buffer.to_le_bytes());
+		data[6..10].copy_from_slice(&max_depth.to_le_bytes());
+		data
+	}
+
+	#[test]
+	fn trees_with_claimable_proof_bounds_are_admitted() {
+		// A depth-6 tree without any canopy never needs more than six proof
+		// accounts, and a depth-26 tree with a ten-level canopy bottoms out at
+		// exactly the sixteen-account cap.
+		assert_eq!(
+			validate_claimable_tree_data(&tree_account(6, 64, 0)),
+			Ok(())
+		);
+		assert_eq!(
+			validate_claimable_tree_data(&tree_account(26, 64, (1 << 11) - 2)),
+			Ok(()),
+		);
+	}
+
+	#[test]
+	fn deep_thin_canopy_trees_are_rejected_at_admission() {
+		// Twenty-six proof accounts can be forced by sibling churn, and the
+		// claim would strand once the path exceeds the accepted tail.
+		assert_eq!(
+			validate_claimable_tree_data(&tree_account(26, 64, 0)),
+			Err(lootbox_error(LootboxError::TreeNotClaimable)),
+		);
+		// A canopy that trims the path to seventeen accounts still misses.
+		assert_eq!(
+			validate_claimable_tree_data(&tree_account(26, 64, (1 << 10) - 2)),
+			Err(lootbox_error(LootboxError::TreeNotClaimable)),
+		);
+	}
+
+	#[test]
+	fn malformed_tree_accounts_fail_closed() {
+		let mut wrong_type = tree_account(6, 64, 0);
+		wrong_type[0] = 0;
+		assert_eq!(
+			validate_claimable_tree_data(&wrong_type),
+			Err(lootbox_error(LootboxError::InvalidPrize)),
+		);
+
+		let mut wrong_version = tree_account(6, 64, 0);
+		wrong_version[1] = 2;
+		assert_eq!(
+			validate_claimable_tree_data(&wrong_version),
+			Err(lootbox_error(LootboxError::InvalidPrize)),
+		);
+
+		// A trailing byte breaks the 32-byte node alignment of the canopy.
+		let mut misaligned = tree_account(6, 64, 0);
+		misaligned.push(0);
+		assert_eq!(
+			validate_claimable_tree_data(&misaligned),
+			Err(lootbox_error(LootboxError::InvalidPrize)),
+		);
+
+		// A canopy whose node count is not two below a power of two cannot
+		// exist on the real compression program.
+		let mut bad_canopy = tree_account(6, 64, 3);
+		bad_canopy[0] = TREE_ACCOUNT_TYPE;
+		assert_eq!(
+			validate_claimable_tree_data(&bad_canopy),
+			Err(lootbox_error(LootboxError::InvalidPrize)),
+		);
+
+		// A header claiming more tree than the account holds.
+		assert!(validate_claimable_tree_data(&tree_account(6, 64, 0)[..64]).is_err());
 	}
 
 	#[test]

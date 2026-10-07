@@ -4294,6 +4294,98 @@
 					}
 				}
 			]
+		},
+		"instruction:1:40": {
+			"rustName": "ClaimStrandedPrizePoolItemInstruction",
+			"versions": [
+				{
+					"schema": {
+						"layout": "fixed",
+						"fields": [
+							{
+								"name": "asset_index",
+								"rustType": "u8"
+							},
+							{
+								"name": "root",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "data_hash",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "creator_hash",
+								"rustType": "[u8; 32]"
+							},
+							{
+								"name": "nonce",
+								"rustType": "u64"
+							},
+							{
+								"name": "index",
+								"rustType": "u32"
+							},
+							{
+								"name": "metadata",
+								"rustType": "Vec<u8, 512>"
+							}
+						]
+					},
+					"process": {
+						"accounts": [
+							{
+								"name": "template"
+							},
+							{
+								"name": "opening",
+								"writable": true
+							},
+							{
+								"name": "bundle",
+								"writable": true
+							},
+							{
+								"name": "prize_pool"
+							},
+							{
+								"name": "prize_pool_item",
+								"writable": true
+							},
+							{
+								"name": "recipient"
+							},
+							{
+								"name": "rent_refund",
+								"writable": true
+							},
+							{
+								"name": "tree_config"
+							},
+							{
+								"name": "merkle_tree",
+								"writable": true
+							},
+							{
+								"name": "bubblegum_program"
+							},
+							{
+								"name": "log_wrapper"
+							},
+							{
+								"name": "compression_program"
+							},
+							{
+								"name": "system_program",
+								"defaultValue": "publicKey:11111111111111111111111111111111"
+							},
+							{
+								"name": "proof_accounts"
+							}
+						]
+					}
+				}
+			]
 		}
 	}
 }

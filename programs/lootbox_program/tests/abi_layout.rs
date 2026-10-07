@@ -6,7 +6,7 @@
 //! check` fails when this file no longer matches the manifest. A layout
 //! change that forgets an offset fails `cargo test` in the same change.
 
-// manifest-sha256: 35d86d5481842d68354de215fb8c33945c37c365460bc6294a0ad78a8d2d5b7e
+// manifest-sha256: a55daf98f978e86218a3f19c0da9027127d9b842b7fd4c5b3257f0857a708439
 // program-id: LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E
 // version_type: u8
 
@@ -2544,6 +2544,42 @@ pub mod instruction_1_3f {
 	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
 	/// `(name, absolute_offset, size)` in encoded bytes.
 	pub const FIELDS: &[(&str, usize, usize)] = &[
+	];
+}
+
+/// ABI layout for the `ClaimStrandedPrizePoolItemInstruction` instruction.
+pub mod instruction_1_40 {
+	/// Manifest contract key.
+	pub const KEY: &str = "instruction:1:40";
+	/// Rust type name as declared in the program.
+	pub const RUST_NAME: &str = "ClaimStrandedPrizePoolItemInstruction";
+	/// Current schema version.
+	pub const VERSION: u32 = 0;
+	/// Schema hash recorded for this version.
+	pub const SCHEMA_SHA256: &str = "ef91ef034f61fe977544454a7eee0d65fd22b144c1c392f0cbf4bd5e3d4b6e4d";
+	/// Width of the discriminator in bytes.
+	pub const DISCRIMINATOR_BYTES: usize = 1;
+	/// Byte offset of the migration version field.
+	pub const VERSION_OFFSET: usize = 1;
+	/// Width of the migration version field in bytes; zero without an envelope.
+	pub const VERSION_BYTES: usize = 1;
+	/// Bytes occupied by the discriminator and version envelope together.
+	pub const MIGRATION_HEADER_SIZE: usize = 2;
+	/// Payload size in bytes, excluding the envelope header.
+	pub const PAYLOAD_SIZE: usize = 623;
+	/// Total encoded size in bytes, including the envelope header.
+	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
+	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
+	pub const MANIFEST_PAYLOAD_SIZE: usize = 623;
+	/// `(name, absolute_offset, size)` in encoded bytes.
+	pub const FIELDS: &[(&str, usize, usize)] = &[
+		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
+		("root", MIGRATION_HEADER_SIZE + 1, 32),
+		("data_hash", MIGRATION_HEADER_SIZE + 33, 32),
+		("creator_hash", MIGRATION_HEADER_SIZE + 65, 32),
+		("nonce", MIGRATION_HEADER_SIZE + 97, 8),
+		("index", MIGRATION_HEADER_SIZE + 105, 4),
+		("metadata", MIGRATION_HEADER_SIZE + 109, 514),
 	];
 }
 

@@ -364,7 +364,15 @@ fn deploy_bubblegum_fixture(program: &Harness) {
 	}
 }
 
-fn initialize_mock_tree(program: &Harness, leaves: &[MockCompressedLeaf]) -> Keypair {
+/// Real-layout header offset of the fixture's evolving root.
+const MOCK_TREE_ROOT_OFFSET: usize = 80 + 8;
+
+fn initialize_mock_tree(
+	program: &Harness,
+	leaves: &[MockCompressedLeaf],
+	max_depth: u32,
+	canopy_depth: u32,
+) -> Keypair {
 	let tree = Keypair::new();
 	let mut data = b"LBGMINT1".to_vec();
 	data.extend_from_slice(
@@ -372,6 +380,8 @@ fn initialize_mock_tree(program: &Harness, leaves: &[MockCompressedLeaf]) -> Key
 			.expect("fixture leaf count")
 			.to_le_bytes(),
 	);
+	data.extend_from_slice(&max_depth.to_le_bytes());
+	data.extend_from_slice(&canopy_depth.to_le_bytes());
 
 	for leaf in leaves {
 		data.extend_from_slice(&leaf.data_hash);
@@ -398,7 +408,8 @@ fn initialize_mock_tree(program: &Harness, leaves: &[MockCompressedLeaf]) -> Key
 }
 
 fn mock_tree_root(program: &Harness, tree: Pubkey) -> [u8; 32] {
-	program.account(&tree).expect("mock tree").data[8..40]
+	program.account(&tree).expect("mock tree").data
+		[MOCK_TREE_ROOT_OFFSET..MOCK_TREE_ROOT_OFFSET + 32]
 		.try_into()
 		.expect("mock root")
 }
@@ -589,6 +600,47 @@ fn claim_prize_pool_item(
 			AccountMeta::new(context.opening, false),
 			AccountMeta::new(context.bundle, false),
 			AccountMeta::new(context.pool, false),
+			AccountMeta::new(item, false),
+			AccountMeta::new_readonly(context.recipient, false),
+			AccountMeta::new(program.payer(), false),
+			AccountMeta::new_readonly(context.tree, false),
+			AccountMeta::new(context.tree, false),
+			AccountMeta::new_readonly(bubblegum_id(), false),
+			AccountMeta::new_readonly(noop_id(), false),
+			AccountMeta::new_readonly(compression_id(), false),
+			AccountMeta::new_readonly(Pubkey::default(), false),
+		],
+	)
+}
+
+/// Claim an assigned pool item after the pool account itself has closed.
+fn claim_stranded_prize_pool_item(
+	program: &Harness,
+	context: &PrizePoolClaimContext,
+	leaf: MockCompressedLeaf,
+	metadata: &[u8],
+	root: [u8; 32],
+) -> Result<(), String> {
+	let (item, _) = prize_pool_item_address(program, context.pool, context.pool_index);
+	let mut data = vec![0; ClaimStrandedPrizePoolItemInstruction::SIZE];
+	let args = ClaimStrandedPrizePoolItemInstruction::initialize(&mut data, |_| Ok(()))
+		.expect("claim stranded pool item");
+	args.asset_index = 0;
+	args.root = root;
+	args.data_hash = leaf.data_hash;
+	args.creator_hash = leaf.creator_hash;
+	args.nonce.set(leaf.nonce);
+	args.index.set(leaf.index);
+	args.metadata
+		.try_set(metadata)
+		.expect("bounded mock metadata");
+	program.send(
+		&data,
+		vec![
+			AccountMeta::new_readonly(context.template, false),
+			AccountMeta::new(context.opening, false),
+			AccountMeta::new(context.bundle, false),
+			AccountMeta::new_readonly(context.pool, false),
 			AccountMeta::new(item, false),
 			AccountMeta::new_readonly(context.recipient, false),
 			AccountMeta::new(program.payer(), false),

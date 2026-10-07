@@ -9,6 +9,7 @@ use super::collections::CompressedTransfer;
 use super::collections::MPL_BUBBLEGUM_ID;
 use super::collections::SPL_ACCOUNT_COMPRESSION_ID;
 use super::collections::SPL_NOOP_ID;
+use super::collections::assert_claimable_tree;
 use super::collections::compressed_asset_id;
 use super::collections::invoke_compressed_transfer;
 use super::collections::validate_compressed_accounts;
@@ -136,6 +137,30 @@ pub struct AllocatePrizePoolOpenInstruction {
 pub struct ClaimPrizePoolItemInstruction {
 	/// Manifest slot of the pool; must equal the opening's
 	/// `selected_pool_asset` and the pool's `asset_index`.
+	pub asset_index: u8,
+	/// Merkle root that Bubblegum verifies the proof against.
+	pub root: [u8; 32],
+	/// Current leaf data hash; must be recomputed from `metadata`.
+	pub data_hash: [u8; 32],
+	/// Current leaf creator hash; must be recomputed from `metadata`.
+	pub creator_hash: [u8; 32],
+	/// Leaf nonce; must equal the item's nonce and derive its asset ID.
+	pub nonce: u64,
+	/// Leaf index in the pool's tree; must equal the item's tree index.
+	pub index: u32,
+	/// Current canonical Bubblegum V1 `MetadataArgs` Borsh preimage.
+	pub metadata: Vec<u8, 512>,
+}
+
+/// Claim an assigned pool item after its pool account has closed.
+///
+/// The opening, item, and bundle bindings alone prove the assignment, so the
+/// bound beneficiary keeps an unlimited claim window even once the pool's rent
+/// has been recovered.
+#[instruction(discriminator = LootboxInstruction::ClaimStrandedPrizePoolItem, migrations)]
+pub struct ClaimStrandedPrizePoolItemInstruction {
+	/// Manifest slot of the pool; must equal the opening's
+	/// `selected_pool_asset`.
 	pub asset_index: u8,
 	/// Merkle root that Bubblegum verifies the proof against.
 	pub root: [u8; 32],
@@ -367,6 +392,45 @@ pub struct ClaimPrizePoolItemAccounts<'a> {
 	///
 	/// Passed as zero through 16 readonly remaining accounts; the tree's canopy
 	/// supplies the rest of the path.
+	#[pina(remaining)]
+	pub proof_accounts: &'a [AccountView],
+}
+
+/// Accounts for `claimStrandedPrizePoolItem`.
+#[derive(Accounts, Debug)]
+pub struct ClaimStrandedPrizePoolItemAccounts<'a> {
+	/// Retired template PDA that owns the opening and bundle.
+	pub template: &'a AccountView,
+	/// Allocated opening PDA with a pool assignment; its claim bit is set.
+	pub opening: &'a mut AccountView,
+	/// Bundle PDA the opening was allocated to; its claimed count advances.
+	pub bundle: &'a mut AccountView,
+	/// Address-only pool PDA. It must derive canonically from the bundle and
+	/// asset slot, but may already be closed: nothing on it is read.
+	pub prize_pool: &'a AccountView,
+	/// Item PDA at the opening's `selected_pool_item`, closed here.
+	pub prize_pool_item: &'a mut AccountView,
+	/// Opening's bound beneficiary; becomes the leaf owner.
+	pub recipient: &'a AccountView,
+	/// Receives the closed per-item PDA rent; fixed to the template authority.
+	pub rent_refund: &'a mut AccountView,
+	/// Bubblegum tree config of `merkle_tree`, validated by Bubblegum.
+	pub tree_config: &'a AccountView,
+	/// Pool's pinned tree that holds the leaf; Bubblegum rewrites it.
+	pub merkle_tree: &'a mut AccountView,
+	/// Bubblegum program, invoked to transfer the compressed NFT.
+	#[pina(validate(address = MPL_BUBBLEGUM_ID))]
+	pub bubblegum_program: &'a AccountView,
+	/// SPL Noop program used by Bubblegum as its log wrapper.
+	#[pina(validate(address = SPL_NOOP_ID))]
+	pub log_wrapper: &'a AccountView,
+	/// SPL Account Compression program that owns `merkle_tree`.
+	#[pina(validate(address = SPL_ACCOUNT_COMPRESSION_ID))]
+	pub compression_program: &'a AccountView,
+	/// System program, passed to Bubblegum.
+	#[pina(validate(address = system::ID))]
+	pub system_program: &'a AccountView,
+	/// Merkle proof nodes in leaf-to-root order.
 	#[pina(remaining)]
 	pub proof_accounts: &'a [AccountView],
 }
@@ -903,11 +967,13 @@ fn active_pool_is_terminal(
 	pending_openings: u64,
 	remaining: u64,
 	assigned_count: u32,
-	claimed_count: u32,
 	reclaimed_count: u32,
 	quantity: u64,
-	released: u64,
 ) -> Result<bool, ProgramError> {
+	// Assigned-but-unclaimed items no longer block closure: the opening,
+	// bundle, and item bindings carry the claim on their own, so the bound
+	// beneficiary can still deliver the leaf through
+	// `ClaimStrandedPrizePoolItem` after the pool's rent is recovered.
 	let accounted = u64::from(assigned_count)
 		.checked_add(u64::from(reclaimed_count))
 		.ok_or(ProgramError::ArithmeticOverflow)?;
@@ -916,9 +982,7 @@ fn active_pool_is_terminal(
 		&& template_status == TEMPLATE_RETIRED
 		&& pending_openings == 0
 		&& remaining == u64::from(reclaimed_count)
-		&& claimed_count == assigned_count
-		&& accounted == quantity
-		&& released == quantity)
+		&& accounted == quantity)
 }
 
 pub(super) fn reserve_prize_pool_item(
@@ -1022,6 +1086,8 @@ impl<'a> ProcessAccountInfos<'a> for CreatePrizePoolAccounts<'a> {
 		let bundle_address = *self.bundle.address();
 		let quantity = bundle.quantity.get();
 		drop(bundle);
+
+		assert_claimable_tree(self.merkle_tree)?;
 
 		let seeds = PrizePoolState::seeds(&bundle_address, args.asset_index);
 
@@ -1524,6 +1590,114 @@ impl<'a> ProcessAccountInfos<'a> for ClaimPrizePoolItemAccounts<'a> {
 	}
 }
 
+impl<'a> ProcessAccountInfos<'a> for ClaimStrandedPrizePoolItemAccounts<'a> {
+	fn process(self, data: &[u8]) -> ProgramResult {
+		let args = ClaimStrandedPrizePoolItemInstruction::try_from_bytes(data)?;
+		self.process_stranded(args)
+	}
+}
+
+impl ClaimStrandedPrizePoolItemAccounts<'_> {
+	/// Kept out of line so the LTO-inlined dispatcher frame stays under the
+	/// SBF stack limit with this journey's locals in their own frame.
+	#[inline(never)]
+	fn process_stranded(self, args: &ClaimStrandedPrizePoolItemInstructionZc) -> ProgramResult {
+		let template = as_template(self.template)?;
+		assert_template(self.template.address(), &template)?;
+		assert_bundle(self.bundle, self.template.address())?;
+		let bundle_address = *self.bundle.address();
+		let opening_address = *self.opening.address();
+		let mut opening = self.opening.as_account_mut::<TemplateOpeningState>(&ID)?;
+		assert_template_opening(&opening_address, &opening, self.template.address())?;
+
+		if !opening.has_pool_assignment.get()
+			|| opening.selected_pool_asset != args.asset_index
+			|| opening.beneficiary != *self.recipient.address()
+			|| template.status != TEMPLATE_RETIRED
+			|| template.authority != *self.rent_refund.address()
+		{
+			return Err(lootbox_error(LootboxError::InvalidRecipient));
+		}
+		let pool_index = opening.selected_pool_item.get();
+
+		// The pool account itself is never read: the bundle and asset slot
+		// derive its address, and the canonical bump it was created with
+		// still signs the leaf transfer after the account has closed.
+		let pool_seeds = PrizePoolState::seeds(&bundle_address, args.asset_index);
+		let pool_bump = self
+			.prize_pool
+			.assert_canonical_bump(&pool_seeds.as_slices(), &ID)?;
+		if *self.prize_pool.address()
+			!= create_program_address(&pool_seeds.with_bump(pool_bump).as_slices(), &ID)?
+		{
+			return Err(ProgramError::InvalidSeeds);
+		}
+		let pool_address = *self.prize_pool.address();
+
+		let item = self.prize_pool_item.as_account::<PrizePoolItemState>(&ID)?;
+		assert_pool_item(self.prize_pool_item, &item, &pool_address, pool_index)?;
+		assert_item_identity(
+			&item,
+			self.merkle_tree.address(),
+			&args.data_hash,
+			&args.creator_hash,
+			args.metadata.as_slice(),
+			args.nonce.get(),
+			args.index.get(),
+		)?;
+		drop(item);
+
+		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
+		let index = usize::from(args.asset_index);
+		if bundle.kinds.get(index) != Some(&PRIZE_POOL) || mint_at(&bundle, index)? != pool_address
+		{
+			return Err(lootbox_error(LootboxError::InvalidPrizePool));
+		}
+		record_claim(
+			&mut opening,
+			&mut bundle,
+			self.recipient.address(),
+			args.asset_index,
+		)?;
+		drop(bundle);
+		drop(opening);
+
+		let pool_bump = [pool_bump];
+		let pool_signer = PdaSigner::from_slices([
+			SEED_PRIZE_POOL,
+			bundle_address.as_ref(),
+			core::slice::from_ref(&args.asset_index),
+			pool_bump.as_slice(),
+		]);
+		let transfer = CompressedTransfer {
+			tree_config: self.tree_config,
+			owner: self.prize_pool,
+			new_owner: self.recipient,
+			merkle_tree: self.merkle_tree,
+			bubblegum_program: self.bubblegum_program,
+			log_wrapper: self.log_wrapper,
+			compression_program: self.compression_program,
+			system_program: self.system_program,
+		};
+		validate_compressed_accounts(&transfer)?;
+		invoke_compressed_transfer(
+			&transfer,
+			self.proof_accounts,
+			&CompressedProof {
+				root: &args.root,
+				data_hash: &args.data_hash,
+				creator_hash: &args.creator_hash,
+				nonce: args.nonce.get(),
+				index: args.index.get(),
+			},
+			&[pool_signer.as_signer()],
+		)?;
+
+		self.prize_pool_item
+			.close_account_zeroed(&ID, self.rent_refund)
+	}
+}
+
 impl<'a> ProcessAccountInfos<'a> for ReclaimPrizePoolItemAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let args = ReclaimPrizePoolItemInstruction::try_from_bytes(data)?;
@@ -1761,10 +1935,8 @@ impl<'a> ProcessAccountInfos<'a> for ClosePrizePoolAccounts<'a> {
 				template.pending_openings.get(),
 				remaining,
 				pool.assigned_count.get(),
-				pool.claimed_count.get(),
 				pool.reclaimed_count.get(),
 				pool.quantity.get(),
-				read_slot(&bundle.claimed, usize::from(pool.asset_index))?,
 			)?
 		} else {
 			false
@@ -1906,21 +2078,33 @@ mod tests {
 	}
 
 	#[test]
-	fn active_pool_closes_only_after_every_ticket_is_terminal() {
-		let terminal = active_pool_is_terminal(
+	fn active_pool_closes_once_every_item_is_assigned_or_recovered() {
+		// Two of three assigned items are still unclaimed; closure is allowed
+		// because the stranded-claim path keeps their delivery alive.
+		let terminal_with_unclaimed = active_pool_is_terminal(
 			PRIZE_POOL_SEALED,
 			BUNDLE_ACTIVE,
 			TEMPLATE_RETIRED,
 			0,
 			2,
 			3,
-			3,
 			2,
 			5,
+		);
+		assert_eq!(terminal_with_unclaimed, Ok(true));
+		let fully_claimed = active_pool_is_terminal(
+			PRIZE_POOL_SEALED,
+			BUNDLE_ACTIVE,
+			TEMPLATE_RETIRED,
+			0,
+			0,
+			5,
+			0,
 			5,
 		);
-		assert_eq!(terminal, Ok(true));
+		assert_eq!(fully_claimed, Ok(true));
 		for nonterminal in [
+			// A pending opening still owes an assignment.
 			active_pool_is_terminal(
 				PRIZE_POOL_SEALED,
 				BUNDLE_ACTIVE,
@@ -1928,11 +2112,32 @@ mod tests {
 				1,
 				2,
 				3,
+				2,
+				5,
+			),
+			// Undrawn inventory is not yet recovered.
+			active_pool_is_terminal(
+				PRIZE_POOL_SEALED,
+				BUNDLE_ACTIVE,
+				TEMPLATE_RETIRED,
+				0,
+				3,
 				3,
 				2,
 				5,
+			),
+			// The treasury is still live.
+			active_pool_is_terminal(
+				PRIZE_POOL_SEALED,
+				BUNDLE_ACTIVE,
+				TEMPLATE_LIVE,
+				0,
+				2,
+				3,
+				2,
 				5,
 			),
+			// A deposited item is neither assigned nor reclaimed.
 			active_pool_is_terminal(
 				PRIZE_POOL_SEALED,
 				BUNDLE_ACTIVE,
@@ -1940,34 +2145,8 @@ mod tests {
 				0,
 				2,
 				3,
-				2,
-				2,
-				5,
-				5,
-			),
-			active_pool_is_terminal(
-				PRIZE_POOL_SEALED,
-				BUNDLE_ACTIVE,
-				TEMPLATE_RETIRED,
-				0,
 				1,
-				3,
-				3,
-				2,
 				5,
-				5,
-			),
-			active_pool_is_terminal(
-				PRIZE_POOL_SEALED,
-				BUNDLE_ACTIVE,
-				TEMPLATE_RETIRED,
-				0,
-				2,
-				3,
-				3,
-				2,
-				5,
-				4,
 			),
 		] {
 			assert_eq!(nonterminal, Ok(false));

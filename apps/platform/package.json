@@ -40,7 +40,7 @@
 	},
 	"devDependencies": {
 		"@axe-core/playwright": "^4.13.0",
-		"@cloudflare/vite-plugin": "1.62.5",
+		"@cloudflare/vite-plugin": "1.63.0",
 		"@playwright/test": "^1.63.0",
 		"@react-router/dev": "7.18.4",
 		"@types/node": "^26.6.2",
@@ -50,7 +50,7 @@
 		"typescript": "^7.0.2",
 		"vite": "^8.3.1",
 		"vitest": "^5.0.2",
-		"wrangler": "4.147.0"
+		"wrangler": "^4.148.0"
 	},
 	"exports": {
 		"./styles.css": "./app/styles/app.css"

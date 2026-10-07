@@ -2591,6 +2591,107 @@ impl InstructionBuilder for ClaimPrizePoolItemArgs {
 	}
 }
 
+/// Arguments for `claim-stranded-prize-pool-item`.
+#[derive(Debug, clap::Args)]
+pub struct ClaimStrandedPrizePoolItemArgs {
+	/// Retired template PDA that owns the opening and bundle.
+	#[arg(long)]
+	pub template: Pubkey,
+	/// Allocated template-opening receipt with a prize pool assignment.
+	#[arg(long)]
+	pub opening: Pubkey,
+	/// Bundle PDA the opening was allocated to.
+	#[arg(long)]
+	pub bundle: Pubkey,
+	/// Prize pool PDA; address-only, may already be closed.
+	#[arg(long)]
+	pub prize_pool: Pubkey,
+	/// Item PDA reserved for the opening, closed here.
+	#[arg(long)]
+	pub prize_pool_item: Pubkey,
+	/// Opening's bound beneficiary; becomes the leaf owner.
+	#[arg(long)]
+	pub recipient: Pubkey,
+	/// Receives the closed item PDA rent; must be the template authority.
+	#[arg(long)]
+	pub rent_refund: Pubkey,
+	/// Bubblegum tree config of the Merkle tree.
+	#[arg(long)]
+	pub tree_config: Pubkey,
+	/// Pool's pinned Merkle tree that holds the leaf.
+	#[arg(long)]
+	pub merkle_tree: Pubkey,
+	/// Bubblegum program.
+	#[arg(long)]
+	pub bubblegum_program: Pubkey,
+	/// SPL Noop program used by Bubblegum as its log wrapper.
+	#[arg(long)]
+	pub log_wrapper: Pubkey,
+	/// SPL Account Compression program that owns the Merkle tree.
+	#[arg(long)]
+	pub compression_program: Pubkey,
+	/// Merkle proof node in leaf-to-root order; repeat for up to 16 nodes.
+	#[arg(long = "proof-account")]
+	pub proof_accounts: Vec<Pubkey>,
+	/// Manifest slot of the pool; must equal the opening's selected pool asset.
+	#[arg(long)]
+	pub asset_index: u8,
+	/// Merkle root (32 bytes, hex) that Bubblegum verifies the proof against.
+	#[arg(long)]
+	pub root: String,
+	/// Current leaf data hash (32 bytes, hex); must match the hash recomputed from the metadata.
+	#[arg(long)]
+	pub data_hash: String,
+	/// Current leaf creator hash (32 bytes, hex); must match the creators in the metadata.
+	#[arg(long)]
+	pub creator_hash: String,
+	/// Leaf nonce; must equal the item's nonce.
+	#[arg(long)]
+	pub nonce: u64,
+	/// Leaf index in the Merkle tree; must equal the item's tree index.
+	#[arg(long)]
+	pub index: u32,
+	/// Current canonical Bubblegum V1 `MetadataArgs` Borsh bytes, hex encoded.
+	#[arg(long)]
+	pub metadata_borsh_hex: String,
+}
+
+impl InstructionBuilder for ClaimStrandedPrizePoolItemArgs {
+	fn build(&self) -> Result<Instruction, CliError> {
+		let accounts = generated::ClaimStrandedPrizePoolItem::new(
+			self.template,
+			self.opening,
+			self.bundle,
+			self.prize_pool,
+			self.prize_pool_item,
+			self.recipient,
+			self.rent_refund,
+			self.tree_config,
+			self.merkle_tree,
+			self.bubblegum_program,
+			self.log_wrapper,
+			self.compression_program,
+			Pubkey::default(),
+		);
+		let root = hex_arg::<32>(&self.root, "root")?;
+		let data_hash = hex_arg::<32>(&self.data_hash, "data_hash")?;
+		let creator_hash = hex_arg::<32>(&self.creator_hash, "creator_hash")?;
+		let metadata = bounded_hex_arg(&self.metadata_borsh_hex, "metadata_borsh_hex", 512)?;
+		let data = generated::ClaimStrandedPrizePoolItemInstructionData::new(|wire| {
+			wire.asset_index = self.asset_index;
+			wire.root = root;
+			wire.data_hash = data_hash;
+			wire.creator_hash = creator_hash;
+			wire.nonce = self.nonce.into();
+			wire.index = self.index.into();
+			wire.metadata
+				.try_set(metadata.as_slice())
+				.expect("metadata length was validated before encoding");
+		})?;
+		replace_proof_tail(accounts.instruction(data), &self.proof_accounts)
+	}
+}
+
 /// Arguments for `reclaim-prize-pool-item`.
 #[derive(Debug, clap::Args)]
 pub struct ReclaimPrizePoolItemArgs {

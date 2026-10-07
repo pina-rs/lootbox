@@ -1510,7 +1510,7 @@ fn clap_lists_every_instruction_subcommand() {
 		.map(|sub| sub.get_name().to_string())
 		.collect();
 
-	assert_eq!(subcommand_names.len(), 47);
+	assert_eq!(subcommand_names.len(), 48);
 }
 
 #[test]
@@ -1886,6 +1886,56 @@ fn create_template_bump_defaults_to_pda_bump() {
 
 	// The derived bump must differ from 0 (the PDA bump for this seed).
 	assert_ne!(without_bump.data, with_bump.data);
+}
+
+#[test]
+fn claim_stranded_prize_pool_item_builds() {
+	let instruction = build_from(&[
+		"claim-stranded-prize-pool-item",
+		"--template",
+		PK1,
+		"--opening",
+		PK2,
+		"--bundle",
+		PK2,
+		"--prize-pool",
+		PK3,
+		"--prize-pool-item",
+		PK3,
+		"--recipient",
+		PK1,
+		"--rent-refund",
+		PK1,
+		"--tree-config",
+		PK2,
+		"--merkle-tree",
+		PK2,
+		"--bubblegum-program",
+		PK2,
+		"--log-wrapper",
+		PK2,
+		"--compression-program",
+		PK2,
+		"--asset-index",
+		"0",
+		"--root",
+		&"11".repeat(32),
+		"--data-hash",
+		&"22".repeat(32),
+		"--creator-hash",
+		&"33".repeat(32),
+		"--nonce",
+		"7",
+		"--index",
+		"3",
+		"--metadata-borsh-hex",
+		"00112233",
+	])
+	.expect("builds");
+
+	assert_eq!(instruction.data[0], 64);
+	// The pool account is address-only: read-only, never writable.
+	assert!(!instruction.accounts[3].is_writable);
 }
 
 #[test]

@@ -19,6 +19,7 @@ export 'claim_metadata_nft_prize.dart';
 export 'claim_mint_prize.dart';
 export 'claim_prize_pool_item.dart';
 export 'claim_sol_prize.dart';
+export 'claim_stranded_prize_pool_item.dart';
 export 'claim_token_prize.dart';
 export 'close_box_curve.dart';
 export 'close_opening.dart';

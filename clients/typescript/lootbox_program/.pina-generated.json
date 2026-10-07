@@ -36,6 +36,7 @@
     "src/generated/instructions/claimMintPrize.ts",
     "src/generated/instructions/claimPrizePoolItem.ts",
     "src/generated/instructions/claimSolPrize.ts",
+    "src/generated/instructions/claimStrandedPrizePoolItem.ts",
     "src/generated/instructions/claimTokenPrize.ts",
     "src/generated/instructions/closeBoxCurve.ts",
     "src/generated/instructions/closeOpening.ts",

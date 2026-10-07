@@ -24,6 +24,7 @@ export * from './claimMetadataNftPrize';
 export * from './claimMintPrize';
 export * from './claimPrizePoolItem';
 export * from './claimSolPrize';
+export * from './claimStrandedPrizePoolItem';
 export * from './claimTokenPrize';
 export * from './closeBoxCurve';
 export * from './closeOpening';

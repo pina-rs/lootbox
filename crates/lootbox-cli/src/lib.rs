@@ -69,6 +69,7 @@ pub fn build_command(command: &Command) -> Result<Instruction, CliError> {
 		Command::SealPrizePool(args) => args.build(),
 		Command::AllocatePrizePoolOpen(args) => args.build(),
 		Command::ClaimPrizePoolItem(args) => args.build(),
+		Command::ClaimStrandedPrizePoolItem(args) => args.build(),
 		Command::ReclaimPrizePoolItem(args) => args.build(),
 		Command::ClosePrizePool(args) => args.build(),
 	}
@@ -204,6 +205,8 @@ pub enum Command {
 	AllocatePrizePoolOpen(build::AllocatePrizePoolOpenArgs),
 	/// Deliver the entropy-selected Bubblegum leaf to the bound recipient.
 	ClaimPrizePoolItem(build::ClaimPrizePoolItemArgs),
+	/// Deliver an assigned pool item after its pool account has closed.
+	ClaimStrandedPrizePoolItem(build::ClaimStrandedPrizePoolItemArgs),
 	/// Return an eligible pool item to the treasury creator.
 	ReclaimPrizePoolItem(build::ReclaimPrizePoolItemArgs),
 	/// Close an empty or fully recovered staged `PrizePool`.

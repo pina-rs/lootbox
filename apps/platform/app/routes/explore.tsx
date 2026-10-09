@@ -16,8 +16,11 @@ const FILTERS = [
 
 export function meta() {
 	return [
-		{ title: "Explore lootboxes — lootbox.so" },
-		{ name: "description", content: "Every public lootbox on lootbox.so." },
+		{ title: "Explore lootboxes — lootbox.pina.rs" },
+		{
+			name: "description",
+			content: "Every public lootbox on lootbox.pina.rs.",
+		},
 	];
 }
 

@@ -63,9 +63,9 @@ export default function RulesTab() {
 			<Section id="rules-organizer" title="1. Organizer">
 				<p>
 					This lootbox is created and run by the wallet{" "}
-					{link("address", lootbox.creator, lootbox.creator)}. lootbox.so is the
-					software it runs on; it does not hold prizes, pick winners, or endorse
-					any creator.
+					{link("address", lootbox.creator, lootbox.creator)}. lootbox.pina.rs
+					is the software it runs on; it does not hold prizes, pick winners, or
+					endorse any creator.
 				</p>
 			</Section>
 
@@ -121,7 +121,7 @@ export default function RulesTab() {
 					Opening burns one box and commits to Switchboard randomness before the
 					result exists. After the oracle's signed reveal is verified on chain,
 					the program assigns a prize first-in, first-out and without
-					replacement. Nobody, including the organizer and lootbox.so, can
+					replacement. Nobody, including the organizer and lootbox.pina.rs, can
 					choose or change a result. The chest animation replays the recorded
 					result.
 				</p>

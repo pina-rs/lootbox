@@ -65,7 +65,7 @@ await faucet(admin.address);
 const client = new LootboxClient(rpcUrl, admin);
 const now = BigInt(await clusterTime(createSolanaRpc(rpcUrl)));
 const plan = await planCollection(client, {
-	origin: "https://lootbox.so",
+	origin: "https://lootbox.pina.rs",
 	attachOpensAt: now - 60n,
 	attachClosesAt: now + 60n * 86_400n,
 });

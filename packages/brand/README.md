@@ -41,7 +41,7 @@ To draw the chest or the word inside your own SVG, place `ChestArt` or `Wordmark
 | `restFrame(reaction, t)`   | The pose it keeps afterwards, still breathing and blinking                 |
 | `nopeFrame(frame, t)`      | A head shake for a hold that cannot open anything                          |
 
-lootbox.so and the Unlisted site play these every animation frame, and the promo videos play them per video frame, so the chest moves the same way everywhere. `mixFrames` blends one phase into the next. The `chest-reel` composition in `apps/promo` shows the whole performance for each reaction.
+lootbox.pina.rs and the Unlisted site play these every animation frame, and the promo videos play them per video frame, so the chest moves the same way everywhere. `mixFrames` blends one phase into the next. The `chest-reel` composition in `apps/promo` shows the whole performance for each reaction.
 
 ## Files
 

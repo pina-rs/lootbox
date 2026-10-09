@@ -112,7 +112,7 @@ export function fromPreStocks(item: unknown): CatalogToken | null {
 		name: company,
 		symbol,
 		decimals: null,
-		// Deliberately no company logo: lootbox.so is not affiliated with them.
+		// Deliberately no company logo: lootbox.pina.rs is not affiliated with them.
 		icon: null,
 		tokenProgram: null,
 		category: "stock",

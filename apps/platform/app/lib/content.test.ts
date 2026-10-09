@@ -14,20 +14,23 @@ describe("box metadata JSON", () => {
 			title: "Summer Drop",
 			symbol: "SUMMER",
 			tagline: "Sun, sea, SOL",
-			descriptionMd: "**Hot** prizes. See [rules](https://lootbox.so/r).",
-			coverUrl: "https://lootbox.so/media/c-1.png",
-		}, "https://lootbox.so");
+			descriptionMd: "**Hot** prizes. See [rules](https://lootbox.pina.rs/r).",
+			coverUrl: "https://lootbox.pina.rs/media/c-1.png",
+		}, "https://lootbox.pina.rs");
 
 		expect(json).toEqual({
 			name: "Summer Drop",
 			symbol: "SUMMER",
 			description: "Sun, sea, SOL\n\nHot prizes. See rules.",
-			image: "https://lootbox.so/media/c-1.png",
-			external_url: "https://lootbox.so/l/summer-drop-abcde",
+			image: "https://lootbox.pina.rs/media/c-1.png",
+			external_url: "https://lootbox.pina.rs/l/summer-drop-abcde",
 			attributes: [{ trait_type: "Type", value: "Sealed lootbox" }],
 			properties: {
 				category: "image",
-				files: [{ uri: "https://lootbox.so/media/c-1.png", type: "image/png" }],
+				files: [{
+					uri: "https://lootbox.pina.rs/media/c-1.png",
+					type: "image/png",
+				}],
 			},
 		});
 	});
@@ -40,10 +43,10 @@ describe("box metadata JSON", () => {
 			tagline: "",
 			descriptionMd: "",
 			coverUrl: null,
-		}, "https://lootbox.so");
+		}, "https://lootbox.pina.rs");
 
-		expect(json.image).toBe("https://lootbox.so/box.png");
-		expect(json.description).toMatch(/lootbox\.so/);
+		expect(json.image).toBe("https://lootbox.pina.rs/box.png");
+		expect(json.description).toMatch(/lootbox\.pina\.rs/);
 		expect(plainText("- a\n- b")).toBe("• a\n• b");
 	});
 });

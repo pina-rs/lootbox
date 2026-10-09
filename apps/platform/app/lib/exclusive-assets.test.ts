@@ -12,10 +12,12 @@ const COLLECTION = "3SWqQpWP5AUyJA5c7kLQdgwP83BLL9p8EH1DkfLTZ3pj";
 const STEM = "00050203000d01-42";
 
 function call(file: string, collection = COLLECTION) {
-	const request = new Request(`https://lootbox.so/x/${collection}/${file}`);
+	const request = new Request(
+		`https://lootbox.pina.rs/x/${collection}/${file}`,
+	);
 	const env = {
 		EXCLUSIVE_COLLECTION_DEVNET: COLLECTION,
-		PUBLIC_ORIGIN: "https://lootbox.so",
+		PUBLIC_ORIGIN: "https://lootbox.pina.rs",
 	};
 	const context = {
 		cloudflare: { env, ctx: { waitUntil: () => {} } },
@@ -62,20 +64,22 @@ describe("exclusiveMetadata", () => {
 	it("is deterministic and points wallets at the PNG", () => {
 		const stem = { traits: [0, 5, 2, 3, 0, 13, 1], serial: 42 };
 		const first = exclusiveMetadata(stem, {
-			origin: "https://lootbox.so",
+			origin: "https://lootbox.pina.rs",
 			collection: COLLECTION,
 		});
 
 		expect(
 			exclusiveMetadata(stem, {
-				origin: "https://lootbox.so",
+				origin: "https://lootbox.pina.rs",
 				collection: COLLECTION,
 			}),
 		)
 			.toEqual(first);
-		expect(first.image).toBe(`https://lootbox.so/x/${COLLECTION}/${STEM}.png`);
+		expect(first.image).toBe(
+			`https://lootbox.pina.rs/x/${COLLECTION}/${STEM}.png`,
+		);
 		expect(first.animation_url).toBe(
-			`https://lootbox.so/x/${COLLECTION}/play.html?nft=${STEM}`,
+			`https://lootbox.pina.rs/x/${COLLECTION}/play.html?nft=${STEM}`,
 		);
 		expect(first.symbol).toBe("LOOT");
 		expect(first.attributes.map((attribute) => attribute.trait_type)).toEqual([

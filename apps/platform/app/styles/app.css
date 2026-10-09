@@ -1,5 +1,5 @@
 /*
- * lootbox.so page styles. Design tokens live in @pina-rs/lootbox-ui's
+ * lootbox.pina.rs page styles. Design tokens live in @pina-rs/lootbox-ui's
  * tokens.css and shared components in its styles.css; root.tsx loads both
  * before this file.
  */

@@ -2,6 +2,8 @@
 
 A small, composable random-reward primitive for Solana, built with [Pina](https://github.com/pina-rs/pina).
 
+**Website:** [lootbox.pina.rs](https://lootbox.pina.rs), the creator platform in [`apps/platform`](apps/platform/README.md)
+
 Lootbox turns a treasury template into a fixed supply of transferable sealed gifts. The program escrows finite bundles of SOL, tokens, and unique NFTs, then atomically issues one zero-decimal Token-2022 box per bundle copy and revokes mint authority. Opening after the reveal date burns a box and commits fresh randomness; ordered allocation records a complete prize bundle, which can be revealed and claimed asset by asset. Creators may also prepay bounded settlement bounties and optional immutable result PDAs for on-chain consumers.
 
 > [!IMPORTANT]

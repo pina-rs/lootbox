@@ -23,7 +23,7 @@ Opening burns one box and commits Switchboard randomness, waits for the oracle's
 
 `.github/workflows/pages.yml` deploys this app to GitHub Pages at `/lootbox/` on every push to `main`, reading `VITE_SOLANA_CLUSTER`, `VITE_RPC_URL`, and `VITE_TREASURY` from repository variables. Set `LOOTBOX_WEB_BASE=/lootbox/` to reproduce that build locally; the `pages` Playwright project checks that every asset, clip, and metadata file resolves under the base path. `public/metadata/` holds the Metaplex-style JSON and images for the box token and the Empty Box badge. The box token image, `box.png`, is the brand chest; `pnpm --dir packages/brand export` writes it.
 
-Prize logos and prices come from PreStocks. The API sends no CORS headers, so the browser never calls it. Prices ship in `src/launch/prestocks-snapshot.json`, which the Pages workflow refreshes before each build with `node tools/snapshot-prestocks.ts` (keeping the committed snapshot if the API is down); the manifest shows the capture date. The chest is the brand character from `@pina-rs/lootbox-brand`, animated in code with the same motion as lootbox.so and the promo videos, so there are no clips to download.
+Prize logos and prices come from PreStocks. The API sends no CORS headers, so the browser never calls it. Prices ship in `src/launch/prestocks-snapshot.json`, which the Pages workflow refreshes before each build with `node tools/snapshot-prestocks.ts` (keeping the committed snapshot if the API is down); the manifest shows the capture date. The chest is the brand character from `@pina-rs/lootbox-brand`, animated in code with the same motion as lootbox.pina.rs and the promo videos, so there are no clips to download.
 
 ## Creator playground
 

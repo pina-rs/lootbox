@@ -71,7 +71,7 @@ export function useLootbox(): LootboxOutlet {
 }
 
 export function meta({ data }: Route.MetaArgs) {
-	if (!data) return [{ title: "Lootbox not found — lootbox.so" }];
+	if (!data) return [{ title: "Lootbox not found — lootbox.pina.rs" }];
 
 	const { lootbox, origin } = data;
 	const description = lootbox.tagline ||
@@ -81,7 +81,7 @@ export function meta({ data }: Route.MetaArgs) {
 	const url = `${origin}/l/${lootbox.slug}`;
 
 	return [
-		{ title: `${lootbox.title} — lootbox.so` },
+		{ title: `${lootbox.title} — lootbox.pina.rs` },
 		{ name: "description", content: description },
 		{ tagName: "link", rel: "canonical", href: url },
 		{ property: "og:type", content: "website" },

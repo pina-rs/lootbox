@@ -1,6 +1,6 @@
 /**
  * Device frames in the site's ink-and-paper style: a browser window showing
- * lootbox.so, and a phone. Their contents are real site components.
+ * lootbox.pina.rs, and a phone. Their contents are real site components.
  */
 import { ChestMark, Wordmark } from "@pina-rs/lootbox-brand";
 import type { CSSProperties, ReactNode } from "react";

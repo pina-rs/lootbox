@@ -2,7 +2,7 @@
 	"name": "@pina-rs/lootbox-ui",
 	"version": "0.1.0",
 	"private": true,
-	"description": "Presentational lootbox components shared by lootbox.so and its promo videos",
+	"description": "Presentational lootbox components shared by lootbox.pina.rs and its promo videos",
 	"license": "Apache-2.0",
 	"type": "module",
 	"exports": {

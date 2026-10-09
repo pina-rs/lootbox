@@ -52,7 +52,7 @@ export function buildReport(
 ): string {
 	const failures = checks.filter((item) => !item.passed);
 	const lines: string[] = [
-		"# lootbox.so promo audio — render report",
+		"# lootbox.pina.rs promo audio — render report",
 		"",
 		"Measured by ffmpeg (`ebur128=peak=true`, `volumedetect`, `astats`) on the delivered files.",
 		"Music is mastered to -14 LUFS integrated with true peak ≤ -1 dBTP; SFX are peak-normalised to -3 dBTP.",

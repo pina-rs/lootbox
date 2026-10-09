@@ -174,7 +174,7 @@ export function brandFiles(): BrandFile[] {
 			width: 192,
 		},
 		// The site's stand-in cover, and the image every box token shows on
-		// lootbox.so and in the Unlisted series.
+		// lootbox.pina.rs and in the Unlisted series.
 		{
 			kind: "svg",
 			path: "../../apps/platform/public/chest.svg",

@@ -14,9 +14,10 @@ describe("rent", () => {
 	});
 
 	it("sizes the box mint like the SDK", () => {
-		expect(boxMintBytes("Box", "LOOT", "https://lootbox.so/m/x.json")).toBe(
-			BigInt(234 + 4 + 64 + 4 + 3 + 4 + 4 + 4 + 27 + 4),
-		);
+		expect(boxMintBytes("Box", "LOOT", "https://lootbox.pina.rs/m/x.json"))
+			.toBe(
+				BigInt(234 + 4 + 64 + 4 + 3 + 4 + 4 + 4 + 32 + 4),
+			);
 	});
 });
 
@@ -53,7 +54,7 @@ describe("creationCost", () => {
 		const cost = creationCost({
 			name: "Box",
 			symbol: "LOOT",
-			uri: "https://lootbox.so/m/x.json",
+			uri: "https://lootbox.pina.rs/m/x.json",
 			bundles,
 			bundleBytes: 300n,
 			rentForZeroBytes: RENT_ZERO,

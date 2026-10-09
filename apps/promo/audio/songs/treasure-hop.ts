@@ -1,5 +1,5 @@
 /**
- * "Treasure Hop" — the lootbox.so brand theme. 116 BPM, C major, a light
+ * "Treasure Hop" — the lootbox.pina.rs brand theme. 116 BPM, C major, a light
  * 16th-note bounce. The marimba owns the hook, the square lead sings the B
  * tune, and every edit is built by re-arranging sections, never by cutting
  * audio, so each version ends on a real, ringing final chord.

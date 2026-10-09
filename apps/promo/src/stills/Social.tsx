@@ -89,7 +89,7 @@ export function Banner() {
 							color: "var(--ink)",
 						}}
 					>
-						lootbox.so
+						lootbox.pina.rs
 					</span>
 				</div>
 			</div>

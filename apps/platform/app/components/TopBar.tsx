@@ -150,7 +150,7 @@ export function TopBar() {
 	return (
 		<header className="topbar">
 			<div className="topbar-inner">
-				<Link to="/" className="brand" aria-label="lootbox.so home">
+				<Link to="/" className="brand" aria-label="lootbox.pina.rs home">
 					<ChestMark className="brand-mark" variant="compact" size={38} />
 					<Wordmark className="brand-word" height={17} title="" />
 				</Link>

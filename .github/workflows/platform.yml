@@ -1,0 +1,70 @@
+name: platform
+
+# Deploys lootbox.pina.rs (apps/platform). Pull requests check and test the
+# Worker through `verify:all` in ci.yml; this workflow only publishes what
+# reached main.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/platform/**"
+      - "packages/**"
+      - "sdks/typescript/**"
+      - "clients/typescript/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/platform.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: platform-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Skipped until the Cloudflare account is connected; see apps/platform/README.md.
+    if: vars.CLOUDFLARE_ACCOUNT_ID != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment:
+      name: platform
+      url: https://lootbox.pina.rs
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |
+            accept-flake-config = true
+            extra-substituters = https://devenv.cachix.org
+            extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=
+
+      - name: Install locked Devenv
+        run: |
+          devenv_revision="$(
+            nix eval --impure --raw --expr '
+              let
+                lock = builtins.fromJSON (builtins.readFile ./devenv.lock);
+              in
+                lock.nodes.devenv.locked.rev
+            '
+          )"
+          nix profile add --accept-flake-config "github:cachix/devenv/${devenv_revision}#devenv"
+
+      - name: Install platform dependencies
+        run: devenv shell -- pnpm install --frozen-lockfile
+
+      - name: Migrate D1, build, and deploy the Worker
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          WRANGLER_SEND_METRICS: "false"
+        run: devenv shell -- deploy:platform

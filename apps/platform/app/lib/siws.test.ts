@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import { buildSiwsMessage, parseSiwsMessage } from "./siws.js";
 
 const fields = {
-	domain: "lootbox.so",
+	domain: "lootbox.pina.rs",
 	address: "3SWqQpWP5AUyJA5c7kLQdgwP83BLL9p8EH1DkfLTZ3pj",
-	statement: "Sign in to lootbox.so.",
-	uri: "https://lootbox.so",
+	statement: "Sign in to lootbox.pina.rs.",
+	uri: "https://lootbox.pina.rs",
 	version: "1",
 	nonce: "abc123",
 	issuedAt: "2026-09-26T10:00:00.000Z",
@@ -18,7 +18,7 @@ describe("SIWS messages", () => {
 		const text = buildSiwsMessage(fields);
 
 		expect(text.split("\n")[0]).toBe(
-			"lootbox.so wants you to sign in with your Solana account:",
+			"lootbox.pina.rs wants you to sign in with your Solana account:",
 		);
 		expect(parseSiwsMessage(text)).toEqual(fields);
 	});

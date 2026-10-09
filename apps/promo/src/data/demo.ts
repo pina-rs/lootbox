@@ -29,7 +29,7 @@ export const TONE_COLORS: Record<OddsTone, string> = {
 
 export const DEMO_TITLE = "Summer Drop";
 export const DEMO_SLUG = "summer-drop";
-export const DEMO_URL = `lootbox.so/l/${DEMO_SLUG}`;
+export const DEMO_URL = `lootbox.pina.rs/l/${DEMO_SLUG}`;
 
 export const DEMO_BUNDLES: readonly DemoBundle[] = [
 	{

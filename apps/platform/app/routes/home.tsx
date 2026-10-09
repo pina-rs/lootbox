@@ -12,13 +12,13 @@ export function meta({ data }: Route.MetaArgs) {
 	const origin = data?.origin ?? "";
 
 	return [
-		{ title: "lootbox.so — sealed gifts with real prizes" },
+		{ title: "lootbox.pina.rs — sealed gifts with real prizes" },
 		{
 			name: "description",
 			content:
 				"Make a Solana lootbox: fill it with SOL, tokens, or NFTs, share the link, and let people open it.",
 		},
-		{ property: "og:title", content: "lootbox.so" },
+		{ property: "og:title", content: "lootbox.pina.rs" },
 		{ property: "og:image", content: `${origin}/box.png` },
 	];
 }

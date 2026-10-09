@@ -3,7 +3,7 @@
  *
  *   pnpm --dir apps/platform exclusive:collection -- \
  *     --cluster devnet --keypair admin.json --closes 2026-12-31T23:59:59Z \
- *     [--opens <iso|unix>] [--origin https://lootbox.so] [--base-uri <url>] \
+ *     [--opens <iso|unix>] [--origin https://lootbox.pina.rs] [--base-uri <url>] \
  *     [--rpc <url>] [--execute]
  *
  * Loads the art package's layer tables in chunks (`setExclusiveLayer`),
@@ -50,7 +50,7 @@ const client = new LootboxClient(rpcUrl, admin, (message, signature) => {
 });
 const baseUri = args.optional("base-uri");
 const plan = await planCollection(client, {
-	origin: args.optional("origin") ?? "https://lootbox.so",
+	origin: args.optional("origin") ?? "https://lootbox.pina.rs",
 	...(baseUri ? { baseUri } : {}),
 	attachOpensAt: unixSeconds(
 		args.optional("opens") ?? String(Math.floor(Date.now() / 1000)),

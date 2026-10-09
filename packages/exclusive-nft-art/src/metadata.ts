@@ -22,7 +22,7 @@ import { assertSerial } from "./render.ts";
 export const EXCLUSIVE_NFT_SYMBOL = "LOOT";
 
 export const EXCLUSIVE_NFT_DISCLOSURE =
-	"An Exclusive Lootbox NFT from lootbox.so, for a box that opened without a main prize. Every layer is drawn independently on-chain from the opening's committed randomness.";
+	"An Exclusive Lootbox NFT from lootbox.pina.rs, for a box that opened without a main prize. Every layer is drawn independently on-chain from the opening's committed randomness.";
 
 export type MetadataAttribute = Readonly<
 	| { trait_type: string; value: string }

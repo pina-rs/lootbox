@@ -1,5 +1,5 @@
-//! Exclusive Lootbox NFT journeys against the real mainnet Bubblegum V2, Core,
-//! MPL Account Compression, and MPL Noop images pinned by
+//! Exclusive Lootbox NFT journeys against the real Bubblegum V2, Core, MPL
+//! Account Compression, and MPL Noop images pinned by
 //! `tests/fixtures/metaplex-programs.sha256`.
 
 use base64::Engine;

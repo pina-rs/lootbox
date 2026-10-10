@@ -1,6 +1,6 @@
 # Exclusive Lootbox NFTs
 
-Status: implemented and tested on local Surfpool against the real mainnet Bubblegum V2, Metaplex Core, MPL Account Compression, and MPL Noop programs. This is an experimental development build, not an independently audited mainnet release.
+Status: implemented and tested on local Surfpool against the real Bubblegum V2, Metaplex Core, MPL Account Compression, and MPL Noop programs: mainnet images, except Core, which is the OtterSec-verified `release/core@0.15.3` build (see Minting and custody). This is an experimental development build, not an independently audited mainnet release.
 
 ## Product
 
@@ -67,7 +67,7 @@ Block hashes, slots, timestamps, signatures, and account addresses are either vi
 
 ## Minting and custody
 
-Bubblegum V2 `mint_v2` is used with a Metaplex Core collection. Bubblegum V1 `mintToCollectionV1` would need a Token Metadata collection NFT, its metadata and master edition, and a collection authority record: more accounts, more rent, and a second metadata program in the trust boundary. Bubblegum V2 has been on mainnet since `release/bubblegum@1.0.0` (May 2025). The pinned layouts come from `release/bubblegum@2.0.0` (`79e1a1954bddb7fe5dcd52a5570a66a9f7d465e4`), the OtterSec-verified mainnet build deployed on 2026-09-22, and Core `e72d63e4118a0a95ac9b40221e81b19d49e1e102`, also verified. Sources: [Bubblegum V2](https://www.metaplex.com/docs/smart-contracts/bubblegum-v2), [creating V2 trees](https://www.metaplex.com/docs/smart-contracts/bubblegum-v2/create-trees), [minting into collections](https://www.metaplex.com/docs/smart-contracts/bubblegum-v2/collections), and the [Core `BubblegumV2` plugin](https://www.metaplex.com/docs/smart-contracts/core/plugins/bubblegum).
+Bubblegum V2 `mint_v2` is used with a Metaplex Core collection. Bubblegum V1 `mintToCollectionV1` would need a Token Metadata collection NFT, its metadata and master edition, and a collection authority record: more accounts, more rent, and a second metadata program in the trust boundary. Bubblegum V2 has been on mainnet since `release/bubblegum@1.0.0` (May 2025). The pinned layouts come from `release/bubblegum@2.0.0` (`79e1a1954bddb7fe5dcd52a5570a66a9f7d465e4`), the OtterSec-verified mainnet build deployed on 2026-09-22, and Core `release/core@0.15.3` (`8c5cee35199a7d103e181de7b13f2e20b1e20103`), also verified. Core 0.15.3 differs from the previously pinned 0.15.2 only in the `VerifiedCreators` plugin, which Exclusive collections do not use. On 2026-10-09 Metaplex upgraded mainnet Core from a private source that OtterSec has not verified, so the Surfpool journey runs the 0.15.3 release build rather than the live mainnet image. It returns to the mainnet image once that source is public and verified. Sources: [Bubblegum V2](https://www.metaplex.com/docs/smart-contracts/bubblegum-v2), [creating V2 trees](https://www.metaplex.com/docs/smart-contracts/bubblegum-v2/create-trees), [minting into collections](https://www.metaplex.com/docs/smart-contracts/bubblegum-v2/collections), and the [Core `BubblegumV2` plugin](https://www.metaplex.com/docs/smart-contracts/core/plugins/bubblegum).
 
 Only the program can mint:
 

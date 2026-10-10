@@ -1,10 +1,16 @@
-# Mainnet program images for the Exclusive Lootbox NFT Surfpool journey, dumped
-# with `solana program dump` on 2026-09-26 and verified by `fetch:metaplex-programs`.
+# Metaplex program images for the Exclusive Lootbox NFT Surfpool journey, verified
+# by `fetch:metaplex-programs`. A line with a third column downloads that URL;
+# the others are dumped from mainnet with `solana program dump`.
 # Bubblegum: release/bubblegum@2.0.0 (79e1a1954bddb7fe5dcd52a5570a66a9f7d465e4),
-# OtterSec-verified. Core: e72d63e4118a0a95ac9b40221e81b19d49e1e102,
-# OtterSec-verified. MPL Account Compression and MPL Noop: 2025-05-13 deploys.
+# OtterSec-verified, dumped 2026-09-26. MPL Account Compression and MPL Noop:
+# 2025-05-13 deploys, dumped 2026-09-26.
+# Core: release/core@0.15.3 (8c5cee35199a7d103e181de7b13f2e20b1e20103), the
+# release asset. With trailing zeros stripped it hashes to 1b0151ff…5d0a4, the
+# build OtterSec reproduced from the tag. It was live on mainnet from 2026-10-07
+# to 2026-10-09, when Metaplex upgraded Core from a private, unverified source.
+# Re-pin to mainnet once that source is public and OtterSec-verified.
 # The binaries are fetched at test time and never committed.
 b3a04a9d16cf2f168ae50e13756557867b3f6805c77519546147ec4065838bab  BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY.so
-96fa631a61234766afa538437c5166c628100dbc70e5c3ddb2f306d5dc5a8ba5  CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d.so
+5b4dacdae4af476d3c9d8aa6712883f559ba0e13705f9b244d96d1fd0dd56ce5  CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d.so  https://github.com/metaplex-foundation/mpl-core/releases/download/release/core%400.15.3/mpl_core_program.so
 fd55664396a9589330bed7e9e0c6b579781744d53f4602d2f0cfb2eacb69fcc5  mcmt6YrQEMKw8Mw43FmpRLmf7BqRnFMKmAcbxE3xkAW.so
 10d275edf5a3181eb4ac187c07d37efd0279c7a6fe0cb222b1ac97804bc14b8b  mnoopTCrg4p8ry25e4bcWA9XZjbNjMTfgYVGGEdRsf3.so

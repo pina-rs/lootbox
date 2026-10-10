@@ -1,10 +1,11 @@
 /**
- * lootbox.so Worker configuration.
+ * lootbox.pina.rs Worker configuration.
  *
- * Local development runs entirely in Miniflare (`pnpm dev`); nothing here is
- * deployed until the owner runs `wrangler deploy`. Replace the placeholder
- * D1 `database_id` with the id printed by `wrangler d1 create lootbox` before
- * the first deploy. See README.md for the full checklist.
+ * Local development runs entirely in Miniflare (`pnpm dev`), with `.dev.vars`
+ * overriding the vars below. `platform.yml` deploys it from main once the
+ * Cloudflare account is connected. Replace the placeholder D1 `database_id`
+ * with the id printed by `wrangler d1 create lootbox` before the first deploy.
+ * See README.md for the full checklist.
  */
 {
 	"$schema": "./node_modules/wrangler/config-schema.json",
@@ -14,6 +15,8 @@
 	"compatibility_flags": ["nodejs_compat"],
 	"observability": { "enabled": true },
 	"upload_source_maps": true,
+	// Requires the pina.rs zone in the same Cloudflare account.
+	"routes": [{ "pattern": "lootbox.pina.rs", "custom_domain": true }],
 	"d1_databases": [
 		{
 			"binding": "DB",
@@ -33,8 +36,9 @@
 		"crons": ["* * * * *"]
 	},
 	"vars": {
-		// Canonical public origin. Empty means "the request's own origin".
-		"PUBLIC_ORIGIN": "",
+		// Canonical public origin, written into on-chain metadata URIs. Empty means
+		// "the request's own origin"; .dev.vars.example empties it for local runs.
+		"PUBLIC_ORIGIN": "https://lootbox.pina.rs",
 		"DEFAULT_CLUSTER": "devnet",
 		// Comma-separated clusters creators may choose: devnet, mainnet, localnet.
 		"ENABLED_CLUSTERS": "devnet",

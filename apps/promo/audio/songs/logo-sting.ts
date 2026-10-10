@@ -1,5 +1,5 @@
 /**
- * "Logo Sting" — four seconds for the lootbox.so logo: an upward sparkle
+ * "Logo Sting" — four seconds for the lootbox.pina.rs logo: an upward sparkle
  * arpeggio, the chest's "thunk" as the lid lands on beat two, then a bright
  * C major (add9) bloom with a twinkling shimmer tail (render.ts fades the
  * last 0.6 s so it closes exactly at 4.0 s).

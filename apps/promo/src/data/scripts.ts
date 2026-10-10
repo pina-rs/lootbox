@@ -59,7 +59,7 @@ export const SCRIPT_CUTS: readonly ScriptCut[] = [
 		captions: [
 			{ from: 0, to: 3, text: "Everyone loves opening a lootbox." },
 			{ from: 3, to: 6, text: "Nobody trusts what's inside one." },
-			{ from: 6, to: 9, text: "So I built lootbox.so" },
+			{ from: 6, to: 9, text: "So I built lootbox.pina.rs" },
 			{ from: 9, to: 12, text: "You fill a box with real prizes" },
 			{ from: 12, to: 14, text: "Every prize is locked on chain" },
 			{ from: 14, to: 16, text: "before anyone opens a box" },
@@ -71,7 +71,7 @@ export const SCRIPT_CUTS: readonly ScriptCut[] = [
 			{ from: 36, to: 40, text: "People can sell back until it sells out" },
 			{ from: 40, to: 43, text: "Not the big one?" },
 			{ from: 43, to: 48, text: "You still get an Exclusive Lootbox NFT" },
-			{ from: 48, to: 52, text: "It's live at lootbox.so" },
+			{ from: 48, to: 52, text: "It's live at lootbox.pina.rs" },
 		],
 		inserts: [
 			{ from: 6, to: 16, insert: "builder" },

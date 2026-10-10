@@ -1,4 +1,4 @@
--- lootbox.so initial schema.
+-- lootbox.pina.rs initial schema.
 --
 -- The chain is the source of truth for prizes, odds, supply, and ownership.
 -- D1 stores only what the chain cannot: display copy the creator may edit at

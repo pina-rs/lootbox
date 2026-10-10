@@ -2,7 +2,7 @@
 	"name": "@pina-rs/lootbox-promo",
 	"version": "0.1.0",
 	"private": true,
-	"description": "Promo videos for lootbox.so, made with Remotion from the site's own components",
+	"description": "Promo videos for lootbox.pina.rs, made with Remotion from the site's own components",
 	"license": "Apache-2.0",
 	"type": "module",
 	"scripts": {

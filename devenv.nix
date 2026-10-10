@@ -289,7 +289,7 @@ in
       pnpm --dir apps/web test
       pnpm --dir apps/web test:e2e
     '';
-    # lootbox.so end to end: a production Worker build in Miniflare against
+    # lootbox.pina.rs end to end: a production Worker build in Miniflare against
     # local Surfpool with the pinned Metaplex programs (Exclusive Lootbox NFTs).
     "test:platform".exec = ''
       set -euo pipefail
@@ -297,6 +297,18 @@ in
       build:test-programs
       fetch:metaplex-programs
       pnpm --dir apps/platform test:e2e
+    '';
+    # Migrates D1 and deploys lootbox.pina.rs. Needs CLOUDFLARE_API_TOKEN and
+    # CLOUDFLARE_ACCOUNT_ID; the platform workflow runs it on every push to main.
+    "deploy:platform".exec = ''
+      set -euo pipefail
+      if grep -q '"database_id": "00000000-0000-0000-0000-000000000000"' apps/platform/wrangler.jsonc; then
+        echo "apps/platform/wrangler.jsonc still has the placeholder D1 database_id; see apps/platform/README.md" >&2
+        exit 1
+      fi
+      pnpm --dir apps/platform exec wrangler d1 migrations apply lootbox --remote
+      # `run` is required: `pnpm deploy` is a built-in that shadows the script.
+      pnpm --dir apps/platform run deploy
     '';
     "lint:all".exec = ''
       set -euo pipefail

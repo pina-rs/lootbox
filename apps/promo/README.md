@@ -1,6 +1,6 @@
-# lootbox.so promo videos
+# lootbox.pina.rs promo videos
 
-Motion design for lootbox.so, made with [Remotion](https://www.remotion.dev/) from the site's own pieces. The chest is `@pina-rs/lootbox-brand`, moving with the same motion functions the site plays, and the odds strip, curve chart, steppers, and action cards come from `@pina-rs/lootbox-ui`. The pages use the platform's real stylesheet. When the product's look changes, the videos change with it: re-render.
+Motion design for lootbox.pina.rs, made with [Remotion](https://www.remotion.dev/) from the site's own pieces. The chest is `@pina-rs/lootbox-brand`, moving with the same motion functions the site plays, and the odds strip, curve chart, steppers, and action cards come from `@pina-rs/lootbox-ui`. The pages use the platform's real stylesheet. When the product's look changes, the videos change with it: re-render.
 
 Every sound is original. The music and effects are synthesised by `audio/render.ts`, so nothing here can be claimed on X or YouTube.
 

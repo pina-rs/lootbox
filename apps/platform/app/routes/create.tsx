@@ -40,7 +40,7 @@ import type { Route } from "./+types/create";
 
 export function meta() {
 	return [
-		{ title: "Make a lootbox — lootbox.so" },
+		{ title: "Make a lootbox — lootbox.pina.rs" },
 		{
 			name: "description",
 			content: "Fill a Solana lootbox with prizes and share it.",

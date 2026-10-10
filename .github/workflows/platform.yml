@@ -12,6 +12,7 @@ on:
       - "packages/**"
       - "sdks/typescript/**"
       - "clients/typescript/**"
+      - "devenv.nix"
       - "pnpm-lock.yaml"
       - ".github/workflows/platform.yml"
   workflow_dispatch:

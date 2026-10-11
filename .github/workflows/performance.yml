@@ -195,8 +195,12 @@ jobs:
           status=$?
           set -e
           printf '%s\n' "$status" > target/perf/compare.status
-          cat target/perf/report.md >> "$GITHUB_STEP_SUMMARY"
         shell: devenv shell -c -- bash -e {0}
+
+      - name: Add report to the job summary
+        if: always()
+        run: cat target/perf/report.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+        shell: bash
 
       - name: Upload report
         if: always()

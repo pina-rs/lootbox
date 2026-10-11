@@ -110,7 +110,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 					}}
 				>
 					<img src={CHEST_SMALL} width={56} height={56} alt="" />
-					lootbox.so
+					lootbox.pina.rs
 				</div>
 			</div>
 			<div

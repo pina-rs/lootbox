@@ -1,6 +1,6 @@
 /*
  * The videos load the site's own fonts, tokens, and component styles, so a
- * frame of lootbox.so in a video is lootbox.so. Transitions stay off: every
+ * frame of lootbox.pina.rs in a video is lootbox.pina.rs. Transitions stay off: every
  * frame is drawn from props.
  */
 @import "@fontsource/bungee/400.css";

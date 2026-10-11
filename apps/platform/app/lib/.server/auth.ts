@@ -24,7 +24,7 @@ import {
 
 export const SESSION_COOKIE = "lootbox_session";
 export const SIGN_IN_STATEMENT =
-	"Sign in to lootbox.so. This proves you own this wallet. It is free and sends no transaction.";
+	"Sign in to lootbox.pina.rs. This proves you own this wallet. It is free and sends no transaction.";
 const NONCE_TTL_SECONDS = 10 * 60;
 const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
 /** Wallet clocks drift; accept an Issued At up to five minutes either side. */

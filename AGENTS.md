@@ -17,3 +17,7 @@ This policy changes only after both of the following are true:
 2. The corresponding program is live on-chain as a supported deployment.
 
 After that point, incompatible changes must use an explicit compatibility strategy approved by the maintainer.
+
+## Platform
+
+`apps/platform` is lootbox.pina.rs: a React Router app on a Cloudflare Worker with D1 and R2. `PUBLIC_ORIGIN` in `apps/platform/wrangler.jsonc` is written into on-chain metadata URIs, so changing it orphans every NFT already minted under the old origin. The deploy job in `.github/workflows/platform.yml` runs only on `main`; never deploy from a pull request. See [apps/platform/README.md](apps/platform/README.md).

@@ -4,6 +4,8 @@ DEFAULT_CLUSTER=localnet
 ENABLED_CLUSTERS=localnet,devnet
 LOCALNET_CONTROL_URL=http://127.0.0.1:8898
 RELAYER_CLUSTERS=localnet
+# Links and metadata URIs use the dev server's own origin, not lootbox.pina.rs.
+PUBLIC_ORIGIN=
 
 # Optional: live token search, prices, and swaps (Jupiter), and wallet NFT
 # discovery (DAS-capable RPCs). Without a Jupiter key the picker still shows

@@ -247,7 +247,7 @@ export function Builder() {
 	return (
 		<AbsoluteFill>
 			<BrowserFrame
-				url="lootbox.so/create"
+				url="lootbox.pina.rs/create"
 				width={frameWidth}
 				height={frameHeight}
 				style={{ left, top: top + mix(height, 0, Math.min(1, arrive)) }}

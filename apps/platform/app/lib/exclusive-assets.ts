@@ -2,7 +2,7 @@
  * What `/x/<collection>/<file>` serves for an Exclusive Lootbox NFT.
  *
  * The program writes each leaf's URI as `{base}{hex traits}-{serial}.json`,
- * with the base `https://lootbox.so/x/<collection>/`. Everything beside the
+ * with the base `https://lootbox.pina.rs/x/<collection>/`. Everything beside the
  * JSON is derived from the same stem, so art is deterministic and immutable:
  *
  * - `<stem>.json`: Metaplex metadata (`metadataFor` from the art package);

@@ -1,4 +1,4 @@
-# lootbox.so
+# lootbox.pina.rs
 
 Make a Solana lootbox, share its page, and let people open it.
 
@@ -59,28 +59,33 @@ The end-to-end suite builds the Worker, serves it with `vite preview` (the same 
 
 `wrangler.jsonc` vars (strings):
 
-| Var                                            | Meaning                                                                                                |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `PUBLIC_ORIGIN`                                | Canonical origin (`https://lootbox.so`). Empty uses the request origin.                                |
-| `DEFAULT_CLUSTER`, `ENABLED_CLUSTERS`          | Networks creators may use: `devnet`, `mainnet`, `localnet` (loopback only).                            |
-| `RPC_URL_DEVNET`, `RPC_URL_MAINNET`            | RPC endpoints. Use a dedicated provider for mainnet.                                                   |
-| `LOCALNET_CONTROL_URL`                         | Surfpool control plane; localnet is refused unless this is a loopback URL.                             |
-| `RELAYER_CLUSTERS`, `RELAYER_CLAIM`            | Where the cron relayer settles openings, and whether it also delivers prizes.                          |
-| `FEATURE_EXCLUSIVE_NFTS`, `FEATURE_NFT_PRIZES` | Exclusive Lootbox NFT consolation, and NFT prizes from other projects.                                 |
-| `FEATURE_BOX_CURVES`                           | Selling boxes on a bonding curve. A paid chance is a lottery in many places; enable only where lawful. |
+| Var                                            | Meaning                                                                                                  |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `PUBLIC_ORIGIN`                                | Canonical origin, `https://lootbox.pina.rs`. Empty uses the request origin, as `.dev.vars.example` does. |
+| `DEFAULT_CLUSTER`, `ENABLED_CLUSTERS`          | Networks creators may use: `devnet`, `mainnet`, `localnet` (loopback only).                              |
+| `RPC_URL_DEVNET`, `RPC_URL_MAINNET`            | RPC endpoints. Use a dedicated provider for mainnet.                                                     |
+| `LOCALNET_CONTROL_URL`                         | Surfpool control plane; localnet is refused unless this is a loopback URL.                               |
+| `RELAYER_CLUSTERS`, `RELAYER_CLAIM`            | Where the cron relayer settles openings, and whether it also delivers prizes.                            |
+| `FEATURE_EXCLUSIVE_NFTS`, `FEATURE_NFT_PRIZES` | Exclusive Lootbox NFT consolation, and NFT prizes from other projects.                                   |
+| `FEATURE_BOX_CURVES`                           | Selling boxes on a bonding curve. A paid chance is a lottery in many places; enable only where lawful.   |
 
 Secrets (`wrangler secret put <NAME>`): `JUPITER_API_KEY` (search, prices, swaps), `DAS_RPC_URL` / `DAS_RPC_URL_DEVNET` (wallet NFT discovery), `RELAYER_SECRET_KEY` (relayer fee payer, base58 or JSON bytes).
 
-## Deploy (owner)
+## Deploy
+
+Every push to `main` that touches the platform, the workspace packages, or the SDK runs [`platform.yml`](../../.github/workflows/platform.yml), which applies D1 migrations, builds the Worker, and runs `wrangler deploy`. The Worker serves `lootbox.pina.rs` as a [custom domain](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/), and `PUBLIC_ORIGIN` in `wrangler.jsonc` pins that origin into every metadata URI. To deploy by hand, export the two variables below and run `devenv shell deploy:platform`.
+
+One-time setup, done by an owner of the Cloudflare account that holds the `pina.rs` zone (the same account as the other Pina product sites):
 
 1. `npx wrangler login`
-2. `npx wrangler d1 create lootbox` and paste the printed `database_id` into `wrangler.jsonc`.
+2. `npx wrangler d1 create lootbox` and commit the printed `database_id` in `wrangler.jsonc`. `deploy:platform` refuses to run while the placeholder is there.
 3. `npx wrangler r2 bucket create lootbox-media`
-4. `npx wrangler d1 migrations apply lootbox --remote`
-5. Set secrets: `npx wrangler secret put JUPITER_API_KEY`, and `RELAYER_SECRET_KEY` with a dedicated fee-payer key funded with a little SOL (it only pays transaction fees).
-6. Set `PUBLIC_ORIGIN` to `https://lootbox.so` and the clusters you want in `wrangler.jsonc`.
-7. `pnpm deploy` (builds, then `wrangler deploy`).
-8. In the Cloudflare dashboard, Workers → `lootbox-platform` → Settings → Domains & Routes → add the custom domain `lootbox.so` once the zone is on Cloudflare.
+4. Set secrets: `npx wrangler secret put JUPITER_API_KEY`, and `RELAYER_SECRET_KEY` with a dedicated fee-payer key funded with a little SOL (it only pays transaction fees).
+5. Choose the clusters you want in `wrangler.jsonc`.
+6. Create an API token from the **Edit Cloudflare Workers** template, limited to that account and the `pina.rs` zone, and add **D1 Edit** so the workflow can apply migrations.
+7. In the repository's settings, create a `platform` environment. Add the account ID as the repository variable `CLOUDFLARE_ACCOUNT_ID` and the token as the environment secret `CLOUDFLARE_API_TOKEN`.
+
+The deploy job is skipped until `CLOUDFLARE_ACCOUNT_ID` is set.
 
 ## Handing boxes out
 
@@ -102,7 +107,7 @@ The chart, odds strip, stepper, and action cards come from `@pina-rs/lootbox-ui`
 
 ## Exclusive Lootbox NFTs
 
-Every lootbox can attach the shared Introductory collection as its consolation prize (step 3 of the wizard), or be made entirely of them. Traits are drawn on chain from the opening's randomness; the site derives and shows them on reveal, mints on claim, and plays the Rive reveal of the minted edition. The program writes each leaf's URI as `https://lootbox.so/x/<collection>/<hex traits>-<serial>.json`; the Worker serves that JSON, `.svg`, `.animated.svg`, `.png`, and `play.html` immutably from `@pina-rs/exclusive-nft-art`, only for collections configured in `EXCLUSIVE_COLLECTION_<CLUSTER>`.
+Every lootbox can attach the shared Introductory collection as its consolation prize (step 3 of the wizard), or be made entirely of them. Traits are drawn on chain from the opening's randomness; the site derives and shows them on reveal, mints on claim, and plays the Rive reveal of the minted edition. The program writes each leaf's URI as `https://lootbox.pina.rs/x/<collection>/<hex traits>-<serial>.json`; the Worker serves that JSON, `.svg`, `.animated.svg`, `.png`, and `play.html` immutably from `@pina-rs/exclusive-nft-art`, only for collections configured in `EXCLUSIVE_COLLECTION_<CLUSTER>`.
 
 Create the collection once per cluster with a dedicated admin key (a multisig on mainnet):
 

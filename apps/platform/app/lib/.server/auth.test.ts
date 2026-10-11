@@ -9,16 +9,16 @@ import { buildSiwsMessage } from "../siws.js";
 import { checkSiwsFields, verifyEd25519, verifySignIn } from "./auth.js";
 
 const NOW = Date.parse("2026-09-26T10:00:00.000Z") / 1000;
-const URL_ = new URL("https://lootbox.so/api/auth/verify");
+const URL_ = new URL("https://lootbox.pina.rs/api/auth/verify");
 
-async function signed(domain = "lootbox.so") {
+async function signed(domain = "lootbox.pina.rs") {
 	const signer = await generateKeyPairSigner();
 	const message = new TextEncoder().encode(
 		buildSiwsMessage({
 			domain,
 			address: signer.address,
 			statement: "Sign in.",
-			uri: "https://lootbox.so",
+			uri: "https://lootbox.pina.rs",
 			version: "1",
 			nonce: "nonce123",
 			issuedAt: new Date(NOW * 1000).toISOString(),
@@ -79,14 +79,18 @@ describe("verifyEd25519", () => {
 
 describe("checkSiwsFields", () => {
 	const base = {
-		domain: "lootbox.so",
+		domain: "lootbox.pina.rs",
 		address: getAddressDecoder().decode(new Uint8Array(32).fill(7)),
 		nonce: "n",
 		version: "1",
 		issuedAt: new Date(NOW * 1000).toISOString(),
 		expirationTime: new Date((NOW + 60) * 1000).toISOString(),
 	};
-	const expected = { domain: "lootbox.so", address: base.address, now: NOW };
+	const expected = {
+		domain: "lootbox.pina.rs",
+		address: base.address,
+		now: NOW,
+	};
 
 	it("accepts a fresh message for this site and wallet", () => {
 		expect(checkSiwsFields(base, expected)).toBeNull();

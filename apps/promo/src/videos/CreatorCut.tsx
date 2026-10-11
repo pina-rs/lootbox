@@ -223,7 +223,7 @@ function LowerThird({ name }: Readonly<{ name: string }>) {
 						color: "var(--ink-soft)",
 					}}
 				>
-					built lootbox.so
+					built lootbox.pina.rs
 				</span>
 			</span>
 		</div>

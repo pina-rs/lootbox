@@ -9,7 +9,7 @@ import { blinks, BOUNCE, enter, float, mix, POP } from "../kit/motion.ts";
 import { Sfx } from "../kit/Sound.tsx";
 
 export function EndCard(
-	{ line = "Make one at", url = "lootbox.so" }: Readonly<
+	{ line = "Make one at", url = "lootbox.pina.rs" }: Readonly<
 		{ line?: string; url?: string }
 	>,
 ) {
@@ -79,6 +79,8 @@ export function EndCard(
 			<div
 				style={{
 					display: "flex",
+					// A stacked frame is too narrow for the line and the URL side by side.
+					flexDirection: stacked ? "column" : "row",
 					alignItems: "center",
 					gap: unit * 0.04,
 					opacity: Math.min(1, cta * 1.4),

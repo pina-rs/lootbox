@@ -1,6 +1,6 @@
-# lootbox.so promo audio
+# lootbox.pina.rs promo audio
 
-Original music and sound effects for the lootbox.so promo videos. The code synthesises every sound from oscillators and seeded noise. There are no samples, soundfonts, loops or downloads. That keeps the audio free of copyright claims on X, and each run produces byte-identical files.
+Original music and sound effects for the lootbox.pina.rs promo videos. The code synthesises every sound from oscillators and seeded noise. There are no samples, soundfonts, loops or downloads. That keeps the audio free of copyright claims on X, and each run produces byte-identical files.
 
 ## Regenerate
 

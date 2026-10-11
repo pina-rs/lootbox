@@ -759,7 +759,7 @@ test("a friend opens an Exclusive Lootbox NFT and claims a real compressed NFT",
 
 	const minted = await mintedLeaf(client, opening.address);
 	const match =
-		/^https:\/\/lootbox\.so\/x\/([1-9A-HJ-NP-Za-km-z]+)\/([0-9a-f]+)-(\d+)\.json$/
+		/^https:\/\/lootbox\.pina\.rs\/x\/([1-9A-HJ-NP-Za-km-z]+)\/([0-9a-f]+)-(\d+)\.json$/
 			.exec(minted.uri);
 
 	expect(match, minted.uri).not.toBeNull();

@@ -6,6 +6,7 @@
 	clippy::empty_line_after_doc_comments,
 	clippy::too_many_arguments
 )]
+
 #![allow(rustdoc::broken_intra_doc_links)]
 
 use pina::Address;
@@ -40,7 +41,8 @@ impl BoxCurveState {
 	/// Whether `data` carries this account's discriminator.
 	#[inline(always)]
 	pub fn matches(data: &[u8]) -> bool {
-		data.len() >= 2 && data[..2] == BOX_CURVE_STATE_DISCRIMINATOR
+		data.len() >= 2
+			&& data[..2] == BOX_CURVE_STATE_DISCRIMINATOR
 	}
 
 	/// Reads this account's fields from the account's data.
@@ -55,29 +57,41 @@ impl BoxCurveState {
 		let mut cursor = 0usize;
 		cursor += 2;
 
-		let template = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let template = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let box_mint = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let box_mint = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let authority = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
+		let authority = Address::new_from_array(data.get(cursor..cursor + 32)?
+		.try_into().ok()?);
 		cursor += 32;
-		let inventory: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let inventory: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let sold: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let sold: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let start_price: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let start_price: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let price_step: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let price_step: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let reserve: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let reserve: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let closes_at: i64 = i64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let closes_at: i64 = i64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let sold_out_at: i64 = i64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
+		let sold_out_at: i64 = i64::from_le_bytes(data.get(cursor..cursor + 8)?
+		.try_into().ok()?);
 		cursor += 8;
-		let fee_bps: u16 = u16::from_le_bytes(data.get(cursor..cursor + 2)?.try_into().ok()?);
+		let fee_bps: u16 = u16::from_le_bytes(data.get(cursor..cursor + 2)?
+		.try_into().ok()?);
 		cursor += 2;
-		let bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
+		let bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
+		.try_into().ok()?);
 
 		Some(BoxCurveState {
 			template,

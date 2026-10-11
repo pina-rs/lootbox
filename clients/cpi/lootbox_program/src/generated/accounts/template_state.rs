@@ -6,6 +6,7 @@
 	clippy::empty_line_after_doc_comments,
 	clippy::too_many_arguments
 )]
+
 #![allow(rustdoc::broken_intra_doc_links)]
 
 use pina::Address;
@@ -52,14 +53,14 @@ pub const TEMPLATE_STATE_DISCRIMINATOR: [u8; 2] = [4, 0];
 impl<'data> TemplateState<'data> {
 	/// Largest encoded size of this account's data.
 	pub const MAX_LEN: usize = 524828;
-	/// Why this account has no generated parser.
-	pub const PARSER_UNSUPPORTED: &'static str =
-		"unsupported type `accountNode` at `account `TemplateState` field `remaining``: this \
-		 field's width is not fixed, so a read-only parser cannot locate the field that follows it";
 
 	/// Whether `data` carries this account's discriminator.
 	#[inline(always)]
 	pub fn matches(data: &[u8]) -> bool {
-		data.len() >= 2 && data[..2] == TEMPLATE_STATE_DISCRIMINATOR
+		data.len() >= 2
+			&& data[..2] == TEMPLATE_STATE_DISCRIMINATOR
 	}
+
+	/// Why this account has no generated parser.
+	pub const PARSER_UNSUPPORTED: &'static str = "unsupported type `accountNode` at `account `TemplateState` field `remaining``: this field's width is not fixed, so a read-only parser cannot locate the field that follows it";
 }

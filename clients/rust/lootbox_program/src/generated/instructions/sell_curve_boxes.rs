@@ -27,36 +27,23 @@ pub struct SellCurveBoxes {
 }
 
 impl SellCurveBoxes {
-	pub fn new(
-		seller: solana_pubkey::Pubkey,
-		template: solana_pubkey::Pubkey,
-		box_mint: solana_pubkey::Pubkey,
-		source_box_account: solana_pubkey::Pubkey,
-		curve_box_account: solana_pubkey::Pubkey,
-		authority: solana_pubkey::Pubkey,
-	) -> Self {
+	pub fn new(seller: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, source_box_account: solana_pubkey::Pubkey, curve_box_account: solana_pubkey::Pubkey, authority: solana_pubkey::Pubkey) -> Self {
 		Self {
 			seller,
 			template,
 			box_curve: solana_pubkey::Pubkey::find_program_address(
 				&["box-curve".as_bytes(), template.as_ref()],
 				&crate::LOOTBOX_PROGRAM_ID,
-			)
-			.0,
+			).0,
 			box_mint,
 			source_box_account,
 			curve_box_account,
 			authority,
-			box_token_program: solana_pubkey::pubkey!(
-				"TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
-			),
+			box_token_program: solana_pubkey::pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
 		}
 	}
 
-	pub fn instruction(
-		&self,
-		data: SellCurveBoxesInstructionData,
-	) -> solana_instruction::Instruction {
+	pub fn instruction(&self, data: SellCurveBoxesInstructionData) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -68,28 +55,13 @@ impl SellCurveBoxes {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(8 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.seller, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.template,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.box_curve, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.box_mint,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.source_box_account,
-			false,
-		));
-		accounts.push(solana_instruction::AccountMeta::new(
-			self.curve_box_account,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.source_box_account, false));
+		accounts.push(solana_instruction::AccountMeta::new(self.curve_box_account, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.box_token_program,
-			false,
-		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_token_program, false));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -105,9 +77,7 @@ pub struct SellCurveBoxesInstructionData {
 }
 
 impl SellCurveBoxesInstructionData {
-	pub fn new(
-		configure: impl FnOnce(&mut SellCurveBoxesInstructionWireZc),
-	) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(configure: impl FnOnce(&mut SellCurveBoxesInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<SellCurveBoxesInstructionWireZc>()];
 		<SellCurveBoxesInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
@@ -115,7 +85,7 @@ impl SellCurveBoxesInstructionData {
 			data.migration_version = SELL_CURVE_BOXES_MIGRATION_VERSION;
 			Ok(())
 		})
-		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

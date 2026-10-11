@@ -27,7 +27,8 @@ concurrency:
 jobs:
   deploy:
     # Skipped until the Cloudflare account is connected; see apps/platform/README.md.
-    if: vars.CLOUDFLARE_ACCOUNT_ID != ''
+    # Manual runs can pick any branch, so deploy only what reached main.
+    if: vars.CLOUDFLARE_ACCOUNT_ID != '' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment:

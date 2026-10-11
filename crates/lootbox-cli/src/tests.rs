@@ -672,7 +672,7 @@ fn forfeit_template_open_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 36);
+	assert_eq!(instruction.data[0], 33);
 	assert_eq!(instruction.data.len(), 2);
 	// The bound beneficiary must occupy the second account slot so the
 	// creator-funded bounty compensates the box holder, never the crank.
@@ -739,7 +739,7 @@ fn lock_treasury_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 37);
+	assert_eq!(instruction.data[0], 34);
 	assert_eq!(instruction.data.len(), 3);
 }
 
@@ -847,7 +847,7 @@ fn fund_core_asset_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 30);
+	assert_eq!(instruction.data[0], 27);
 	assert_eq!(instruction.data.len(), 2);
 }
 
@@ -888,7 +888,7 @@ fn fund_compressed_nft_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 33);
+	assert_eq!(instruction.data[0], 30);
 	assert_eq!(instruction.data.len(), 2 + 32 * 3 + 8 + 4);
 }
 
@@ -971,7 +971,7 @@ fn claim_core_asset_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 31);
+	assert_eq!(instruction.data[0], 28);
 	assert_eq!(instruction.data.len(), 2 + 1);
 }
 
@@ -1016,7 +1016,7 @@ fn claim_compressed_nft_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 34);
+	assert_eq!(instruction.data[0], 31);
 	assert_eq!(instruction.data.len(), 2 + 1 + 32 * 3 + 8 + 4);
 }
 
@@ -1097,7 +1097,7 @@ fn reclaim_core_asset_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 32);
+	assert_eq!(instruction.data[0], 29);
 	assert_eq!(instruction.data.len(), 2 + 1);
 }
 
@@ -1142,7 +1142,7 @@ fn reclaim_compressed_nft_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 35);
+	assert_eq!(instruction.data[0], 32);
 	assert_eq!(instruction.data.len(), 2 + 1 + 32 * 3 + 8 + 4);
 }
 
@@ -1812,7 +1812,7 @@ fn claim_stranded_prize_pool_item_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 64);
+	assert_eq!(instruction.data[0], 61);
 	// The pool account is address-only: read-only, never writable.
 	assert!(!instruction.accounts[3].is_writable);
 }
@@ -1837,7 +1837,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		"7",
 	])
 	.expect("create pool");
-	assert_eq!((create.data[0], create.accounts.len()), (44, 6));
+	assert_eq!((create.data[0], create.accounts.len()), (41, 6));
 
 	let prepare = build_from(&[
 		"prepare-prize-pool-item",
@@ -1865,7 +1865,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		"00",
 	])
 	.expect("prepare item");
-	assert_eq!((prepare.data[0], prepare.accounts.len()), (51, 6));
+	assert_eq!((prepare.data[0], prepare.accounts.len()), (48, 6));
 
 	let deposit = build_from(&[
 		"deposit-prize-pool-item",
@@ -1905,7 +1905,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		"10",
 	])
 	.expect("deposit item");
-	assert_eq!((deposit.data[0], deposit.accounts.len()), (45, 13));
+	assert_eq!((deposit.data[0], deposit.accounts.len()), (42, 13));
 	assert_eq!(deposit.accounts[11].pubkey, pubkey(PK1));
 	assert_eq!(deposit.accounts[12].pubkey, pubkey(PK2));
 
@@ -1923,7 +1923,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		PK2,
 	])
 	.expect("cancel prepared item");
-	assert_eq!((cancel.data[0], cancel.accounts.len()), (52, 5));
+	assert_eq!((cancel.data[0], cancel.accounts.len()), (49, 5));
 
 	let seal = build_from(&[
 		"seal-prize-pool",
@@ -1937,7 +1937,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		PK1,
 	])
 	.expect("seal pool");
-	assert_eq!((seal.data[0], seal.accounts.len()), (46, 4));
+	assert_eq!((seal.data[0], seal.accounts.len()), (43, 4));
 
 	let allocate = build_from(&[
 		"allocate-prize-pool-open",
@@ -1955,7 +1955,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		"17",
 	])
 	.expect("allocate pool");
-	assert_eq!((allocate.data[0], allocate.accounts.len()), (47, 7));
+	assert_eq!((allocate.data[0], allocate.accounts.len()), (44, 7));
 
 	let claim = build_from(&[
 		"claim-prize-pool-item",
@@ -2001,7 +2001,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		"00",
 	])
 	.expect("claim item");
-	assert_eq!((claim.data[0], claim.accounts.len()), (48, 14));
+	assert_eq!((claim.data[0], claim.accounts.len()), (45, 14));
 
 	let reclaim = build_from(&[
 		"reclaim-prize-pool-item",
@@ -2043,7 +2043,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		"00",
 	])
 	.expect("reclaim item");
-	assert_eq!((reclaim.data[0], reclaim.accounts.len()), (49, 12));
+	assert_eq!((reclaim.data[0], reclaim.accounts.len()), (46, 12));
 
 	let close = build_from(&[
 		"close-prize-pool",
@@ -2057,7 +2057,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		PK1,
 	])
 	.expect("close pool");
-	assert_eq!((close.data[0], close.accounts.len()), (50, 4));
+	assert_eq!((close.data[0], close.accounts.len()), (47, 4));
 }
 
 #[test]

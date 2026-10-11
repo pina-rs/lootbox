@@ -473,7 +473,6 @@ export function bundleAssets(
 			"token",
 			"nft",
 			"token2022",
-			"metadataNft",
 			"core",
 			"compressedNft",
 			"quoteSol",
@@ -601,7 +600,7 @@ function expectedStoredKind(asset: PrizeAsset) {
 
 	if (asset.kind === "mintBadge") return "mintBadge";
 
-	if (asset.kind === "nft") return asset.metadata ? "metadataNft" : "nft";
+	if (asset.kind === "nft") return "nft";
 	return asset.kind;
 }
 
@@ -1208,39 +1207,6 @@ export class LootboxClient {
 			tokenProgram,
 		});
 	}
-	async metadataPda(mint: Address) {
-		return (await getProgramDerivedAddress({
-			programAddress: TOKEN_METADATA_PROGRAM,
-			seeds: [
-				utf8.encode("metadata"),
-				addressBytes.encode(TOKEN_METADATA_PROGRAM),
-				addressBytes.encode(mint),
-			],
-		}))[0];
-	}
-	async editionPda(mint: Address) {
-		return (await getProgramDerivedAddress({
-			programAddress: TOKEN_METADATA_PROGRAM,
-			seeds: [
-				utf8.encode("metadata"),
-				addressBytes.encode(TOKEN_METADATA_PROGRAM),
-				addressBytes.encode(mint),
-				utf8.encode("edition"),
-			],
-		}))[0];
-	}
-	async tokenRecordPda(mint: Address, tokenAccount: Address) {
-		return (await getProgramDerivedAddress({
-			programAddress: TOKEN_METADATA_PROGRAM,
-			seeds: [
-				utf8.encode("metadata"),
-				addressBytes.encode(TOKEN_METADATA_PROGRAM),
-				addressBytes.encode(mint),
-				utf8.encode("token_record"),
-				addressBytes.encode(tokenAccount),
-			],
-		}))[0];
-	}
 	async template(template: Address): Promise<ChainTemplate> {
 		return generated.fetchTemplateState(this.rpc, template, { commitment });
 	}
@@ -1692,7 +1658,7 @@ export class LootboxClient {
 			})], `Escrow badge mint authority · bundle ${bundleNumber}`);
 		}
 
-		if (asset.kind === "token" || (asset.kind === "nft" && !asset.metadata)) {
+		if (asset.kind === "token" || asset.kind === "nft") {
 			const tokenProgram = asset.kind === "token"
 				? asset.tokenProgram ?? CLASSIC_TOKEN_PROGRAM
 				: CLASSIC_TOKEN_PROGRAM;
@@ -1710,55 +1676,6 @@ export class LootboxClient {
 					isNft: asset.kind === "nft",
 				}),
 			], `Escrow ${asset.kind} · bundle ${bundleNumber}`);
-		}
-
-		if (asset.kind === "nft") {
-			const metadata = asset.metadata;
-
-			if (!metadata) {
-				throw new Error("metadata NFT is missing its metadata PDA");
-			}
-
-			const source = await this.ata(
-				authority,
-				asset.mint,
-				CLASSIC_TOKEN_PROGRAM,
-			);
-			const escrow = await this.ata(bundle, asset.mint, CLASSIC_TOKEN_PROGRAM);
-			const optional = [
-				accountMeta(asset.edition ?? await this.editionPda(asset.mint)),
-				accountMeta(
-					asset.tokenRecord ?? TOKEN_METADATA_PROGRAM,
-					asset.tokenRecord ? AccountRole.WRITABLE : AccountRole.READONLY,
-				),
-				accountMeta(
-					asset.destinationTokenRecord ?? TOKEN_METADATA_PROGRAM,
-					asset.destinationTokenRecord
-						? AccountRole.WRITABLE
-						: AccountRole.READONLY,
-				),
-				accountMeta(asset.authorizationRulesProgram ?? TOKEN_METADATA_PROGRAM),
-				accountMeta(asset.authorizationRules ?? TOKEN_METADATA_PROGRAM),
-			];
-			const funding = generated.getFundMetadataNftPrizeInstruction({
-				authority: this.payer,
-				template,
-				bundle,
-				mint: asset.mint,
-				source,
-				escrow,
-				metadata,
-				tokenMetadataProgram: TOKEN_METADATA_PROGRAM,
-				systemProgram: SYSTEM_PROGRAM,
-				instructionsSysvar: INSTRUCTIONS_SYSVAR,
-				tokenProgram: CLASSIC_TOKEN_PROGRAM,
-				associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM,
-				optionalAccounts: TOKEN_METADATA_PROGRAM,
-			});
-			return this.send([
-				await this.createAta(bundle, asset.mint, CLASSIC_TOKEN_PROGRAM),
-				replaceGeneratedTail(funding, optional),
-			], `Escrow NFT · bundle ${bundleNumber}`);
 		}
 
 		if (asset.kind === "core") {
@@ -2544,63 +2461,7 @@ export class LootboxClient {
 					);
 				}
 
-				if (asset.kind === "metadataNft" && resolved.kind === "nft") {
-					const escrow = await this.ata(
-						bundle,
-						resolved.mint,
-						CLASSIC_TOKEN_PROGRAM,
-					);
-					const destination = await this.ata(
-						this.payer.address,
-						resolved.mint,
-						CLASSIC_TOKEN_PROGRAM,
-					);
-					const reclaim = generated.getReclaimMetadataNftPrizeInstruction({
-						authority: this.payer,
-						...input,
-						mint: resolved.mint,
-						escrow,
-						destination,
-						metadata: resolved.metadata ??
-							await this.metadataPda(resolved.mint),
-						tokenMetadataProgram: TOKEN_METADATA_PROGRAM,
-						systemProgram: SYSTEM_PROGRAM,
-						instructionsSysvar: INSTRUCTIONS_SYSVAR,
-						tokenProgram: CLASSIC_TOKEN_PROGRAM,
-						associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM,
-						optionalAccounts: TOKEN_METADATA_PROGRAM,
-					});
-					instructions = [
-						await this.createAta(
-							this.payer.address,
-							resolved.mint,
-							CLASSIC_TOKEN_PROGRAM,
-						),
-						replaceGeneratedTail(reclaim, [
-							accountMeta(
-								resolved.edition ?? await this.editionPda(resolved.mint),
-							),
-							accountMeta(
-								resolved.tokenRecord ?? TOKEN_METADATA_PROGRAM,
-								resolved.tokenRecord
-									? AccountRole.WRITABLE
-									: AccountRole.READONLY,
-							),
-							accountMeta(
-								resolved.destinationTokenRecord ?? TOKEN_METADATA_PROGRAM,
-								resolved.destinationTokenRecord
-									? AccountRole.WRITABLE
-									: AccountRole.READONLY,
-							),
-							accountMeta(
-								resolved.authorizationRulesProgram ?? TOKEN_METADATA_PROGRAM,
-							),
-							accountMeta(
-								resolved.authorizationRules ?? TOKEN_METADATA_PROGRAM,
-							),
-						]),
-					];
-				} else if (asset.kind === "core" && resolved.kind === "core") {
+				if (asset.kind === "core" && resolved.kind === "core") {
 					const reclaim = generated.getReclaimCoreAssetPrizeInstruction({
 						authority: this.payer,
 						...input,
@@ -3634,64 +3495,7 @@ export class LootboxClient {
 						);
 					}
 
-					if (asset.kind === "metadataNft" && resolved.kind === "nft") {
-						const escrow = await this.ata(
-							bundle,
-							resolved.mint,
-							CLASSIC_TOKEN_PROGRAM,
-						);
-						const destination = await this.ata(
-							input.recipient,
-							resolved.mint,
-							CLASSIC_TOKEN_PROGRAM,
-						);
-						const optional = [
-							accountMeta(
-								resolved.edition ?? await this.editionPda(resolved.mint),
-							),
-							accountMeta(
-								resolved.tokenRecord ?? TOKEN_METADATA_PROGRAM,
-								resolved.tokenRecord
-									? AccountRole.WRITABLE
-									: AccountRole.READONLY,
-							),
-							accountMeta(
-								resolved.destinationTokenRecord ?? TOKEN_METADATA_PROGRAM,
-								resolved.destinationTokenRecord
-									? AccountRole.WRITABLE
-									: AccountRole.READONLY,
-							),
-							accountMeta(
-								resolved.authorizationRulesProgram ?? TOKEN_METADATA_PROGRAM,
-							),
-							accountMeta(
-								resolved.authorizationRules ?? TOKEN_METADATA_PROGRAM,
-							),
-						];
-						const claim = generated.getClaimMetadataNftPrizeInstruction({
-							payer: this.payer,
-							...input,
-							mint: resolved.mint,
-							escrow,
-							destination,
-							metadata: resolved.metadata ??
-								await this.metadataPda(resolved.mint),
-							tokenMetadataProgram: TOKEN_METADATA_PROGRAM,
-							systemProgram: SYSTEM_PROGRAM,
-							instructionsSysvar: INSTRUCTIONS_SYSVAR,
-							tokenProgram: CLASSIC_TOKEN_PROGRAM,
-							associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM,
-							optionalAccounts: TOKEN_METADATA_PROGRAM,
-						});
-						instructions = [
-							await this.createAta(
-								input.recipient,
-								resolved.mint,
-								CLASSIC_TOKEN_PROGRAM,
-							),
-							replaceGeneratedTail(claim, optional),
-						];
-					} else if (asset.kind === "core" && resolved.kind === "core") {
+					if (asset.kind === "core" && resolved.kind === "core") {
 						const claim = generated.getClaimCoreAssetPrizeInstruction({
 							payer: this.payer,
 							...input,

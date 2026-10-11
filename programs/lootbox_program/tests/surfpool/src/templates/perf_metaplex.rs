@@ -10,22 +10,13 @@
 //!
 //! # Remaining journeys
 //!
-//! The compressed-NFT and Token Metadata trios still need fixture programs
-//! before they can be measured on chain:
-//!
-//! - `fundCompressedNftPrize` requires a tree that passes the on-chain
-//!   claimable-tree check, which parses the real spl-account-compression
-//!   `ConcurrentMerkleTree` layout; the mock bubblegum's `LBGMINT1` tree
-//!   cannot pass it. The journey therefore needs the real Bubblegum V2 with
-//!   harness-side `create_tree_v2` and `mint_v2` calls, plus reconstruction
-//!   of the current root and leaf-to-root proof from the tree account (a
-//!   full-depth canopy keeps the supplied-proof tail at zero accounts).
-//! - `fundMetadataNftPrize` validates the Token Metadata program against an
-//!   address this pre-release program pins locally, so the journey needs a
-//!   mock Token Metadata ABI program at that address (the pattern the
-//!   mock-switchboard and mock-bubblegum fixtures follow), plus harness-side
-//!   creation of an immutable Metadata account and Master Edition in the
-//!   serialization the program validates.
+//! `fundCompressedNftPrize` requires a tree that passes the on-chain
+//! claimable-tree check, which parses the real spl-account-compression
+//! `ConcurrentMerkleTree` layout; the mock bubblegum's `LBGMINT1` tree
+//! cannot pass it. The journey therefore needs the real Bubblegum V2 with
+//! harness-side `create_tree_v2` and `mint_v2` calls, plus reconstruction
+//! of the current root and leaf-to-root proof from the tree account (a
+//! full-depth canopy keeps the supplied-proof tail at zero accounts).
 
 use super::exclusive_nft::core;
 use super::exclusive_nft::deploy_metaplex_programs;

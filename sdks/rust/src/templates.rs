@@ -107,12 +107,6 @@ pub enum PrizeAsset<'a> {
 		/// SPL Token mint of the NFT.
 		mint: [u8; 32],
 	},
-	/// A standard Metaplex Token Metadata NFT with no programmable transfer
-	/// rules. Its bundle must have a quantity of one.
-	MetadataNft {
-		/// Mint of the NFT.
-		mint: [u8; 32],
-	},
 	/// A Metaplex Core asset. Its bundle must have a quantity of one.
 	CoreAsset {
 		/// Address of the Core asset.
@@ -149,8 +143,7 @@ impl PrizeAsset<'_> {
 			| Self::Token2022 { mint, .. }
 			| Self::QuoteToken { mint, .. }
 			| Self::MintBadge { mint }
-			| Self::LegacyNft { mint }
-			| Self::MetadataNft { mint } => Some(mint),
+			| Self::LegacyNft { mint } => Some(mint),
 			Self::CoreAsset { asset } | Self::CompressedNft { asset } => Some(asset),
 			Self::PrizePool { tree, .. } => Some(tree),
 			Self::ExclusiveNft { collection } => Some(collection),
@@ -167,7 +160,6 @@ impl PrizeAsset<'_> {
 			| Self::QuoteToken { amount, .. } => amount,
 			Self::MintBadge { .. }
 			| Self::LegacyNft { .. }
-			| Self::MetadataNft { .. }
 			| Self::CoreAsset { .. }
 			| Self::CompressedNft { .. }
 			| Self::PrizePool { .. }
@@ -185,7 +177,6 @@ impl PrizeAsset<'_> {
 			self,
 			Self::MintBadge { .. }
 				| Self::LegacyNft { .. }
-				| Self::MetadataNft { .. }
 				| Self::CoreAsset { .. }
 				| Self::CompressedNft { .. }
 		)

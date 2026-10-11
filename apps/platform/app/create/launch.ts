@@ -182,28 +182,13 @@ export async function prepareIdentity(
 	return { templateId, template, boxMint: mintSigner.address, mintSigner };
 }
 
-/** SDK bundle inputs, deriving each standard NFT's metadata account. */
+/** SDK bundle inputs for the create flow. */
 export async function prizeInputs(
 	client: LootboxClient,
 	bundles: readonly DraftBundle[],
 ): Promise<PrizeBundleInput[]> {
-	const metadata = new Map<string, Address>();
-
-	for (const bundle of bundles) {
-		for (const asset of bundle.assets) {
-			if (asset.kind === "nft" && asset.standard === "tokenMetadata") {
-				metadata.set(asset.mint, await client.metadataPda(address(asset.mint)));
-			}
-		}
-	}
-
-	return draftBundlesToInputs(bundles, (mint) => {
-		const pda = metadata.get(mint);
-
-		if (!pda) throw new Error(`missing metadata account for ${mint}`);
-
-		return pda;
-	});
+	void client;
+	return draftBundlesToInputs(bundles);
 }
 
 /** The exact checked plan the SDK will execute for this draft. */

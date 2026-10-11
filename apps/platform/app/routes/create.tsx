@@ -132,7 +132,7 @@ function Wizard(
 			name: details.name.trim() || "Lootbox",
 			uri: "",
 			opensAt: BigInt(details.revealAt ?? 0),
-			bundles: draftBundlesToInputs(bundles, (mint) => mint),
+			bundles: draftBundlesToInputs(bundles),
 		});
 	const prizesProblem = planCheck.ok ? null : planCheck.message;
 	const exclusiveCollection = useExclusiveCollection(

@@ -51,7 +51,7 @@ void main() {
             label: 'Jackpot',
             quantity: BigInt.one,
             assets: [
-              PrizeAsset.metadataNft(nft),
+              PrizeAsset.legacyNft(nft),
               PrizeAsset.sol(BigInt.from(1000000000)),
             ],
           ),

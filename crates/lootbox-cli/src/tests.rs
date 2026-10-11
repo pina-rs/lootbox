@@ -823,43 +823,6 @@ fn fund_token_prize_builds() {
 }
 
 #[test]
-fn fund_metadata_nft_prize_builds() {
-	let instruction = build_from(&[
-		"fund-metadata-nft-prize",
-		"--authority",
-		PK1,
-		"--template",
-		PK2,
-		"--bundle",
-		PK3,
-		"--mint",
-		PK1,
-		"--source",
-		PK2,
-		"--escrow",
-		PK3,
-		"--metadata",
-		PK1,
-		"--token-metadata-program",
-		PK2,
-		"--system-program",
-		PK3,
-		"--instructions-sysvar",
-		PK1,
-		"--token-program",
-		PK2,
-		"--associated-token-program",
-		PK3,
-		"--optional-accounts",
-		PK1,
-	])
-	.expect("builds");
-
-	assert_eq!(instruction.data[0], 27);
-	assert_eq!(instruction.data.len(), 2);
-}
-
-#[test]
 fn fund_core_asset_prize_builds() {
 	let instruction = build_from(&[
 		"fund-core-asset-prize",
@@ -974,49 +937,6 @@ fn claim_token_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 20);
-	assert_eq!(instruction.data.len(), 2 + 1);
-}
-
-#[test]
-fn claim_metadata_nft_prize_builds() {
-	let instruction = build_from(&[
-		"claim-metadata-nft-prize",
-		"--payer",
-		PK1,
-		"--template",
-		PK2,
-		"--opening",
-		PK3,
-		"--bundle",
-		PK1,
-		"--recipient",
-		PK2,
-		"--mint",
-		PK3,
-		"--escrow",
-		PK1,
-		"--destination",
-		PK2,
-		"--metadata",
-		PK3,
-		"--token-metadata-program",
-		PK1,
-		"--system-program",
-		PK2,
-		"--instructions-sysvar",
-		PK3,
-		"--token-program",
-		PK1,
-		"--associated-token-program",
-		PK2,
-		"--optional-accounts",
-		PK3,
-		"--asset-index",
-		"0",
-	])
-	.expect("builds");
-
-	assert_eq!(instruction.data[0], 28);
 	assert_eq!(instruction.data.len(), 2 + 1);
 }
 
@@ -1145,47 +1065,6 @@ fn reclaim_token_prize_builds() {
 	.expect("builds");
 
 	assert_eq!(instruction.data[0], 23);
-	assert_eq!(instruction.data.len(), 2 + 1);
-}
-
-#[test]
-fn reclaim_metadata_nft_prize_builds() {
-	let instruction = build_from(&[
-		"reclaim-metadata-nft-prize",
-		"--authority",
-		PK1,
-		"--template",
-		PK2,
-		"--box-mint",
-		PK3,
-		"--bundle",
-		PK1,
-		"--mint",
-		PK2,
-		"--escrow",
-		PK3,
-		"--destination",
-		PK1,
-		"--metadata",
-		PK2,
-		"--token-metadata-program",
-		PK3,
-		"--system-program",
-		PK1,
-		"--instructions-sysvar",
-		PK2,
-		"--token-program",
-		PK3,
-		"--associated-token-program",
-		PK1,
-		"--optional-accounts",
-		PK2,
-		"--asset-index",
-		"1",
-	])
-	.expect("builds");
-
-	assert_eq!(instruction.data[0], 29);
 	assert_eq!(instruction.data.len(), 2 + 1);
 }
 
@@ -1510,7 +1389,7 @@ fn clap_lists_every_instruction_subcommand() {
 		.map(|sub| sub.get_name().to_string())
 		.collect();
 
-	assert_eq!(subcommand_names.len(), 48);
+	assert_eq!(subcommand_names.len(), 45);
 }
 
 #[test]

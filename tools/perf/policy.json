@@ -11,7 +11,7 @@
 		"failBytes": 2048,
 		"failPercent": 0.5
 	},
-	"approvedBinarySize": 576152,
+	"approvedBinarySize": 539152,
 	"advisory": [
 		"box_curve/*"
 	],

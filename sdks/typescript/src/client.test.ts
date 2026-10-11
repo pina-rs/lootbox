@@ -210,15 +210,15 @@ describe("chain prize decoding", () => {
 			decimals: new Uint8Array(4),
 		});
 		expect(dynamic.map((asset) => asset.kind)).toEqual([
-			"quoteSol",
 			"quoteToken",
 			"mintBadge",
 			"prizePool",
+			"exclusiveNft",
 		]);
 		expect(
 			bundleAssets({
 				assetCount: 1,
-				kinds: new Uint8Array([11]),
+				kinds: new Uint8Array([10]),
 				mints: new Uint8Array(128),
 				amounts: new Uint8Array(32),
 				decimals: new Uint8Array(4),

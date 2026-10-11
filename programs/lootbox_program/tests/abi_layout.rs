@@ -6,7 +6,7 @@
 //! check` fails when this file no longer matches the manifest. A layout
 //! change that forgets an offset fails `cargo test` in the same change.
 
-// manifest-sha256: a55daf98f978e86218a3f19c0da9027127d9b842b7fd4c5b3257f0857a708439
+// manifest-sha256: 9cb74eb9beb9765a2b1f0d7ccadda26bcdf32a014a7ef4a94162d6c914cea2b7
 // program-id: LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E
 // version_type: u8
 
@@ -1393,99 +1393,10 @@ pub mod instruction_1_1a {
 	];
 }
 
-/// ABI layout for the `FundMetadataNftPrizeInstruction` instruction.
+/// ABI layout for the `FundCoreAssetPrizeInstruction` instruction.
 pub mod instruction_1_1b {
 	/// Manifest contract key.
 	pub const KEY: &str = "instruction:1:1b";
-	/// Rust type name as declared in the program.
-	pub const RUST_NAME: &str = "FundMetadataNftPrizeInstruction";
-	/// Current schema version.
-	pub const VERSION: u32 = 0;
-	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "4d30c5a987a69cde3f10c23b93498ead2a16de2576027c1cf287e3813769bdc3";
-	/// Width of the discriminator in bytes.
-	pub const DISCRIMINATOR_BYTES: usize = 1;
-	/// Byte offset of the migration version field.
-	pub const VERSION_OFFSET: usize = 1;
-	/// Width of the migration version field in bytes; zero without an envelope.
-	pub const VERSION_BYTES: usize = 1;
-	/// Bytes occupied by the discriminator and version envelope together.
-	pub const MIGRATION_HEADER_SIZE: usize = 2;
-	/// Payload size in bytes, excluding the envelope header.
-	pub const PAYLOAD_SIZE: usize = 0;
-	/// Total encoded size in bytes, including the envelope header.
-	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
-	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
-	pub const MANIFEST_PAYLOAD_SIZE: usize = 0;
-	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-	];
-}
-
-/// ABI layout for the `ClaimMetadataNftPrizeInstruction` instruction.
-pub mod instruction_1_1c {
-	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:1c";
-	/// Rust type name as declared in the program.
-	pub const RUST_NAME: &str = "ClaimMetadataNftPrizeInstruction";
-	/// Current schema version.
-	pub const VERSION: u32 = 0;
-	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
-	/// Width of the discriminator in bytes.
-	pub const DISCRIMINATOR_BYTES: usize = 1;
-	/// Byte offset of the migration version field.
-	pub const VERSION_OFFSET: usize = 1;
-	/// Width of the migration version field in bytes; zero without an envelope.
-	pub const VERSION_BYTES: usize = 1;
-	/// Bytes occupied by the discriminator and version envelope together.
-	pub const MIGRATION_HEADER_SIZE: usize = 2;
-	/// Payload size in bytes, excluding the envelope header.
-	pub const PAYLOAD_SIZE: usize = 1;
-	/// Total encoded size in bytes, including the envelope header.
-	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
-	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
-	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
-	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
-	];
-}
-
-/// ABI layout for the `ReclaimMetadataNftPrizeInstruction` instruction.
-pub mod instruction_1_1d {
-	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:1d";
-	/// Rust type name as declared in the program.
-	pub const RUST_NAME: &str = "ReclaimMetadataNftPrizeInstruction";
-	/// Current schema version.
-	pub const VERSION: u32 = 0;
-	/// Schema hash recorded for this version.
-	pub const SCHEMA_SHA256: &str = "023d8432c7ef96fdfee8c1e63cec4bb12a922c74cc8e67c45eda709ebaf01d96";
-	/// Width of the discriminator in bytes.
-	pub const DISCRIMINATOR_BYTES: usize = 1;
-	/// Byte offset of the migration version field.
-	pub const VERSION_OFFSET: usize = 1;
-	/// Width of the migration version field in bytes; zero without an envelope.
-	pub const VERSION_BYTES: usize = 1;
-	/// Bytes occupied by the discriminator and version envelope together.
-	pub const MIGRATION_HEADER_SIZE: usize = 2;
-	/// Payload size in bytes, excluding the envelope header.
-	pub const PAYLOAD_SIZE: usize = 1;
-	/// Total encoded size in bytes, including the envelope header.
-	pub const SIZE: usize = MIGRATION_HEADER_SIZE + PAYLOAD_SIZE;
-	/// Manifest payload size; must agree with `PAYLOAD_SIZE`.
-	pub const MANIFEST_PAYLOAD_SIZE: usize = 1;
-	/// `(name, absolute_offset, size)` in encoded bytes.
-	pub const FIELDS: &[(&str, usize, usize)] = &[
-		("asset_index", MIGRATION_HEADER_SIZE + 0, 1),
-	];
-}
-
-/// ABI layout for the `FundCoreAssetPrizeInstruction` instruction.
-pub mod instruction_1_1e {
-	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:1e";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "FundCoreAssetPrizeInstruction";
 	/// Current schema version.
@@ -1512,9 +1423,9 @@ pub mod instruction_1_1e {
 }
 
 /// ABI layout for the `ClaimCoreAssetPrizeInstruction` instruction.
-pub mod instruction_1_1f {
+pub mod instruction_1_1c {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:1f";
+	pub const KEY: &str = "instruction:1:1c";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "ClaimCoreAssetPrizeInstruction";
 	/// Current schema version.
@@ -1542,9 +1453,9 @@ pub mod instruction_1_1f {
 }
 
 /// ABI layout for the `ReclaimCoreAssetPrizeInstruction` instruction.
-pub mod instruction_1_20 {
+pub mod instruction_1_1d {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:20";
+	pub const KEY: &str = "instruction:1:1d";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "ReclaimCoreAssetPrizeInstruction";
 	/// Current schema version.
@@ -1572,9 +1483,9 @@ pub mod instruction_1_20 {
 }
 
 /// ABI layout for the `FundCompressedNftPrizeInstruction` instruction.
-pub mod instruction_1_21 {
+pub mod instruction_1_1e {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:21";
+	pub const KEY: &str = "instruction:1:1e";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "FundCompressedNftPrizeInstruction";
 	/// Current schema version.
@@ -1606,9 +1517,9 @@ pub mod instruction_1_21 {
 }
 
 /// ABI layout for the `ClaimCompressedNftPrizeInstruction` instruction.
-pub mod instruction_1_22 {
+pub mod instruction_1_1f {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:22";
+	pub const KEY: &str = "instruction:1:1f";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "ClaimCompressedNftPrizeInstruction";
 	/// Current schema version.
@@ -1641,9 +1552,9 @@ pub mod instruction_1_22 {
 }
 
 /// ABI layout for the `ReclaimCompressedNftPrizeInstruction` instruction.
-pub mod instruction_1_23 {
+pub mod instruction_1_20 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:23";
+	pub const KEY: &str = "instruction:1:20";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "ReclaimCompressedNftPrizeInstruction";
 	/// Current schema version.
@@ -1676,9 +1587,9 @@ pub mod instruction_1_23 {
 }
 
 /// ABI layout for the `ForfeitTemplateOpenInstruction` instruction.
-pub mod instruction_1_24 {
+pub mod instruction_1_21 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:24";
+	pub const KEY: &str = "instruction:1:21";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "ForfeitTemplateOpenInstruction";
 	/// Current schema version.
@@ -1705,9 +1616,9 @@ pub mod instruction_1_24 {
 }
 
 /// ABI layout for the `LockTreasuryInstruction` instruction.
-pub mod instruction_1_25 {
+pub mod instruction_1_22 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:25";
+	pub const KEY: &str = "instruction:1:22";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "LockTreasuryInstruction";
 	/// Current schema version.
@@ -1735,9 +1646,9 @@ pub mod instruction_1_25 {
 }
 
 /// ABI layout for the `CloseServiceVaultInstruction` instruction.
-pub mod instruction_1_26 {
+pub mod instruction_1_23 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:26";
+	pub const KEY: &str = "instruction:1:23";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "CloseServiceVaultInstruction";
 	/// Current schema version.
@@ -1764,9 +1675,9 @@ pub mod instruction_1_26 {
 }
 
 /// ABI layout for the `FundQuoteSolPrizeInstruction` instruction.
-pub mod instruction_1_27 {
+pub mod instruction_1_24 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:27";
+	pub const KEY: &str = "instruction:1:24";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "FundQuoteSolPrizeInstruction";
 	/// Current schema version.
@@ -1794,9 +1705,9 @@ pub mod instruction_1_27 {
 }
 
 /// ABI layout for the `FundQuoteTokenPrizeInstruction` instruction.
-pub mod instruction_1_28 {
+pub mod instruction_1_25 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:28";
+	pub const KEY: &str = "instruction:1:25";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "FundQuoteTokenPrizeInstruction";
 	/// Current schema version.
@@ -1824,9 +1735,9 @@ pub mod instruction_1_28 {
 }
 
 /// ABI layout for the `FundMintPrizeInstruction` instruction.
-pub mod instruction_1_29 {
+pub mod instruction_1_26 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:29";
+	pub const KEY: &str = "instruction:1:26";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "FundMintPrizeInstruction";
 	/// Current schema version.
@@ -1853,9 +1764,9 @@ pub mod instruction_1_29 {
 }
 
 /// ABI layout for the `ClaimMintPrizeInstruction` instruction.
-pub mod instruction_1_2a {
+pub mod instruction_1_27 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:2a";
+	pub const KEY: &str = "instruction:1:27";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "ClaimMintPrizeInstruction";
 	/// Current schema version.
@@ -1883,9 +1794,9 @@ pub mod instruction_1_2a {
 }
 
 /// ABI layout for the `ReclaimMintPrizeInstruction` instruction.
-pub mod instruction_1_2b {
+pub mod instruction_1_28 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:2b";
+	pub const KEY: &str = "instruction:1:28";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "ReclaimMintPrizeInstruction";
 	/// Current schema version.
@@ -1913,9 +1824,9 @@ pub mod instruction_1_2b {
 }
 
 /// ABI layout for the `CreatePrizePoolInstruction` instruction.
-pub mod instruction_1_2c {
+pub mod instruction_1_29 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:2c";
+	pub const KEY: &str = "instruction:1:29";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "CreatePrizePoolInstruction";
 	/// Current schema version.
@@ -1944,9 +1855,9 @@ pub mod instruction_1_2c {
 }
 
 /// ABI layout for the `DepositPrizePoolItemInstruction` instruction.
-pub mod instruction_1_2d {
+pub mod instruction_1_2a {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:2d";
+	pub const KEY: &str = "instruction:1:2a";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "DepositPrizePoolItemInstruction";
 	/// Current schema version.
@@ -1978,9 +1889,9 @@ pub mod instruction_1_2d {
 }
 
 /// ABI layout for the `SealPrizePoolInstruction` instruction.
-pub mod instruction_1_2e {
+pub mod instruction_1_2b {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:2e";
+	pub const KEY: &str = "instruction:1:2b";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "SealPrizePoolInstruction";
 	/// Current schema version.
@@ -2007,9 +1918,9 @@ pub mod instruction_1_2e {
 }
 
 /// ABI layout for the `AllocatePrizePoolOpenInstruction` instruction.
-pub mod instruction_1_2f {
+pub mod instruction_1_2c {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:2f";
+	pub const KEY: &str = "instruction:1:2c";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "AllocatePrizePoolOpenInstruction";
 	/// Current schema version.
@@ -2037,9 +1948,9 @@ pub mod instruction_1_2f {
 }
 
 /// ABI layout for the `ClaimPrizePoolItemInstruction` instruction.
-pub mod instruction_1_30 {
+pub mod instruction_1_2d {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:30";
+	pub const KEY: &str = "instruction:1:2d";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "ClaimPrizePoolItemInstruction";
 	/// Current schema version.
@@ -2073,9 +1984,9 @@ pub mod instruction_1_30 {
 }
 
 /// ABI layout for the `ReclaimPrizePoolItemInstruction` instruction.
-pub mod instruction_1_31 {
+pub mod instruction_1_2e {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:31";
+	pub const KEY: &str = "instruction:1:2e";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "ReclaimPrizePoolItemInstruction";
 	/// Current schema version.
@@ -2109,9 +2020,9 @@ pub mod instruction_1_31 {
 }
 
 /// ABI layout for the `ClosePrizePoolInstruction` instruction.
-pub mod instruction_1_32 {
+pub mod instruction_1_2f {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:32";
+	pub const KEY: &str = "instruction:1:2f";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "ClosePrizePoolInstruction";
 	/// Current schema version.
@@ -2138,9 +2049,9 @@ pub mod instruction_1_32 {
 }
 
 /// ABI layout for the `PreparePrizePoolItemInstruction` instruction.
-pub mod instruction_1_33 {
+pub mod instruction_1_30 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:33";
+	pub const KEY: &str = "instruction:1:30";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "PreparePrizePoolItemInstruction";
 	/// Current schema version.
@@ -2173,9 +2084,9 @@ pub mod instruction_1_33 {
 }
 
 /// ABI layout for the `CancelPrizePoolItemInstruction` instruction.
-pub mod instruction_1_34 {
+pub mod instruction_1_31 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:34";
+	pub const KEY: &str = "instruction:1:31";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "CancelPrizePoolItemInstruction";
 	/// Current schema version.
@@ -2202,9 +2113,9 @@ pub mod instruction_1_34 {
 }
 
 /// ABI layout for the `CreateExclusiveCollectionInstruction` instruction.
-pub mod instruction_1_35 {
+pub mod instruction_1_32 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:35";
+	pub const KEY: &str = "instruction:1:32";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "CreateExclusiveCollectionInstruction";
 	/// Current schema version.
@@ -2239,9 +2150,9 @@ pub mod instruction_1_35 {
 }
 
 /// ABI layout for the `SetExclusiveLayerInstruction` instruction.
-pub mod instruction_1_36 {
+pub mod instruction_1_33 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:36";
+	pub const KEY: &str = "instruction:1:33";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "SetExclusiveLayerInstruction";
 	/// Current schema version.
@@ -2271,9 +2182,9 @@ pub mod instruction_1_36 {
 }
 
 /// ABI layout for the `AppendExclusiveTreeInstruction` instruction.
-pub mod instruction_1_37 {
+pub mod instruction_1_34 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:37";
+	pub const KEY: &str = "instruction:1:34";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "AppendExclusiveTreeInstruction";
 	/// Current schema version.
@@ -2302,9 +2213,9 @@ pub mod instruction_1_37 {
 }
 
 /// ABI layout for the `PublishExclusiveCollectionInstruction` instruction.
-pub mod instruction_1_38 {
+pub mod instruction_1_35 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:38";
+	pub const KEY: &str = "instruction:1:35";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "PublishExclusiveCollectionInstruction";
 	/// Current schema version.
@@ -2331,9 +2242,9 @@ pub mod instruction_1_38 {
 }
 
 /// ABI layout for the `AttachExclusiveNftInstruction` instruction.
-pub mod instruction_1_39 {
+pub mod instruction_1_36 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:39";
+	pub const KEY: &str = "instruction:1:36";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "AttachExclusiveNftInstruction";
 	/// Current schema version.
@@ -2363,9 +2274,9 @@ pub mod instruction_1_39 {
 }
 
 /// ABI layout for the `ClaimExclusiveNftInstruction` instruction.
-pub mod instruction_1_3a {
+pub mod instruction_1_37 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:3a";
+	pub const KEY: &str = "instruction:1:37";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "ClaimExclusiveNftInstruction";
 	/// Current schema version.
@@ -2393,9 +2304,9 @@ pub mod instruction_1_3a {
 }
 
 /// ABI layout for the `ReclaimExclusiveFeesInstruction` instruction.
-pub mod instruction_1_3b {
+pub mod instruction_1_38 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:3b";
+	pub const KEY: &str = "instruction:1:38";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "ReclaimExclusiveFeesInstruction";
 	/// Current schema version.
@@ -2423,9 +2334,9 @@ pub mod instruction_1_3b {
 }
 
 /// ABI layout for the `OpenBoxCurveInstruction` instruction.
-pub mod instruction_1_3c {
+pub mod instruction_1_39 {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:3c";
+	pub const KEY: &str = "instruction:1:39";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "OpenBoxCurveInstruction";
 	/// Current schema version.
@@ -2457,9 +2368,9 @@ pub mod instruction_1_3c {
 }
 
 /// ABI layout for the `BuyCurveBoxesInstruction` instruction.
-pub mod instruction_1_3d {
+pub mod instruction_1_3a {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:3d";
+	pub const KEY: &str = "instruction:1:3a";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "BuyCurveBoxesInstruction";
 	/// Current schema version.
@@ -2488,9 +2399,9 @@ pub mod instruction_1_3d {
 }
 
 /// ABI layout for the `SellCurveBoxesInstruction` instruction.
-pub mod instruction_1_3e {
+pub mod instruction_1_3b {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:3e";
+	pub const KEY: &str = "instruction:1:3b";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "SellCurveBoxesInstruction";
 	/// Current schema version.
@@ -2519,9 +2430,9 @@ pub mod instruction_1_3e {
 }
 
 /// ABI layout for the `CloseBoxCurveInstruction` instruction.
-pub mod instruction_1_3f {
+pub mod instruction_1_3c {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:3f";
+	pub const KEY: &str = "instruction:1:3c";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "CloseBoxCurveInstruction";
 	/// Current schema version.
@@ -2548,9 +2459,9 @@ pub mod instruction_1_3f {
 }
 
 /// ABI layout for the `ClaimStrandedPrizePoolItemInstruction` instruction.
-pub mod instruction_1_40 {
+pub mod instruction_1_3d {
 	/// Manifest contract key.
-	pub const KEY: &str = "instruction:1:40";
+	pub const KEY: &str = "instruction:1:3d";
 	/// Rust type name as declared in the program.
 	pub const RUST_NAME: &str = "ClaimStrandedPrizePoolItemInstruction";
 	/// Current schema version.

@@ -18,7 +18,6 @@ enum PrizeKind {
   quoteToken,
   mintBadge,
   legacyNft,
-  metadataNft,
   coreAsset,
   compressedNft,
   prizePool,
@@ -123,12 +122,6 @@ final class PrizeAsset {
       amount = BigInt.one,
       poolItems = const [];
 
-  PrizeAsset.metadataNft(Address mint)
-    : kind = PrizeKind.metadataNft,
-      identifier = mint,
-      amount = BigInt.one,
-      poolItems = const [];
-
   PrizeAsset.core(Address asset)
     : kind = PrizeKind.coreAsset,
       identifier = asset,
@@ -171,7 +164,6 @@ final class PrizeAsset {
     PrizeKind.prizePool || PrizeKind.exclusiveNft => false,
     PrizeKind.mintBadge ||
     PrizeKind.legacyNft ||
-    PrizeKind.metadataNft ||
     PrizeKind.coreAsset ||
     PrizeKind.compressedNft => true,
   };

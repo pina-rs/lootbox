@@ -102,21 +102,27 @@ jobs:
         shell: devenv shell -c -- bash -e {0}
 
       - name: Fetch pinned Metaplex programs
-        # The exclusive-NFT family needs the pinned mainnet images. A stale
-        # pin also fails the functional suite; keep benchmarking the other
-        # families and say so in the report instead of blocking on it.
+        # The exclusive-NFT family needs the pinned Metaplex images; the pin
+        # file carries a download URL for release-asset pins and falls back to
+        # a mainnet dump otherwise. A stale pin also fails the functional
+        # suite; keep benchmarking the other families and say so in the report
+        # instead of blocking on it.
         run: |
           pins="$PWD/tests/fixtures/metaplex-programs.sha256"
           directory="$PWD/target/deploy/metaplex"
           mkdir -p "$directory"
           ok=1
-          grep -v '^#' "$pins" | while read -r expected file; do
+          grep -v '^#' "$pins" | while read -r expected file url; do
             [ -n "$expected" ] || continue
             path="$directory/$file"
             if [ -f "$path" ] && [ "$(sha256sum "$path" | cut -d' ' -f1)" = "$expected" ]; then
               continue
             fi
-            solana program dump --url "https://api.mainnet-beta.solana.com" "${file%.so}" "$path.download" >/dev/null
+            if [ -n "$url" ]; then
+              curl --fail --silent --show-error --location --output "$path.download" "$url"
+            else
+              solana program dump --url "https://api.mainnet-beta.solana.com" "${file%.so}" "$path.download" >/dev/null
+            fi
             actual="$(sha256sum "$path.download" | cut -d' ' -f1)"
             if [ "$actual" != "$expected" ]; then
               rm -f "$path.download"

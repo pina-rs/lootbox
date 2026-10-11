@@ -35,7 +35,7 @@ fn bubblegum() -> Pubkey {
 	pubkey(METAPLEX_PROGRAMS[0])
 }
 
-fn core() -> Pubkey {
+pub(super) fn core() -> Pubkey {
 	pubkey(METAPLEX_PROGRAMS[1])
 }
 
@@ -43,11 +43,11 @@ fn compression() -> Pubkey {
 	pubkey(METAPLEX_PROGRAMS[2])
 }
 
-fn noop() -> Pubkey {
+pub(super) fn noop() -> Pubkey {
 	pubkey(METAPLEX_PROGRAMS[3])
 }
 
-fn deploy_metaplex_programs(program: &Harness) {
+pub(super) fn deploy_metaplex_programs(program: &Harness) {
 	let directory = PathBuf::from(
 		std::env::var_os("METAPLEX_PROGRAMS_DIR")
 			.expect("METAPLEX_PROGRAMS_DIR; run `devenv shell -- test:surfpool`"),

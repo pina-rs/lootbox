@@ -55,3 +55,118 @@ Only introduce inventory lanes after measurements show that a single series need
 - Pre-resolve dynamic NFT accounts immediately before claim; cached proofs and authorization-rule accounts expire.
 - Let the SDK split mixed prize delivery and resume from the current claim mask. Compressed transfers are capped at 16 supplied proof nodes on chain; configure sufficient tree canopy rather than relying on an address lookup table to bypass that account-count policy.
 - Cap initial treasury value and supply, then increase only after observed load and adapter compatibility are stable.
+
+## Compute units per instruction
+
+Measured on the real SBF artifact by the deterministic Surfpool benchmark journeys (`devenv shell -- bench:compute-units`). The journeys use seed-derived fixture keys: the program's canonical-bump and associated-token-address assertions search from bump 255 downward, so random fixture keys shift the measured figures by thousands of units run to run. With fixed keys every enforced case reproduces exactly, which is what the `performance` workflow compares against on every pull request.
+
+The box-curve family is measured but reported as advisory: Surfpool's local runtime meters those four instructions with a per-boot variance quantized at one sha256-syscall, independent of the fixture keys. The other 56 cases are byte-identical across runs.
+
+### Core lootbox lifecycle
+
+| Instruction        | Compute units |
+| ------------------ | ------------: |
+| `add_outcome`      |         1,820 |
+| `close_opening`    |         7,562 |
+| `create_lootbox`   |        15,684 |
+| `deposit`          |         4,707 |
+| `migrate`          |           830 |
+| `mint_boxes`       |         9,701 |
+| `refund_open`      |         5,796 |
+| `request_open`     |        27,175 |
+| `seal`             |         1,791 |
+| `settle_open`      |        13,820 |
+| `withdraw_surplus` |         3,732 |
+
+### Treasury templates
+
+| Instruction              | Compute units |
+| ------------------------ | ------------: |
+| `activate_bundle`        |         6,009 |
+| `add_bundle`             |         6,598 |
+| `allocate_template_open` |        21,212 |
+| `cancel_bundle`          |         3,820 |
+| `claim_mint_prize`       |        13,525 |
+| `claim_sol_prize`        |         5,477 |
+| `claim_token_prize`      |        15,025 |
+| `close_service_vault`    |         5,367 |
+| `close_template_opening` |         7,650 |
+| `create_template`        |        11,939 |
+| `forfeit_template_open`  |         9,006 |
+| `fulfill_template_open`  |        13,587 |
+| `fund_mint_prize`        |         5,347 |
+| `fund_quote_sol_prize`   |         5,106 |
+| `fund_quote_token_prize` |         8,567 |
+| `fund_sol_prize`         |         5,106 |
+| `fund_token_prize`       |         8,639 |
+| `lock_treasury`          |        11,701 |
+| `mint_template_boxes`    |         7,386 |
+| `reclaim_mint_prize`     |         5,623 |
+| `reclaim_sol_prize`      |         4,305 |
+| `reclaim_token_prize`    |        13,463 |
+| `request_template_open`  |        23,981 |
+| `retire_template`        |         2,336 |
+| `seal_template`          |         2,180 |
+
+### Box curve
+
+| Instruction        | Compute units |
+| ------------------ | ------------: |
+| `buy_curve_boxes`  |        14,371 |
+| `close_box_curve`  |        13,492 |
+| `open_box_curve`   |        14,656 |
+| `sell_curve_boxes` |        12,016 |
+
+### Prize pool
+
+| Instruction                      | Compute units |
+| -------------------------------- | ------------: |
+| `allocate_prize_pool_open`       |        19,480 |
+| `cancel_prize_pool_item`         |         7,551 |
+| `claim_prize_pool_item`          |        15,288 |
+| `claim_stranded_prize_pool_item` |        20,438 |
+| `close_prize_pool`               |         5,754 |
+| `create_prize_pool`              |        15,002 |
+| `deposit_prize_pool_item`        |        14,985 |
+| `prepare_prize_pool_item`        |        14,889 |
+| `reclaim_prize_pool_item`        |        15,518 |
+| `seal_prize_pool`                |         6,161 |
+
+### Core-asset prizes (real MPL Core)
+
+| Instruction                | Compute units |
+| -------------------------- | ------------: |
+| `claim_core_asset_prize`   |        12,156 |
+| `fund_core_asset_prize`    |        10,267 |
+| `reclaim_core_asset_prize` |        10,679 |
+
+### Exclusive Lootbox NFTs (real Bubblegum V2 and MPL Core)
+
+| Instruction                    | Compute units |
+| ------------------------------ | ------------: |
+| `append_exclusive_tree`        |       115,427 |
+| `attach_exclusive_nft`         |        13,662 |
+| `claim_exclusive_nft`          |       125,532 |
+| `create_exclusive_collection`  |        23,889 |
+| `publish_exclusive_collection` |        21,392 |
+| `reclaim_exclusive_fees`       |         9,353 |
+| `set_exclusive_layer`          |         3,217 |
+
+The `metadataNftPrize`, `compressedNftPrize`, and remaining `coreAssetPrize`-adjacent adapter variants not listed above are gated by the deployed-binary size check and the static profile; runtime journeys for the compressed and Token Metadata trios need the fixture programs described in the benchmark module's documentation.
+
+## Program size
+
+The deployed `lootbox_program.so` is **576,152 bytes**, built `cdylib`-only with fat LTO, `codegen-units = 1`, and `opt-level = 3` (the profile `pina build` applies). The crate must stay `cdylib`-only: a second `lib` crate type makes rustc silently drop LTO, which cost 17.9% of the program's size and several percent of compute units on every instruction before it was fixed.
+
+The size-optimised `opt-level = "s"` profile was measured and rejected: it saves 9,992 bytes (1.7%) but adds 14% compute units across the core and box-curve families, up to +48% on `open_box_curve`.
+
+Overflow checks stay enabled: every hand-written operation is already checked, and the checks turn any missed one into a failed transaction instead of a wrap (the same trade the other pina-rs programs make).
+
+## Measuring yourself
+
+```sh
+devenv shell -- bench:compute-units   # writes target/perf/cu/<family>.json
+node tools/perf/compare.mjs            # compares against the last recorded baseline
+```
+
+The `performance` workflow posts a pull-request comment comparing every instruction and the binary size against the PR base, and fails when a regression exceeds the thresholds in [`tools/perf/policy.json`](../tools/perf/policy.json).

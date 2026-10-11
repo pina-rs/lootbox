@@ -16,6 +16,7 @@ use super::*;
 mod box_curve;
 mod exclusive_nft;
 mod perf;
+mod perf_metaplex;
 mod prize_pool;
 
 const NAME: &str = "Treasury test";

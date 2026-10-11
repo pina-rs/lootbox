@@ -35,7 +35,11 @@ pub struct CloseServiceVault {
 }
 
 impl CloseServiceVault {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		authority: solana_pubkey::Pubkey,
+		template: solana_pubkey::Pubkey,
+		box_mint: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			authority,
 			template,
@@ -43,12 +47,16 @@ impl CloseServiceVault {
 			service_vault: solana_pubkey::Pubkey::find_program_address(
 				&["service-vault".as_bytes(), template.as_ref()],
 				&crate::LOOTBOX_PROGRAM_ID,
-			).0,
+			)
+			.0,
 			system_program: solana_pubkey::pubkey!("11111111111111111111111111111111"),
 		}
 	}
 
-	pub fn instruction(&self, data: CloseServiceVaultInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: CloseServiceVaultInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -60,10 +68,22 @@ impl CloseServiceVault {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.service_vault, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.template,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.box_mint,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.service_vault,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.system_program,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -79,7 +99,9 @@ pub struct CloseServiceVaultInstructionData {
 }
 
 impl CloseServiceVaultInstructionData {
-	pub fn new(configure: impl FnOnce(&mut CloseServiceVaultInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut CloseServiceVaultInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<CloseServiceVaultInstructionWireZc>()];
 		<CloseServiceVaultInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
@@ -87,7 +109,7 @@ impl CloseServiceVaultInstructionData {
 			data.migration_version = CLOSE_SERVICE_VAULT_MIGRATION_VERSION;
 			Ok(())
 		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

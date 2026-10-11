@@ -5,7 +5,6 @@ use pina_test::AccountMeta;
 use pina_test::Instruction;
 use pina_test::Keypair;
 use pina_test::Pubkey;
-use pina_test::Signer as _;
 use program::*;
 use solana_keccak_hasher::hashv as keccak_hashv;
 use spl_token_2022_interface::instruction as token_ix;

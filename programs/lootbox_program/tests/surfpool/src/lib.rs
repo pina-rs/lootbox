@@ -98,9 +98,10 @@ impl Recorder {
 	}
 
 	fn write(self) -> Result<(), std::string::String> {
-		let directory = std::env::var_os("LOOTBOX_CU_REPORT_DIR")
-			.map(PathBuf::from)
-			.unwrap_or_else(|| PathBuf::from("target/perf/cu"));
+		let directory = match std::env::var_os("LOOTBOX_CU_REPORT_DIR") {
+			Some(directory) => PathBuf::from(directory),
+			None => PathBuf::from("target/perf/cu"),
+		};
 		std::fs::create_dir_all(&directory)
 			.map_err(|error| format!("create {}: {error}", directory.display()))?;
 		let mut json = std::string::String::from(

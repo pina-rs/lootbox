@@ -6,7 +6,6 @@
 	clippy::empty_line_after_doc_comments,
 	clippy::too_many_arguments
 )]
-
 #![allow(rustdoc::broken_intra_doc_links)]
 
 use pina::Address;
@@ -45,8 +44,7 @@ impl BundleState {
 	/// Whether `data` carries this account's discriminator.
 	#[inline(always)]
 	pub fn matches(data: &[u8]) -> bool {
-		data.len() >= 2
-			&& data[..2] == BUNDLE_STATE_DISCRIMINATOR
+		data.len() >= 2 && data[..2] == BUNDLE_STATE_DISCRIMINATOR
 	}
 
 	/// Reads this account's fields from the account's data.
@@ -61,53 +59,38 @@ impl BundleState {
 		let mut cursor = 0usize;
 		cursor += 2;
 
-		let template = Address::new_from_array(data.get(cursor..cursor + 32)?
-		.try_into().ok()?);
+		let template = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
 		cursor += 32;
-		let quantity: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
-		.try_into().ok()?);
+		let quantity: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
 		cursor += 8;
-		let rent_reserve: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
-		.try_into().ok()?);
+		let rent_reserve: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
 		cursor += 8;
-		let mints: [u8; 128] = data.get(cursor..cursor + 128)?
-		.try_into().ok()?;
+		let mints: [u8; 128] = data.get(cursor..cursor + 128)?.try_into().ok()?;
 		cursor += 128;
-		let commitments: [u8; 128] = data.get(cursor..cursor + 128)?
-		.try_into().ok()?;
+		let commitments: [u8; 128] = data.get(cursor..cursor + 128)?.try_into().ok()?;
 		cursor += 128;
-		let amounts: [u8; 32] = data.get(cursor..cursor + 32)?
-		.try_into().ok()?;
+		let amounts: [u8; 32] = data.get(cursor..cursor + 32)?.try_into().ok()?;
 		cursor += 32;
-		let claimed: [u8; 32] = data.get(cursor..cursor + 32)?
-		.try_into().ok()?;
+		let claimed: [u8; 32] = data.get(cursor..cursor + 32)?.try_into().ok()?;
 		cursor += 32;
-		let kinds: [u8; 4] = data.get(cursor..cursor + 4)?
-		.try_into().ok()?;
+		let kinds: [u8; 4] = data.get(cursor..cursor + 4)?.try_into().ok()?;
 		cursor += 4;
-		let decimals: [u8; 4] = data.get(cursor..cursor + 4)?
-		.try_into().ok()?;
+		let decimals: [u8; 4] = data.get(cursor..cursor + 4)?.try_into().ok()?;
 		cursor += 4;
-		let activated_revision: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
-		.try_into().ok()?);
+		let activated_revision: u64 =
+			u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
 		cursor += 8;
-		let index: u32 = u32::from_le_bytes(data.get(cursor..cursor + 4)?
-		.try_into().ok()?);
+		let index: u32 = u32::from_le_bytes(data.get(cursor..cursor + 4)?.try_into().ok()?);
 		cursor += 4;
-		let asset_count: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
-		.try_into().ok()?);
+		let asset_count: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
 		cursor += 1;
-		let funded_assets: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
-		.try_into().ok()?);
+		let funded_assets: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
 		cursor += 1;
-		let reclaimed_mask: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
-		.try_into().ok()?);
+		let reclaimed_mask: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
 		cursor += 1;
-		let status: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
-		.try_into().ok()?);
+		let status: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
 		cursor += 1;
-		let bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
-		.try_into().ok()?);
+		let bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
 
 		Some(BundleState {
 			template,

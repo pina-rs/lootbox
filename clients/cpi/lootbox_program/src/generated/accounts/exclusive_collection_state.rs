@@ -6,7 +6,6 @@
 	clippy::empty_line_after_doc_comments,
 	clippy::too_many_arguments
 )]
-
 #![allow(rustdoc::broken_intra_doc_links)]
 
 use pina::Address;
@@ -50,8 +49,7 @@ impl ExclusiveCollectionState {
 	/// Whether `data` carries this account's discriminator.
 	#[inline(always)]
 	pub fn matches(data: &[u8]) -> bool {
-		data.len() >= 2
-			&& data[..2] == EXCLUSIVE_COLLECTION_STATE_DISCRIMINATOR
+		data.len() >= 2 && data[..2] == EXCLUSIVE_COLLECTION_STATE_DISCRIMINATOR
 	}
 
 	/// Reads this account's fields from the account's data.
@@ -66,56 +64,42 @@ impl ExclusiveCollectionState {
 		let mut cursor = 0usize;
 		cursor += 2;
 
-		let admin = Address::new_from_array(data.get(cursor..cursor + 32)?
-		.try_into().ok()?);
+		let admin = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
 		cursor += 32;
-		let core_collection = Address::new_from_array(data.get(cursor..cursor + 32)?
-		.try_into().ok()?);
+		let core_collection =
+			Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
 		cursor += 32;
-		let active_tree = Address::new_from_array(data.get(cursor..cursor + 32)?
-		.try_into().ok()?);
+		let active_tree = Address::new_from_array(data.get(cursor..cursor + 32)?.try_into().ok()?);
 		cursor += 32;
-		let layers_hash: [u8; 32] = data.get(cursor..cursor + 32)?
-		.try_into().ok()?;
+		let layers_hash: [u8; 32] = data.get(cursor..cursor + 32)?.try_into().ok()?;
 		cursor += 32;
-		let collection_id: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
-		.try_into().ok()?);
+		let collection_id: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
 		cursor += 8;
-		let minted: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?
-		.try_into().ok()?);
+		let minted: u64 = u64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
 		cursor += 8;
-		let attach_opens_at: i64 = i64::from_le_bytes(data.get(cursor..cursor + 8)?
-		.try_into().ok()?);
+		let attach_opens_at: i64 =
+			i64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
 		cursor += 8;
-		let attach_closes_at: i64 = i64::from_le_bytes(data.get(cursor..cursor + 8)?
-		.try_into().ok()?);
+		let attach_closes_at: i64 =
+			i64::from_le_bytes(data.get(cursor..cursor + 8)?.try_into().ok()?);
 		cursor += 8;
-		let tree_count: u32 = u32::from_le_bytes(data.get(cursor..cursor + 4)?
-		.try_into().ok()?);
+		let tree_count: u32 = u32::from_le_bytes(data.get(cursor..cursor + 4)?.try_into().ok()?);
 		cursor += 4;
-		let trait_counts: [u8; 12] = data.get(cursor..cursor + 12)?
-		.try_into().ok()?;
+		let trait_counts: [u8; 12] = data.get(cursor..cursor + 12)?.try_into().ok()?;
 		cursor += 12;
-		let weights: [u8; 3072] = data.get(cursor..cursor + 3072)?
-		.try_into().ok()?;
+		let weights: [u8; 3072] = data.get(cursor..cursor + 3072)?.try_into().ok()?;
 		cursor += 3072;
-		let name_prefix: [u8; 32] = data.get(cursor..cursor + 32)?
-		.try_into().ok()?;
+		let name_prefix: [u8; 32] = data.get(cursor..cursor + 32)?.try_into().ok()?;
 		cursor += 32;
-		let symbol: [u8; 10] = data.get(cursor..cursor + 10)?
-		.try_into().ok()?;
+		let symbol: [u8; 10] = data.get(cursor..cursor + 10)?.try_into().ok()?;
 		cursor += 10;
-		let base_uri: [u8; 128] = data.get(cursor..cursor + 128)?
-		.try_into().ok()?;
+		let base_uri: [u8; 128] = data.get(cursor..cursor + 128)?.try_into().ok()?;
 		cursor += 128;
-		let layer_count: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
-		.try_into().ok()?);
+		let layer_count: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
 		cursor += 1;
-		let status: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
-		.try_into().ok()?);
+		let status: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
 		cursor += 1;
-		let bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?
-		.try_into().ok()?);
+		let bump: u8 = u8::from_le_bytes(data.get(cursor..cursor + 1)?.try_into().ok()?);
 
 		Some(ExclusiveCollectionState {
 			admin,

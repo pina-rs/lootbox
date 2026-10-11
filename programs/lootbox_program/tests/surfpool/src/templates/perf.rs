@@ -16,7 +16,6 @@ use pina_test::AccountMeta;
 use pina_test::Instruction;
 use pina_test::Keypair;
 use pina_test::Pubkey;
-use pina_test::Signer as _;
 
 use super::*;
 

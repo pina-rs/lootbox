@@ -4,11 +4,9 @@
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
-use pina_test::Account;
 use pina_test::AccountMeta;
 use pina_test::Keypair;
 use pina_test::Pubkey;
-use pina_test::Signer as _;
 
 use super::*;
 
@@ -265,12 +263,8 @@ fn append_tree_with(
 	Ok(tree_config)
 }
 
-fn create_template(program: &Harness, queue: Pubkey, opens_at: i64) -> (Pubkey, Pubkey) {
-	create_template_with_mint(program, queue, opens_at, &Keypair::new())
-}
-
-/// [`create_template`] with a caller-supplied mint keypair, for the
-/// deterministic benchmark fixtures.
+/// Template fixture with a caller-supplied mint keypair, for the deterministic
+/// benchmark fixtures.
 fn create_template_with_mint(
 	program: &Harness,
 	queue: Pubkey,

@@ -4,7 +4,6 @@
 use pina_test::AccountMeta;
 use pina_test::Keypair;
 use pina_test::Pubkey;
-use pina_test::Signer as _;
 
 use super::*;
 
@@ -589,7 +588,7 @@ fn box_curve_compute_units() {
 		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
 			.await
 			.expect("Surfpool");
-		let lootbox = locked_lootbox(&program, INVENTORY);
+		let lootbox = locked_lootbox_with_mint(&program, INVENTORY, &stable_keypair(3, 1));
 		let curve = curve_for(&program, &lootbox);
 
 		program.start_recording("box_curve");

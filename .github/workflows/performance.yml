@@ -133,7 +133,8 @@ jobs:
             fi
             mv "$path.download" "$path"
           done || ok=0
-          echo "metaplex_ok=$ok" >> "$GITHUB_ENV"
+          mkdir -p target/perf
+          printf '%s' "$ok" > target/perf/metaplex-ok
         shell: devenv shell -c -- bash -e {0}
 
       - name: Measure base compute units
@@ -145,7 +146,7 @@ jobs:
         run: |
           export HOME="${HOME:-/home/runner}"
           skip=""
-          if [ "${{ env.metaplex_ok }}" != "1" ]; then
+          if [ "$(cat target/perf/metaplex-ok)" != "1" ]; then
             skip="--skip exclusive_nft_compute_units"
           fi
           if git -C ../lootbox-performance-base cat-file \
@@ -168,7 +169,7 @@ jobs:
         run: |
           export HOME="${HOME:-/home/runner}"
           skip=""
-          if [ "${{ env.metaplex_ok }}" != "1" ]; then
+          if [ "$(cat target/perf/metaplex-ok)" != "1" ]; then
             skip="--skip exclusive_nft_compute_units"
           fi
           LOOTBOX_CU_REPORT_DIR="$PWD/target/perf/cu-head" \

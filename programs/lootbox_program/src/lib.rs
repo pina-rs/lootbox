@@ -14,7 +14,10 @@
 // until those macros document their output. Hand-written items are fully
 // documented; remove this once Pina ships generated-item docs.
 #![allow(missing_docs)]
-#![no_std]
+// The Surfpool suite includes this source by path inside its own test
+// harness, where `no_std` is both wrong and rejected at the module level;
+// keep it for every deployed and host build of the program crate itself.
+#![cfg_attr(not(test), no_std)]
 
 extern crate alloc;
 
@@ -2189,7 +2192,7 @@ mod tests {
 	fn parse_instruction_rejects_wrong_program_id() {
 		let wrong_id = Address::new_from_array([9u8; 32]);
 		let data = [LootboxInstruction::CreateLootbox as u8];
-		let result = pina::parse_instruction::<LootboxInstruction>(&wrong_id, &ID, &data);
+		let result = parse_instruction::<LootboxInstruction>(&wrong_id, &ID, &data);
 
 		assert!(matches!(result, Err(ProgramError::IncorrectProgramId)));
 	}

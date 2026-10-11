@@ -8,7 +8,11 @@ repository = "https://github.com/pina-rs/lootbox/tree/main/programs/lootbox_prog
 description = "A fully collateralized random-reward primitive for Solana"
 
 [lib]
-crate-type = ["cdylib", "lib"]
+# `cdylib` only. A second `lib` crate type makes rustc reject LTO for the
+# program, which costs 20-35% of deployed program size. The Surfpool suite
+# includes `src/lib.rs` by path instead of linking this crate, so no rlib is
+# ever needed.
+crate-type = ["cdylib"]
 
 [features]
 default = []

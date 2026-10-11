@@ -136,5 +136,4 @@ packages = [
 versioned_files = [
 	{ path = "Cargo.toml", type = "cargo" },
 	{ path = "programs/lootbox_program/tests/surfpool/Cargo.toml", type = "cargo" },
-	{ path = "programs/lootbox_program/tests/surfpool/Cargo.toml", regex = 'program_under_test = .*version = "(?<version>[^"]+)"' },
 ]

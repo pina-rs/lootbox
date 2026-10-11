@@ -1,6 +1,10 @@
 //! Box-curve journeys: a locked lootbox sells boxes on a bonding curve,
 //! buyers trade against it, and the creator is paid at sell-out or reveal.
 
+use pina_test::AccountMeta;
+use pina_test::Keypair;
+use pina_test::Pubkey;
+
 use super::*;
 
 const INVENTORY: u64 = 20;
@@ -30,14 +34,33 @@ fn locked_lootbox(program: &Harness, supply: u64) -> LockedLootbox {
 	lootbox
 }
 
+/// [`locked_lootbox`] with a caller-supplied mint keypair, for the
+/// deterministic benchmark fixtures.
+fn locked_lootbox_with_mint(program: &Harness, supply: u64, mint: &Keypair) -> LockedLootbox {
+	let lootbox = published_lootbox_with_mint(program, supply, mint);
+	lock_treasury(program, lootbox.template, lootbox.mint, 1);
+
+	lootbox
+}
+
 /// A live lootbox with every box minted to its creator, not yet locked.
 fn published_lootbox(program: &Harness, supply: u64) -> LockedLootbox {
+	published_lootbox_with_mint(program, supply, &Keypair::new())
+}
+
+/// [`published_lootbox`] with a caller-supplied mint keypair, for the
+/// deterministic benchmark fixtures.
+fn published_lootbox_with_mint(
+	program: &Harness,
+	supply: u64,
+	mint_keypair: &Keypair,
+) -> LockedLootbox {
 	let payer = program.payer();
 	let (template, bump) = Pubkey::find_program_address(
 		&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
 		&program.program_id,
 	);
-	let mint = mint_with_metadata(program, &template);
+	let mint = mint_with_metadata_keypair(program, &template, mint_keypair);
 	let creator_boxes = box_ata(program, &payer, &mint);
 	let opens_at = chain_timestamp(program) + 3_600;
 	program
@@ -105,7 +128,7 @@ fn open_curve(
 	lootbox: &LockedLootbox,
 	curve: &Curve,
 	inventory: u64,
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	let mut data = vec![0; OpenBoxCurveInstruction::SIZE];
 	let args = OpenBoxCurveInstruction::initialize(&mut data, |_| Ok(())).expect("open data");
 	args.inventory.set(inventory);
@@ -135,7 +158,7 @@ fn buy(
 	buyer: &Keypair,
 	destination: Pubkey,
 	(count, max_lamports): (u64, u64),
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	let mut data = vec![0; BuyCurveBoxesInstruction::SIZE];
 	let args = BuyCurveBoxesInstruction::initialize(&mut data, |_| Ok(())).expect("buy data");
 	args.count.set(count);
@@ -165,7 +188,7 @@ fn sell(
 	curve: &Curve,
 	seller: &Keypair,
 	(count, min_lamports): (u64, u64),
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	let mut data = vec![0; SellCurveBoxesInstruction::SIZE];
 	let args = SellCurveBoxesInstruction::initialize(&mut data, |_| Ok(())).expect("sell data");
 	args.count.set(count);
@@ -197,7 +220,11 @@ fn sell(
 	)
 }
 
-fn close_curve(program: &Harness, lootbox: &LockedLootbox, curve: &Curve) -> Result<(), String> {
+fn close_curve(
+	program: &Harness,
+	lootbox: &LockedLootbox,
+	curve: &Curve,
+) -> Result<(), std::string::String> {
 	program.send(
 		&[LootboxInstruction::CloseBoxCurve as u8, 0],
 		vec![
@@ -219,7 +246,12 @@ fn curve_state(program: &Harness, curve: &Curve) -> BoxCurveStateZc {
 }
 
 fn funded_trader(program: &Harness, mint: &Pubkey) -> (Keypair, Pubkey) {
-	let trader = Keypair::new();
+	funded_trader_keypair(program, mint, Keypair::new())
+}
+
+/// [`funded_trader`] with a caller-supplied trader keypair, for the
+/// deterministic benchmark fixtures.
+fn funded_trader_keypair(program: &Harness, mint: &Pubkey, trader: Keypair) -> (Keypair, Pubkey) {
 	program
 		.fund(&trader.pubkey(), 1_000_000_000)
 		.expect("fund trader");
@@ -228,7 +260,7 @@ fn funded_trader(program: &Harness, mint: &Pubkey) -> (Keypair, Pubkey) {
 	(trader, boxes)
 }
 
-fn assert_error(result: Result<(), String>, error: LootboxError, reason: &str) {
+fn assert_error(result: Result<(), std::string::String>, error: LootboxError, reason: &str) {
 	let message = result.expect_err(reason);
 	assert!(
 		message.contains(&format!("custom program error: {:#x}", error as u32)),
@@ -544,6 +576,56 @@ fn a_curve_needs_a_locked_lootbox_and_can_close_before_any_sale() {
 		box_ata(&program, &curve.address, &lootbox.mint);
 		open_curve(&program, &lootbox, &curve, INVENTORY).expect("a closed curve can reopen");
 
+		program.stop().expect("stop Surfpool");
+	});
+}
+
+/// One full curve journey, measuring the compute units of every instruction.
+#[test]
+#[ignore = "run with `devenv shell -- test:surfpool`"]
+fn box_curve_compute_units() {
+	pina_test::run(async {
+		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
+			.await
+			.expect("Surfpool");
+		let lootbox = locked_lootbox_with_mint(&program, INVENTORY, &stable_keypair(3, 1));
+		let curve = curve_for(&program, &lootbox);
+
+		program.start_recording("box_curve");
+		program.record_as("open_box_curve");
+		open_curve(&program, &lootbox, &curve, INVENTORY).expect("open curve");
+		assert_eq!(token_balance(&program, &curve.boxes), INVENTORY);
+
+		let (buyer, buyer_boxes) = funded_trader(&program, &lootbox.mint);
+		let two = cost(0, 2);
+		program.record_as("buy_curve_boxes");
+		buy(
+			&program,
+			&lootbox,
+			&curve,
+			&buyer,
+			buyer_boxes,
+			(2, two + fee(two)),
+		)
+		.expect("buy two");
+		assert_eq!(token_balance(&program, &buyer_boxes), 2);
+
+		program.record_as("sell_curve_boxes");
+		sell(&program, &lootbox, &curve, &buyer, (2, two - fee(two))).expect("sell two back");
+		assert_eq!(token_balance(&program, &curve.boxes), INVENTORY);
+
+		program
+			.surfnet
+			.cheatcodes()
+			.time_travel_to_timestamp(
+				u64::try_from(lootbox.opens_at + 1).expect("timestamp") * 1000,
+			)
+			.expect("reach the reveal");
+		program.record_as("close_box_curve");
+		close_curve(&program, &lootbox, &curve).expect("close after reveal");
+		assert!(program.account(&curve.address).is_err(), "curve closed");
+
+		program.finish_recording().expect("write box_curve report");
 		program.stop().expect("stop Surfpool");
 	});
 }

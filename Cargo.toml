@@ -95,3 +95,10 @@ lto = "fat"
 opt-level = 3
 overflow-checks = true
 panic = "abort"
+strip = true
+
+# Build scripts and proc macros do not ship in the deployed program.
+[profile.release.build-override]
+codegen-units = 1
+incremental = false
+opt-level = 3

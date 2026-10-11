@@ -4,6 +4,9 @@
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
+use pina_test::AccountMeta;
+use pina_test::Keypair;
+use pina_test::Pubkey;
 
 use super::*;
 
@@ -30,7 +33,7 @@ fn bubblegum() -> Pubkey {
 	pubkey(METAPLEX_PROGRAMS[0])
 }
 
-fn core() -> Pubkey {
+pub(super) fn core() -> Pubkey {
 	pubkey(METAPLEX_PROGRAMS[1])
 }
 
@@ -38,11 +41,11 @@ fn compression() -> Pubkey {
 	pubkey(METAPLEX_PROGRAMS[2])
 }
 
-fn noop() -> Pubkey {
+pub(super) fn noop() -> Pubkey {
 	pubkey(METAPLEX_PROGRAMS[3])
 }
 
-fn deploy_metaplex_programs(program: &Harness) {
+pub(super) fn deploy_metaplex_programs(program: &Harness) {
 	let directory = PathBuf::from(
 		std::env::var_os("METAPLEX_PROGRAMS_DIR")
 			.expect("METAPLEX_PROGRAMS_DIR; run `devenv shell -- test:surfpool`"),
@@ -72,7 +75,7 @@ fn fixture_weight(layer: usize, slot: usize) -> u32 {
 	(1_000_000 / (rank * rank)).max(1)
 }
 
-fn fixture_table() -> ([u8; 12], Vec<u8>) {
+fn fixture_table() -> ([u8; 12], std::vec::Vec<u8>) {
 	let mut counts = [0u8; 12];
 	let mut weights = vec![0u8; 12 * 256];
 
@@ -210,7 +213,11 @@ fn publish_collection(program: &Harness, attach_closes_at: i64) -> CollectionCon
 	}
 }
 
-fn append_tree(program: &Harness, collection: Pubkey, canopy: u64) -> Result<Pubkey, String> {
+fn append_tree(
+	program: &Harness,
+	collection: Pubkey,
+	canopy: u64,
+) -> Result<Pubkey, std::string::String> {
 	append_tree_with(program, collection, &Keypair::new(), canopy)
 }
 
@@ -219,7 +226,7 @@ fn append_tree_with(
 	collection: Pubkey,
 	tree: &Keypair,
 	canopy: u64,
-) -> Result<Pubkey, String> {
+) -> Result<Pubkey, std::string::String> {
 	let payer = program.payer();
 	let tree_config = Pubkey::find_program_address(&[tree.pubkey().as_ref()], &bubblegum()).0;
 	let space = merkle_tree_account_size(u64::from(TREE_DEPTH), u64::from(TREE_BUFFER), canopy);
@@ -256,13 +263,20 @@ fn append_tree_with(
 	Ok(tree_config)
 }
 
-fn create_template(program: &Harness, queue: Pubkey, opens_at: i64) -> (Pubkey, Pubkey) {
+/// Template fixture with a caller-supplied mint keypair, for the deterministic
+/// benchmark fixtures.
+fn create_template_with_mint(
+	program: &Harness,
+	queue: Pubkey,
+	opens_at: i64,
+	box_mint_keypair: &Keypair,
+) -> (Pubkey, Pubkey) {
 	let payer = program.payer();
 	let (template, bump) = Pubkey::find_program_address(
 		&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
 		&program.program_id,
 	);
-	let box_mint = mint_with_metadata(program, &template);
+	let box_mint = mint_with_metadata_keypair(program, &template, box_mint_keypair);
 	program
 		.send(
 			&create_template_data(queue, bump, opens_at, false),
@@ -292,7 +306,7 @@ fn attach(
 	template: Pubkey,
 	bundle: Pubkey,
 	box_mint: Pubkey,
-) -> Result<AttachmentContext, String> {
+) -> Result<AttachmentContext, std::string::String> {
 	let (attachment, bump) = Pubkey::find_program_address(
 		&[b"exclusive-attachment", bundle.as_ref(), &[0]],
 		&program.program_id,
@@ -328,7 +342,7 @@ fn attach(
 	})
 }
 
-fn reclaim_fees(program: &Harness, context: &AttachmentContext) -> Result<(), String> {
+fn reclaim_fees(program: &Harness, context: &AttachmentContext) -> Result<(), std::string::String> {
 	program.send(
 		&[LootboxInstruction::ReclaimExclusiveFees as u8, 0, 0],
 		vec![
@@ -344,8 +358,8 @@ fn reclaim_fees(program: &Harness, context: &AttachmentContext) -> Result<(), St
 }
 
 /// Borsh `MetadataArgsV2` the program must hand Bubblegum for one edition.
-fn expected_metadata(name: &str, uri: &str, collection: &Pubkey) -> Vec<u8> {
-	let mut bytes = Vec::new();
+fn expected_metadata(name: &str, uri: &str, collection: &Pubkey) -> std::vec::Vec<u8> {
+	let mut bytes = std::vec::Vec::new();
 	push_borsh_string(&mut bytes, name);
 	push_borsh_string(&mut bytes, SYMBOL);
 	push_borsh_string(&mut bytes, uri);
@@ -357,16 +371,16 @@ fn expected_metadata(name: &str, uri: &str, collection: &Pubkey) -> Vec<u8> {
 	bytes
 }
 
-fn read_borsh_string(data: &[u8], offset: &mut usize) -> String {
+fn read_borsh_string(data: &[u8], offset: &mut usize) -> std::string::String {
 	let length = u32::from_le_bytes(data[*offset..*offset + 4].try_into().expect("length"));
 	let start = *offset + 4;
 	let end = start + usize::try_from(length).expect("length");
 	*offset = end;
-	String::from_utf8(data[start..end].to_vec()).expect("UTF-8")
+	std::string::String::from_utf8(data[start..end].to_vec()).expect("UTF-8")
 }
 
 /// Encoded `ExclusiveNftMinted` event from a claim's `Program data:` logs.
-fn minted_event_bytes(logs: &[String]) -> Vec<u8> {
+fn minted_event_bytes(logs: &[std::string::String]) -> std::vec::Vec<u8> {
 	logs.iter()
 		.filter_map(|line| line.strip_prefix("Program data: "))
 		.find_map(|payload| {
@@ -404,7 +418,13 @@ fn minted_leaf(execution: &Execution) -> MintedLeaf {
 }
 
 /// Name, symbol, and URI the lootbox program handed Bubblegum's `mint_v2`.
-fn minted_metadata(execution: &Execution) -> (String, String, String) {
+fn minted_metadata(
+	execution: &Execution,
+) -> (
+	std::string::String,
+	std::string::String,
+	std::string::String,
+) {
 	let bubblegum = bubblegum();
 	let data = execution
 		.inner_instructions
@@ -441,7 +461,8 @@ fn exclusive_attachment_unwinds_from_a_staged_bundle() {
 		let payer = program.payer();
 		let opens_at = chain_timestamp(&program) + 3_600;
 		let collection = publish_collection(&program, opens_at);
-		let (template, box_mint) = create_template(&program, queue, opens_at);
+		let (template, box_mint) =
+			create_template_with_mint(&program, queue, opens_at, &stable_keypair(5, 4));
 		let bundle = add_bundle(&program, template, 0, 3, 1);
 
 		let before = program.balance(&payer).expect("creator balance");
@@ -479,19 +500,21 @@ fn exclusive_attachment_unwinds_from_a_staged_bundle() {
 #[ignore = "run with `devenv shell -- test:surfpool`"]
 fn exclusive_nfts_mint_layered_traits_to_the_bound_beneficiary() {
 	pina_test::run(async {
-		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
-			.await
-			.expect("Surfpool");
+		let mut program =
+			Harness::start_with_payer(Pubkey::new_from_array(ID.to_bytes()), stable_keypair(5, 0))
+				.await
+				.expect("Surfpool");
 		deploy_metaplex_programs(&program);
 		let (queue, oracle, cpi) = oracle_fixture(&mut program);
 		let payer = program.payer();
-		let recipient = Keypair::new();
+		let recipient = stable_keypair(5, 1);
 		program
 			.fund(&recipient.pubkey(), 100_000_000)
 			.expect("recipient fee funds");
 		let opens_at = chain_timestamp(&program) + 60;
 		let collection = publish_collection(&program, opens_at);
-		let (template, box_mint) = create_template(&program, queue, opens_at);
+		let (template, box_mint) =
+			create_template_with_mint(&program, queue, opens_at, &stable_keypair(5, 4));
 		let creator_box_ata = box_ata(&program, &payer, &box_mint);
 		let recipient_box_ata = box_ata(&program, &recipient.pubkey(), &box_mint);
 		// Four copies: three are opened and one is burned unopened, so
@@ -549,9 +572,9 @@ fn exclusive_nfts_mint_layered_traits_to_the_bound_beneficiary() {
 			"the attach window has closed"
 		);
 
-		let mut openings = Vec::new();
-		for _ in 0..3 {
-			let randomness = Keypair::new();
+		let mut openings = std::vec::Vec::new();
+		for index in 0..3 {
+			let randomness = stable_keypair(5, 10 + index as u8);
 			let (opening, opening_bump) = Pubkey::find_program_address(
 				&[
 					b"template-opening",
@@ -722,14 +745,15 @@ fn exclusive_nfts_mint_layered_traits_to_the_bound_beneficiary() {
 			assert_eq!(event.collection.as_ref(), collection.collection.as_ref());
 
 			let name = format!("{NAME_PREFIX} #{serial}");
-			let hex = traits
-				.as_slice()
-				.iter()
-				.fold(String::new(), |mut text, value| {
-					use std::fmt::Write as _;
-					write!(text, "{value:02x}").expect("write hex");
-					text
-				});
+			let hex =
+				traits
+					.as_slice()
+					.iter()
+					.fold(std::string::String::new(), |mut text, value| {
+						use std::fmt::Write as _;
+						write!(text, "{value:02x}").expect("write hex");
+						text
+					});
 			let uri = format!("{BASE_URI}{hex}-{serial}.json");
 			assert_eq!(
 				minted_metadata(&execution),
@@ -791,6 +815,334 @@ fn exclusive_nfts_mint_layered_traits_to_the_bound_beneficiary() {
 			BUBBLEGUM_MINT_V2_FEE_LAMPORTS,
 			"exactly the unused copy's fee returns"
 		);
+		program.stop().expect("stop Surfpool");
+	});
+}
+
+/// One exclusive-collection journey, measuring the compute units of every
+/// instruction from collection creation through a minted, layered NFT claim.
+#[test]
+#[ignore = "run with `devenv shell -- test:surfpool`"]
+fn exclusive_nft_compute_units() {
+	pina_test::run(async {
+		let mut program =
+			Harness::start_with_payer(Pubkey::new_from_array(ID.to_bytes()), stable_keypair(5, 0))
+				.await
+				.expect("Surfpool");
+		deploy_metaplex_programs(&program);
+		let (queue, oracle, cpi) = oracle_fixture(&mut program);
+		let payer = program.payer();
+		let recipient = stable_keypair(5, 1);
+		program
+			.fund(&recipient.pubkey(), 100_000_000)
+			.expect("recipient fee funds");
+		let opens_at = chain_timestamp(&program) + 60;
+
+		program.start_recording("exclusive_nft");
+		let (collection, collection_bump) = Pubkey::find_program_address(
+			&[
+				b"exclusive-collection",
+				payer.as_ref(),
+				&COLLECTION_ID.to_le_bytes(),
+			],
+			&program.program_id,
+		);
+		let core_collection = stable_keypair(5, 2);
+		let mut create = vec![0; CreateExclusiveCollectionInstruction::SIZE];
+		let args = CreateExclusiveCollectionInstruction::initialize(&mut create, |_| Ok(()))
+			.expect("create collection data");
+		args.collection_id.set(COLLECTION_ID);
+		args.attach_opens_at.set(chain_timestamp(&program) - 10);
+		args.attach_closes_at.set(opens_at + 3_600);
+		args.layer_count = u8::try_from(FIXTURE_TRAITS.len()).expect("layers");
+		args.bump = collection_bump;
+		args.name_prefix = padded(NAME_PREFIX);
+		args.symbol = padded(SYMBOL);
+		args.base_uri = padded(BASE_URI);
+		program.record_as("create_exclusive_collection");
+		program
+			.send_with_signers(
+				program.instruction(
+					&create,
+					vec![
+						AccountMeta::new(payer, true),
+						AccountMeta::new(collection, false),
+						AccountMeta::new(core_collection.pubkey(), true),
+						AccountMeta::new_readonly(core(), false),
+						AccountMeta::new_readonly(Pubkey::default(), false),
+					],
+				),
+				&[&core_collection],
+			)
+			.expect("create the collection and its PDA-controlled Core collection");
+
+		let (counts, weights) = fixture_table();
+		for layer in 0..FIXTURE_TRAITS.len() {
+			let mut data = vec![0; SetExclusiveLayerInstruction::SIZE];
+			let args = SetExclusiveLayerInstruction::initialize(&mut data, |_| Ok(()))
+				.expect("layer data");
+			args.layer_index = u8::try_from(layer).expect("layer");
+			args.trait_count = counts[layer];
+			args.weights
+				.copy_from_slice(&weights[layer * 256..(layer + 1) * 256]);
+			if layer == 0 {
+				program.record_as("set_exclusive_layer");
+			}
+			program
+				.send(
+					&data,
+					vec![
+						AccountMeta::new_readonly(payer, true),
+						AccountMeta::new(collection, false),
+					],
+				)
+				.expect("load one layer table");
+		}
+
+		// The tree account is created in its own transaction so the benchmark
+		// measures exactly the lootbox append instruction.
+		let tree = stable_keypair(5, 3);
+		let tree_config = Pubkey::find_program_address(&[tree.pubkey().as_ref()], &bubblegum()).0;
+		let canopy = u64::from(TREE_DEPTH) - u64::from(MAX_EXCLUSIVE_TRANSFER_PROOF_NODES);
+		let space = merkle_tree_account_size(u64::from(TREE_DEPTH), u64::from(TREE_BUFFER), canopy);
+		program
+			.send_with_signers(
+				create_account_instruction(
+					&payer,
+					&tree.pubkey(),
+					rent_minimum(space),
+					space,
+					&compression(),
+				),
+				&[&tree],
+			)
+			.expect("create the Merkle tree account");
+		let mut append = vec![0; AppendExclusiveTreeInstruction::SIZE];
+		let args =
+			AppendExclusiveTreeInstruction::initialize(&mut append, |_| Ok(())).expect("tree data");
+		args.max_depth = TREE_DEPTH;
+		args.max_buffer_size.set(TREE_BUFFER);
+		program.record_as("append_exclusive_tree");
+		program
+			.send(
+				&append,
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new(collection, false),
+					AccountMeta::new(tree_config, false),
+					AccountMeta::new(tree.pubkey(), false),
+					AccountMeta::new_readonly(bubblegum(), false),
+					AccountMeta::new_readonly(noop(), false),
+					AccountMeta::new_readonly(compression(), false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+				],
+			)
+			.expect("append a private Bubblegum V2 tree");
+
+		program.record_as("publish_exclusive_collection");
+		program
+			.send(
+				&[LootboxInstruction::PublishExclusiveCollection as u8, 0],
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(collection, false),
+				],
+			)
+			.expect("publish and freeze the layers");
+
+		let (template, box_mint) =
+			create_template_with_mint(&program, queue, opens_at, &stable_keypair(5, 4));
+		let creator_box_ata = box_ata(&program, &payer, &box_mint);
+		let recipient_box_ata = box_ata(&program, &recipient.pubkey(), &box_mint);
+		let quantity = 4;
+		let bundle = add_bundle(&program, template, 0, quantity, 1);
+		program.record_as("attach_exclusive_nft");
+		let context = attach(&program, collection, template, bundle, box_mint)
+			.expect("attach while the window is open");
+
+		activate_bundle(&program, template, bundle);
+		program
+			.send(
+				&[LootboxInstruction::SealTemplate as u8, 0],
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+				],
+			)
+			.expect("seal");
+		program
+			.send(
+				&template_mint_data(quantity),
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new(box_mint, false),
+					AccountMeta::new(creator_box_ata, false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("mint exact boxes");
+		lock_treasury(&program, template, box_mint, 1);
+		program
+			.send_instruction(
+				token_ix::transfer_checked(
+					&token_2022(),
+					&creator_box_ata,
+					&box_mint,
+					&recipient_box_ata,
+					&payer,
+					&[],
+					quantity,
+					0,
+				)
+				.expect("box transfer"),
+			)
+			.expect("deliver boxes");
+		program
+			.surfnet
+			.cheatcodes()
+			.time_travel_to_timestamp(u64::try_from(opens_at + 1).expect("time") * 1000)
+			.expect("unlock");
+
+		let mut openings = std::vec::Vec::new();
+		for index in 0..3 {
+			let randomness = stable_keypair(5, 10 + index as u8);
+			let (opening, opening_bump) = Pubkey::find_program_address(
+				&[
+					b"template-opening",
+					template.as_ref(),
+					randomness.pubkey().as_ref(),
+				],
+				&program.program_id,
+			);
+			program
+				.send_with_signers(
+					program.instruction(
+						&template_request_data(opening_bump, recipient.pubkey()),
+						template_request_accounts(&TemplateRequestContext {
+							owner: recipient.pubkey(),
+							template,
+							mint: box_mint,
+							ata: recipient_box_ata,
+							opening,
+							randomness: randomness.pubkey(),
+							queue,
+							oracle,
+							cpi: &cpi,
+						}),
+					),
+					&[&recipient, &randomness],
+				)
+				.expect("commit opening");
+			openings.push((opening, randomness.pubkey()));
+		}
+		program
+			.send_with_signers(
+				token_ix::burn_checked(
+					&token_2022(),
+					&recipient_box_ata,
+					&box_mint,
+					&recipient.pubkey(),
+					&[],
+					1,
+					0,
+				)
+				.expect("burn"),
+				&[&recipient],
+			)
+			.expect("burn the fourth box unopened");
+		program.advance_one_slot().expect("oracle delay");
+		let service_vault = Pubkey::find_program_address(
+			&[b"service-vault", template.as_ref()],
+			&program.program_id,
+		)
+		.0;
+		for (opening, randomness) in openings.iter().copied() {
+			fulfill(
+				&FulfillContext {
+					program: &program,
+					payer: &recipient,
+					template,
+					opening,
+					randomness,
+					queue,
+					oracle,
+					cpi: &cpi,
+				},
+				7,
+			)
+			.expect("fulfill");
+			let (result_receipt, result_receipt_bump) =
+				result_receipt_address(&program, opening).expect("result receipt");
+			program
+				.send(
+					&[
+						LootboxInstruction::AllocateTemplateOpen as u8,
+						0,
+						result_receipt_bump,
+					],
+					vec![
+						AccountMeta::new(template, false),
+						AccountMeta::new(opening, false),
+						AccountMeta::new_readonly(bundle, false),
+						AccountMeta::new(service_vault, false),
+						AccountMeta::new(result_receipt, false),
+						AccountMeta::new_readonly(Pubkey::default(), false),
+					],
+				)
+				.expect("allocate the consolation bundle");
+		}
+
+		let claim_accounts = |opening: Pubkey, beneficiary: Pubkey| {
+			vec![
+				AccountMeta::new_readonly(template, false),
+				AccountMeta::new(opening, false),
+				AccountMeta::new(bundle, false),
+				AccountMeta::new(context.attachment, false),
+				AccountMeta::new(context.fee_vault, false),
+				AccountMeta::new(collection, false),
+				AccountMeta::new_readonly(beneficiary, false),
+				AccountMeta::new(tree_config, false),
+				AccountMeta::new(tree.pubkey(), false),
+				AccountMeta::new(core_collection.pubkey(), false),
+				AccountMeta::new_readonly(
+					Pubkey::new_from_array(MPL_CORE_CPI_SIGNER_ID.to_bytes()),
+					false,
+				),
+				AccountMeta::new_readonly(bubblegum(), false),
+				AccountMeta::new_readonly(core(), false),
+				AccountMeta::new_readonly(noop(), false),
+				AccountMeta::new_readonly(compression(), false),
+				AccountMeta::new_readonly(Pubkey::default(), false),
+			]
+		};
+		let claim_data = [LootboxInstruction::ClaimExclusiveNft as u8, 0, 0];
+		for (index, (opening, _)) in openings.iter().copied().enumerate() {
+			if index == 0 {
+				program.record_as("claim_exclusive_nft");
+			}
+			program
+				.send_instruction(
+					program.instruction(&claim_data, claim_accounts(opening, recipient.pubkey())),
+				)
+				.expect("mint layer-drawn NFT to the bound beneficiary");
+		}
+
+		program
+			.send(
+				&[LootboxInstruction::RetireTemplate as u8, 0],
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+				],
+			)
+			.expect("retire the drained series");
+		program.record_as("reclaim_exclusive_fees");
+		reclaim_fees(&program, &context).expect("recover the unused copy's fee");
+
+		program
+			.finish_recording()
+			.expect("write exclusive_nft report");
 		program.stop().expect("stop Surfpool");
 	});
 }

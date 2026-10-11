@@ -28,6 +28,8 @@ edition_2024_expr_fragment_specifier = "allow"
 level = "warn"
 check-cfg = [
 	'cfg(coverage)',
+	'cfg(kani)',
+	'cfg(feature, values("bpf-entrypoint"))',
 	'cfg(target_os, values("solana"))',
 	'cfg(target_arch, values("bpf"))',
 	'cfg(target_feature, values("static-syscalls"))',
@@ -61,13 +63,18 @@ wildcard_imports = "allow"
 [dependencies]
 base64 = "=0.22.1"
 bs58 = "=0.5.1"
+pina = { version = "=0.23.0", default-features = false, features = ["account-resize", "compact", "logs", "token", "validation"] }
 pina_test = "=0.23.0"
-program_under_test = { package = "lootbox_program", path = "../..", version = "0.0.2" }
+proptest = { version = "1", default-features = false, features = ["std"] }
+serde_json = "1"
 solana-commitment-config = "=3.1.1"
-solana-keccak-hasher = "=3.1.0"
+solana-keccak-hasher = { version = "=3.1.0", features = ["sha3"] }
+solana-keypair = "=3.1.2"
 solana-message = "=4.4.1"
 solana-rent = "=4.3.0"
 solana-rpc-client-api = "=4.2.2"
+solana-seed-derivable = "=3.0.0"
+solana-sha256-hasher = { version = "=3.1.0", features = ["sha2"] }
 solana-transaction = "=4.1.6"
 solana-transaction-status-client-types = "=4.2.2"
 solana-zk-sdk-pod = "=0.1.2"

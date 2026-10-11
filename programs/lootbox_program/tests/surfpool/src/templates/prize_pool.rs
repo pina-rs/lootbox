@@ -1,27 +1,33 @@
+use pina_test::AccountMeta;
+use pina_test::Keypair;
+use pina_test::Pubkey;
+
 use super::*;
 
 #[test]
 #[ignore = "run with `devenv shell -- test:surfpool`"]
 fn custody_entropy_and_bound_delivery_resist_adversarial_paths() {
 	pina_test::run(async {
-		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
-			.await
-			.expect("Surfpool");
+		let mut program =
+			Harness::start_with_payer(Pubkey::new_from_array(ID.to_bytes()), stable_keypair(4, 0))
+				.await
+				.expect("Surfpool");
 		deploy_bubblegum_fixture(&program);
 		let (queue, oracle, cpi) = oracle_fixture(&mut program);
 		let payer = program.payer();
-		let recipient = Keypair::new();
+		let recipient = stable_keypair(4, 1);
 		program
 			.fund(&recipient.pubkey(), 100_000_000)
 			.expect("recipient fee funds");
 		let leaves = [mock_leaf(41, 7), mock_leaf(99, 2), mock_leaf(5, 31)];
-		let tree = initialize_mock_tree(&program, &leaves, 6, 0);
+		let tree = stable_keypair(4, 2);
+		initialize_mock_tree_keypair(&program, &leaves, 6, 0, &tree);
 		let tree_address = tree.pubkey();
 		let (template, template_bump) = Pubkey::find_program_address(
 			&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
 			&program.program_id,
 		);
-		let mint = mint_with_metadata(&program, &template);
+		let mint = mint_with_metadata_keypair(&program, &template, &stable_keypair(4, 3));
 		let creator_ata = box_ata(&program, &payer, &mint);
 		let recipient_ata = box_ata(&program, &recipient.pubkey(), &mint);
 		let opens_at = chain_timestamp(&program) + 3_600;
@@ -257,7 +263,7 @@ fn custody_entropy_and_bound_delivery_resist_adversarial_paths() {
 			.time_travel_to_timestamp(u64::try_from(opens_at + 1).expect("time") * 1_000)
 			.expect("unlock pool boxes");
 
-		let mut openings = Vec::new();
+		let mut openings = std::vec::Vec::new();
 		for entropy in 1..=3u8 {
 			let randomness = Keypair::new();
 			let (opening, opening_bump) = Pubkey::find_program_address(
@@ -791,7 +797,7 @@ fn pool_rent_recovers_while_stranded_claims_stay_alive() {
 			&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
 			&program.program_id,
 		);
-		let mint = mint_with_metadata(&program, &template);
+		let mint = mint_with_metadata_keypair(&program, &template, &stable_keypair(4, 3));
 		let creator_ata = box_ata(&program, &payer, &mint);
 		let recipient_ata = box_ata(&program, &recipient.pubkey(), &mint);
 		let opens_at = chain_timestamp(&program) + 3_600;
@@ -1102,6 +1108,424 @@ fn pool_rent_recovers_while_stranded_claims_stay_alive() {
 		let state = TemplateOpeningState::try_from_bytes(&delivered.data).expect("opening state");
 		assert_eq!(state.status, 3, "the opening is fully delivered");
 
+		program.stop().expect("stop Surfpool");
+	});
+}
+
+/// One full prize-pool journey, measuring the compute units of every
+/// instruction: three compressed leaves enter custody, one is cancelled before
+/// transfer, one is claimed, one is left assigned-but-unclaimed for the
+/// stranded path, and the unassigned tail is reclaimed before the pool rent
+/// returns.
+#[test]
+#[ignore = "run with `devenv shell -- test:surfpool`"]
+fn prize_pool_compute_units() {
+	pina_test::run(async {
+		let mut program =
+			Harness::start_with_payer(Pubkey::new_from_array(ID.to_bytes()), stable_keypair(4, 0))
+				.await
+				.expect("Surfpool");
+		deploy_bubblegum_fixture(&program);
+		let (queue, oracle, cpi) = oracle_fixture(&mut program);
+		let payer = program.payer();
+		let recipient = stable_keypair(4, 1);
+		program
+			.fund(&recipient.pubkey(), 100_000_000)
+			.expect("recipient fee funds");
+		let leaves = [mock_leaf(41, 7), mock_leaf(99, 2), mock_leaf(5, 31)];
+		let tree = stable_keypair(4, 2);
+		initialize_mock_tree_keypair(&program, &leaves, 6, 0, &tree);
+		let tree_address = tree.pubkey();
+		let (template, template_bump) = Pubkey::find_program_address(
+			&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
+			&program.program_id,
+		);
+		let mint = mint_with_metadata_keypair(&program, &template, &stable_keypair(4, 3));
+		let creator_ata = box_ata(&program, &payer, &mint);
+		let recipient_ata = box_ata(&program, &recipient.pubkey(), &mint);
+		let opens_at = chain_timestamp(&program) + 3_600;
+		program
+			.send(
+				&create_template_data(queue, template_bump, opens_at, true),
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new_readonly(mint, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("create PrizePool template");
+		let bundle = add_bundle(&program, template, 0, 3, 1);
+		let (pool, pool_bump) = Pubkey::find_program_address(
+			&[b"prize-pool", bundle.as_ref(), &[0u8][..]],
+			&program.program_id,
+		);
+
+		program.start_recording("prize_pool");
+		let mut create_pool = vec![0; CreatePrizePoolInstruction::SIZE];
+		CreatePrizePoolInstruction::initialize(&mut create_pool, |wire| {
+			wire.asset_index = 0;
+			wire.bump = pool_bump;
+			Ok(())
+		})
+		.expect("pool args");
+		program.record_as("create_prize_pool");
+		program
+			.send(
+				&create_pool,
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new(bundle, false),
+					AccountMeta::new(pool, false),
+					AccountMeta::new_readonly(tree_address, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+				],
+			)
+			.expect("create compact PrizePool");
+		let custody = PrizePoolCustodyContext {
+			template,
+			bundle,
+			pool,
+			tree: tree_address,
+		};
+
+		program.record_as("prepare_prize_pool_item");
+		prepare_prize_pool_item(
+			&program,
+			template,
+			bundle,
+			pool,
+			0,
+			leaves[0],
+			&mock_metadata(leaves[0].nonce, false),
+		)
+		.expect("admit first item");
+		program.record_as("deposit_prize_pool_item");
+		transfer_prepared_prize_pool_item(
+			&program,
+			&custody,
+			0,
+			leaves[0],
+			mock_tree_root(&program, tree_address),
+		)
+		.expect("first leaf enters PDA custody");
+
+		prepare_prize_pool_item(
+			&program,
+			template,
+			bundle,
+			pool,
+			1,
+			leaves[1],
+			&mock_metadata(leaves[1].nonce, false),
+		)
+		.expect("admit second item");
+		transfer_prepared_prize_pool_item(
+			&program,
+			&custody,
+			1,
+			leaves[1],
+			mock_tree_root(&program, tree_address),
+		)
+		.expect("second leaf enters custody");
+
+		prepare_prize_pool_item(
+			&program,
+			template,
+			bundle,
+			pool,
+			2,
+			leaves[2],
+			&mock_metadata(leaves[2].nonce, false),
+		)
+		.expect("admit resumable item");
+		let (prepared_item, _) = prize_pool_item_address(&program, pool, 2);
+		program.record_as("cancel_prize_pool_item");
+		program
+			.send(
+				&[LootboxInstruction::CancelPrizePoolItem as u8, 0],
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new_readonly(bundle, false),
+					AccountMeta::new(pool, false),
+					AccountMeta::new(prepared_item, false),
+				],
+			)
+			.expect("cancel crashed admission cleanly");
+		prepare_prize_pool_item(
+			&program,
+			template,
+			bundle,
+			pool,
+			2,
+			leaves[2],
+			&mock_metadata(leaves[2].nonce, false),
+		)
+		.expect("readmit resumable item");
+		transfer_prepared_prize_pool_item(
+			&program,
+			&custody,
+			2,
+			leaves[2],
+			mock_tree_root(&program, tree_address),
+		)
+		.expect("resumed leaf enters custody");
+
+		program.record_as("seal_prize_pool");
+		program
+			.send(
+				&[LootboxInstruction::SealPrizePool as u8, 0],
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new(bundle, false),
+					AccountMeta::new(pool, false),
+				],
+			)
+			.expect("seal exact pool inventory");
+		activate_bundle(&program, template, bundle);
+		program
+			.send(
+				&[LootboxInstruction::SealTemplate as u8, 0],
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+				],
+			)
+			.expect("publish pool treasury");
+		program
+			.send(
+				&template_mint_data(3),
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new(mint, false),
+					AccountMeta::new(creator_ata, false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("mint exactly three pool tickets");
+		lock_treasury(&program, template, mint, 1);
+		program
+			.send_instruction(
+				token_ix::transfer_checked(
+					&token_2022(),
+					&creator_ata,
+					&mint,
+					&recipient_ata,
+					&payer,
+					&[],
+					3,
+					0,
+				)
+				.expect("box transfer"),
+			)
+			.expect("gift pool-backed boxes");
+		program
+			.surfnet
+			.cheatcodes()
+			.time_travel_to_timestamp(u64::try_from(opens_at + 1).expect("time") * 1_000)
+			.expect("unlock pool boxes");
+
+		// Two boxes are opened and allocated; the third is burned so the
+		// retirement path can recover the unassigned pool item.
+		let mut openings = std::vec::Vec::new();
+		for (position, entropy) in (1..=2u8).enumerate() {
+			let randomness = stable_keypair(4, 10 + position as u8);
+			let (opening, opening_bump) = Pubkey::find_program_address(
+				&[
+					b"template-opening",
+					template.as_ref(),
+					randomness.pubkey().as_ref(),
+				],
+				&program.program_id,
+			);
+			program
+				.send_with_signers(
+					program.instruction(
+						&template_request_data(opening_bump, recipient.pubkey()),
+						template_request_accounts(&TemplateRequestContext {
+							owner: recipient.pubkey(),
+							template,
+							mint,
+							ata: recipient_ata,
+							opening,
+							randomness: randomness.pubkey(),
+							queue,
+							oracle,
+							cpi: &cpi,
+						}),
+					),
+					&[&recipient, &randomness],
+				)
+				.expect("burn and commit pool box");
+			openings.push((opening, randomness.pubkey(), entropy));
+		}
+		program
+			.send_with_signers(
+				token_ix::burn_checked(
+					&token_2022(),
+					&recipient_ata,
+					&mint,
+					&recipient.pubkey(),
+					&[],
+					1,
+					0,
+				)
+				.expect("burn remaining box"),
+				&[&recipient],
+			)
+			.expect("remove outstanding supply");
+
+		program.advance_one_slot().expect("oracle reveal slot");
+		for (opening, randomness, entropy) in &openings {
+			fulfill(
+				&FulfillContext {
+					program: &program,
+					payer: &recipient,
+					template,
+					opening: *opening,
+					randomness: *randomness,
+					queue,
+					oracle,
+					cpi: &cpi,
+				},
+				*entropy,
+			)
+			.expect("verify committed pool entropy");
+		}
+
+		let service_vault = Pubkey::find_program_address(
+			&[b"service-vault", template.as_ref()],
+			&program.program_id,
+		)
+		.0;
+		let mut assigned = [false; 3];
+		for (position, (opening, ..)) in openings.iter().copied().enumerate() {
+			let (result_receipt, receipt_bump) =
+				result_receipt_address(&program, opening).expect("canonical result receipt");
+			let mut allocation = vec![0; AllocatePrizePoolOpenInstruction::SIZE];
+			AllocatePrizePoolOpenInstruction::initialize(&mut allocation, |_| Ok(()))
+				.expect("pool allocation")
+				.result_receipt_bump = receipt_bump;
+			if position == 0 {
+				program.record_as("allocate_prize_pool_open");
+			}
+			program
+				.send(
+					&allocation,
+					vec![
+						AccountMeta::new(template, false),
+						AccountMeta::new(opening, false),
+						AccountMeta::new_readonly(bundle, false),
+						AccountMeta::new(pool, false),
+						AccountMeta::new(service_vault, false),
+						AccountMeta::new(result_receipt, false),
+						AccountMeta::new_readonly(Pubkey::default(), false),
+					],
+				)
+				.expect("entropy reserves one available pool item");
+			let opening_account = program.account(&opening).expect("allocated opening");
+			let state =
+				TemplateOpeningState::try_from_bytes(&opening_account.data).expect("opening state");
+			assigned[usize::try_from(state.selected_pool_item.get()).expect("pool index")] = true;
+		}
+
+		let (claimed_opening, ..) = openings[0];
+		let (stranded_opening, ..) = openings[1];
+		let claim_context = PrizePoolClaimContext {
+			template,
+			opening: claimed_opening,
+			bundle,
+			pool,
+			tree: tree_address,
+			recipient: recipient.pubkey(),
+			pool_index: {
+				let claimed_account = program.account(&claimed_opening).expect("claimed opening");
+				let state = TemplateOpeningState::try_from_bytes(&claimed_account.data)
+					.expect("opening state");
+				state.selected_pool_item.get()
+			},
+		};
+		let claim_leaf = leaves[usize::try_from(claim_context.pool_index).expect("pool index")];
+		program.record_as("claim_prize_pool_item");
+		claim_prize_pool_item(
+			&program,
+			&claim_context,
+			claim_leaf,
+			&mock_metadata(claim_leaf.nonce, false),
+			mock_tree_root(&program, tree_address),
+		)
+		.expect("deliver the claimed pool item");
+
+		program
+			.send(
+				&[LootboxInstruction::RetireTemplate as u8, 0],
+				vec![
+					AccountMeta::new_readonly(payer, true),
+					AccountMeta::new(template, false),
+				],
+			)
+			.expect("retire treasury");
+
+		let recovered_index = assigned
+			.iter()
+			.position(|claimed| !claimed)
+			.expect("one item is never assigned");
+		program.record_as("reclaim_prize_pool_item");
+		reclaim_prize_pool_item(
+			&program,
+			&custody,
+			mint,
+			u32::try_from(recovered_index).expect("recovered index"),
+			leaves[recovered_index],
+			mock_tree_root(&program, tree_address),
+		)
+		.expect("recover the unassigned item");
+
+		program.record_as("close_prize_pool");
+		program
+			.send(
+				&[LootboxInstruction::ClosePrizePool as u8, 0],
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new_readonly(template, false),
+					AccountMeta::new(bundle, false),
+					AccountMeta::new(pool, false),
+				],
+			)
+			.expect("pool rent recovers with the assigned item unclaimed");
+
+		let stranded_account = program
+			.account(&stranded_opening)
+			.expect("stranded opening");
+		let stranded_state =
+			TemplateOpeningState::try_from_bytes(&stranded_account.data).expect("opening state");
+		let stranded_context = PrizePoolClaimContext {
+			template,
+			opening: stranded_opening,
+			bundle,
+			pool,
+			tree: tree_address,
+			recipient: recipient.pubkey(),
+			pool_index: stranded_state.selected_pool_item.get(),
+		};
+		let stranded_leaf =
+			leaves[usize::try_from(stranded_context.pool_index).expect("pool index")];
+		program.record_as("claim_stranded_prize_pool_item");
+		claim_stranded_prize_pool_item(
+			&program,
+			&stranded_context,
+			stranded_leaf,
+			&mock_metadata(stranded_leaf.nonce, false),
+			mock_tree_root(&program, tree_address),
+		)
+		.expect("stranded claim delivers after pool closure");
+
+		program.finish_recording().expect("write prize_pool report");
 		program.stop().expect("stop Surfpool");
 	});
 }

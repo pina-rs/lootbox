@@ -1,0 +1,19 @@
+{
+	"warn": {
+		"deltaCu": 100,
+		"deltaPercent": 1.0
+	},
+	"fail": {
+		"deltaCu": 250,
+		"deltaPercent": 2.0
+	},
+	"size": {
+		"failBytes": 2048,
+		"failPercent": 0.5
+	},
+	"approvedBinarySize": 576152,
+	"advisory": [
+		"box_curve/*"
+	],
+	"approvedTotals": {}
+}

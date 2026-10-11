@@ -273,6 +273,25 @@ in
       set -euo pipefail
       cargo kani --package lootbox_program --lib --jobs --output-format terse
     '';
+    # Compute-unit benchmark journeys from the `performance` workflow. Each
+    # journey measures one instruction family on deterministic fixtures and
+    # writes target/perf/cu/<family>.json for tools/perf/compare.mjs.
+    "bench:compute-units".exec = ''
+      set -euo pipefail
+      build:program
+      build:test-programs
+      fetch:metaplex-programs
+      LOOTBOX_CU_REPORT_DIR="''${LOOTBOX_CU_REPORT_DIR:-$PWD/target/perf/cu}" \
+        PINA_SBF_ARTIFACT="$PWD/target/deploy/lootbox_program.so" \
+        MOCK_SWITCHBOARD_SBF_ARTIFACT="$PWD/target/deploy/mock_switchboard.so" \
+        MOCK_BUBBLEGUM_SBF_ARTIFACT="$PWD/target/deploy/mock_bubblegum.so" \
+        METAPLEX_PROGRAMS_DIR="$PWD/target/deploy/metaplex" \
+        cargo test \
+          --manifest-path programs/lootbox_program/tests/surfpool/Cargo.toml \
+          --locked \
+          compute_units -- --ignored --test-threads=1 --nocapture
+    '';
+
     "test:surfpool".exec = ''
       set -euo pipefail
       build:program

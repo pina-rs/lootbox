@@ -1,0 +1,255 @@
+name: performance
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches:
+      - main
+    # Benchmarks only carry signal when the program, its build inputs, or the
+    # benchmark harness change. The workflow is not a required status check,
+    # so a skipped run (and its missing PR comment) is safe for docs- and
+    # tooling-only pull requests. Pushes to `main` never run this workflow:
+    # benchmarks compare a pull request against its base.
+    paths:
+      - programs/lootbox_program/**
+      - programs/lootbox_program/tests/surfpool/**
+      - crates/**
+      - tests/fixtures/**
+      - Cargo.toml
+      - Cargo.lock
+      - rust-toolchain.toml
+      - devenv.nix
+      - devenv.lock
+      - devenv.yaml
+      - tools/perf/**
+      - .github/workflows/performance.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Advisory gates: every result reports through the PR comment, and the
+# compute-unit and size policies fail the `enforce` step when a regression
+# exceeds the thresholds in tools/perf/policy.json. An intentional regression
+# updates the approved totals there, in the same pull request.
+jobs:
+  benchmark:
+    name: compute units and binary size
+    timeout-minutes: 45
+    runs-on: ubuntu-24.04
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target/perf-build
+      LOOTBOX_CU_REPORT_DIR: ${{ github.workspace }}/target/perf/cu-head
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |
+            accept-flake-config = true
+            extra-substituters = https://devenv.cachix.org
+            extra-trusted-public-keys = devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=
+
+      - name: Install locked Devenv
+        run: |
+          devenv_revision="$(
+            nix eval --impure --raw --expr '
+              let
+                lock = builtins.fromJSON (builtins.readFile ./devenv.lock);
+              in
+                lock.nodes.devenm.locked.rev
+            '
+          )"
+          nix profile add --accept-flake-config "github:cachix/devenv/${devenv_revision}#devenv"
+
+      - name: Create base worktree
+        run: git worktree add --detach ../lootbox-performance-base "$BASE_SHA"
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+
+      - name: Build base program
+        run: |
+          CARGO_TARGET_DIR="$PWD/../base-target" RUST_LOG=error \
+            pina build --project ../lootbox-performance-base/programs/lootbox_program
+          mkdir -p target/perf/binaries
+          cp ../base-target/deploy/lootbox_program.so target/perf/binaries/base.so
+        shell: devenv shell -c -- bash -e {0}
+
+      - name: Build head program
+        run: |
+          CARGO_TARGET_DIR="$PWD/target/head-build" RUST_LOG=error \
+            pina build --project programs/lootbox_program
+          cp target/head-build/deploy/lootbox_program.so target/perf/binaries/head.so
+        shell: devenv shell -c -- bash -e {0}
+
+      - name: Build benchmark fixture programs
+        run: |
+          for fixture in mock_switchboard mock_bubblegum; do
+            CARGO_TARGET_DIR="$PWD/target/fixture-build" RUST_LOG=error \
+              pina build --project "tests/fixtures/$fixture"
+          done
+          mkdir -p target/deploy
+          cp target/fixture-build/deploy/mock_switchboard.so target/deploy/
+          cp target/fixture-build/deploy/mock_bubblegum.so target/deploy/
+        shell: devenv shell -c -- bash -e {0}
+
+      - name: Fetch pinned Metaplex programs
+        # The exclusive-NFT family needs the pinned mainnet images. A stale
+        # pin also fails the functional suite; keep benchmarking the other
+        # families and say so in the report instead of blocking on it.
+        run: |
+          pins="$PWD/tests/fixtures/metaplex-programs.sha256"
+          directory="$PWD/target/deploy/metaplex"
+          mkdir -p "$directory"
+          ok=1
+          grep -v '^#' "$pins" | while read -r expected file; do
+            [ -n "$expected" ] || continue
+            path="$directory/$file"
+            if [ -f "$path" ] && [ "$(sha256sum "$path" | cut -d' ' -f1)" = "$expected" ]; then
+              continue
+            fi
+            solana program dump --url "https://api.mainnet-beta.solana.com" "${file%.so}" "$path.download" >/dev/null
+            actual="$(sha256sum "$path.download" | cut -d' ' -f1)"
+            if [ "$actual" != "$expected" ]; then
+              rm -f "$path.download"
+              exit 1
+            fi
+            mv "$path.download" "$path"
+          done || ok=0
+          echo "metaplex_ok=$ok" >> "$GITHUB_ENV"
+        shell: devenv shell -c -- bash -e {0}
+
+      - name: Measure base compute units
+        # The base measurement drives the base worktree's own benchmark
+        # journeys against the base artifact, so a pull request that edits a
+        # journey still compares like with like. The journey suite itself has
+        # a bootstrap case — the pull request that introduces it — covered by
+        # driving the head's journeys against the base artifact instead.
+        run: |
+          skip=""
+          if [ "${{ env.metaplex_ok }}" != "1" ]; then
+            skip="--skip exclusive_nft_compute_units"
+          fi
+          if git -C ../lootbox-performance-base cat-file \
+            -e HEAD:programs/lootbox_program/tests/surfpool/src/templates/perf.rs 2>/dev/null; then
+            manifest="../lootbox-performance-base/programs/lootbox_program/tests/surfpool/Cargo.toml"
+          else
+            manifest="programs/lootbox_program/tests/surfpool/Cargo.toml"
+          fi
+          LOOTBOX_CU_REPORT_DIR="$PWD/target/perf/cu-base" \
+          PINA_SBF_ARTIFACT="$PWD/target/perf/binaries/base.so" \
+          MOCK_SWITCHBOARD_SBF_ARTIFACT="$PWD/target/deploy/mock_switchboard.so" \
+          MOCK_BUBBLEGUM_SBF_ARTIFACT="$PWD/target/deploy/mock_bubblegum.so" \
+          METAPLEX_PROGRAMS_DIR="$PWD/target/deploy/metaplex" \
+            cargo test \
+              --manifest-path "$manifest" \
+              --locked compute_units -- --ignored --test-threads=1 $skip
+        shell: devenv shell -c -- bash -e {0}
+
+      - name: Measure head compute units
+        run: |
+          skip=""
+          if [ "${{ env.metaplex_ok }}" != "1" ]; then
+            skip="--skip exclusive_nft_compute_units"
+          fi
+          LOOTBOX_CU_REPORT_DIR="$PWD/target/perf/cu-head" \
+          PINA_SBF_ARTIFACT="$PWD/target/perf/binaries/head.so" \
+          MOCK_SWITCHBOARD_SBF_ARTIFACT="$PWD/target/deploy/mock_switchboard.so" \
+          MOCK_BUBBLEGUM_SBF_ARTIFACT="$PWD/target/deploy/mock_bubblegum.so" \
+          METAPLEX_PROGRAMS_DIR="$PWD/target/deploy/metaplex" \
+            cargo test \
+              --manifest-path programs/lootbox_program/tests/surfpool/Cargo.toml \
+              --locked compute_units -- --ignored --test-threads=1 $skip
+        shell: devenv shell -c -- bash -e {0}
+
+      - name: Compare base and head
+        run: |
+          set +e
+          LOOTBOX_PERF_BASE_DIR="$PWD/target/perf/cu-base" \
+          LOOTBOX_PERF_HEAD_DIR="$PWD/target/perf/cu-head" \
+          LOOTBOX_PERF_BASE_BINARY="$PWD/target/perf/binaries/base.so" \
+          LOOTBOX_PERF_HEAD_BINARY="$PWD/target/perf/binaries/head.so" \
+            node tools/perf/compare.mjs \
+              target/perf/report.md \
+              target/perf/report.json
+          status=$?
+          set -e
+          printf '%s\n' "$status" > target/perf/compare.status
+          cat target/perf/report.md >> "$GITHUB_STEP_SUMMARY"
+        shell: devenv shell -c -- bash -e {0}
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: performance-report
+          path: target/perf
+          if-no-files-found: error
+
+      - name: Enforce compute-unit and size policy
+        if: always()
+        run: |
+          if [ ! -f target/perf/compare.status ]; then
+            echo "benchmark comparison did not finish" >&2
+            exit 1
+          fi
+          exit "$(tr -d '\n' < target/perf/compare.status)"
+        shell: bash
+
+  comment:
+    name: PR performance comment
+    needs: benchmark
+    # !cancelled() still posts a comment when the benchmark fails, so the
+    # failure is visible on the pull request itself.
+    if: ${{ !cancelled() }}
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download benchmark report
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: performance-report
+          path: target/perf
+
+      - name: Assemble PR comment
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          {
+            echo "# Performance report"
+            echo
+            echo "Comparing head \`${HEAD_SHA:0:8}\` with the pull request base \`${BASE_SHA:0:8}\`."
+            echo "Compute units are measured on deterministic Surfpool journeys against the real SBF artifact; every figure is exact and reproducible. The binary is the deployed \`.so\` as \`pina build\` produces it."
+            echo
+            if [ -f target/perf/report.md ]; then
+              cat target/perf/report.md
+            else
+              echo "⚠️ Benchmark report unavailable. See the workflow job log."
+            fi
+            echo
+            echo "Regression thresholds live in [\`tools/perf/policy.json\`](./tools/perf/policy.json): an intentional regression updates its approved total in the same pull request."
+          } > target/perf/comment.md
+        shell: bash
+
+      - name: Post performance comment
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3.0.5
+        with:
+          header: performance-benchmarks
+          path: target/perf/comment.md

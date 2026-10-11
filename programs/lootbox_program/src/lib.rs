@@ -32,16 +32,19 @@ pub mod entrypoint;
 
 use core::mem::size_of;
 
-use pina::*;
-use solana_sha256_hasher::hashv;
+// Surfpool includes this source by path; the crate-visible re-export carries
+// these bindings into the harness so `crate::` paths in submodules keep
+// resolving there. In the program crate the visibility is unchanged.
+pub(crate) use pina::*;
+pub(crate) use solana_sha256_hasher::hashv;
 pub use switchboard_randomness_cpi::DEVNET_ID as SWITCHBOARD_DEVNET_ID;
 pub use switchboard_randomness_cpi::MAINNET_ID as SWITCHBOARD_MAINNET_ID;
-use switchboard_randomness_cpi::RandomnessClose;
-use switchboard_randomness_cpi::RandomnessCommit;
-use switchboard_randomness_cpi::RandomnessInit;
-use switchboard_randomness_cpi::RandomnessReveal;
-use switchboard_randomness_cpi::RandomnessSnapshot;
-use switchboard_randomness_cpi::parse_randomness_account;
+pub(crate) use switchboard_randomness_cpi::RandomnessClose;
+pub(crate) use switchboard_randomness_cpi::RandomnessCommit;
+pub(crate) use switchboard_randomness_cpi::RandomnessInit;
+pub(crate) use switchboard_randomness_cpi::RandomnessReveal;
+pub(crate) use switchboard_randomness_cpi::RandomnessSnapshot;
+pub(crate) use switchboard_randomness_cpi::parse_randomness_account;
 
 mod templates;
 pub use templates::*;
@@ -61,19 +64,21 @@ pub const RANDOMNESS_TIMEOUT_SLOTS: u64 = 300;
 /// `2^-256`. Exhaustion fails closed instead of introducing modulo bias.
 pub const MAX_TOTAL_WEIGHT: u64 = u32::MAX as u64;
 
-const CLOCK_SYSVAR_ID: Address = address!("SysvarC1ock11111111111111111111111111111111");
-const SLOT_HASHES_SYSVAR_ID: Address = address!("SysvarS1otHashes111111111111111111111111111");
-const SEED_LOOTBOX: &[u8] = b"lootbox";
-const SEED_VAULT: &[u8] = b"vault";
-const SEED_OPENING: &[u8] = b"opening";
-const WRAPPED_SOL_MINT_ID: Address = address!("So11111111111111111111111111111111111111112");
-const ADDRESS_LOOKUP_TABLE_PROGRAM_ID: Address =
+pub(crate) const CLOCK_SYSVAR_ID: Address = address!("SysvarC1ock11111111111111111111111111111111");
+pub(crate) const SLOT_HASHES_SYSVAR_ID: Address =
+	address!("SysvarS1otHashes111111111111111111111111111");
+pub(crate) const SEED_LOOTBOX: &[u8] = b"lootbox";
+pub(crate) const SEED_VAULT: &[u8] = b"vault";
+pub(crate) const SEED_OPENING: &[u8] = b"opening";
+pub(crate) const WRAPPED_SOL_MINT_ID: Address =
+	address!("So11111111111111111111111111111111111111112");
+pub(crate) const ADDRESS_LOOKUP_TABLE_PROGRAM_ID: Address =
 	address!("AddressLookupTab1e1111111111111111111111111");
 
-const OPENING_PENDING: u8 = 0;
-const OPENING_SETTLED: u8 = 1;
-const OPENING_REFUNDED: u8 = 2;
-const OUTCOME_DOMAIN: &[u8] = b"pina-lootbox-outcome";
+pub(crate) const OPENING_PENDING: u8 = 0;
+pub(crate) const OPENING_SETTLED: u8 = 1;
+pub(crate) const OPENING_REFUNDED: u8 = 2;
+pub(crate) const OUTCOME_DOMAIN: &[u8] = b"pina-lootbox-outcome";
 
 /// Custom error codes the lootbox program returns as `ProgramError::Custom`.
 #[error]
@@ -444,7 +449,7 @@ pub struct OpeningState {
 	pub bump: u8,
 }
 
-fn read_outcome_slot(slots: &[u8; 64], index: usize) -> Result<u64, ProgramError> {
+pub(crate) fn read_outcome_slot(slots: &[u8; 64], index: usize) -> Result<u64, ProgramError> {
 	let start = index
 		.checked_mul(size_of::<u64>())
 		.ok_or(ProgramError::InvalidAccountData)?;
@@ -460,7 +465,11 @@ fn read_outcome_slot(slots: &[u8; 64], index: usize) -> Result<u64, ProgramError
 	Ok(u64::from_le_bytes(bytes))
 }
 
-fn write_outcome_slot(slots: &mut [u8; 64], index: usize, value: u64) -> Result<(), ProgramError> {
+pub(crate) fn write_outcome_slot(
+	slots: &mut [u8; 64],
+	index: usize,
+	value: u64,
+) -> Result<(), ProgramError> {
 	let start = index
 		.checked_mul(size_of::<u64>())
 		.ok_or(ProgramError::InvalidAccountData)?;
@@ -863,11 +872,11 @@ pub struct WithdrawSurplusAccounts<'a> {
 	pub box_mint: &'a AccountView,
 }
 
-fn lootbox_error(error: LootboxError) -> ProgramError {
+pub(crate) fn lootbox_error(error: LootboxError) -> ProgramError {
 	error.into()
 }
 
-fn assert_known_oracle_program(program: &Address) -> ProgramResult {
+pub(crate) fn assert_known_oracle_program(program: &Address) -> ProgramResult {
 	if program != &SWITCHBOARD_MAINNET_ID && program != &SWITCHBOARD_DEVNET_ID {
 		return Err(lootbox_error(LootboxError::InvalidRandomness));
 	}
@@ -875,14 +884,17 @@ fn assert_known_oracle_program(program: &Address) -> ProgramResult {
 	Ok(())
 }
 
-fn assert_authority_address(authority: &AccountView, expected: &Address) -> ProgramResult {
+pub(crate) fn assert_authority_address(
+	authority: &AccountView,
+	expected: &Address,
+) -> ProgramResult {
 	authority
 		.assert_address(expected)
 		.map(|_| ())
 		.map_err(|_| lootbox_error(LootboxError::Unauthorized))
 }
 
-fn assert_lootbox_pda(address: &Address, state: &LootboxStateZc) -> ProgramResult {
+pub(crate) fn assert_lootbox_pda(address: &Address, state: &LootboxStateZc) -> ProgramResult {
 	let seeds = LootboxState::seeds(&state.authority, state.id.get());
 	let seeds_with_bump = seeds.with_bump(state.bump);
 	let expected = create_program_address(&seeds_with_bump.as_slices(), &ID)?;
@@ -894,7 +906,7 @@ fn assert_lootbox_pda(address: &Address, state: &LootboxStateZc) -> ProgramResul
 	Ok(())
 }
 
-fn assert_vault(vault: &AccountView, lootbox: &Address) -> Result<u64, ProgramError> {
+pub(crate) fn assert_vault(vault: &AccountView, lootbox: &Address) -> Result<u64, ProgramError> {
 	let state = vault.as_account::<VaultState>(&ID)?;
 	let seeds = VaultState::seeds(lootbox);
 	let seeds_with_bump = seeds.with_bump(state.bump);
@@ -908,7 +920,7 @@ fn assert_vault(vault: &AccountView, lootbox: &Address) -> Result<u64, ProgramEr
 	Ok(state.rent_reserve.get())
 }
 
-fn assert_box_mint(
+pub(crate) fn assert_box_mint(
 	box_mint: &AccountView,
 	lootbox: &Address,
 	expected_mint: &Address,
@@ -926,7 +938,7 @@ fn assert_box_mint(
 	Ok(mint.supply())
 }
 
-fn clock_slot(clock: &AccountView) -> Result<u64, ProgramError> {
+pub(crate) fn clock_slot(clock: &AccountView) -> Result<u64, ProgramError> {
 	clock.assert_sysvar(&CLOCK_SYSVAR_ID)?;
 	let data = clock.try_borrow()?;
 	let bytes = data
@@ -938,7 +950,7 @@ fn clock_slot(clock: &AccountView) -> Result<u64, ProgramError> {
 	Ok(u64::from_le_bytes(slot))
 }
 
-fn parse_address(data: &[u8], start: usize) -> Result<Address, ProgramError> {
+pub(crate) fn parse_address(data: &[u8], start: usize) -> Result<Address, ProgramError> {
 	let bytes = data
 		.get(start..start + 32)
 		.ok_or_else(|| lootbox_error(LootboxError::InvalidRandomness))?;
@@ -948,7 +960,7 @@ fn parse_address(data: &[u8], start: usize) -> Result<Address, ProgramError> {
 	Ok(Address::new_from_array(address))
 }
 
-fn parse_randomness(
+pub(crate) fn parse_randomness(
 	account: &AccountView,
 	oracle_program: &Address,
 ) -> Result<RandomnessSnapshot, ProgramError> {
@@ -963,7 +975,7 @@ fn parse_randomness(
 /// The oracle derives this escrow as the wrapped-SOL associated token account
 /// of the randomness account itself; pinning the derivation keeps a client
 /// from substituting an arbitrary writable token account into the CPI.
-fn assert_reward_escrow(escrow: &AccountView, randomness: &Address) -> ProgramResult {
+pub(crate) fn assert_reward_escrow(escrow: &AccountView, randomness: &Address) -> ProgramResult {
 	escrow
 		.assert_associated_token_address(randomness, &WRAPPED_SOL_MINT_ID, &token::ID)
 		.map(|_| ())
@@ -973,11 +985,14 @@ fn assert_reward_escrow(escrow: &AccountView, randomness: &Address) -> ProgramRe
 ///
 /// Switchboard's own commit validates queue membership; this ownership check
 /// fails a substituted foreign account closed before the CPI runs.
-fn assert_commit_oracle(oracle: &AccountView, oracle_program: &Address) -> ProgramResult {
+pub(crate) fn assert_commit_oracle(
+	oracle: &AccountView,
+	oracle_program: &Address,
+) -> ProgramResult {
 	oracle.assert_owner(oracle_program).map(|_| ())
 }
 
-fn required_liability(
+pub(crate) fn required_liability(
 	state: &LootboxStateZc,
 	mint_supply: u64,
 	pending_openings: u64,
@@ -991,7 +1006,11 @@ fn required_liability(
 		.ok_or(ProgramError::ArithmeticOverflow)
 }
 
-fn assert_solvency(vault: &AccountView, rent_reserve: u64, required: u64) -> ProgramResult {
+pub(crate) fn assert_solvency(
+	vault: &AccountView,
+	rent_reserve: u64,
+	required: u64,
+) -> ProgramResult {
 	let minimum = rent_reserve
 		.checked_add(required)
 		.ok_or(ProgramError::ArithmeticOverflow)?;
@@ -1009,7 +1028,7 @@ fn assert_solvency(vault: &AccountView, rent_reserve: u64, required: u64) -> Pro
 /// The low band `0..(2^64 mod bound)` is rejected so every accepted residue has
 /// exactly the same number of preimages. Callers draw a fresh candidate after
 /// a rejection. `bound` must be nonzero.
-const fn accept_uniform_candidate(candidate: u64, bound: u64) -> Option<u64> {
+pub(crate) const fn accept_uniform_candidate(candidate: u64, bound: u64) -> Option<u64> {
 	let rejection_threshold = bound.wrapping_neg() % bound;
 
 	if candidate < rejection_threshold {
@@ -1020,14 +1039,14 @@ const fn accept_uniform_candidate(candidate: u64, bound: u64) -> Option<u64> {
 }
 
 /// Read the first eight bytes of a digest as a little-endian sample.
-fn digest_candidate(digest: &[u8]) -> u64 {
+pub(crate) fn digest_candidate(digest: &[u8]) -> u64 {
 	let mut candidate_bytes = [0u8; 8];
 	candidate_bytes.copy_from_slice(&digest[..8]);
 
 	u64::from_le_bytes(candidate_bytes)
 }
 
-fn select_outcome(
+pub(crate) fn select_outcome(
 	randomness: &[u8; 32],
 	lootbox: &Address,
 	opening: &Address,
@@ -1057,7 +1076,10 @@ fn select_outcome(
 	Err(lootbox_error(LootboxError::EntropyRejectionExhausted))
 }
 
-fn outcome_for_target(state: &LootboxStateZc, target: u64) -> Result<(u8, u64), ProgramError> {
+pub(crate) fn outcome_for_target(
+	state: &LootboxStateZc,
+	target: u64,
+) -> Result<(u8, u64), ProgramError> {
 	let mut cumulative = 0u64;
 
 	for index in 0..usize::from(state.outcome_count) {
@@ -1075,7 +1097,7 @@ fn outcome_for_target(state: &LootboxStateZc, target: u64) -> Result<(u8, u64), 
 	Err(lootbox_error(LootboxError::InvalidOutcome))
 }
 
-fn minimum_outcome(state: &LootboxStateZc) -> Result<(u8, u64), ProgramError> {
+pub(crate) fn minimum_outcome(state: &LootboxStateZc) -> Result<(u8, u64), ProgramError> {
 	if state.outcome_count == 0 {
 		return Err(lootbox_error(LootboxError::IncompleteConfiguration));
 	}
@@ -1801,7 +1823,7 @@ impl<'a> ProcessAccountInfos<'a> for WithdrawSurplusAccounts<'a> {
 
 /// Largest total rent top-up the reserved `Migrate` instruction may draw from
 /// its payer across every account slot in one invocation.
-const MAX_MIGRATION_LAMPORTS: u64 = 1_000_000;
+pub(crate) const MAX_MIGRATION_LAMPORTS: u64 = 1_000_000;
 
 /// Fail closed unless one reserved-route slot is already at the current
 /// schema version.
@@ -1811,7 +1833,7 @@ const MAX_MIGRATION_LAMPORTS: u64 = 1_000_000;
 /// time of their choosing. Until a maintainer deliberately replaces this
 /// tripwire with an authority-checked migration entry point, the route may
 /// only validate accounts that have nothing to migrate.
-fn assert_migration_slot_is_current<T: MigratableAccount>(
+pub(crate) fn assert_migration_slot_is_current<T: MigratableAccount>(
 	program_id: &Address,
 	accounts: &[AccountView],
 	index: usize,
@@ -1840,7 +1862,7 @@ fn assert_migration_slot_is_current<T: MigratableAccount>(
 /// exclusiveCollection, exclusiveAttachment, boxCurve]`; every
 /// state slot is optional and skipped when it holds the program-address
 /// placeholder.
-fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> ProgramResult {
+pub(crate) fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> ProgramResult {
 	assert_migration_slot_is_current::<LootboxState>(program_id, accounts, 2)?;
 	assert_migration_slot_is_current::<VaultState>(program_id, accounts, 3)?;
 	assert_migration_slot_is_current::<OpeningState>(program_id, accounts, 4)?;
@@ -2147,6 +2169,44 @@ mod tests {
 	use proptest::prelude::*;
 
 	use super::*;
+
+	#[test]
+	fn instruction_discriminators_are_stable() {
+		assert_eq!(LootboxInstruction::CreateLootbox as u8, 0);
+		assert_eq!(LootboxInstruction::RequestOpen as u8, 5);
+		assert_eq!(LootboxInstruction::WithdrawSurplus as u8, 9);
+		assert_eq!(LootboxInstruction::LockTreasury as u8, 37);
+		assert_eq!(LootboxInstruction::CloseServiceVault as u8, 38);
+		assert_eq!(LootboxInstruction::FundQuoteSolPrize as u8, 39);
+		assert_eq!(LootboxInstruction::FundQuoteTokenPrize as u8, 40);
+		assert_eq!(LootboxInstruction::FundMintPrize as u8, 41);
+
+		assert_eq!(LootboxInstruction::ClaimMintPrize as u8, 42);
+		assert_eq!(LootboxInstruction::ReclaimMintPrize as u8, 43);
+	}
+
+	#[test]
+	fn parse_instruction_rejects_wrong_program_id() {
+		let wrong_id = Address::new_from_array([9u8; 32]);
+		let data = [LootboxInstruction::CreateLootbox as u8];
+		let result = pina::parse_instruction::<LootboxInstruction>(&wrong_id, &ID, &data);
+
+		assert!(matches!(result, Err(ProgramError::IncorrectProgramId)));
+	}
+
+	#[test]
+	fn add_outcome_instruction_roundtrips() {
+		let mut data = [0u8; AddOutcomeInstruction::SIZE];
+		let args =
+			AddOutcomeInstruction::initialize(&mut data, |_| Ok(())).expect("instruction storage");
+		args.weight.set(25);
+		args.reward_lamports.set(1_000_000);
+
+		let decoded = AddOutcomeInstruction::try_from_bytes(&data).expect("decode instruction");
+
+		assert_eq!(decoded.weight.get(), 25);
+		assert_eq!(decoded.reward_lamports.get(), 1_000_000);
+	}
 
 	#[test]
 	fn weighted_boundaries_select_expected_outcomes() {

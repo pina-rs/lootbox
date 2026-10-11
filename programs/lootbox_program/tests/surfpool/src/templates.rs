@@ -1,7 +1,12 @@
 //! current treasury protocol tests use real token programs and real lootbox SBF. Only the external
 //! oracle boundary is emulated; no lootbox account is fabricated or mutated.
 
-use program_under_test::*;
+use pina_test::AccountMeta;
+use pina_test::Instruction;
+use pina_test::Keypair;
+use pina_test::Pubkey;
+use pina_test::Signer as _;
+use program::*;
 use solana_keccak_hasher::hashv as keccak_hashv;
 use spl_token_2022_interface::instruction as token_ix;
 use spl_token_metadata_interface::instruction as metadata_ix;
@@ -10,6 +15,7 @@ use super::*;
 
 mod box_curve;
 mod exclusive_nft;
+mod perf;
 mod prize_pool;
 
 const NAME: &str = "Treasury test";
@@ -20,7 +26,12 @@ fn token_2022() -> Pubkey {
 }
 
 fn mint_with_metadata(program: &Harness, template: &Pubkey) -> Pubkey {
-	let mint = Keypair::new();
+	mint_with_metadata_keypair(program, template, &Keypair::new())
+}
+
+/// [`mint_with_metadata`] with a caller-supplied mint keypair, for the
+/// deterministic benchmark fixtures.
+fn mint_with_metadata_keypair(program: &Harness, template: &Pubkey, mint: &Keypair) -> Pubkey {
 	let payer = program.payer();
 	let address = mint.pubkey();
 	let instructions = [
@@ -88,7 +99,7 @@ fn create_template_data(
 	bump: u8,
 	opens_at: i64,
 	result_receipts_enabled: bool,
-) -> Vec<u8> {
+) -> std::vec::Vec<u8> {
 	let mut bytes = vec![0; CreateTemplateInstruction::SIZE];
 	let args = CreateTemplateInstruction::initialize(&mut bytes, |_| Ok(()))
 		.expect("create template data");
@@ -154,7 +165,7 @@ fn fund_sol(
 	template: Pubkey,
 	bundle: Pubkey,
 	amount: u64,
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	let mut bytes = vec![0; FundSolPrizeInstruction::SIZE];
 	FundSolPrizeInstruction::initialize(&mut bytes, |_| Ok(()))
 		.expect("fund data")
@@ -176,7 +187,7 @@ fn fund_quote_sol(
 	template: Pubkey,
 	bundle: Pubkey,
 	amount: u64,
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	let mut bytes = vec![0; FundQuoteSolPrizeInstruction::SIZE];
 	FundQuoteSolPrizeInstruction::initialize(&mut bytes, |_| Ok(()))
 		.expect("fund quote data")
@@ -198,7 +209,7 @@ fn fund_mint_badge(
 	template: Pubkey,
 	bundle: Pubkey,
 	mint: Pubkey,
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	program.send(
 		&[LootboxInstruction::FundMintPrize as u8, 0],
 		vec![
@@ -295,7 +306,7 @@ struct MockCompressedLeaf {
 	index: u32,
 }
 
-fn push_borsh_string(bytes: &mut Vec<u8>, value: &str) {
+fn push_borsh_string(bytes: &mut std::vec::Vec<u8>, value: &str) {
 	bytes.extend_from_slice(
 		&u32::try_from(value.len())
 			.expect("small metadata string")
@@ -308,8 +319,8 @@ fn mock_metadata_with_creator_verification(
 	nonce: u64,
 	is_mutable: bool,
 	creator_verified: bool,
-) -> Vec<u8> {
-	let mut metadata = Vec::new();
+) -> std::vec::Vec<u8> {
+	let mut metadata = std::vec::Vec::new();
 	push_borsh_string(&mut metadata, &format!("Prize #{nonce}"));
 	push_borsh_string(&mut metadata, "POOL");
 	push_borsh_string(&mut metadata, &format!("https://example.com/{nonce}.json"));
@@ -328,7 +339,7 @@ fn mock_metadata_with_creator_verification(
 	metadata
 }
 
-fn mock_metadata(nonce: u64, is_mutable: bool) -> Vec<u8> {
+fn mock_metadata(nonce: u64, is_mutable: bool) -> std::vec::Vec<u8> {
 	mock_metadata_with_creator_verification(nonce, is_mutable, false)
 }
 
@@ -374,6 +385,19 @@ fn initialize_mock_tree(
 	canopy_depth: u32,
 ) -> Keypair {
 	let tree = Keypair::new();
+	initialize_mock_tree_keypair(program, leaves, max_depth, canopy_depth, &tree);
+	tree
+}
+
+/// [`initialize_mock_tree`] with a caller-supplied tree keypair, for the
+/// deterministic benchmark fixtures.
+fn initialize_mock_tree_keypair(
+	program: &Harness,
+	leaves: &[MockCompressedLeaf],
+	max_depth: u32,
+	canopy_depth: u32,
+	tree: &Keypair,
+) {
 	let mut data = b"LBGMINT1".to_vec();
 	data.extend_from_slice(
 		&u32::try_from(leaves.len())
@@ -404,7 +428,6 @@ fn initialize_mock_tree(
 			&[&tree],
 		)
 		.expect("initialize mock compressed tree");
-	tree
 }
 
 fn mock_tree_root(program: &Harness, tree: Pubkey) -> [u8; 32] {
@@ -418,7 +441,7 @@ fn update_mock_leaf_hashes(
 	program: &Harness,
 	tree: Pubkey,
 	leaf: MockCompressedLeaf,
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	let mut data = b"LBGMUPD1".to_vec();
 	data.extend_from_slice(&leaf.nonce.to_le_bytes());
 	data.extend_from_slice(&leaf.index.to_le_bytes());
@@ -449,7 +472,7 @@ fn prepare_prize_pool_item(
 	pool_index: u32,
 	leaf: MockCompressedLeaf,
 	metadata: &[u8],
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	let (item, bump) = prize_pool_item_address(program, pool, pool_index);
 	let mut data = vec![0; PreparePrizePoolItemInstruction::SIZE];
 	let args = PreparePrizePoolItemInstruction::initialize(&mut data, |_| Ok(()))
@@ -486,7 +509,7 @@ fn transfer_prepared_prize_pool_item(
 	pool_index: u32,
 	leaf: MockCompressedLeaf,
 	root: [u8; 32],
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	let (item, _) = prize_pool_item_address(program, context.pool, pool_index);
 	let mut data = vec![0; DepositPrizePoolItemInstruction::SIZE];
 	let args = DepositPrizePoolItemInstruction::initialize(&mut data, |_| Ok(()))
@@ -520,7 +543,7 @@ fn deposit_prize_pool_item(
 	pool_index: u32,
 	leaf: MockCompressedLeaf,
 	root: [u8; 32],
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	prepare_prize_pool_item(
 		program,
 		context.template,
@@ -540,7 +563,7 @@ fn direct_mock_transfer(
 	new_owner: Pubkey,
 	leaf: MockCompressedLeaf,
 	root: [u8; 32],
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	let mut data = vec![163, 52, 200, 231, 140, 3, 69, 186];
 	data.extend_from_slice(&root);
 	data.extend_from_slice(&leaf.data_hash);
@@ -579,7 +602,7 @@ fn claim_prize_pool_item(
 	leaf: MockCompressedLeaf,
 	metadata: &[u8],
 	root: [u8; 32],
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	let (item, _) = prize_pool_item_address(program, context.pool, context.pool_index);
 	let mut data = vec![0; ClaimPrizePoolItemInstruction::SIZE];
 	let args =
@@ -620,7 +643,7 @@ fn claim_stranded_prize_pool_item(
 	leaf: MockCompressedLeaf,
 	metadata: &[u8],
 	root: [u8; 32],
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	let (item, _) = prize_pool_item_address(program, context.pool, context.pool_index);
 	let mut data = vec![0; ClaimStrandedPrizePoolItemInstruction::SIZE];
 	let args = ClaimStrandedPrizePoolItemInstruction::initialize(&mut data, |_| Ok(()))
@@ -661,7 +684,7 @@ fn reclaim_prize_pool_item(
 	pool_index: u32,
 	leaf: MockCompressedLeaf,
 	root: [u8; 32],
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	let (item, _) = prize_pool_item_address(program, context.pool, pool_index);
 	let mut data = vec![0; ReclaimPrizePoolItemInstruction::SIZE];
 	let args = ReclaimPrizePoolItemInstruction::initialize(&mut data, |_| Ok(()))
@@ -740,7 +763,7 @@ fn fund_quote_token(
 	mint
 }
 
-fn template_mint_data(amount: u64) -> Vec<u8> {
+fn template_mint_data(amount: u64) -> std::vec::Vec<u8> {
 	let mut data = vec![0; MintTemplateBoxesInstruction::SIZE];
 	MintTemplateBoxesInstruction::initialize(&mut data, |_| Ok(()))
 		.expect("mint data")
@@ -759,7 +782,7 @@ fn try_lock_treasury(
 	template: Pubkey,
 	mint: Pubkey,
 	bundle_count: u32,
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	let next_bundle = Pubkey::find_program_address(
 		&[b"bundle", template.as_ref(), &bundle_count.to_le_bytes()],
 		&program.program_id,
@@ -794,7 +817,7 @@ fn lock_treasury(program: &Harness, template: Pubkey, mint: Pubkey, bundle_count
 	try_lock_treasury(program, template, mint, bundle_count).expect("lock exact treasury supply");
 }
 
-fn template_request_data(bump: u8, beneficiary: Pubkey) -> Vec<u8> {
+fn template_request_data(bump: u8, beneficiary: Pubkey) -> std::vec::Vec<u8> {
 	let mut data = vec![0; RequestTemplateOpenInstruction::SIZE];
 	let args =
 		RequestTemplateOpenInstruction::initialize(&mut data, |_| Ok(())).expect("request data");
@@ -816,7 +839,7 @@ struct TemplateRequestContext<'a> {
 	cpi: &'a OracleCpiAccounts,
 }
 
-fn template_request_accounts(context: &TemplateRequestContext<'_>) -> Vec<AccountMeta> {
+fn template_request_accounts(context: &TemplateRequestContext<'_>) -> std::vec::Vec<AccountMeta> {
 	let mut accounts = request_accounts(
 		&context.owner,
 		&context.template,
@@ -885,7 +908,7 @@ struct FulfillContext<'a> {
 	cpi: &'a OracleCpiAccounts,
 }
 
-fn fulfill(context: &FulfillContext<'_>, value: u8) -> Result<(), String> {
+fn fulfill(context: &FulfillContext<'_>, value: u8) -> Result<(), std::string::String> {
 	let mut accounts = settle_accounts(
 		&context.payer.pubkey(),
 		&context.payer.pubkey(),
@@ -934,7 +957,10 @@ fn fulfill(context: &FulfillContext<'_>, value: u8) -> Result<(), String> {
 	Ok(())
 }
 
-fn result_receipt_address(program: &Harness, opening: Pubkey) -> Result<(Pubkey, u8), String> {
+fn result_receipt_address(
+	program: &Harness,
+	opening: Pubkey,
+) -> Result<(Pubkey, u8), std::string::String> {
 	let account = program.account(&opening)?;
 	let state = TemplateOpeningState::try_from_bytes(&account.data)
 		.map_err(|error| format!("decode opening sequence: {error}"))?;
@@ -949,10 +975,10 @@ fn allocate_any(
 	program: &Harness,
 	template: Pubkey,
 	opening: Pubkey,
-	bundles: &[Pubkey; 3],
-) -> Result<usize, String> {
+	bundles: &[Pubkey],
+) -> Result<usize, std::string::String> {
 	// Exercise wrong-prize account rejection as well as the successful path.
-	let mut failures = Vec::with_capacity(bundles.len());
+	let mut failures = std::vec::Vec::with_capacity(bundles.len());
 
 	for (index, bundle) in bundles.iter().enumerate() {
 		let service_vault = Pubkey::find_program_address(
@@ -1213,7 +1239,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 			token_amount(&program.account(&owner_ata).expect("recipient ATA")),
 			6
 		);
-		let mut openings = Vec::new();
+		let mut openings = std::vec::Vec::new();
 		for index in 0..6 {
 			let randomness = Keypair::new();
 			let (opening, bump) = Pubkey::find_program_address(
@@ -1594,7 +1620,7 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 			.time_travel_to_timestamp(u64::try_from(opens_at + 1).expect("time") * 1000)
 			.expect("unlock");
 
-		let mut openings = Vec::new();
+		let mut openings = std::vec::Vec::new();
 		for _ in 0..2 {
 			let randomness = Keypair::new();
 			let (opening, opening_bump) = Pubkey::find_program_address(
@@ -2687,7 +2713,7 @@ fn fund_token_2022(
 	(template, bundle): (Pubkey, Pubkey),
 	(mint, source, escrow): (Pubkey, Pubkey, Pubkey),
 	amount_per_win: u64,
-) -> Result<(), String> {
+) -> Result<(), std::string::String> {
 	let payer = program.payer();
 	let mut data = vec![0; FundTokenPrizeInstruction::SIZE];
 	FundTokenPrizeInstruction::initialize(&mut data, |_| Ok(()))
@@ -2708,7 +2734,7 @@ fn fund_token_2022(
 	)
 }
 
-fn assert_invalid_prize(result: Result<(), String>, reason: &str) {
+fn assert_invalid_prize(result: Result<(), std::string::String>, reason: &str) {
 	let error = result.expect_err(reason);
 	assert!(
 		error.contains(&format!(

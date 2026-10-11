@@ -468,11 +468,15 @@ export function bundleAssets(
 	) throw new Error("invalid prize asset kind or count");
 	return Array.from({ length: bundle.assetCount }, (_, index) => ({
 		index,
+		// Slot 4 is the retired Token Metadata adapter's kind byte; it stays
+		// in the array so every later kind keeps its on-chain value, and no
+		// new bundle can carry it.
 		kind: ([
 			"sol",
 			"token",
 			"nft",
 			"token2022",
+			"retiredMetadataNft",
 			"core",
 			"compressedNft",
 			"quoteSol",

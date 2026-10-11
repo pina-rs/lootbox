@@ -77,6 +77,7 @@ jobs:
 
       - name: Build base program
         run: |
+          export HOME="${HOME:-/home/runner}"
           CARGO_TARGET_DIR="$PWD/../base-target" RUST_LOG=error \
             pina build --project ../lootbox-performance-base/programs/lootbox_program
           mkdir -p target/perf/binaries
@@ -85,6 +86,7 @@ jobs:
 
       - name: Build head program
         run: |
+          export HOME="${HOME:-/home/runner}"
           CARGO_TARGET_DIR="$PWD/target/head-build" RUST_LOG=error \
             pina build --project programs/lootbox_program
           cp target/head-build/deploy/lootbox_program.so target/perf/binaries/head.so
@@ -92,6 +94,7 @@ jobs:
 
       - name: Build benchmark fixture programs
         run: |
+          export HOME="${HOME:-/home/runner}"
           for fixture in mock_switchboard mock_bubblegum; do
             CARGO_TARGET_DIR="$PWD/target/fixture-build" RUST_LOG=error \
               pina build --project "tests/fixtures/$fixture"
@@ -140,6 +143,7 @@ jobs:
         # a bootstrap case — the pull request that introduces it — covered by
         # driving the head's journeys against the base artifact instead.
         run: |
+          export HOME="${HOME:-/home/runner}"
           skip=""
           if [ "${{ env.metaplex_ok }}" != "1" ]; then
             skip="--skip exclusive_nft_compute_units"
@@ -162,6 +166,7 @@ jobs:
 
       - name: Measure head compute units
         run: |
+          export HOME="${HOME:-/home/runner}"
           skip=""
           if [ "${{ env.metaplex_ok }}" != "1" ]; then
             skip="--skip exclusive_nft_compute_units"

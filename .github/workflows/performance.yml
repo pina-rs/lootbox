@@ -65,7 +65,7 @@ jobs:
               let
                 lock = builtins.fromJSON (builtins.readFile ./devenv.lock);
               in
-                lock.nodes.devenm.locked.rev
+                lock.nodes.devenv.locked.rev
             '
           )"
           nix profile add --accept-flake-config "github:cachix/devenv/${devenv_revision}#devenv"

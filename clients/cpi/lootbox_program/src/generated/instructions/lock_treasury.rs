@@ -126,4 +126,4 @@ impl<'account> LockTreasury<'account> {
 	}
 }
 
-const LOCK_TREASURY_DISCRIMINATOR: [u8; 2] = [37, 0];
+const LOCK_TREASURY_DISCRIMINATOR: [u8; 2] = [34, 0];

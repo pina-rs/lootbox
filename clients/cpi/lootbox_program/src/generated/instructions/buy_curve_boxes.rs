@@ -124,4 +124,4 @@ impl<'account> BuyCurveBoxes<'account> {
 	}
 }
 
-const BUY_CURVE_BOXES_DISCRIMINATOR: [u8; 2] = [61, 0];
+const BUY_CURVE_BOXES_DISCRIMINATOR: [u8; 2] = [58, 0];

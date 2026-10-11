@@ -152,4 +152,4 @@ impl<'account, 'argument> PreparePrizePoolItem<'account, 'argument> {
 	}
 }
 
-const PREPARE_PRIZE_POOL_ITEM_DISCRIMINATOR: [u8; 2] = [51, 0];
+const PREPARE_PRIZE_POOL_ITEM_DISCRIMINATOR: [u8; 2] = [48, 0];

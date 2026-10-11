@@ -68,10 +68,6 @@ const int lootboxProgramErrorClaimLocked = 0xe; // 14
 /// Message: "An earlier opening must be allocated first."
 const int lootboxProgramErrorAllocationOutOfOrder = 0xf; // 15
 
-/// At least one advertised prize has been exhausted.
-/// Message: "At least one advertised prize has been exhausted."
-const int lootboxProgramErrorPrizeExhausted = 0x10; // 16
-
 /// The asset, quantity, or escrow does not match the immutable prize.
 /// Message: "The asset, quantity, or escrow does not match the immutable prize."
 const int lootboxProgramErrorInvalidPrize = 0x11; // 17
@@ -206,8 +202,6 @@ const Map<int, String> _lootboxProgramErrorMessages = {
       'The template\'s earliest opening timestamp has not arrived.',
   lootboxProgramErrorAllocationOutOfOrder:
       'An earlier opening must be allocated first.',
-  lootboxProgramErrorPrizeExhausted:
-      'At least one advertised prize has been exhausted.',
   lootboxProgramErrorInvalidPrize:
       'The asset, quantity, or escrow does not match the immutable prize.',
   lootboxProgramErrorPrizeAlreadyClaimed:

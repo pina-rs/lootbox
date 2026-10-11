@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const LOCK_TREASURY_DISCRIMINATOR = 37;
+export const LOCK_TREASURY_DISCRIMINATOR = 34;
 
 export function getLockTreasuryDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(LOCK_TREASURY_DISCRIMINATOR); }
 
@@ -37,7 +37,7 @@ export type LockTreasuryInstructionDataArgs = {
 serviceVaultBump: number;  };
 
 export function getLockTreasuryInstructionDataEncoder(): FixedSizeEncoder<LockTreasuryInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['serviceVaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 37, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['serviceVaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 34, migrationVersion: 0 }));
 }
 
 export function getLockTreasuryInstructionDataDecoder(): FixedSizeDecoder<LockTreasuryInstructionData> {

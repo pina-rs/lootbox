@@ -180,4 +180,4 @@ impl<'account> ClaimExclusiveNft<'account> {
 	}
 }
 
-const CLAIM_EXCLUSIVE_NFT_DISCRIMINATOR: [u8; 2] = [58, 0];
+const CLAIM_EXCLUSIVE_NFT_DISCRIMINATOR: [u8; 2] = [55, 0];

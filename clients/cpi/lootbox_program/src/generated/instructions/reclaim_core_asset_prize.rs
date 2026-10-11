@@ -144,4 +144,4 @@ impl<'account> ReclaimCoreAssetPrize<'account> {
 	}
 }
 
-const RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR: [u8; 2] = [32, 0];
+const RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR: [u8; 2] = [29, 0];

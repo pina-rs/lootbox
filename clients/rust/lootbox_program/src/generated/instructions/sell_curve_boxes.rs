@@ -8,7 +8,7 @@
 	clippy::too_many_arguments
 )]
 
-pub const SELL_CURVE_BOXES_DISCRIMINATOR: u8 = 62u8;
+pub const SELL_CURVE_BOXES_DISCRIMINATOR: u8 = 59u8;
 pub const SELL_CURVE_BOXES_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

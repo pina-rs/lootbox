@@ -203,4 +203,4 @@ impl<'account, 'argument> ReclaimPrizePoolItem<'account, 'argument> {
 	}
 }
 
-const RECLAIM_PRIZE_POOL_ITEM_DISCRIMINATOR: [u8; 2] = [49, 0];
+const RECLAIM_PRIZE_POOL_ITEM_DISCRIMINATOR: [u8; 2] = [46, 0];

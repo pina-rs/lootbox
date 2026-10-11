@@ -124,4 +124,4 @@ impl<'account> ReclaimExclusiveFees<'account> {
 	}
 }
 
-const RECLAIM_EXCLUSIVE_FEES_DISCRIMINATOR: [u8; 2] = [59, 0];
+const RECLAIM_EXCLUSIVE_FEES_DISCRIMINATOR: [u8; 2] = [56, 0];

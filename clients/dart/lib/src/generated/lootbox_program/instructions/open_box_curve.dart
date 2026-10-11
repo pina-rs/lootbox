@@ -19,7 +19,7 @@ class OpenBoxCurveInstructionData {
     required this.priceStep,
     required this.feeBps,
     required this.bump,
-  }) : discriminator = 60,
+  }) : discriminator = 57,
        migrationVersion = 0;
 
   final int discriminator;
@@ -45,7 +45,7 @@ Encoder<OpenBoxCurveInstructionData> getOpenBoxCurveInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (OpenBoxCurveInstructionData value) => <String, Object?>{
-      'discriminator': 60,
+      'discriminator': 57,
       'migrationVersion': 0,
       'inventory': value.inventory,
       'startPrice': value.startPrice,
@@ -76,7 +76,7 @@ Decoder<OpenBoxCurveInstructionData> getOpenBoxCurveInstructionDataDecoder() {
   }
 
   (OpenBoxCurveInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(60)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(57)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

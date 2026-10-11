@@ -135,4 +135,4 @@ impl<'account> AttachExclusiveNft<'account> {
 	}
 }
 
-const ATTACH_EXCLUSIVE_NFT_DISCRIMINATOR: [u8; 2] = [57, 0];
+const ATTACH_EXCLUSIVE_NFT_DISCRIMINATOR: [u8; 2] = [54, 0];

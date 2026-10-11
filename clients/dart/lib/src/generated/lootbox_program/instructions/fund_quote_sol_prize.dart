@@ -14,7 +14,7 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class FundQuoteSolPrizeInstructionData {
   const FundQuoteSolPrizeInstructionData({required this.lamportsPerWin})
-    : discriminator = 39,
+    : discriminator = 36,
       migrationVersion = 0;
 
   final int discriminator;
@@ -33,7 +33,7 @@ getFundQuoteSolPrizeInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (FundQuoteSolPrizeInstructionData value) => <String, Object?>{
-      'discriminator': 39,
+      'discriminator': 36,
       'migrationVersion': 0,
       'lamportsPerWin': value.lamportsPerWin,
     },
@@ -60,7 +60,7 @@ getFundQuoteSolPrizeInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(39)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(36)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

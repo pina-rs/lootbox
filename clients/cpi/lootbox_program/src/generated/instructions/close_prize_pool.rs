@@ -99,4 +99,4 @@ impl<'account> ClosePrizePool<'account> {
 	}
 }
 
-const CLOSE_PRIZE_POOL_DISCRIMINATOR: [u8; 2] = [50, 0];
+const CLOSE_PRIZE_POOL_DISCRIMINATOR: [u8; 2] = [47, 0];

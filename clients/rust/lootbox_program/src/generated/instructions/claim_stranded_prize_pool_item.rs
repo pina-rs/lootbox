@@ -13,7 +13,7 @@
 /// The opening, item, and bundle bindings alone prove the assignment, so the
 /// bound beneficiary keeps an unlimited claim window even once the pool's rent
 /// has been recovered.
-pub const CLAIM_STRANDED_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 64u8;
+pub const CLAIM_STRANDED_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 61u8;
 pub const CLAIM_STRANDED_PRIZE_POOL_ITEM_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

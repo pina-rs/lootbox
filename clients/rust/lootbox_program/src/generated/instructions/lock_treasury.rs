@@ -14,7 +14,7 @@
 /// with every activated ticket minted and no staged tail. It funds the service
 /// vault when receipts or bounties are enabled, revokes box mint authority, and
 /// records the manifest hash.
-pub const LOCK_TREASURY_DISCRIMINATOR: u8 = 37u8;
+pub const LOCK_TREASURY_DISCRIMINATOR: u8 = 34u8;
 pub const LOCK_TREASURY_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

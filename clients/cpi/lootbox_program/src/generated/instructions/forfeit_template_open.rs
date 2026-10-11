@@ -123,4 +123,4 @@ impl<'account> ForfeitTemplateOpen<'account> {
 	}
 }
 
-const FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR: [u8; 2] = [36, 0];
+const FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR: [u8; 2] = [33, 0];

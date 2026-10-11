@@ -14,7 +14,7 @@
 /// retired. The pool must be funding with `deposit_cursor == quantity` and no
 /// prepared item. Writes the domain-separated pool commitment into the bundle
 /// slot, advances the bundle's `funded_assets`, and marks the pool sealed.
-pub const SEAL_PRIZE_POOL_DISCRIMINATOR: u8 = 46u8;
+pub const SEAL_PRIZE_POOL_DISCRIMINATOR: u8 = 43u8;
 pub const SEAL_PRIZE_POOL_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

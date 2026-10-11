@@ -15,7 +15,7 @@
 /// prepared item at `deposit_cursor`. The arguments must match that item.
 /// Bubblegum moves the leaf to the pool PDA; the item becomes deposited, and
 /// the pool advances its cursor, manifest accumulator, and bitmap.
-pub const DEPOSIT_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 45u8;
+pub const DEPOSIT_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 42u8;
 pub const DEPOSIT_PRIZE_POOL_ITEM_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

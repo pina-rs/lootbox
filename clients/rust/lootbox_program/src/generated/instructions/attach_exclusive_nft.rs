@@ -15,7 +15,7 @@
 /// open. Creates the attachment PDA, records the slot as kind
 /// `PRIZE_EXCLUSIVE_NFT` with its commitment, and tops up the fee vault to
 /// `quantity × 90,000` lamports plus its rent-exempt minimum.
-pub const ATTACH_EXCLUSIVE_NFT_DISCRIMINATOR: u8 = 57u8;
+pub const ATTACH_EXCLUSIVE_NFT_DISCRIMINATOR: u8 = 54u8;
 pub const ATTACH_EXCLUSIVE_NFT_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

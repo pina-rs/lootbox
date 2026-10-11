@@ -15,7 +15,7 @@
 /// the item's semantic commitment. The pool PDA signs a Bubblegum transfer to
 /// the recipient, the claim is recorded, and the item PDA closes to the pool
 /// authority.
-pub const CLAIM_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 48u8;
+pub const CLAIM_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 45u8;
 pub const CLAIM_PRIZE_POOL_ITEM_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

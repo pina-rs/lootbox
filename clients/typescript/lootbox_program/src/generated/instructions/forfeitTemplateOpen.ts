@@ -12,7 +12,7 @@ import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type I
 import { findServiceVaultPda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR = 36;
+export const FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR = 33;
 
 export function getForfeitTemplateOpenDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR); }
 
@@ -28,7 +28,7 @@ export type ForfeitTemplateOpenInstructionData = { discriminator: number; migrat
 export type ForfeitTemplateOpenInstructionDataArgs = {  };
 
 export function getForfeitTemplateOpenInstructionDataEncoder(): FixedSizeEncoder<ForfeitTemplateOpenInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 36, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 33, migrationVersion: 0 }));
 }
 
 export function getForfeitTemplateOpenInstructionDataDecoder(): FixedSizeDecoder<ForfeitTemplateOpenInstructionData> {

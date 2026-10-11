@@ -8,7 +8,7 @@
 	clippy::too_many_arguments
 )]
 
-pub const CLOSE_BOX_CURVE_DISCRIMINATOR: u8 = 63u8;
+pub const CLOSE_BOX_CURVE_DISCRIMINATOR: u8 = 60u8;
 pub const CLOSE_BOX_CURVE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

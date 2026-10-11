@@ -15,7 +15,7 @@
 /// Creates the compact `PrizePoolState` PDA, pins its tree and quantity, and
 /// reserves the slot as kind `PRIZE_POOL` with amount 1; a bundle holds at
 /// most one pool.
-pub const CREATE_PRIZE_POOL_DISCRIMINATOR: u8 = 44u8;
+pub const CREATE_PRIZE_POOL_DISCRIMINATOR: u8 = 41u8;
 pub const CREATE_PRIZE_POOL_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

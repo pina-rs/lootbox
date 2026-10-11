@@ -179,4 +179,4 @@ impl<'account> ClaimCompressedNftPrize<'account> {
 	}
 }
 
-const CLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: [u8; 2] = [34, 0];
+const CLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: [u8; 2] = [31, 0];

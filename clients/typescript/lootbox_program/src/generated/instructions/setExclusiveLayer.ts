@@ -11,7 +11,7 @@ import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytes
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const SET_EXCLUSIVE_LAYER_DISCRIMINATOR = 54;
+export const SET_EXCLUSIVE_LAYER_DISCRIMINATOR = 51;
 
 export function getSetExclusiveLayerDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(SET_EXCLUSIVE_LAYER_DISCRIMINATOR); }
 
@@ -53,7 +53,7 @@ traitCount: number;
 weights: ReadonlyUint8Array;  };
 
 export function getSetExclusiveLayerInstructionDataEncoder(): FixedSizeEncoder<SetExclusiveLayerInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['layerIndex', getU8Encoder()], ['traitCount', getU8Encoder()], ['weights', fixPinaPodEncoderSize(getBytesEncoder(), 256)]]), (value) => ({ ...value, discriminator: 54, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['layerIndex', getU8Encoder()], ['traitCount', getU8Encoder()], ['weights', fixPinaPodEncoderSize(getBytesEncoder(), 256)]]), (value) => ({ ...value, discriminator: 51, migrationVersion: 0 }));
 }
 
 export function getSetExclusiveLayerInstructionDataDecoder(): FixedSizeDecoder<SetExclusiveLayerInstructionData> {

@@ -14,7 +14,7 @@
 /// and the bundle must be active and selected by the opening's entropy. Also
 /// reserves one entropy-selected unassigned pool item for the opening, then
 /// marks it allocated and optionally creates its result receipt.
-pub const ALLOCATE_PRIZE_POOL_OPEN_DISCRIMINATOR: u8 = 47u8;
+pub const ALLOCATE_PRIZE_POOL_OPEN_DISCRIMINATOR: u8 = 44u8;
 pub const ALLOCATE_PRIZE_POOL_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

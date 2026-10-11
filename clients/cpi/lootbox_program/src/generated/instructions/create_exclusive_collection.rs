@@ -152,4 +152,4 @@ impl<'account> CreateExclusiveCollection<'account> {
 	}
 }
 
-const CREATE_EXCLUSIVE_COLLECTION_DISCRIMINATOR: [u8; 2] = [53, 0];
+const CREATE_EXCLUSIVE_COLLECTION_DISCRIMINATOR: [u8; 2] = [50, 0];

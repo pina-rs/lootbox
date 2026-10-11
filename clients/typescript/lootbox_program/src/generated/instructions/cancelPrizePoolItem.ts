@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const CANCEL_PRIZE_POOL_ITEM_DISCRIMINATOR = 52;
+export const CANCEL_PRIZE_POOL_ITEM_DISCRIMINATOR = 49;
 
 export function getCancelPrizePoolItemDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CANCEL_PRIZE_POOL_ITEM_DISCRIMINATOR); }
 
@@ -27,7 +27,7 @@ export type CancelPrizePoolItemInstructionData = { discriminator: number; migrat
 export type CancelPrizePoolItemInstructionDataArgs = {  };
 
 export function getCancelPrizePoolItemInstructionDataEncoder(): FixedSizeEncoder<CancelPrizePoolItemInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 52, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 49, migrationVersion: 0 }));
 }
 
 export function getCancelPrizePoolItemInstructionDataDecoder(): FixedSizeDecoder<CancelPrizePoolItemInstructionData> {

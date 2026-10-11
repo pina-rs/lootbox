@@ -118,4 +118,4 @@ impl<'account> SellCurveBoxes<'account> {
 	}
 }
 
-const SELL_CURVE_BOXES_DISCRIMINATOR: [u8; 2] = [62, 0];
+const SELL_CURVE_BOXES_DISCRIMINATOR: [u8; 2] = [59, 0];

@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const CREATE_PRIZE_POOL_DISCRIMINATOR = 44;
+export const CREATE_PRIZE_POOL_DISCRIMINATOR = 41;
 
 export function getCreatePrizePoolDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CREATE_PRIZE_POOL_DISCRIMINATOR); }
 
@@ -47,7 +47,7 @@ assetIndex: number;
 bump: number;  };
 
 export function getCreatePrizePoolInstructionDataEncoder(): FixedSizeEncoder<CreatePrizePoolInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 44, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 41, migrationVersion: 0 }));
 }
 
 export function getCreatePrizePoolInstructionDataDecoder(): FixedSizeDecoder<CreatePrizePoolInstructionData> {

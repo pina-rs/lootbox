@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const ATTACH_EXCLUSIVE_NFT_DISCRIMINATOR = 57;
+export const ATTACH_EXCLUSIVE_NFT_DISCRIMINATOR = 54;
 
 export function getAttachExclusiveNftDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(ATTACH_EXCLUSIVE_NFT_DISCRIMINATOR); }
 
@@ -51,7 +51,7 @@ bump: number;
 feeVaultBump: number;  };
 
 export function getAttachExclusiveNftInstructionDataEncoder(): FixedSizeEncoder<AttachExclusiveNftInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()], ['bump', getU8Encoder()], ['feeVaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 57, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()], ['bump', getU8Encoder()], ['feeVaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 54, migrationVersion: 0 }));
 }
 
 export function getAttachExclusiveNftInstructionDataDecoder(): FixedSizeDecoder<AttachExclusiveNftInstructionData> {

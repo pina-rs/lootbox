@@ -16,7 +16,7 @@
 /// allocated to `bundle`, and the slot must not be claimed yet. Sets the slot's
 /// claim bit on the opening and marks the opening delivered once every slot is
 /// claimed.
-pub const CLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: u8 = 34u8;
+pub const CLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: u8 = 31u8;
 pub const CLAIM_COMPRESSED_NFT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

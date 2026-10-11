@@ -14,7 +14,7 @@
 /// is funding. The pool must be funding with a prepared item at
 /// `deposit_cursor`. Clears `has_prepared_item` and closes the item PDA,
 /// returning its rent to the authority; deposited items are never touched.
-pub const CANCEL_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 52u8;
+pub const CANCEL_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 49u8;
 pub const CANCEL_PRIZE_POOL_ITEM_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

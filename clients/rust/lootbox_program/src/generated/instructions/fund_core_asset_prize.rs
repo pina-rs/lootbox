@@ -15,7 +15,7 @@
 /// The asset must be uncollected, carry no plugins, and already name the bundle
 /// PDA as its update authority. Ownership moves to the bundle, and the asset
 /// address is recorded in the bundle's next unfunded slot.
-pub const FUND_CORE_ASSET_PRIZE_DISCRIMINATOR: u8 = 30u8;
+pub const FUND_CORE_ASSET_PRIZE_DISCRIMINATOR: u8 = 27u8;
 pub const FUND_CORE_ASSET_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

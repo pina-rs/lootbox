@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR = 32;
+export const RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR = 29;
 
 export function getReclaimCoreAssetPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR); }
 
@@ -37,7 +37,7 @@ export type ReclaimCoreAssetPrizeInstructionDataArgs = {
 assetIndex: number;  };
 
 export function getReclaimCoreAssetPrizeInstructionDataEncoder(): FixedSizeEncoder<ReclaimCoreAssetPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 32, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 29, migrationVersion: 0 }));
 }
 
 export function getReclaimCoreAssetPrizeInstructionDataDecoder(): FixedSizeDecoder<ReclaimCoreAssetPrizeInstructionData> {

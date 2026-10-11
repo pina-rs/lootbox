@@ -123,4 +123,4 @@ impl<'account> ReclaimMintPrize<'account> {
 	}
 }
 
-const RECLAIM_MINT_PRIZE_DISCRIMINATOR: [u8; 2] = [43, 0];
+const RECLAIM_MINT_PRIZE_DISCRIMINATOR: [u8; 2] = [40, 0];

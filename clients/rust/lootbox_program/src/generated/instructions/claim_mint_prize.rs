@@ -15,7 +15,7 @@
 /// goes only to the bound beneficiary. Each asset is claimable once per
 /// opening; the claim that releases the final copy revokes the bundle's mint
 /// authority.
-pub const CLAIM_MINT_PRIZE_DISCRIMINATOR: u8 = 42u8;
+pub const CLAIM_MINT_PRIZE_DISCRIMINATOR: u8 = 39u8;
 pub const CLAIM_MINT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

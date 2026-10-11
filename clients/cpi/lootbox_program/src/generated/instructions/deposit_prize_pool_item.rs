@@ -176,4 +176,4 @@ impl<'account> DepositPrizePoolItem<'account> {
 	}
 }
 
-const DEPOSIT_PRIZE_POOL_ITEM_DISCRIMINATOR: [u8; 2] = [45, 0];
+const DEPOSIT_PRIZE_POOL_ITEM_DISCRIMINATOR: [u8; 2] = [42, 0];

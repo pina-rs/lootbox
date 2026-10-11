@@ -98,4 +98,4 @@ impl<'account> SealPrizePool<'account> {
 	}
 }
 
-const SEAL_PRIZE_POOL_DISCRIMINATOR: [u8; 2] = [46, 0];
+const SEAL_PRIZE_POOL_DISCRIMINATOR: [u8; 2] = [43, 0];

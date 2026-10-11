@@ -104,4 +104,4 @@ impl<'account> CloseBoxCurve<'account> {
 	}
 }
 
-const CLOSE_BOX_CURVE_DISCRIMINATOR: [u8; 2] = [63, 0];
+const CLOSE_BOX_CURVE_DISCRIMINATOR: [u8; 2] = [60, 0];

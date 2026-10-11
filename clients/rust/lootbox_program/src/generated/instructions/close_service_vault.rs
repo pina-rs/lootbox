@@ -15,7 +15,7 @@
 /// configured, be retired, have no pending openings, and have zero box supply.
 /// The whole balance, including unused prepaid service funds and the rent
 /// reserve, moves to the authority; an empty vault is a no-op.
-pub const CLOSE_SERVICE_VAULT_DISCRIMINATOR: u8 = 38u8;
+pub const CLOSE_SERVICE_VAULT_DISCRIMINATOR: u8 = 35u8;
 pub const CLOSE_SERVICE_VAULT_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

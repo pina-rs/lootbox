@@ -20,7 +20,7 @@ class ClaimCompressedNftPrizeInstructionData {
     required this.creatorHash,
     required this.nonce,
     required this.index,
-  }) : discriminator = 34,
+  }) : discriminator = 31,
        migrationVersion = 0;
 
   final int discriminator;
@@ -52,7 +52,7 @@ getClaimCompressedNftPrizeInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (ClaimCompressedNftPrizeInstructionData value) => <String, Object?>{
-      'discriminator': 34,
+      'discriminator': 31,
       'migrationVersion': 0,
       'assetIndex': value.assetIndex,
       'root': value.root,
@@ -89,7 +89,7 @@ getClaimCompressedNftPrizeInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(34)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(31)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

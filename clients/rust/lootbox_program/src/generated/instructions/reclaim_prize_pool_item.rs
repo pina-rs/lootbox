@@ -16,7 +16,7 @@
 /// while its bundle is funding with an unlocked treasury, or after the
 /// template retires with zero box supply and no pending openings. The pool PDA
 /// signs the Bubblegum transfer and the item PDA closes to the authority.
-pub const RECLAIM_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 49u8;
+pub const RECLAIM_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 46u8;
 pub const RECLAIM_PRIZE_POOL_ITEM_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

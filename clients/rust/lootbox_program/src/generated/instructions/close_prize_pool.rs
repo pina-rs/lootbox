@@ -15,7 +15,7 @@
 /// retired active bundle whose every item was claimed or reclaimed. The first
 /// two require an unlocked treasury and clear the bundle slot. The pool
 /// account closes and its rent returns to the authority.
-pub const CLOSE_PRIZE_POOL_DISCRIMINATOR: u8 = 50u8;
+pub const CLOSE_PRIZE_POOL_DISCRIMINATOR: u8 = 47u8;
 pub const CLOSE_PRIZE_POOL_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

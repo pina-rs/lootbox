@@ -113,7 +113,7 @@ pnpm --dir apps/platform exclusive:collection -- --cluster devnet --keypair admi
 
 It prints a dry run first (collection PDA, base URI, attach window, layer tables, tree rent: depth 20, buffer 64, canopy 10, about 0.76 SOL), then loads the layers from `layers.ts`, appends the Bubblegum V2 tree, creates the Core collection, and publishes. It resumes from chain state if interrupted. Put the printed address in `EXCLUSIVE_COLLECTION_DEVNET` and set `FEATURE_EXCLUSIVE_NFTS=true`.
 
-The end-to-end suite runs the playground with `LOOTBOX_METAPLEX_PROGRAMS_DIR=target/deploy/metaplex` (from `fetch:metaplex-programs`), so claims mint real compressed NFTs through the pinned mainnet Bubblegum V2 and Core programs.
+The end-to-end suite runs the playground with `LOOTBOX_METAPLEX_PROGRAMS_DIR=target/deploy/metaplex` (from `fetch:metaplex-programs`), so claims mint real compressed NFTs through the pinned Bubblegum V2 (mainnet) and Core (verified 0.15.3 release) programs.
 
 ## Not done yet
 

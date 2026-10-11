@@ -215,26 +215,32 @@ in
       cp "$sbf_target/deploy/mock_bubblegum.so" target/deploy/
       cp "$sbf_target/idl/mock_bubblegum.json" target/idl/
     '';
-    # Real Metaplex programs for the Exclusive NFT Surfpool journey. The images
-    # are dumped from mainnet once and pinned by hash; an upstream upgrade fails
-    # here until the new release is reviewed and re-pinned.
+    # Real Metaplex programs for the Exclusive NFT Surfpool journey, pinned by
+    # hash. Images are dumped from mainnet unless the pin names a release URL; an
+    # upstream upgrade fails here until the new release is reviewed and re-pinned.
     "fetch:metaplex-programs".exec = ''
       set -euo pipefail
       pins="$PWD/tests/fixtures/metaplex-programs.sha256"
       directory="$PWD/target/deploy/metaplex"
       rpc="''${LOOTBOX_METAPLEX_RPC_URL:-https://api.mainnet-beta.solana.com}"
       mkdir -p "$directory"
-      grep -v '^#' "$pins" | while read -r expected file; do
+      grep -v '^#' "$pins" | while read -r expected file url; do
         [ -n "$expected" ] || continue
         path="$directory/$file"
         if [ -f "$path" ] && [ "$(sha256sum "$path" | cut -d' ' -f1)" = "$expected" ]; then
           continue
         fi
-        solana program dump --url "$rpc" "''${file%.so}" "$path.download" >/dev/null
+        if [ -n "$url" ]; then
+          source="$url"
+          curl --fail --silent --show-error --location --output "$path.download" "$url"
+        else
+          source="$rpc"
+          solana program dump --url "$rpc" "''${file%.so}" "$path.download" >/dev/null
+        fi
         actual="$(sha256sum "$path.download" | cut -d' ' -f1)"
         if [ "$actual" != "$expected" ]; then
           rm -f "$path.download"
-          echo "''${file%.so} on $rpc hashes to $actual, not the pinned $expected." >&2
+          echo "''${file%.so} from $source hashes to $actual, not the pinned $expected." >&2
           echo "Review the upstream release against docs/exclusive-nfts.md, then re-pin $pins." >&2
           exit 1
         fi

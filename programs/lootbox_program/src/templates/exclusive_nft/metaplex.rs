@@ -2,7 +2,8 @@
 //!
 //! Instruction layouts are pinned to `mpl-bubblegum` release `bubblegum@2.0.0`
 //! (`79e1a1954bddb7fe5dcd52a5570a66a9f7d465e4`, the OtterSec-verified mainnet
-//! build) and `mpl-core` `e72d63e4118a0a95ac9b40221e81b19d49e1e102`.
+//! build) and `mpl-core` release `core@0.15.3`
+//! (`8c5cee35199a7d103e181de7b13f2e20b1e20103`, also OtterSec-verified).
 
 use alloc::vec::Vec;
 

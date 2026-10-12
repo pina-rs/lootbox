@@ -15,5 +15,8 @@
 	"advisory": [
 		"box_curve/*"
 	],
-	"approvedTotals": {}
+	"approvedTotals": {},
+	"removedCases": [
+		"core/*"
+	]
 }

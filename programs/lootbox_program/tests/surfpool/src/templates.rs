@@ -2880,3 +2880,69 @@ fn issuer_controlled_stock_escrows_exactly_the_recorded_amount() {
 		program.stop().expect("stop Surfpool");
 	});
 }
+
+#[test]
+#[ignore = "run with `devenv shell -- test:surfpool`"]
+fn reserved_migrate_accepts_a_current_template_only_at_its_documented_slot() {
+	pina_test::run(async {
+		let mut program = Harness::start(Pubkey::new_from_array(ID.to_bytes()))
+			.await
+			.expect("Surfpool");
+		let (queue, _oracle, _cpi) = oracle_fixture(&mut program);
+		let payer = program.payer();
+		let (template, bump) = Pubkey::find_program_address(
+			&[b"template", payer.as_ref(), &1u64.to_le_bytes()],
+			&program.program_id,
+		);
+		let mint = mint_with_metadata(&program, &template);
+		let now = chain_timestamp(&program);
+		program
+			.send(
+				&create_template_data(queue, bump, now + 3600, true),
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new(template, false),
+					AccountMeta::new_readonly(mint, false),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+					AccountMeta::new_readonly(token_2022(), false),
+				],
+			)
+			.expect("create template");
+
+		// The documented Migrate layout is [payer, systemProgram, template,
+		// bundle, templateOpening, resultReceipt, prizePool, prizePoolItem,
+		// exclusiveCollection, exclusiveAttachment, boxCurve]. A current
+		// template at slot 2 validates as already current; every other state
+		// slot holds the program-address placeholder and is skipped.
+		let placeholders: std::vec::Vec<AccountMeta> = (0..8)
+			.map(|_| AccountMeta::new(program.program_id, false))
+			.collect();
+		program
+			.send(
+				&[255],
+				vec![
+					AccountMeta::new(payer, true),
+					AccountMeta::new_readonly(Pubkey::default(), false),
+					AccountMeta::new(template, false),
+				]
+				.into_iter()
+				.chain(placeholders)
+				.collect(),
+			)
+			.expect("a current template at its documented slot is already current");
+
+		// The same template anywhere else must fail closed, so the documented
+		// order cannot drift silently again.
+		let mut reordered = vec![
+			AccountMeta::new(payer, true),
+			AccountMeta::new_readonly(Pubkey::default(), false),
+			AccountMeta::new(program.program_id, false),
+			AccountMeta::new(template, false),
+		];
+		reordered.extend((0..7).map(|_| AccountMeta::new(program.program_id, false)));
+		program
+			.send(&[255], reordered)
+			.expect_err("a template outside its documented slot is not migratable");
+		program.stop().expect("stop Surfpool");
+	});
+}

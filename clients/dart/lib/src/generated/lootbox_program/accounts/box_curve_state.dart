@@ -26,7 +26,7 @@ class BoxCurveState {
     required this.soldOutAt,
     required this.feeBps,
     required this.bump,
-  }) : discriminator = 12,
+  }) : discriminator = 9,
        migrationVersion = 0;
 
   final int discriminator;
@@ -108,7 +108,7 @@ Encoder<BoxCurveState> getBoxCurveStateEncoder() {
   return transformEncoder(
     structEncoder,
     (BoxCurveState value) => <String, Object?>{
-      'discriminator': 12,
+      'discriminator': 9,
       'migrationVersion': 0,
       'template': value.template,
       'boxMint': value.boxMint,
@@ -153,7 +153,7 @@ Decoder<BoxCurveState> getBoxCurveStateDecoder() {
   }
 
   (BoxCurveState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(12)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(9)).read(bytes, offset + 0);
     final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
     if (storedMigrationVersion != 0) {
       throw StateError(
@@ -221,7 +221,7 @@ bool boxCurveStateNeedsMigration(List<int> data) {
   if (data.length < 2) {
     return false;
   }
-  if (data[0] != 12) {
+  if (data[0] != 9) {
     return false;
   }
   return data[1] < 0;

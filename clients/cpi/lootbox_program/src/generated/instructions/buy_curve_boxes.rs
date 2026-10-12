@@ -6,14 +6,13 @@
 	clippy::empty_line_after_doc_comments,
 	clippy::too_many_arguments
 )]
-
 #![allow(rustdoc::broken_intra_doc_links)]
 
 use pina::AccountView;
 use pina::CpiContext;
 use pina::CpiHandle;
-use pina::ProgramResult;
 use pina::ProgramError;
+use pina::ProgramResult;
 use pina::Signer;
 
 use crate::ProgramAccount;
@@ -124,4 +123,4 @@ impl<'account> BuyCurveBoxes<'account> {
 	}
 }
 
-const BUY_CURVE_BOXES_DISCRIMINATOR: [u8; 2] = [58, 0];
+const BUY_CURVE_BOXES_DISCRIMINATOR: [u8; 2] = [48, 0];

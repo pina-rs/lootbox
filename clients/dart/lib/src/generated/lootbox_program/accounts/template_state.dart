@@ -44,7 +44,7 @@ class TemplateState {
     required this.bump,
     required this.serviceVaultBump,
     required this.remaining,
-  }) : discriminator = 4,
+  }) : discriminator = 1,
        migrationVersion = 0;
 
   final int discriminator;
@@ -205,7 +205,7 @@ Encoder<TemplateState> getTemplateStateEncoder() {
   return transformEncoder(
     structEncoder,
     (TemplateState value) => <String, Object?>{
-      'discriminator': 4,
+      'discriminator': 1,
       'migrationVersion': 0,
       'authority': value.authority,
       'boxMint': value.boxMint,
@@ -292,7 +292,7 @@ Decoder<TemplateState> getTemplateStateDecoder() {
   }
 
   (TemplateState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(4)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(1)).read(bytes, offset + 0);
     final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
     if (storedMigrationVersion != 0) {
       throw StateError(
@@ -377,7 +377,7 @@ bool templateStateNeedsMigration(List<int> data) {
   if (data.length < 2) {
     return false;
   }
-  if (data[0] != 4) {
+  if (data[0] != 1) {
     return false;
   }
   return data[1] < 0;

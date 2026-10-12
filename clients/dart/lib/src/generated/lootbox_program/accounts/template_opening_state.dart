@@ -33,7 +33,7 @@ class TemplateOpeningState {
     required this.hasPoolAssignment,
     required this.claimedMask,
     required this.bump,
-  }) : discriminator = 6,
+  }) : discriminator = 3,
        migrationVersion = 0;
 
   final int discriminator;
@@ -146,7 +146,7 @@ Encoder<TemplateOpeningState> getTemplateOpeningStateEncoder() {
   return transformEncoder(
     structEncoder,
     (TemplateOpeningState value) => <String, Object?>{
-      'discriminator': 6,
+      'discriminator': 3,
       'migrationVersion': 0,
       'template': value.template,
       'boxAuthority': value.boxAuthority,
@@ -205,7 +205,7 @@ Decoder<TemplateOpeningState> getTemplateOpeningStateDecoder() {
   }
 
   (TemplateOpeningState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(6)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(3)).read(bytes, offset + 0);
     final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
     if (storedMigrationVersion != 0) {
       throw StateError(
@@ -287,7 +287,7 @@ bool templateOpeningStateNeedsMigration(List<int> data) {
   if (data.length < 2) {
     return false;
   }
-  if (data[0] != 6) {
+  if (data[0] != 3) {
     return false;
   }
   return data[1] < 0;

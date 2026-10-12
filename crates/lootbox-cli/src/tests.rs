@@ -65,300 +65,6 @@ fn build_from(args: &[&str]) -> Result<Instruction, CliError> {
 }
 
 #[test]
-fn create_lootbox_builds_with_derived_pdas() {
-	let instruction = build_from(&[
-		"create-lootbox",
-		"--authority",
-		PK1,
-		"--box-mint",
-		PK2,
-		"--id",
-		"7",
-		"--max-supply",
-		"1000",
-		"--oracle-program",
-		PROGRAM,
-		"--oracle-queue",
-		PK3,
-	])
-	.expect("builds");
-
-	assert_eq!(instruction.program_id, pubkey(PROGRAM));
-	assert_eq!(instruction.data[0], 0);
-	// id (8) + max_supply (8) + oracle_program (32) + oracle_queue (32) + bumps (2)
-	assert_eq!(instruction.data.len(), 2 + 8 + 8 + 32 + 32 + 2);
-
-	let explicit = build_from(&[
-		"create-lootbox",
-		"--authority",
-		PK1,
-		"--box-mint",
-		PK2,
-		"--id",
-		"7",
-		"--max-supply",
-		"1000",
-		"--oracle-program",
-		PROGRAM,
-		"--oracle-queue",
-		PK3,
-		"--bump",
-		"254",
-		"--vault-bump",
-		"255",
-	])
-	.expect("builds");
-	assert_eq!(explicit.data[instruction.data.len() - 2], 254);
-	assert_eq!(explicit.data[instruction.data.len() - 1], 255);
-}
-
-#[test]
-fn deposit_builds() {
-	let instruction = build_from(&[
-		"deposit",
-		"--depositor",
-		PK1,
-		"--lootbox",
-		PK2,
-		"--vault",
-		PK3,
-		"--lamports",
-		"42",
-	])
-	.expect("builds");
-
-	assert_eq!(instruction.data[0], 2);
-	assert_eq!(instruction.data.len(), 2 + 8);
-	assert!(instruction.accounts.iter().any(|meta| meta.is_signer));
-	// The generated builder derives the canonical vault; the CLI sends the
-	// account the caller named instead.
-	assert_eq!(instruction.accounts[2].pubkey, pubkey(PK3));
-}
-
-#[test]
-fn add_outcome_builds() {
-	let instruction = build_from(&[
-		"add-outcome",
-		"--authority",
-		PK1,
-		"--lootbox",
-		PK2,
-		"--weight",
-		"5",
-		"--reward-lamports",
-		"1000",
-	])
-	.expect("builds");
-
-	assert_eq!(instruction.data[0], 1);
-	assert_eq!(instruction.data.len(), 2 + 8 + 8);
-}
-
-#[test]
-fn seal_builds() {
-	let instruction = build_from(&["seal", "--authority", PK1, "--lootbox", PK2]).expect("builds");
-
-	assert_eq!(instruction.data[0], 3);
-	assert_eq!(instruction.data.len(), 2);
-}
-
-#[test]
-fn mint_boxes_builds() {
-	let instruction = build_from(&[
-		"mint-boxes",
-		"--authority",
-		PK1,
-		"--lootbox",
-		PK2,
-		"--vault",
-		PK3,
-		"--box-mint",
-		PK1,
-		"--recipient-box-account",
-		PK2,
-		"--amount",
-		"3",
-	])
-	.expect("builds");
-
-	assert_eq!(instruction.data[0], 4);
-	assert_eq!(instruction.data.len(), 2 + 8);
-}
-
-#[test]
-fn request_open_builds() {
-	let instruction = build_from(&[
-		"request-open",
-		"--owner",
-		PK1,
-		"--lootbox",
-		PK2,
-		"--vault",
-		PK3,
-		"--box-mint",
-		PK1,
-		"--owner-box-account",
-		PK2,
-		"--randomness",
-		PK3,
-		"--reward-escrow",
-		PK1,
-		"--oracle-queue",
-		PK2,
-		"--oracle",
-		PK3,
-		"--recent-slot-hashes",
-		PK1,
-		"--oracle-program",
-		PROGRAM,
-		"--oracle-program-state",
-		PK2,
-		"--oracle-lut-signer",
-		PK3,
-		"--oracle-lut",
-		PK1,
-		"--wrapped-sol-mint",
-		PK2,
-		"--address-lookup-table-program",
-		PK3,
-		"--recent-slot",
-		"99",
-		"--bump",
-		"253",
-	])
-	.expect("builds");
-
-	assert_eq!(instruction.data[0], 5);
-	assert_eq!(instruction.data.len(), 2 + 8 + 1);
-}
-
-#[test]
-fn settle_open_builds() {
-	let instruction = build_from(&[
-		"settle-open",
-		"--recipient",
-		PK1,
-		"--payer",
-		PK2,
-		"--lootbox",
-		PK3,
-		"--vault",
-		PK1,
-		"--box-mint",
-		PK2,
-		"--opening",
-		PK3,
-		"--randomness",
-		PK1,
-		"--oracle-queue",
-		PK2,
-		"--oracle",
-		PK3,
-		"--oracle-stats",
-		PK1,
-		"--recent-slot-hashes",
-		PK2,
-		"--oracle-program",
-		PROGRAM,
-		"--reward-escrow",
-		PK3,
-		"--oracle-program-state",
-		PK1,
-		"--wrapped-sol-mint",
-		PK2,
-		"--signature",
-		SIG64,
-		"--recovery-id",
-		"1",
-		"--value",
-		HASH32,
-	])
-	.expect("builds");
-
-	assert_eq!(instruction.data[0], 6);
-	assert_eq!(instruction.data.len(), 2 + 64 + 1 + 32);
-}
-
-#[test]
-fn refund_open_builds() {
-	let instruction = build_from(&[
-		"refund-open",
-		"--recipient",
-		PK1,
-		"--lootbox",
-		PK2,
-		"--vault",
-		PK3,
-		"--box-mint",
-		PK1,
-		"--opening",
-		PK2,
-		"--randomness",
-		PK3,
-		"--clock",
-		PK1,
-	])
-	.expect("builds");
-
-	assert_eq!(instruction.data[0], 7);
-	assert_eq!(instruction.data.len(), 2);
-}
-
-#[test]
-fn close_opening_builds() {
-	let instruction = build_from(&[
-		"close-opening",
-		"--recipient",
-		PK1,
-		"--lootbox",
-		PK2,
-		"--opening",
-		PK3,
-		"--randomness",
-		PK1,
-		"--reward-escrow",
-		PK2,
-		"--oracle-program",
-		PROGRAM,
-		"--oracle-program-state",
-		PK3,
-		"--oracle-lut",
-		PK1,
-		"--oracle-lut-signer",
-		PK2,
-		"--wrapped-sol-mint",
-		PK3,
-		"--address-lookup-table-program",
-		PK1,
-	])
-	.expect("builds");
-
-	assert_eq!(instruction.data[0], 8);
-	assert_eq!(instruction.data.len(), 2);
-}
-
-#[test]
-fn withdraw_surplus_builds() {
-	let instruction = build_from(&[
-		"withdraw-surplus",
-		"--authority",
-		PK1,
-		"--lootbox",
-		PK2,
-		"--vault",
-		PK3,
-		"--box-mint",
-		PK1,
-		"--lamports",
-		"500",
-	])
-	.expect("builds");
-
-	assert_eq!(instruction.data[0], 9);
-	assert_eq!(instruction.data.len(), 2 + 8);
-}
-
-#[test]
 fn create_template_builds() {
 	let instruction = build_from(&[
 		"create-template",
@@ -381,7 +87,7 @@ fn create_template_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 10);
+	assert_eq!(instruction.data[0], 0);
 	assert_eq!(instruction.data.len(), 324);
 }
 
@@ -458,7 +164,7 @@ fn add_bundle_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 11);
+	assert_eq!(instruction.data[0], 1);
 	assert_eq!(instruction.data.len(), 2 + 8 + 1 + 1);
 	assert_eq!(instruction.accounts.len(), 4 + 2);
 }
@@ -492,7 +198,7 @@ fn seal_template_builds() {
 	let instruction =
 		build_from(&["seal-template", "--authority", PK1, "--template", PK2]).expect("builds");
 
-	assert_eq!(instruction.data[0], 14);
+	assert_eq!(instruction.data[0], 4);
 	assert_eq!(instruction.data.len(), 2);
 }
 
@@ -513,7 +219,7 @@ fn mint_template_boxes_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 15);
+	assert_eq!(instruction.data[0], 5);
 	assert_eq!(instruction.data.len(), 2 + 8);
 }
 
@@ -568,7 +274,7 @@ fn request_template_open_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 16);
+	assert_eq!(instruction.data[0], 6);
 	assert_eq!(instruction.data.len(), 107);
 }
 
@@ -614,7 +320,7 @@ fn fulfill_template_open_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 17);
+	assert_eq!(instruction.data[0], 7);
 	assert_eq!(instruction.data.len(), 2 + 64 + 1 + 32);
 
 	// Every named account lands in its own slot, in the program's order.
@@ -649,7 +355,7 @@ fn allocate_template_open_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 18);
+	assert_eq!(instruction.data[0], 8);
 	assert_eq!(instruction.data.len(), 3);
 }
 
@@ -672,7 +378,7 @@ fn forfeit_template_open_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 33);
+	assert_eq!(instruction.data[0], 23);
 	assert_eq!(instruction.data.len(), 2);
 	// The bound beneficiary must occupy the second account slot so the
 	// creator-funded bounty compensates the box holder, never the crank.
@@ -709,7 +415,7 @@ fn close_template_opening_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 24);
+	assert_eq!(instruction.data[0], 14);
 	assert_eq!(instruction.data.len(), 2);
 }
 
@@ -718,7 +424,7 @@ fn retire_template_builds() {
 	let instruction =
 		build_from(&["retire-template", "--authority", PK1, "--template", PK2]).expect("builds");
 
-	assert_eq!(instruction.data[0], 21);
+	assert_eq!(instruction.data[0], 11);
 	assert_eq!(instruction.data.len(), 2);
 }
 
@@ -739,7 +445,7 @@ fn lock_treasury_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 34);
+	assert_eq!(instruction.data[0], 24);
 	assert_eq!(instruction.data.len(), 3);
 }
 
@@ -756,7 +462,7 @@ fn activate_bundle_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 25);
+	assert_eq!(instruction.data[0], 15);
 	assert_eq!(instruction.data.len(), 2);
 }
 
@@ -773,7 +479,7 @@ fn cancel_bundle_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 26);
+	assert_eq!(instruction.data[0], 16);
 	assert_eq!(instruction.data.len(), 2);
 }
 
@@ -792,7 +498,7 @@ fn fund_sol_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 12);
+	assert_eq!(instruction.data[0], 2);
 	assert_eq!(instruction.data.len(), 2 + 8);
 }
 
@@ -818,7 +524,7 @@ fn fund_token_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 13);
+	assert_eq!(instruction.data[0], 3);
 	assert_eq!(instruction.data.len(), 2 + 8 + 1);
 }
 
@@ -847,7 +553,7 @@ fn fund_core_asset_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 27);
+	assert_eq!(instruction.data[0], 17);
 	assert_eq!(instruction.data.len(), 2);
 }
 
@@ -888,7 +594,7 @@ fn fund_compressed_nft_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 30);
+	assert_eq!(instruction.data[0], 20);
 	assert_eq!(instruction.data.len(), 2 + 32 * 3 + 8 + 4);
 }
 
@@ -909,7 +615,7 @@ fn claim_sol_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 19);
+	assert_eq!(instruction.data[0], 9);
 	assert_eq!(instruction.data.len(), 2 + 1);
 }
 
@@ -936,7 +642,7 @@ fn claim_token_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 20);
+	assert_eq!(instruction.data[0], 10);
 	assert_eq!(instruction.data.len(), 2 + 1);
 }
 
@@ -971,7 +677,7 @@ fn claim_core_asset_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 28);
+	assert_eq!(instruction.data[0], 18);
 	assert_eq!(instruction.data.len(), 2 + 1);
 }
 
@@ -1016,7 +722,7 @@ fn claim_compressed_nft_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 31);
+	assert_eq!(instruction.data[0], 21);
 	assert_eq!(instruction.data.len(), 2 + 1 + 32 * 3 + 8 + 4);
 }
 
@@ -1037,7 +743,7 @@ fn reclaim_sol_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 22);
+	assert_eq!(instruction.data[0], 12);
 	assert_eq!(instruction.data.len(), 2 + 1);
 }
 
@@ -1064,7 +770,7 @@ fn reclaim_token_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 23);
+	assert_eq!(instruction.data[0], 13);
 	assert_eq!(instruction.data.len(), 2 + 1);
 }
 
@@ -1097,7 +803,7 @@ fn reclaim_core_asset_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 29);
+	assert_eq!(instruction.data[0], 19);
 	assert_eq!(instruction.data.len(), 2 + 1);
 }
 
@@ -1142,24 +848,20 @@ fn reclaim_compressed_nft_prize_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 32);
+	assert_eq!(instruction.data[0], 22);
 	assert_eq!(instruction.data.len(), 2 + 1 + 32 * 3 + 8 + 4);
 }
 
 #[test]
 fn hex_args_reject_bad_input() {
 	let error = build_from(&[
-		"settle-open",
-		"--recipient",
-		PK1,
+		"fulfill-template-open",
 		"--payer",
 		PK2,
-		"--lootbox",
-		PK3,
-		"--vault",
-		PK1,
-		"--box-mint",
+		"--template",
 		PK2,
+		"--service-vault",
+		PK1,
 		"--opening",
 		PK3,
 		"--randomness",
@@ -1198,18 +900,7 @@ fn hex_args_reject_bad_input() {
 
 #[test]
 fn run_build_mode_prints_text() {
-	let cli = parse(&[
-		"deposit",
-		"--depositor",
-		PK1,
-		"--lootbox",
-		PK2,
-		"--vault",
-		PK3,
-		"--lamports",
-		"42",
-	])
-	.expect("parses");
+	let cli = parse(&["seal-template", "--authority", PK1, "--template", PK2]).expect("parses");
 	let output = crate::run(&cli, None).expect("runs");
 
 	assert!(output.contains("program:"));
@@ -1220,21 +911,17 @@ fn run_build_mode_prints_text() {
 fn run_build_mode_prints_json() {
 	let cli = parse(&[
 		"--json",
-		"deposit",
-		"--depositor",
+		"seal-template",
+		"--authority",
 		PK1,
-		"--lootbox",
+		"--template",
 		PK2,
-		"--vault",
-		PK3,
-		"--lamports",
-		"42",
 	])
 	.expect("parses");
 	let output = crate::run(&cli, None).expect("runs");
 	let parsed: serde_json::Value = serde_json::from_str(&output).expect("json");
 
-	assert_eq!(parsed["accounts"].as_array().expect("accounts").len(), 4);
+	assert_eq!(parsed["accounts"].as_array().expect("accounts").len(), 2);
 }
 
 #[test]
@@ -1245,15 +932,11 @@ fn run_send_mode_submits_through_the_transport() {
 		"http://localhost:8899",
 		"--keypair",
 		"/tmp/kp.json",
-		"deposit",
-		"--depositor",
+		"seal-template",
+		"--authority",
 		PK1,
-		"--lootbox",
+		"--template",
 		PK2,
-		"--vault",
-		PK3,
-		"--lamports",
-		"42",
 	])
 	.expect("parses");
 	let output = crate::run(&cli, Some(&submit_mock(1))).expect("runs");
@@ -1270,15 +953,11 @@ fn run_send_mode_prints_json_with_signature() {
 		"http://localhost:8899",
 		"--keypair",
 		"/tmp/kp.json",
-		"deposit",
-		"--depositor",
+		"seal-template",
+		"--authority",
 		PK1,
-		"--lootbox",
+		"--template",
 		PK2,
-		"--vault",
-		PK3,
-		"--lamports",
-		"42",
 	])
 	.expect("parses");
 	let output = crate::run(&cli, Some(&submit_mock(1))).expect("runs");
@@ -1300,15 +979,11 @@ fn run_send_mode_reports_transport_errors() {
 		"http://localhost:8899",
 		"--keypair",
 		"/tmp/kp.json",
-		"deposit",
-		"--depositor",
+		"seal-template",
+		"--authority",
 		PK1,
-		"--lootbox",
+		"--template",
 		PK2,
-		"--vault",
-		PK3,
-		"--lamports",
-		"42",
 	])
 	.expect("parses");
 	let error = crate::run(&cli, Some(&MockErrorSubmit)).expect_err("errors");
@@ -1324,15 +999,11 @@ fn run_send_mode_without_transport_is_rejected() {
 		"http://localhost:8899",
 		"--keypair",
 		"/tmp/kp.json",
-		"deposit",
-		"--depositor",
+		"seal-template",
+		"--authority",
 		PK1,
-		"--lootbox",
+		"--template",
 		PK2,
-		"--vault",
-		PK3,
-		"--lamports",
-		"42",
 	])
 	.expect("parses");
 	let error = crate::run(&cli, None).expect_err("errors");
@@ -1344,15 +1015,11 @@ fn run_send_mode_without_transport_is_rejected() {
 fn clap_rejects_send_without_rpc() {
 	let error = parse(&[
 		"--send",
-		"deposit",
-		"--depositor",
+		"seal-template",
+		"--authority",
 		PK1,
-		"--lootbox",
+		"--template",
 		PK2,
-		"--vault",
-		PK3,
-		"--lamports",
-		"42",
 	])
 	.expect_err("rejects");
 
@@ -1365,15 +1032,11 @@ fn clap_rejects_send_without_keypair() {
 		"--send",
 		"--rpc",
 		"http://localhost:8899",
-		"deposit",
-		"--depositor",
+		"seal-template",
+		"--authority",
 		PK1,
-		"--lootbox",
+		"--template",
 		PK2,
-		"--vault",
-		PK3,
-		"--lamports",
-		"42",
 	])
 	.expect_err("rejects");
 
@@ -1389,23 +1052,19 @@ fn clap_lists_every_instruction_subcommand() {
 		.map(|sub| sub.get_name().to_string())
 		.collect();
 
-	assert_eq!(subcommand_names.len(), 45);
+	assert_eq!(subcommand_names.len(), 35);
 }
 
 #[test]
 fn hex_arg_rejects_non_hex_digits() {
 	let error = build_from(&[
-		"settle-open",
-		"--recipient",
-		PK1,
+		"fulfill-template-open",
 		"--payer",
 		PK2,
-		"--lootbox",
-		PK3,
-		"--vault",
-		PK1,
-		"--box-mint",
+		"--template",
 		PK2,
+		"--service-vault",
+		PK1,
 		"--opening",
 		PK3,
 		"--randomness",
@@ -1444,24 +1103,20 @@ fn hex_arg_rejects_non_hex_digits() {
 
 impl Command {
 	/// Number of distinct instruction subcommands.
-	pub const VARIANTS: usize = 39;
+	pub const VARIANTS: usize = 35;
 }
 
 #[test]
 fn hex_arg_rejects_bad_hex_for_u8_32() {
 	// A [u8; 32] hex argument with the wrong length
 	let error = build_from(&[
-		"settle-open",
-		"--recipient",
-		PK1,
+		"fulfill-template-open",
 		"--payer",
 		PK2,
-		"--lootbox",
-		PK3,
-		"--vault",
-		PK1,
-		"--box-mint",
+		"--template",
 		PK2,
+		"--service-vault",
+		PK1,
 		"--opening",
 		PK3,
 		"--randomness",
@@ -1700,7 +1355,7 @@ fn allocate_template_open_defaults_receipt_to_canonical_pda() {
 		&lootbox_program_client::generated::programs::LOOTBOX_PROGRAM_ID,
 	);
 
-	assert_eq!(instruction.data[0], 18);
+	assert_eq!(instruction.data[0], 8);
 	assert_eq!(instruction.accounts[4].pubkey, receipt);
 
 	use crate::InstructionBuilder;
@@ -1812,7 +1467,7 @@ fn claim_stranded_prize_pool_item_builds() {
 	])
 	.expect("builds");
 
-	assert_eq!(instruction.data[0], 61);
+	assert_eq!(instruction.data[0], 51);
 	// The pool account is address-only: read-only, never writable.
 	assert!(!instruction.accounts[3].is_writable);
 }
@@ -1837,7 +1492,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		"7",
 	])
 	.expect("create pool");
-	assert_eq!((create.data[0], create.accounts.len()), (41, 6));
+	assert_eq!((create.data[0], create.accounts.len()), (31, 6));
 
 	let prepare = build_from(&[
 		"prepare-prize-pool-item",
@@ -1865,7 +1520,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		"00",
 	])
 	.expect("prepare item");
-	assert_eq!((prepare.data[0], prepare.accounts.len()), (48, 6));
+	assert_eq!((prepare.data[0], prepare.accounts.len()), (38, 6));
 
 	let deposit = build_from(&[
 		"deposit-prize-pool-item",
@@ -1905,7 +1560,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		"10",
 	])
 	.expect("deposit item");
-	assert_eq!((deposit.data[0], deposit.accounts.len()), (42, 13));
+	assert_eq!((deposit.data[0], deposit.accounts.len()), (32, 13));
 	assert_eq!(deposit.accounts[11].pubkey, pubkey(PK1));
 	assert_eq!(deposit.accounts[12].pubkey, pubkey(PK2));
 
@@ -1923,7 +1578,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		PK2,
 	])
 	.expect("cancel prepared item");
-	assert_eq!((cancel.data[0], cancel.accounts.len()), (49, 5));
+	assert_eq!((cancel.data[0], cancel.accounts.len()), (39, 5));
 
 	let seal = build_from(&[
 		"seal-prize-pool",
@@ -1937,7 +1592,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		PK1,
 	])
 	.expect("seal pool");
-	assert_eq!((seal.data[0], seal.accounts.len()), (43, 4));
+	assert_eq!((seal.data[0], seal.accounts.len()), (33, 4));
 
 	let allocate = build_from(&[
 		"allocate-prize-pool-open",
@@ -1955,7 +1610,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		"17",
 	])
 	.expect("allocate pool");
-	assert_eq!((allocate.data[0], allocate.accounts.len()), (44, 7));
+	assert_eq!((allocate.data[0], allocate.accounts.len()), (34, 7));
 
 	let claim = build_from(&[
 		"claim-prize-pool-item",
@@ -2001,7 +1656,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		"00",
 	])
 	.expect("claim item");
-	assert_eq!((claim.data[0], claim.accounts.len()), (45, 14));
+	assert_eq!((claim.data[0], claim.accounts.len()), (35, 14));
 
 	let reclaim = build_from(&[
 		"reclaim-prize-pool-item",
@@ -2043,7 +1698,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		"00",
 	])
 	.expect("reclaim item");
-	assert_eq!((reclaim.data[0], reclaim.accounts.len()), (46, 12));
+	assert_eq!((reclaim.data[0], reclaim.accounts.len()), (36, 12));
 
 	let close = build_from(&[
 		"close-prize-pool",
@@ -2057,7 +1712,7 @@ fn prize_pool_cli_builds_the_complete_lifecycle() {
 		PK1,
 	])
 	.expect("close pool");
-	assert_eq!((close.data[0], close.accounts.len()), (47, 4));
+	assert_eq!((close.data[0], close.accounts.len()), (37, 4));
 }
 
 #[test]

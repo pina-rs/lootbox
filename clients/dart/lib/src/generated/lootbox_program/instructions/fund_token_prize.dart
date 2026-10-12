@@ -16,7 +16,7 @@ class FundTokenPrizeInstructionData {
   const FundTokenPrizeInstructionData({
     required this.amountPerWin,
     required this.isNft,
-  }) : discriminator = 13,
+  }) : discriminator = 3,
        migrationVersion = 0;
 
   final int discriminator;
@@ -37,7 +37,7 @@ getFundTokenPrizeInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (FundTokenPrizeInstructionData value) => <String, Object?>{
-      'discriminator': 13,
+      'discriminator': 3,
       'migrationVersion': 0,
       'amountPerWin': value.amountPerWin,
       'isNft': value.isNft,
@@ -66,7 +66,7 @@ getFundTokenPrizeInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(13)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(3)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

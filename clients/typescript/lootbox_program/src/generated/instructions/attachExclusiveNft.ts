@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const ATTACH_EXCLUSIVE_NFT_DISCRIMINATOR = 54;
+export const ATTACH_EXCLUSIVE_NFT_DISCRIMINATOR = 44;
 
 export function getAttachExclusiveNftDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(ATTACH_EXCLUSIVE_NFT_DISCRIMINATOR); }
 
@@ -22,28 +22,28 @@ export function getAttachExclusiveNftDiscriminator2Bytes(): ReadonlyUint8Array {
 export type AttachExclusiveNftInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountExclusiveCollection extends string | AccountMeta<string> = string, TAccountExclusiveAttachment extends string | AccountMeta<string> = string, TAccountFeeVault extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountExclusiveCollection extends string ? ReadonlyAccount<TAccountExclusiveCollection> : TAccountExclusiveCollection, TAccountExclusiveAttachment extends string ? WritableAccount<TAccountExclusiveAttachment> : TAccountExclusiveAttachment, TAccountFeeVault extends string ? WritableAccount<TAccountFeeVault> : TAccountFeeVault, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type AttachExclusiveNftInstructionData = { discriminator: number; migrationVersion: number;
+export type AttachExclusiveNftInstructionData = { discriminator: number; migrationVersion: number; 
 /** Manifest slot to bind; must equal the bundle's `funded_assets`. */
-assetIndex: number;
+assetIndex: number; 
 /**
  * Canonical bump of the attachment PDA
  * `["exclusive-attachment", bundle, asset_index]`; any other value fails.
  */
-bump: number;
+bump: number; 
 /**
  * Canonical bump of the fee vault PDA
  * `["exclusive-fee-vault", attachment]`; any other value fails.
  */
 feeVaultBump: number;  };
 
-export type AttachExclusiveNftInstructionDataArgs = {
+export type AttachExclusiveNftInstructionDataArgs = { 
 /** Manifest slot to bind; must equal the bundle's `funded_assets`. */
-assetIndex: number;
+assetIndex: number; 
 /**
  * Canonical bump of the attachment PDA
  * `["exclusive-attachment", bundle, asset_index]`; any other value fails.
  */
-bump: number;
+bump: number; 
 /**
  * Canonical bump of the fee vault PDA
  * `["exclusive-fee-vault", attachment]`; any other value fails.
@@ -51,7 +51,7 @@ bump: number;
 feeVaultBump: number;  };
 
 export function getAttachExclusiveNftInstructionDataEncoder(): FixedSizeEncoder<AttachExclusiveNftInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()], ['bump', getU8Encoder()], ['feeVaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 54, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()], ['bump', getU8Encoder()], ['feeVaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 44, migrationVersion: 0 }));
 }
 
 export function getAttachExclusiveNftInstructionDataDecoder(): FixedSizeDecoder<AttachExclusiveNftInstructionData> {

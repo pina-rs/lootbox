@@ -21,9 +21,6 @@ pub fn get_migrate_discriminator_bytes() -> Vec<u8> {
 pub struct Migrate {
 	pub payer: Option<solana_pubkey::Pubkey>,
 	pub system_program: Option<solana_pubkey::Pubkey>,
-	pub lootbox_state: Option<solana_pubkey::Pubkey>,
-	pub vault_state: Option<solana_pubkey::Pubkey>,
-	pub opening_state: Option<solana_pubkey::Pubkey>,
 	pub template_state: Option<solana_pubkey::Pubkey>,
 	pub bundle_state: Option<solana_pubkey::Pubkey>,
 	pub template_opening_state: Option<solana_pubkey::Pubkey>,
@@ -40,9 +37,6 @@ impl Migrate {
 		Self {
 			payer: None,
 			system_program: None,
-			lootbox_state: None,
-			vault_state: None,
-			opening_state: None,
 			template_state: None,
 			bundle_state: None,
 			template_opening_state: None,
@@ -70,7 +64,7 @@ impl Migrate {
 		&self,
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
-		let mut accounts = Vec::with_capacity(14 + remaining_accounts.len());
+		let mut accounts = Vec::with_capacity(11 + remaining_accounts.len());
 		if let Some(payer) = self.payer {
 			accounts.push(solana_instruction::AccountMeta::new(payer, true));
 		} else {
@@ -80,33 +74,10 @@ impl Migrate {
 			));
 		}
 		accounts.push(solana_instruction::AccountMeta::new_readonly(
-			self.system_program.unwrap_or(solana_pubkey::Pubkey::new_from_array([0; 32])),
+			self.system_program
+				.unwrap_or(solana_pubkey::Pubkey::new_from_array([0; 32])),
 			false,
 		));
-		if let Some(lootbox_state) = self.lootbox_state {
-			accounts.push(solana_instruction::AccountMeta::new(lootbox_state, false));
-		} else {
-			accounts.push(solana_instruction::AccountMeta::new_readonly(
-				crate::LOOTBOX_PROGRAM_ID,
-				false,
-			));
-		}
-		if let Some(vault_state) = self.vault_state {
-			accounts.push(solana_instruction::AccountMeta::new(vault_state, false));
-		} else {
-			accounts.push(solana_instruction::AccountMeta::new_readonly(
-				crate::LOOTBOX_PROGRAM_ID,
-				false,
-			));
-		}
-		if let Some(opening_state) = self.opening_state {
-			accounts.push(solana_instruction::AccountMeta::new(opening_state, false));
-		} else {
-			accounts.push(solana_instruction::AccountMeta::new_readonly(
-				crate::LOOTBOX_PROGRAM_ID,
-				false,
-			));
-		}
 		if let Some(template_state) = self.template_state {
 			accounts.push(solana_instruction::AccountMeta::new(template_state, false));
 		} else {
@@ -124,7 +95,10 @@ impl Migrate {
 			));
 		}
 		if let Some(template_opening_state) = self.template_opening_state {
-			accounts.push(solana_instruction::AccountMeta::new(template_opening_state, false));
+			accounts.push(solana_instruction::AccountMeta::new(
+				template_opening_state,
+				false,
+			));
 		} else {
 			accounts.push(solana_instruction::AccountMeta::new_readonly(
 				crate::LOOTBOX_PROGRAM_ID,
@@ -132,7 +106,10 @@ impl Migrate {
 			));
 		}
 		if let Some(result_receipt_state) = self.result_receipt_state {
-			accounts.push(solana_instruction::AccountMeta::new(result_receipt_state, false));
+			accounts.push(solana_instruction::AccountMeta::new(
+				result_receipt_state,
+				false,
+			));
 		} else {
 			accounts.push(solana_instruction::AccountMeta::new_readonly(
 				crate::LOOTBOX_PROGRAM_ID,
@@ -140,7 +117,10 @@ impl Migrate {
 			));
 		}
 		if let Some(prize_pool_state) = self.prize_pool_state {
-			accounts.push(solana_instruction::AccountMeta::new(prize_pool_state, false));
+			accounts.push(solana_instruction::AccountMeta::new(
+				prize_pool_state,
+				false,
+			));
 		} else {
 			accounts.push(solana_instruction::AccountMeta::new_readonly(
 				crate::LOOTBOX_PROGRAM_ID,
@@ -148,7 +128,10 @@ impl Migrate {
 			));
 		}
 		if let Some(prize_pool_item_state) = self.prize_pool_item_state {
-			accounts.push(solana_instruction::AccountMeta::new(prize_pool_item_state, false));
+			accounts.push(solana_instruction::AccountMeta::new(
+				prize_pool_item_state,
+				false,
+			));
 		} else {
 			accounts.push(solana_instruction::AccountMeta::new_readonly(
 				crate::LOOTBOX_PROGRAM_ID,
@@ -156,7 +139,10 @@ impl Migrate {
 			));
 		}
 		if let Some(exclusive_collection_state) = self.exclusive_collection_state {
-			accounts.push(solana_instruction::AccountMeta::new(exclusive_collection_state, false));
+			accounts.push(solana_instruction::AccountMeta::new(
+				exclusive_collection_state,
+				false,
+			));
 		} else {
 			accounts.push(solana_instruction::AccountMeta::new_readonly(
 				crate::LOOTBOX_PROGRAM_ID,
@@ -164,7 +150,10 @@ impl Migrate {
 			));
 		}
 		if let Some(exclusive_attachment_state) = self.exclusive_attachment_state {
-			accounts.push(solana_instruction::AccountMeta::new(exclusive_attachment_state, false));
+			accounts.push(solana_instruction::AccountMeta::new(
+				exclusive_attachment_state,
+				false,
+			));
 		} else {
 			accounts.push(solana_instruction::AccountMeta::new_readonly(
 				crate::LOOTBOX_PROGRAM_ID,

@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const CLAIM_SOL_PRIZE_DISCRIMINATOR = 19;
+export const CLAIM_SOL_PRIZE_DISCRIMINATOR = 9;
 
 export function getClaimSolPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLAIM_SOL_PRIZE_DISCRIMINATOR); }
 
@@ -22,7 +22,7 @@ export function getClaimSolPrizeDiscriminator2Bytes(): ReadonlyUint8Array { retu
 export type ClaimSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountRecipient extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountRecipient extends string ? WritableAccount<TAccountRecipient> : TAccountRecipient, ...TRemainingAccounts]>;
 
-export type ClaimSolPrizeInstructionData = { discriminator: number; migrationVersion: number;
+export type ClaimSolPrizeInstructionData = { discriminator: number; migrationVersion: number; 
 /**
  * Asset slot within the selected bundle; must be below its asset count,
  * hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and be unclaimed by this
@@ -30,7 +30,7 @@ export type ClaimSolPrizeInstructionData = { discriminator: number; migrationVer
  */
 assetIndex: number;  };
 
-export type ClaimSolPrizeInstructionDataArgs = {
+export type ClaimSolPrizeInstructionDataArgs = { 
 /**
  * Asset slot within the selected bundle; must be below its asset count,
  * hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and be unclaimed by this
@@ -39,7 +39,7 @@ export type ClaimSolPrizeInstructionDataArgs = {
 assetIndex: number;  };
 
 export function getClaimSolPrizeInstructionDataEncoder(): FixedSizeEncoder<ClaimSolPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 19, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 9, migrationVersion: 0 }));
 }
 
 export function getClaimSolPrizeInstructionDataDecoder(): FixedSizeDecoder<ClaimSolPrizeInstructionData> {

@@ -31,7 +31,7 @@ class ExclusiveCollectionState {
     required this.layerCount,
     required this.status,
     required this.bump,
-  }) : discriminator = 10,
+  }) : discriminator = 7,
        migrationVersion = 0;
 
   final int discriminator;
@@ -145,7 +145,7 @@ Encoder<ExclusiveCollectionState> getExclusiveCollectionStateEncoder() {
   return transformEncoder(
     structEncoder,
     (ExclusiveCollectionState value) => <String, Object?>{
-      'discriminator': 10,
+      'discriminator': 7,
       'migrationVersion': 0,
       'admin': value.admin,
       'coreCollection': value.coreCollection,
@@ -200,7 +200,7 @@ Decoder<ExclusiveCollectionState> getExclusiveCollectionStateDecoder() {
   }
 
   (ExclusiveCollectionState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(10)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(7)).read(bytes, offset + 0);
     final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
     if (storedMigrationVersion != 0) {
       throw StateError(
@@ -280,7 +280,7 @@ bool exclusiveCollectionStateNeedsMigration(List<int> data) {
   if (data.length < 2) {
     return false;
   }
-  if (data[0] != 10) {
+  if (data[0] != 7) {
     return false;
   }
   return data[1] < 0;

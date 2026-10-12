@@ -18,19 +18,19 @@ export const BOX_CURVE_TRADED_EVENT_EVENT_DISCRIMINATOR2 = 0;
 export function getBoxCurveTradedEventEventDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(BOX_CURVE_TRADED_EVENT_EVENT_DISCRIMINATOR2); }
 
 /** Emitted on every buy and sell, for trade feeds and price history. */
-export type BoxCurveTradedEventEvent = { discriminator: number; migrationVersion: number; curve: Address; trader: Address; count: bigint;
+export type BoxCurveTradedEventEvent = { discriminator: number; migrationVersion: number; curve: Address; trader: Address; count: bigint; 
 /** The curve price of the boxes moved, before the fee. */
-lamports: bigint; fee: bigint;
+lamports: bigint; fee: bigint; 
 /** `sold` after the trade; the next box costs `price(sold_after)`. */
-soldAfter: bigint;
+soldAfter: bigint; 
 /** `CURVE_TRADE_BUY` or `CURVE_TRADE_SELL`. */
 side: number;  };
 
-export type BoxCurveTradedEventEventArgs = { curve: Address; trader: Address; count: number | bigint;
+export type BoxCurveTradedEventEventArgs = { curve: Address; trader: Address; count: number | bigint; 
 /** The curve price of the boxes moved, before the fee. */
-lamports: number | bigint; fee: number | bigint;
+lamports: number | bigint; fee: number | bigint; 
 /** `sold` after the trade; the next box costs `price(sold_after)`. */
-soldAfter: number | bigint;
+soldAfter: number | bigint; 
 /** `CURVE_TRADE_BUY` or `CURVE_TRADE_SELL`. */
 side: number;  };
 

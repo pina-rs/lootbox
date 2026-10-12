@@ -6,14 +6,13 @@
 	clippy::empty_line_after_doc_comments,
 	clippy::too_many_arguments
 )]
-
 #![allow(rustdoc::broken_intra_doc_links)]
 
 use pina::AccountView;
 use pina::CpiContext;
 use pina::CpiHandle;
-use pina::ProgramResult;
 use pina::ProgramError;
+use pina::ProgramResult;
 use pina::Signer;
 
 use crate::ProgramAccount;
@@ -152,4 +151,4 @@ impl<'account> CreateExclusiveCollection<'account> {
 	}
 }
 
-const CREATE_EXCLUSIVE_COLLECTION_DISCRIMINATOR: [u8; 2] = [50, 0];
+const CREATE_EXCLUSIVE_COLLECTION_DISCRIMINATOR: [u8; 2] = [40, 0];

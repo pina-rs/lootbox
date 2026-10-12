@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const RETIRE_TEMPLATE_DISCRIMINATOR = 21;
+export const RETIRE_TEMPLATE_DISCRIMINATOR = 11;
 
 export function getRetireTemplateDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(RETIRE_TEMPLATE_DISCRIMINATOR); }
 
@@ -27,7 +27,7 @@ export type RetireTemplateInstructionData = { discriminator: number; migrationVe
 export type RetireTemplateInstructionDataArgs = {  };
 
 export function getRetireTemplateInstructionDataEncoder(): FixedSizeEncoder<RetireTemplateInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 21, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 11, migrationVersion: 0 }));
 }
 
 export function getRetireTemplateInstructionDataDecoder(): FixedSizeDecoder<RetireTemplateInstructionData> {

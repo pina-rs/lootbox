@@ -12,7 +12,7 @@ import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type I
 import { findServiceVaultPda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const FULFILL_TEMPLATE_OPEN_DISCRIMINATOR = 17;
+export const FULFILL_TEMPLATE_OPEN_DISCRIMINATOR = 7;
 
 export function getFulfillTemplateOpenDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(FULFILL_TEMPLATE_OPEN_DISCRIMINATOR); }
 
@@ -23,22 +23,22 @@ export function getFulfillTemplateOpenDiscriminator2Bytes(): ReadonlyUint8Array 
 export type FulfillTemplateOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountPayer extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountServiceVault extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountRandomness extends string | AccountMeta<string> = string, TAccountOracleQueue extends string | AccountMeta<string> = string, TAccountOracle extends string | AccountMeta<string> = string, TAccountOracleStats extends string | AccountMeta<string> = string, TAccountRecentSlotHashes extends string | AccountMeta<string> = string, TAccountOracleProgram extends string | AccountMeta<string> = string, TAccountRewardEscrow extends string | AccountMeta<string> = string, TAccountOracleProgramState extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TAccountWrappedSolMint extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountPayer extends string ? WritableSignerAccount<TAccountPayer> & AccountSignerMeta<TAccountPayer> : TAccountPayer, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountServiceVault extends string ? WritableAccount<TAccountServiceVault> : TAccountServiceVault, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountRandomness extends string ? WritableAccount<TAccountRandomness> : TAccountRandomness, TAccountOracleQueue extends string ? ReadonlyAccount<TAccountOracleQueue> : TAccountOracleQueue, TAccountOracle extends string ? ReadonlyAccount<TAccountOracle> : TAccountOracle, TAccountOracleStats extends string ? WritableAccount<TAccountOracleStats> : TAccountOracleStats, TAccountRecentSlotHashes extends string ? ReadonlyAccount<TAccountRecentSlotHashes> : TAccountRecentSlotHashes, TAccountOracleProgram extends string ? ReadonlyAccount<TAccountOracleProgram> : TAccountOracleProgram, TAccountRewardEscrow extends string ? WritableAccount<TAccountRewardEscrow> : TAccountRewardEscrow, TAccountOracleProgramState extends string ? ReadonlyAccount<TAccountOracleProgramState> : TAccountOracleProgramState, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, TAccountWrappedSolMint extends string ? ReadonlyAccount<TAccountWrappedSolMint> : TAccountWrappedSolMint, ...TRemainingAccounts]>;
 
-export type FulfillTemplateOpenInstructionData = { discriminator: number; migrationVersion: number;
+export type FulfillTemplateOpenInstructionData = { discriminator: number; migrationVersion: number; 
 /** Switchboard enclave signature returned by the randomness gateway. */
-signature: ReadonlyUint8Array;
+signature: ReadonlyUint8Array; 
 /** Secp256k1 recovery identifier returned by the randomness gateway. */
-recoveryId: number;
+recoveryId: number; 
 /**
  * Revealed value covered by `signature`; rejected unless Switchboard
  * stores exactly this value on the randomness account.
  */
 value: ReadonlyUint8Array;  };
 
-export type FulfillTemplateOpenInstructionDataArgs = {
+export type FulfillTemplateOpenInstructionDataArgs = { 
 /** Switchboard enclave signature returned by the randomness gateway. */
-signature: ReadonlyUint8Array;
+signature: ReadonlyUint8Array; 
 /** Secp256k1 recovery identifier returned by the randomness gateway. */
-recoveryId: number;
+recoveryId: number; 
 /**
  * Revealed value covered by `signature`; rejected unless Switchboard
  * stores exactly this value on the randomness account.
@@ -46,7 +46,7 @@ recoveryId: number;
 value: ReadonlyUint8Array;  };
 
 export function getFulfillTemplateOpenInstructionDataEncoder(): FixedSizeEncoder<FulfillTemplateOpenInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['signature', fixPinaPodEncoderSize(getBytesEncoder(), 64)], ['recoveryId', getU8Encoder()], ['value', fixPinaPodEncoderSize(getBytesEncoder(), 32)]]), (value) => ({ ...value, discriminator: 17, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['signature', fixPinaPodEncoderSize(getBytesEncoder(), 64)], ['recoveryId', getU8Encoder()], ['value', fixPinaPodEncoderSize(getBytesEncoder(), 32)]]), (value) => ({ ...value, discriminator: 7, migrationVersion: 0 }));
 }
 
 export function getFulfillTemplateOpenInstructionDataDecoder(): FixedSizeDecoder<FulfillTemplateOpenInstructionData> {

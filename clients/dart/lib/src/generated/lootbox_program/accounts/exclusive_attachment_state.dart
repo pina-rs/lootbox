@@ -24,7 +24,7 @@ class ExclusiveAttachmentState {
     required this.assetIndex,
     required this.bump,
     required this.feeVaultBump,
-  }) : discriminator = 11,
+  }) : discriminator = 8,
        migrationVersion = 0;
 
   final int discriminator;
@@ -101,7 +101,7 @@ Encoder<ExclusiveAttachmentState> getExclusiveAttachmentStateEncoder() {
   return transformEncoder(
     structEncoder,
     (ExclusiveAttachmentState value) => <String, Object?>{
-      'discriminator': 11,
+      'discriminator': 8,
       'migrationVersion': 0,
       'template': value.template,
       'bundle': value.bundle,
@@ -142,7 +142,7 @@ Decoder<ExclusiveAttachmentState> getExclusiveAttachmentStateDecoder() {
   }
 
   (ExclusiveAttachmentState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(11)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(8)).read(bytes, offset + 0);
     final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
     if (storedMigrationVersion != 0) {
       throw StateError(
@@ -215,7 +215,7 @@ bool exclusiveAttachmentStateNeedsMigration(List<int> data) {
   if (data.length < 2) {
     return false;
   }
-  if (data[0] != 11) {
+  if (data[0] != 8) {
     return false;
   }
   return data[1] < 0;

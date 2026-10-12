@@ -11,7 +11,7 @@ import { combineCodec, fixDecoderSize, fixEncoderSize, getArrayDecoder, getArray
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const PREPARE_PRIZE_POOL_ITEM_DISCRIMINATOR = 48;
+export const PREPARE_PRIZE_POOL_ITEM_DISCRIMINATOR = 38;
 
 export function getPreparePrizePoolItemDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(PREPARE_PRIZE_POOL_ITEM_DISCRIMINATOR); }
 
@@ -22,60 +22,60 @@ export function getPreparePrizePoolItemDiscriminator2Bytes(): ReadonlyUint8Array
 export type PreparePrizePoolItemInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountPrizePool extends string | AccountMeta<string> = string, TAccountPrizePoolItem extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? ReadonlyAccount<TAccountBundle> : TAccountBundle, TAccountPrizePool extends string ? WritableAccount<TAccountPrizePool> : TAccountPrizePool, TAccountPrizePoolItem extends string ? WritableAccount<TAccountPrizePoolItem> : TAccountPrizePoolItem, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type PreparePrizePoolItemInstructionData = { discriminator: number; migrationVersion: number;
+export type PreparePrizePoolItemInstructionData = { discriminator: number; migrationVersion: number; 
 /**
  * Canonical bump of the item PDA
  * `["prize-pool-item", prize_pool, deposit_cursor]`; any other value fails.
  */
-itemBump: number;
+itemBump: number; 
 /**
  * Leaf data hash; must equal `keccak(keccak(metadata) ||
  * seller_fee_basis_points)` recomputed from `metadata`.
  */
-dataHash: ReadonlyUint8Array;
+dataHash: ReadonlyUint8Array; 
 /**
  * Leaf creator hash; must equal the keccak hash of the creators encoded
  * in `metadata`.
  */
-creatorHash: ReadonlyUint8Array;
+creatorHash: ReadonlyUint8Array; 
 /**
  * Leaf nonce; derives the asset ID `["asset", tree, nonce]` under
  * Bubblegum using the pool's pinned tree.
  */
-nonce: bigint;
+nonce: bigint; 
 /** Leaf index in the pool's tree, stored for the later transfer. */
-index: number;
+index: number; 
 /** Canonical Borsh serialization of Bubblegum V1 `MetadataArgs`. */
 metadata: Array<number>;  };
 
-export type PreparePrizePoolItemInstructionDataArgs = {
+export type PreparePrizePoolItemInstructionDataArgs = { 
 /**
  * Canonical bump of the item PDA
  * `["prize-pool-item", prize_pool, deposit_cursor]`; any other value fails.
  */
-itemBump: number;
+itemBump: number; 
 /**
  * Leaf data hash; must equal `keccak(keccak(metadata) ||
  * seller_fee_basis_points)` recomputed from `metadata`.
  */
-dataHash: ReadonlyUint8Array;
+dataHash: ReadonlyUint8Array; 
 /**
  * Leaf creator hash; must equal the keccak hash of the creators encoded
  * in `metadata`.
  */
-creatorHash: ReadonlyUint8Array;
+creatorHash: ReadonlyUint8Array; 
 /**
  * Leaf nonce; derives the asset ID `["asset", tree, nonce]` under
  * Bubblegum using the pool's pinned tree.
  */
-nonce: number | bigint;
+nonce: number | bigint; 
 /** Leaf index in the pool's tree, stored for the later transfer. */
-index: number;
+index: number; 
 /** Canonical Borsh serialization of Bubblegum V1 `MetadataArgs`. */
 metadata: Array<number>;  };
 
 export function getPreparePrizePoolItemInstructionDataEncoder(): FixedSizeEncoder<PreparePrizePoolItemInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['itemBump', getU8Encoder()], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()], ['metadata', fixPinaPodEncoderSize(getArrayEncoder(getU8Encoder(), { size: getU16Encoder() }), 514)]]), (value) => ({ ...value, discriminator: 48, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['itemBump', getU8Encoder()], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()], ['metadata', fixPinaPodEncoderSize(getArrayEncoder(getU8Encoder(), { size: getU16Encoder() }), 514)]]), (value) => ({ ...value, discriminator: 38, migrationVersion: 0 }));
 }
 
 export function getPreparePrizePoolItemInstructionDataDecoder(): FixedSizeDecoder<PreparePrizePoolItemInstructionData> {

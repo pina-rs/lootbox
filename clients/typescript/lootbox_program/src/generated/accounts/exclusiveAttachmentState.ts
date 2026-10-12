@@ -10,7 +10,7 @@ import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder, getPinaPodMigrat
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findExclusiveAttachmentPda, type ExclusiveAttachmentSeeds } from '../pdas';
 
-export const EXCLUSIVE_ATTACHMENT_STATE_DISCRIMINATOR = 11;
+export const EXCLUSIVE_ATTACHMENT_STATE_DISCRIMINATOR = 8;
 
 export function getExclusiveAttachmentStateDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(EXCLUSIVE_ATTACHMENT_STATE_DISCRIMINATOR); }
 
@@ -25,77 +25,77 @@ export function getExclusiveAttachmentStateDiscriminator2Bytes(): ReadonlyUint8A
  * zero-data fee vault prepaying Bubblegum's per-mint fee, so a claim costs
  * its submitter only the transaction fee.
  */
-export type ExclusiveAttachmentState = { discriminator: number; migrationVersion: number;
+export type ExclusiveAttachmentState = { discriminator: number; migrationVersion: number; 
 /** Template PDA whose bundle attached; set at attach time. */
-template: Address;
+template: Address; 
 /** Bundle PDA whose slot this attachment fills; part of the PDA seeds. */
-bundle: Address;
+bundle: Address; 
 /** `ExclusiveCollectionState` PDA that every claim mints from. */
-collection: Address;
+collection: Address; 
 /** The collection's frozen `layers_hash` at attach time. */
-layersHash: ReadonlyUint8Array;
+layersHash: ReadonlyUint8Array; 
 /**
  * Copies the bound bundle slot can ever mint.
  *
  * Copied from the bundle's quantity at attach time.
  */
-quantity: bigint;
+quantity: bigint; 
 /**
  * Copies minted through this attachment.
  *
  * Incremented on each claim and never exceeds `quantity`.
  */
-minted: bigint;
+minted: bigint; 
 /**
  * Bubblegum mint fee escrowed per copy.
  *
  * Lamports; fixed at attach time to Bubblegum V2's 90,000-lamport fee.
  */
-mintFeeLamports: bigint;
+mintFeeLamports: bigint; 
 /** Bundle manifest slot bound to the collection; part of the PDA seeds. */
-assetIndex: number;
+assetIndex: number; 
 /** Canonical bump of this PDA `["exclusive-attachment", bundle, asset_index]`. */
-bump: number;
+bump: number; 
 /** Canonical bump of the fee vault PDA `["exclusive-fee-vault", attachment]`. */
 feeVaultBump: number;  };
 
-export type ExclusiveAttachmentStateArgs = {
+export type ExclusiveAttachmentStateArgs = { 
 /** Template PDA whose bundle attached; set at attach time. */
-template: Address;
+template: Address; 
 /** Bundle PDA whose slot this attachment fills; part of the PDA seeds. */
-bundle: Address;
+bundle: Address; 
 /** `ExclusiveCollectionState` PDA that every claim mints from. */
-collection: Address;
+collection: Address; 
 /** The collection's frozen `layers_hash` at attach time. */
-layersHash: ReadonlyUint8Array;
+layersHash: ReadonlyUint8Array; 
 /**
  * Copies the bound bundle slot can ever mint.
  *
  * Copied from the bundle's quantity at attach time.
  */
-quantity: number | bigint;
+quantity: number | bigint; 
 /**
  * Copies minted through this attachment.
  *
  * Incremented on each claim and never exceeds `quantity`.
  */
-minted: number | bigint;
+minted: number | bigint; 
 /**
  * Bubblegum mint fee escrowed per copy.
  *
  * Lamports; fixed at attach time to Bubblegum V2's 90,000-lamport fee.
  */
-mintFeeLamports: number | bigint;
+mintFeeLamports: number | bigint; 
 /** Bundle manifest slot bound to the collection; part of the PDA seeds. */
-assetIndex: number;
+assetIndex: number; 
 /** Canonical bump of this PDA `["exclusive-attachment", bundle, asset_index]`. */
-bump: number;
+bump: number; 
 /** Canonical bump of the fee vault PDA `["exclusive-fee-vault", attachment]`. */
 feeVaultBump: number;  };
 
 /** Gets the encoder for {@link ExclusiveAttachmentStateArgs} account data. */
 export function getExclusiveAttachmentStateEncoder(): FixedSizeEncoder<ExclusiveAttachmentStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['template', getAddressEncoder()], ['bundle', getAddressEncoder()], ['collection', getAddressEncoder()], ['layersHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['quantity', getU64Encoder()], ['minted', getU64Encoder()], ['mintFeeLamports', getU64Encoder()], ['assetIndex', getU8Encoder()], ['bump', getU8Encoder()], ['feeVaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 11, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['template', getAddressEncoder()], ['bundle', getAddressEncoder()], ['collection', getAddressEncoder()], ['layersHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['quantity', getU64Encoder()], ['minted', getU64Encoder()], ['mintFeeLamports', getU64Encoder()], ['assetIndex', getU8Encoder()], ['bump', getU8Encoder()], ['feeVaultBump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 8, migrationVersion: 0 }));
 }
 
 /** Gets the decoder for {@link ExclusiveAttachmentState} account data. */
@@ -194,7 +194,7 @@ export function exclusiveAttachmentStateNeedsMigration(data: ReadonlyUint8Array)
 	if (data.length < 2) {
 		return false;
 	}
-	if (data[0] !== 11) {
+	if (data[0] !== 8) {
 		return false;
 	}
 	return data[1]! < 0;

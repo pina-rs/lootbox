@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const RECLAIM_SOL_PRIZE_DISCRIMINATOR = 22;
+export const RECLAIM_SOL_PRIZE_DISCRIMINATOR = 12;
 
 export function getReclaimSolPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(RECLAIM_SOL_PRIZE_DISCRIMINATOR); }
 
@@ -22,7 +22,7 @@ export function getReclaimSolPrizeDiscriminator2Bytes(): ReadonlyUint8Array { re
 export type ReclaimSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, ...TRemainingAccounts]>;
 
-export type ReclaimSolPrizeInstructionData = { discriminator: number; migrationVersion: number;
+export type ReclaimSolPrizeInstructionData = { discriminator: number; migrationVersion: number; 
 /**
  * Asset slot within the bundle; must be below its funded asset count,
  * hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and not be reclaimed
@@ -30,7 +30,7 @@ export type ReclaimSolPrizeInstructionData = { discriminator: number; migrationV
  */
 assetIndex: number;  };
 
-export type ReclaimSolPrizeInstructionDataArgs = {
+export type ReclaimSolPrizeInstructionDataArgs = { 
 /**
  * Asset slot within the bundle; must be below its funded asset count,
  * hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and not be reclaimed
@@ -39,7 +39,7 @@ export type ReclaimSolPrizeInstructionDataArgs = {
 assetIndex: number;  };
 
 export function getReclaimSolPrizeInstructionDataEncoder(): FixedSizeEncoder<ReclaimSolPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 22, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 12, migrationVersion: 0 }));
 }
 
 export function getReclaimSolPrizeInstructionDataDecoder(): FixedSizeDecoder<ReclaimSolPrizeInstructionData> {

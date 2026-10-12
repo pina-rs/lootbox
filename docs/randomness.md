@@ -2,44 +2,52 @@
 
 ## Why an oracle
 
-Solana programs are deterministic, so block time, recent hashes, signatures, and account addresses are not safe entropy. Lootbox single-reward protocol consumes Switchboard On-Demand's commit/reveal randomness instead of inventing a protocol-specific oracle.
+Solana programs are deterministic, so block time, recent hashes, signatures, and account addresses are not safe entropy. The lootbox protocol consumes Switchboard On-Demand's commit/reveal randomness instead of inventing a protocol-specific oracle.
 
-Switchboard's official guide identifies the core failure mode: if value is committed only after reveal, a user can selectively continue favorable draws. Lootbox binds the box burn to a fresh commitment and makes reveal inseparable from settlement. See the [Switchboard randomness tutorial](https://docs.switchboard.xyz/docs-by-chain/solana-svm/randomness/randomness-tutorial).
+Switchboard's official guide identifies the core failure mode: if value is committed only after reveal, a user can selectively continue favorable draws. Lootbox binds the box burn to a fresh commitment and separates reveal, allocation, and delivery into permissionless steps that no holder can withhold selectively. See the [Switchboard randomness tutorial](https://docs.switchboard.xyz/docs-by-chain/solana/svm/randomness/randomness-tutorial).
 
 ## PDA-controlled atomic flow
 
 ```text
 transaction A:
-  owner + fresh randomness keypair sign request_open
-    -> create opening PDA
+  owner + fresh randomness keypair sign requestTemplateOpen
+    -> create template-opening PDA
     -> opening PDA signs Switchboard randomness_init CPI
     -> opening PDA signs Switchboard randomness_commit CPI
     -> verify committed oracle state
     -> burn one box and store the exact seed slot
 
 transaction B, after the committed slot:
-  any relayer signs settle_open with a Switchboard gateway proof
+  any relayer signs fulfillTemplateOpen with a Switchboard gateway proof
     -> opening PDA signs Switchboard randomness_reveal CPI
     -> verify the revealed oracle state and proof value
-    -> select and pay the stored recipient
+    -> persist the entropy on the opening
+
+transaction C:
+  any relayer signs allocateTemplateOpen
+    -> select one undrawn ticket uniformly without replacement
+    -> bind the opening to that bundle and write result receipts
+
+delivery:
+  beneficiary claims each allocated asset (claimSolPrize, claimTokenPrize, ...)
 
 cleanup:
-  close_opening
+  closeTemplateOpening
     -> opening PDA signs Switchboard randomness_close CPI
-    -> return randomness and receipt rent to the recipient
+    -> return randomness and receipt rent to the refund address
 ```
 
-The opening PDA, derived from `['opening', lootbox, randomness]`, is the Switchboard randomness authority for the entire lifecycle. A box holder cannot sign a direct re-commit, reveal, or close. The only instruction that can create that PDA is `request_open`, and it accepts only a fresh, signer-backed randomness account. This closes both selective-refund and commitment-overwrite paths.
+The opening PDA, derived from `['template-opening', template, randomness]`, is the Switchboard randomness authority for the entire lifecycle. A box holder cannot sign a direct re-commit, reveal, or close. The only instruction that can create that PDA is `requestTemplateOpen`, and it accepts only a fresh, signer-backed randomness account. This closes both selective-withdrawal and commitment-overwrite paths.
 
-`request_open` rolls back the receipt, both oracle CPIs, accounting, and burn if any step fails. `settle_open` likewise rolls back the oracle reveal if recipient validation, selection, solvency, or payout fails.
+`requestTemplateOpen` rolls back the receipt, both oracle CPIs, accounting, and burn if any step fails. `fulfillTemplateOpen` likewise rolls back the oracle reveal if state or proof validation fails.
 
 ## Client construction
 
-Switchboard's `Randomness.create(...)` helper returns a randomness object and an unsigned `randomness_init` instruction. Use that instruction as an account/slot template; do not submit it directly because it names the wallet as authority. Pass its initialization accounts and `recentSlot` into Lootbox's generated `request_open` builder instead. Lootbox substitutes the opening PDA as authority inside its CPI.
+Switchboard's `Randomness.create(...)` helper returns a randomness object and an unsigned `randomness_init` instruction. Use that instruction as an account/slot template; do not submit it directly because it names the wallet as authority. Pass its initialization accounts and `recentSlot` into the SDK's open orchestration instead. Lootbox substitutes the opening PDA as authority inside its CPI.
 
-The request transaction must be signed by both the box owner and the fresh randomness keypair. The generated Rust and TypeScript clients mark both correctly, and derive the opening PDA from the lootbox and randomness addresses.
+The request transaction must be signed by both the box owner and the fresh randomness keypair (a sponsor may pay). The generated Rust and TypeScript clients mark both correctly and derive the opening PDA from the template and randomness addresses.
 
-After the commitment matures, call Switchboard's `Randomness.revealIx(...)` to fetch the gateway proof but do not submit that instruction directly. Decode its 105-byte data with `decode_switchboard_reveal` or `decodeSwitchboardReveal` in the Rust, TypeScript, or Dart SDK. Feed those signature, recovery ID, and value fields—plus the reveal instruction's oracle accounts—into Lootbox's generated `settle_open` builder. Lootbox performs the authenticated reveal CPI under the opening PDA and pays in one atomic instruction.
+After the commitment matures, call Switchboard's `Randomness.revealIx(...)` to fetch the gateway proof but do not submit that instruction directly. Decode its 105-byte data with `decodeSwitchboardReveal` (TypeScript and Dart) or the Rust SDK helper. Feed those signature, recovery ID, and value fields—plus the reveal instruction's oracle accounts—into `fulfillTemplateOpen`. Lootbox performs the authenticated reveal CPI under the opening PDA; allocation and claims follow in separate permissionless transactions.
 
 The [official Switchboard TypeScript implementation](https://github.com/switchboard-xyz/on-demand/blob/main/src/accounts/randomness.ts) is the reference for initialization account derivation, fresh-oracle selection, gateway proof retrieval, and lookup-table addresses.
 
@@ -52,9 +60,9 @@ At request, the program requires:
 - the configured queue, a writable oracle, canonical slot-hashes sysvar, and known system/token/ATA/wrapped-SOL/lookup-table addresses;
 - Switchboard initialization to store the opening PDA as authority and the configured queue;
 - Switchboard commit to produce a non-zero seed slot and remain unrevealed;
-- the owner to hold a box in their canonical associated token account.
+- the owner to hold a box under the template's box mint.
 
-At settlement, it re-checks the oracle program, queue, oracle, randomness owner/layout, opening PDA, stored recipient, stored seed, and unrevealed state before CPI. After CPI it requires a later reveal slot and an exact match between the signed proof value and stored oracle value before selecting or paying an outcome.
+At fulfillment, it re-checks the oracle program, queue, oracle, randomness owner/layout, opening PDA, stored seed, and unrevealed state before CPI. After CPI it requires a later reveal slot and an exact match between the signed proof value and stored oracle value before persisting entropy.
 
 At cleanup, it re-checks the terminal receipt and oracle binding before the opening PDA authorizes Switchboard account closure. Switchboard currently deactivates the per-randomness address lookup table but cannot recover that table's rent after the protocol's cooldown in the same call; this upstream limitation is documented as a residual cost in the security review.
 
@@ -68,9 +76,9 @@ That tradeoff makes ABI monitoring an explicit maintenance duty. Any Switchboard
 
 ## Failure path
 
-An opening still unrevealed at `seed_slot + 300` may be refunded by its recipient. The signed refund re-checks the PDA authority, queue, owner, stored seed, and absence of an on-chain reveal, then pays the lowest reward in the immutable outcome table and terminalizes the receipt. Recipient authorization prevents an outsider from racing a valid settlement merely to force the lower floor payout.
+A FIFO-head opening still unrevealed at `seed_slot + 300` may be forfeited by any signer. Forfeiture re-checks the PDA authority, queue, owner, stored seed, and absence of an on-chain reveal, consumes no inventory, never remints the box, never changes the beneficiary, and pays any configured settlement bounty to the beneficiary. It terminalizes the receipt so later openings can allocate.
 
-It deliberately does not remint the box. A gateway proof exists off chain before the reveal CPI, so reminting would let a holder inspect an unfavorable proof, withhold it, wait for timeout, and buy another draw. The minimum reward is never better than the authentic outcome; withholding a proof therefore cannot improve the recipient's result. This trades retry liveness for economic fairness while still guaranteeing the configured reward floor.
+It deliberately does not remint the box. A gateway proof exists off chain before the reveal CPI, so reminting would let a holder inspect an unfavorable proof, withhold it, wait for timeout, and buy another draw. Forfeiture therefore cannot improve a withholder's result while unblocking FIFO liveness for every later opener.
 
 ## Surfpool test oracle
 

@@ -10,7 +10,7 @@ import { getPinaPodDiscriminatorDecoder, getPinaPodMigrationVersionDecoder } fro
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, getAddressDecoder, getAddressEncoder, getI64Decoder, getI64Encoder, getStructDecoder, getStructEncoder, getU16Decoder, getU16Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findBoxCurvePda, type BoxCurveSeeds } from '../pdas';
 
-export const BOX_CURVE_STATE_DISCRIMINATOR = 12;
+export const BOX_CURVE_STATE_DISCRIMINATOR = 9;
 
 export function getBoxCurveStateDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(BOX_CURVE_STATE_DISCRIMINATOR); }
 
@@ -19,57 +19,57 @@ export const BOX_CURVE_STATE_DISCRIMINATOR2 = 0;
 export function getBoxCurveStateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(BOX_CURVE_STATE_DISCRIMINATOR2); }
 
 /** A bonding curve selling one locked lootbox's boxes. */
-export type BoxCurveState = { discriminator: number; migrationVersion: number; template: Address; boxMint: Address;
+export type BoxCurveState = { discriminator: number; migrationVersion: number; template: Address; boxMint: Address; 
 /**
  * The creator. Receives every fee, the reserve at sell-out, and whatever
  * is left when the curve closes.
  */
-authority: Address;
+authority: Address; 
 /** Boxes deposited. The curve sells out when `sold` reaches this. */
-inventory: bigint;
+inventory: bigint; 
 /** Boxes currently sold, net of buybacks. */
-sold: bigint;
+sold: bigint; 
 /** Price of the first box, in lamports. */
-startPrice: bigint;
+startPrice: bigint; 
 /** Price increase per sold box, in lamports. */
-priceStep: bigint;
+priceStep: bigint; 
 /**
  * Lamports that back buybacks: the sum of every sold position's price.
  * Zero once the curve sells out and pays the creator.
  */
-reserve: bigint;
+reserve: bigint; 
 /** Trading closes at the lootbox's reveal time. */
-closesAt: bigint;
+closesAt: bigint; 
 /** When the last box sold. Zero while any inventory remains. */
 soldOutAt: bigint; feeBps: number; bump: number;  };
 
-export type BoxCurveStateArgs = { template: Address; boxMint: Address;
+export type BoxCurveStateArgs = { template: Address; boxMint: Address; 
 /**
  * The creator. Receives every fee, the reserve at sell-out, and whatever
  * is left when the curve closes.
  */
-authority: Address;
+authority: Address; 
 /** Boxes deposited. The curve sells out when `sold` reaches this. */
-inventory: number | bigint;
+inventory: number | bigint; 
 /** Boxes currently sold, net of buybacks. */
-sold: number | bigint;
+sold: number | bigint; 
 /** Price of the first box, in lamports. */
-startPrice: number | bigint;
+startPrice: number | bigint; 
 /** Price increase per sold box, in lamports. */
-priceStep: number | bigint;
+priceStep: number | bigint; 
 /**
  * Lamports that back buybacks: the sum of every sold position's price.
  * Zero once the curve sells out and pays the creator.
  */
-reserve: number | bigint;
+reserve: number | bigint; 
 /** Trading closes at the lootbox's reveal time. */
-closesAt: number | bigint;
+closesAt: number | bigint; 
 /** When the last box sold. Zero while any inventory remains. */
 soldOutAt: number | bigint; feeBps: number; bump: number;  };
 
 /** Gets the encoder for {@link BoxCurveStateArgs} account data. */
 export function getBoxCurveStateEncoder(): FixedSizeEncoder<BoxCurveStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['template', getAddressEncoder()], ['boxMint', getAddressEncoder()], ['authority', getAddressEncoder()], ['inventory', getU64Encoder()], ['sold', getU64Encoder()], ['startPrice', getU64Encoder()], ['priceStep', getU64Encoder()], ['reserve', getU64Encoder()], ['closesAt', getI64Encoder()], ['soldOutAt', getI64Encoder()], ['feeBps', getU16Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 12, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['template', getAddressEncoder()], ['boxMint', getAddressEncoder()], ['authority', getAddressEncoder()], ['inventory', getU64Encoder()], ['sold', getU64Encoder()], ['startPrice', getU64Encoder()], ['priceStep', getU64Encoder()], ['reserve', getU64Encoder()], ['closesAt', getI64Encoder()], ['soldOutAt', getI64Encoder()], ['feeBps', getU16Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 9, migrationVersion: 0 }));
 }
 
 /** Gets the decoder for {@link BoxCurveState} account data. */
@@ -168,7 +168,7 @@ export function boxCurveStateNeedsMigration(data: ReadonlyUint8Array): boolean {
 	if (data.length < 2) {
 		return false;
 	}
-	if (data[0] !== 12) {
+	if (data[0] !== 9) {
 		return false;
 	}
 	return data[1]! < 0;

@@ -18,47 +18,47 @@ export const EXCLUSIVE_NFT_MINTED_EVENT_EVENT_DISCRIMINATOR2 = 0;
 export function getExclusiveNftMintedEventEventDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(EXCLUSIVE_NFT_MINTED_EVENT_EVENT_DISCRIMINATOR2); }
 
 /** Emitted once per minted Exclusive Lootbox NFT. */
-export type ExclusiveNftMintedEventEvent = { discriminator: number; migrationVersion: number;
+export type ExclusiveNftMintedEventEvent = { discriminator: number; migrationVersion: number; 
 /** Template PDA of the claimed opening. */
-template: Address;
+template: Address; 
 /** Opening PDA whose entropy seeded the traits. */
-opening: Address;
+opening: Address; 
 /** `ExclusiveCollectionState` PDA that minted the leaf. */
-collection: Address;
+collection: Address; 
 /** `ExclusiveAttachmentState` PDA whose slot was claimed. */
-attachment: Address;
+attachment: Address; 
 /** Opening's bound beneficiary and the new leaf owner. */
-beneficiary: Address;
+beneficiary: Address; 
 /** Bubblegum asset ID of the minted leaf. */
-asset: Address;
+asset: Address; 
 /** Seed `S` that determined every trait. */
-seed: ReadonlyUint8Array;
+seed: ReadonlyUint8Array; 
 /** Global serial within the collection. */
-serial: bigint;
+serial: bigint; 
 /** Trait index per layer, bottom to top; unused layers are zero. */
-traits: ReadonlyUint8Array;
+traits: ReadonlyUint8Array; 
 /** Number of meaningful entries in `traits`. */
 layerCount: number;  };
 
-export type ExclusiveNftMintedEventEventArgs = {
+export type ExclusiveNftMintedEventEventArgs = { 
 /** Template PDA of the claimed opening. */
-template: Address;
+template: Address; 
 /** Opening PDA whose entropy seeded the traits. */
-opening: Address;
+opening: Address; 
 /** `ExclusiveCollectionState` PDA that minted the leaf. */
-collection: Address;
+collection: Address; 
 /** `ExclusiveAttachmentState` PDA whose slot was claimed. */
-attachment: Address;
+attachment: Address; 
 /** Opening's bound beneficiary and the new leaf owner. */
-beneficiary: Address;
+beneficiary: Address; 
 /** Bubblegum asset ID of the minted leaf. */
-asset: Address;
+asset: Address; 
 /** Seed `S` that determined every trait. */
-seed: ReadonlyUint8Array;
+seed: ReadonlyUint8Array; 
 /** Global serial within the collection. */
-serial: number | bigint;
+serial: number | bigint; 
 /** Trait index per layer, bottom to top; unused layers are zero. */
-traits: ReadonlyUint8Array;
+traits: ReadonlyUint8Array; 
 /** Number of meaningful entries in `traits`. */
 layerCount: number;  };
 

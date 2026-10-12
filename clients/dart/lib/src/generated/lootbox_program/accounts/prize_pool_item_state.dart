@@ -25,7 +25,7 @@ class PrizePoolItemState {
     required this.poolIndex,
     required this.status,
     required this.bump,
-  }) : discriminator = 9,
+  }) : discriminator = 6,
        migrationVersion = 0;
 
   final int discriminator;
@@ -112,7 +112,7 @@ Encoder<PrizePoolItemState> getPrizePoolItemStateEncoder() {
   return transformEncoder(
     structEncoder,
     (PrizePoolItemState value) => <String, Object?>{
-      'discriminator': 9,
+      'discriminator': 6,
       'migrationVersion': 0,
       'pool': value.pool,
       'asset': value.asset,
@@ -155,7 +155,7 @@ Decoder<PrizePoolItemState> getPrizePoolItemStateDecoder() {
   }
 
   (PrizePoolItemState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(9)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(6)).read(bytes, offset + 0);
     final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
     if (storedMigrationVersion != 0) {
       throw StateError(
@@ -229,7 +229,7 @@ bool prizePoolItemStateNeedsMigration(List<int> data) {
   if (data.length < 2) {
     return false;
   }
-  if (data[0] != 9) {
+  if (data[0] != 6) {
     return false;
   }
   return data[1] < 0;

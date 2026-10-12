@@ -14,7 +14,7 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class AllocateTemplateOpenInstructionData {
   const AllocateTemplateOpenInstructionData({required this.resultReceiptBump})
-    : discriminator = 18,
+    : discriminator = 8,
       migrationVersion = 0;
 
   final int discriminator;
@@ -33,7 +33,7 @@ getAllocateTemplateOpenInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (AllocateTemplateOpenInstructionData value) => <String, Object?>{
-      'discriminator': 18,
+      'discriminator': 8,
       'migrationVersion': 0,
       'resultReceiptBump': value.resultReceiptBump,
     },
@@ -60,7 +60,7 @@ getAllocateTemplateOpenInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(18)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(8)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

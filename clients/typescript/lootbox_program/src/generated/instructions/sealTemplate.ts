@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const SEAL_TEMPLATE_DISCRIMINATOR = 14;
+export const SEAL_TEMPLATE_DISCRIMINATOR = 4;
 
 export function getSealTemplateDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(SEAL_TEMPLATE_DISCRIMINATOR); }
 
@@ -27,7 +27,7 @@ export type SealTemplateInstructionData = { discriminator: number; migrationVers
 export type SealTemplateInstructionDataArgs = {  };
 
 export function getSealTemplateInstructionDataEncoder(): FixedSizeEncoder<SealTemplateInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 14, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 4, migrationVersion: 0 }));
 }
 
 export function getSealTemplateInstructionDataDecoder(): FixedSizeDecoder<SealTemplateInstructionData> {

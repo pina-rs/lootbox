@@ -11,7 +11,7 @@ import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytes
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const SET_EXCLUSIVE_LAYER_DISCRIMINATOR = 51;
+export const SET_EXCLUSIVE_LAYER_DISCRIMINATOR = 41;
 
 export function getSetExclusiveLayerDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(SET_EXCLUSIVE_LAYER_DISCRIMINATOR); }
 
@@ -22,14 +22,14 @@ export function getSetExclusiveLayerDiscriminator2Bytes(): ReadonlyUint8Array { 
 export type SetExclusiveLayerInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAdmin extends string | AccountMeta<string> = string, TAccountExclusiveCollection extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAdmin extends string ? ReadonlySignerAccount<TAccountAdmin> & AccountSignerMeta<TAccountAdmin> : TAccountAdmin, TAccountExclusiveCollection extends string ? WritableAccount<TAccountExclusiveCollection> : TAccountExclusiveCollection, ...TRemainingAccounts]>;
 
-export type SetExclusiveLayerInstructionData = { discriminator: number; migrationVersion: number;
+export type SetExclusiveLayerInstructionData = { discriminator: number; migrationVersion: number; 
 /**
  * Layer to overwrite, counted from 0 at the bottom; must be below the
  * collection's `layer_count`.
  */
-layerIndex: number;
+layerIndex: number; 
 /** Traits in the layer, from 1 through 64. */
-traitCount: number;
+traitCount: number; 
 /**
  * Sixty-four little-endian `u32` weights; slots past `trait_count` are zero.
  *
@@ -37,14 +37,14 @@ traitCount: number;
  */
 weights: ReadonlyUint8Array;  };
 
-export type SetExclusiveLayerInstructionDataArgs = {
+export type SetExclusiveLayerInstructionDataArgs = { 
 /**
  * Layer to overwrite, counted from 0 at the bottom; must be below the
  * collection's `layer_count`.
  */
-layerIndex: number;
+layerIndex: number; 
 /** Traits in the layer, from 1 through 64. */
-traitCount: number;
+traitCount: number; 
 /**
  * Sixty-four little-endian `u32` weights; slots past `trait_count` are zero.
  *
@@ -53,7 +53,7 @@ traitCount: number;
 weights: ReadonlyUint8Array;  };
 
 export function getSetExclusiveLayerInstructionDataEncoder(): FixedSizeEncoder<SetExclusiveLayerInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['layerIndex', getU8Encoder()], ['traitCount', getU8Encoder()], ['weights', fixPinaPodEncoderSize(getBytesEncoder(), 256)]]), (value) => ({ ...value, discriminator: 51, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['layerIndex', getU8Encoder()], ['traitCount', getU8Encoder()], ['weights', fixPinaPodEncoderSize(getBytesEncoder(), 256)]]), (value) => ({ ...value, discriminator: 41, migrationVersion: 0 }));
 }
 
 export function getSetExclusiveLayerInstructionDataDecoder(): FixedSizeDecoder<SetExclusiveLayerInstructionData> {

@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const MINT_TEMPLATE_BOXES_DISCRIMINATOR = 15;
+export const MINT_TEMPLATE_BOXES_DISCRIMINATOR = 5;
 
 export function getMintTemplateBoxesDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(MINT_TEMPLATE_BOXES_DISCRIMINATOR); }
 
@@ -22,16 +22,16 @@ export function getMintTemplateBoxesDiscriminator2Bytes(): ReadonlyUint8Array { 
 export type MintTemplateBoxesInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountRecipientBoxAccount extends string | AccountMeta<string> = string, TAccountBoxTokenProgram extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? WritableAccount<TAccountBoxMint> : TAccountBoxMint, TAccountRecipientBoxAccount extends string ? WritableAccount<TAccountRecipientBoxAccount> : TAccountRecipientBoxAccount, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, ...TRemainingAccounts]>;
 
-export type MintTemplateBoxesInstructionData = { discriminator: number; migrationVersion: number;
+export type MintTemplateBoxesInstructionData = { discriminator: number; migrationVersion: number; 
 /** Boxes to mint; must be positive. */
 amount: bigint;  };
 
-export type MintTemplateBoxesInstructionDataArgs = {
+export type MintTemplateBoxesInstructionDataArgs = { 
 /** Boxes to mint; must be positive. */
 amount: number | bigint;  };
 
 export function getMintTemplateBoxesInstructionDataEncoder(): FixedSizeEncoder<MintTemplateBoxesInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['amount', getU64Encoder()]]), (value) => ({ ...value, discriminator: 15, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['amount', getU64Encoder()]]), (value) => ({ ...value, discriminator: 5, migrationVersion: 0 }));
 }
 
 export function getMintTemplateBoxesInstructionDataDecoder(): FixedSizeDecoder<MintTemplateBoxesInstructionData> {

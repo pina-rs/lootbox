@@ -12,7 +12,7 @@ import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type I
 import { findBoxCurvePda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const CLOSE_BOX_CURVE_DISCRIMINATOR = 60;
+export const CLOSE_BOX_CURVE_DISCRIMINATOR = 50;
 
 export function getCloseBoxCurveDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLOSE_BOX_CURVE_DISCRIMINATOR); }
 
@@ -28,7 +28,7 @@ export type CloseBoxCurveInstructionData = { discriminator: number; migrationVer
 export type CloseBoxCurveInstructionDataArgs = {  };
 
 export function getCloseBoxCurveInstructionDataEncoder(): FixedSizeEncoder<CloseBoxCurveInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 60, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 50, migrationVersion: 0 }));
 }
 
 export function getCloseBoxCurveInstructionDataDecoder(): FixedSizeDecoder<CloseBoxCurveInstructionData> {

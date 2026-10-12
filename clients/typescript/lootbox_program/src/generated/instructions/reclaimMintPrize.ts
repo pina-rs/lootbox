@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const RECLAIM_MINT_PRIZE_DISCRIMINATOR = 40;
+export const RECLAIM_MINT_PRIZE_DISCRIMINATOR = 30;
 
 export function getReclaimMintPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(RECLAIM_MINT_PRIZE_DISCRIMINATOR); }
 
@@ -22,7 +22,7 @@ export function getReclaimMintPrizeDiscriminator2Bytes(): ReadonlyUint8Array { r
 export type ReclaimMintPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountMint extends string ? WritableAccount<TAccountMint> : TAccountMint, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type ReclaimMintPrizeInstructionData = { discriminator: number; migrationVersion: number;
+export type ReclaimMintPrizeInstructionData = { discriminator: number; migrationVersion: number; 
 /**
  * Asset slot within the bundle; must be below its funded asset count,
  * hold a `PRIZE_MINT_BADGE` asset with an amount of one, and not be
@@ -30,7 +30,7 @@ export type ReclaimMintPrizeInstructionData = { discriminator: number; migration
  */
 assetIndex: number;  };
 
-export type ReclaimMintPrizeInstructionDataArgs = {
+export type ReclaimMintPrizeInstructionDataArgs = { 
 /**
  * Asset slot within the bundle; must be below its funded asset count,
  * hold a `PRIZE_MINT_BADGE` asset with an amount of one, and not be
@@ -39,7 +39,7 @@ export type ReclaimMintPrizeInstructionDataArgs = {
 assetIndex: number;  };
 
 export function getReclaimMintPrizeInstructionDataEncoder(): FixedSizeEncoder<ReclaimMintPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 40, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 30, migrationVersion: 0 }));
 }
 
 export function getReclaimMintPrizeInstructionDataDecoder(): FixedSizeDecoder<ReclaimMintPrizeInstructionData> {

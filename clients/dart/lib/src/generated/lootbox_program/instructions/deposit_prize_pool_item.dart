@@ -19,7 +19,7 @@ class DepositPrizePoolItemInstructionData {
     required this.creatorHash,
     required this.nonce,
     required this.index,
-  }) : discriminator = 42,
+  }) : discriminator = 32,
        migrationVersion = 0;
 
   final int discriminator;
@@ -49,7 +49,7 @@ getDepositPrizePoolItemInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (DepositPrizePoolItemInstructionData value) => <String, Object?>{
-      'discriminator': 42,
+      'discriminator': 32,
       'migrationVersion': 0,
       'root': value.root,
       'dataHash': value.dataHash,
@@ -84,7 +84,7 @@ getDepositPrizePoolItemInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(42)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(32)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

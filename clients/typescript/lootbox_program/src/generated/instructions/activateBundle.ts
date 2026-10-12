@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const ACTIVATE_BUNDLE_DISCRIMINATOR = 25;
+export const ACTIVATE_BUNDLE_DISCRIMINATOR = 15;
 
 export function getActivateBundleDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(ACTIVATE_BUNDLE_DISCRIMINATOR); }
 
@@ -27,7 +27,7 @@ export type ActivateBundleInstructionData = { discriminator: number; migrationVe
 export type ActivateBundleInstructionDataArgs = {  };
 
 export function getActivateBundleInstructionDataEncoder(): FixedSizeEncoder<ActivateBundleInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 25, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 15, migrationVersion: 0 }));
 }
 
 export function getActivateBundleInstructionDataDecoder(): FixedSizeDecoder<ActivateBundleInstructionData> {

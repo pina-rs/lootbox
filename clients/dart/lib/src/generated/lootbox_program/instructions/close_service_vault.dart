@@ -14,7 +14,7 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class CloseServiceVaultInstructionData {
   const CloseServiceVaultInstructionData()
-    : discriminator = 35,
+    : discriminator = 25,
       migrationVersion = 0;
 
   final int discriminator;
@@ -31,7 +31,7 @@ getCloseServiceVaultInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (CloseServiceVaultInstructionData value) => <String, Object?>{
-      'discriminator': 35,
+      'discriminator': 25,
       'migrationVersion': 0,
     },
   );
@@ -56,7 +56,7 @@ getCloseServiceVaultInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(35)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(25)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

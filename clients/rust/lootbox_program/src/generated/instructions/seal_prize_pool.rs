@@ -14,7 +14,7 @@
 /// retired. The pool must be funding with `deposit_cursor == quantity` and no
 /// prepared item. Writes the domain-separated pool commitment into the bundle
 /// slot, advances the bundle's `funded_assets`, and marks the pool sealed.
-pub const SEAL_PRIZE_POOL_DISCRIMINATOR: u8 = 43u8;
+pub const SEAL_PRIZE_POOL_DISCRIMINATOR: u8 = 33u8;
 pub const SEAL_PRIZE_POOL_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
@@ -32,7 +32,12 @@ pub struct SealPrizePool {
 }
 
 impl SealPrizePool {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, prize_pool: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		authority: solana_pubkey::Pubkey,
+		template: solana_pubkey::Pubkey,
+		bundle: solana_pubkey::Pubkey,
+		prize_pool: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			authority,
 			template,
@@ -41,7 +46,10 @@ impl SealPrizePool {
 		}
 	}
 
-	pub fn instruction(&self, data: SealPrizePoolInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: SealPrizePoolInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -52,8 +60,14 @@ impl SealPrizePool {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.authority, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.authority,
+			true,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.template,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.prize_pool, false));
 		accounts.extend_from_slice(remaining_accounts);
@@ -71,7 +85,9 @@ pub struct SealPrizePoolInstructionData {
 }
 
 impl SealPrizePoolInstructionData {
-	pub fn new(configure: impl FnOnce(&mut SealPrizePoolInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut SealPrizePoolInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<SealPrizePoolInstructionWireZc>()];
 		<SealPrizePoolInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
@@ -79,7 +95,7 @@ impl SealPrizePoolInstructionData {
 			data.migration_version = SEAL_PRIZE_POOL_MIGRATION_VERSION;
 			Ok(())
 		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

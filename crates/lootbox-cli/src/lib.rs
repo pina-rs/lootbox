@@ -24,16 +24,6 @@ pub fn build_command(command: &Command) -> Result<Instruction, CliError> {
 	use build::InstructionBuilder;
 
 	match command {
-		Command::CreateLootbox(args) => args.build(),
-		Command::Deposit(args) => args.build(),
-		Command::AddOutcome(args) => args.build(),
-		Command::Seal(args) => args.build(),
-		Command::MintBoxes(args) => args.build(),
-		Command::RequestOpen(args) => args.build(),
-		Command::SettleOpen(args) => args.build(),
-		Command::RefundOpen(args) => args.build(),
-		Command::CloseOpening(args) => args.build(),
-		Command::WithdrawSurplus(args) => args.build(),
 		Command::CreateTemplate(args) => args.build(),
 		Command::AddBundle(args) => args.build(),
 		Command::SealTemplate(args) => args.build(),
@@ -112,26 +102,6 @@ pub struct Cli {
 /// One subcommand per lootbox program instruction.
 #[derive(Debug, clap::Subcommand)]
 pub enum Command {
-	/// Create a lootbox definition, its vault, and its box mint authority.
-	CreateLootbox(build::CreateLootboxArgs),
-	/// Deposit lamports into the vault.
-	Deposit(build::DepositArgs),
-	/// Append a weighted SOL outcome to the lootbox.
-	AddOutcome(build::AddOutcomeArgs),
-	/// Seal the lootbox before boxes can be opened.
-	Seal(build::SealArgs),
-	/// Mint boxes to a recipient.
-	MintBoxes(build::MintBoxesArgs),
-	/// Burn a box and commit oracle entropy for the open.
-	RequestOpen(build::RequestOpenArgs),
-	/// Reveal the committed randomness and allocate the reward.
-	SettleOpen(build::SettleOpenArgs),
-	/// Refund an expired opening.
-	RefundOpen(build::RefundOpenArgs),
-	/// Close the opening receipt and reclaim the randomness rent.
-	CloseOpening(build::CloseOpeningArgs),
-	/// Withdraw surplus lamports that are not owed to open boxes.
-	WithdrawSurplus(build::WithdrawSurplusArgs),
 	/// Create a treasury template, its box mint, and its bundle vault.
 	CreateTemplate(build::CreateTemplateArgs),
 	/// Append a fully collateralized prize bundle to the treasury.

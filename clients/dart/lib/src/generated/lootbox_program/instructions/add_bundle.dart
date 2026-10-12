@@ -17,7 +17,7 @@ class AddBundleInstructionData {
     required this.quantity,
     required this.assetCount,
     required this.bump,
-  }) : discriminator = 11,
+  }) : discriminator = 1,
        migrationVersion = 0;
 
   final int discriminator;
@@ -39,7 +39,7 @@ Encoder<AddBundleInstructionData> getAddBundleInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (AddBundleInstructionData value) => <String, Object?>{
-      'discriminator': 11,
+      'discriminator': 1,
       'migrationVersion': 0,
       'quantity': value.quantity,
       'assetCount': value.assetCount,
@@ -66,7 +66,7 @@ Decoder<AddBundleInstructionData> getAddBundleInstructionDataDecoder() {
   }
 
   (AddBundleInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(11)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(1)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

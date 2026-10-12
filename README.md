@@ -30,38 +30,41 @@ It deploys both SBF artifacts and exposes its RPC addresses and oracle fixture a
 
 ## What is included
 
-- A `no_std`, Pina-based Solana program with the single-reward ABI plus treasury instructions.
+- A `no_std`, Pina-based Solana program implementing treasury templates.
 - Switchboard On-Demand initialization, commit, reveal, and close CPIs controlled by each opening PDA.
-- Fully escrowed finite SOL, classic SPL, safe Token-2022, standard Token Metadata NFT, Core, compressed-NFT, PrizePool, SOL/token quote, and badge-mint bundles in treasury templates; the single-reward SOL model retains minimum-reward timeouts.
+- Fully escrowed finite SOL, classic SPL, safe Token-2022, Core, compressed-NFT, PrizePool, SOL/token quote, and badge-mint bundles in treasury templates, with permissionless reveal, allocation, claims, and timeout forfeiture.
 - Codama-generated Rust, TypeScript, and Dart clients.
 - Ergonomic checked planning APIs in all three languages.
 - An animated React creator/recipient playground with nested bundle composition, a timezone-aware reveal picker, exact-supply lock workflow, market desk, searchable asset selection, live odds/revision/queue state, disposable test wallets, and desktop/mobile Playwright coverage.
 - A test-only Switchboard ABI emulator deployed beside the real lootbox SBF program in offline Surfpool.
 
-## Single-reward protocol
+## Treasury templates
 
-The SOL-only single-reward model below remains ABI-compatible. The treasury model uses finite bundle inventory and a permissionless timeout forfeiture that unblocks FIFO without returning a rerollable box or changing the bound recipient; see the [template specification](docs/treasury-templates.md).
+Each lootbox is a treasury template: a zero-decimal Token-2022 box mint, an append-only inventory of fully escrowed prize bundles, and an issuance cap equal to the activated ticket count. Opening burns one box before randomness is known, then allocates one bundle uniformly without replacement once the Switchboard commitment is revealed; see the [template specification](docs/treasury-templates.md).
 
 ```mermaid
 flowchart LR
-    A[Configure outcomes] --> B[Fund worst case]
-    B --> C[Seal forever]
-    C --> D[Mint boxes]
-    D --> E[Initialize + commit + burn]
-    E --> F{Gateway proof arrives?}
-    F -->|yes| G[Reveal + payout atomically]
-    F -->|no, after 300 slots| H[Minimum reward floor]
-    G --> I[Close oracle + receipt]
-    H --> I
+    A[Stage bundles] --> B[Fund every asset]
+    B --> C[Activate into inventory]
+    C --> D[Seal + lock supply]
+    D --> E[Mint boxes]
+    E --> F[Initialize + commit + burn]
+    F --> G{Gateway proof arrives?}
+    G -->|yes| H[Reveal entropy]
+    H --> I[Allocate one ticket]
+    I --> J[Claim each asset]
+    G -->|no, after 300 slots| K[Permissionless forfeit]
+    J --> L[Close oracle + receipt]
+    K --> L
 ```
 
 The core invariant is:
 
 ```text
-vault balance - rent reserve >= (mint supply + pending openings) * max reward
+box supply + pending openings <= undrawn tickets, and every activated ticket is fully escrowed
 ```
 
-The program re-evaluates it whenever supply, pending openings, payouts, timeout floors, or withdrawals change.
+The program re-evaluates it whenever inventory, supply, or pending openings change.
 
 ## Quick start
 
@@ -135,7 +138,7 @@ console.log(plan.fixedSupply); // 100n after market lock
 console.log(plan.treasury); // [{ mint: null, amount: 10_900_000_000n }]
 ```
 
-See the [template API and economics](docs/treasury-templates.md) for token/NFT bundles and `LootboxClient` transaction orchestration. The [legacy API](docs/api.md), [architecture](docs/architecture.md), [randomness integration](docs/randomness.md), and [single-reward security review](docs/security-review.md) document the retained SOL-only contract.
+See the [template API and economics](docs/treasury-templates.md) for token/NFT bundles and `LootboxClient` transaction orchestration. The [architecture](docs/architecture.md), [randomness integration](docs/randomness.md), and [treasury security review](docs/security-templates.md) document the deployed contract.
 
 For reuse in other projects, see the [integration and CPI guide](docs/integrating.md), [performance and scaling analysis](docs/performance.md), [adoption plan](docs/adoption.md), and [treasury security review](docs/security-templates.md).
 

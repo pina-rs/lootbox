@@ -16,7 +16,7 @@
 /// revision snapshotted at request. Consumes one inventory unit, advances the
 /// FIFO cursor, and creates a result receipt when receipts are enabled. Bundles
 /// holding a prize pool must use `AllocatePrizePoolOpen` instead.
-pub const ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 18u8;
+pub const ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 8u8;
 pub const ALLOCATE_TEMPLATE_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
@@ -45,7 +45,13 @@ pub struct AllocateTemplateOpen {
 }
 
 impl AllocateTemplateOpen {
-	pub fn new(template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, service_vault: solana_pubkey::Pubkey, result_receipt: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		template: solana_pubkey::Pubkey,
+		opening: solana_pubkey::Pubkey,
+		bundle: solana_pubkey::Pubkey,
+		service_vault: solana_pubkey::Pubkey,
+		result_receipt: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			template,
 			opening,
@@ -56,7 +62,10 @@ impl AllocateTemplateOpen {
 		}
 	}
 
-	pub fn instruction(&self, data: AllocateTemplateOpenInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: AllocateTemplateOpenInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -69,10 +78,22 @@ impl AllocateTemplateOpen {
 		let mut accounts = Vec::with_capacity(6 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.template, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.bundle, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.service_vault, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.result_receipt, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.bundle,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.service_vault,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.result_receipt,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.system_program,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -88,15 +109,20 @@ pub struct AllocateTemplateOpenInstructionData {
 }
 
 impl AllocateTemplateOpenInstructionData {
-	pub fn new(configure: impl FnOnce(&mut AllocateTemplateOpenInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut AllocateTemplateOpenInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<AllocateTemplateOpenInstructionWireZc>()];
-		<AllocateTemplateOpenInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
-			configure(data);
-			data.discriminator = ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR;
-			data.migration_version = ALLOCATE_TEMPLATE_OPEN_MIGRATION_VERSION;
-			Ok(())
-		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		<AllocateTemplateOpenInstructionWire as pina::PinaPodFixed>::initialize(
+			&mut bytes,
+			|data| {
+				configure(data);
+				data.discriminator = ALLOCATE_TEMPLATE_OPEN_DISCRIMINATOR;
+				data.migration_version = ALLOCATE_TEMPLATE_OPEN_MIGRATION_VERSION;
+				Ok(())
+			},
+		)
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

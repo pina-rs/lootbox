@@ -50,7 +50,9 @@ impl ExclusiveNftMintedEvent {
 	/// Logs carry the record base64-encoded after `Program data: `; pass the decoded bytes here.
 	///
 	/// Records of another version are rejected; `try_from_bytes` tells them apart, and the event generated for that version decodes them.
-	pub fn from_bytes(data: &[u8]) -> Result<&ExclusiveNftMintedEventZc, solana_program_error::ProgramError> {
+	pub fn from_bytes(
+		data: &[u8],
+	) -> Result<&ExclusiveNftMintedEventZc, solana_program_error::ProgramError> {
 		let event = <Self as pina::PinaPodFixed>::read_exact(data)
 			.map_err(|_| solana_program_error::ProgramError::InvalidArgument)?;
 		if event.discriminator != EXCLUSIVE_NFT_MINTED_EVENT_DISCRIMINATOR {
@@ -78,14 +80,21 @@ impl core::fmt::Display for ExclusiveNftMintedEventVersionError {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		match self {
 			Self::InvalidData => write!(f, "invalid ExclusiveNftMintedEvent event data"),
-			Self::Stale { stored } => write!(
-				f,
-				"event migration version mismatch: expected 0, received {stored} (an earlier version emitted it; decode it with the event generated for that version)"
-			),
-			Self::Future { stored } => write!(
-				f,
-				"event migration version mismatch: expected 0, received {stored} (a later version emitted it; decode it with the event generated for that version, or regenerate this client)"
-			),
+			Self::Stale { stored } => {
+				write!(
+					f,
+					"event migration version mismatch: expected 0, received {stored} (an earlier \
+					 version emitted it; decode it with the event generated for that version)"
+				)
+			}
+			Self::Future { stored } => {
+				write!(
+					f,
+					"event migration version mismatch: expected 0, received {stored} (a later \
+					 version emitted it; decode it with the event generated for that version, or \
+					 regenerate this client)"
+				)
+			}
 		}
 	}
 }
@@ -103,7 +112,9 @@ impl ExclusiveNftMintedEvent {
 			return Err(ExclusiveNftMintedEventVersionError::InvalidData);
 		}
 		if event.migration_version > EXCLUSIVE_NFT_MINTED_EVENT_MIGRATION_VERSION {
-			return Err(ExclusiveNftMintedEventVersionError::Future { stored: event.migration_version });
+			return Err(ExclusiveNftMintedEventVersionError::Future {
+				stored: event.migration_version,
+			});
 		}
 		Ok(event)
 	}

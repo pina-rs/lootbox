@@ -13,8 +13,7 @@ pub mod accounts;
 mod programs;
 
 pub use instructions::*;
-
 pub use programs::*;
 
 /// Number of instructions rendered for the `lootboxProgram` program.
-pub const INSTRUCTION_COUNT: usize = 62;
+pub const INSTRUCTION_COUNT: usize = 52;

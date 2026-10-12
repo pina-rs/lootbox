@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR = 28;
+export const CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR = 18;
 
 export function getClaimCoreAssetPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR); }
 
@@ -22,14 +22,14 @@ export function getClaimCoreAssetPrizeDiscriminator2Bytes(): ReadonlyUint8Array 
 export type ClaimCoreAssetPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountPayer extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountRecipient extends string | AccountMeta<string> = string, TAccountAsset extends string | AccountMeta<string> = string, TAccountCollection extends string | AccountMeta<string> = string, TAccountCoreProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountPluginAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountPayer extends string ? WritableSignerAccount<TAccountPayer> & AccountSignerMeta<TAccountPayer> : TAccountPayer, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountRecipient extends string ? ReadonlyAccount<TAccountRecipient> : TAccountRecipient, TAccountAsset extends string ? WritableAccount<TAccountAsset> : TAccountAsset, TAccountCollection extends string ? ReadonlyAccount<TAccountCollection> : TAccountCollection, TAccountCoreProgram extends string ? ReadonlyAccount<TAccountCoreProgram> : TAccountCoreProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountPluginAccounts extends string ? ReadonlyAccount<TAccountPluginAccounts> : TAccountPluginAccounts, ...TRemainingAccounts]>;
 
-export type ClaimCoreAssetPrizeInstructionData = { discriminator: number; migrationVersion: number;
+export type ClaimCoreAssetPrizeInstructionData = { discriminator: number; migrationVersion: number; 
 /**
  * Bundle slot holding the asset. Must be below the bundle's `asset_count`
  * and hold a Core asset whose address is `asset`.
  */
 assetIndex: number;  };
 
-export type ClaimCoreAssetPrizeInstructionDataArgs = {
+export type ClaimCoreAssetPrizeInstructionDataArgs = { 
 /**
  * Bundle slot holding the asset. Must be below the bundle's `asset_count`
  * and hold a Core asset whose address is `asset`.
@@ -37,7 +37,7 @@ export type ClaimCoreAssetPrizeInstructionDataArgs = {
 assetIndex: number;  };
 
 export function getClaimCoreAssetPrizeInstructionDataEncoder(): FixedSizeEncoder<ClaimCoreAssetPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 28, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 18, migrationVersion: 0 }));
 }
 
 export function getClaimCoreAssetPrizeInstructionDataDecoder(): FixedSizeDecoder<ClaimCoreAssetPrizeInstructionData> {

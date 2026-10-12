@@ -14,7 +14,7 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class ActivateBundleInstructionData {
   const ActivateBundleInstructionData()
-    : discriminator = 25,
+    : discriminator = 15,
       migrationVersion = 0;
 
   final int discriminator;
@@ -31,7 +31,7 @@ getActivateBundleInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (ActivateBundleInstructionData value) => <String, Object?>{
-      'discriminator': 25,
+      'discriminator': 15,
       'migrationVersion': 0,
     },
   );
@@ -56,7 +56,7 @@ getActivateBundleInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(25)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(15)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

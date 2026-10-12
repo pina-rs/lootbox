@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const CLOSE_TEMPLATE_OPENING_DISCRIMINATOR = 24;
+export const CLOSE_TEMPLATE_OPENING_DISCRIMINATOR = 14;
 
 export function getCloseTemplateOpeningDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLOSE_TEMPLATE_OPENING_DISCRIMINATOR); }
 
@@ -27,7 +27,7 @@ export type CloseTemplateOpeningInstructionData = { discriminator: number; migra
 export type CloseTemplateOpeningInstructionDataArgs = {  };
 
 export function getCloseTemplateOpeningInstructionDataEncoder(): FixedSizeEncoder<CloseTemplateOpeningInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 24, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 14, migrationVersion: 0 }));
 }
 
 export function getCloseTemplateOpeningInstructionDataDecoder(): FixedSizeDecoder<CloseTemplateOpeningInstructionData> {

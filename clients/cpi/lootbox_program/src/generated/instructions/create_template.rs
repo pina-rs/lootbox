@@ -6,15 +6,14 @@
 	clippy::empty_line_after_doc_comments,
 	clippy::too_many_arguments
 )]
-
 #![allow(rustdoc::broken_intra_doc_links)]
 
 use pina::AccountView;
 use pina::Address;
 use pina::CpiContext;
 use pina::CpiHandle;
-use pina::ProgramResult;
 use pina::ProgramError;
+use pina::ProgramResult;
 use pina::Signer;
 
 use crate::ProgramAccount;
@@ -155,4 +154,4 @@ impl<'account, 'argument> CreateTemplate<'account, 'argument> {
 	}
 }
 
-const CREATE_TEMPLATE_DISCRIMINATOR: [u8; 2] = [10, 0];
+const CREATE_TEMPLATE_DISCRIMINATOR: [u8; 2] = [0, 0];

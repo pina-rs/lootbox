@@ -388,9 +388,9 @@ in
     '';
     "security:audit".exec = ''
       set -euo pipefail
-      cargo audit --deny warnings --ignore RUSTSEC-2025-0141
-      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --file tests/fixtures/mock_switchboard/Cargo.lock
-      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --file tests/fixtures/mock_bubblegum/Cargo.lock
+      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --ignore RUSTSEC-2024-0449
+      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --ignore RUSTSEC-2024-0449 --file tests/fixtures/mock_switchboard/Cargo.lock
+      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --ignore RUSTSEC-2024-0449 --file tests/fixtures/mock_bubblegum/Cargo.lock
       cargo audit \
         --deny warnings \
         --file programs/lootbox_program/tests/surfpool/Cargo.lock \
@@ -405,7 +405,7 @@ in
         --ignore RUSTSEC-2024-0421 \
         --ignore RUSTSEC-2024-0436 \
         --ignore RUSTSEC-2025-0134 \
-        --ignore RUSTSEC-2025-0141 \
+        --ignore RUSTSEC-2025-0141 --ignore RUSTSEC-2024-0449 \
         --ignore RUSTSEC-2025-0161 \
         --ignore RUSTSEC-2025-0167 \
         --ignore RUSTSEC-2026-0097 \

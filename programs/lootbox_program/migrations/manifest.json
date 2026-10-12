@@ -4,158 +4,6 @@
 	"versionType": "u8",
 	"contracts": {
 		"account:1:01": {
-			"rustName": "LootboxState",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": [
-							{
-								"name": "authority",
-								"rustType": "Address"
-							},
-							{
-								"name": "box_mint",
-								"rustType": "Address"
-							},
-							{
-								"name": "oracle_program",
-								"rustType": "Address"
-							},
-							{
-								"name": "oracle_queue",
-								"rustType": "Address"
-							},
-							{
-								"name": "id",
-								"rustType": "u64"
-							},
-							{
-								"name": "max_supply",
-								"rustType": "u64"
-							},
-							{
-								"name": "total_minted",
-								"rustType": "u64"
-							},
-							{
-								"name": "pending_openings",
-								"rustType": "u64"
-							},
-							{
-								"name": "opened",
-								"rustType": "u64"
-							},
-							{
-								"name": "refunded",
-								"rustType": "u64"
-							},
-							{
-								"name": "total_weight",
-								"rustType": "u64"
-							},
-							{
-								"name": "max_reward_lamports",
-								"rustType": "u64"
-							},
-							{
-								"name": "outcome_weights",
-								"rustType": "[u8; 64]"
-							},
-							{
-								"name": "outcome_lamports",
-								"rustType": "[u8; 64]"
-							},
-							{
-								"name": "outcome_count",
-								"rustType": "u8"
-							},
-							{
-								"name": "sealed",
-								"rustType": "bool"
-							},
-							{
-								"name": "bump",
-								"rustType": "u8"
-							},
-							{
-								"name": "vault_bump",
-								"rustType": "u8"
-							}
-						]
-					}
-				}
-			]
-		},
-		"account:1:02": {
-			"rustName": "VaultState",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": [
-							{
-								"name": "lootbox",
-								"rustType": "Address"
-							},
-							{
-								"name": "rent_reserve",
-								"rustType": "u64"
-							},
-							{
-								"name": "bump",
-								"rustType": "u8"
-							}
-						]
-					}
-				}
-			]
-		},
-		"account:1:03": {
-			"rustName": "OpeningState",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": [
-							{
-								"name": "lootbox",
-								"rustType": "Address"
-							},
-							{
-								"name": "recipient",
-								"rustType": "Address"
-							},
-							{
-								"name": "randomness",
-								"rustType": "Address"
-							},
-							{
-								"name": "seed_slot",
-								"rustType": "u64"
-							},
-							{
-								"name": "reward_lamports",
-								"rustType": "u64"
-							},
-							{
-								"name": "selected_outcome",
-								"rustType": "u8"
-							},
-							{
-								"name": "status",
-								"rustType": "u8"
-							},
-							{
-								"name": "bump",
-								"rustType": "u8"
-							}
-						]
-					}
-				}
-			]
-		},
-		"account:1:04": {
 			"rustName": "TemplateState",
 			"versions": [
 				{
@@ -279,7 +127,7 @@
 				}
 			]
 		},
-		"account:1:05": {
+		"account:1:02": {
 			"rustName": "BundleState",
 			"versions": [
 				{
@@ -355,7 +203,7 @@
 				}
 			]
 		},
-		"account:1:06": {
+		"account:1:03": {
 			"rustName": "TemplateOpeningState",
 			"versions": [
 				{
@@ -443,7 +291,7 @@
 				}
 			]
 		},
-		"account:1:07": {
+		"account:1:04": {
 			"rustName": "ResultReceiptState",
 			"versions": [
 				{
@@ -511,7 +359,7 @@
 				}
 			]
 		},
-		"account:1:08": {
+		"account:1:05": {
 			"rustName": "PrizePoolState",
 			"versions": [
 				{
@@ -583,7 +431,7 @@
 				}
 			]
 		},
-		"account:1:09": {
+		"account:1:06": {
 			"rustName": "PrizePoolItemState",
 			"versions": [
 				{
@@ -639,7 +487,7 @@
 				}
 			]
 		},
-		"account:1:0a": {
+		"account:1:07": {
 			"rustName": "ExclusiveCollectionState",
 			"versions": [
 				{
@@ -719,7 +567,7 @@
 				}
 			]
 		},
-		"account:1:0b": {
+		"account:1:08": {
 			"rustName": "ExclusiveAttachmentState",
 			"versions": [
 				{
@@ -771,7 +619,7 @@
 				}
 			]
 		},
-		"account:1:0c": {
+		"account:1:09": {
 			"rustName": "BoxCurveState",
 			"versions": [
 				{
@@ -924,551 +772,6 @@
 			]
 		},
 		"instruction:1:00": {
-			"rustName": "CreateLootboxInstruction",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": [
-							{
-								"name": "id",
-								"rustType": "u64"
-							},
-							{
-								"name": "max_supply",
-								"rustType": "u64"
-							},
-							{
-								"name": "oracle_program",
-								"rustType": "Address"
-							},
-							{
-								"name": "oracle_queue",
-								"rustType": "Address"
-							},
-							{
-								"name": "bump",
-								"rustType": "u8"
-							},
-							{
-								"name": "vault_bump",
-								"rustType": "u8"
-							}
-						]
-					},
-					"process": {
-						"accounts": [
-							{
-								"name": "authority",
-								"writable": true,
-								"signer": true
-							},
-							{
-								"name": "box_mint"
-							},
-							{
-								"name": "lootbox",
-								"writable": true,
-								"pda": "lootbox"
-							},
-							{
-								"name": "vault",
-								"writable": true,
-								"pda": "vault"
-							},
-							{
-								"name": "system_program",
-								"defaultValue": "publicKey:11111111111111111111111111111111"
-							},
-							{
-								"name": "token_program",
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-							}
-						]
-					}
-				}
-			]
-		},
-		"instruction:1:01": {
-			"rustName": "AddOutcomeInstruction",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": [
-							{
-								"name": "weight",
-								"rustType": "u64"
-							},
-							{
-								"name": "reward_lamports",
-								"rustType": "u64"
-							}
-						]
-					},
-					"process": {
-						"accounts": [
-							{
-								"name": "authority",
-								"signer": true
-							},
-							{
-								"name": "lootbox",
-								"writable": true,
-								"pda": "lootbox"
-							}
-						]
-					}
-				}
-			]
-		},
-		"instruction:1:02": {
-			"rustName": "DepositInstruction",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": [
-							{
-								"name": "lamports",
-								"rustType": "u64"
-							}
-						]
-					},
-					"process": {
-						"accounts": [
-							{
-								"name": "depositor",
-								"writable": true,
-								"signer": true
-							},
-							{
-								"name": "lootbox",
-								"pda": "lootbox"
-							},
-							{
-								"name": "vault",
-								"writable": true,
-								"pda": "vault"
-							},
-							{
-								"name": "system_program",
-								"defaultValue": "publicKey:11111111111111111111111111111111"
-							}
-						]
-					}
-				}
-			]
-		},
-		"instruction:1:03": {
-			"rustName": "SealInstruction",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": []
-					},
-					"process": {
-						"accounts": [
-							{
-								"name": "authority",
-								"signer": true
-							},
-							{
-								"name": "lootbox",
-								"writable": true,
-								"pda": "lootbox"
-							}
-						]
-					}
-				}
-			]
-		},
-		"instruction:1:04": {
-			"rustName": "MintBoxesInstruction",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": [
-							{
-								"name": "amount",
-								"rustType": "u64"
-							}
-						]
-					},
-					"process": {
-						"accounts": [
-							{
-								"name": "authority",
-								"signer": true
-							},
-							{
-								"name": "lootbox",
-								"writable": true,
-								"pda": "lootbox"
-							},
-							{
-								"name": "vault",
-								"pda": "vault"
-							},
-							{
-								"name": "box_mint",
-								"writable": true
-							},
-							{
-								"name": "recipient_box_account",
-								"writable": true
-							},
-							{
-								"name": "token_program",
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-							}
-						]
-					}
-				}
-			]
-		},
-		"instruction:1:05": {
-			"rustName": "RequestOpenInstruction",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": [
-							{
-								"name": "recent_slot",
-								"rustType": "u64"
-							},
-							{
-								"name": "bump",
-								"rustType": "u8"
-							}
-						]
-					},
-					"process": {
-						"accounts": [
-							{
-								"name": "owner",
-								"writable": true,
-								"signer": true
-							},
-							{
-								"name": "lootbox",
-								"writable": true,
-								"pda": "lootbox"
-							},
-							{
-								"name": "vault",
-								"pda": "vault"
-							},
-							{
-								"name": "box_mint",
-								"writable": true
-							},
-							{
-								"name": "owner_box_account",
-								"writable": true
-							},
-							{
-								"name": "opening",
-								"writable": true,
-								"pda": "opening"
-							},
-							{
-								"name": "randomness",
-								"writable": true,
-								"signer": true
-							},
-							{
-								"name": "reward_escrow",
-								"writable": true
-							},
-							{
-								"name": "oracle_queue",
-								"writable": true
-							},
-							{
-								"name": "oracle",
-								"writable": true
-							},
-							{
-								"name": "recent_slot_hashes"
-							},
-							{
-								"name": "oracle_program"
-							},
-							{
-								"name": "oracle_program_state"
-							},
-							{
-								"name": "oracle_lut_signer"
-							},
-							{
-								"name": "oracle_lut",
-								"writable": true
-							},
-							{
-								"name": "associated_token_program",
-								"defaultValue": "publicKey:ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-							},
-							{
-								"name": "wrapped_sol_mint"
-							},
-							{
-								"name": "address_lookup_table_program"
-							},
-							{
-								"name": "system_program",
-								"defaultValue": "publicKey:11111111111111111111111111111111"
-							},
-							{
-								"name": "token_program",
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-							}
-						]
-					}
-				}
-			]
-		},
-		"instruction:1:06": {
-			"rustName": "SettleOpenInstruction",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": [
-							{
-								"name": "signature",
-								"rustType": "[u8; 64]"
-							},
-							{
-								"name": "recovery_id",
-								"rustType": "u8"
-							},
-							{
-								"name": "value",
-								"rustType": "[u8; 32]"
-							}
-						]
-					},
-					"process": {
-						"accounts": [
-							{
-								"name": "recipient",
-								"writable": true
-							},
-							{
-								"name": "payer",
-								"writable": true,
-								"signer": true
-							},
-							{
-								"name": "lootbox",
-								"writable": true,
-								"pda": "lootbox"
-							},
-							{
-								"name": "vault",
-								"writable": true,
-								"pda": "vault"
-							},
-							{
-								"name": "box_mint"
-							},
-							{
-								"name": "opening",
-								"writable": true,
-								"pda": "opening"
-							},
-							{
-								"name": "randomness",
-								"writable": true
-							},
-							{
-								"name": "oracle_queue"
-							},
-							{
-								"name": "oracle"
-							},
-							{
-								"name": "oracle_stats",
-								"writable": true
-							},
-							{
-								"name": "recent_slot_hashes"
-							},
-							{
-								"name": "oracle_program"
-							},
-							{
-								"name": "reward_escrow",
-								"writable": true
-							},
-							{
-								"name": "oracle_program_state"
-							},
-							{
-								"name": "system_program",
-								"defaultValue": "publicKey:11111111111111111111111111111111"
-							},
-							{
-								"name": "token_program",
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-							},
-							{
-								"name": "wrapped_sol_mint"
-							}
-						]
-					}
-				}
-			]
-		},
-		"instruction:1:07": {
-			"rustName": "RefundOpenInstruction",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": []
-					},
-					"process": {
-						"accounts": [
-							{
-								"name": "recipient",
-								"writable": true,
-								"signer": true
-							},
-							{
-								"name": "lootbox",
-								"writable": true,
-								"pda": "lootbox"
-							},
-							{
-								"name": "vault",
-								"writable": true,
-								"pda": "vault"
-							},
-							{
-								"name": "box_mint"
-							},
-							{
-								"name": "opening",
-								"writable": true,
-								"pda": "opening"
-							},
-							{
-								"name": "randomness"
-							},
-							{
-								"name": "clock"
-							}
-						]
-					}
-				}
-			]
-		},
-		"instruction:1:08": {
-			"rustName": "CloseOpeningInstruction",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": []
-					},
-					"process": {
-						"accounts": [
-							{
-								"name": "recipient",
-								"writable": true
-							},
-							{
-								"name": "lootbox",
-								"pda": "lootbox"
-							},
-							{
-								"name": "opening",
-								"writable": true,
-								"pda": "opening"
-							},
-							{
-								"name": "randomness",
-								"writable": true
-							},
-							{
-								"name": "reward_escrow",
-								"writable": true
-							},
-							{
-								"name": "oracle_program"
-							},
-							{
-								"name": "oracle_program_state"
-							},
-							{
-								"name": "oracle_lut",
-								"writable": true
-							},
-							{
-								"name": "oracle_lut_signer"
-							},
-							{
-								"name": "system_program",
-								"defaultValue": "publicKey:11111111111111111111111111111111"
-							},
-							{
-								"name": "token_program",
-								"defaultValue": "publicKey:TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-							},
-							{
-								"name": "wrapped_sol_mint"
-							},
-							{
-								"name": "address_lookup_table_program"
-							}
-						]
-					}
-				}
-			]
-		},
-		"instruction:1:09": {
-			"rustName": "WithdrawSurplusInstruction",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": [
-							{
-								"name": "lamports",
-								"rustType": "u64"
-							}
-						]
-					},
-					"process": {
-						"accounts": [
-							{
-								"name": "authority",
-								"writable": true,
-								"signer": true
-							},
-							{
-								"name": "lootbox",
-								"pda": "lootbox"
-							},
-							{
-								"name": "vault",
-								"writable": true,
-								"pda": "vault"
-							},
-							{
-								"name": "box_mint"
-							}
-						]
-					}
-				}
-			]
-		},
-		"instruction:1:0a": {
 			"rustName": "CreateTemplateInstruction",
 			"versions": [
 				{
@@ -1541,7 +844,7 @@
 				}
 			]
 		},
-		"instruction:1:0b": {
+		"instruction:1:01": {
 			"rustName": "AddBundleInstruction",
 			"versions": [
 				{
@@ -1587,7 +890,7 @@
 				}
 			]
 		},
-		"instruction:1:0c": {
+		"instruction:1:02": {
 			"rustName": "FundSolPrizeInstruction",
 			"versions": [
 				{
@@ -1625,7 +928,7 @@
 				}
 			]
 		},
-		"instruction:1:0d": {
+		"instruction:1:03": {
 			"rustName": "FundTokenPrizeInstruction",
 			"versions": [
 				{
@@ -1677,7 +980,7 @@
 				}
 			]
 		},
-		"instruction:1:0e": {
+		"instruction:1:04": {
 			"rustName": "SealTemplateInstruction",
 			"versions": [
 				{
@@ -1700,7 +1003,7 @@
 				}
 			]
 		},
-		"instruction:1:0f": {
+		"instruction:1:05": {
 			"rustName": "MintTemplateBoxesInstruction",
 			"versions": [
 				{
@@ -1739,7 +1042,7 @@
 				}
 			]
 		},
-		"instruction:1:10": {
+		"instruction:1:06": {
 			"rustName": "RequestTemplateOpenInstruction",
 			"versions": [
 				{
@@ -1856,7 +1159,7 @@
 				}
 			]
 		},
-		"instruction:1:11": {
+		"instruction:1:07": {
 			"rustName": "FulfillTemplateOpenInstruction",
 			"versions": [
 				{
@@ -1941,7 +1244,7 @@
 				}
 			]
 		},
-		"instruction:1:12": {
+		"instruction:1:08": {
 			"rustName": "AllocateTemplateOpenInstruction",
 			"versions": [
 				{
@@ -1985,7 +1288,7 @@
 				}
 			]
 		},
-		"instruction:1:13": {
+		"instruction:1:09": {
 			"rustName": "ClaimSolPrizeInstruction",
 			"versions": [
 				{
@@ -2022,7 +1325,7 @@
 				}
 			]
 		},
-		"instruction:1:14": {
+		"instruction:1:0a": {
 			"rustName": "ClaimTokenPrizeInstruction",
 			"versions": [
 				{
@@ -2073,7 +1376,7 @@
 				}
 			]
 		},
-		"instruction:1:15": {
+		"instruction:1:0b": {
 			"rustName": "RetireTemplateInstruction",
 			"versions": [
 				{
@@ -2096,7 +1399,7 @@
 				}
 			]
 		},
-		"instruction:1:16": {
+		"instruction:1:0c": {
 			"rustName": "ReclaimSolPrizeInstruction",
 			"versions": [
 				{
@@ -2132,7 +1435,7 @@
 				}
 			]
 		},
-		"instruction:1:17": {
+		"instruction:1:0d": {
 			"rustName": "ReclaimTokenPrizeInstruction",
 			"versions": [
 				{
@@ -2182,7 +1485,7 @@
 				}
 			]
 		},
-		"instruction:1:18": {
+		"instruction:1:0e": {
 			"rustName": "CloseTemplateOpeningInstruction",
 			"versions": [
 				{
@@ -2244,7 +1547,7 @@
 				}
 			]
 		},
-		"instruction:1:19": {
+		"instruction:1:0f": {
 			"rustName": "ActivateBundleInstruction",
 			"versions": [
 				{
@@ -2277,7 +1580,7 @@
 				}
 			]
 		},
-		"instruction:1:1a": {
+		"instruction:1:10": {
 			"rustName": "CancelBundleInstruction",
 			"versions": [
 				{
@@ -2305,7 +1608,7 @@
 				}
 			]
 		},
-		"instruction:1:1b": {
+		"instruction:1:11": {
 			"rustName": "FundCoreAssetPrizeInstruction",
 			"versions": [
 				{
@@ -2353,7 +1656,7 @@
 				}
 			]
 		},
-		"instruction:1:1c": {
+		"instruction:1:12": {
 			"rustName": "ClaimCoreAssetPrizeInstruction",
 			"versions": [
 				{
@@ -2414,7 +1717,7 @@
 				}
 			]
 		},
-		"instruction:1:1d": {
+		"instruction:1:13": {
 			"rustName": "ReclaimCoreAssetPrizeInstruction",
 			"versions": [
 				{
@@ -2470,7 +1773,7 @@
 				}
 			]
 		},
-		"instruction:1:1e": {
+		"instruction:1:14": {
 			"rustName": "FundCompressedNftPrizeInstruction",
 			"versions": [
 				{
@@ -2540,7 +1843,7 @@
 				}
 			]
 		},
-		"instruction:1:1f": {
+		"instruction:1:15": {
 			"rustName": "ClaimCompressedNftPrizeInstruction",
 			"versions": [
 				{
@@ -2618,7 +1921,7 @@
 				}
 			]
 		},
-		"instruction:1:20": {
+		"instruction:1:16": {
 			"rustName": "ReclaimCompressedNftPrizeInstruction",
 			"versions": [
 				{
@@ -2695,7 +1998,7 @@
 				}
 			]
 		},
-		"instruction:1:21": {
+		"instruction:1:17": {
 			"rustName": "ForfeitTemplateOpenInstruction",
 			"versions": [
 				{
@@ -2740,7 +2043,7 @@
 				}
 			]
 		},
-		"instruction:1:22": {
+		"instruction:1:18": {
 			"rustName": "LockTreasuryInstruction",
 			"versions": [
 				{
@@ -2789,7 +2092,7 @@
 				}
 			]
 		},
-		"instruction:1:23": {
+		"instruction:1:19": {
 			"rustName": "CloseServiceVaultInstruction",
 			"versions": [
 				{
@@ -2824,7 +2127,7 @@
 				}
 			]
 		},
-		"instruction:1:24": {
+		"instruction:1:1a": {
 			"rustName": "FundQuoteSolPrizeInstruction",
 			"versions": [
 				{
@@ -2862,7 +2165,7 @@
 				}
 			]
 		},
-		"instruction:1:25": {
+		"instruction:1:1b": {
 			"rustName": "FundQuoteTokenPrizeInstruction",
 			"versions": [
 				{
@@ -2910,7 +2213,7 @@
 				}
 			]
 		},
-		"instruction:1:26": {
+		"instruction:1:1c": {
 			"rustName": "FundMintPrizeInstruction",
 			"versions": [
 				{
@@ -2946,7 +2249,7 @@
 				}
 			]
 		},
-		"instruction:1:27": {
+		"instruction:1:1d": {
 			"rustName": "ClaimMintPrizeInstruction",
 			"versions": [
 				{
@@ -2994,7 +2297,7 @@
 				}
 			]
 		},
-		"instruction:1:28": {
+		"instruction:1:1e": {
 			"rustName": "ReclaimMintPrizeInstruction",
 			"versions": [
 				{
@@ -3037,7 +2340,7 @@
 				}
 			]
 		},
-		"instruction:1:29": {
+		"instruction:1:1f": {
 			"rustName": "CreatePrizePoolInstruction",
 			"versions": [
 				{
@@ -3086,7 +2389,7 @@
 				}
 			]
 		},
-		"instruction:1:2a": {
+		"instruction:1:20": {
 			"rustName": "DepositPrizePoolItemInstruction",
 			"versions": [
 				{
@@ -3166,7 +2469,7 @@
 				}
 			]
 		},
-		"instruction:1:2b": {
+		"instruction:1:21": {
 			"rustName": "SealPrizePoolInstruction",
 			"versions": [
 				{
@@ -3197,7 +2500,7 @@
 				}
 			]
 		},
-		"instruction:1:2c": {
+		"instruction:1:22": {
 			"rustName": "AllocatePrizePoolOpenInstruction",
 			"versions": [
 				{
@@ -3245,7 +2548,7 @@
 				}
 			]
 		},
-		"instruction:1:2d": {
+		"instruction:1:23": {
 			"rustName": "ClaimPrizePoolItemInstruction",
 			"versions": [
 				{
@@ -3341,7 +2644,7 @@
 				}
 			]
 		},
-		"instruction:1:2e": {
+		"instruction:1:24": {
 			"rustName": "ReclaimPrizePoolItemInstruction",
 			"versions": [
 				{
@@ -3433,7 +2736,7 @@
 				}
 			]
 		},
-		"instruction:1:2f": {
+		"instruction:1:25": {
 			"rustName": "ClosePrizePoolInstruction",
 			"versions": [
 				{
@@ -3465,7 +2768,7 @@
 				}
 			]
 		},
-		"instruction:1:30": {
+		"instruction:1:26": {
 			"rustName": "PreparePrizePoolItemInstruction",
 			"versions": [
 				{
@@ -3530,7 +2833,7 @@
 				}
 			]
 		},
-		"instruction:1:31": {
+		"instruction:1:27": {
 			"rustName": "CancelPrizePoolItemInstruction",
 			"versions": [
 				{
@@ -3566,7 +2869,7 @@
 				}
 			]
 		},
-		"instruction:1:32": {
+		"instruction:1:28": {
 			"rustName": "CreateExclusiveCollectionInstruction",
 			"versions": [
 				{
@@ -3636,7 +2939,7 @@
 				}
 			]
 		},
-		"instruction:1:33": {
+		"instruction:1:29": {
 			"rustName": "SetExclusiveLayerInstruction",
 			"versions": [
 				{
@@ -3673,7 +2976,7 @@
 				}
 			]
 		},
-		"instruction:1:34": {
+		"instruction:1:2a": {
 			"rustName": "AppendExclusiveTreeInstruction",
 			"versions": [
 				{
@@ -3728,7 +3031,7 @@
 				}
 			]
 		},
-		"instruction:1:35": {
+		"instruction:1:2b": {
 			"rustName": "PublishExclusiveCollectionInstruction",
 			"versions": [
 				{
@@ -3752,7 +3055,7 @@
 				}
 			]
 		},
-		"instruction:1:36": {
+		"instruction:1:2c": {
 			"rustName": "AttachExclusiveNftInstruction",
 			"versions": [
 				{
@@ -3810,7 +3113,7 @@
 				}
 			]
 		},
-		"instruction:1:37": {
+		"instruction:1:2d": {
 			"rustName": "ClaimExclusiveNftInstruction",
 			"versions": [
 				{
@@ -3892,7 +3195,7 @@
 				}
 			]
 		},
-		"instruction:1:38": {
+		"instruction:1:2e": {
 			"rustName": "ReclaimExclusiveFeesInstruction",
 			"versions": [
 				{
@@ -3942,7 +3245,7 @@
 				}
 			]
 		},
-		"instruction:1:39": {
+		"instruction:1:2f": {
 			"rustName": "OpenBoxCurveInstruction",
 			"versions": [
 				{
@@ -4010,7 +3313,7 @@
 				}
 			]
 		},
-		"instruction:1:3a": {
+		"instruction:1:30": {
 			"rustName": "BuyCurveBoxesInstruction",
 			"versions": [
 				{
@@ -4070,7 +3373,7 @@
 				}
 			]
 		},
-		"instruction:1:3b": {
+		"instruction:1:31": {
 			"rustName": "SellCurveBoxesInstruction",
 			"versions": [
 				{
@@ -4126,7 +3429,7 @@
 				}
 			]
 		},
-		"instruction:1:3c": {
+		"instruction:1:32": {
 			"rustName": "CloseBoxCurveInstruction",
 			"versions": [
 				{
@@ -4169,7 +3472,7 @@
 				}
 			]
 		},
-		"instruction:1:3d": {
+		"instruction:1:33": {
 			"rustName": "ClaimStrandedPrizePoolItemInstruction",
 			"versions": [
 				{

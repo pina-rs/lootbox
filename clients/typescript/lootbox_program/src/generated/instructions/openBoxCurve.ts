@@ -12,7 +12,7 @@ import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type I
 import { findBoxCurvePda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const OPEN_BOX_CURVE_DISCRIMINATOR = 57;
+export const OPEN_BOX_CURVE_DISCRIMINATOR = 47;
 
 export function getOpenBoxCurveDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(OPEN_BOX_CURVE_DISCRIMINATOR); }
 
@@ -28,7 +28,7 @@ export type OpenBoxCurveInstructionData = { discriminator: number; migrationVers
 export type OpenBoxCurveInstructionDataArgs = { inventory: number | bigint; startPrice: number | bigint; priceStep: number | bigint; feeBps: number; bump: number;  };
 
 export function getOpenBoxCurveInstructionDataEncoder(): FixedSizeEncoder<OpenBoxCurveInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['inventory', getU64Encoder()], ['startPrice', getU64Encoder()], ['priceStep', getU64Encoder()], ['feeBps', getU16Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 57, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['inventory', getU64Encoder()], ['startPrice', getU64Encoder()], ['priceStep', getU64Encoder()], ['feeBps', getU16Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 47, migrationVersion: 0 }));
 }
 
 export function getOpenBoxCurveInstructionDataDecoder(): FixedSizeDecoder<OpenBoxCurveInstructionData> {

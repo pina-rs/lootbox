@@ -16,7 +16,7 @@ class CreatePrizePoolInstructionData {
   const CreatePrizePoolInstructionData({
     required this.assetIndex,
     required this.bump,
-  }) : discriminator = 41,
+  }) : discriminator = 31,
        migrationVersion = 0;
 
   final int discriminator;
@@ -37,7 +37,7 @@ getCreatePrizePoolInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (CreatePrizePoolInstructionData value) => <String, Object?>{
-      'discriminator': 41,
+      'discriminator': 31,
       'migrationVersion': 0,
       'assetIndex': value.assetIndex,
       'bump': value.bump,
@@ -66,7 +66,7 @@ getCreatePrizePoolInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(41)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(31)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

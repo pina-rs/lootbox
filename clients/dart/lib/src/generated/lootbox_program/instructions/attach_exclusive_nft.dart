@@ -17,7 +17,7 @@ class AttachExclusiveNftInstructionData {
     required this.assetIndex,
     required this.bump,
     required this.feeVaultBump,
-  }) : discriminator = 54,
+  }) : discriminator = 44,
        migrationVersion = 0;
 
   final int discriminator;
@@ -40,7 +40,7 @@ getAttachExclusiveNftInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (AttachExclusiveNftInstructionData value) => <String, Object?>{
-      'discriminator': 54,
+      'discriminator': 44,
       'migrationVersion': 0,
       'assetIndex': value.assetIndex,
       'bump': value.bump,
@@ -71,7 +71,7 @@ getAttachExclusiveNftInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(54)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(44)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

@@ -14,7 +14,7 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class CloseTemplateOpeningInstructionData {
   const CloseTemplateOpeningInstructionData()
-    : discriminator = 24,
+    : discriminator = 14,
       migrationVersion = 0;
 
   final int discriminator;
@@ -31,7 +31,7 @@ getCloseTemplateOpeningInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (CloseTemplateOpeningInstructionData value) => <String, Object?>{
-      'discriminator': 24,
+      'discriminator': 14,
       'migrationVersion': 0,
     },
   );
@@ -56,7 +56,7 @@ getCloseTemplateOpeningInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(24)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(14)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

@@ -17,7 +17,7 @@ class SetExclusiveLayerInstructionData {
     required this.layerIndex,
     required this.traitCount,
     required this.weights,
-  }) : discriminator = 51,
+  }) : discriminator = 41,
        migrationVersion = 0;
 
   final int discriminator;
@@ -40,7 +40,7 @@ getSetExclusiveLayerInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (SetExclusiveLayerInstructionData value) => <String, Object?>{
-      'discriminator': 51,
+      'discriminator': 41,
       'migrationVersion': 0,
       'layerIndex': value.layerIndex,
       'traitCount': value.traitCount,
@@ -71,7 +71,7 @@ getSetExclusiveLayerInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(51)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(41)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

@@ -19,7 +19,7 @@ class RequestTemplateOpenInstructionData {
     required this.consumerProgram,
     required this.consumerContext,
     required this.bump,
-  }) : discriminator = 16,
+  }) : discriminator = 6,
        migrationVersion = 0;
 
   final int discriminator;
@@ -49,7 +49,7 @@ getRequestTemplateOpenInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (RequestTemplateOpenInstructionData value) => <String, Object?>{
-      'discriminator': 16,
+      'discriminator': 6,
       'migrationVersion': 0,
       'recentSlot': value.recentSlot,
       'beneficiary': value.beneficiary,
@@ -84,7 +84,7 @@ getRequestTemplateOpenInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(16)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(6)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

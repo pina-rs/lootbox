@@ -14,7 +14,7 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class CancelPrizePoolItemInstructionData {
   const CancelPrizePoolItemInstructionData()
-    : discriminator = 49,
+    : discriminator = 39,
       migrationVersion = 0;
 
   final int discriminator;
@@ -31,7 +31,7 @@ getCancelPrizePoolItemInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (CancelPrizePoolItemInstructionData value) => <String, Object?>{
-      'discriminator': 49,
+      'discriminator': 39,
       'migrationVersion': 0,
     },
   );
@@ -56,7 +56,7 @@ getCancelPrizePoolItemInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(49)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(39)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

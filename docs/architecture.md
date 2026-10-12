@@ -2,80 +2,76 @@
 
 ## Design goals
 
-The original single-reward flow optimizes for a small auditable core:
+The treasury-template protocol optimizes for a small auditable core:
 
 - one box token equals one future draw;
-- outcome odds become immutable before boxes exist;
+- every bundle is fully escrowed before any box exists;
 - oracle initialization, commitment, and box burn happen atomically;
-- oracle reveal and reward settlement happen atomically;
+- oracle reveal, allocation, and claim delivery are permissionless relays;
 - payouts can never depend on the authority remaining online;
 - every outstanding claim is funded at its worst possible value.
 
-That compact flow deliberately supports SOL payouts only. Arbitrary SPL tokens, NFTs, bundles, metadata standards, and pluggable payout adapters are provided by treasury templates.
+A template controls a zero-decimal Token-2022 box mint and an append-only inventory of prize bundles. Opening burns one box before randomness is known, records the exact Switchboard commitment, then allocates one escrowed bundle uniformly without replacement after that commitment is revealed.
 
 ## Accounts
 
-### `LootboxState`
+### `TemplateState`
 
-Definition and accounting PDA derived from `['lootbox', authority, id]`. It stores the mint, selected Switchboard program and queue, at most eight `(weight, reward_lamports)` pairs, maximum supply, live counters, and canonical PDA bumps.
+Treasury template derived from `['template', authority, id]`. It stores the box mint, selected Switchboard program and queue, bundle inventory counters, activated ticket accounting, market-lock and reveal terms, and canonical PDA bumps. See [Treasury templates](treasury-templates.md).
 
-### `VaultState`
+### `BundleState`
 
-Program-owned SOL vault derived from `['vault', lootbox]`. It stores only its parent lootbox, immutable rent reserve, and bump. Keeping rewards in a separate account prevents definition data from being resized or entangled with payout accounting.
+Prize bundle derived from `['bundle', template, index]`. It stores up to four fully escrowed prize assets, its ticket count, and funding/activation status. Activation appends a funded bundle to the template's live inventory and its tickets to the issuance cap.
 
-### `OpeningState`
+### `TemplateOpeningState`
 
-Per-draw receipt derived from `['opening', lootbox, randomness]`. It binds the burned box to one randomness account, seed slot, and recipient. Its terminal state records either the selected outcome and payout or a refund.
+Per-draw receipt derived from `['template-opening', template, randomness]`. It binds the burned box to one randomness account, seed slot, and beneficiary, and records the entropy-verified allocation outcome.
+
+### `ResultReceiptState`
+
+Immutable allocation result derived from `['result-receipt', opening, sequence]`. It binds one allocated asset slot to its opening so each prize can be claimed independently.
+
+The remaining program-owned accounts — `PrizePoolState`, `PrizePoolItemState`, `ExclusiveCollectionState`, `ExclusiveAttachmentState`, and `BoxCurveState` — hold Bubblegum prize-pool custody, layered Exclusive NFT collections, and box bonding curves; [PrizePools](prize-pools.md), [Exclusive NFTs](exclusive-nfts.md), and [Box curves](box-curves.md) document them.
 
 ## State transitions
 
 ```text
-draft --add_outcome--> draft --seal--> sealed --mint_boxes--> circulating
-                                                       |
-                            request_open + init CPI + commit CPI + burn
-                                                       v
-                                                    pending
-                                                   /       \
-                          reveal CPI + settle_open /         \ refund_open
-                                                 v           v
-                                             settled      floor paid
-                                                   \       /
-                                    oracle close + close_opening
+draft --add_bundle/fund--> staged --activate_bundle--> live --lock_treasury--> locked
+                                                                   |
+             request_open + init CPI + commit CPI + burn           v
+                                                                pending
+                                                       fulfill (reveal CPI)
+                                                                   v
+                                                               allocated
+                                                     /       |       \
+                                      claim_prize   claim_prize  ...   forfeit (timeout)
+                                                   \       |       /
+                                                    close_template_opening
 ```
 
-`seal` is irreversible. A pending opening is also irreversible except through its two explicit terminal paths: revealed settlement or an unrevealed timeout refund.
+`lockTreasury` is irreversible. An opening is irreversible except through its two terminal paths: entropy-verified allocation with per-asset claims, or an unrevealed timeout forfeiture that consumes no inventory, never remints the box, and never changes the beneficiary.
 
 ## Solvency model
 
-The liability count is the live SPL mint supply plus pending openings. Burning moves one unit from supply to pending and does not reduce liability. Settlement removes one pending unit and pays its selected reward; timeout refund removes one pending unit and pays the minimum configured reward. Neither path changes live mint supply. Therefore each transition preserves:
-
-```text
-available vault lamports >= active claims * maximum reward
-```
-
-The program reads the actual SPL mint supply instead of inferring it solely from counters. Direct holder burns therefore reduce liability safely, while unauthorized minting remains impossible because the lootbox PDA is the mint authority.
-
-`withdraw_surplus` is authority-only and computes the same invariant against the live mint before transferring a lamport. Vault rent is never withdrawable.
+Activated tickets are the lifetime issuance cap: box supply plus pending openings may never exceed undrawn tickets, and minting stops at the cap. Every ticket is backed by its bundle's fully escrowed assets before activation, so no transition can create an unfunded claim. Retirement and reclamation return only inventory that no live ticket can still draw.
 
 ## Selection
 
 The oracle's 32-byte value is hashed with:
 
 - domain separator `pina-lootbox-outcome`;
-- lootbox address;
+- template address;
 - opening address;
 - a retry counter.
 
-The first eight bytes become a little-endian `u64`. Rejection sampling discards the small high-range remainder that would otherwise create modulo bias, then maps the result into the cumulative weight table. The protocol caps the sum of weights at `u32::MAX`, so one sample rejects with probability below `2^-32`. After eight rejected hashes, a deterministic modulo fallback guarantees settlement; the probability of reaching that fallback—and therefore the statistical distance it can introduce—is below `2^-256` under the SHA-256 random-oracle assumption.
+The first eight bytes become a little-endian `u64`. Rejection sampling discards the small high-range remainder that would otherwise create modulo bias, then maps the result into the undrawn ticket count. The protocol caps the sampling domain at `u32::MAX`, so one sample rejects with probability below `2^-32`. After eight rejected hashes, a deterministic modulo fallback guarantees settlement; the probability of reaching that fallback—and therefore the statistical distance it can introduce—is below `2^-256` under the SHA-256 random-oracle assumption.
 
 ## Trust and liveness
 
-The lootbox authority controls configuration, minting within `max_supply`, deposits, and genuine surplus withdrawals. It cannot change a sealed reward table, redirect a payout, choose a revealed outcome, or block settlement.
+The template authority controls configuration, bundle staging, activation, and minting within the activated inventory. It cannot change a locked template, redirect a payout, choose an allocated outcome, or block settlement. Anyone may relay the reveal, allocation, and claims: the program pins the beneficiary on the opening, so a relayer can never redirect a prize.
 
-The opening PDA—not the holder or lootbox authority—is each Switchboard randomness account's authority. Only the Lootbox program can initialize, commit, reveal, or close through that PDA. Switchboard is the external trust/liveness dependency: if no relayer settles within 300 slots, the recipient can claim the minimum configured reward. A holder gains nothing by withholding an unfavorable off-chain proof because timeout never pays more than the authentic outcome and never creates another draw; the recipient signature also prevents a third party from forcing that lower floor payout.
+The opening PDA—not the holder or template authority—is each Switchboard randomness account's authority. Only the Lootbox program can initialize, commit, reveal, or close through that PDA. Switchboard is the external trust/liveness dependency: if no relayer fulfills within 300 slots, an uninvolved signer can forfeit the FIFO head so later openings can allocate, and any configured settlement bounty still goes to the bound beneficiary.
 
-## Treasury templates
-
-Treasury templates now provide compact append-only inventories, SPL and Token-2022 rewards, Metadata/Core/compressed NFTs, entropy-selected Bubblegum PrizePools, winner-routed quote delivery, capped badge minting, and an interactive local Surfpool playground. See [Treasury templates](treasury-templates.md) for the current account model, [PrizePools](prize-pools.md) for compressed-NFT custody, and [Dynamic prize delivery](dynamic-prizes.md) for the remaining adapter decisions.
+## Production readiness
 
 The unfinished protocol work is fixed bonding-curve adapters and fresh supply-one NFT minting. Production release work remains separate and includes an external audit, real Bubblegum and Switchboard devnet journeys, sustained soak, monitoring, and incident runbooks.

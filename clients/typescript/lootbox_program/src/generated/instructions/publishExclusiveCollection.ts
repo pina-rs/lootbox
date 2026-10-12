@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const PUBLISH_EXCLUSIVE_COLLECTION_DISCRIMINATOR = 53;
+export const PUBLISH_EXCLUSIVE_COLLECTION_DISCRIMINATOR = 43;
 
 export function getPublishExclusiveCollectionDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(PUBLISH_EXCLUSIVE_COLLECTION_DISCRIMINATOR); }
 
@@ -27,7 +27,7 @@ export type PublishExclusiveCollectionInstructionData = { discriminator: number;
 export type PublishExclusiveCollectionInstructionDataArgs = {  };
 
 export function getPublishExclusiveCollectionInstructionDataEncoder(): FixedSizeEncoder<PublishExclusiveCollectionInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 53, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 43, migrationVersion: 0 }));
 }
 
 export function getPublishExclusiveCollectionInstructionDataDecoder(): FixedSizeDecoder<PublishExclusiveCollectionInstructionData> {

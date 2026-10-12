@@ -10,7 +10,7 @@ import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder, getPinaPodMigrat
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findPrizePoolItemPda, type PrizePoolItemSeeds } from '../pdas';
 
-export const PRIZE_POOL_ITEM_STATE_DISCRIMINATOR = 9;
+export const PRIZE_POOL_ITEM_STATE_DISCRIMINATOR = 6;
 
 export function getPrizePoolItemStateDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(PRIZE_POOL_ITEM_STATE_DISCRIMINATOR); }
 
@@ -24,75 +24,75 @@ export function getPrizePoolItemStateDiscriminator2Bytes(): ReadonlyUint8Array {
  * Bubblegum authorities may change verification flags after custody, so claims
  * re-prove the current metadata while pinning every semantic field.
  */
-export type PrizePoolItemState = { discriminator: number; migrationVersion: number;
+export type PrizePoolItemState = { discriminator: number; migrationVersion: number; 
 /** Prize pool PDA that holds this item; seeds this PDA. */
-pool: Address;
+pool: Address; 
 /** Bubblegum asset ID derived from the pool's tree and `nonce`. */
-asset: Address;
+asset: Address; 
 /**
  * Bubblegum leaf data hash admitted at preparation and re-checked on
  * deposit.
  */
-dataHash: ReadonlyUint8Array;
+dataHash: ReadonlyUint8Array; 
 /**
  * Bubblegum leaf creator hash admitted at preparation and re-checked on
  * deposit.
  */
-creatorHash: ReadonlyUint8Array;
+creatorHash: ReadonlyUint8Array; 
 /**
  * Hash of the canonical metadata with only collection and creator
  * verification flags zeroed; claims and reclaims must reproduce it.
  */
-semanticMetadataHash: ReadonlyUint8Array;
+semanticMetadataHash: ReadonlyUint8Array; 
 /** Restores the append-only accumulator when an unfinished tail is removed. */
-previousManifestAccumulator: ReadonlyUint8Array;
+previousManifestAccumulator: ReadonlyUint8Array; 
 /** Bubblegum leaf nonce. */
-nonce: bigint;
+nonce: bigint; 
 /** Leaf index within the Merkle tree. */
-treeIndex: number;
+treeIndex: number; 
 /** Position within the pool in deposit order; seeds this PDA. */
-poolIndex: number;
+poolIndex: number; 
 /** 0 metadata-admitted, 1 transferred into `PrizePool` custody. */
-status: number;
+status: number; 
 /** Canonical bump of this item PDA. */
 bump: number;  };
 
-export type PrizePoolItemStateArgs = {
+export type PrizePoolItemStateArgs = { 
 /** Prize pool PDA that holds this item; seeds this PDA. */
-pool: Address;
+pool: Address; 
 /** Bubblegum asset ID derived from the pool's tree and `nonce`. */
-asset: Address;
+asset: Address; 
 /**
  * Bubblegum leaf data hash admitted at preparation and re-checked on
  * deposit.
  */
-dataHash: ReadonlyUint8Array;
+dataHash: ReadonlyUint8Array; 
 /**
  * Bubblegum leaf creator hash admitted at preparation and re-checked on
  * deposit.
  */
-creatorHash: ReadonlyUint8Array;
+creatorHash: ReadonlyUint8Array; 
 /**
  * Hash of the canonical metadata with only collection and creator
  * verification flags zeroed; claims and reclaims must reproduce it.
  */
-semanticMetadataHash: ReadonlyUint8Array;
+semanticMetadataHash: ReadonlyUint8Array; 
 /** Restores the append-only accumulator when an unfinished tail is removed. */
-previousManifestAccumulator: ReadonlyUint8Array;
+previousManifestAccumulator: ReadonlyUint8Array; 
 /** Bubblegum leaf nonce. */
-nonce: number | bigint;
+nonce: number | bigint; 
 /** Leaf index within the Merkle tree. */
-treeIndex: number;
+treeIndex: number; 
 /** Position within the pool in deposit order; seeds this PDA. */
-poolIndex: number;
+poolIndex: number; 
 /** 0 metadata-admitted, 1 transferred into `PrizePool` custody. */
-status: number;
+status: number; 
 /** Canonical bump of this item PDA. */
 bump: number;  };
 
 /** Gets the encoder for {@link PrizePoolItemStateArgs} account data. */
 export function getPrizePoolItemStateEncoder(): FixedSizeEncoder<PrizePoolItemStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['pool', getAddressEncoder()], ['asset', getAddressEncoder()], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['semanticMetadataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['previousManifestAccumulator', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['treeIndex', getU32Encoder()], ['poolIndex', getU32Encoder()], ['status', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 9, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['pool', getAddressEncoder()], ['asset', getAddressEncoder()], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['semanticMetadataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['previousManifestAccumulator', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['treeIndex', getU32Encoder()], ['poolIndex', getU32Encoder()], ['status', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 6, migrationVersion: 0 }));
 }
 
 /** Gets the decoder for {@link PrizePoolItemState} account data. */
@@ -191,7 +191,7 @@ export function prizePoolItemStateNeedsMigration(data: ReadonlyUint8Array): bool
 	if (data.length < 2) {
 		return false;
 	}
-	if (data[0] !== 9) {
+	if (data[0] !== 6) {
 		return false;
 	}
 	return data[1]! < 0;

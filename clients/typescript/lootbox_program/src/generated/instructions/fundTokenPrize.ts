@@ -11,7 +11,7 @@ import { combineCodec, getBooleanDecoder, getBooleanEncoder, getStructDecoder, g
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const FUND_TOKEN_PRIZE_DISCRIMINATOR = 13;
+export const FUND_TOKEN_PRIZE_DISCRIMINATOR = 3;
 
 export function getFundTokenPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(FUND_TOKEN_PRIZE_DISCRIMINATOR); }
 
@@ -22,24 +22,24 @@ export function getFundTokenPrizeDiscriminator2Bytes(): ReadonlyUint8Array { ret
 export type FundTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountSource extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountSource extends string ? WritableAccount<TAccountSource> : TAccountSource, TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type FundTokenPrizeInstructionData = { discriminator: number; migrationVersion: number;
+export type FundTokenPrizeInstructionData = { discriminator: number; migrationVersion: number; 
 /**
  * Base units delivered per win; must be positive. A transfer-fee mint
  * charges the funder the gross amount so escrow nets this total.
  */
-amountPerWin: bigint;
+amountPerWin: bigint; 
 /**
  * Records a classic SPL NFT: requires SPL Token, supply one, zero decimals,
  * revoked mint authority, and a one-copy bundle paying one unit.
  */
 isNft: boolean;  };
 
-export type FundTokenPrizeInstructionDataArgs = {
+export type FundTokenPrizeInstructionDataArgs = { 
 /**
  * Base units delivered per win; must be positive. A transfer-fee mint
  * charges the funder the gross amount so escrow nets this total.
  */
-amountPerWin: number | bigint;
+amountPerWin: number | bigint; 
 /**
  * Records a classic SPL NFT: requires SPL Token, supply one, zero decimals,
  * revoked mint authority, and a one-copy bundle paying one unit.
@@ -47,7 +47,7 @@ amountPerWin: number | bigint;
 isNft: boolean;  };
 
 export function getFundTokenPrizeInstructionDataEncoder(): FixedSizeEncoder<FundTokenPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['amountPerWin', getU64Encoder()], ['isNft', getBooleanEncoder()]]), (value) => ({ ...value, discriminator: 13, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['amountPerWin', getU64Encoder()], ['isNft', getBooleanEncoder()]]), (value) => ({ ...value, discriminator: 3, migrationVersion: 0 }));
 }
 
 export function getFundTokenPrizeInstructionDataDecoder(): FixedSizeDecoder<FundTokenPrizeInstructionData> {

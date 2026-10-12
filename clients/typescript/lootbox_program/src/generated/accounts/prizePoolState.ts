@@ -10,7 +10,7 @@ import { fixPinaPodEncoderSize, getPinaPodBoundedArrayDecoder, getPinaPodBounded
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getArrayDecoder, getArrayEncoder, getBooleanDecoder, getBooleanEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU16Decoder, getU16Encoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type Codec, type Decoder, type EncodedAccount, type Encoder, type FetchAccountConfig, type FetchAccountsConfig, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findPrizePoolPda, type PrizePoolSeeds } from '../pdas';
 
-export const PRIZE_POOL_STATE_DISCRIMINATOR = 8;
+export const PRIZE_POOL_STATE_DISCRIMINATOR = 5;
 
 export function getPrizePoolStateDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(PRIZE_POOL_STATE_DISCRIMINATOR); }
 
@@ -25,48 +25,48 @@ export function getPrizePoolStateDiscriminator2Bytes(): ReadonlyUint8Array { ret
  * items. Per-item PDAs retain deposit snapshots while the sealed accumulator
  * commits the ordered inventory into the parent treasury manifest.
  */
-export type PrizePoolState = { discriminator: number; migrationVersion: number;
+export type PrizePoolState = { discriminator: number; migrationVersion: number; 
 /**
  * Template authority that created the pool. Receives item rent when a
  * winner claims an item.
  */
-authority: Address;
+authority: Address; 
 /** Bundle whose asset slot this pool fills; seeds this PDA. */
-bundle: Address;
+bundle: Address; 
 /** Nonzero Bubblegum Merkle tree that holds every deposited leaf. */
-tree: Address;
+tree: Address; 
 /**
  * Chained hash of every deposited item in pool order. Removing the
  * unsealed tail restores the previous value; sealing commits it into the
  * bundle slot.
  */
-manifestAccumulator: ReadonlyUint8Array;
+manifestAccumulator: ReadonlyUint8Array; 
 /**
  * Items the pool must hold before sealing; equals the bundle quantity and
  * is between one and 4,096.
  */
-quantity: bigint;
+quantity: bigint; 
 /**
  * Seal counter mixed into the bundle slot commitment; `sealPrizePool`
  * increments it from zero.
  */
-version: bigint;
+version: bigint; 
 /** Items deposited so far, and the pool index of the next item. */
-depositCursor: number;
+depositCursor: number; 
 /** Reserved items, including those already claimed by winners. */
-assignedCount: number;
+assignedCount: number; 
 /** Assigned items already delivered to their winners. */
-claimedCount: number;
+claimedCount: number; 
 /** Items returned to the creator from the sealed pool. */
-reclaimedCount: number;
+reclaimedCount: number; 
 /** Bundle asset slot this pool fills; seeds this PDA. */
-assetIndex: number;
+assetIndex: number; 
 /** 0 funding, 1 sealed. */
-status: number;
+status: number; 
 /** One metadata-admitted item PDA exists at `deposit_cursor`. */
-hasPreparedItem: boolean;
+hasPreparedItem: boolean; 
 /** Canonical bump of this prize pool PDA. */
-bump: number;
+bump: number; 
 /**
  * A set bit means the item cannot be allocated again.
  * Holds one bit per deposited item, so its length is `deposit_cursor`
@@ -74,48 +74,48 @@ bump: number;
  */
 unavailable: Array<number>;  };
 
-export type PrizePoolStateArgs = {
+export type PrizePoolStateArgs = { 
 /**
  * Template authority that created the pool. Receives item rent when a
  * winner claims an item.
  */
-authority: Address;
+authority: Address; 
 /** Bundle whose asset slot this pool fills; seeds this PDA. */
-bundle: Address;
+bundle: Address; 
 /** Nonzero Bubblegum Merkle tree that holds every deposited leaf. */
-tree: Address;
+tree: Address; 
 /**
  * Chained hash of every deposited item in pool order. Removing the
  * unsealed tail restores the previous value; sealing commits it into the
  * bundle slot.
  */
-manifestAccumulator: ReadonlyUint8Array;
+manifestAccumulator: ReadonlyUint8Array; 
 /**
  * Items the pool must hold before sealing; equals the bundle quantity and
  * is between one and 4,096.
  */
-quantity: number | bigint;
+quantity: number | bigint; 
 /**
  * Seal counter mixed into the bundle slot commitment; `sealPrizePool`
  * increments it from zero.
  */
-version: number | bigint;
+version: number | bigint; 
 /** Items deposited so far, and the pool index of the next item. */
-depositCursor: number;
+depositCursor: number; 
 /** Reserved items, including those already claimed by winners. */
-assignedCount: number;
+assignedCount: number; 
 /** Assigned items already delivered to their winners. */
-claimedCount: number;
+claimedCount: number; 
 /** Items returned to the creator from the sealed pool. */
-reclaimedCount: number;
+reclaimedCount: number; 
 /** Bundle asset slot this pool fills; seeds this PDA. */
-assetIndex: number;
+assetIndex: number; 
 /** 0 funding, 1 sealed. */
-status: number;
+status: number; 
 /** One metadata-admitted item PDA exists at `deposit_cursor`. */
-hasPreparedItem: boolean;
+hasPreparedItem: boolean; 
 /** Canonical bump of this prize pool PDA. */
-bump: number;
+bump: number; 
 /**
  * A set bit means the item cannot be allocated again.
  * Holds one bit per deposited item, so its length is `deposit_cursor`
@@ -125,7 +125,7 @@ unavailable: Array<number>;  };
 
 /** Gets the encoder for {@link PrizePoolStateArgs} account data. */
 export function getPrizePoolStateEncoder(): Encoder<PrizePoolStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['authority', getAddressEncoder()], ['bundle', getAddressEncoder()], ['tree', getAddressEncoder()], ['manifestAccumulator', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['quantity', getU64Encoder()], ['version', getU64Encoder()], ['depositCursor', getU32Encoder()], ['assignedCount', getU32Encoder()], ['claimedCount', getU32Encoder()], ['reclaimedCount', getU32Encoder()], ['assetIndex', getU8Encoder()], ['status', getU8Encoder()], ['hasPreparedItem', getBooleanEncoder()], ['bump', getU8Encoder()], ['unavailable', getPinaPodBoundedArrayEncoder(getArrayEncoder(getU8Encoder(), { size: getU16Encoder() }), 512)]]), (value) => ({ ...value, discriminator: 8, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['authority', getAddressEncoder()], ['bundle', getAddressEncoder()], ['tree', getAddressEncoder()], ['manifestAccumulator', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['quantity', getU64Encoder()], ['version', getU64Encoder()], ['depositCursor', getU32Encoder()], ['assignedCount', getU32Encoder()], ['claimedCount', getU32Encoder()], ['reclaimedCount', getU32Encoder()], ['assetIndex', getU8Encoder()], ['status', getU8Encoder()], ['hasPreparedItem', getBooleanEncoder()], ['bump', getU8Encoder()], ['unavailable', getPinaPodBoundedArrayEncoder(getArrayEncoder(getU8Encoder(), { size: getU16Encoder() }), 512)]]), (value) => ({ ...value, discriminator: 5, migrationVersion: 0 }));
 }
 
 /** Gets the decoder for {@link PrizePoolState} account data. */
@@ -224,7 +224,7 @@ export function prizePoolStateNeedsMigration(data: ReadonlyUint8Array): boolean 
 	if (data.length < 2) {
 		return false;
 	}
-	if (data[0] !== 8) {
+	if (data[0] !== 5) {
 		return false;
 	}
 	return data[1]! < 0;

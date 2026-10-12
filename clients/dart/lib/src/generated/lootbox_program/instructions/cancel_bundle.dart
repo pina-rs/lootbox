@@ -14,7 +14,7 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class CancelBundleInstructionData {
   const CancelBundleInstructionData()
-    : discriminator = 26,
+    : discriminator = 16,
       migrationVersion = 0;
 
   final int discriminator;
@@ -30,7 +30,7 @@ Encoder<CancelBundleInstructionData> getCancelBundleInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (CancelBundleInstructionData value) => <String, Object?>{
-      'discriminator': 26,
+      'discriminator': 16,
       'migrationVersion': 0,
     },
   );
@@ -51,7 +51,7 @@ Decoder<CancelBundleInstructionData> getCancelBundleInstructionDataDecoder() {
   }
 
   (CancelBundleInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(26)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(16)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

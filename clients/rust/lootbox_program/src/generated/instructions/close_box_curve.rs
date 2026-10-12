@@ -8,7 +8,7 @@
 	clippy::too_many_arguments
 )]
 
-pub const CLOSE_BOX_CURVE_DISCRIMINATOR: u8 = 60u8;
+pub const CLOSE_BOX_CURVE_DISCRIMINATOR: u8 = 50u8;
 pub const CLOSE_BOX_CURVE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
@@ -26,22 +26,34 @@ pub struct CloseBoxCurve {
 }
 
 impl CloseBoxCurve {
-	pub fn new(authority: solana_pubkey::Pubkey, template: solana_pubkey::Pubkey, box_mint: solana_pubkey::Pubkey, curve_box_account: solana_pubkey::Pubkey, destination_box_account: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		authority: solana_pubkey::Pubkey,
+		template: solana_pubkey::Pubkey,
+		box_mint: solana_pubkey::Pubkey,
+		curve_box_account: solana_pubkey::Pubkey,
+		destination_box_account: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			authority,
 			template,
 			box_curve: solana_pubkey::Pubkey::find_program_address(
 				&["box-curve".as_bytes(), template.as_ref()],
 				&crate::LOOTBOX_PROGRAM_ID,
-			).0,
+			)
+			.0,
 			box_mint,
 			curve_box_account,
 			destination_box_account,
-			box_token_program: solana_pubkey::pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
+			box_token_program: solana_pubkey::pubkey!(
+				"TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+			),
 		}
 	}
 
-	pub fn instruction(&self, data: CloseBoxCurveInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: CloseBoxCurveInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -53,12 +65,27 @@ impl CloseBoxCurve {
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(7 + remaining_accounts.len());
 		accounts.push(solana_instruction::AccountMeta::new(self.authority, true));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.template,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.box_curve, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_mint, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.curve_box_account, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.destination_box_account, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.box_token_program, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.box_mint,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.curve_box_account,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.destination_box_account,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.box_token_program,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -74,7 +101,9 @@ pub struct CloseBoxCurveInstructionData {
 }
 
 impl CloseBoxCurveInstructionData {
-	pub fn new(configure: impl FnOnce(&mut CloseBoxCurveInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
+	pub fn new(
+		configure: impl FnOnce(&mut CloseBoxCurveInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
 		let mut bytes = vec![0u8; core::mem::size_of::<CloseBoxCurveInstructionWireZc>()];
 		<CloseBoxCurveInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
 			configure(data);
@@ -82,7 +111,7 @@ impl CloseBoxCurveInstructionData {
 			data.migration_version = CLOSE_BOX_CURVE_MIGRATION_VERSION;
 			Ok(())
 		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

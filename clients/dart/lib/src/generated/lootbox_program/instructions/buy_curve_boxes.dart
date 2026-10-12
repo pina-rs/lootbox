@@ -16,7 +16,7 @@ class BuyCurveBoxesInstructionData {
   const BuyCurveBoxesInstructionData({
     required this.count,
     required this.maxLamports,
-  }) : discriminator = 58,
+  }) : discriminator = 48,
        migrationVersion = 0;
 
   final int discriminator;
@@ -36,7 +36,7 @@ Encoder<BuyCurveBoxesInstructionData> getBuyCurveBoxesInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (BuyCurveBoxesInstructionData value) => <String, Object?>{
-      'discriminator': 58,
+      'discriminator': 48,
       'migrationVersion': 0,
       'count': value.count,
       'maxLamports': value.maxLamports,
@@ -64,7 +64,7 @@ Decoder<BuyCurveBoxesInstructionData> getBuyCurveBoxesInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(58)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(48)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

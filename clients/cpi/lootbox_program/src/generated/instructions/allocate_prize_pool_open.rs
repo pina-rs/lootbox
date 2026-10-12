@@ -6,14 +6,13 @@
 	clippy::empty_line_after_doc_comments,
 	clippy::too_many_arguments
 )]
-
 #![allow(rustdoc::broken_intra_doc_links)]
 
 use pina::AccountView;
 use pina::CpiContext;
 use pina::CpiHandle;
-use pina::ProgramResult;
 use pina::ProgramError;
+use pina::ProgramResult;
 use pina::Signer;
 
 use crate::ProgramAccount;
@@ -128,4 +127,4 @@ impl<'account> AllocatePrizePoolOpen<'account> {
 	}
 }
 
-const ALLOCATE_PRIZE_POOL_OPEN_DISCRIMINATOR: [u8; 2] = [44, 0];
+const ALLOCATE_PRIZE_POOL_OPEN_DISCRIMINATOR: [u8; 2] = [34, 0];

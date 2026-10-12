@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const CANCEL_BUNDLE_DISCRIMINATOR = 26;
+export const CANCEL_BUNDLE_DISCRIMINATOR = 16;
 
 export function getCancelBundleDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CANCEL_BUNDLE_DISCRIMINATOR); }
 
@@ -27,7 +27,7 @@ export type CancelBundleInstructionData = { discriminator: number; migrationVers
 export type CancelBundleInstructionDataArgs = {  };
 
 export function getCancelBundleInstructionDataEncoder(): FixedSizeEncoder<CancelBundleInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 26, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 16, migrationVersion: 0 }));
 }
 
 export function getCancelBundleInstructionDataDecoder(): FixedSizeDecoder<CancelBundleInstructionData> {

@@ -18,9 +18,6 @@ const lootboxProgramProgramAddress = Address(
 
 /// Known accounts for the LootboxProgram program.
 enum LootboxProgramAccount {
-  lootboxState,
-  vaultState,
-  openingState,
   templateState,
   bundleState,
   templateOpeningState,
@@ -64,16 +61,6 @@ enum LootboxProgramInstruction {
   buyCurveBoxes,
   sellCurveBoxes,
   closeBoxCurve,
-  createLootbox,
-  addOutcome,
-  deposit,
-  seal,
-  mintBoxes,
-  requestOpen,
-  settleOpen,
-  refundOpen,
-  closeOpening,
-  withdrawSurplus,
   createTemplate,
   addBundle,
   fundSolPrize,
@@ -100,251 +87,211 @@ enum LootboxProgramInstruction {
 
 /// Identifies the type of a LootboxProgram instruction.
 LootboxProgramInstruction identifyLootboxProgramInstruction(Uint8List data) {
-  if (containsBytes(data, getU8Encoder().encode(61), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(51), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.claimStrandedPrizePoolItem;
   }
-  if (containsBytes(data, getU8Encoder().encode(27), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(17), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.fundCoreAssetPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(28), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(18), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.claimCoreAssetPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(29), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(19), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.reclaimCoreAssetPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(30), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(20), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.fundCompressedNftPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(31), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(21), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.claimCompressedNftPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(32), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(22), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.reclaimCompressedNftPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(13), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(3), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.fundTokenPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(20), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(10), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.claimTokenPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(23), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(13), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.reclaimTokenPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(41), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(31), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.createPrizePool;
   }
-  if (containsBytes(data, getU8Encoder().encode(48), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(38), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.preparePrizePoolItem;
   }
-  if (containsBytes(data, getU8Encoder().encode(42), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(32), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.depositPrizePoolItem;
   }
-  if (containsBytes(data, getU8Encoder().encode(49), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(39), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.cancelPrizePoolItem;
   }
-  if (containsBytes(data, getU8Encoder().encode(43), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(33), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.sealPrizePool;
   }
-  if (containsBytes(data, getU8Encoder().encode(44), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(34), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.allocatePrizePoolOpen;
   }
-  if (containsBytes(data, getU8Encoder().encode(45), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(35), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.claimPrizePoolItem;
   }
-  if (containsBytes(data, getU8Encoder().encode(46), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(36), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.reclaimPrizePoolItem;
   }
-  if (containsBytes(data, getU8Encoder().encode(47), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(37), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.closePrizePool;
   }
-  if (containsBytes(data, getU8Encoder().encode(50), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(40), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.createExclusiveCollection;
   }
-  if (containsBytes(data, getU8Encoder().encode(51), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(41), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.setExclusiveLayer;
   }
-  if (containsBytes(data, getU8Encoder().encode(52), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(42), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.appendExclusiveTree;
   }
-  if (containsBytes(data, getU8Encoder().encode(53), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(43), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.publishExclusiveCollection;
   }
-  if (containsBytes(data, getU8Encoder().encode(54), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(44), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.attachExclusiveNft;
   }
-  if (containsBytes(data, getU8Encoder().encode(55), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(45), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.claimExclusiveNft;
   }
-  if (containsBytes(data, getU8Encoder().encode(56), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(46), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.reclaimExclusiveFees;
   }
-  if (containsBytes(data, getU8Encoder().encode(57), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(47), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.openBoxCurve;
   }
-  if (containsBytes(data, getU8Encoder().encode(58), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(48), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.buyCurveBoxes;
   }
-  if (containsBytes(data, getU8Encoder().encode(59), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(49), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.sellCurveBoxes;
   }
-  if (containsBytes(data, getU8Encoder().encode(60), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(50), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.closeBoxCurve;
   }
   if (containsBytes(data, getU8Encoder().encode(0), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.createLootbox;
+    return LootboxProgramInstruction.createTemplate;
   }
   if (containsBytes(data, getU8Encoder().encode(1), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.addOutcome;
+    return LootboxProgramInstruction.addBundle;
   }
   if (containsBytes(data, getU8Encoder().encode(2), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.deposit;
-  }
-  if (containsBytes(data, getU8Encoder().encode(3), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.seal;
+    return LootboxProgramInstruction.fundSolPrize;
   }
   if (containsBytes(data, getU8Encoder().encode(4), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.mintBoxes;
+    return LootboxProgramInstruction.sealTemplate;
   }
   if (containsBytes(data, getU8Encoder().encode(5), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.requestOpen;
+    return LootboxProgramInstruction.mintTemplateBoxes;
   }
   if (containsBytes(data, getU8Encoder().encode(6), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.settleOpen;
+    return LootboxProgramInstruction.requestTemplateOpen;
   }
   if (containsBytes(data, getU8Encoder().encode(7), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.refundOpen;
+    return LootboxProgramInstruction.fulfillTemplateOpen;
   }
   if (containsBytes(data, getU8Encoder().encode(8), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.closeOpening;
+    return LootboxProgramInstruction.allocateTemplateOpen;
   }
   if (containsBytes(data, getU8Encoder().encode(9), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.withdrawSurplus;
-  }
-  if (containsBytes(data, getU8Encoder().encode(10), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.createTemplate;
+    return LootboxProgramInstruction.claimSolPrize;
   }
   if (containsBytes(data, getU8Encoder().encode(11), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.addBundle;
+    return LootboxProgramInstruction.retireTemplate;
   }
   if (containsBytes(data, getU8Encoder().encode(12), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.fundSolPrize;
+    return LootboxProgramInstruction.reclaimSolPrize;
   }
   if (containsBytes(data, getU8Encoder().encode(14), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.sealTemplate;
+    return LootboxProgramInstruction.closeTemplateOpening;
   }
   if (containsBytes(data, getU8Encoder().encode(15), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.mintTemplateBoxes;
+    return LootboxProgramInstruction.activateBundle;
   }
   if (containsBytes(data, getU8Encoder().encode(16), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.requestTemplateOpen;
-  }
-  if (containsBytes(data, getU8Encoder().encode(17), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.fulfillTemplateOpen;
-  }
-  if (containsBytes(data, getU8Encoder().encode(18), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.allocateTemplateOpen;
-  }
-  if (containsBytes(data, getU8Encoder().encode(19), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.claimSolPrize;
-  }
-  if (containsBytes(data, getU8Encoder().encode(21), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.retireTemplate;
-  }
-  if (containsBytes(data, getU8Encoder().encode(22), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.reclaimSolPrize;
-  }
-  if (containsBytes(data, getU8Encoder().encode(24), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.closeTemplateOpening;
-  }
-  if (containsBytes(data, getU8Encoder().encode(25), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.activateBundle;
-  }
-  if (containsBytes(data, getU8Encoder().encode(26), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.cancelBundle;
   }
-  if (containsBytes(data, getU8Encoder().encode(33), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(23), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.forfeitTemplateOpen;
   }
-  if (containsBytes(data, getU8Encoder().encode(34), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(24), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.lockTreasury;
   }
-  if (containsBytes(data, getU8Encoder().encode(35), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(25), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.closeServiceVault;
   }
-  if (containsBytes(data, getU8Encoder().encode(36), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(26), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.fundQuoteSolPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(37), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(27), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.fundQuoteTokenPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(38), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(28), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.fundMintPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(39), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(29), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.claimMintPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(40), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(30), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.reclaimMintPrize;
   }
@@ -608,86 +555,6 @@ final class ParsedCloseBoxCurve extends ParsedLootboxProgramInstruction {
     : super(LootboxProgramInstruction.closeBoxCurve);
 
   final CloseBoxCurveInstructionData data;
-}
-
-/// A parsed CreateLootbox instruction.
-final class ParsedCreateLootbox extends ParsedLootboxProgramInstruction {
-  const ParsedCreateLootbox({required this.data})
-    : super(LootboxProgramInstruction.createLootbox);
-
-  final CreateLootboxInstructionData data;
-}
-
-/// A parsed AddOutcome instruction.
-final class ParsedAddOutcome extends ParsedLootboxProgramInstruction {
-  const ParsedAddOutcome({required this.data})
-    : super(LootboxProgramInstruction.addOutcome);
-
-  final AddOutcomeInstructionData data;
-}
-
-/// A parsed Deposit instruction.
-final class ParsedDeposit extends ParsedLootboxProgramInstruction {
-  const ParsedDeposit({required this.data})
-    : super(LootboxProgramInstruction.deposit);
-
-  final DepositInstructionData data;
-}
-
-/// A parsed Seal instruction.
-final class ParsedSeal extends ParsedLootboxProgramInstruction {
-  const ParsedSeal({required this.data})
-    : super(LootboxProgramInstruction.seal);
-
-  final SealInstructionData data;
-}
-
-/// A parsed MintBoxes instruction.
-final class ParsedMintBoxes extends ParsedLootboxProgramInstruction {
-  const ParsedMintBoxes({required this.data})
-    : super(LootboxProgramInstruction.mintBoxes);
-
-  final MintBoxesInstructionData data;
-}
-
-/// A parsed RequestOpen instruction.
-final class ParsedRequestOpen extends ParsedLootboxProgramInstruction {
-  const ParsedRequestOpen({required this.data})
-    : super(LootboxProgramInstruction.requestOpen);
-
-  final RequestOpenInstructionData data;
-}
-
-/// A parsed SettleOpen instruction.
-final class ParsedSettleOpen extends ParsedLootboxProgramInstruction {
-  const ParsedSettleOpen({required this.data})
-    : super(LootboxProgramInstruction.settleOpen);
-
-  final SettleOpenInstructionData data;
-}
-
-/// A parsed RefundOpen instruction.
-final class ParsedRefundOpen extends ParsedLootboxProgramInstruction {
-  const ParsedRefundOpen({required this.data})
-    : super(LootboxProgramInstruction.refundOpen);
-
-  final RefundOpenInstructionData data;
-}
-
-/// A parsed CloseOpening instruction.
-final class ParsedCloseOpening extends ParsedLootboxProgramInstruction {
-  const ParsedCloseOpening({required this.data})
-    : super(LootboxProgramInstruction.closeOpening);
-
-  final CloseOpeningInstructionData data;
-}
-
-/// A parsed WithdrawSurplus instruction.
-final class ParsedWithdrawSurplus extends ParsedLootboxProgramInstruction {
-  const ParsedWithdrawSurplus({required this.data})
-    : super(LootboxProgramInstruction.withdrawSurplus);
-
-  final WithdrawSurplusInstructionData data;
 }
 
 /// A parsed CreateTemplate instruction.
@@ -974,36 +841,6 @@ ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
     ),
     LootboxProgramInstruction.closeBoxCurve => ParsedCloseBoxCurve(
       data: parseCloseBoxCurveInstruction(instruction),
-    ),
-    LootboxProgramInstruction.createLootbox => ParsedCreateLootbox(
-      data: parseCreateLootboxInstruction(instruction),
-    ),
-    LootboxProgramInstruction.addOutcome => ParsedAddOutcome(
-      data: parseAddOutcomeInstruction(instruction),
-    ),
-    LootboxProgramInstruction.deposit => ParsedDeposit(
-      data: parseDepositInstruction(instruction),
-    ),
-    LootboxProgramInstruction.seal => ParsedSeal(
-      data: parseSealInstruction(instruction),
-    ),
-    LootboxProgramInstruction.mintBoxes => ParsedMintBoxes(
-      data: parseMintBoxesInstruction(instruction),
-    ),
-    LootboxProgramInstruction.requestOpen => ParsedRequestOpen(
-      data: parseRequestOpenInstruction(instruction),
-    ),
-    LootboxProgramInstruction.settleOpen => ParsedSettleOpen(
-      data: parseSettleOpenInstruction(instruction),
-    ),
-    LootboxProgramInstruction.refundOpen => ParsedRefundOpen(
-      data: parseRefundOpenInstruction(instruction),
-    ),
-    LootboxProgramInstruction.closeOpening => ParsedCloseOpening(
-      data: parseCloseOpeningInstruction(instruction),
-    ),
-    LootboxProgramInstruction.withdrawSurplus => ParsedWithdrawSurplus(
-      data: parseWithdrawSurplusInstruction(instruction),
     ),
     LootboxProgramInstruction.createTemplate => ParsedCreateTemplate(
       data: parseCreateTemplateInstruction(instruction),

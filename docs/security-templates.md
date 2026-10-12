@@ -1,6 +1,6 @@
 # Treasury protocol security notes
 
-This is an implementation self-review, not an independent audit or a production-readiness certificate. The [single-reward protocol review](security-review.md) still applies only to legacy discriminators 0–9.
+This is an implementation self-review, not an independent audit or a production-readiness certificate. The retired single-reward protocol review is kept as a [historical record](security-review.md).
 
 ## Security model
 

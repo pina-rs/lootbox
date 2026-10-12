@@ -140,8 +140,15 @@ function main(markdownPath, jsonPath) {
 	for (const [id, baseUnits] of baseCases) {
 		const headUnits = headCases.get(id);
 		if (headUnits === undefined) {
-			notes.push(`\`${id}\` disappeared from the head benchmark`);
-			failures.push(`missing case: ${id}`);
+			notes.push(`\`${id}\` was removed in this pull request`);
+			comparisons.push({
+				id,
+				status: "removed",
+				baseUnits,
+				headUnits: null,
+				deltaCu: null,
+				deltaPercent: null,
+			});
 			continue;
 		}
 		const approved = policy.approvedTotals?.[id];
@@ -241,12 +248,18 @@ function main(markdownPath, jsonPath) {
 			: `${formatDelta(item.deltaCu)} (${
 				formatDelta(Number(item.deltaPercent.toFixed(1)))
 			}%)`;
-		const status = item.status === "new-baseline" ? "🆕 new" : MARKDOWN_STATUS[
-			/** @type {keyof typeof MARKDOWN_STATUS} */ (item.status)
-		];
+		const status = item.status === "new-baseline"
+			? "🆕 new"
+			: item.status === "removed"
+			? "🗑️ removed"
+			: MARKDOWN_STATUS[
+				/** @type {keyof typeof MARKDOWN_STATUS} */ (item.status)
+			];
 		return `| \`${item.id}\` | ${
 			item.baseUnits === null ? "—" : item.baseUnits.toLocaleString("en-US")
-		} | ${item.headUnits.toLocaleString("en-US")} | ${delta} | ${status} |`;
+		} | ${
+			item.headUnits === null ? "—" : item.headUnits.toLocaleString("en-US")
+		} | ${delta} | ${status} |`;
 	});
 
 	const lines = [

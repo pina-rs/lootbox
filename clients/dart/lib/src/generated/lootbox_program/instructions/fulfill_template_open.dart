@@ -17,7 +17,7 @@ class FulfillTemplateOpenInstructionData {
     required this.signature,
     required this.recoveryId,
     required this.value,
-  }) : discriminator = 17,
+  }) : discriminator = 7,
        migrationVersion = 0;
 
   final int discriminator;
@@ -43,7 +43,7 @@ getFulfillTemplateOpenInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (FulfillTemplateOpenInstructionData value) => <String, Object?>{
-      'discriminator': 17,
+      'discriminator': 7,
       'migrationVersion': 0,
       'signature': value.signature,
       'recoveryId': value.recoveryId,
@@ -74,7 +74,7 @@ getFulfillTemplateOpenInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(17)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(7)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

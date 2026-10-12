@@ -10,7 +10,7 @@ import { fixPinaPodEncoderSize, getPinaPodDiscriminatorDecoder, getPinaPodMigrat
 import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getStructDecoder, getStructEncoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
 import { findBundlePda, type BundleSeeds } from '../pdas';
 
-export const BUNDLE_STATE_DISCRIMINATOR = 5;
+export const BUNDLE_STATE_DISCRIMINATOR = 2;
 
 export function getBundleStateDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(BUNDLE_STATE_DISCRIMINATOR); }
 
@@ -19,147 +19,147 @@ export const BUNDLE_STATE_DISCRIMINATOR2 = 0;
 export function getBundleStateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(BUNDLE_STATE_DISCRIMINATOR2); }
 
 /** A complete prize outcome and its escrow authority, shared across all boxes. */
-export type BundleState = { discriminator: number; migrationVersion: number;
+export type BundleState = { discriminator: number; migrationVersion: number; 
 /** Template PDA that owns this bundle and seeds its address. */
-template: Address;
+template: Address; 
 /**
  * Copies of this outcome, each one draw ticket. Fixed by `addBundle`.
  * Deposited slots (SOL, tokens, NFTs, prize pools) escrow their per-win
  * amount times this quantity. Mint-on-claim badge slots hold the mint
  * authority instead, and Exclusive NFT slots prepay `quantity` mint fees.
  */
-quantity: bigint;
+quantity: bigint; 
 /**
  * Lamports the bundle PDA held when `addBundle` created it. SOL claims
  * and reclaims always leave this reserve in the account.
  */
-rentReserve: bigint;
+rentReserve: bigint; 
 /**
  * Four asset identifiers; the zero address denotes native SOL.
  * Slots hold a mint, Core asset, compressed asset ID, `PrizePool` PDA, or
  * exclusive attachment PDA; unfunded slots stay zeroed.
  */
-mints: ReadonlyUint8Array;
+mints: ReadonlyUint8Array; 
 /**
  * Adapter-specific immutable commitments, one 32-byte value per slot.
  * Plain escrowed assets leave their commitment zeroed.
  */
-commitments: ReadonlyUint8Array;
+commitments: ReadonlyUint8Array; 
 /**
  * Four little-endian base-unit amounts paid per winning bundle.
  * Native SOL is in lamports; NFTs, badges, and prize pools use one.
  */
-amounts: ReadonlyUint8Array;
+amounts: ReadonlyUint8Array; 
 /**
  * Four little-endian counts released through claims or retirement recovery.
  * A slot's count never exceeds `quantity`.
  */
-claimed: ReadonlyUint8Array;
+claimed: ReadonlyUint8Array; 
 /**
  * Prize kind per slot: 0 SOL, 1 SPL token, 2 SPL NFT, 3 Token-2022 token,
  * 4 Token Metadata NFT, 5 Core asset, 6 compressed NFT, 7 quote SOL,
  * 8 quote token, 9 mint-on-claim badge, 10 prize pool, 11 exclusive NFT.
  * Slots at or beyond `funded_assets` are unfunded unless reserved.
  */
-kinds: ReadonlyUint8Array;
+kinds: ReadonlyUint8Array; 
 /** Mint decimals per slot: 9 for native SOL and 0 for unique assets. */
-decimals: ReadonlyUint8Array;
+decimals: ReadonlyUint8Array; 
 /**
  * Template `revision` assigned by `activateBundle`; zero while funding.
  * Allocation rejects the bundle for openings snapshotted before it.
  */
-activatedRevision: bigint;
+activatedRevision: bigint; 
 /** Append-order position within the template; seeds this PDA. */
-index: number;
+index: number; 
 /** Declared asset slots, one to four, fixed by `addBundle`. */
-assetCount: number;
+assetCount: number; 
 /**
  * Slots funded so far; funding fills slots in order at this index. A
  * prize pool slot counts only once the pool is sealed.
  */
-fundedAssets: number;
+fundedAssets: number; 
 /**
  * Bit `i` is set once slot `i`'s undrawn inventory is fully returned to
  * the creator by a reclaim instruction.
  */
-reclaimedMask: number;
+reclaimedMask: number; 
 /** 0 funding, 1 active. */
-status: number;
+status: number; 
 /** Canonical bump of this bundle PDA. */
 bump: number;  };
 
-export type BundleStateArgs = {
+export type BundleStateArgs = { 
 /** Template PDA that owns this bundle and seeds its address. */
-template: Address;
+template: Address; 
 /**
  * Copies of this outcome, each one draw ticket. Fixed by `addBundle`.
  * Deposited slots (SOL, tokens, NFTs, prize pools) escrow their per-win
  * amount times this quantity. Mint-on-claim badge slots hold the mint
  * authority instead, and Exclusive NFT slots prepay `quantity` mint fees.
  */
-quantity: number | bigint;
+quantity: number | bigint; 
 /**
  * Lamports the bundle PDA held when `addBundle` created it. SOL claims
  * and reclaims always leave this reserve in the account.
  */
-rentReserve: number | bigint;
+rentReserve: number | bigint; 
 /**
  * Four asset identifiers; the zero address denotes native SOL.
  * Slots hold a mint, Core asset, compressed asset ID, `PrizePool` PDA, or
  * exclusive attachment PDA; unfunded slots stay zeroed.
  */
-mints: ReadonlyUint8Array;
+mints: ReadonlyUint8Array; 
 /**
  * Adapter-specific immutable commitments, one 32-byte value per slot.
  * Plain escrowed assets leave their commitment zeroed.
  */
-commitments: ReadonlyUint8Array;
+commitments: ReadonlyUint8Array; 
 /**
  * Four little-endian base-unit amounts paid per winning bundle.
  * Native SOL is in lamports; NFTs, badges, and prize pools use one.
  */
-amounts: ReadonlyUint8Array;
+amounts: ReadonlyUint8Array; 
 /**
  * Four little-endian counts released through claims or retirement recovery.
  * A slot's count never exceeds `quantity`.
  */
-claimed: ReadonlyUint8Array;
+claimed: ReadonlyUint8Array; 
 /**
  * Prize kind per slot: 0 SOL, 1 SPL token, 2 SPL NFT, 3 Token-2022 token,
  * 4 Token Metadata NFT, 5 Core asset, 6 compressed NFT, 7 quote SOL,
  * 8 quote token, 9 mint-on-claim badge, 10 prize pool, 11 exclusive NFT.
  * Slots at or beyond `funded_assets` are unfunded unless reserved.
  */
-kinds: ReadonlyUint8Array;
+kinds: ReadonlyUint8Array; 
 /** Mint decimals per slot: 9 for native SOL and 0 for unique assets. */
-decimals: ReadonlyUint8Array;
+decimals: ReadonlyUint8Array; 
 /**
  * Template `revision` assigned by `activateBundle`; zero while funding.
  * Allocation rejects the bundle for openings snapshotted before it.
  */
-activatedRevision: number | bigint;
+activatedRevision: number | bigint; 
 /** Append-order position within the template; seeds this PDA. */
-index: number;
+index: number; 
 /** Declared asset slots, one to four, fixed by `addBundle`. */
-assetCount: number;
+assetCount: number; 
 /**
  * Slots funded so far; funding fills slots in order at this index. A
  * prize pool slot counts only once the pool is sealed.
  */
-fundedAssets: number;
+fundedAssets: number; 
 /**
  * Bit `i` is set once slot `i`'s undrawn inventory is fully returned to
  * the creator by a reclaim instruction.
  */
-reclaimedMask: number;
+reclaimedMask: number; 
 /** 0 funding, 1 active. */
-status: number;
+status: number; 
 /** Canonical bump of this bundle PDA. */
 bump: number;  };
 
 /** Gets the encoder for {@link BundleStateArgs} account data. */
 export function getBundleStateEncoder(): FixedSizeEncoder<BundleStateArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['template', getAddressEncoder()], ['quantity', getU64Encoder()], ['rentReserve', getU64Encoder()], ['mints', fixPinaPodEncoderSize(getBytesEncoder(), 128)], ['commitments', fixPinaPodEncoderSize(getBytesEncoder(), 128)], ['amounts', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['claimed', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['kinds', fixPinaPodEncoderSize(getBytesEncoder(), 4)], ['decimals', fixPinaPodEncoderSize(getBytesEncoder(), 4)], ['activatedRevision', getU64Encoder()], ['index', getU32Encoder()], ['assetCount', getU8Encoder()], ['fundedAssets', getU8Encoder()], ['reclaimedMask', getU8Encoder()], ['status', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 5, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['template', getAddressEncoder()], ['quantity', getU64Encoder()], ['rentReserve', getU64Encoder()], ['mints', fixPinaPodEncoderSize(getBytesEncoder(), 128)], ['commitments', fixPinaPodEncoderSize(getBytesEncoder(), 128)], ['amounts', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['claimed', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['kinds', fixPinaPodEncoderSize(getBytesEncoder(), 4)], ['decimals', fixPinaPodEncoderSize(getBytesEncoder(), 4)], ['activatedRevision', getU64Encoder()], ['index', getU32Encoder()], ['assetCount', getU8Encoder()], ['fundedAssets', getU8Encoder()], ['reclaimedMask', getU8Encoder()], ['status', getU8Encoder()], ['bump', getU8Encoder()]]), (value) => ({ ...value, discriminator: 2, migrationVersion: 0 }));
 }
 
 /** Gets the decoder for {@link BundleState} account data. */
@@ -258,7 +258,7 @@ export function bundleStateNeedsMigration(data: ReadonlyUint8Array): boolean {
 	if (data.length < 2) {
 		return false;
 	}
-	if (data[0] !== 5) {
+	if (data[0] !== 2) {
 		return false;
 	}
 	return data[1]! < 0;

@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const RECLAIM_EXCLUSIVE_FEES_DISCRIMINATOR = 56;
+export const RECLAIM_EXCLUSIVE_FEES_DISCRIMINATOR = 46;
 
 export function getReclaimExclusiveFeesDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(RECLAIM_EXCLUSIVE_FEES_DISCRIMINATOR); }
 
@@ -22,16 +22,16 @@ export function getReclaimExclusiveFeesDiscriminator2Bytes(): ReadonlyUint8Array
 export type ReclaimExclusiveFeesInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountExclusiveAttachment extends string | AccountMeta<string> = string, TAccountFeeVault extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountExclusiveAttachment extends string ? WritableAccount<TAccountExclusiveAttachment> : TAccountExclusiveAttachment, TAccountFeeVault extends string ? WritableAccount<TAccountFeeVault> : TAccountFeeVault, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type ReclaimExclusiveFeesInstructionData = { discriminator: number; migrationVersion: number;
+export type ReclaimExclusiveFeesInstructionData = { discriminator: number; migrationVersion: number; 
 /** Manifest slot bound to the attachment. */
 assetIndex: number;  };
 
-export type ReclaimExclusiveFeesInstructionDataArgs = {
+export type ReclaimExclusiveFeesInstructionDataArgs = { 
 /** Manifest slot bound to the attachment. */
 assetIndex: number;  };
 
 export function getReclaimExclusiveFeesInstructionDataEncoder(): FixedSizeEncoder<ReclaimExclusiveFeesInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 56, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 46, migrationVersion: 0 }));
 }
 
 export function getReclaimExclusiveFeesInstructionDataDecoder(): FixedSizeDecoder<ReclaimExclusiveFeesInstructionData> {

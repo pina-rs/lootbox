@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU8Decoder, getU8En
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR = 29;
+export const RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR = 19;
 
 export function getReclaimCoreAssetPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(RECLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR); }
 
@@ -22,14 +22,14 @@ export function getReclaimCoreAssetPrizeDiscriminator2Bytes(): ReadonlyUint8Arra
 export type ReclaimCoreAssetPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountAsset extends string | AccountMeta<string> = string, TAccountCollection extends string | AccountMeta<string> = string, TAccountCoreProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountPluginAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountAsset extends string ? WritableAccount<TAccountAsset> : TAccountAsset, TAccountCollection extends string ? ReadonlyAccount<TAccountCollection> : TAccountCollection, TAccountCoreProgram extends string ? ReadonlyAccount<TAccountCoreProgram> : TAccountCoreProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountPluginAccounts extends string ? ReadonlyAccount<TAccountPluginAccounts> : TAccountPluginAccounts, ...TRemainingAccounts]>;
 
-export type ReclaimCoreAssetPrizeInstructionData = { discriminator: number; migrationVersion: number;
+export type ReclaimCoreAssetPrizeInstructionData = { discriminator: number; migrationVersion: number; 
 /**
  * Bundle slot holding the asset. Must be below the bundle's
  * `funded_assets` and hold a Core asset whose address is `asset`.
  */
 assetIndex: number;  };
 
-export type ReclaimCoreAssetPrizeInstructionDataArgs = {
+export type ReclaimCoreAssetPrizeInstructionDataArgs = { 
 /**
  * Bundle slot holding the asset. Must be below the bundle's
  * `funded_assets` and hold a Core asset whose address is `asset`.
@@ -37,7 +37,7 @@ export type ReclaimCoreAssetPrizeInstructionDataArgs = {
 assetIndex: number;  };
 
 export function getReclaimCoreAssetPrizeInstructionDataEncoder(): FixedSizeEncoder<ReclaimCoreAssetPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 29, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()]]), (value) => ({ ...value, discriminator: 19, migrationVersion: 0 }));
 }
 
 export function getReclaimCoreAssetPrizeInstructionDataDecoder(): FixedSizeDecoder<ReclaimCoreAssetPrizeInstructionData> {

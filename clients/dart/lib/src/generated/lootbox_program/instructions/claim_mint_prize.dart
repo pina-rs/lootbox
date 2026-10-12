@@ -14,7 +14,7 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class ClaimMintPrizeInstructionData {
   const ClaimMintPrizeInstructionData({required this.assetIndex})
-    : discriminator = 39,
+    : discriminator = 29,
       migrationVersion = 0;
 
   final int discriminator;
@@ -33,7 +33,7 @@ getClaimMintPrizeInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (ClaimMintPrizeInstructionData value) => <String, Object?>{
-      'discriminator': 39,
+      'discriminator': 29,
       'migrationVersion': 0,
       'assetIndex': value.assetIndex,
     },
@@ -60,7 +60,7 @@ getClaimMintPrizeInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(39)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(29)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

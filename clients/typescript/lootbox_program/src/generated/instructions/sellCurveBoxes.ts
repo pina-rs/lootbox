@@ -12,7 +12,7 @@ import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type I
 import { findBoxCurvePda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const SELL_CURVE_BOXES_DISCRIMINATOR = 59;
+export const SELL_CURVE_BOXES_DISCRIMINATOR = 49;
 
 export function getSellCurveBoxesDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(SELL_CURVE_BOXES_DISCRIMINATOR); }
 
@@ -23,16 +23,16 @@ export function getSellCurveBoxesDiscriminator2Bytes(): ReadonlyUint8Array { ret
 export type SellCurveBoxesInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountSeller extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxCurve extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountSourceBoxAccount extends string | AccountMeta<string> = string, TAccountCurveBoxAccount extends string | AccountMeta<string> = string, TAccountAuthority extends string | AccountMeta<string> = string, TAccountBoxTokenProgram extends string | AccountMeta<string> = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountSeller extends string ? WritableSignerAccount<TAccountSeller> & AccountSignerMeta<TAccountSeller> : TAccountSeller, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxCurve extends string ? WritableAccount<TAccountBoxCurve> : TAccountBoxCurve, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountSourceBoxAccount extends string ? WritableAccount<TAccountSourceBoxAccount> : TAccountSourceBoxAccount, TAccountCurveBoxAccount extends string ? WritableAccount<TAccountCurveBoxAccount> : TAccountCurveBoxAccount, TAccountAuthority extends string ? WritableAccount<TAccountAuthority> : TAccountAuthority, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, ...TRemainingAccounts]>;
 
-export type SellCurveBoxesInstructionData = { discriminator: number; migrationVersion: number; count: bigint;
+export type SellCurveBoxesInstructionData = { discriminator: number; migrationVersion: number; count: bigint; 
 /** Least the seller will accept after the fee. */
 minLamports: bigint;  };
 
-export type SellCurveBoxesInstructionDataArgs = { count: number | bigint;
+export type SellCurveBoxesInstructionDataArgs = { count: number | bigint; 
 /** Least the seller will accept after the fee. */
 minLamports: number | bigint;  };
 
 export function getSellCurveBoxesInstructionDataEncoder(): FixedSizeEncoder<SellCurveBoxesInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['count', getU64Encoder()], ['minLamports', getU64Encoder()]]), (value) => ({ ...value, discriminator: 59, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['count', getU64Encoder()], ['minLamports', getU64Encoder()]]), (value) => ({ ...value, discriminator: 49, migrationVersion: 0 }));
 }
 
 export function getSellCurveBoxesInstructionDataDecoder(): FixedSizeDecoder<SellCurveBoxesInstructionData> {

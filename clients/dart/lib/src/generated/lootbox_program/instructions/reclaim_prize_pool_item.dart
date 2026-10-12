@@ -21,7 +21,7 @@ class ReclaimPrizePoolItemInstructionData {
     required this.nonce,
     required this.index,
     required this.metadata,
-  }) : discriminator = 46,
+  }) : discriminator = 36,
        migrationVersion = 0;
 
   final int discriminator;
@@ -65,7 +65,7 @@ getReclaimPrizePoolItemInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (ReclaimPrizePoolItemInstructionData value) => <String, Object?>{
-      'discriminator': 46,
+      'discriminator': 36,
       'migrationVersion': 0,
       'poolIndex': value.poolIndex,
       'root': value.root,
@@ -113,7 +113,7 @@ getReclaimPrizePoolItemInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(46)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(36)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

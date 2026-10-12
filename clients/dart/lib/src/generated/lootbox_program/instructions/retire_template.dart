@@ -14,7 +14,7 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class RetireTemplateInstructionData {
   const RetireTemplateInstructionData()
-    : discriminator = 21,
+    : discriminator = 11,
       migrationVersion = 0;
 
   final int discriminator;
@@ -31,7 +31,7 @@ getRetireTemplateInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (RetireTemplateInstructionData value) => <String, Object?>{
-      'discriminator': 21,
+      'discriminator': 11,
       'migrationVersion': 0,
     },
   );
@@ -56,7 +56,7 @@ getRetireTemplateInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(21)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(11)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

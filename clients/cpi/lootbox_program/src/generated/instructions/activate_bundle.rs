@@ -6,14 +6,13 @@
 	clippy::empty_line_after_doc_comments,
 	clippy::too_many_arguments
 )]
-
 #![allow(rustdoc::broken_intra_doc_links)]
 
 use pina::AccountView;
 use pina::CpiContext;
 use pina::CpiHandle;
-use pina::ProgramResult;
 use pina::ProgramError;
+use pina::ProgramResult;
 use pina::Signer;
 
 use crate::ProgramAccount;
@@ -98,4 +97,4 @@ impl<'account> ActivateBundle<'account> {
 	}
 }
 
-const ACTIVATE_BUNDLE_DISCRIMINATOR: [u8; 2] = [25, 0];
+const ACTIVATE_BUNDLE_DISCRIMINATOR: [u8; 2] = [15, 0];

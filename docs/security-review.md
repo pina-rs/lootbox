@@ -1,5 +1,7 @@
 # Security Review
 
+> **Retired scope.** The single-reward instructions this review covers were removed from the program before release; nothing in this document describes deployed code anymore. It is kept as a historical record of the review the retired family passed. The operative security document is the [treasury protocol security review](security-templates.md).
+
 Review date: 2026-09-03\
 Scope: lootbox program, generated account surface, handwritten SDK validation, test oracle boundary, and playground gateway\
 Reviewer: internal implementation review plus automated pull-request review; this is not a substitute for an independent production audit

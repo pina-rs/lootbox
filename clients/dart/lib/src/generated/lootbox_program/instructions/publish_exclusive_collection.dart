@@ -14,7 +14,7 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class PublishExclusiveCollectionInstructionData {
   const PublishExclusiveCollectionInstructionData()
-    : discriminator = 53,
+    : discriminator = 43,
       migrationVersion = 0;
 
   final int discriminator;
@@ -31,7 +31,7 @@ getPublishExclusiveCollectionInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (PublishExclusiveCollectionInstructionData value) => <String, Object?>{
-      'discriminator': 53,
+      'discriminator': 43,
       'migrationVersion': 0,
     },
   );
@@ -56,7 +56,7 @@ getPublishExclusiveCollectionInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(53)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(43)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

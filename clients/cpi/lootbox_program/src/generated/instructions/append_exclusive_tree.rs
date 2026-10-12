@@ -6,14 +6,13 @@
 	clippy::empty_line_after_doc_comments,
 	clippy::too_many_arguments
 )]
-
 #![allow(rustdoc::broken_intra_doc_links)]
 
 use pina::AccountView;
 use pina::CpiContext;
 use pina::CpiHandle;
-use pina::ProgramResult;
 use pina::ProgramError;
+use pina::ProgramResult;
 use pina::Signer;
 
 use crate::ProgramAccount;
@@ -136,4 +135,4 @@ impl<'account> AppendExclusiveTree<'account> {
 	}
 }
 
-const APPEND_EXCLUSIVE_TREE_DISCRIMINATOR: [u8; 2] = [52, 0];
+const APPEND_EXCLUSIVE_TREE_DISCRIMINATOR: [u8; 2] = [42, 0];

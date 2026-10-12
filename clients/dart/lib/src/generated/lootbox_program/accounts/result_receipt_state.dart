@@ -28,7 +28,7 @@ class ResultReceiptState {
     required this.selectedPoolAsset,
     required this.hasPoolAssignment,
     required this.bump,
-  }) : discriminator = 7,
+  }) : discriminator = 4,
        migrationVersion = 0;
 
   final int discriminator;
@@ -124,7 +124,7 @@ Encoder<ResultReceiptState> getResultReceiptStateEncoder() {
   return transformEncoder(
     structEncoder,
     (ResultReceiptState value) => <String, Object?>{
-      'discriminator': 7,
+      'discriminator': 4,
       'migrationVersion': 0,
       'template': value.template,
       'opening': value.opening,
@@ -173,7 +173,7 @@ Decoder<ResultReceiptState> getResultReceiptStateDecoder() {
   }
 
   (ResultReceiptState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(7)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(4)).read(bytes, offset + 0);
     final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
     if (storedMigrationVersion != 0) {
       throw StateError(
@@ -249,7 +249,7 @@ bool resultReceiptStateNeedsMigration(List<int> data) {
   if (data.length < 2) {
     return false;
   }
-  if (data[0] != 7) {
+  if (data[0] != 4) {
     return false;
   }
   return data[1] < 0;

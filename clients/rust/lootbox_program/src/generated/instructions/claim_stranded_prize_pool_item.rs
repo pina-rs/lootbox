@@ -13,7 +13,7 @@
 /// The opening, item, and bundle bindings alone prove the assignment, so the
 /// bound beneficiary keeps an unlimited claim window even once the pool's rent
 /// has been recovered.
-pub const CLAIM_STRANDED_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 61u8;
+pub const CLAIM_STRANDED_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 51u8;
 pub const CLAIM_STRANDED_PRIZE_POOL_ITEM_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.
@@ -51,7 +51,21 @@ pub struct ClaimStrandedPrizePoolItem {
 }
 
 impl ClaimStrandedPrizePoolItem {
-	pub fn new(template: solana_pubkey::Pubkey, opening: solana_pubkey::Pubkey, bundle: solana_pubkey::Pubkey, prize_pool: solana_pubkey::Pubkey, prize_pool_item: solana_pubkey::Pubkey, recipient: solana_pubkey::Pubkey, rent_refund: solana_pubkey::Pubkey, tree_config: solana_pubkey::Pubkey, merkle_tree: solana_pubkey::Pubkey, bubblegum_program: solana_pubkey::Pubkey, log_wrapper: solana_pubkey::Pubkey, compression_program: solana_pubkey::Pubkey, proof_accounts: solana_pubkey::Pubkey) -> Self {
+	pub fn new(
+		template: solana_pubkey::Pubkey,
+		opening: solana_pubkey::Pubkey,
+		bundle: solana_pubkey::Pubkey,
+		prize_pool: solana_pubkey::Pubkey,
+		prize_pool_item: solana_pubkey::Pubkey,
+		recipient: solana_pubkey::Pubkey,
+		rent_refund: solana_pubkey::Pubkey,
+		tree_config: solana_pubkey::Pubkey,
+		merkle_tree: solana_pubkey::Pubkey,
+		bubblegum_program: solana_pubkey::Pubkey,
+		log_wrapper: solana_pubkey::Pubkey,
+		compression_program: solana_pubkey::Pubkey,
+		proof_accounts: solana_pubkey::Pubkey,
+	) -> Self {
 		Self {
 			template,
 			opening,
@@ -70,7 +84,10 @@ impl ClaimStrandedPrizePoolItem {
 		}
 	}
 
-	pub fn instruction(&self, data: ClaimStrandedPrizePoolItemInstructionData) -> solana_instruction::Instruction {
+	pub fn instruction(
+		&self,
+		data: ClaimStrandedPrizePoolItemInstructionData,
+	) -> solana_instruction::Instruction {
 		self.instruction_with_remaining_accounts(data, &[])
 	}
 
@@ -81,20 +98,56 @@ impl ClaimStrandedPrizePoolItem {
 		remaining_accounts: &[solana_instruction::AccountMeta],
 	) -> solana_instruction::Instruction {
 		let mut accounts = Vec::with_capacity(14 + remaining_accounts.len());
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.template, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.template,
+			false,
+		));
 		accounts.push(solana_instruction::AccountMeta::new(self.opening, false));
 		accounts.push(solana_instruction::AccountMeta::new(self.bundle, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.prize_pool, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.prize_pool_item, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.recipient, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.rent_refund, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.tree_config, false));
-		accounts.push(solana_instruction::AccountMeta::new(self.merkle_tree, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.bubblegum_program, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.log_wrapper, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.compression_program, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.system_program, false));
-		accounts.push(solana_instruction::AccountMeta::new_readonly(self.proof_accounts, false));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.prize_pool,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.prize_pool_item,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.recipient,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.rent_refund,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.tree_config,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new(
+			self.merkle_tree,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.bubblegum_program,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.log_wrapper,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.compression_program,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.system_program,
+			false,
+		));
+		accounts.push(solana_instruction::AccountMeta::new_readonly(
+			self.proof_accounts,
+			false,
+		));
 		accounts.extend_from_slice(remaining_accounts);
 		solana_instruction::Instruction {
 			program_id: crate::LOOTBOX_PROGRAM_ID,
@@ -110,15 +163,21 @@ pub struct ClaimStrandedPrizePoolItemInstructionData {
 }
 
 impl ClaimStrandedPrizePoolItemInstructionData {
-	pub fn new(configure: impl FnOnce(&mut ClaimStrandedPrizePoolItemInstructionWireZc)) -> Result<Self, solana_program_error::ProgramError> {
-		let mut bytes = vec![0u8; core::mem::size_of::<ClaimStrandedPrizePoolItemInstructionWireZc>()];
-		<ClaimStrandedPrizePoolItemInstructionWire as pina::PinaPodFixed>::initialize(&mut bytes, |data| {
-			configure(data);
-			data.discriminator = CLAIM_STRANDED_PRIZE_POOL_ITEM_DISCRIMINATOR;
-			data.migration_version = CLAIM_STRANDED_PRIZE_POOL_ITEM_MIGRATION_VERSION;
-			Ok(())
-		})
-			.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
+	pub fn new(
+		configure: impl FnOnce(&mut ClaimStrandedPrizePoolItemInstructionWireZc),
+	) -> Result<Self, solana_program_error::ProgramError> {
+		let mut bytes =
+			vec![0u8; core::mem::size_of::<ClaimStrandedPrizePoolItemInstructionWireZc>()];
+		<ClaimStrandedPrizePoolItemInstructionWire as pina::PinaPodFixed>::initialize(
+			&mut bytes,
+			|data| {
+				configure(data);
+				data.discriminator = CLAIM_STRANDED_PRIZE_POOL_ITEM_DISCRIMINATOR;
+				data.migration_version = CLAIM_STRANDED_PRIZE_POOL_ITEM_MIGRATION_VERSION;
+				Ok(())
+			},
+		)
+		.map_err(|_| solana_program_error::ProgramError::InvalidInstructionData)?;
 		Ok(Self { bytes })
 	}
 }

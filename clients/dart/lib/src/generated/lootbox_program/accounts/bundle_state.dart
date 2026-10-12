@@ -30,7 +30,7 @@ class BundleState {
     required this.reclaimedMask,
     required this.status,
     required this.bump,
-  }) : discriminator = 5,
+  }) : discriminator = 2,
        migrationVersion = 0;
 
   final int discriminator;
@@ -131,7 +131,7 @@ Encoder<BundleState> getBundleStateEncoder() {
   return transformEncoder(
     structEncoder,
     (BundleState value) => <String, Object?>{
-      'discriminator': 5,
+      'discriminator': 2,
       'migrationVersion': 0,
       'template': value.template,
       'quantity': value.quantity,
@@ -184,7 +184,7 @@ Decoder<BundleState> getBundleStateDecoder() {
   }
 
   (BundleState, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(5)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(2)).read(bytes, offset + 0);
     final (storedMigrationVersion, _) = getU8Decoder().read(bytes, offset + 1);
     if (storedMigrationVersion != 0) {
       throw StateError(
@@ -256,7 +256,7 @@ bool bundleStateNeedsMigration(List<int> data) {
   if (data.length < 2) {
     return false;
   }
-  if (data[0] != 5) {
+  if (data[0] != 2) {
     return false;
   }
   return data[1] < 0;

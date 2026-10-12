@@ -23,7 +23,7 @@ class CreateTemplateInstructionData {
     required this.settlementBountyLamports,
     required this.resultReceiptsEnabled,
     required this.bump,
-  }) : discriminator = 10,
+  }) : discriminator = 0,
        migrationVersion = 0;
 
   final int discriminator;
@@ -58,7 +58,7 @@ getCreateTemplateInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (CreateTemplateInstructionData value) => <String, Object?>{
-      'discriminator': 10,
+      'discriminator': 0,
       'migrationVersion': 0,
       'id': value.id,
       'opensAt': value.opensAt,
@@ -101,7 +101,7 @@ getCreateTemplateInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(10)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

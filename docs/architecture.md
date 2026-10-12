@@ -39,13 +39,14 @@ The remaining program-owned accounts — `PrizePoolState`, `PrizePoolItemState`,
 draft --add_bundle/fund--> staged --activate_bundle--> live --lock_treasury--> locked
                                                                    |
              request_open + init CPI + commit CPI + burn           v
-                                                                pending
-                                                       fulfill (reveal CPI)
-                                                                   v
-                                                               allocated
-                                                     /       |       \
-                                      claim_prize   claim_prize  ...   forfeit (timeout)
-                                                   \       |       /
+                                    +--------------------------- pending
+                                    |        fulfill (reveal CPI)
+                                    |  timeout, unrevealed FIFO head    |
+                                    |                                  v
+                                    v                              allocated
+                          forfeit (consumes no        claim_prize / ... / claim_prize
+                          inventory, pays any bounty)         |
+                                                               v
                                                     close_template_opening
 ```
 

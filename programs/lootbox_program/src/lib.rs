@@ -473,28 +473,28 @@ pub(crate) fn assert_migration_slot_is_current<T: MigratableAccount>(
 /// state slot is optional and skipped when it holds the program-address
 /// placeholder.
 pub(crate) fn process_migrate(program_id: &Address, accounts: &mut [AccountView]) -> ProgramResult {
-	assert_migration_slot_is_current::<TemplateState>(program_id, accounts, 5)?;
-	assert_migration_slot_is_current::<BundleState>(program_id, accounts, 6)?;
-	assert_migration_slot_is_current::<TemplateOpeningState>(program_id, accounts, 7)?;
-	assert_migration_slot_is_current::<ResultReceiptState>(program_id, accounts, 8)?;
-	assert_migration_slot_is_current::<PrizePoolState>(program_id, accounts, 9)?;
+	assert_migration_slot_is_current::<TemplateState>(program_id, accounts, 2)?;
+	assert_migration_slot_is_current::<BundleState>(program_id, accounts, 3)?;
+	assert_migration_slot_is_current::<TemplateOpeningState>(program_id, accounts, 4)?;
+	assert_migration_slot_is_current::<ResultReceiptState>(program_id, accounts, 5)?;
+	assert_migration_slot_is_current::<PrizePoolState>(program_id, accounts, 6)?;
 
-	assert_migration_slot_is_current::<PrizePoolItemState>(program_id, accounts, 10)?;
-	assert_migration_slot_is_current::<ExclusiveCollectionState>(program_id, accounts, 11)?;
-	assert_migration_slot_is_current::<ExclusiveAttachmentState>(program_id, accounts, 12)?;
-	assert_migration_slot_is_current::<BoxCurveState>(program_id, accounts, 13)?;
+	assert_migration_slot_is_current::<PrizePoolItemState>(program_id, accounts, 7)?;
+	assert_migration_slot_is_current::<ExclusiveCollectionState>(program_id, accounts, 8)?;
+	assert_migration_slot_is_current::<ExclusiveAttachmentState>(program_id, accounts, 9)?;
+	assert_migration_slot_is_current::<BoxCurveState>(program_id, accounts, 10)?;
 
 	let mut context = MigrateContext::new(program_id, accounts, Some(MAX_MIGRATION_LAMPORTS))?;
-	context.run_optional::<TemplateState>(5)?;
-	context.run_optional::<BundleState>(6)?;
-	context.run_optional::<TemplateOpeningState>(7)?;
-	context.run_optional::<ResultReceiptState>(8)?;
+	context.run_optional::<TemplateState>(2)?;
+	context.run_optional::<BundleState>(3)?;
+	context.run_optional::<TemplateOpeningState>(4)?;
+	context.run_optional::<ResultReceiptState>(5)?;
 
-	context.run_optional::<PrizePoolState>(9)?;
-	context.run_optional::<PrizePoolItemState>(10)?;
-	context.run_optional::<ExclusiveCollectionState>(11)?;
-	context.run_optional::<ExclusiveAttachmentState>(12)?;
-	context.run_optional::<BoxCurveState>(13)?;
+	context.run_optional::<PrizePoolState>(6)?;
+	context.run_optional::<PrizePoolItemState>(7)?;
+	context.run_optional::<ExclusiveCollectionState>(8)?;
+	context.run_optional::<ExclusiveAttachmentState>(9)?;
+	context.run_optional::<BoxCurveState>(10)?;
 	Ok(())
 }
 

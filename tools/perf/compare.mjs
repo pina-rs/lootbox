@@ -136,19 +136,32 @@ function main(markdownPath, jsonPath) {
 	const comparisons = [];
 	const failures = [];
 	const notes = [];
+	const commonIds = [...baseCases.keys()].filter((id) => headCases.has(id));
 
 	for (const [id, baseUnits] of baseCases) {
 		const headUnits = headCases.get(id);
 		if (headUnits === undefined) {
-			notes.push(`\`${id}\` was removed in this pull request`);
-			comparisons.push({
-				id,
-				status: "removed",
-				baseUnits,
-				headUnits: null,
-				deltaCu: null,
-				deltaPercent: null,
-			});
+			const removedApproved = (policy.removedCases ?? []).some((pattern) =>
+				new RegExp(`^${pattern.replace(/\*/g, ".*")}$`).test(id)
+			);
+			if (removedApproved) {
+				notes.push(
+					`\`${id}\` was removed in this pull request (approved by policy.removedCases)`,
+				);
+				comparisons.push({
+					id,
+					status: "removed",
+					baseUnits,
+					headUnits: null,
+					deltaCu: null,
+					deltaPercent: null,
+				});
+			} else {
+				notes.push(
+					`\`${id}\` disappeared from the head benchmark; add it to policy.removedCases in tools/perf/policy.json only for a deliberate removal`,
+				);
+				failures.push(`missing case: ${id}`);
+			}
 			continue;
 		}
 		const approved = policy.approvedTotals?.[id];
@@ -233,12 +246,14 @@ function main(markdownPath, jsonPath) {
 		);
 	}
 
-	const baseTotal = [...baseCases.values()].reduce(
-		(sum, units) => sum + units,
+	// Totals compare only the cases both sides measure, so a removed or new
+	// instruction cannot show up as a phantom improvement or regression.
+	const baseTotal = commonIds.reduce(
+		(sum, id) => sum + baseCases.get(id),
 		0,
 	);
-	const headTotal = [...headCases.values()].reduce(
-		(sum, units) => sum + units,
+	const headTotal = commonIds.reduce(
+		(sum, id) => sum + headCases.get(id),
 		0,
 	);
 
@@ -273,7 +288,7 @@ function main(markdownPath, jsonPath) {
 			formatDelta(
 				Number((((headTotal - baseTotal) / baseTotal) * 100).toFixed(2)),
 			)
-		}%) across ${comparisons.length} instructions.`,
+		}%) across ${commonIds.length} instructions.`,
 		`**Binary:** ${baseSize.toLocaleString("en-US")} → ${
 			headSize.toLocaleString("en-US")
 		} bytes (${formatDelta(sizeDelta)}, ${

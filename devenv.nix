@@ -388,9 +388,17 @@ in
     '';
     "security:audit".exec = ''
       set -euo pipefail
-      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --ignore RUSTSEC-2024-0449
-      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --ignore RUSTSEC-2024-0449 --file tests/fixtures/mock_switchboard/Cargo.lock
-      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --ignore RUSTSEC-2024-0449 --file tests/fixtures/mock_bubblegum/Cargo.lock
+      # bincode 1.3.3 ships inside the solana 4.x client train the CLI links;
+      # Agave must migrate before the ignore can go.
+      cargo audit --deny warnings --ignore RUSTSEC-2025-0141
+      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --file tests/fixtures/mock_switchboard/Cargo.lock
+      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --file tests/fixtures/mock_bubblegum/Cargo.lock
+      # Every ignored advisory below roots in the Surfpool harness's bundled
+      # legacy stack (surfpool-core: reqwest 0.11, dalek 1/3, webpki 0.101,
+      # plus unmaintained transitive leaves). All are host-only test
+      # dependencies; the deployed program and shipped SDKs pull none of them.
+      # Each entry is a deliberate hold until Surfpool or Agave ships the
+      # fixed line - re-evaluate every ID on a surfpool-sdk bump.
       cargo audit \
         --deny warnings \
         --file programs/lootbox_program/tests/surfpool/Cargo.lock \

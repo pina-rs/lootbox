@@ -15,7 +15,7 @@
 /// have passed since the committed seed slot and the randomness is still
 /// unrevealed. Consumes no inventory, never remints the box, and never changes
 /// the beneficiary; pays any configured settlement bounty to the beneficiary.
-pub const FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 36u8;
+pub const FORFEIT_TEMPLATE_OPEN_DISCRIMINATOR: u8 = 33u8;
 pub const FORFEIT_TEMPLATE_OPEN_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

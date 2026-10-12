@@ -84,4 +84,4 @@ impl<'account> PublishExclusiveCollection<'account> {
 	}
 }
 
-const PUBLISH_EXCLUSIVE_COLLECTION_DISCRIMINATOR: [u8; 2] = [56, 0];
+const PUBLISH_EXCLUSIVE_COLLECTION_DISCRIMINATOR: [u8; 2] = [53, 0];

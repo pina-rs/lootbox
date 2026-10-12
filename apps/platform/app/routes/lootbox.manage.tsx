@@ -580,7 +580,7 @@ function AppendBundles(
 		name: "Append",
 		uri: "",
 		opensAt: 0n,
-		bundles: draftBundlesToInputs(bundles, (mint) => mint),
+		bundles: draftBundlesToInputs(bundles),
 	});
 
 	if (!open) {

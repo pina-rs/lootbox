@@ -15,7 +15,7 @@
 /// `ExclusiveCollectionState` PDA and a Core collection, named after the
 /// prefix with the URI `{base_uri}collection.json`, whose update authority is
 /// that PDA.
-pub const CREATE_EXCLUSIVE_COLLECTION_DISCRIMINATOR: u8 = 53u8;
+pub const CREATE_EXCLUSIVE_COLLECTION_DISCRIMINATOR: u8 = 50u8;
 pub const CREATE_EXCLUSIVE_COLLECTION_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

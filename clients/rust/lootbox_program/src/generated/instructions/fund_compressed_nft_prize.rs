@@ -15,7 +15,7 @@
 /// Bubblegum transfers the leaf to the bundle PDA, and the asset ID derived
 /// from `merkle_tree` and `nonce` is recorded in the bundle's next unfunded
 /// slot.
-pub const FUND_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: u8 = 33u8;
+pub const FUND_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: u8 = 30u8;
 pub const FUND_COMPRESSED_NFT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

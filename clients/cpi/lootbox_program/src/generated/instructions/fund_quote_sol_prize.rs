@@ -102,4 +102,4 @@ impl<'account> FundQuoteSolPrize<'account> {
 	}
 }
 
-const FUND_QUOTE_SOL_PRIZE_DISCRIMINATOR: [u8; 2] = [39, 0];
+const FUND_QUOTE_SOL_PRIZE_DISCRIMINATOR: [u8; 2] = [36, 0];

@@ -71,7 +71,7 @@ export const draftAssetSchema = z.discriminatedUnion("kind", [
 	z.object({
 		kind: z.literal("nft"),
 		mint: addressSchema,
-		standard: z.enum(["tokenMetadata", "core"]),
+		standard: z.literal("core"),
 		name: z.string().max(80),
 		image: z.string().url().max(500).nullable(),
 	}),

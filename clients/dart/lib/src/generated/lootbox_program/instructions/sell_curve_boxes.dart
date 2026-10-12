@@ -16,7 +16,7 @@ class SellCurveBoxesInstructionData {
   const SellCurveBoxesInstructionData({
     required this.count,
     required this.minLamports,
-  }) : discriminator = 62,
+  }) : discriminator = 59,
        migrationVersion = 0;
 
   final int discriminator;
@@ -37,7 +37,7 @@ getSellCurveBoxesInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (SellCurveBoxesInstructionData value) => <String, Object?>{
-      'discriminator': 62,
+      'discriminator': 59,
       'migrationVersion': 0,
       'count': value.count,
       'minLamports': value.minLamports,
@@ -66,7 +66,7 @@ getSellCurveBoxesInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(62)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(59)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

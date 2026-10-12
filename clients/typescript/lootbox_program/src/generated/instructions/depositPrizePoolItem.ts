@@ -11,7 +11,7 @@ import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytes
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const DEPOSIT_PRIZE_POOL_ITEM_DISCRIMINATOR = 45;
+export const DEPOSIT_PRIZE_POOL_ITEM_DISCRIMINATOR = 42;
 
 export function getDepositPrizePoolItemDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(DEPOSIT_PRIZE_POOL_ITEM_DISCRIMINATOR); }
 
@@ -47,7 +47,7 @@ nonce: number | bigint;
 index: number;  };
 
 export function getDepositPrizePoolItemInstructionDataEncoder(): FixedSizeEncoder<DepositPrizePoolItemInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['root', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()]]), (value) => ({ ...value, discriminator: 45, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['root', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()]]), (value) => ({ ...value, discriminator: 42, migrationVersion: 0 }));
 }
 
 export function getDepositPrizePoolItemInstructionDataDecoder(): FixedSizeDecoder<DepositPrizePoolItemInstructionData> {

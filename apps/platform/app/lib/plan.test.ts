@@ -46,19 +46,17 @@ describe("odds", () => {
 
 describe("draft to SDK", () => {
 	it("maps each prize kind", () => {
-		const metadata = address("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
-
-		expect(draftAssetToPrize({ kind: "sol", lamports: "5" }, () => metadata))
+		expect(draftAssetToPrize({ kind: "sol", lamports: "5" }))
 			.toEqual({ kind: "sol", lamports: 5n });
 		expect(
 			draftAssetToPrize({
 				kind: "nft",
 				mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-				standard: "tokenMetadata",
+				standard: "core",
 				name: "N",
 				image: null,
-			}, () => metadata),
-		).toMatchObject({ kind: "nft", metadata });
+			}),
+		).toMatchObject({ kind: "core" });
 	});
 
 	it("grosses up issuer-stock escrow once per bundle", () => {

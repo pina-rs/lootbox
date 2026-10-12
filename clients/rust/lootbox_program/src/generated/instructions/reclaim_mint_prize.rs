@@ -15,7 +15,7 @@
 /// as the other reclaims. Mints nothing; when allocated copies are still
 /// unclaimed, only the accounting changes and the final claim later revokes
 /// the authority.
-pub const RECLAIM_MINT_PRIZE_DISCRIMINATOR: u8 = 43u8;
+pub const RECLAIM_MINT_PRIZE_DISCRIMINATOR: u8 = 40u8;
 pub const RECLAIM_MINT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

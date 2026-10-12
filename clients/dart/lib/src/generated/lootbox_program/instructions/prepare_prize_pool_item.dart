@@ -20,7 +20,7 @@ class PreparePrizePoolItemInstructionData {
     required this.nonce,
     required this.index,
     required this.metadata,
-  }) : discriminator = 51,
+  }) : discriminator = 48,
        migrationVersion = 0;
 
   final int discriminator;
@@ -62,7 +62,7 @@ getPreparePrizePoolItemInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (PreparePrizePoolItemInstructionData value) => <String, Object?>{
-      'discriminator': 51,
+      'discriminator': 48,
       'migrationVersion': 0,
       'itemBump': value.itemBump,
       'dataHash': value.dataHash,
@@ -108,7 +108,7 @@ getPreparePrizePoolItemInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(51)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(48)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

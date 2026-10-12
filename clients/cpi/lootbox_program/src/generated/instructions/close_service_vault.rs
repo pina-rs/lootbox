@@ -105,4 +105,4 @@ impl<'account> CloseServiceVault<'account> {
 	}
 }
 
-const CLOSE_SERVICE_VAULT_DISCRIMINATOR: [u8; 2] = [38, 0];
+const CLOSE_SERVICE_VAULT_DISCRIMINATOR: [u8; 2] = [35, 0];

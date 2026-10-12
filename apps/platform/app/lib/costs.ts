@@ -96,10 +96,6 @@ export function creationCost(
 			}
 
 			if (asset.kind === "nft") {
-				if (asset.standard === "tokenMetadata") {
-					escrowAccounts += rent(CLASSIC_TOKEN_ACCOUNT_BYTES);
-				}
-
 				continue;
 			}
 

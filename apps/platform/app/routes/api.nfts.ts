@@ -17,7 +17,7 @@ type NftItem = Readonly<{
 	mint: string;
 	name: string;
 	image: string | null;
-	standard: "tokenMetadata" | "core";
+	standard: "core";
 }>;
 
 function parseAssets(payload: unknown): NftItem[] {
@@ -52,14 +52,11 @@ function parseAssets(payload: unknown): NftItem[] {
 
 		if (typeof id !== "string" || !BASE58.test(id) || compressed) return [];
 
-		const standard = face === "MplCoreAsset"
-			? "core"
-			: face === "V1_NFT" || face === "ProgrammableNFT"
-			? "tokenMetadata"
-			: null;
+		// Classic Token Metadata NFTs (including programmable ones with
+		// transfer rules) are not an admitted prize standard.
+		if (face !== "MplCoreAsset") return [];
 
-		// Programmable NFTs carry transfer rules the program does not admit yet.
-		if (!standard || face === "ProgrammableNFT") return [];
+		const standard = "core";
 
 		return [{
 			mint: id,

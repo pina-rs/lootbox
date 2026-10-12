@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU32Decoder, getU32
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const APPEND_EXCLUSIVE_TREE_DISCRIMINATOR = 55;
+export const APPEND_EXCLUSIVE_TREE_DISCRIMINATOR = 52;
 
 export function getAppendExclusiveTreeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(APPEND_EXCLUSIVE_TREE_DISCRIMINATOR); }
 
@@ -41,7 +41,7 @@ maxDepth: number;
 maxBufferSize: number;  };
 
 export function getAppendExclusiveTreeInstructionDataEncoder(): FixedSizeEncoder<AppendExclusiveTreeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['maxDepth', getU8Encoder()], ['maxBufferSize', getU32Encoder()]]), (value) => ({ ...value, discriminator: 55, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['maxDepth', getU8Encoder()], ['maxBufferSize', getU32Encoder()]]), (value) => ({ ...value, discriminator: 52, migrationVersion: 0 }));
 }
 
 export function getAppendExclusiveTreeInstructionDataDecoder(): FixedSizeDecoder<AppendExclusiveTreeInstructionData> {

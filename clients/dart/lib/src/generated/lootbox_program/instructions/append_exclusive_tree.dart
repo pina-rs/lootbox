@@ -16,7 +16,7 @@ class AppendExclusiveTreeInstructionData {
   const AppendExclusiveTreeInstructionData({
     required this.maxDepth,
     required this.maxBufferSize,
-  }) : discriminator = 55,
+  }) : discriminator = 52,
        migrationVersion = 0;
 
   final int discriminator;
@@ -37,7 +37,7 @@ getAppendExclusiveTreeInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (AppendExclusiveTreeInstructionData value) => <String, Object?>{
-      'discriminator': 55,
+      'discriminator': 52,
       'migrationVersion': 0,
       'maxDepth': value.maxDepth,
       'maxBufferSize': value.maxBufferSize,
@@ -66,7 +66,7 @@ getAppendExclusiveTreeInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(55)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(52)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

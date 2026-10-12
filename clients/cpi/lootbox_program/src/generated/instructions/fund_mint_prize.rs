@@ -108,4 +108,4 @@ impl<'account> FundMintPrize<'account> {
 	}
 }
 
-const FUND_MINT_PRIZE_DISCRIMINATOR: [u8; 2] = [41, 0];
+const FUND_MINT_PRIZE_DISCRIMINATOR: [u8; 2] = [38, 0];

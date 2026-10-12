@@ -747,7 +747,7 @@ function NftList(
 							onAdd({
 								kind: "nft",
 								mint: nft.mint,
-								standard: "tokenMetadata",
+								standard: "core",
 								name: nft.name ?? `NFT ${nft.mint.slice(0, 4)}…`,
 								image: null,
 							})}

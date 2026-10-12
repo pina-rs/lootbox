@@ -14,7 +14,7 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class LockTreasuryInstructionData {
   const LockTreasuryInstructionData({required this.serviceVaultBump})
-    : discriminator = 37,
+    : discriminator = 34,
       migrationVersion = 0;
 
   final int discriminator;
@@ -32,7 +32,7 @@ Encoder<LockTreasuryInstructionData> getLockTreasuryInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (LockTreasuryInstructionData value) => <String, Object?>{
-      'discriminator': 37,
+      'discriminator': 34,
       'migrationVersion': 0,
       'serviceVaultBump': value.serviceVaultBump,
     },
@@ -55,7 +55,7 @@ Decoder<LockTreasuryInstructionData> getLockTreasuryInstructionDataDecoder() {
   }
 
   (LockTreasuryInstructionData, int) readTopLevel(Uint8List bytes, int offset) {
-    getConstantDecoder(getU8Encoder().encode(37)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(34)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

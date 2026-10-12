@@ -15,7 +15,7 @@
 /// slot must not be claimed yet. The asset is revalidated as plugin-free before
 /// the bundle PDA signs the transfer. Sets the slot's claim bit on the opening
 /// and marks the opening delivered once every slot is claimed.
-pub const CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR: u8 = 31u8;
+pub const CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR: u8 = 28u8;
 pub const CLAIM_CORE_ASSET_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

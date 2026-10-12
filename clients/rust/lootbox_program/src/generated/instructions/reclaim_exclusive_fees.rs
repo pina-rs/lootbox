@@ -15,7 +15,7 @@
 /// releases undrawn copies only after retirement with zero box supply and no
 /// pending openings. A staged bundle empties the vault and closes the
 /// attachment; otherwise only the surplus above unclaimed copies' fees leaves.
-pub const RECLAIM_EXCLUSIVE_FEES_DISCRIMINATOR: u8 = 59u8;
+pub const RECLAIM_EXCLUSIVE_FEES_DISCRIMINATOR: u8 = 56u8;
 pub const RECLAIM_EXCLUSIVE_FEES_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

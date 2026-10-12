@@ -2,11 +2,6 @@
 	"abiVersion": "0.21",
 	"programId": "LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E",
 	"versionType": "u8",
-	"auto": [
-		"accounts",
-		"instructions",
-		"events"
-	],
 	"contracts": {
 		"account:1:01": {
 			"rustName": "LootboxState",
@@ -1019,7 +1014,8 @@
 							},
 							{
 								"name": "lootbox",
-								"writable": true
+								"writable": true,
+								"pda": "lootbox"
 							}
 						]
 					}
@@ -1047,11 +1043,13 @@
 								"signer": true
 							},
 							{
-								"name": "lootbox"
+								"name": "lootbox",
+								"pda": "lootbox"
 							},
 							{
 								"name": "vault",
-								"writable": true
+								"writable": true,
+								"pda": "vault"
 							},
 							{
 								"name": "system_program",
@@ -1078,7 +1076,8 @@
 							},
 							{
 								"name": "lootbox",
-								"writable": true
+								"writable": true,
+								"pda": "lootbox"
 							}
 						]
 					}
@@ -1106,10 +1105,12 @@
 							},
 							{
 								"name": "lootbox",
-								"writable": true
+								"writable": true,
+								"pda": "lootbox"
 							},
 							{
-								"name": "vault"
+								"name": "vault",
+								"pda": "vault"
 							},
 							{
 								"name": "box_mint",
@@ -1154,10 +1155,12 @@
 							},
 							{
 								"name": "lootbox",
-								"writable": true
+								"writable": true,
+								"pda": "lootbox"
 							},
 							{
-								"name": "vault"
+								"name": "vault",
+								"pda": "vault"
 							},
 							{
 								"name": "box_mint",
@@ -1262,18 +1265,21 @@
 							},
 							{
 								"name": "lootbox",
-								"writable": true
+								"writable": true,
+								"pda": "lootbox"
 							},
 							{
 								"name": "vault",
-								"writable": true
+								"writable": true,
+								"pda": "vault"
 							},
 							{
 								"name": "box_mint"
 							},
 							{
 								"name": "opening",
-								"writable": true
+								"writable": true,
+								"pda": "opening"
 							},
 							{
 								"name": "randomness",
@@ -1335,18 +1341,21 @@
 							},
 							{
 								"name": "lootbox",
-								"writable": true
+								"writable": true,
+								"pda": "lootbox"
 							},
 							{
 								"name": "vault",
-								"writable": true
+								"writable": true,
+								"pda": "vault"
 							},
 							{
 								"name": "box_mint"
 							},
 							{
 								"name": "opening",
-								"writable": true
+								"writable": true,
+								"pda": "opening"
 							},
 							{
 								"name": "randomness"
@@ -1374,11 +1383,13 @@
 								"writable": true
 							},
 							{
-								"name": "lootbox"
+								"name": "lootbox",
+								"pda": "lootbox"
 							},
 							{
 								"name": "opening",
-								"writable": true
+								"writable": true,
+								"pda": "opening"
 							},
 							{
 								"name": "randomness",
@@ -1441,11 +1452,13 @@
 								"signer": true
 							},
 							{
-								"name": "lootbox"
+								"name": "lootbox",
+								"pda": "lootbox"
 							},
 							{
 								"name": "vault",
-								"writable": true
+								"writable": true,
+								"pda": "vault"
 							},
 							{
 								"name": "box_mint"
@@ -1600,7 +1613,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "system_program",
@@ -1640,7 +1654,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "mint"
@@ -1779,7 +1794,7 @@
 							{
 								"name": "opening",
 								"writable": true,
-								"pda": "opening"
+								"pda": "template_opening"
 							},
 							{
 								"name": "randomness",
@@ -1875,11 +1890,13 @@
 							},
 							{
 								"name": "service_vault",
-								"writable": true
+								"writable": true,
+								"pda": "service_vault"
 							},
 							{
 								"name": "opening",
-								"writable": true
+								"writable": true,
+								"pda": "template_opening"
 							},
 							{
 								"name": "randomness",
@@ -1945,7 +1962,8 @@
 							},
 							{
 								"name": "opening",
-								"writable": true
+								"writable": true,
+								"pda": "template_opening"
 							},
 							{
 								"name": "bundle"
@@ -1987,11 +2005,13 @@
 							},
 							{
 								"name": "opening",
-								"writable": true
+								"writable": true,
+								"pda": "template_opening"
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "recipient",
@@ -2022,11 +2042,13 @@
 							},
 							{
 								"name": "opening",
-								"writable": true
+								"writable": true,
+								"pda": "template_opening"
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "recipient"
@@ -2102,7 +2124,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							}
 						]
 					}
@@ -2136,7 +2159,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "mint"
@@ -2177,7 +2201,8 @@
 							},
 							{
 								"name": "opening",
-								"writable": true
+								"writable": true,
+								"pda": "template_opening"
 							},
 							{
 								"name": "randomness",
@@ -2240,7 +2265,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "system_program",
@@ -2271,7 +2297,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							}
 						]
 					}
@@ -2279,206 +2306,6 @@
 			]
 		},
 		"instruction:1:1b": {
-			"rustName": "FundMetadataNftPrizeInstruction",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": []
-					},
-					"process": {
-						"accounts": [
-							{
-								"name": "authority",
-								"writable": true,
-								"signer": true
-							},
-							{
-								"name": "template"
-							},
-							{
-								"name": "bundle",
-								"writable": true
-							},
-							{
-								"name": "mint"
-							},
-							{
-								"name": "source",
-								"writable": true
-							},
-							{
-								"name": "escrow",
-								"writable": true
-							},
-							{
-								"name": "metadata",
-								"writable": true
-							},
-							{
-								"name": "token_metadata_program"
-							},
-							{
-								"name": "system_program"
-							},
-							{
-								"name": "instructions_sysvar"
-							},
-							{
-								"name": "token_program"
-							},
-							{
-								"name": "associated_token_program"
-							},
-							{
-								"name": "optional_accounts"
-							}
-						]
-					}
-				}
-			]
-		},
-		"instruction:1:1c": {
-			"rustName": "ClaimMetadataNftPrizeInstruction",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": [
-							{
-								"name": "asset_index",
-								"rustType": "u8"
-							}
-						]
-					},
-					"process": {
-						"accounts": [
-							{
-								"name": "payer",
-								"writable": true,
-								"signer": true
-							},
-							{
-								"name": "template"
-							},
-							{
-								"name": "opening",
-								"writable": true
-							},
-							{
-								"name": "bundle",
-								"writable": true
-							},
-							{
-								"name": "recipient"
-							},
-							{
-								"name": "mint"
-							},
-							{
-								"name": "escrow",
-								"writable": true
-							},
-							{
-								"name": "destination",
-								"writable": true
-							},
-							{
-								"name": "metadata",
-								"writable": true
-							},
-							{
-								"name": "token_metadata_program"
-							},
-							{
-								"name": "system_program"
-							},
-							{
-								"name": "instructions_sysvar"
-							},
-							{
-								"name": "token_program"
-							},
-							{
-								"name": "associated_token_program"
-							},
-							{
-								"name": "optional_accounts"
-							}
-						]
-					}
-				}
-			]
-		},
-		"instruction:1:1d": {
-			"rustName": "ReclaimMetadataNftPrizeInstruction",
-			"versions": [
-				{
-					"schema": {
-						"layout": "fixed",
-						"fields": [
-							{
-								"name": "asset_index",
-								"rustType": "u8"
-							}
-						]
-					},
-					"process": {
-						"accounts": [
-							{
-								"name": "authority",
-								"writable": true,
-								"signer": true
-							},
-							{
-								"name": "template"
-							},
-							{
-								"name": "box_mint"
-							},
-							{
-								"name": "bundle",
-								"writable": true
-							},
-							{
-								"name": "mint"
-							},
-							{
-								"name": "escrow",
-								"writable": true
-							},
-							{
-								"name": "destination",
-								"writable": true
-							},
-							{
-								"name": "metadata",
-								"writable": true
-							},
-							{
-								"name": "token_metadata_program"
-							},
-							{
-								"name": "system_program"
-							},
-							{
-								"name": "instructions_sysvar"
-							},
-							{
-								"name": "token_program"
-							},
-							{
-								"name": "associated_token_program"
-							},
-							{
-								"name": "optional_accounts"
-							}
-						]
-					}
-				}
-			]
-		},
-		"instruction:1:1e": {
 			"rustName": "FundCoreAssetPrizeInstruction",
 			"versions": [
 				{
@@ -2498,7 +2325,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "asset",
@@ -2511,7 +2339,8 @@
 								"name": "core_program"
 							},
 							{
-								"name": "system_program"
+								"name": "system_program",
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							},
 							{
 								"name": "log_wrapper"
@@ -2524,7 +2353,7 @@
 				}
 			]
 		},
-		"instruction:1:1f": {
+		"instruction:1:1c": {
 			"rustName": "ClaimCoreAssetPrizeInstruction",
 			"versions": [
 				{
@@ -2549,11 +2378,13 @@
 							},
 							{
 								"name": "opening",
-								"writable": true
+								"writable": true,
+								"pda": "template_opening"
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "recipient"
@@ -2569,7 +2400,8 @@
 								"name": "core_program"
 							},
 							{
-								"name": "system_program"
+								"name": "system_program",
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							},
 							{
 								"name": "log_wrapper"
@@ -2582,7 +2414,7 @@
 				}
 			]
 		},
-		"instruction:1:20": {
+		"instruction:1:1d": {
 			"rustName": "ReclaimCoreAssetPrizeInstruction",
 			"versions": [
 				{
@@ -2610,7 +2442,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "asset",
@@ -2623,7 +2456,8 @@
 								"name": "core_program"
 							},
 							{
-								"name": "system_program"
+								"name": "system_program",
+								"defaultValue": "publicKey:11111111111111111111111111111111"
 							},
 							{
 								"name": "log_wrapper"
@@ -2636,7 +2470,7 @@
 				}
 			]
 		},
-		"instruction:1:21": {
+		"instruction:1:1e": {
 			"rustName": "FundCompressedNftPrizeInstruction",
 			"versions": [
 				{
@@ -2676,7 +2510,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "tree_config"
@@ -2705,7 +2540,7 @@
 				}
 			]
 		},
-		"instruction:1:22": {
+		"instruction:1:1f": {
 			"rustName": "ClaimCompressedNftPrizeInstruction",
 			"versions": [
 				{
@@ -2745,11 +2580,13 @@
 							},
 							{
 								"name": "opening",
-								"writable": true
+								"writable": true,
+								"pda": "template_opening"
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "recipient"
@@ -2781,7 +2618,7 @@
 				}
 			]
 		},
-		"instruction:1:23": {
+		"instruction:1:20": {
 			"rustName": "ReclaimCompressedNftPrizeInstruction",
 			"versions": [
 				{
@@ -2828,7 +2665,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "tree_config"
@@ -2857,7 +2695,7 @@
 				}
 			]
 		},
-		"instruction:1:24": {
+		"instruction:1:21": {
 			"rustName": "ForfeitTemplateOpenInstruction",
 			"versions": [
 				{
@@ -2882,11 +2720,13 @@
 							},
 							{
 								"name": "service_vault",
-								"writable": true
+								"writable": true,
+								"pda": "service_vault"
 							},
 							{
 								"name": "opening",
-								"writable": true
+								"writable": true,
+								"pda": "template_opening"
 							},
 							{
 								"name": "randomness"
@@ -2900,7 +2740,7 @@
 				}
 			]
 		},
-		"instruction:1:25": {
+		"instruction:1:22": {
 			"rustName": "LockTreasuryInstruction",
 			"versions": [
 				{
@@ -2949,7 +2789,7 @@
 				}
 			]
 		},
-		"instruction:1:26": {
+		"instruction:1:23": {
 			"rustName": "CloseServiceVaultInstruction",
 			"versions": [
 				{
@@ -2972,7 +2812,8 @@
 							},
 							{
 								"name": "service_vault",
-								"writable": true
+								"writable": true,
+								"pda": "service_vault"
 							},
 							{
 								"name": "system_program",
@@ -2983,7 +2824,7 @@
 				}
 			]
 		},
-		"instruction:1:27": {
+		"instruction:1:24": {
 			"rustName": "FundQuoteSolPrizeInstruction",
 			"versions": [
 				{
@@ -3009,7 +2850,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "system_program",
@@ -3020,7 +2862,7 @@
 				}
 			]
 		},
-		"instruction:1:28": {
+		"instruction:1:25": {
 			"rustName": "FundQuoteTokenPrizeInstruction",
 			"versions": [
 				{
@@ -3045,7 +2887,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "mint"
@@ -3067,7 +2910,7 @@
 				}
 			]
 		},
-		"instruction:1:29": {
+		"instruction:1:26": {
 			"rustName": "FundMintPrizeInstruction",
 			"versions": [
 				{
@@ -3087,7 +2930,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "mint",
@@ -3102,7 +2946,7 @@
 				}
 			]
 		},
-		"instruction:1:2a": {
+		"instruction:1:27": {
 			"rustName": "ClaimMintPrizeInstruction",
 			"versions": [
 				{
@@ -3122,11 +2966,13 @@
 							},
 							{
 								"name": "opening",
-								"writable": true
+								"writable": true,
+								"pda": "template_opening"
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "recipient"
@@ -3148,7 +2994,7 @@
 				}
 			]
 		},
-		"instruction:1:2b": {
+		"instruction:1:28": {
 			"rustName": "ReclaimMintPrizeInstruction",
 			"versions": [
 				{
@@ -3175,7 +3021,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "mint",
@@ -3190,7 +3037,7 @@
 				}
 			]
 		},
-		"instruction:1:2c": {
+		"instruction:1:29": {
 			"rustName": "CreatePrizePoolInstruction",
 			"versions": [
 				{
@@ -3219,7 +3066,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "prize_pool",
@@ -3238,7 +3086,7 @@
 				}
 			]
 		},
-		"instruction:1:2d": {
+		"instruction:1:2a": {
 			"rustName": "DepositPrizePoolItemInstruction",
 			"versions": [
 				{
@@ -3278,7 +3126,8 @@
 								"name": "template"
 							},
 							{
-								"name": "bundle"
+								"name": "bundle",
+								"pda": "bundle"
 							},
 							{
 								"name": "prize_pool",
@@ -3286,7 +3135,8 @@
 							},
 							{
 								"name": "prize_pool_item",
-								"writable": true
+								"writable": true,
+								"pda": "prize_pool_item"
 							},
 							{
 								"name": "tree_config"
@@ -3316,7 +3166,7 @@
 				}
 			]
 		},
-		"instruction:1:2e": {
+		"instruction:1:2b": {
 			"rustName": "SealPrizePoolInstruction",
 			"versions": [
 				{
@@ -3335,7 +3185,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "prize_pool",
@@ -3346,7 +3197,7 @@
 				}
 			]
 		},
-		"instruction:1:2f": {
+		"instruction:1:2c": {
 			"rustName": "AllocatePrizePoolOpenInstruction",
 			"versions": [
 				{
@@ -3367,7 +3218,8 @@
 							},
 							{
 								"name": "opening",
-								"writable": true
+								"writable": true,
+								"pda": "template_opening"
 							},
 							{
 								"name": "bundle"
@@ -3393,7 +3245,7 @@
 				}
 			]
 		},
-		"instruction:1:30": {
+		"instruction:1:2d": {
 			"rustName": "ClaimPrizePoolItemInstruction",
 			"versions": [
 				{
@@ -3437,11 +3289,13 @@
 							},
 							{
 								"name": "opening",
-								"writable": true
+								"writable": true,
+								"pda": "template_opening"
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "prize_pool",
@@ -3449,7 +3303,8 @@
 							},
 							{
 								"name": "prize_pool_item",
-								"writable": true
+								"writable": true,
+								"pda": "prize_pool_item"
 							},
 							{
 								"name": "recipient"
@@ -3486,7 +3341,7 @@
 				}
 			]
 		},
-		"instruction:1:31": {
+		"instruction:1:2e": {
 			"rustName": "ReclaimPrizePoolItemInstruction",
 			"versions": [
 				{
@@ -3538,7 +3393,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "prize_pool",
@@ -3546,7 +3402,8 @@
 							},
 							{
 								"name": "prize_pool_item",
-								"writable": true
+								"writable": true,
+								"pda": "prize_pool_item"
 							},
 							{
 								"name": "tree_config"
@@ -3576,7 +3433,7 @@
 				}
 			]
 		},
-		"instruction:1:32": {
+		"instruction:1:2f": {
 			"rustName": "ClosePrizePoolInstruction",
 			"versions": [
 				{
@@ -3596,7 +3453,8 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "prize_pool",
@@ -3607,7 +3465,7 @@
 				}
 			]
 		},
-		"instruction:1:33": {
+		"instruction:1:30": {
 			"rustName": "PreparePrizePoolItemInstruction",
 			"versions": [
 				{
@@ -3651,7 +3509,8 @@
 								"name": "template"
 							},
 							{
-								"name": "bundle"
+								"name": "bundle",
+								"pda": "bundle"
 							},
 							{
 								"name": "prize_pool",
@@ -3671,7 +3530,7 @@
 				}
 			]
 		},
-		"instruction:1:34": {
+		"instruction:1:31": {
 			"rustName": "CancelPrizePoolItemInstruction",
 			"versions": [
 				{
@@ -3690,7 +3549,8 @@
 								"name": "template"
 							},
 							{
-								"name": "bundle"
+								"name": "bundle",
+								"pda": "bundle"
 							},
 							{
 								"name": "prize_pool",
@@ -3698,14 +3558,15 @@
 							},
 							{
 								"name": "prize_pool_item",
-								"writable": true
+								"writable": true,
+								"pda": "prize_pool_item"
 							}
 						]
 					}
 				}
 			]
 		},
-		"instruction:1:35": {
+		"instruction:1:32": {
 			"rustName": "CreateExclusiveCollectionInstruction",
 			"versions": [
 				{
@@ -3775,7 +3636,7 @@
 				}
 			]
 		},
-		"instruction:1:36": {
+		"instruction:1:33": {
 			"rustName": "SetExclusiveLayerInstruction",
 			"versions": [
 				{
@@ -3804,14 +3665,15 @@
 							},
 							{
 								"name": "exclusive_collection",
-								"writable": true
+								"writable": true,
+								"pda": "exclusive_collection"
 							}
 						]
 					}
 				}
 			]
 		},
-		"instruction:1:37": {
+		"instruction:1:34": {
 			"rustName": "AppendExclusiveTreeInstruction",
 			"versions": [
 				{
@@ -3837,7 +3699,8 @@
 							},
 							{
 								"name": "exclusive_collection",
-								"writable": true
+								"writable": true,
+								"pda": "exclusive_collection"
 							},
 							{
 								"name": "tree_config",
@@ -3865,7 +3728,7 @@
 				}
 			]
 		},
-		"instruction:1:38": {
+		"instruction:1:35": {
 			"rustName": "PublishExclusiveCollectionInstruction",
 			"versions": [
 				{
@@ -3881,14 +3744,15 @@
 							},
 							{
 								"name": "exclusive_collection",
-								"writable": true
+								"writable": true,
+								"pda": "exclusive_collection"
 							}
 						]
 					}
 				}
 			]
 		},
-		"instruction:1:39": {
+		"instruction:1:36": {
 			"rustName": "AttachExclusiveNftInstruction",
 			"versions": [
 				{
@@ -3921,10 +3785,12 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
-								"name": "exclusive_collection"
+								"name": "exclusive_collection",
+								"pda": "exclusive_collection"
 							},
 							{
 								"name": "exclusive_attachment",
@@ -3944,7 +3810,7 @@
 				}
 			]
 		},
-		"instruction:1:3a": {
+		"instruction:1:37": {
 			"rustName": "ClaimExclusiveNftInstruction",
 			"versions": [
 				{
@@ -3964,23 +3830,28 @@
 							},
 							{
 								"name": "opening",
-								"writable": true
+								"writable": true,
+								"pda": "template_opening"
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "exclusive_attachment",
-								"writable": true
+								"writable": true,
+								"pda": "exclusive_attachment"
 							},
 							{
 								"name": "fee_vault",
-								"writable": true
+								"writable": true,
+								"pda": "fee_vault"
 							},
 							{
 								"name": "exclusive_collection",
-								"writable": true
+								"writable": true,
+								"pda": "exclusive_collection"
 							},
 							{
 								"name": "recipient"
@@ -4021,7 +3892,7 @@
 				}
 			]
 		},
-		"instruction:1:3b": {
+		"instruction:1:38": {
 			"rustName": "ReclaimExclusiveFeesInstruction",
 			"versions": [
 				{
@@ -4049,15 +3920,18 @@
 							},
 							{
 								"name": "bundle",
-								"writable": true
+								"writable": true,
+								"pda": "bundle"
 							},
 							{
 								"name": "exclusive_attachment",
-								"writable": true
+								"writable": true,
+								"pda": "exclusive_attachment"
 							},
 							{
 								"name": "fee_vault",
-								"writable": true
+								"writable": true,
+								"pda": "fee_vault"
 							},
 							{
 								"name": "system_program",
@@ -4068,7 +3942,7 @@
 				}
 			]
 		},
-		"instruction:1:3c": {
+		"instruction:1:39": {
 			"rustName": "OpenBoxCurveInstruction",
 			"versions": [
 				{
@@ -4136,7 +4010,7 @@
 				}
 			]
 		},
-		"instruction:1:3d": {
+		"instruction:1:3a": {
 			"rustName": "BuyCurveBoxesInstruction",
 			"versions": [
 				{
@@ -4196,7 +4070,7 @@
 				}
 			]
 		},
-		"instruction:1:3e": {
+		"instruction:1:3b": {
 			"rustName": "SellCurveBoxesInstruction",
 			"versions": [
 				{
@@ -4252,7 +4126,7 @@
 				}
 			]
 		},
-		"instruction:1:3f": {
+		"instruction:1:3c": {
 			"rustName": "CloseBoxCurveInstruction",
 			"versions": [
 				{
@@ -4295,7 +4169,7 @@
 				}
 			]
 		},
-		"instruction:1:40": {
+		"instruction:1:3d": {
 			"rustName": "ClaimStrandedPrizePoolItemInstruction",
 			"versions": [
 				{

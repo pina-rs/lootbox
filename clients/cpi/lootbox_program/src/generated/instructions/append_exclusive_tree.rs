@@ -136,4 +136,4 @@ impl<'account> AppendExclusiveTree<'account> {
 	}
 }
 
-const APPEND_EXCLUSIVE_TREE_DISCRIMINATOR: [u8; 2] = [55, 0];
+const APPEND_EXCLUSIVE_TREE_DISCRIMINATOR: [u8; 2] = [52, 0];

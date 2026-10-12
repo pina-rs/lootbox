@@ -165,4 +165,4 @@ impl<'account> FundCompressedNftPrize<'account> {
 	}
 }
 
-const FUND_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: [u8; 2] = [33, 0];
+const FUND_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: [u8; 2] = [30, 0];

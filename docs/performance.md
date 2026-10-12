@@ -66,97 +66,97 @@ The box-curve family is measured but reported as advisory: Surfpool's local runt
 
 | Instruction        | Compute units |
 | ------------------ | ------------: |
-| `add_outcome`      |         1,820 |
-| `close_opening`    |         7,562 |
-| `create_lootbox`   |        15,684 |
-| `deposit`          |         4,707 |
-| `migrate`          |           830 |
-| `mint_boxes`       |         9,701 |
-| `refund_open`      |         5,796 |
-| `request_open`     |        27,175 |
-| `seal`             |         1,791 |
-| `settle_open`      |        13,820 |
-| `withdraw_surplus` |         3,732 |
+| `add_outcome`      |         1,812 |
+| `close_opening`    |         7,556 |
+| `create_lootbox`   |        15,676 |
+| `deposit`          |         4,699 |
+| `migrate`          |           744 |
+| `mint_boxes`       |         9,693 |
+| `refund_open`      |         5,788 |
+| `request_open`     |        27,169 |
+| `seal`             |         1,783 |
+| `settle_open`      |        13,814 |
+| `withdraw_surplus` |         3,724 |
 
 ### Treasury templates
 
 | Instruction              | Compute units |
 | ------------------------ | ------------: |
-| `activate_bundle`        |         6,009 |
-| `add_bundle`             |         6,598 |
-| `allocate_template_open` |        21,212 |
-| `cancel_bundle`          |         3,820 |
+| `activate_bundle`        |         6,002 |
+| `add_bundle`             |         6,590 |
+| `allocate_template_open` |        21,204 |
+| `cancel_bundle`          |         3,813 |
 | `claim_mint_prize`       |        13,525 |
-| `claim_sol_prize`        |         5,477 |
+| `claim_sol_prize`        |         5,469 |
 | `claim_token_prize`      |        15,025 |
-| `close_service_vault`    |         5,367 |
-| `close_template_opening` |         7,650 |
-| `create_template`        |        11,939 |
-| `forfeit_template_open`  |         9,006 |
-| `fulfill_template_open`  |        13,587 |
-| `fund_mint_prize`        |         5,347 |
-| `fund_quote_sol_prize`   |         5,106 |
-| `fund_quote_token_prize` |         8,567 |
-| `fund_sol_prize`         |         5,106 |
-| `fund_token_prize`       |         8,639 |
-| `lock_treasury`          |        11,701 |
-| `mint_template_boxes`    |         7,386 |
-| `reclaim_mint_prize`     |         5,623 |
-| `reclaim_sol_prize`      |         4,305 |
-| `reclaim_token_prize`    |        13,463 |
-| `request_template_open`  |        23,981 |
-| `retire_template`        |         2,336 |
-| `seal_template`          |         2,180 |
+| `close_service_vault`    |         5,359 |
+| `close_template_opening` |         7,644 |
+| `create_template`        |        11,931 |
+| `forfeit_template_open`  |         8,997 |
+| `fulfill_template_open`  |        13,581 |
+| `fund_mint_prize`        |         5,339 |
+| `fund_quote_sol_prize`   |         5,097 |
+| `fund_quote_token_prize` |         8,559 |
+| `fund_sol_prize`         |         5,098 |
+| `fund_token_prize`       |         8,637 |
+| `lock_treasury`          |        11,693 |
+| `mint_template_boxes`    |         7,379 |
+| `reclaim_mint_prize`     |         5,616 |
+| `reclaim_sol_prize`      |         4,297 |
+| `reclaim_token_prize`    |        13,422 |
+| `request_template_open`  |        23,976 |
+| `retire_template`        |         2,328 |
+| `seal_template`          |         2,172 |
 
 ### Box curve
 
 | Instruction        | Compute units |
 | ------------------ | ------------: |
-| `buy_curve_boxes`  |        14,371 |
-| `close_box_curve`  |        13,492 |
-| `open_box_curve`   |        14,656 |
-| `sell_curve_boxes` |        12,016 |
+| `buy_curve_boxes`  |        15,867 |
+| `close_box_curve`  |        14,988 |
+| `open_box_curve`   |        16,152 |
+| `sell_curve_boxes` |        13,512 |
 
 ### Prize pool
 
 | Instruction                      | Compute units |
 | -------------------------------- | ------------: |
-| `allocate_prize_pool_open`       |        19,480 |
-| `cancel_prize_pool_item`         |         7,551 |
-| `claim_prize_pool_item`          |        15,288 |
-| `claim_stranded_prize_pool_item` |        20,438 |
-| `close_prize_pool`               |         5,754 |
-| `create_prize_pool`              |        15,002 |
-| `deposit_prize_pool_item`        |        14,985 |
-| `prepare_prize_pool_item`        |        14,889 |
-| `reclaim_prize_pool_item`        |        15,518 |
-| `seal_prize_pool`                |         6,161 |
+| `allocate_prize_pool_open`       |        19,496 |
+| `cancel_prize_pool_item`         |         7,562 |
+| `claim_prize_pool_item`          |        15,248 |
+| `claim_stranded_prize_pool_item` |        20,435 |
+| `close_prize_pool`               |         5,766 |
+| `create_prize_pool`              |        15,001 |
+| `deposit_prize_pool_item`        |        14,976 |
+| `prepare_prize_pool_item`        |        14,884 |
+| `reclaim_prize_pool_item`        |        15,500 |
+| `seal_prize_pool`                |         6,169 |
 
 ### Core-asset prizes (real MPL Core)
 
 | Instruction                | Compute units |
 | -------------------------- | ------------: |
-| `claim_core_asset_prize`   |        12,156 |
-| `fund_core_asset_prize`    |        10,267 |
-| `reclaim_core_asset_prize` |        10,679 |
+| `claim_core_asset_prize`   |        12,136 |
+| `fund_core_asset_prize`    |        10,247 |
+| `reclaim_core_asset_prize` |        10,655 |
 
 ### Exclusive Lootbox NFTs (real Bubblegum V2 and MPL Core)
 
 | Instruction                    | Compute units |
 | ------------------------------ | ------------: |
-| `append_exclusive_tree`        |       115,427 |
-| `attach_exclusive_nft`         |        13,662 |
-| `claim_exclusive_nft`          |       125,532 |
-| `create_exclusive_collection`  |        23,889 |
-| `publish_exclusive_collection` |        21,392 |
-| `reclaim_exclusive_fees`       |         9,353 |
-| `set_exclusive_layer`          |         3,217 |
+| `append_exclusive_tree`        |       115,406 |
+| `attach_exclusive_nft`         |        13,663 |
+| `claim_exclusive_nft`          |       125,486 |
+| `create_exclusive_collection`  |        23,905 |
+| `publish_exclusive_collection` |        21,409 |
+| `reclaim_exclusive_fees`       |         9,333 |
+| `set_exclusive_layer`          |         3,231 |
 
-The `metadataNftPrize`, `compressedNftPrize`, and remaining `coreAssetPrize`-adjacent adapter variants not listed above are gated by the deployed-binary size check and the static profile; runtime journeys for the compressed and Token Metadata trios need the fixture programs described in the benchmark module's documentation.
+The `compressedNftPrize` trio is gated by the deployed-binary size check and the static profile; its runtime journey needs the fixture program described in the benchmark module's documentation.
 
 ## Program size
 
-The deployed `lootbox_program.so` is **576,152 bytes**, built `cdylib`-only with fat LTO, `codegen-units = 1`, and `opt-level = 3` (the profile `pina build` applies). The crate must stay `cdylib`-only: a second `lib` crate type makes rustc silently drop LTO, which cost 17.9% of the program's size and several percent of compute units on every instruction before it was fixed.
+The deployed `lootbox_program.so` is **539,152 bytes**, built `cdylib`-only with fat LTO, `codegen-units = 1`, and `opt-level = 3` (the profile `pina build` applies). The crate must stay `cdylib`-only: a second `lib` crate type makes rustc silently drop LTO, which cost 17.9% of the program's size and several percent of compute units on every instruction before it was fixed. Removing the Token Metadata prize adapters (fund, claim, reclaim) and the unused `PrizeExhausted` error took another 37 KB after LTO; the adapter, prize-pool, and exclusive families dispatch out of line so the LTO-inlined main dispatcher frame stays inside the SBF 4 KiB limit.
 
 The size-optimised `opt-level = "s"` profile was measured and rejected: it saves 9,992 bytes (1.7%) but adds 14% compute units across the core and box-curve families, up to +48% on `open_box_curve`.
 

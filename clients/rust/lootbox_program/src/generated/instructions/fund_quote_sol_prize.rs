@@ -13,7 +13,7 @@
 /// The template authority signs and transfers `lamports_per_win` times the
 /// bundle quantity to the bundle PDA. The treasury must be unlocked and not
 /// retired.
-pub const FUND_QUOTE_SOL_PRIZE_DISCRIMINATOR: u8 = 39u8;
+pub const FUND_QUOTE_SOL_PRIZE_DISCRIMINATOR: u8 = 36u8;
 pub const FUND_QUOTE_SOL_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

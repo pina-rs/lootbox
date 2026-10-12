@@ -15,7 +15,7 @@
 /// pool is funding, below its quantity, and has no prepared item. Recomputes
 /// both leaf hashes from `metadata`, rejects mutable metadata, and creates the
 /// `PrizePoolItemState` PDA at `deposit_cursor` in the prepared state.
-pub const PREPARE_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 51u8;
+pub const PREPARE_PRIZE_POOL_ITEM_DISCRIMINATOR: u8 = 48u8;
 pub const PREPARE_PRIZE_POOL_ITEM_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

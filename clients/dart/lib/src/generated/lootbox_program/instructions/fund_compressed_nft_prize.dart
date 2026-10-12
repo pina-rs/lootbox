@@ -19,7 +19,7 @@ class FundCompressedNftPrizeInstructionData {
     required this.creatorHash,
     required this.nonce,
     required this.index,
-  }) : discriminator = 33,
+  }) : discriminator = 30,
        migrationVersion = 0;
 
   final int discriminator;
@@ -49,7 +49,7 @@ getFundCompressedNftPrizeInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (FundCompressedNftPrizeInstructionData value) => <String, Object?>{
-      'discriminator': 33,
+      'discriminator': 30,
       'migrationVersion': 0,
       'root': value.root,
       'dataHash': value.dataHash,
@@ -84,7 +84,7 @@ getFundCompressedNftPrizeInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(33)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(30)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

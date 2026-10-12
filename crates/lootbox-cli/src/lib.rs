@@ -49,17 +49,14 @@ pub fn build_command(command: &Command) -> Result<Instruction, CliError> {
 		Command::CancelBundle(args) => args.build(),
 		Command::FundSolPrize(args) => args.build(),
 		Command::FundTokenPrize(args) => args.build(),
-		Command::FundMetadataNftPrize(args) => args.build(),
 		Command::FundCoreAssetPrize(args) => args.build(),
 		Command::FundCompressedNftPrize(args) => args.build(),
 		Command::ClaimSolPrize(args) => args.build(),
 		Command::ClaimTokenPrize(args) => args.build(),
-		Command::ClaimMetadataNftPrize(args) => args.build(),
 		Command::ClaimCoreAssetPrize(args) => args.build(),
 		Command::ClaimCompressedNftPrize(args) => args.build(),
 		Command::ReclaimSolPrize(args) => args.build(),
 		Command::ReclaimTokenPrize(args) => args.build(),
-		Command::ReclaimMetadataNftPrize(args) => args.build(),
 		Command::ReclaimCoreAssetPrize(args) => args.build(),
 		Command::ReclaimCompressedNftPrize(args) => args.build(),
 		Command::CreatePrizePool(args) => args.build(),
@@ -165,8 +162,6 @@ pub enum Command {
 	FundSolPrize(build::FundSolPrizeArgs),
 	/// Fund a bundle with a token prize.
 	FundTokenPrize(build::FundTokenPrizeArgs),
-	/// Fund a bundle with a metadata NFT prize.
-	FundMetadataNftPrize(build::FundMetadataNftPrizeArgs),
 	/// Fund a bundle with a core asset prize.
 	FundCoreAssetPrize(build::FundCoreAssetPrizeArgs),
 	/// Fund a bundle with a compressed NFT prize.
@@ -175,8 +170,6 @@ pub enum Command {
 	ClaimSolPrize(build::ClaimSolPrizeArgs),
 	/// Claim the allocated token prize.
 	ClaimTokenPrize(build::ClaimTokenPrizeArgs),
-	/// Claim the allocated metadata NFT prize.
-	ClaimMetadataNftPrize(build::ClaimMetadataNftPrizeArgs),
 	/// Claim the allocated core asset prize.
 	ClaimCoreAssetPrize(build::ClaimCoreAssetPrizeArgs),
 	/// Claim the allocated compressed NFT prize.
@@ -185,8 +178,6 @@ pub enum Command {
 	ReclaimSolPrize(build::ReclaimSolPrizeArgs),
 	/// Reclaim an exhausted token prize from the bundle.
 	ReclaimTokenPrize(build::ReclaimTokenPrizeArgs),
-	/// Reclaim an exhausted metadata NFT prize from the bundle.
-	ReclaimMetadataNftPrize(build::ReclaimMetadataNftPrizeArgs),
 	/// Reclaim an exhausted core asset prize from the bundle.
 	ReclaimCoreAssetPrize(build::ReclaimCoreAssetPrizeArgs),
 	/// Reclaim an exhausted compressed NFT prize from the bundle.

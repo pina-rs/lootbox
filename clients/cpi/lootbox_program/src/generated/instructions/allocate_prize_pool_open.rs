@@ -128,4 +128,4 @@ impl<'account> AllocatePrizePoolOpen<'account> {
 	}
 }
 
-const ALLOCATE_PRIZE_POOL_OPEN_DISCRIMINATOR: [u8; 2] = [47, 0];
+const ALLOCATE_PRIZE_POOL_OPEN_DISCRIMINATOR: [u8; 2] = [44, 0];

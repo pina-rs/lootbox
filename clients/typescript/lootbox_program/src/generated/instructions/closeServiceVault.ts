@@ -12,7 +12,7 @@ import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type I
 import { findServiceVaultPda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const CLOSE_SERVICE_VAULT_DISCRIMINATOR = 38;
+export const CLOSE_SERVICE_VAULT_DISCRIMINATOR = 35;
 
 export function getCloseServiceVaultDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLOSE_SERVICE_VAULT_DISCRIMINATOR); }
 
@@ -28,7 +28,7 @@ export type CloseServiceVaultInstructionData = { discriminator: number; migratio
 export type CloseServiceVaultInstructionDataArgs = {  };
 
 export function getCloseServiceVaultInstructionDataEncoder(): FixedSizeEncoder<CloseServiceVaultInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 38, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()]]), (value) => ({ ...value, discriminator: 35, migrationVersion: 0 }));
 }
 
 export function getCloseServiceVaultInstructionDataDecoder(): FixedSizeDecoder<CloseServiceVaultInstructionData> {

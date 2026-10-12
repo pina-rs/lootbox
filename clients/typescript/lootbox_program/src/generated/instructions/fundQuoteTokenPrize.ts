@@ -11,7 +11,7 @@ import { combineCodec, getStructDecoder, getStructEncoder, getU64Decoder, getU64
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const FUND_QUOTE_TOKEN_PRIZE_DISCRIMINATOR = 40;
+export const FUND_QUOTE_TOKEN_PRIZE_DISCRIMINATOR = 37;
 
 export function getFundQuoteTokenPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(FUND_QUOTE_TOKEN_PRIZE_DISCRIMINATOR); }
 
@@ -31,7 +31,7 @@ export type FundQuoteTokenPrizeInstructionDataArgs = {
 amountPerWin: number | bigint;  };
 
 export function getFundQuoteTokenPrizeInstructionDataEncoder(): FixedSizeEncoder<FundQuoteTokenPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['amountPerWin', getU64Encoder()]]), (value) => ({ ...value, discriminator: 40, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['amountPerWin', getU64Encoder()]]), (value) => ({ ...value, discriminator: 37, migrationVersion: 0 }));
 }
 
 export function getFundQuoteTokenPrizeInstructionDataDecoder(): FixedSizeDecoder<FundQuoteTokenPrizeInstructionData> {

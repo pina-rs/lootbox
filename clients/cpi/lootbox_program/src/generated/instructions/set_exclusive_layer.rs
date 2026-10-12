@@ -102,4 +102,4 @@ impl<'account> SetExclusiveLayer<'account> {
 	}
 }
 
-const SET_EXCLUSIVE_LAYER_DISCRIMINATOR: [u8; 2] = [54, 0];
+const SET_EXCLUSIVE_LAYER_DISCRIMINATOR: [u8; 2] = [51, 0];

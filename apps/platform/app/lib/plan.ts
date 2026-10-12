@@ -18,14 +18,8 @@ import type { DraftAsset, DraftBundle } from "./schemas.js";
 
 export const LAMPORTS_PER_SOL = 1_000_000_000n;
 
-/**
- * Convert one draft prize to an SDK prize. `metadataFor` derives the Token
- * Metadata PDA for a standard NFT (the SDK's escrow adapter needs it).
- */
-export function draftAssetToPrize(
-	asset: DraftAsset,
-	metadataFor: (mint: Address) => Address,
-): PrizeAsset {
+/** Convert one draft prize to an SDK prize. */
+export function draftAssetToPrize(asset: DraftAsset): PrizeAsset {
 	switch (asset.kind) {
 		case "sol":
 			return { kind: "sol", lamports: BigInt(asset.lamports) };
@@ -39,25 +33,17 @@ export function draftAssetToPrize(
 				symbol: asset.symbol,
 			};
 		case "nft":
-			return asset.standard === "core"
-				? { kind: "core", asset: address(asset.mint), name: asset.name }
-				: {
-					kind: "nft",
-					mint: address(asset.mint),
-					name: asset.name,
-					metadata: metadataFor(address(asset.mint)),
-				};
+			return { kind: "core", asset: address(asset.mint), name: asset.name };
 	}
 }
 
 export function draftBundlesToInputs(
 	bundles: readonly DraftBundle[],
-	metadataFor: (mint: Address) => Address,
 ): PrizeBundleInput[] {
 	return bundles.map((bundle) => ({
 		label: bundle.label,
 		quantity: BigInt(bundle.quantity),
-		assets: bundle.assets.map((asset) => draftAssetToPrize(asset, metadataFor)),
+		assets: bundle.assets.map((asset) => draftAssetToPrize(asset)),
 	}));
 }
 

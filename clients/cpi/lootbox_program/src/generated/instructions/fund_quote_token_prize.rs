@@ -123,4 +123,4 @@ impl<'account> FundQuoteTokenPrize<'account> {
 	}
 }
 
-const FUND_QUOTE_TOKEN_PRIZE_DISCRIMINATOR: [u8; 2] = [40, 0];
+const FUND_QUOTE_TOKEN_PRIZE_DISCRIMINATOR: [u8; 2] = [37, 0];

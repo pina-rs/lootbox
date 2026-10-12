@@ -14,7 +14,7 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class CloseBoxCurveInstructionData {
   const CloseBoxCurveInstructionData()
-    : discriminator = 63,
+    : discriminator = 60,
       migrationVersion = 0;
 
   final int discriminator;
@@ -30,7 +30,7 @@ Encoder<CloseBoxCurveInstructionData> getCloseBoxCurveInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (CloseBoxCurveInstructionData value) => <String, Object?>{
-      'discriminator': 63,
+      'discriminator': 60,
       'migrationVersion': 0,
     },
   );
@@ -54,7 +54,7 @@ Decoder<CloseBoxCurveInstructionData> getCloseBoxCurveInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(63)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(60)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

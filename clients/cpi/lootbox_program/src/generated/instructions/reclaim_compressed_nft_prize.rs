@@ -178,4 +178,4 @@ impl<'account> ReclaimCompressedNftPrize<'account> {
 	}
 }
 
-const RECLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: [u8; 2] = [35, 0];
+const RECLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: [u8; 2] = [32, 0];

@@ -103,4 +103,4 @@ impl<'account> CancelPrizePoolItem<'account> {
 	}
 }
 
-const CANCEL_PRIZE_POOL_ITEM_DISCRIMINATOR: [u8; 2] = [52, 0];
+const CANCEL_PRIZE_POOL_ITEM_DISCRIMINATOR: [u8; 2] = [49, 0];

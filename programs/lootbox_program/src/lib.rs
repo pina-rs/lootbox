@@ -120,8 +120,6 @@ pub enum LootboxError {
 	ClaimLocked = 14,
 	/// An earlier opening must be allocated first.
 	AllocationOutOfOrder = 15,
-	/// At least one advertised prize has been exhausted.
-	PrizeExhausted = 16,
 	/// The asset, quantity, or escrow does not match the immutable prize.
 	InvalidPrize = 17,
 	/// This asset has already been delivered for this opening.
@@ -239,85 +237,79 @@ pub enum LootboxInstruction {
 	ActivateBundle = 25,
 	/// Closes the unfunded or fully reclaimed staged tail bundle.
 	CancelBundle = 26,
-	/// Escrows a Metaplex Token Metadata NFT for one asset of a staged bundle.
-	FundMetadataNftPrize = 27,
-	/// Delivers one allocated Token Metadata NFT to the opening's recipient.
-	ClaimMetadataNftPrize = 28,
-	/// Returns an unallocated Token Metadata NFT to the template authority.
-	ReclaimMetadataNftPrize = 29,
 	/// Escrows a Metaplex Core asset for one asset of a staged bundle.
-	FundCoreAssetPrize = 30,
+	FundCoreAssetPrize = 27,
 	/// Delivers one allocated Core asset to the opening's recipient.
-	ClaimCoreAssetPrize = 31,
+	ClaimCoreAssetPrize = 28,
 	/// Returns an unallocated Core asset to the template authority.
-	ReclaimCoreAssetPrize = 32,
+	ReclaimCoreAssetPrize = 29,
 	/// Escrows a Bubblegum compressed NFT for one asset of a staged bundle.
-	FundCompressedNftPrize = 33,
+	FundCompressedNftPrize = 30,
 	/// Delivers one allocated compressed NFT to the opening's recipient.
-	ClaimCompressedNftPrize = 34,
+	ClaimCompressedNftPrize = 31,
 	/// Returns an unallocated compressed NFT to the template authority.
-	ReclaimCompressedNftPrize = 35,
+	ReclaimCompressedNftPrize = 32,
 	/// Advances a FIFO head opening left unrevealed past the timeout without
 	/// consuming inventory.
-	ForfeitTemplateOpen = 36,
+	ForfeitTemplateOpen = 33,
 	/// Irreversibly fixes a live template's box supply to its activated
 	/// inventory.
-	LockTreasury = 37,
+	LockTreasury = 34,
 	/// Returns a retired, fully settled template's service vault balance.
-	CloseServiceVault = 38,
+	CloseServiceVault = 35,
 	/// Escrows winner-routable native SOL for one asset of a staged bundle.
-	FundQuoteSolPrize = 39,
+	FundQuoteSolPrize = 36,
 	/// Escrows a winner-routable token quote for one asset of a staged bundle.
-	FundQuoteTokenPrize = 40,
+	FundQuoteTokenPrize = 37,
 	/// Hands an empty badge mint's authority to a staged bundle for
 	/// mint-on-claim delivery.
-	FundMintPrize = 41,
+	FundMintPrize = 38,
 	/// Mints one allocated badge to the opening's recipient.
-	ClaimMintPrize = 42,
+	ClaimMintPrize = 39,
 	/// Releases unallocated badge copies and revokes the bundle's mint
 	/// authority once every copy is released.
-	ReclaimMintPrize = 43,
+	ReclaimMintPrize = 40,
 	/// Reserves one bundle asset slot for a Bubblegum prize pool over one tree.
-	CreatePrizePool = 44,
+	CreatePrizePool = 41,
 	/// Transfers the prepared compressed NFT into the prize pool's custody.
-	DepositPrizePoolItem = 45,
+	DepositPrizePoolItem = 42,
 	/// Commits a fully deposited prize pool to its bundle slot.
-	SealPrizePool = 46,
+	SealPrizePool = 43,
 	/// Allocates the FIFO head opening and selects one prize-pool item.
-	AllocatePrizePoolOpen = 47,
+	AllocatePrizePoolOpen = 44,
 	/// Transfers the selected prize-pool item to the opening's recipient.
-	ClaimPrizePoolItem = 48,
+	ClaimPrizePoolItem = 45,
 	/// Returns an unassigned prize-pool item to the template authority.
-	ReclaimPrizePoolItem = 49,
+	ReclaimPrizePoolItem = 46,
 	/// Closes an empty, fully recovered, or terminal prize pool.
-	ClosePrizePool = 50,
+	ClosePrizePool = 47,
 	/// Records the verified immutable metadata commitment for the next pool
 	/// item.
-	PreparePrizePoolItem = 51,
+	PreparePrizePoolItem = 48,
 	/// Closes a prepared prize-pool item that was never deposited.
-	CancelPrizePoolItem = 52,
+	CancelPrizePoolItem = 49,
 	/// Creates an Exclusive NFT collection PDA and its Metaplex Core
 	/// collection.
-	CreateExclusiveCollection = 53,
+	CreateExclusiveCollection = 50,
 	/// Loads one trait layer into a draft Exclusive NFT collection.
-	SetExclusiveLayer = 54,
+	SetExclusiveLayer = 51,
 	/// Creates a Bubblegum tree and makes it the collection's active tree.
-	AppendExclusiveTree = 55,
+	AppendExclusiveTree = 52,
 	/// Validates and freezes an Exclusive NFT collection's layer tables.
-	PublishExclusiveCollection = 56,
+	PublishExclusiveCollection = 53,
 	/// Binds a staged bundle asset slot to a published Exclusive NFT
 	/// collection and escrows its mint fees.
-	AttachExclusiveNft = 57,
+	AttachExclusiveNft = 54,
 	/// Mints one allocated Exclusive NFT to the opening's recipient.
-	ClaimExclusiveNft = 58,
+	ClaimExclusiveNft = 55,
 	/// Returns unused Exclusive NFT mint fees to the template authority.
-	ReclaimExclusiveFees = 59,
-	OpenBoxCurve = 60,
-	BuyCurveBoxes = 61,
-	SellCurveBoxes = 62,
-	CloseBoxCurve = 63,
+	ReclaimExclusiveFees = 56,
+	OpenBoxCurve = 57,
+	BuyCurveBoxes = 58,
+	SellCurveBoxes = 59,
+	CloseBoxCurve = 60,
 	/// Claims an assigned pool item after the pool account has closed.
-	ClaimStrandedPrizePoolItem = 64,
+	ClaimStrandedPrizePoolItem = 61,
 }
 
 /// Single-byte account discriminators for every lootbox-owned account.
@@ -1922,6 +1914,147 @@ mod stranded_pool_dispatch {
 	}
 }
 
+/// Metaplex-asset prize adapters, dispatched out of line.
+///
+/// Same reason as the curve family: LTO inlines every handler it can into
+/// the main dispatcher's frame, and that frame stays under 4 KiB only while
+/// a second frame carries these adapters.
+mod adapter_dispatch {
+	use super::*;
+
+	#[inline(never)]
+	pub fn process_instruction(
+		program_id: &Address,
+		accounts: &mut [AccountView],
+		data: &[u8],
+	) -> ProgramResult {
+		let instruction: LootboxInstruction = parse_instruction(program_id, &ID, data)?;
+
+		match instruction {
+			LootboxInstruction::FundCoreAssetPrize => {
+				FundCoreAssetPrizeAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::ClaimCoreAssetPrize => {
+				ClaimCoreAssetPrizeAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::ReclaimCoreAssetPrize => {
+				ReclaimCoreAssetPrizeAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::FundCompressedNftPrize => {
+				FundCompressedNftPrizeAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::ClaimCompressedNftPrize => {
+				ClaimCompressedNftPrizeAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::ReclaimCompressedNftPrize => {
+				ReclaimCompressedNftPrizeAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::FundTokenPrize => {
+				FundTokenPrizeAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::ClaimTokenPrize => {
+				ClaimTokenPrizeAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::ReclaimTokenPrize => {
+				ReclaimTokenPrizeAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			_ => Err(ProgramError::InvalidInstructionData),
+		}
+	}
+}
+
+/// Prize-pool instructions, dispatched out of line.
+///
+/// Same reason as the curve family: LTO inlines every handler it can into
+/// the main dispatcher's frame, and that frame stays under 4 KiB only while
+/// a second frame carries this family.
+mod prize_pool_dispatch {
+	use super::*;
+
+	#[inline(never)]
+	pub fn process_instruction(
+		program_id: &Address,
+		accounts: &mut [AccountView],
+		data: &[u8],
+	) -> ProgramResult {
+		let instruction: LootboxInstruction = parse_instruction(program_id, &ID, data)?;
+
+		match instruction {
+			LootboxInstruction::CreatePrizePool => {
+				CreatePrizePoolAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::PreparePrizePoolItem => {
+				PreparePrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::DepositPrizePoolItem => {
+				DepositPrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::CancelPrizePoolItem => {
+				CancelPrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::SealPrizePool => {
+				SealPrizePoolAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::AllocatePrizePoolOpen => {
+				AllocatePrizePoolOpenAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::ClaimPrizePoolItem => {
+				ClaimPrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::ReclaimPrizePoolItem => {
+				ReclaimPrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::ClosePrizePool => {
+				ClosePrizePoolAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			_ => Err(ProgramError::InvalidInstructionData),
+		}
+	}
+}
+
+/// Exclusive-NFT instructions, dispatched out of line.
+///
+/// Same reason as the curve family: LTO inlines every handler it can into
+/// the main dispatcher's frame, and that frame stays under 4 KiB only while
+/// a second frame carries this family.
+mod exclusive_dispatch {
+	use super::*;
+
+	#[inline(never)]
+	pub fn process_instruction(
+		program_id: &Address,
+		accounts: &mut [AccountView],
+		data: &[u8],
+	) -> ProgramResult {
+		let instruction: LootboxInstruction = parse_instruction(program_id, &ID, data)?;
+
+		match instruction {
+			LootboxInstruction::CreateExclusiveCollection => {
+				CreateExclusiveCollectionAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::SetExclusiveLayer => {
+				SetExclusiveLayerAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::AppendExclusiveTree => {
+				AppendExclusiveTreeAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::PublishExclusiveCollection => {
+				PublishExclusiveCollectionAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::AttachExclusiveNft => {
+				AttachExclusiveNftAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::ClaimExclusiveNft => {
+				ClaimExclusiveNftAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			LootboxInstruction::ReclaimExclusiveFees => {
+				ReclaimExclusiveFeesAccounts::try_from((program_id, accounts))?.process(data)
+			}
+			_ => Err(ProgramError::InvalidInstructionData),
+		}
+	}
+}
+
 /// Box-curve instructions, dispatched out of line.
 ///
 /// Every arm of the main dispatcher keeps its own account-parsing slots in one
@@ -2012,9 +2145,7 @@ pub fn process_instruction(
 		LootboxInstruction::FundSolPrize => {
 			FundSolPrizeAccounts::try_from((program_id, accounts))?.process(data)
 		}
-		LootboxInstruction::FundTokenPrize => {
-			FundTokenPrizeAccounts::try_from((program_id, accounts))?.process(data)
-		}
+
 		LootboxInstruction::SealTemplate => {
 			SealTemplateAccounts::try_from((program_id, accounts))?.process(data)
 		}
@@ -2033,18 +2164,14 @@ pub fn process_instruction(
 		LootboxInstruction::ClaimSolPrize => {
 			ClaimSolPrizeAccounts::try_from((program_id, accounts))?.process(data)
 		}
-		LootboxInstruction::ClaimTokenPrize => {
-			ClaimTokenPrizeAccounts::try_from((program_id, accounts))?.process(data)
-		}
+
 		LootboxInstruction::RetireTemplate => {
 			RetireTemplateAccounts::try_from((program_id, accounts))?.process(data)
 		}
 		LootboxInstruction::ReclaimSolPrize => {
 			ReclaimSolPrizeAccounts::try_from((program_id, accounts))?.process(data)
 		}
-		LootboxInstruction::ReclaimTokenPrize => {
-			ReclaimTokenPrizeAccounts::try_from((program_id, accounts))?.process(data)
-		}
+
 		LootboxInstruction::CloseTemplateOpening => {
 			CloseTemplateOpeningAccounts::try_from((program_id, accounts))?.process(data)
 		}
@@ -2054,32 +2181,16 @@ pub fn process_instruction(
 		LootboxInstruction::CancelBundle => {
 			CancelBundleAccounts::try_from((program_id, accounts))?.process(data)
 		}
-		LootboxInstruction::FundMetadataNftPrize => {
-			FundMetadataNftPrizeAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::ClaimMetadataNftPrize => {
-			ClaimMetadataNftPrizeAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::ReclaimMetadataNftPrize => {
-			ReclaimMetadataNftPrizeAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::FundCoreAssetPrize => {
-			FundCoreAssetPrizeAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::ClaimCoreAssetPrize => {
-			ClaimCoreAssetPrizeAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::ReclaimCoreAssetPrize => {
-			ReclaimCoreAssetPrizeAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::FundCompressedNftPrize => {
-			FundCompressedNftPrizeAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::ClaimCompressedNftPrize => {
-			ClaimCompressedNftPrizeAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::ReclaimCompressedNftPrize => {
-			ReclaimCompressedNftPrizeAccounts::try_from((program_id, accounts))?.process(data)
+		_adapter @ (LootboxInstruction::FundTokenPrize
+		| LootboxInstruction::ClaimTokenPrize
+		| LootboxInstruction::ReclaimTokenPrize
+		| LootboxInstruction::FundCoreAssetPrize
+		| LootboxInstruction::ClaimCoreAssetPrize
+		| LootboxInstruction::ReclaimCoreAssetPrize
+		| LootboxInstruction::FundCompressedNftPrize
+		| LootboxInstruction::ClaimCompressedNftPrize
+		| LootboxInstruction::ReclaimCompressedNftPrize) => {
+			adapter_dispatch::process_instruction(program_id, accounts, data)
 		}
 		LootboxInstruction::ForfeitTemplateOpen => {
 			ForfeitTemplateOpenAccounts::try_from((program_id, accounts))?.process(data)
@@ -2105,56 +2216,28 @@ pub fn process_instruction(
 		LootboxInstruction::ReclaimMintPrize => {
 			ReclaimMintPrizeAccounts::try_from((program_id, accounts))?.process(data)
 		}
-		LootboxInstruction::CreatePrizePool => {
-			CreatePrizePoolAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::PreparePrizePoolItem => {
-			PreparePrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::DepositPrizePoolItem => {
-			DepositPrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::CancelPrizePoolItem => {
-			CancelPrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::SealPrizePool => {
-			SealPrizePoolAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::AllocatePrizePoolOpen => {
-			AllocatePrizePoolOpenAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::ClaimPrizePoolItem => {
-			ClaimPrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::ReclaimPrizePoolItem => {
-			ReclaimPrizePoolItemAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::ClosePrizePool => {
-			ClosePrizePoolAccounts::try_from((program_id, accounts))?.process(data)
+		_pool @ (LootboxInstruction::CreatePrizePool
+		| LootboxInstruction::PreparePrizePoolItem
+		| LootboxInstruction::DepositPrizePoolItem
+		| LootboxInstruction::CancelPrizePoolItem
+		| LootboxInstruction::SealPrizePool
+		| LootboxInstruction::AllocatePrizePoolOpen
+		| LootboxInstruction::ClaimPrizePoolItem
+		| LootboxInstruction::ReclaimPrizePoolItem
+		| LootboxInstruction::ClosePrizePool) => {
+			prize_pool_dispatch::process_instruction(program_id, accounts, data)
 		}
 		_stranded @ LootboxInstruction::ClaimStrandedPrizePoolItem => {
 			stranded_pool_dispatch::process_instruction(program_id, accounts, data)
 		}
-		LootboxInstruction::CreateExclusiveCollection => {
-			CreateExclusiveCollectionAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::SetExclusiveLayer => {
-			SetExclusiveLayerAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::AppendExclusiveTree => {
-			AppendExclusiveTreeAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::PublishExclusiveCollection => {
-			PublishExclusiveCollectionAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::AttachExclusiveNft => {
-			AttachExclusiveNftAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::ClaimExclusiveNft => {
-			ClaimExclusiveNftAccounts::try_from((program_id, accounts))?.process(data)
-		}
-		LootboxInstruction::ReclaimExclusiveFees => {
-			ReclaimExclusiveFeesAccounts::try_from((program_id, accounts))?.process(data)
+		_exclusive @ (LootboxInstruction::CreateExclusiveCollection
+		| LootboxInstruction::SetExclusiveLayer
+		| LootboxInstruction::AppendExclusiveTree
+		| LootboxInstruction::PublishExclusiveCollection
+		| LootboxInstruction::AttachExclusiveNft
+		| LootboxInstruction::ClaimExclusiveNft
+		| LootboxInstruction::ReclaimExclusiveFees) => {
+			exclusive_dispatch::process_instruction(program_id, accounts, data)
 		}
 		// Bound rather than listed, so the IDL reads these arms from the
 		// curve dispatcher instead of recording them twice.
@@ -2178,14 +2261,14 @@ mod tests {
 		assert_eq!(LootboxInstruction::CreateLootbox as u8, 0);
 		assert_eq!(LootboxInstruction::RequestOpen as u8, 5);
 		assert_eq!(LootboxInstruction::WithdrawSurplus as u8, 9);
-		assert_eq!(LootboxInstruction::LockTreasury as u8, 37);
-		assert_eq!(LootboxInstruction::CloseServiceVault as u8, 38);
-		assert_eq!(LootboxInstruction::FundQuoteSolPrize as u8, 39);
-		assert_eq!(LootboxInstruction::FundQuoteTokenPrize as u8, 40);
-		assert_eq!(LootboxInstruction::FundMintPrize as u8, 41);
+		assert_eq!(LootboxInstruction::LockTreasury as u8, 34);
+		assert_eq!(LootboxInstruction::CloseServiceVault as u8, 35);
+		assert_eq!(LootboxInstruction::FundQuoteSolPrize as u8, 36);
+		assert_eq!(LootboxInstruction::FundQuoteTokenPrize as u8, 37);
+		assert_eq!(LootboxInstruction::FundMintPrize as u8, 38);
 
-		assert_eq!(LootboxInstruction::ClaimMintPrize as u8, 42);
-		assert_eq!(LootboxInstruction::ReclaimMintPrize as u8, 43);
+		assert_eq!(LootboxInstruction::ClaimMintPrize as u8, 39);
+		assert_eq!(LootboxInstruction::ReclaimMintPrize as u8, 40);
 	}
 
 	#[test]

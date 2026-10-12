@@ -150,4 +150,4 @@ impl<'account> ClaimCoreAssetPrize<'account> {
 	}
 }
 
-const CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR: [u8; 2] = [31, 0];
+const CLAIM_CORE_ASSET_PRIZE_DISCRIMINATOR: [u8; 2] = [28, 0];

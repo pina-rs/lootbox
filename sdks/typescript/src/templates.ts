@@ -67,16 +67,13 @@ export type PrizeAsset =
 		image?: string;
 	}>
 	| Readonly<{
+		/** A classic supply-one NFT escrowed as a plain token; the mint's
+		 * supply and decimals are validated on chain.
+		 */
 		kind: "nft";
 		mint: Address;
 		name?: string;
 		image?: string;
-		metadata?: Address;
-		edition?: Address;
-		tokenRecord?: Address;
-		destinationTokenRecord?: Address;
-		authorizationRulesProgram?: Address;
-		authorizationRules?: Address;
 	}>
 	| Readonly<{
 		kind: "core";
@@ -400,16 +397,6 @@ export function createTemplatePlan(
 				throw new TemplatePlanError(
 					"INVALID_ASSET",
 					"compressed NFTs need a canonical identity and a complete bounded proof",
-				);
-			}
-			if (
-				asset.kind === "nft" &&
-				(asset.tokenRecord || asset.destinationTokenRecord ||
-					asset.authorizationRulesProgram || asset.authorizationRules)
-			) {
-				throw new TemplatePlanError(
-					"INVALID_ASSET",
-					"programmable NFT rules are not admitted until their mutability is compatibility-tested",
 				);
 			}
 			if (

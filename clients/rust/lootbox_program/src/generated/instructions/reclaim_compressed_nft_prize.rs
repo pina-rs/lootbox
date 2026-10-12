@@ -15,7 +15,7 @@
 /// active bundle is reclaimable only after the template is retired, the box
 /// supply is zero, no openings are pending, and its copy was never drawn. Sets
 /// the slot's reclaimed bit so it cannot be reclaimed twice.
-pub const RECLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: u8 = 35u8;
+pub const RECLAIM_COMPRESSED_NFT_PRIZE_DISCRIMINATOR: u8 = 32u8;
 pub const RECLAIM_COMPRESSED_NFT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

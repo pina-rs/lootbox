@@ -22,7 +22,7 @@ class CreateExclusiveCollectionInstructionData {
     required this.namePrefix,
     required this.symbol,
     required this.baseUri,
-  }) : discriminator = 53,
+  }) : discriminator = 50,
        migrationVersion = 0;
 
   final int discriminator;
@@ -58,7 +58,7 @@ getCreateExclusiveCollectionInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (CreateExclusiveCollectionInstructionData value) => <String, Object?>{
-      'discriminator': 53,
+      'discriminator': 50,
       'migrationVersion': 0,
       'collectionId': value.collectionId,
       'attachOpensAt': value.attachOpensAt,
@@ -99,7 +99,7 @@ getCreateExclusiveCollectionInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(53)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(50)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

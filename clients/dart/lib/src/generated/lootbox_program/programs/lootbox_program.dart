@@ -35,6 +35,31 @@ enum LootboxProgramAccount {
 /// Known instructions for the LootboxProgram program.
 enum LootboxProgramInstruction {
   claimStrandedPrizePoolItem,
+  fundCoreAssetPrize,
+  claimCoreAssetPrize,
+  reclaimCoreAssetPrize,
+  fundCompressedNftPrize,
+  claimCompressedNftPrize,
+  reclaimCompressedNftPrize,
+  fundTokenPrize,
+  claimTokenPrize,
+  reclaimTokenPrize,
+  createPrizePool,
+  preparePrizePoolItem,
+  depositPrizePoolItem,
+  cancelPrizePoolItem,
+  sealPrizePool,
+  allocatePrizePoolOpen,
+  claimPrizePoolItem,
+  reclaimPrizePoolItem,
+  closePrizePool,
+  createExclusiveCollection,
+  setExclusiveLayer,
+  appendExclusiveTree,
+  publishExclusiveCollection,
+  attachExclusiveNft,
+  claimExclusiveNft,
+  reclaimExclusiveFees,
   openBoxCurve,
   buyCurveBoxes,
   sellCurveBoxes,
@@ -52,29 +77,17 @@ enum LootboxProgramInstruction {
   createTemplate,
   addBundle,
   fundSolPrize,
-  fundTokenPrize,
   sealTemplate,
   mintTemplateBoxes,
   requestTemplateOpen,
   fulfillTemplateOpen,
   allocateTemplateOpen,
   claimSolPrize,
-  claimTokenPrize,
   retireTemplate,
   reclaimSolPrize,
-  reclaimTokenPrize,
   closeTemplateOpening,
   activateBundle,
   cancelBundle,
-  fundMetadataNftPrize,
-  claimMetadataNftPrize,
-  reclaimMetadataNftPrize,
-  fundCoreAssetPrize,
-  claimCoreAssetPrize,
-  reclaimCoreAssetPrize,
-  fundCompressedNftPrize,
-  claimCompressedNftPrize,
-  reclaimCompressedNftPrize,
   forfeitTemplateOpen,
   lockTreasury,
   closeServiceVault,
@@ -83,43 +96,127 @@ enum LootboxProgramInstruction {
   fundMintPrize,
   claimMintPrize,
   reclaimMintPrize,
-  createPrizePool,
-  preparePrizePoolItem,
-  depositPrizePoolItem,
-  cancelPrizePoolItem,
-  sealPrizePool,
-  allocatePrizePoolOpen,
-  claimPrizePoolItem,
-  reclaimPrizePoolItem,
-  closePrizePool,
-  createExclusiveCollection,
-  setExclusiveLayer,
-  appendExclusiveTree,
-  publishExclusiveCollection,
-  attachExclusiveNft,
-  claimExclusiveNft,
-  reclaimExclusiveFees,
 }
 
 /// Identifies the type of a LootboxProgram instruction.
 LootboxProgramInstruction identifyLootboxProgramInstruction(Uint8List data) {
-  if (containsBytes(data, getU8Encoder().encode(64), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(61), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.claimStrandedPrizePoolItem;
   }
-  if (containsBytes(data, getU8Encoder().encode(60), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(27), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.fundCoreAssetPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(28), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.claimCoreAssetPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(29), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.reclaimCoreAssetPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(30), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.fundCompressedNftPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(31), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.claimCompressedNftPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(32), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.reclaimCompressedNftPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(13), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.fundTokenPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(20), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.claimTokenPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(23), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.reclaimTokenPrize;
+  }
+  if (containsBytes(data, getU8Encoder().encode(41), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.createPrizePool;
+  }
+  if (containsBytes(data, getU8Encoder().encode(48), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.preparePrizePoolItem;
+  }
+  if (containsBytes(data, getU8Encoder().encode(42), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.depositPrizePoolItem;
+  }
+  if (containsBytes(data, getU8Encoder().encode(49), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.cancelPrizePoolItem;
+  }
+  if (containsBytes(data, getU8Encoder().encode(43), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.sealPrizePool;
+  }
+  if (containsBytes(data, getU8Encoder().encode(44), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.allocatePrizePoolOpen;
+  }
+  if (containsBytes(data, getU8Encoder().encode(45), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.claimPrizePoolItem;
+  }
+  if (containsBytes(data, getU8Encoder().encode(46), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.reclaimPrizePoolItem;
+  }
+  if (containsBytes(data, getU8Encoder().encode(47), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.closePrizePool;
+  }
+  if (containsBytes(data, getU8Encoder().encode(50), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.createExclusiveCollection;
+  }
+  if (containsBytes(data, getU8Encoder().encode(51), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.setExclusiveLayer;
+  }
+  if (containsBytes(data, getU8Encoder().encode(52), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.appendExclusiveTree;
+  }
+  if (containsBytes(data, getU8Encoder().encode(53), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.publishExclusiveCollection;
+  }
+  if (containsBytes(data, getU8Encoder().encode(54), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.attachExclusiveNft;
+  }
+  if (containsBytes(data, getU8Encoder().encode(55), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.claimExclusiveNft;
+  }
+  if (containsBytes(data, getU8Encoder().encode(56), 0) &&
+      containsBytes(data, getU8Encoder().encode(0), 1)) {
+    return LootboxProgramInstruction.reclaimExclusiveFees;
+  }
+  if (containsBytes(data, getU8Encoder().encode(57), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.openBoxCurve;
   }
-  if (containsBytes(data, getU8Encoder().encode(61), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(58), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.buyCurveBoxes;
   }
-  if (containsBytes(data, getU8Encoder().encode(62), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(59), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.sellCurveBoxes;
   }
-  if (containsBytes(data, getU8Encoder().encode(63), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(60), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.closeBoxCurve;
   }
@@ -175,10 +272,6 @@ LootboxProgramInstruction identifyLootboxProgramInstruction(Uint8List data) {
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.fundSolPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(13), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.fundTokenPrize;
-  }
   if (containsBytes(data, getU8Encoder().encode(14), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.sealTemplate;
@@ -203,10 +296,6 @@ LootboxProgramInstruction identifyLootboxProgramInstruction(Uint8List data) {
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.claimSolPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(20), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.claimTokenPrize;
-  }
   if (containsBytes(data, getU8Encoder().encode(21), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.retireTemplate;
@@ -214,10 +303,6 @@ LootboxProgramInstruction identifyLootboxProgramInstruction(Uint8List data) {
   if (containsBytes(data, getU8Encoder().encode(22), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.reclaimSolPrize;
-  }
-  if (containsBytes(data, getU8Encoder().encode(23), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.reclaimTokenPrize;
   }
   if (containsBytes(data, getU8Encoder().encode(24), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
@@ -231,137 +316,37 @@ LootboxProgramInstruction identifyLootboxProgramInstruction(Uint8List data) {
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.cancelBundle;
   }
-  if (containsBytes(data, getU8Encoder().encode(27), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.fundMetadataNftPrize;
-  }
-  if (containsBytes(data, getU8Encoder().encode(28), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.claimMetadataNftPrize;
-  }
-  if (containsBytes(data, getU8Encoder().encode(29), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.reclaimMetadataNftPrize;
-  }
-  if (containsBytes(data, getU8Encoder().encode(30), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.fundCoreAssetPrize;
-  }
-  if (containsBytes(data, getU8Encoder().encode(31), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.claimCoreAssetPrize;
-  }
-  if (containsBytes(data, getU8Encoder().encode(32), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.reclaimCoreAssetPrize;
-  }
   if (containsBytes(data, getU8Encoder().encode(33), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.fundCompressedNftPrize;
-  }
-  if (containsBytes(data, getU8Encoder().encode(34), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.claimCompressedNftPrize;
-  }
-  if (containsBytes(data, getU8Encoder().encode(35), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.reclaimCompressedNftPrize;
-  }
-  if (containsBytes(data, getU8Encoder().encode(36), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.forfeitTemplateOpen;
   }
-  if (containsBytes(data, getU8Encoder().encode(37), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(34), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.lockTreasury;
   }
-  if (containsBytes(data, getU8Encoder().encode(38), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(35), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.closeServiceVault;
   }
-  if (containsBytes(data, getU8Encoder().encode(39), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(36), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.fundQuoteSolPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(40), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(37), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.fundQuoteTokenPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(41), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(38), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.fundMintPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(42), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(39), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.claimMintPrize;
   }
-  if (containsBytes(data, getU8Encoder().encode(43), 0) &&
+  if (containsBytes(data, getU8Encoder().encode(40), 0) &&
       containsBytes(data, getU8Encoder().encode(0), 1)) {
     return LootboxProgramInstruction.reclaimMintPrize;
-  }
-  if (containsBytes(data, getU8Encoder().encode(44), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.createPrizePool;
-  }
-  if (containsBytes(data, getU8Encoder().encode(51), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.preparePrizePoolItem;
-  }
-  if (containsBytes(data, getU8Encoder().encode(45), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.depositPrizePoolItem;
-  }
-  if (containsBytes(data, getU8Encoder().encode(52), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.cancelPrizePoolItem;
-  }
-  if (containsBytes(data, getU8Encoder().encode(46), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.sealPrizePool;
-  }
-  if (containsBytes(data, getU8Encoder().encode(47), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.allocatePrizePoolOpen;
-  }
-  if (containsBytes(data, getU8Encoder().encode(48), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.claimPrizePoolItem;
-  }
-  if (containsBytes(data, getU8Encoder().encode(49), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.reclaimPrizePoolItem;
-  }
-  if (containsBytes(data, getU8Encoder().encode(50), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.closePrizePool;
-  }
-  if (containsBytes(data, getU8Encoder().encode(53), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.createExclusiveCollection;
-  }
-  if (containsBytes(data, getU8Encoder().encode(54), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.setExclusiveLayer;
-  }
-  if (containsBytes(data, getU8Encoder().encode(55), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.appendExclusiveTree;
-  }
-  if (containsBytes(data, getU8Encoder().encode(56), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.publishExclusiveCollection;
-  }
-  if (containsBytes(data, getU8Encoder().encode(57), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.attachExclusiveNft;
-  }
-  if (containsBytes(data, getU8Encoder().encode(58), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.claimExclusiveNft;
-  }
-  if (containsBytes(data, getU8Encoder().encode(59), 0) &&
-      containsBytes(data, getU8Encoder().encode(0), 1)) {
-    return LootboxProgramInstruction.reclaimExclusiveFees;
   }
 
   throw SolanaError(SolanaErrorCode.programClientsFailedToIdentifyInstruction, {
@@ -384,6 +369,213 @@ final class ParsedClaimStrandedPrizePoolItem
     : super(LootboxProgramInstruction.claimStrandedPrizePoolItem);
 
   final ClaimStrandedPrizePoolItemInstructionData data;
+}
+
+/// A parsed FundCoreAssetPrize instruction.
+final class ParsedFundCoreAssetPrize extends ParsedLootboxProgramInstruction {
+  const ParsedFundCoreAssetPrize({required this.data})
+    : super(LootboxProgramInstruction.fundCoreAssetPrize);
+
+  final FundCoreAssetPrizeInstructionData data;
+}
+
+/// A parsed ClaimCoreAssetPrize instruction.
+final class ParsedClaimCoreAssetPrize extends ParsedLootboxProgramInstruction {
+  const ParsedClaimCoreAssetPrize({required this.data})
+    : super(LootboxProgramInstruction.claimCoreAssetPrize);
+
+  final ClaimCoreAssetPrizeInstructionData data;
+}
+
+/// A parsed ReclaimCoreAssetPrize instruction.
+final class ParsedReclaimCoreAssetPrize
+    extends ParsedLootboxProgramInstruction {
+  const ParsedReclaimCoreAssetPrize({required this.data})
+    : super(LootboxProgramInstruction.reclaimCoreAssetPrize);
+
+  final ReclaimCoreAssetPrizeInstructionData data;
+}
+
+/// A parsed FundCompressedNftPrize instruction.
+final class ParsedFundCompressedNftPrize
+    extends ParsedLootboxProgramInstruction {
+  const ParsedFundCompressedNftPrize({required this.data})
+    : super(LootboxProgramInstruction.fundCompressedNftPrize);
+
+  final FundCompressedNftPrizeInstructionData data;
+}
+
+/// A parsed ClaimCompressedNftPrize instruction.
+final class ParsedClaimCompressedNftPrize
+    extends ParsedLootboxProgramInstruction {
+  const ParsedClaimCompressedNftPrize({required this.data})
+    : super(LootboxProgramInstruction.claimCompressedNftPrize);
+
+  final ClaimCompressedNftPrizeInstructionData data;
+}
+
+/// A parsed ReclaimCompressedNftPrize instruction.
+final class ParsedReclaimCompressedNftPrize
+    extends ParsedLootboxProgramInstruction {
+  const ParsedReclaimCompressedNftPrize({required this.data})
+    : super(LootboxProgramInstruction.reclaimCompressedNftPrize);
+
+  final ReclaimCompressedNftPrizeInstructionData data;
+}
+
+/// A parsed FundTokenPrize instruction.
+final class ParsedFundTokenPrize extends ParsedLootboxProgramInstruction {
+  const ParsedFundTokenPrize({required this.data})
+    : super(LootboxProgramInstruction.fundTokenPrize);
+
+  final FundTokenPrizeInstructionData data;
+}
+
+/// A parsed ClaimTokenPrize instruction.
+final class ParsedClaimTokenPrize extends ParsedLootboxProgramInstruction {
+  const ParsedClaimTokenPrize({required this.data})
+    : super(LootboxProgramInstruction.claimTokenPrize);
+
+  final ClaimTokenPrizeInstructionData data;
+}
+
+/// A parsed ReclaimTokenPrize instruction.
+final class ParsedReclaimTokenPrize extends ParsedLootboxProgramInstruction {
+  const ParsedReclaimTokenPrize({required this.data})
+    : super(LootboxProgramInstruction.reclaimTokenPrize);
+
+  final ReclaimTokenPrizeInstructionData data;
+}
+
+/// A parsed CreatePrizePool instruction.
+final class ParsedCreatePrizePool extends ParsedLootboxProgramInstruction {
+  const ParsedCreatePrizePool({required this.data})
+    : super(LootboxProgramInstruction.createPrizePool);
+
+  final CreatePrizePoolInstructionData data;
+}
+
+/// A parsed PreparePrizePoolItem instruction.
+final class ParsedPreparePrizePoolItem extends ParsedLootboxProgramInstruction {
+  const ParsedPreparePrizePoolItem({required this.data})
+    : super(LootboxProgramInstruction.preparePrizePoolItem);
+
+  final PreparePrizePoolItemInstructionData data;
+}
+
+/// A parsed DepositPrizePoolItem instruction.
+final class ParsedDepositPrizePoolItem extends ParsedLootboxProgramInstruction {
+  const ParsedDepositPrizePoolItem({required this.data})
+    : super(LootboxProgramInstruction.depositPrizePoolItem);
+
+  final DepositPrizePoolItemInstructionData data;
+}
+
+/// A parsed CancelPrizePoolItem instruction.
+final class ParsedCancelPrizePoolItem extends ParsedLootboxProgramInstruction {
+  const ParsedCancelPrizePoolItem({required this.data})
+    : super(LootboxProgramInstruction.cancelPrizePoolItem);
+
+  final CancelPrizePoolItemInstructionData data;
+}
+
+/// A parsed SealPrizePool instruction.
+final class ParsedSealPrizePool extends ParsedLootboxProgramInstruction {
+  const ParsedSealPrizePool({required this.data})
+    : super(LootboxProgramInstruction.sealPrizePool);
+
+  final SealPrizePoolInstructionData data;
+}
+
+/// A parsed AllocatePrizePoolOpen instruction.
+final class ParsedAllocatePrizePoolOpen
+    extends ParsedLootboxProgramInstruction {
+  const ParsedAllocatePrizePoolOpen({required this.data})
+    : super(LootboxProgramInstruction.allocatePrizePoolOpen);
+
+  final AllocatePrizePoolOpenInstructionData data;
+}
+
+/// A parsed ClaimPrizePoolItem instruction.
+final class ParsedClaimPrizePoolItem extends ParsedLootboxProgramInstruction {
+  const ParsedClaimPrizePoolItem({required this.data})
+    : super(LootboxProgramInstruction.claimPrizePoolItem);
+
+  final ClaimPrizePoolItemInstructionData data;
+}
+
+/// A parsed ReclaimPrizePoolItem instruction.
+final class ParsedReclaimPrizePoolItem extends ParsedLootboxProgramInstruction {
+  const ParsedReclaimPrizePoolItem({required this.data})
+    : super(LootboxProgramInstruction.reclaimPrizePoolItem);
+
+  final ReclaimPrizePoolItemInstructionData data;
+}
+
+/// A parsed ClosePrizePool instruction.
+final class ParsedClosePrizePool extends ParsedLootboxProgramInstruction {
+  const ParsedClosePrizePool({required this.data})
+    : super(LootboxProgramInstruction.closePrizePool);
+
+  final ClosePrizePoolInstructionData data;
+}
+
+/// A parsed CreateExclusiveCollection instruction.
+final class ParsedCreateExclusiveCollection
+    extends ParsedLootboxProgramInstruction {
+  const ParsedCreateExclusiveCollection({required this.data})
+    : super(LootboxProgramInstruction.createExclusiveCollection);
+
+  final CreateExclusiveCollectionInstructionData data;
+}
+
+/// A parsed SetExclusiveLayer instruction.
+final class ParsedSetExclusiveLayer extends ParsedLootboxProgramInstruction {
+  const ParsedSetExclusiveLayer({required this.data})
+    : super(LootboxProgramInstruction.setExclusiveLayer);
+
+  final SetExclusiveLayerInstructionData data;
+}
+
+/// A parsed AppendExclusiveTree instruction.
+final class ParsedAppendExclusiveTree extends ParsedLootboxProgramInstruction {
+  const ParsedAppendExclusiveTree({required this.data})
+    : super(LootboxProgramInstruction.appendExclusiveTree);
+
+  final AppendExclusiveTreeInstructionData data;
+}
+
+/// A parsed PublishExclusiveCollection instruction.
+final class ParsedPublishExclusiveCollection
+    extends ParsedLootboxProgramInstruction {
+  const ParsedPublishExclusiveCollection({required this.data})
+    : super(LootboxProgramInstruction.publishExclusiveCollection);
+
+  final PublishExclusiveCollectionInstructionData data;
+}
+
+/// A parsed AttachExclusiveNft instruction.
+final class ParsedAttachExclusiveNft extends ParsedLootboxProgramInstruction {
+  const ParsedAttachExclusiveNft({required this.data})
+    : super(LootboxProgramInstruction.attachExclusiveNft);
+
+  final AttachExclusiveNftInstructionData data;
+}
+
+/// A parsed ClaimExclusiveNft instruction.
+final class ParsedClaimExclusiveNft extends ParsedLootboxProgramInstruction {
+  const ParsedClaimExclusiveNft({required this.data})
+    : super(LootboxProgramInstruction.claimExclusiveNft);
+
+  final ClaimExclusiveNftInstructionData data;
+}
+
+/// A parsed ReclaimExclusiveFees instruction.
+final class ParsedReclaimExclusiveFees extends ParsedLootboxProgramInstruction {
+  const ParsedReclaimExclusiveFees({required this.data})
+    : super(LootboxProgramInstruction.reclaimExclusiveFees);
+
+  final ReclaimExclusiveFeesInstructionData data;
 }
 
 /// A parsed OpenBoxCurve instruction.
@@ -522,14 +714,6 @@ final class ParsedFundSolPrize extends ParsedLootboxProgramInstruction {
   final FundSolPrizeInstructionData data;
 }
 
-/// A parsed FundTokenPrize instruction.
-final class ParsedFundTokenPrize extends ParsedLootboxProgramInstruction {
-  const ParsedFundTokenPrize({required this.data})
-    : super(LootboxProgramInstruction.fundTokenPrize);
-
-  final FundTokenPrizeInstructionData data;
-}
-
 /// A parsed SealTemplate instruction.
 final class ParsedSealTemplate extends ParsedLootboxProgramInstruction {
   const ParsedSealTemplate({required this.data})
@@ -578,14 +762,6 @@ final class ParsedClaimSolPrize extends ParsedLootboxProgramInstruction {
   final ClaimSolPrizeInstructionData data;
 }
 
-/// A parsed ClaimTokenPrize instruction.
-final class ParsedClaimTokenPrize extends ParsedLootboxProgramInstruction {
-  const ParsedClaimTokenPrize({required this.data})
-    : super(LootboxProgramInstruction.claimTokenPrize);
-
-  final ClaimTokenPrizeInstructionData data;
-}
-
 /// A parsed RetireTemplate instruction.
 final class ParsedRetireTemplate extends ParsedLootboxProgramInstruction {
   const ParsedRetireTemplate({required this.data})
@@ -600,14 +776,6 @@ final class ParsedReclaimSolPrize extends ParsedLootboxProgramInstruction {
     : super(LootboxProgramInstruction.reclaimSolPrize);
 
   final ReclaimSolPrizeInstructionData data;
-}
-
-/// A parsed ReclaimTokenPrize instruction.
-final class ParsedReclaimTokenPrize extends ParsedLootboxProgramInstruction {
-  const ParsedReclaimTokenPrize({required this.data})
-    : super(LootboxProgramInstruction.reclaimTokenPrize);
-
-  final ReclaimTokenPrizeInstructionData data;
 }
 
 /// A parsed CloseTemplateOpening instruction.
@@ -632,84 +800,6 @@ final class ParsedCancelBundle extends ParsedLootboxProgramInstruction {
     : super(LootboxProgramInstruction.cancelBundle);
 
   final CancelBundleInstructionData data;
-}
-
-/// A parsed FundMetadataNftPrize instruction.
-final class ParsedFundMetadataNftPrize extends ParsedLootboxProgramInstruction {
-  const ParsedFundMetadataNftPrize({required this.data})
-    : super(LootboxProgramInstruction.fundMetadataNftPrize);
-
-  final FundMetadataNftPrizeInstructionData data;
-}
-
-/// A parsed ClaimMetadataNftPrize instruction.
-final class ParsedClaimMetadataNftPrize
-    extends ParsedLootboxProgramInstruction {
-  const ParsedClaimMetadataNftPrize({required this.data})
-    : super(LootboxProgramInstruction.claimMetadataNftPrize);
-
-  final ClaimMetadataNftPrizeInstructionData data;
-}
-
-/// A parsed ReclaimMetadataNftPrize instruction.
-final class ParsedReclaimMetadataNftPrize
-    extends ParsedLootboxProgramInstruction {
-  const ParsedReclaimMetadataNftPrize({required this.data})
-    : super(LootboxProgramInstruction.reclaimMetadataNftPrize);
-
-  final ReclaimMetadataNftPrizeInstructionData data;
-}
-
-/// A parsed FundCoreAssetPrize instruction.
-final class ParsedFundCoreAssetPrize extends ParsedLootboxProgramInstruction {
-  const ParsedFundCoreAssetPrize({required this.data})
-    : super(LootboxProgramInstruction.fundCoreAssetPrize);
-
-  final FundCoreAssetPrizeInstructionData data;
-}
-
-/// A parsed ClaimCoreAssetPrize instruction.
-final class ParsedClaimCoreAssetPrize extends ParsedLootboxProgramInstruction {
-  const ParsedClaimCoreAssetPrize({required this.data})
-    : super(LootboxProgramInstruction.claimCoreAssetPrize);
-
-  final ClaimCoreAssetPrizeInstructionData data;
-}
-
-/// A parsed ReclaimCoreAssetPrize instruction.
-final class ParsedReclaimCoreAssetPrize
-    extends ParsedLootboxProgramInstruction {
-  const ParsedReclaimCoreAssetPrize({required this.data})
-    : super(LootboxProgramInstruction.reclaimCoreAssetPrize);
-
-  final ReclaimCoreAssetPrizeInstructionData data;
-}
-
-/// A parsed FundCompressedNftPrize instruction.
-final class ParsedFundCompressedNftPrize
-    extends ParsedLootboxProgramInstruction {
-  const ParsedFundCompressedNftPrize({required this.data})
-    : super(LootboxProgramInstruction.fundCompressedNftPrize);
-
-  final FundCompressedNftPrizeInstructionData data;
-}
-
-/// A parsed ClaimCompressedNftPrize instruction.
-final class ParsedClaimCompressedNftPrize
-    extends ParsedLootboxProgramInstruction {
-  const ParsedClaimCompressedNftPrize({required this.data})
-    : super(LootboxProgramInstruction.claimCompressedNftPrize);
-
-  final ClaimCompressedNftPrizeInstructionData data;
-}
-
-/// A parsed ReclaimCompressedNftPrize instruction.
-final class ParsedReclaimCompressedNftPrize
-    extends ParsedLootboxProgramInstruction {
-  const ParsedReclaimCompressedNftPrize({required this.data})
-    : super(LootboxProgramInstruction.reclaimCompressedNftPrize);
-
-  final ReclaimCompressedNftPrizeInstructionData data;
 }
 
 /// A parsed ForfeitTemplateOpen instruction.
@@ -776,137 +866,6 @@ final class ParsedReclaimMintPrize extends ParsedLootboxProgramInstruction {
   final ReclaimMintPrizeInstructionData data;
 }
 
-/// A parsed CreatePrizePool instruction.
-final class ParsedCreatePrizePool extends ParsedLootboxProgramInstruction {
-  const ParsedCreatePrizePool({required this.data})
-    : super(LootboxProgramInstruction.createPrizePool);
-
-  final CreatePrizePoolInstructionData data;
-}
-
-/// A parsed PreparePrizePoolItem instruction.
-final class ParsedPreparePrizePoolItem extends ParsedLootboxProgramInstruction {
-  const ParsedPreparePrizePoolItem({required this.data})
-    : super(LootboxProgramInstruction.preparePrizePoolItem);
-
-  final PreparePrizePoolItemInstructionData data;
-}
-
-/// A parsed DepositPrizePoolItem instruction.
-final class ParsedDepositPrizePoolItem extends ParsedLootboxProgramInstruction {
-  const ParsedDepositPrizePoolItem({required this.data})
-    : super(LootboxProgramInstruction.depositPrizePoolItem);
-
-  final DepositPrizePoolItemInstructionData data;
-}
-
-/// A parsed CancelPrizePoolItem instruction.
-final class ParsedCancelPrizePoolItem extends ParsedLootboxProgramInstruction {
-  const ParsedCancelPrizePoolItem({required this.data})
-    : super(LootboxProgramInstruction.cancelPrizePoolItem);
-
-  final CancelPrizePoolItemInstructionData data;
-}
-
-/// A parsed SealPrizePool instruction.
-final class ParsedSealPrizePool extends ParsedLootboxProgramInstruction {
-  const ParsedSealPrizePool({required this.data})
-    : super(LootboxProgramInstruction.sealPrizePool);
-
-  final SealPrizePoolInstructionData data;
-}
-
-/// A parsed AllocatePrizePoolOpen instruction.
-final class ParsedAllocatePrizePoolOpen
-    extends ParsedLootboxProgramInstruction {
-  const ParsedAllocatePrizePoolOpen({required this.data})
-    : super(LootboxProgramInstruction.allocatePrizePoolOpen);
-
-  final AllocatePrizePoolOpenInstructionData data;
-}
-
-/// A parsed ClaimPrizePoolItem instruction.
-final class ParsedClaimPrizePoolItem extends ParsedLootboxProgramInstruction {
-  const ParsedClaimPrizePoolItem({required this.data})
-    : super(LootboxProgramInstruction.claimPrizePoolItem);
-
-  final ClaimPrizePoolItemInstructionData data;
-}
-
-/// A parsed ReclaimPrizePoolItem instruction.
-final class ParsedReclaimPrizePoolItem extends ParsedLootboxProgramInstruction {
-  const ParsedReclaimPrizePoolItem({required this.data})
-    : super(LootboxProgramInstruction.reclaimPrizePoolItem);
-
-  final ReclaimPrizePoolItemInstructionData data;
-}
-
-/// A parsed ClosePrizePool instruction.
-final class ParsedClosePrizePool extends ParsedLootboxProgramInstruction {
-  const ParsedClosePrizePool({required this.data})
-    : super(LootboxProgramInstruction.closePrizePool);
-
-  final ClosePrizePoolInstructionData data;
-}
-
-/// A parsed CreateExclusiveCollection instruction.
-final class ParsedCreateExclusiveCollection
-    extends ParsedLootboxProgramInstruction {
-  const ParsedCreateExclusiveCollection({required this.data})
-    : super(LootboxProgramInstruction.createExclusiveCollection);
-
-  final CreateExclusiveCollectionInstructionData data;
-}
-
-/// A parsed SetExclusiveLayer instruction.
-final class ParsedSetExclusiveLayer extends ParsedLootboxProgramInstruction {
-  const ParsedSetExclusiveLayer({required this.data})
-    : super(LootboxProgramInstruction.setExclusiveLayer);
-
-  final SetExclusiveLayerInstructionData data;
-}
-
-/// A parsed AppendExclusiveTree instruction.
-final class ParsedAppendExclusiveTree extends ParsedLootboxProgramInstruction {
-  const ParsedAppendExclusiveTree({required this.data})
-    : super(LootboxProgramInstruction.appendExclusiveTree);
-
-  final AppendExclusiveTreeInstructionData data;
-}
-
-/// A parsed PublishExclusiveCollection instruction.
-final class ParsedPublishExclusiveCollection
-    extends ParsedLootboxProgramInstruction {
-  const ParsedPublishExclusiveCollection({required this.data})
-    : super(LootboxProgramInstruction.publishExclusiveCollection);
-
-  final PublishExclusiveCollectionInstructionData data;
-}
-
-/// A parsed AttachExclusiveNft instruction.
-final class ParsedAttachExclusiveNft extends ParsedLootboxProgramInstruction {
-  const ParsedAttachExclusiveNft({required this.data})
-    : super(LootboxProgramInstruction.attachExclusiveNft);
-
-  final AttachExclusiveNftInstructionData data;
-}
-
-/// A parsed ClaimExclusiveNft instruction.
-final class ParsedClaimExclusiveNft extends ParsedLootboxProgramInstruction {
-  const ParsedClaimExclusiveNft({required this.data})
-    : super(LootboxProgramInstruction.claimExclusiveNft);
-
-  final ClaimExclusiveNftInstructionData data;
-}
-
-/// A parsed ReclaimExclusiveFees instruction.
-final class ParsedReclaimExclusiveFees extends ParsedLootboxProgramInstruction {
-  const ParsedReclaimExclusiveFees({required this.data})
-    : super(LootboxProgramInstruction.reclaimExclusiveFees);
-
-  final ReclaimExclusiveFeesInstructionData data;
-}
-
 /// Parses a LootboxProgram instruction.
 ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
   Instruction instruction,
@@ -917,113 +876,6 @@ ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
     LootboxProgramInstruction.claimStrandedPrizePoolItem =>
       ParsedClaimStrandedPrizePoolItem(
         data: parseClaimStrandedPrizePoolItemInstruction(instruction),
-      ),
-    LootboxProgramInstruction.openBoxCurve => ParsedOpenBoxCurve(
-      data: parseOpenBoxCurveInstruction(instruction),
-    ),
-    LootboxProgramInstruction.buyCurveBoxes => ParsedBuyCurveBoxes(
-      data: parseBuyCurveBoxesInstruction(instruction),
-    ),
-    LootboxProgramInstruction.sellCurveBoxes => ParsedSellCurveBoxes(
-      data: parseSellCurveBoxesInstruction(instruction),
-    ),
-    LootboxProgramInstruction.closeBoxCurve => ParsedCloseBoxCurve(
-      data: parseCloseBoxCurveInstruction(instruction),
-    ),
-    LootboxProgramInstruction.createLootbox => ParsedCreateLootbox(
-      data: parseCreateLootboxInstruction(instruction),
-    ),
-    LootboxProgramInstruction.addOutcome => ParsedAddOutcome(
-      data: parseAddOutcomeInstruction(instruction),
-    ),
-    LootboxProgramInstruction.deposit => ParsedDeposit(
-      data: parseDepositInstruction(instruction),
-    ),
-    LootboxProgramInstruction.seal => ParsedSeal(
-      data: parseSealInstruction(instruction),
-    ),
-    LootboxProgramInstruction.mintBoxes => ParsedMintBoxes(
-      data: parseMintBoxesInstruction(instruction),
-    ),
-    LootboxProgramInstruction.requestOpen => ParsedRequestOpen(
-      data: parseRequestOpenInstruction(instruction),
-    ),
-    LootboxProgramInstruction.settleOpen => ParsedSettleOpen(
-      data: parseSettleOpenInstruction(instruction),
-    ),
-    LootboxProgramInstruction.refundOpen => ParsedRefundOpen(
-      data: parseRefundOpenInstruction(instruction),
-    ),
-    LootboxProgramInstruction.closeOpening => ParsedCloseOpening(
-      data: parseCloseOpeningInstruction(instruction),
-    ),
-    LootboxProgramInstruction.withdrawSurplus => ParsedWithdrawSurplus(
-      data: parseWithdrawSurplusInstruction(instruction),
-    ),
-    LootboxProgramInstruction.createTemplate => ParsedCreateTemplate(
-      data: parseCreateTemplateInstruction(instruction),
-    ),
-    LootboxProgramInstruction.addBundle => ParsedAddBundle(
-      data: parseAddBundleInstruction(instruction),
-    ),
-    LootboxProgramInstruction.fundSolPrize => ParsedFundSolPrize(
-      data: parseFundSolPrizeInstruction(instruction),
-    ),
-    LootboxProgramInstruction.fundTokenPrize => ParsedFundTokenPrize(
-      data: parseFundTokenPrizeInstruction(instruction),
-    ),
-    LootboxProgramInstruction.sealTemplate => ParsedSealTemplate(
-      data: parseSealTemplateInstruction(instruction),
-    ),
-    LootboxProgramInstruction.mintTemplateBoxes => ParsedMintTemplateBoxes(
-      data: parseMintTemplateBoxesInstruction(instruction),
-    ),
-    LootboxProgramInstruction.requestTemplateOpen => ParsedRequestTemplateOpen(
-      data: parseRequestTemplateOpenInstruction(instruction),
-    ),
-    LootboxProgramInstruction.fulfillTemplateOpen => ParsedFulfillTemplateOpen(
-      data: parseFulfillTemplateOpenInstruction(instruction),
-    ),
-    LootboxProgramInstruction.allocateTemplateOpen =>
-      ParsedAllocateTemplateOpen(
-        data: parseAllocateTemplateOpenInstruction(instruction),
-      ),
-    LootboxProgramInstruction.claimSolPrize => ParsedClaimSolPrize(
-      data: parseClaimSolPrizeInstruction(instruction),
-    ),
-    LootboxProgramInstruction.claimTokenPrize => ParsedClaimTokenPrize(
-      data: parseClaimTokenPrizeInstruction(instruction),
-    ),
-    LootboxProgramInstruction.retireTemplate => ParsedRetireTemplate(
-      data: parseRetireTemplateInstruction(instruction),
-    ),
-    LootboxProgramInstruction.reclaimSolPrize => ParsedReclaimSolPrize(
-      data: parseReclaimSolPrizeInstruction(instruction),
-    ),
-    LootboxProgramInstruction.reclaimTokenPrize => ParsedReclaimTokenPrize(
-      data: parseReclaimTokenPrizeInstruction(instruction),
-    ),
-    LootboxProgramInstruction.closeTemplateOpening =>
-      ParsedCloseTemplateOpening(
-        data: parseCloseTemplateOpeningInstruction(instruction),
-      ),
-    LootboxProgramInstruction.activateBundle => ParsedActivateBundle(
-      data: parseActivateBundleInstruction(instruction),
-    ),
-    LootboxProgramInstruction.cancelBundle => ParsedCancelBundle(
-      data: parseCancelBundleInstruction(instruction),
-    ),
-    LootboxProgramInstruction.fundMetadataNftPrize =>
-      ParsedFundMetadataNftPrize(
-        data: parseFundMetadataNftPrizeInstruction(instruction),
-      ),
-    LootboxProgramInstruction.claimMetadataNftPrize =>
-      ParsedClaimMetadataNftPrize(
-        data: parseClaimMetadataNftPrizeInstruction(instruction),
-      ),
-    LootboxProgramInstruction.reclaimMetadataNftPrize =>
-      ParsedReclaimMetadataNftPrize(
-        data: parseReclaimMetadataNftPrizeInstruction(instruction),
       ),
     LootboxProgramInstruction.fundCoreAssetPrize => ParsedFundCoreAssetPrize(
       data: parseFundCoreAssetPrizeInstruction(instruction),
@@ -1047,29 +899,14 @@ ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
       ParsedReclaimCompressedNftPrize(
         data: parseReclaimCompressedNftPrizeInstruction(instruction),
       ),
-    LootboxProgramInstruction.forfeitTemplateOpen => ParsedForfeitTemplateOpen(
-      data: parseForfeitTemplateOpenInstruction(instruction),
+    LootboxProgramInstruction.fundTokenPrize => ParsedFundTokenPrize(
+      data: parseFundTokenPrizeInstruction(instruction),
     ),
-    LootboxProgramInstruction.lockTreasury => ParsedLockTreasury(
-      data: parseLockTreasuryInstruction(instruction),
+    LootboxProgramInstruction.claimTokenPrize => ParsedClaimTokenPrize(
+      data: parseClaimTokenPrizeInstruction(instruction),
     ),
-    LootboxProgramInstruction.closeServiceVault => ParsedCloseServiceVault(
-      data: parseCloseServiceVaultInstruction(instruction),
-    ),
-    LootboxProgramInstruction.fundQuoteSolPrize => ParsedFundQuoteSolPrize(
-      data: parseFundQuoteSolPrizeInstruction(instruction),
-    ),
-    LootboxProgramInstruction.fundQuoteTokenPrize => ParsedFundQuoteTokenPrize(
-      data: parseFundQuoteTokenPrizeInstruction(instruction),
-    ),
-    LootboxProgramInstruction.fundMintPrize => ParsedFundMintPrize(
-      data: parseFundMintPrizeInstruction(instruction),
-    ),
-    LootboxProgramInstruction.claimMintPrize => ParsedClaimMintPrize(
-      data: parseClaimMintPrizeInstruction(instruction),
-    ),
-    LootboxProgramInstruction.reclaimMintPrize => ParsedReclaimMintPrize(
-      data: parseReclaimMintPrizeInstruction(instruction),
+    LootboxProgramInstruction.reclaimTokenPrize => ParsedReclaimTokenPrize(
+      data: parseReclaimTokenPrizeInstruction(instruction),
     ),
     LootboxProgramInstruction.createPrizePool => ParsedCreatePrizePool(
       data: parseCreatePrizePoolInstruction(instruction),
@@ -1126,5 +963,115 @@ ParsedLootboxProgramInstruction parseLootboxProgramInstruction(
       ParsedReclaimExclusiveFees(
         data: parseReclaimExclusiveFeesInstruction(instruction),
       ),
+    LootboxProgramInstruction.openBoxCurve => ParsedOpenBoxCurve(
+      data: parseOpenBoxCurveInstruction(instruction),
+    ),
+    LootboxProgramInstruction.buyCurveBoxes => ParsedBuyCurveBoxes(
+      data: parseBuyCurveBoxesInstruction(instruction),
+    ),
+    LootboxProgramInstruction.sellCurveBoxes => ParsedSellCurveBoxes(
+      data: parseSellCurveBoxesInstruction(instruction),
+    ),
+    LootboxProgramInstruction.closeBoxCurve => ParsedCloseBoxCurve(
+      data: parseCloseBoxCurveInstruction(instruction),
+    ),
+    LootboxProgramInstruction.createLootbox => ParsedCreateLootbox(
+      data: parseCreateLootboxInstruction(instruction),
+    ),
+    LootboxProgramInstruction.addOutcome => ParsedAddOutcome(
+      data: parseAddOutcomeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.deposit => ParsedDeposit(
+      data: parseDepositInstruction(instruction),
+    ),
+    LootboxProgramInstruction.seal => ParsedSeal(
+      data: parseSealInstruction(instruction),
+    ),
+    LootboxProgramInstruction.mintBoxes => ParsedMintBoxes(
+      data: parseMintBoxesInstruction(instruction),
+    ),
+    LootboxProgramInstruction.requestOpen => ParsedRequestOpen(
+      data: parseRequestOpenInstruction(instruction),
+    ),
+    LootboxProgramInstruction.settleOpen => ParsedSettleOpen(
+      data: parseSettleOpenInstruction(instruction),
+    ),
+    LootboxProgramInstruction.refundOpen => ParsedRefundOpen(
+      data: parseRefundOpenInstruction(instruction),
+    ),
+    LootboxProgramInstruction.closeOpening => ParsedCloseOpening(
+      data: parseCloseOpeningInstruction(instruction),
+    ),
+    LootboxProgramInstruction.withdrawSurplus => ParsedWithdrawSurplus(
+      data: parseWithdrawSurplusInstruction(instruction),
+    ),
+    LootboxProgramInstruction.createTemplate => ParsedCreateTemplate(
+      data: parseCreateTemplateInstruction(instruction),
+    ),
+    LootboxProgramInstruction.addBundle => ParsedAddBundle(
+      data: parseAddBundleInstruction(instruction),
+    ),
+    LootboxProgramInstruction.fundSolPrize => ParsedFundSolPrize(
+      data: parseFundSolPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.sealTemplate => ParsedSealTemplate(
+      data: parseSealTemplateInstruction(instruction),
+    ),
+    LootboxProgramInstruction.mintTemplateBoxes => ParsedMintTemplateBoxes(
+      data: parseMintTemplateBoxesInstruction(instruction),
+    ),
+    LootboxProgramInstruction.requestTemplateOpen => ParsedRequestTemplateOpen(
+      data: parseRequestTemplateOpenInstruction(instruction),
+    ),
+    LootboxProgramInstruction.fulfillTemplateOpen => ParsedFulfillTemplateOpen(
+      data: parseFulfillTemplateOpenInstruction(instruction),
+    ),
+    LootboxProgramInstruction.allocateTemplateOpen =>
+      ParsedAllocateTemplateOpen(
+        data: parseAllocateTemplateOpenInstruction(instruction),
+      ),
+    LootboxProgramInstruction.claimSolPrize => ParsedClaimSolPrize(
+      data: parseClaimSolPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.retireTemplate => ParsedRetireTemplate(
+      data: parseRetireTemplateInstruction(instruction),
+    ),
+    LootboxProgramInstruction.reclaimSolPrize => ParsedReclaimSolPrize(
+      data: parseReclaimSolPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.closeTemplateOpening =>
+      ParsedCloseTemplateOpening(
+        data: parseCloseTemplateOpeningInstruction(instruction),
+      ),
+    LootboxProgramInstruction.activateBundle => ParsedActivateBundle(
+      data: parseActivateBundleInstruction(instruction),
+    ),
+    LootboxProgramInstruction.cancelBundle => ParsedCancelBundle(
+      data: parseCancelBundleInstruction(instruction),
+    ),
+    LootboxProgramInstruction.forfeitTemplateOpen => ParsedForfeitTemplateOpen(
+      data: parseForfeitTemplateOpenInstruction(instruction),
+    ),
+    LootboxProgramInstruction.lockTreasury => ParsedLockTreasury(
+      data: parseLockTreasuryInstruction(instruction),
+    ),
+    LootboxProgramInstruction.closeServiceVault => ParsedCloseServiceVault(
+      data: parseCloseServiceVaultInstruction(instruction),
+    ),
+    LootboxProgramInstruction.fundQuoteSolPrize => ParsedFundQuoteSolPrize(
+      data: parseFundQuoteSolPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.fundQuoteTokenPrize => ParsedFundQuoteTokenPrize(
+      data: parseFundQuoteTokenPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.fundMintPrize => ParsedFundMintPrize(
+      data: parseFundMintPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.claimMintPrize => ParsedClaimMintPrize(
+      data: parseClaimMintPrizeInstruction(instruction),
+    ),
+    LootboxProgramInstruction.reclaimMintPrize => ParsedReclaimMintPrize(
+      data: parseReclaimMintPrizeInstruction(instruction),
+    ),
   };
 }

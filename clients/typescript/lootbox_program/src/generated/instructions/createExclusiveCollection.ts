@@ -11,7 +11,7 @@ import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytes
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const CREATE_EXCLUSIVE_COLLECTION_DISCRIMINATOR = 53;
+export const CREATE_EXCLUSIVE_COLLECTION_DISCRIMINATOR = 50;
 
 export function getCreateExclusiveCollectionDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CREATE_EXCLUSIVE_COLLECTION_DISCRIMINATOR); }
 
@@ -83,7 +83,7 @@ symbol: ReadonlyUint8Array;
 baseUri: ReadonlyUint8Array;  };
 
 export function getCreateExclusiveCollectionInstructionDataEncoder(): FixedSizeEncoder<CreateExclusiveCollectionInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['collectionId', getU64Encoder()], ['attachOpensAt', getI64Encoder()], ['attachClosesAt', getI64Encoder()], ['layerCount', getU8Encoder()], ['bump', getU8Encoder()], ['namePrefix', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['symbol', fixPinaPodEncoderSize(getBytesEncoder(), 10)], ['baseUri', fixPinaPodEncoderSize(getBytesEncoder(), 128)]]), (value) => ({ ...value, discriminator: 53, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['collectionId', getU64Encoder()], ['attachOpensAt', getI64Encoder()], ['attachClosesAt', getI64Encoder()], ['layerCount', getU8Encoder()], ['bump', getU8Encoder()], ['namePrefix', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['symbol', fixPinaPodEncoderSize(getBytesEncoder(), 10)], ['baseUri', fixPinaPodEncoderSize(getBytesEncoder(), 128)]]), (value) => ({ ...value, discriminator: 50, migrationVersion: 0 }));
 }
 
 export function getCreateExclusiveCollectionInstructionDataDecoder(): FixedSizeDecoder<CreateExclusiveCollectionInstructionData> {

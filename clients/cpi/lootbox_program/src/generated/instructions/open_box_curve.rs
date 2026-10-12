@@ -130,4 +130,4 @@ impl<'account> OpenBoxCurve<'account> {
 	}
 }
 
-const OPEN_BOX_CURVE_DISCRIMINATOR: [u8; 2] = [60, 0];
+const OPEN_BOX_CURVE_DISCRIMINATOR: [u8; 2] = [57, 0];

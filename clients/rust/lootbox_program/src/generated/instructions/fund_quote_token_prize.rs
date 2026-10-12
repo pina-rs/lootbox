@@ -13,7 +13,7 @@
 /// The template authority signs the transfer of the per-win amount times the
 /// bundle quantity into the bundle's associated token account. The mint may
 /// carry only metadata extensions and no freeze authority.
-pub const FUND_QUOTE_TOKEN_PRIZE_DISCRIMINATOR: u8 = 40u8;
+pub const FUND_QUOTE_TOKEN_PRIZE_DISCRIMINATOR: u8 = 37u8;
 pub const FUND_QUOTE_TOKEN_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

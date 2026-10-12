@@ -78,10 +78,6 @@ pub enum LootboxProgramError {
 	/// 15 - An earlier opening must be allocated first.
 	#[error("An earlier opening must be allocated first.")]
 	AllocationOutOfOrder = 0xF,
-	/// At least one advertised prize has been exhausted.
-	/// 16 - At least one advertised prize has been exhausted.
-	#[error("At least one advertised prize has been exhausted.")]
-	PrizeExhausted = 0x10,
 	/// The asset, quantity, or escrow does not match the immutable prize.
 	/// 17 - The asset, quantity, or escrow does not match the immutable prize.
 	#[error("The asset, quantity, or escrow does not match the immutable prize.")]

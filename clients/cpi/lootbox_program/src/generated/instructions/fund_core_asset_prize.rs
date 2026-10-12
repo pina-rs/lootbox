@@ -133,4 +133,4 @@ impl<'account> FundCoreAssetPrize<'account> {
 	}
 }
 
-const FUND_CORE_ASSET_PRIZE_DISCRIMINATOR: [u8; 2] = [30, 0];
+const FUND_CORE_ASSET_PRIZE_DISCRIMINATOR: [u8; 2] = [27, 0];

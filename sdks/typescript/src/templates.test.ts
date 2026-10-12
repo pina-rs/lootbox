@@ -129,16 +129,6 @@ describe("finite template plans", () => {
 	it("rejects mutable collection transfer policies", () => {
 		expect(() =>
 			createTemplatePlan({
-				name: "Mutable programmable NFT",
-				bundles: [{
-					label: "NFT",
-					quantity: 1n,
-					assets: [{ kind: "nft", mint: nft, tokenRecord: nft }],
-				}],
-			})
-		).toThrow("programmable NFT");
-		expect(() =>
-			createTemplatePlan({
 				name: "Mutable Core",
 				bundles: [{
 					label: "Core",

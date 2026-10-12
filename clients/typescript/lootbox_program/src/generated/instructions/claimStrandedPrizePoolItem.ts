@@ -11,7 +11,7 @@ import { combineCodec, fixDecoderSize, fixEncoderSize, getArrayDecoder, getArray
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const CLAIM_STRANDED_PRIZE_POOL_ITEM_DISCRIMINATOR = 64;
+export const CLAIM_STRANDED_PRIZE_POOL_ITEM_DISCRIMINATOR = 61;
 
 export function getClaimStrandedPrizePoolItemDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(CLAIM_STRANDED_PRIZE_POOL_ITEM_DISCRIMINATOR); }
 
@@ -61,7 +61,7 @@ index: number;
 metadata: Array<number>;  };
 
 export function getClaimStrandedPrizePoolItemInstructionDataEncoder(): FixedSizeEncoder<ClaimStrandedPrizePoolItemInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()], ['root', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()], ['metadata', fixPinaPodEncoderSize(getArrayEncoder(getU8Encoder(), { size: getU16Encoder() }), 514)]]), (value) => ({ ...value, discriminator: 64, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['assetIndex', getU8Encoder()], ['root', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()], ['metadata', fixPinaPodEncoderSize(getArrayEncoder(getU8Encoder(), { size: getU16Encoder() }), 514)]]), (value) => ({ ...value, discriminator: 61, migrationVersion: 0 }));
 }
 
 export function getClaimStrandedPrizePoolItemInstructionDataDecoder(): FixedSizeDecoder<ClaimStrandedPrizePoolItemInstructionData> {

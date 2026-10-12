@@ -200,4 +200,4 @@ impl<'account, 'argument> ClaimStrandedPrizePoolItem<'account, 'argument> {
 	}
 }
 
-const CLAIM_STRANDED_PRIZE_POOL_ITEM_DISCRIMINATOR: [u8; 2] = [64, 0];
+const CLAIM_STRANDED_PRIZE_POOL_ITEM_DISCRIMINATOR: [u8; 2] = [61, 0];

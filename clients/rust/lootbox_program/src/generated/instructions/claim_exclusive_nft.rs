@@ -15,7 +15,7 @@
 /// collection must match their commitments. Records the claim, derives the
 /// traits from the opening's entropy, takes the next serial, mints through
 /// Bubblegum V2 with the fee vault paying, and emits `ExclusiveNftMintedEvent`.
-pub const CLAIM_EXCLUSIVE_NFT_DISCRIMINATOR: u8 = 58u8;
+pub const CLAIM_EXCLUSIVE_NFT_DISCRIMINATOR: u8 = 55u8;
 pub const CLAIM_EXCLUSIVE_NFT_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

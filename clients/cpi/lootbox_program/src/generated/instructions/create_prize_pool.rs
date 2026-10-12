@@ -125,4 +125,4 @@ impl<'account> CreatePrizePool<'account> {
 	}
 }
 
-const CREATE_PRIZE_POOL_DISCRIMINATOR: [u8; 2] = [44, 0];
+const CREATE_PRIZE_POOL_DISCRIMINATOR: [u8; 2] = [41, 0];

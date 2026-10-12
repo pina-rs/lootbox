@@ -15,7 +15,7 @@
 /// signs. The mint needs zero supply and decimals, no freeze authority, and
 /// immutable metadata if any. Mint authority moves to the bundle PDA and one
 /// badge is recorded per win.
-pub const FUND_MINT_PRIZE_DISCRIMINATOR: u8 = 41u8;
+pub const FUND_MINT_PRIZE_DISCRIMINATOR: u8 = 38u8;
 pub const FUND_MINT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

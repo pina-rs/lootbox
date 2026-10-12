@@ -11,7 +11,7 @@ import { combineCodec, fixDecoderSize, fixEncoderSize, getBytesDecoder, getBytes
 import { getAccountMetaFactory, type InstructionAccountInput, type InstructionAccountInputAddress, type InstructionSignerInput, type ResolvedInstructionAccount, type ResolvedInstructionAccountMeta } from '@solana/program-client-core';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const FUND_COMPRESSED_NFT_PRIZE_DISCRIMINATOR = 33;
+export const FUND_COMPRESSED_NFT_PRIZE_DISCRIMINATOR = 30;
 
 export function getFundCompressedNftPrizeDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(FUND_COMPRESSED_NFT_PRIZE_DISCRIMINATOR); }
 
@@ -59,7 +59,7 @@ nonce: number | bigint;
 index: number;  };
 
 export function getFundCompressedNftPrizeInstructionDataEncoder(): FixedSizeEncoder<FundCompressedNftPrizeInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['root', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()]]), (value) => ({ ...value, discriminator: 33, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['root', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['dataHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['creatorHash', fixPinaPodEncoderSize(getBytesEncoder(), 32)], ['nonce', getU64Encoder()], ['index', getU32Encoder()]]), (value) => ({ ...value, discriminator: 30, migrationVersion: 0 }));
 }
 
 export function getFundCompressedNftPrizeInstructionDataDecoder(): FixedSizeDecoder<FundCompressedNftPrizeInstructionData> {

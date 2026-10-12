@@ -14,7 +14,7 @@ import 'package:solana_kit_instructions/solana_kit_instructions.dart';
 @immutable
 class ClaimExclusiveNftInstructionData {
   const ClaimExclusiveNftInstructionData({required this.assetIndex})
-    : discriminator = 58,
+    : discriminator = 55,
       migrationVersion = 0;
 
   final int discriminator;
@@ -33,7 +33,7 @@ getClaimExclusiveNftInstructionDataEncoder() {
   return transformEncoder(
     structEncoder,
     (ClaimExclusiveNftInstructionData value) => <String, Object?>{
-      'discriminator': 58,
+      'discriminator': 55,
       'migrationVersion': 0,
       'assetIndex': value.assetIndex,
     },
@@ -60,7 +60,7 @@ getClaimExclusiveNftInstructionDataDecoder() {
     Uint8List bytes,
     int offset,
   ) {
-    getConstantDecoder(getU8Encoder().encode(58)).read(bytes, offset + 0);
+    getConstantDecoder(getU8Encoder().encode(55)).read(bytes, offset + 0);
     getConstantDecoder(getU8Encoder().encode(0)).read(bytes, offset + 1);
     final (map, newOffset) = structDecoder.read(bytes, offset);
     if (newOffset != bytes.length) {

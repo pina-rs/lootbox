@@ -12,7 +12,7 @@ import { getAccountMetaFactory, getAddressFromResolvedInstructionAccount, type I
 import { findBoxCurvePda } from '../pdas';
 import { LOOTBOX_PROGRAM_PROGRAM_ADDRESS } from '../programs';
 
-export const SELL_CURVE_BOXES_DISCRIMINATOR = 62;
+export const SELL_CURVE_BOXES_DISCRIMINATOR = 59;
 
 export function getSellCurveBoxesDiscriminatorBytes(): ReadonlyUint8Array { return getU8Encoder().encode(SELL_CURVE_BOXES_DISCRIMINATOR); }
 
@@ -32,7 +32,7 @@ export type SellCurveBoxesInstructionDataArgs = { count: number | bigint;
 minLamports: number | bigint;  };
 
 export function getSellCurveBoxesInstructionDataEncoder(): FixedSizeEncoder<SellCurveBoxesInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['count', getU64Encoder()], ['minLamports', getU64Encoder()]]), (value) => ({ ...value, discriminator: 62, migrationVersion: 0 }));
+    return transformEncoder(getStructEncoder([['discriminator', getU8Encoder()], ['migrationVersion', getU8Encoder()], ['count', getU64Encoder()], ['minLamports', getU64Encoder()]]), (value) => ({ ...value, discriminator: 59, migrationVersion: 0 }));
 }
 
 export function getSellCurveBoxesInstructionDataDecoder(): FixedSizeDecoder<SellCurveBoxesInstructionData> {

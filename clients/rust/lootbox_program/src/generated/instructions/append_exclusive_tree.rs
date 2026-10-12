@@ -15,7 +15,7 @@
 /// a canopy that leaves proofs of at most ten nodes. The collection PDA signs
 /// as tree creator; the resulting tree must be private with no delegate and
 /// no mints.
-pub const APPEND_EXCLUSIVE_TREE_DISCRIMINATOR: u8 = 55u8;
+pub const APPEND_EXCLUSIVE_TREE_DISCRIMINATOR: u8 = 52u8;
 pub const APPEND_EXCLUSIVE_TREE_MIGRATION_VERSION: u8 = 0u8;
 
 /// Accounts.

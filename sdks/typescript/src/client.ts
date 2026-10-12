@@ -1238,14 +1238,14 @@ export class LootboxClient {
 		for (const account of accounts) {
 			const bytes = getBase64Encoder().encode(account.account.data[0]);
 
-			if (bytes[0] === 4) {
+			if (bytes[0] === generated.TEMPLATE_STATE_DISCRIMINATOR) {
 				templates.push({
 					address: account.pubkey,
 					data: generated.getTemplateStateDecoder().decode(bytes),
 				});
 			}
 
-			if (bytes[0] === 6) {
+			if (bytes[0] === generated.TEMPLATE_OPENING_STATE_DISCRIMINATOR) {
 				openings.push({
 					address: account.pubkey,
 					data: generated.getTemplateOpeningStateDecoder().decode(bytes),

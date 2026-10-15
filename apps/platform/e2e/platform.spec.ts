@@ -688,7 +688,17 @@ test("a friend opens a box after the reveal and claims the prize", async ({ page
 
 	await expect(card).toBeVisible({ timeout: 60_000 });
 	await snap(page, "10-prize");
-	await card.getByRole("button", { name: "Claim to wallet" }).click();
+	const claim = card.getByRole("button", { name: "Claim to wallet" });
+	const eligibility = card.getByRole("checkbox");
+
+	// The draw can select an issuer token, whose claim requires confirmation.
+	if (await eligibility.count() > 0) {
+		await expect(claim).toBeDisabled();
+		await eligibility.check();
+	}
+
+	await expect(claim).toBeEnabled();
+	await claim.click();
 	await expect(card.getByText("Delivered to your wallet.")).toBeVisible({
 		timeout: 60_000,
 	});

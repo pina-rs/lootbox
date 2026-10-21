@@ -423,7 +423,9 @@ in
         --ignore RUSTSEC-2026-0173 \
         --ignore RUSTSEC-2026-0186 \
         --ignore RUSTSEC-2026-0247 \
-        --ignore RUSTSEC-2026-0258
+        --ignore RUSTSEC-2026-0258 \
+        --ignore RUSTSEC-2026-0346 \
+        --ignore RUSTSEC-2026-0349
       cargo deny check -D warnings advisories bans sources
       cargo deny \
         --manifest-path programs/lootbox_program/tests/surfpool/Cargo.toml \

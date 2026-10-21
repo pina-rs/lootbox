@@ -29,6 +29,12 @@ ignore = [
 	"RUSTSEC-2026-0173",
 	"RUSTSEC-2026-0258",
 	"RUSTSEC-2024-0449",
+	# rustls 0.21, rustls-webpki 0.101 and webpki-roots 0.25 arrive only through
+	# txtx-addon-kit's reqwest 0.11 and have no patched release on those lines.
+	"RUSTSEC-2026-0346",
+	"RUSTSEC-2026-0349",
+	"RUSTSEC-2026-0381",
+	"RUSTSEC-2026-0382",
 ]
 
 [bans]

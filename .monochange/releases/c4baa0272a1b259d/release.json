@@ -1,0 +1,185 @@
+{
+	"schema_version": "0.10",
+	"kind": "monochange.releaseRecord",
+	"created_at": "2026-10-23T09:36:55Z",
+	"command": "release",
+	"version": "0.0.3",
+	"versions": {
+		"lootbox": "0.0.3"
+	},
+	"release_targets": [
+		{
+			"id": "lootbox",
+			"kind": "group",
+			"version": "0.0.3",
+			"version_format": "namespaced",
+			"tag": false,
+			"release": false,
+			"tag_name": "lootbox/v0.0.3",
+			"rendered_title": "lootbox v0.0.3 (2026-10-23)",
+			"rendered_changelog_title": "lootbox [0.0.3](https://github.com/pina-rs/lootbox/releases/tag/lootbox/v0.0.3) (2026-10-23)",
+			"members": [
+				"switchboard_randomness_cpi",
+				"lootbox_program",
+				"lootbox_sdk",
+				"lootbox_cli",
+				"lootbox_program_client_typescript",
+				"lootbox_sdk_typescript",
+				"lootbox_program_client_dart",
+				"lootbox_sdk_dart"
+			]
+		}
+	],
+	"released_packages": [
+		"@pina-rs/lootbox",
+		"@pina-rs/lootbox-program-client",
+		"lootbox",
+		"lootbox_cli",
+		"lootbox_program",
+		"lootbox_program_client",
+		"lootbox_sdk",
+		"switchboard_randomness_cpi"
+	],
+	"changed_files": [
+		"Cargo.lock",
+		"Cargo.toml",
+		"clients/dart/pubspec.yaml",
+		"clients/typescript/lootbox_program/package.json",
+		"crates/lootbox-cli/Cargo.toml",
+		"crates/switchboard_randomness_cpi/Cargo.toml",
+		"pnpm-lock.yaml",
+		"programs/lootbox_program/Cargo.toml",
+		"programs/lootbox_program/tests/surfpool/Cargo.toml",
+		"sdks/dart/pubspec.lock",
+		"sdks/dart/pubspec.yaml",
+		"sdks/rust/Cargo.toml",
+		"sdks/typescript/package.json"
+	],
+	"package_publications": [],
+	"updated_changelogs": [],
+	"deleted_changesets": [
+		".changeset/host-constant-time-dependencies.md"
+	],
+	"changesets": [
+		{
+			"path": ".changeset/host-constant-time-dependencies.md",
+			"summary": "Update constant-time helpers used by host tooling",
+			"details": "Update the CLI and offline Surfpool harness lockfiles to ctutils 0.4.4, which fixes the constant-time mask generation and 128-bit comparison issues reported in RUSTSEC-2026-0385. The on-chain program source is unchanged.",
+			"targets": [
+				{
+					"id": "lootbox_cli",
+					"kind": "package",
+					"bump": "patch",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "fix"
+				},
+				{
+					"id": "lootbox_program",
+					"kind": "package",
+					"bump": "none",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "none"
+				}
+			],
+			"context": {
+				"provider": "github",
+				"host": "github.com",
+				"capabilities": {
+					"commit_web_urls": true,
+					"actor_profiles": true,
+					"review_request_lookup": true,
+					"related_issues": true,
+					"issue_comments": true
+				},
+				"introduced": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "1a50bf6868ad0c166a0676160f0a3d5b7aeb30d7",
+						"short_sha": "1a50bf6",
+						"url": "https://github.com/pina-rs/lootbox/commit/1a50bf6868ad0c166a0676160f0a3d5b7aeb30d7",
+						"authored_at": "2026-10-23T10:33:21+01:00",
+						"committed_at": "2026-10-23T10:33:21+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#67",
+						"title": "chore(deps): update monochange to 0.21.0",
+						"url": "https://github.com/pina-rs/lootbox/pull/67",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"last_updated": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "1a50bf6868ad0c166a0676160f0a3d5b7aeb30d7",
+						"short_sha": "1a50bf6",
+						"url": "https://github.com/pina-rs/lootbox/commit/1a50bf6868ad0c166a0676160f0a3d5b7aeb30d7",
+						"authored_at": "2026-10-23T10:33:21+01:00",
+						"committed_at": "2026-10-23T10:33:21+01:00",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#67",
+						"title": "chore(deps): update monochange to 0.21.0",
+						"url": "https://github.com/pina-rs/lootbox/pull/67",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"related_issues": []
+			}
+		}
+	],
+	"changelogs": [],
+	"provider": {
+		"kind": "github",
+		"owner": "pina-rs",
+		"repo": "lootbox",
+		"host": null
+	}
+}

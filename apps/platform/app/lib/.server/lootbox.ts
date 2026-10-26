@@ -1,8 +1,9 @@
 /**
  * Loading a lootbox page and authorizing its creator.
  */
-import { type LootboxChainView, readLootboxChain } from "../chain.js";
+import { type LootboxChainView } from "../chain.js";
 import { isSlug } from "../slug.js";
+import { cachedLootboxChain } from "./chain-cache.js";
 import { type AppServices, errorResponse, requireWallet } from "./context.js";
 import { lootboxBySlug, type LootboxRecord } from "./db.js";
 import { rpcUrlFor } from "./env.js";
@@ -44,7 +45,11 @@ export async function readChain(
 	}
 
 	try {
-		const view = await readLootboxChain(rpcUrl, record.template);
+		const view = await cachedLootboxChain(
+			rpcUrl,
+			record.cluster,
+			record.template,
+		);
 
 		return view ? { status: "ok", view } : { status: "missing" };
 	} catch (error) {

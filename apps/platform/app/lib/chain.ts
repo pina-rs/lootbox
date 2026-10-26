@@ -139,12 +139,11 @@ export async function openingsFor(
 	template: Address,
 	beneficiary: Address,
 ): Promise<ChainOpening[]> {
-	const openings = await listTemplateOpenings(
-		readClient(rpcUrl).rpc,
-		template,
-	);
-
-	return openings.filter((opening) => opening.data.beneficiary === beneficiary);
+	// The memcmp filter runs on the RPC node, so a wallet's openings cost
+	// O(theirs), not O(every opening of the template).
+	return listTemplateOpenings(readClient(rpcUrl).rpc, template, {
+		beneficiary,
+	});
 }
 
 /** Can a holder open a box right now? */

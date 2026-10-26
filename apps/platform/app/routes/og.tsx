@@ -7,10 +7,10 @@ import { cache, GoogleFont, ImageResponse } from "@cf-wasm/og/workerd";
 import chestCompactSvg from "@pina-rs/lootbox-brand/assets/logo/mark-compact.svg?raw";
 import chestSvg from "@pina-rs/lootbox-brand/assets/logo/mark.svg?raw";
 
+import { cachedTemplateSummaries } from "../lib/.server/chain-cache.js";
 import { mediaUrl, services } from "../lib/.server/context.js";
 import { originFor, rpcUrlFor } from "../lib/.server/env.js";
 import { requireLootbox } from "../lib/.server/lootbox.js";
-import { readTemplateSummaries } from "../lib/chain.js";
 import { ACCENT_COLORS, lootboxStatus } from "../lib/status.js";
 import type { Route } from "./+types/og";
 
@@ -25,8 +25,9 @@ async function statusLabel(
 	record: Awaited<ReturnType<typeof requireLootbox>>,
 ): Promise<string | null> {
 	try {
-		const [summary] = await readTemplateSummaries(
+		const [summary] = await cachedTemplateSummaries(
 			await rpcUrlFor(app.config, record.cluster),
+			record.cluster,
 			[record.template],
 		);
 

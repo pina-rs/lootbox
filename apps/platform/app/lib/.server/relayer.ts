@@ -158,7 +158,11 @@ export async function runRelayer(
 
 		for (const lootbox of lootboxes) {
 			const rpcUrl = await rpcUrlFor(config, lootbox.cluster);
-			const client = new LootboxClient(rpcUrl, signer);
+			const lut = config.programLuts[lootbox.cluster];
+
+			const client = new LootboxClient(rpcUrl, signer, undefined, {
+				...(lut ? { lookupTableAddresses: [address(lut)] } : {}),
+			});
 			const events: RelayerEvent[] = [];
 			const result = await relayTemplateOpenings({
 				client,

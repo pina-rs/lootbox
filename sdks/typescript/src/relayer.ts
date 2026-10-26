@@ -16,23 +16,22 @@ import {
 	LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
 	TEMPLATE_OPENING_STATE_DISCRIMINATOR,
 } from "@pina-rs/lootbox-program-client";
+import { type Address, getAddressEncoder, getBase64Encoder } from "@solana/kit";
 import {
-	type Address,
-	type Base58EncodedBytes,
-	getAddressEncoder,
-	getBase58Decoder,
-	getBase64Encoder,
-} from "@solana/kit";
-import type {
-	ChainOpening,
-	ChainTemplate,
-	LootboxClient,
-	OracleAccounts,
-	OracleProof,
+	base58Bytes,
+	type ChainOpening,
+	type ChainTemplate,
+	type LootboxClient,
+	type OracleAccounts,
+	type OracleProof,
 } from "./client.js";
 
 /** `TemplateOpeningState.template` follows the discriminator and version. */
 const OPENING_TEMPLATE_OFFSET = 2n;
+
+/** `TemplateOpeningState.beneficiary` follows the discriminator, version,
+ * template, and box authority. */
+const OPENING_BENEFICIARY_OFFSET = 66n;
 
 /** Opening lifecycle values recorded by the program. */
 export const OPENING_STATUS = {
@@ -95,40 +94,59 @@ export type RelayResult = Readonly<{
 /** Base58-encode filter bytes. `Base58EncodedBytes` is a nominal brand with
  * no runtime constructor; Kit documents tagging an encoder's output this way.
  */
-function base58Bytes(bytes: Uint8Array): Base58EncodedBytes {
-	return getBase58Decoder().decode(bytes) as Base58EncodedBytes;
-}
+/** Optional server-side filters for `listTemplateOpenings`. */
+export type ListTemplateOpeningsOptions = Readonly<{
+	/** Only return openings whose immutable prize destination is this address.
+	 * Pushing the filter on chain keeps a beneficiary's openings O(theirs), not
+	 * O(every opening of the template). */
+	beneficiary?: Address;
+}>;
 
 /** Every opening of `template` still on chain, oldest request first. */
 export async function listTemplateOpenings(
 	rpc: LootboxClient["rpc"],
 	template: Address,
+	options: ListTemplateOpeningsOptions = {},
 ): Promise<ChainOpening[]> {
+	const filters = [
+		{
+			memcmp: {
+				offset: 0n,
+				bytes: base58Bytes(
+					new Uint8Array([TEMPLATE_OPENING_STATE_DISCRIMINATOR]),
+				),
+				encoding: "base58" as const,
+			},
+		},
+		{
+			memcmp: {
+				offset: OPENING_TEMPLATE_OFFSET,
+				bytes: base58Bytes(
+					new Uint8Array(getAddressEncoder().encode(template)),
+				),
+				encoding: "base58" as const,
+			},
+		},
+	];
+
+	if (options.beneficiary !== undefined) {
+		filters.push({
+			memcmp: {
+				offset: OPENING_BENEFICIARY_OFFSET,
+				bytes: base58Bytes(
+					new Uint8Array(getAddressEncoder().encode(options.beneficiary)),
+				),
+				encoding: "base58" as const,
+			},
+		});
+	}
+
 	const accounts = await rpc.getProgramAccounts(
 		LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
 		{
 			commitment: "confirmed",
 			encoding: "base64",
-			filters: [
-				{
-					memcmp: {
-						offset: 0n,
-						bytes: base58Bytes(
-							new Uint8Array([TEMPLATE_OPENING_STATE_DISCRIMINATOR]),
-						),
-						encoding: "base58",
-					},
-				},
-				{
-					memcmp: {
-						offset: OPENING_TEMPLATE_OFFSET,
-						bytes: base58Bytes(
-							new Uint8Array(getAddressEncoder().encode(template)),
-						),
-						encoding: "base58",
-					},
-				},
-			],
+			filters,
 		},
 	).send();
 	const decoder = getTemplateOpeningStateDecoder();

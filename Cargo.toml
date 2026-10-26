@@ -24,6 +24,7 @@ rust-version = "1.89.0"
 
 [workspace.dependencies]
 lootbox_program_client = { path = "clients/rust/lootbox_program", version = "0.0.2" }
+lootbox_sdk = { path = "sdks/rust", version = "0.0.2" }
 num-derive = { default-features = false, version = "0.5" }
 num-traits = { default-features = false, version = "0.2" }
 pina = { default-features = false, features = ["compact"], version = "=0.23.0" }

@@ -1,5 +1,11 @@
 import {
+	getResultReceiptStateEncoder,
+	getTemplateOpeningStateDecoder,
+	getTemplateOpeningStateEncoder,
+	getTemplateStateDecoder,
+	getTemplateStateEncoder,
 	MAX_BUBBLEGUM_PROOF_ACCOUNTS,
+	REQUEST_TEMPLATE_OPEN_DISCRIMINATOR,
 	withBubblegumProofAccounts,
 } from "@pina-rs/lootbox-program-client";
 import {
@@ -7,26 +13,38 @@ import {
 	AccountRole,
 	type Address,
 	address,
+	blockhash,
 	createNoopSigner,
+	decompileTransactionMessage,
+	generateKeyPairSigner,
 	getAddressDecoder,
 	getAddressEncoder,
+	getBase64Decoder,
+	getBase64Encoder,
+	getCompiledTransactionMessageDecoder,
 	getProgramDerivedAddress,
+	getTransactionDecoder,
 	getU64Encoder,
 	type Instruction,
 	type InstructionWithAccounts,
 } from "@solana/kit";
 import { describe, expect, it } from "vitest";
+import { computeUnitLimitByNames } from "./budget.js";
 import {
 	assertFundedPrizeMatches,
+	base58Bytes,
 	boundedRejectionTarget,
 	BUBBLEGUM_PROGRAM,
 	bundleAssets,
 	composeWinnerRoutedSolQuoteClaim,
 	composeWinnerRoutedTokenQuoteClaim,
+	LootboxClient,
+	type LootboxRpc,
 	partitionPrizeDeliveryInstructions,
 	prizePoolCommitment,
 	prizePoolManifestAccumulator,
 	readU64,
+	rentExemptionLamports,
 	validateCompressedNftIdentity,
 } from "./client.js";
 
@@ -396,5 +414,403 @@ describe("chain prize decoding", () => {
 				amount: 100n,
 			})
 		).toThrow(/saved prize differs/);
+	});
+});
+
+const PROGRAM_ADDRESS = address("LootKCMiRgk7jcfJiydzgdjEu4WkPce3WdPwepB8J2E");
+const COMPUTE_BUDGET_ADDRESS = address(
+	"ComputeBudget111111111111111111111111111111",
+);
+const LOOKUP_TABLE_ADDRESS = address(
+	"SysvarC1ock11111111111111111111111111111111",
+);
+const LOOKUP_TABLE_MEMBER = address("11111111111111111111111111111111");
+const SENDER = address("9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM");
+
+/** The RPC reads `send` performs, captured for one submission. */
+function sendRpc() {
+	const sent: string[] = [];
+
+	const rpc = {
+		getLatestBlockhash: () => ({
+			send: async () => ({
+				value: {
+					blockhash: blockhash("GHjnZdpDPTpex7X8WqMf9NdawoM4kXQ8JUkvdLdDebeR"),
+					lastValidBlockHeight: 100n,
+				},
+			}),
+		}),
+		getMultipleAccounts: (keys: readonly Address[]) => ({
+			send: async () => ({
+				value: keys.map(() => ({
+					data: {
+						parsed: { info: { addresses: [LOOKUP_TABLE_MEMBER] } },
+						source: "rpc",
+					},
+					executable: false,
+					lamports: 0,
+					owner: LOOKUP_TABLE_MEMBER,
+					rentEpoch: 0,
+					space: 0,
+				})),
+			}),
+		}),
+		sendTransaction: (wire: string) => ({
+			send: async () => {
+				sent.push(wire);
+
+				return "SIGNATURE1";
+			},
+		}),
+		getSignatureStatuses: () => ({
+			send: async () => ({
+				value: [
+					{ confirmationStatus: "confirmed", err: null, slot: 1n },
+				],
+			}),
+		}),
+	} as unknown as LootboxRpc;
+
+	return { rpc, sent };
+}
+
+/** Decode the single transaction a captured send produced. */
+function decodeSent(wire: string) {
+	const transaction = getTransactionDecoder().decode(
+		getBase64Encoder().encode(wire),
+	);
+	const compiled = getCompiledTransactionMessageDecoder().decode(
+		transaction.messageBytes,
+	);
+
+	return {
+		compiled,
+		message: decompileTransactionMessage(compiled, {
+			addressesByLookupTableAddress: {
+				[LOOKUP_TABLE_ADDRESS]: [LOOKUP_TABLE_MEMBER],
+			},
+		}),
+	};
+}
+
+describe("LootboxClient transaction costs", () => {
+	it("memoizes rent exemption per account size", async () => {
+		const reads: bigint[] = [];
+		const rpc = {
+			getMinimumBalanceForRentExemption: (space: bigint) => ({
+				send: async () => {
+					reads.push(space);
+
+					return 890_880n;
+				},
+			}),
+		} as unknown as LootboxRpc;
+		const cache = new Map<number, bigint>();
+
+		await rentExemptionLamports(rpc, 82n, cache);
+		await rentExemptionLamports(rpc, 82, cache);
+		await rentExemptionLamports(rpc, 165n, cache);
+
+		expect(reads).toEqual([82n, 165n]);
+	});
+
+	it("encodes memcmp filters as base58", () => {
+		expect(base58Bytes(new Uint8Array(32))).toBe("1".repeat(32));
+	});
+
+	it("caches lookup table contents per cache lifetime", async () => {
+		let fetches = 0;
+		const rpc = {
+			getMultipleAccounts: (keys: readonly Address[]) => ({
+				send: async () => {
+					fetches += 1;
+
+					return {
+						value: keys.map(() => ({
+							data: {
+								parsed: { info: { addresses: [LOOKUP_TABLE_MEMBER] } },
+								source: "rpc",
+							},
+							executable: false,
+							lamports: 0,
+							owner: LOOKUP_TABLE_MEMBER,
+							rentEpoch: 0,
+							space: 0,
+						})),
+					};
+				},
+			}),
+		} as unknown as LootboxRpc;
+		const client = new LootboxClient(
+			"http://localhost:8899",
+			await generateKeyPairSigner(),
+			undefined,
+			{
+				lookupTableAddresses: [LOOKUP_TABLE_ADDRESS],
+				lookupTableCacheMilliseconds: 3_600_000,
+				rpc,
+			},
+		);
+		const first = await client.lookupTables();
+		const second = await client.lookupTables();
+
+		expect(first).toEqual({ [LOOKUP_TABLE_ADDRESS]: [LOOKUP_TABLE_MEMBER] });
+		expect(second).toBe(first);
+		expect(fetches).toBe(1);
+	});
+
+	it("sends with the measured compute budget and lookup compression", async () => {
+		const { rpc, sent } = sendRpc();
+		const client = new LootboxClient(
+			"http://localhost:8899",
+			await generateKeyPairSigner(),
+			undefined,
+			{ lookupTableAddresses: [LOOKUP_TABLE_ADDRESS], rpc },
+		);
+		const instruction: Instruction = {
+			accounts: [
+				{ address: LOOKUP_TABLE_MEMBER, role: AccountRole.READONLY },
+			],
+			data: new Uint8Array([REQUEST_TEMPLATE_OPEN_DISCRIMINATOR, 0]),
+			programAddress: PROGRAM_ADDRESS,
+		};
+		const signature = await client.send([instruction], "request open");
+
+		expect(signature).toBe("SIGNATURE1");
+		expect(sent).toHaveLength(1);
+
+		const { compiled, message } = decodeSent(sent[0] ?? "");
+		const budget = message.instructions.find(
+			(instruction) => instruction.programAddress === COMPUTE_BUDGET_ADDRESS,
+		);
+
+		expect(budget?.data).toEqual(
+			new Uint8Array([
+				2,
+				...new Uint8Array(
+					new Uint32Array([
+						computeUnitLimitByNames(["requestTemplateOpen"]) ?? 0,
+					])
+						.buffer,
+				),
+			]),
+		);
+		expect(
+			compiled.version === 0
+				? compiled.addressTableLookups?.map(
+					(lookup) => lookup.lookupTableAddress,
+				)
+				: undefined,
+		).toEqual([LOOKUP_TABLE_ADDRESS]);
+		expect(compiled.staticAccounts).not.toContain(LOOKUP_TABLE_MEMBER);
+	});
+
+	it("honors explicit compute unit and priority fee overrides", async () => {
+		const first = sendRpc();
+		const explicit = new LootboxClient(
+			"http://localhost:8899",
+			await generateKeyPairSigner(),
+			undefined,
+			{ rpc: first.rpc },
+		);
+		const instruction: Instruction = {
+			accounts: [],
+			data: new Uint8Array([REQUEST_TEMPLATE_OPEN_DISCRIMINATOR, 0]),
+			programAddress: PROGRAM_ADDRESS,
+		};
+
+		await explicit.send([instruction], "request open", {
+			computeUnitLimit: 12345,
+			priorityFeeMicroLamports: 1000n,
+		});
+
+		const firstMessage = decodeSent(first.sent[0] ?? "").message;
+		const firstBudget = firstMessage.instructions.find(
+			(instruction) => instruction.programAddress === COMPUTE_BUDGET_ADDRESS,
+		);
+		const firstPrice = firstMessage.instructions.find(
+			(instruction) =>
+				instruction.programAddress === COMPUTE_BUDGET_ADDRESS &&
+				instruction.data?.[0] === 3,
+		);
+
+		expect(firstBudget?.data).toEqual(
+			new Uint8Array([2, ...new Uint8Array(new Uint32Array([12345]).buffer)]),
+		);
+		expect(firstPrice?.data?.slice(1)).toEqual(
+			new Uint8Array(new BigUint64Array([1000n]).buffer),
+		);
+
+		const second = sendRpc();
+		const none = new LootboxClient(
+			"http://localhost:8899",
+			await generateKeyPairSigner(),
+			undefined,
+			{ rpc: second.rpc },
+		);
+
+		await none.send([instruction], "request open", {
+			computeUnitLimit: "none",
+		});
+
+		const secondMessage = decodeSent(second.sent[0] ?? "").message;
+
+		expect(secondMessage.instructions).toHaveLength(1);
+		expect(secondMessage.instructions[0]?.programAddress).toBe(PROGRAM_ADDRESS);
+	});
+
+	it("inventories with discriminator filters per account type", async () => {
+		const queries: { filters: unknown[] }[] = [];
+		const templateData = getBase64Decoder().decode(
+			getTemplateStateEncoder().encode({
+				authority: SENDER,
+				boxMint: LOOKUP_TABLE_MEMBER,
+				oracleProgram: LOOKUP_TABLE_MEMBER,
+				oracleQueue: LOOKUP_TABLE_MEMBER,
+				id: 1n,
+				opensAt: 0n,
+				lockedAt: 0n,
+				totalBundles: 0n,
+				totalMinted: 0n,
+				remainingBundles: 0n,
+				pendingOpenings: 0n,
+				nextRequest: 0n,
+				nextAllocation: 0n,
+				revision: 0n,
+				manifestAccumulator: new Uint8Array(32),
+				manifestHash: new Uint8Array(32),
+				settlementBountyLamports: 0n,
+				resultReceiptRentLamports: 0n,
+				remainingResultReceipts: 0n,
+				remainingSettlementBounties: 0n,
+				name: new Uint8Array(32),
+				uri: new Uint8Array(200),
+				bundleCount: 0,
+				status: 0,
+				resultReceiptsEnabled: false,
+				bump: 254,
+				serviceVaultBump: 253,
+				remaining: [],
+			}),
+		);
+		const openingData = getBase64Decoder().decode(
+			getTemplateOpeningStateEncoder().encode({
+				template: LOOKUP_TABLE_MEMBER,
+				boxAuthority: SENDER,
+				beneficiary: SENDER,
+				rentRefund: SENDER,
+				consumerProgram: LOOKUP_TABLE_MEMBER,
+				consumerContext: new Uint8Array(32),
+				randomness: LOOKUP_TABLE_MEMBER,
+				sequence: 1n,
+				seedSlot: 2n,
+				entropy: new Uint8Array(32),
+				treasuryRevision: 0n,
+				eligibleBundleCount: 1,
+				status: 0,
+				selectedBundle: 0,
+				selectedPoolItem: 0,
+				selectedPoolAsset: 0,
+				hasPoolAssignment: false,
+				claimedMask: 0,
+				bump: 254,
+			}),
+		);
+		let call = 0;
+		const rpc = {
+			getProgramAccounts: (
+				_program: Address,
+				config: { filters: unknown[] },
+			) => ({
+				send: async () => {
+					queries.push({ filters: config.filters });
+
+					// The template query is issued first; the opening query second.
+					call += 1;
+
+					return [
+						{
+							account: { data: [call === 1 ? templateData : openingData] },
+							pubkey: LOOKUP_TABLE_MEMBER,
+						},
+					];
+				},
+			}),
+		} as unknown as LootboxRpc;
+		const client = new LootboxClient(
+			"http://localhost:8899",
+			await generateKeyPairSigner(),
+			undefined,
+			{ rpc },
+		);
+		const inventory = await client.inventory();
+
+		expect(queries).toHaveLength(2);
+		expect(queries[0]?.filters).toHaveLength(1);
+		expect(queries[1]?.filters).toHaveLength(1);
+		expect(inventory.templates).toHaveLength(1);
+		expect(inventory.templates[0]?.data.id).toBe(1n);
+		expect(inventory.openings).toHaveLength(1);
+		expect(inventory.openings[0]?.data.sequence).toBe(1n);
+	});
+
+	it("quotes service funding from memoized rent reads", async () => {
+		const reads: bigint[] = [];
+		const rpc = {
+			getMinimumBalanceForRentExemption: (space: bigint) => ({
+				send: async () => {
+					reads.push(space);
+
+					return 1_000n;
+				},
+			}),
+		} as unknown as LootboxRpc;
+		const client = new LootboxClient(
+			"http://localhost:8899",
+			await generateKeyPairSigner(),
+			undefined,
+			{ rpc },
+		);
+		const data = getTemplateStateEncoder().encode({
+			authority: SENDER,
+			boxMint: LOOKUP_TABLE_MEMBER,
+			oracleProgram: LOOKUP_TABLE_MEMBER,
+			oracleQueue: LOOKUP_TABLE_MEMBER,
+			id: 1n,
+			opensAt: 0n,
+			lockedAt: 0n,
+			totalBundles: 3n,
+			totalMinted: 0n,
+			remainingBundles: 3n,
+			pendingOpenings: 0n,
+			nextRequest: 0n,
+			nextAllocation: 0n,
+			revision: 0n,
+			manifestAccumulator: new Uint8Array(32),
+			manifestHash: new Uint8Array(32),
+			settlementBountyLamports: 5_000n,
+			resultReceiptRentLamports: 0n,
+			remainingResultReceipts: 3n,
+			remainingSettlementBounties: 3n,
+			name: new Uint8Array(32),
+			uri: new Uint8Array(200),
+			bundleCount: 0,
+			status: 0,
+			resultReceiptsEnabled: true,
+			bump: 254,
+			serviceVaultBump: 253,
+			remaining: [],
+		});
+		const quote = await client.serviceFundingQuote({
+			address: LOOKUP_TABLE_MEMBER,
+			data: getTemplateStateDecoder().decode(data),
+		});
+
+		expect(reads).toEqual([
+			BigInt(getResultReceiptStateEncoder().fixedSize),
+			0n,
+		]);
+		expect(quote.resultReceiptRent).toBe(1_000n);
+		expect(quote.serviceVaultRent).toBe(1_000n);
 	});
 });

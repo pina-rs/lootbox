@@ -1,0 +1,98 @@
+{
+	"$comment": "Measured compute units per lootbox instruction and the shared client compute-unit budget policy. Numbers come from the deterministic Surfpool journeys in docs/performance.md; keep the planners in sdks/typescript, sdks/dart, and sdks/rust aligned with this file. A null limit means the caller must not set a compute-unit instruction.",
+	"policy": {
+		"multiplier": 2,
+		"addend": 10000,
+		"minimum": 50000,
+		"maximum": 1398000
+	},
+	"instructions": {
+		"activateBundle": 6000,
+		"addBundle": 6590,
+		"allocateTemplateOpen": 21204,
+		"cancelBundle": 3813,
+		"claimMintPrize": 13525,
+		"claimSolPrize": 5469,
+		"claimTokenPrize": 15025,
+		"closeServiceVault": 5359,
+		"closeTemplateOpening": 7642,
+		"createTemplate": 11931,
+		"forfeitTemplateOpen": 8997,
+		"fulfillTemplateOpen": 13579,
+		"fundMintPrize": 5338,
+		"fundQuoteSolPrize": 5097,
+		"fundQuoteTokenPrize": 8559,
+		"fundSolPrize": 5098,
+		"fundTokenPrize": 8639,
+		"lockTreasury": 11693,
+		"mintTemplateBoxes": 7379,
+		"reclaimMintPrize": 5615,
+		"reclaimSolPrize": 4297,
+		"reclaimTokenPrize": 13422,
+		"requestTemplateOpen": 23972,
+		"retireTemplate": 2328,
+		"sealTemplate": 2172,
+		"buyCurveBoxes": 11369,
+		"closeBoxCurve": 10490,
+		"openBoxCurve": 11654,
+		"sellCurveBoxes": 9014,
+		"allocatePrizePoolOpen": 19497,
+		"cancelPrizePoolItem": 7564,
+		"claimPrizePoolItem": 15249,
+		"claimStrandedPrizePoolItem": 20434,
+		"closePrizePool": 5767,
+		"createPrizePool": 15002,
+		"depositPrizePoolItem": 14979,
+		"preparePrizePoolItem": 14874,
+		"reclaimPrizePoolItem": 15504,
+		"sealPrizePool": 6170,
+		"claimCoreAssetPrize": 12135,
+		"fundCoreAssetPrize": 10246,
+		"reclaimCoreAssetPrize": 10654,
+		"appendExclusiveTree": 115407,
+		"attachExclusiveNft": 13663,
+		"claimExclusiveNft": 125489,
+		"createExclusiveCollection": 23905,
+		"publishExclusiveCollection": 21409,
+		"reclaimExclusiveFees": 9328,
+		"setExclusiveLayer": 3231
+	},
+	"cases": [
+		{
+			"instructions": [
+				"requestTemplateOpen"
+			],
+			"expectedLimit": 57944
+		},
+		{
+			"instructions": [
+				"requestTemplateOpen",
+				"fulfillTemplateOpen"
+			],
+			"expectedLimit": 85102
+		},
+		{
+			"instructions": [
+				"retireTemplate"
+			],
+			"expectedLimit": 50000
+		},
+		{
+			"instructions": [
+				"claimExclusiveNft",
+				"claimExclusiveNft"
+			],
+			"expectedLimit": 511956
+		},
+		{
+			"instructions": [
+				"claimCompressedNftPrize"
+			],
+			"expectedLimit": null
+		},
+		{
+			"instructions": [],
+			"expectedLimit": null
+		}
+	]
+}

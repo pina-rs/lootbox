@@ -23,13 +23,13 @@ struct RpcSubmitter {
 }
 
 impl Submit for RpcSubmitter {
-	fn submit(&self, instruction: &Instruction) -> Result<SubmitOutcome, CliError> {
+	fn submit(&self, instructions: &[Instruction]) -> Result<SubmitOutcome, CliError> {
 		let blockhash = self
 			.client
 			.get_latest_blockhash()
 			.map_err(|error| CliError::Rpc(error.to_string()))?;
 		let transaction = solana_transaction::Transaction::new_signed_with_payer(
-			std::slice::from_ref(instruction),
+			instructions,
 			Some(&self.payer.pubkey()),
 			&[&self.payer],
 			blockhash,

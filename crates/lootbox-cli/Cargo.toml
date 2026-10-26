@@ -19,6 +19,7 @@ path = "src/lib.rs"
 base64 = { default-features = false, version = "0.22" }
 clap = { features = ["derive"], version = "4" }
 lootbox_program_client = { workspace = true }
+lootbox_sdk = { workspace = true }
 serde_json = { default-features = false, version = "1", features = ["std"] }
 solana-client = { default-features = false, version = "4.2" }
 solana-commitment-config = { default-features = false, version = "3.1" }

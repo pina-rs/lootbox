@@ -32,6 +32,15 @@ fn mint_with_metadata(program: &Harness, template: &Pubkey) -> Pubkey {
 /// [`mint_with_metadata`] with a caller-supplied mint keypair, for the
 /// deterministic benchmark fixtures.
 fn mint_with_metadata_keypair(program: &Harness, template: &Pubkey, mint: &Keypair) -> Pubkey {
+	metadata_mint_with_pointer_authority(program, template, mint, None)
+}
+
+fn metadata_mint_with_pointer_authority(
+	program: &Harness,
+	template: &Pubkey,
+	mint: &Keypair,
+	pointer_authority: Option<Pubkey>,
+) -> Pubkey {
 	let payer = program.payer();
 	let address = mint.pubkey();
 	let instructions = [
@@ -39,7 +48,7 @@ fn mint_with_metadata_keypair(program: &Harness, template: &Pubkey, mint: &Keypa
 		spl_token_2022_interface::extension::metadata_pointer::instruction::initialize(
 			&token_2022(),
 			&address,
-			None,
+			pointer_authority,
 			Some(address),
 		)
 		.expect("pointer"),
@@ -210,16 +219,37 @@ fn fund_mint_badge(
 	bundle: Pubkey,
 	mint: Pubkey,
 ) -> Result<(), std::string::String> {
-	program.send(
+	let token_program = program.account(&mint).expect("badge mint").owner;
+	let policy: serde_json::Value = serde_json::from_str(include_str!(
+		"../../../../../tests/vectors/compute-units.json"
+	))
+	.expect("SDK budget policy");
+	let limit = u32::try_from(
+		policy["policy"]["minimum"]
+			.as_u64()
+			.expect("minimum budget"),
+	)
+	.expect("u32 compute limit");
+	let mut budget_data = vec![2];
+	budget_data.extend_from_slice(&limit.to_le_bytes());
+	let budget = Instruction::new_with_bytes(
+		"ComputeBudget111111111111111111111111111111"
+			.parse()
+			.expect("compute budget program"),
+		&budget_data,
+		vec![],
+	);
+	let funding = program.instruction(
 		&[LootboxInstruction::FundMintPrize as u8, 0],
 		vec![
 			AccountMeta::new_readonly(program.payer(), true),
 			AccountMeta::new(template, false),
 			AccountMeta::new(bundle, false),
 			AccountMeta::new(mint, false),
-			AccountMeta::new_readonly(token_program_id(), false),
+			AccountMeta::new_readonly(token_program, false),
 		],
-	)
+	);
+	program.send_instructions_with_signers(&[budget, funding], &[])
 }
 
 fn fund_token(
@@ -1568,8 +1598,14 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 			fund_mint_badge(&program, template, bundle, bad_mint).is_err(),
 			"badge funding rejects pre-existing supply"
 		);
+		let mutable_pointer =
+			metadata_mint_with_pointer_authority(&program, &payer, &Keypair::new(), Some(payer));
+		assert!(
+			fund_mint_badge(&program, template, bundle, mutable_pointer).is_err(),
+			"immutable metadata cannot be advertised through a mutable pointer",
+		);
 
-		let badge_mint = provision_mint(&program, &payer, &payer).expect("badge mint");
+		let badge_mint = mint_with_metadata(&program, &payer);
 		fund_mint_badge(&program, template, bundle, badge_mint).expect("badge authority escrow");
 		let badge = program.account(&badge_mint).expect("funded badge mint");
 		assert_eq!(&badge.data[..4], &[1, 0, 0, 0]);
@@ -1671,8 +1707,7 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 			.expect("fulfill");
 		}
 
-		let badge_ata =
-			provision_ata(&program, &payer, &recipient.pubkey(), &badge_mint).expect("badge ATA");
+		let badge_ata = box_ata(&program, &recipient.pubkey(), &badge_mint);
 		let quote_ata =
 			provision_ata(&program, &payer, &recipient.pubkey(), &quote_mint).expect("quote ATA");
 		let quote_balance_before = program.balance(&recipient.pubkey()).expect("quote balance");
@@ -1772,7 +1807,7 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 					AccountMeta::new_readonly(recipient.pubkey(), false),
 					AccountMeta::new(badge_mint, false),
 					AccountMeta::new(badge_ata, false),
-					AccountMeta::new_readonly(token_program_id(), false),
+					AccountMeta::new_readonly(token_2022(), false),
 				],
 			);
 			if index == 0 {
@@ -1785,7 +1820,7 @@ fn quote_intent_is_atomic_and_badge_mint_is_capped() {
 						AccountMeta::new_readonly(payer, false),
 						AccountMeta::new(badge_mint, false),
 						AccountMeta::new(badge_ata, false),
-						AccountMeta::new_readonly(token_program_id(), false),
+						AccountMeta::new_readonly(token_2022(), false),
 					],
 				);
 				assert!(

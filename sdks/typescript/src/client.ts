@@ -2863,6 +2863,8 @@ export class LootboxClient {
 	}
 	/** Create an empty classic badge mint. Funding transfers its mint authority
 	 * to the bundle PDA; pass that address when resuming a funded draft.
+	 * Its identity is the mint address. External wallet metadata is unverified;
+	 * use createMetadataBadgeMint for an immutable name and URI.
 	 */
 	async createBadgeMint(
 		mint: TransactionSigner,
@@ -2946,11 +2948,21 @@ export class LootboxClient {
 					entry.__kind === "TokenMetadata"
 				)
 				: undefined;
+			const pointer = data.extensions.__option === "Some"
+				? data.extensions.value.find((entry) =>
+					entry.__kind === "MetadataPointer"
+				)
+				: undefined;
 			if (
 				data.decimals !== 0 || !authorityMatches ||
 				data.freezeAuthority.__option !== "None" ||
 				tokenMetadata?.__kind !== "TokenMetadata" ||
 				tokenMetadata.updateAuthority.__option !== "None" ||
+				tokenMetadata.mint !== mint.address ||
+				pointer?.__kind !== "MetadataPointer" ||
+				pointer.authority.__option !== "None" ||
+				pointer.metadataAddress.__option !== "Some" ||
+				pointer.metadataAddress.value !== mint.address ||
 				tokenMetadata.name !== metadata.name ||
 				tokenMetadata.symbol !== metadata.symbol ||
 				tokenMetadata.uri !== metadata.uri

@@ -48,6 +48,8 @@ There is deliberately no oracle, launch-token promise, program-selected price, c
 
 Funding accepts an empty classic or safe Token-2022 mint only when it has zero supply, zero decimals, the creator as mint authority, and no freeze authority. Funding then transfers mint authority to the bundle PDA. The authority transfer is irreversible from the creator's perspective.
 
+Token-2022 badges must carry embedded metadata bound to the badge mint, with both the metadata update authority and metadata-pointer authority revoked and the pointer fixed to the mint itself. Classic badges promise only a specific mint address and supply cap. External wallet names, images, and Metaplex metadata for classic badges are unverified and may change; they are not part of the prize's identity guarantee. Use the SDK's `createMetadataBadgeMint` when a badge needs an immutable name and URI.
+
 Each successful `claimMintPrize`:
 
 1. verifies the opening's bound beneficiary and canonical destination ATA;

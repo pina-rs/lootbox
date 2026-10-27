@@ -783,8 +783,9 @@ pub struct FundQuoteTokenPrizeInstruction {
 ///
 /// The template authority, which must be the mint's current mint authority,
 /// signs. The mint needs zero supply and decimals, no freeze authority, and
-/// immutable metadata if any. Mint authority moves to the bundle PDA and one
-/// badge is recorded per win.
+/// immutable, self-pointing embedded metadata for Token-2022 badges. Classic
+/// badges promise only their mint address; external metadata is not verified.
+/// Mint authority moves to the bundle PDA and one badge is recorded per win.
 #[instruction(discriminator = LootboxInstruction::FundMintPrize, migrations)]
 pub struct FundMintPrizeInstruction {}
 
@@ -1326,6 +1327,22 @@ fn assert_template_mint(
 
 fn metadata_bytes(data: &[u8]) -> Result<&[u8], ProgramError> {
 	find_metadata_bytes(data)?.ok_or(lootbox_error(LootboxError::InvalidMint))
+}
+
+fn validate_badge_metadata(address: &Address, data: &[u8]) -> ProgramResult {
+	let mint = token_2022::state::StateWithExtensions::<token_2022::state::Mint>::from_bytes(data)?;
+	let pointer = mint.get_extension::<token_2022::state::MetadataPointerExtension>()?;
+	let metadata = metadata_bytes(data)?;
+
+	if pointer.authority.as_ref().is_some()
+		|| pointer.metadata_address.as_ref() != Some(address)
+		|| metadata.get(..32) != Some([0u8; 32].as_slice())
+		|| parse_address(metadata, 32)? != *address
+	{
+		return Err(lootbox_error(LootboxError::MutablePrize));
+	}
+
+	Ok(())
 }
 
 /// Return the on-mint Token-2022 metadata payload when the mint carries one.
@@ -1914,17 +1931,8 @@ impl<'a> ProcessAccountInfos<'a> for FundMintPrizeAccounts<'a> {
 		}
 		drop(mint);
 
-		// Badge metadata is optional; when the mint carries any it must already
-		// be immutable, so the advertised identity cannot change after escrow.
-		// The borrow is scoped so the data guard never outlives local checks.
-		{
-			let mint_data = self.mint.try_borrow()?;
-
-			if let Some(metadata) = find_metadata_bytes(&mint_data)?
-				&& metadata.get(..32) != Some([0u8; 32].as_slice())
-			{
-				return Err(lootbox_error(LootboxError::MutablePrize));
-			}
+		if token_program == token_2022::ID {
+			validate_badge_metadata(self.mint.address(), &self.mint.try_borrow()?)?;
 		}
 
 		let mut bundle = self.bundle.as_account_mut::<BundleState>(&ID)?;
@@ -2343,5 +2351,43 @@ mod market_lock_tests {
 
 		state.locked_at.set(1);
 		assert!(assert_treasury_unlocked(&state).is_err());
+	}
+}
+
+#[cfg(test)]
+mod badge_metadata_tests {
+	use alloc::vec;
+
+	use super::*;
+
+	#[test]
+	fn metadata_badge_requires_an_immutable_self_pointer_and_embedded_identity() {
+		let address = Address::new_from_array([7; 32]);
+		let mut bytes = vec![0; 166];
+		bytes[45] = 1;
+		bytes[165] = 1;
+		bytes.extend_from_slice(
+			&(token_2022::state::ExtensionType::MetadataPointer as u16).to_le_bytes(),
+		);
+		bytes.extend_from_slice(&64u16.to_le_bytes());
+		bytes.extend_from_slice(&[0; 32]);
+		bytes.extend_from_slice(address.as_ref());
+		bytes.extend_from_slice(
+			&(token_2022::state::ExtensionType::TokenMetadata as u16).to_le_bytes(),
+		);
+		bytes.extend_from_slice(&80u16.to_le_bytes());
+		bytes.extend_from_slice(&[0; 32]);
+		bytes.extend_from_slice(address.as_ref());
+		bytes.extend_from_slice(&[0; 16]);
+		assert_eq!(validate_badge_metadata(&address, &bytes), Ok(()));
+
+		for offset in [170, 202, 238, 270] {
+			let mut changed = bytes.clone();
+			changed[offset] = 9;
+			assert!(validate_badge_metadata(&address, &changed).is_err());
+		}
+
+		assert!(validate_badge_metadata(&address, &bytes[..234]).is_err());
+		assert!(validate_badge_metadata(&address, &bytes[..166]).is_err());
 	}
 }

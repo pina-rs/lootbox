@@ -25,8 +25,17 @@ const rpcEnvelope = z.object({
 export function relayerRpc(
 	url: string,
 	runSignal: AbortSignal,
+	expired: () => boolean,
 	fetcher: typeof fetch = globalThis.fetch.bind(globalThis),
 ) {
+	const guardedFetch: typeof fetch = (input, init) => {
+		// A signer may finish after expiry before the timeout callback runs.
+		// This check excludes attempt counts because the send is already reserved.
+		if (expired()) throw new Error("relayer run deadline expired");
+
+		return fetcher(input, init);
+	};
+
 	async function transport<TResponse>(
 		request: Parameters<RpcTransport>[0],
 	): Promise<RpcResponse<TResponse>> {
@@ -41,7 +50,7 @@ export function relayerRpc(
 		}, {
 			maxBytes: RELAYER_RPC_RESPONSE_BYTES,
 			timeoutMs: 8_000,
-			fetch: fetcher,
+			fetch: guardedFetch,
 		});
 
 		if (!response.ok) {

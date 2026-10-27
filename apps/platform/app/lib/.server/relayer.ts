@@ -211,7 +211,7 @@ export async function runRelayer(
 			const localBudget = budget.forLootbox();
 			const rpcUrl = await rpcUrlFor(config, lootbox.cluster);
 			const lut = config.programLuts[lootbox.cluster];
-			const rpc = relayerRpc(rpcUrl, signal);
+			const rpc = relayerRpc(rpcUrl, signal, budget.expired);
 
 			const client = new LootboxClient(rpcUrl, signer, undefined, {
 				rpc,

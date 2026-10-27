@@ -496,6 +496,8 @@ function decodeSent(wire: string) {
 }
 
 describe("LootboxClient transaction costs", () => {
+	// Cold HTTP setup and teardown share the fixture limit; the pending request
+	// has its own two-second abort watchdog after the server observes submission.
 	it("aborts a submitted RPC request that never responds", async () => {
 		const controller = new AbortController();
 		let submissions = 0;
@@ -584,7 +586,7 @@ describe("LootboxClient transaction costs", () => {
 				server.close((error) => error ? reject(error) : resolve())
 			);
 		}
-	});
+	}, 30_000);
 
 	it("refuses signing when the caller's transaction budget is exhausted", async () => {
 		const { rpc, sent } = sendRpc();

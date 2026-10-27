@@ -10,11 +10,13 @@ export const RELAYER_RUN_LIMITS = {
 export function relayerBudget(now: () => number, signal: AbortSignal) {
 	const deadline = now() + RELAYER_RUN_LIMITS.durationSeconds;
 	let attempts = 0;
+	const expired = () => signal.aborted || now() >= deadline;
 	const shouldStop = () =>
-		signal.aborted || now() >= deadline ||
+		expired() ||
 		attempts >= RELAYER_RUN_LIMITS.transactions;
 
-	return {
+	return Object.freeze({
+		expired,
 		shouldStop,
 		forLootbox() {
 			let localAttempts = 0;
@@ -32,5 +34,5 @@ export function relayerBudget(now: () => number, signal: AbortSignal) {
 				},
 			};
 		},
-	};
+	});
 }

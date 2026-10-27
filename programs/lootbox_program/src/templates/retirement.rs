@@ -7,10 +7,10 @@ use super::*;
 /// Permanently retires a live template: issuance and every creator mutation
 /// stop, while existing boxes stay openable and prizes stay claimable.
 ///
-/// Signed by the template authority. An issued template that is not
-/// market-locked may retire only at or after `opens_at`, as a missed-deadline
-/// recovery; that path also disables result receipts and settlement bounties,
-/// which were never prepaid.
+/// Signed by the template authority, or by any signer once an unlocked
+/// template has missed `opens_at`. An issued unlocked template may retire
+/// only at or after that deadline; recovery also disables result receipts
+/// and settlement bounties, which were never prepaid.
 #[instruction(discriminator = LootboxInstruction::RetireTemplate, migrations)]
 pub struct RetireTemplateInstruction {}
 
@@ -64,8 +64,8 @@ pub struct ReclaimMintPrizeInstruction {
 /// Accounts for `retireTemplate`.
 #[derive(Accounts, Debug)]
 pub struct RetireTemplateAccounts<'a> {
-	/// Template authority; must sign and match the authority recorded on the
-	/// template.
+	/// Signer requesting retirement. Must match the template authority unless
+	/// the live, unlocked template has reached its reveal deadline.
 	#[pina(validate(signer))]
 	pub authority: &'a AccountView,
 	/// Live template treasury, validated by its PDA seeds; moves to the retired
@@ -160,14 +160,23 @@ fn validate_retirement(state: &TemplateStateHeader, now: i64) -> ProgramResult {
 	Ok(())
 }
 
+fn permissionless_retirement(state: &TemplateStateHeader, now: i64) -> bool {
+	state.status == TEMPLATE_LIVE && state.locked_at.get() == 0 && now >= state.opens_at.get()
+}
+
 impl<'a> ProcessAccountInfos<'a> for RetireTemplateAccounts<'a> {
 	fn process(self, data: &[u8]) -> ProgramResult {
 		let _ = RetireTemplateInstruction::try_from_bytes(data)?;
 		let address = *self.template.address();
 		let state = as_template(self.template)?;
 		assert_template(&address, &state)?;
-		assert_template_authority(self.authority, &state)?;
-		validate_retirement(&state, sysvars::clock::Clock::get()?.unix_timestamp)?;
+		let now = sysvars::clock::Clock::get()?.unix_timestamp;
+
+		if !permissionless_retirement(&state, now) {
+			assert_template_authority(self.authority, &state)?;
+		}
+
+		validate_retirement(&state, now)?;
 
 		let patch = if state.locked_at.get() == 0 {
 			// The optional services are funded only by a successful market lock.
@@ -541,9 +550,17 @@ mod tests {
 		state.opens_at.set(1_001);
 
 		assert!(validate_retirement(&state, 1_000).is_err());
+		assert!(!permissionless_retirement(&state, 1_000));
 		assert_eq!(validate_retirement(&state, 1_001), Ok(()));
+		assert!(permissionless_retirement(&state, 1_001));
 		state.locked_at.set(999);
 		assert_eq!(validate_retirement(&state, 1_000), Ok(()));
+		assert!(!permissionless_retirement(&state, 1_002));
+		state.locked_at.set(0);
+		state.status = TEMPLATE_DRAFT;
+		assert!(!permissionless_retirement(&state, 1_002));
+		state.status = TEMPLATE_RETIRED;
+		assert!(!permissionless_retirement(&state, 1_002));
 	}
 
 	#[test]

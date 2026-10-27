@@ -2327,10 +2327,6 @@ export class LootboxClient {
 	async retireTemplate(template: ChainTemplate): Promise<ChainTemplate> {
 		const current = await this.template(template.address);
 
-		if (current.data.authority !== this.payer.address) {
-			throw new Error("only the treasury creator can retire this series");
-		}
-
 		if (current.data.status === 2) return current;
 
 		await this.send([generated.getRetireTemplateInstruction({

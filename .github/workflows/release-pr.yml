@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   create:
-    if: github.repository_owner == 'pina-rs'
+    if: github.repository_owner == 'pina-rs' && github.ref == 'refs/heads/main'
     outputs:
       is_release_commit: ${{ steps.release_record.outputs.is_release_commit }}
     timeout-minutes: 20
@@ -130,7 +130,7 @@ jobs:
         run: echo "HEAD is already a merged release commit; skipping release PR refresh."
 
   tag:
-    if: github.repository_owner == 'pina-rs' && needs.create.outputs.is_release_commit == 'true'
+    if: github.repository_owner == 'pina-rs' && github.ref == 'refs/heads/main' && needs.create.outputs.is_release_commit == 'true'
     needs: create
     timeout-minutes: 20
     runs-on: ubuntu-24.04
@@ -229,7 +229,8 @@ jobs:
             gh workflow run publish.yml \
               --repo "$GITHUB_REPOSITORY" \
               --ref main \
-              --field "tag=$tag"
+              --field "tag=$tag" \
+              --field "release_sha=$GITHUB_SHA"
           done
         shell: devenv shell -- bash -e {0}
 

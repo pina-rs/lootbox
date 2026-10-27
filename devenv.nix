@@ -258,6 +258,7 @@ in
     "test:unit".exec = ''
       set -euo pipefail
       node --test tools/normalize-generated.test.mjs
+      node --test tools/workflow-security.test.ts
       cargo test --workspace --all-features
       pnpm --dir sdks/typescript test:coverage
       pnpm --dir apps/platform test

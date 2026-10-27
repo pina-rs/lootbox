@@ -304,7 +304,9 @@ export function testClient(
 	rpcUrl: string,
 	signer: KeyPairSigner,
 ): LootboxClient {
-	return new LootboxClient(rpcUrl, signer);
+	return new LootboxClient(rpcUrl, signer, undefined, {
+		maxAccountFundingLamports: 10_000_000n,
+	});
 }
 
 const BUBBLEGUM = "BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY";

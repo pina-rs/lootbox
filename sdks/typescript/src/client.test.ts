@@ -31,6 +31,7 @@ import {
 import { describe, expect, it } from "vitest";
 import { computeUnitLimitByNames } from "./budget.js";
 import {
+	accountFundingRentCeiling,
 	assertFundedPrizeMatches,
 	base58Bytes,
 	boundedRejectionTarget,
@@ -501,7 +502,7 @@ describe("LootboxClient transaction costs", () => {
 				send: async () => {
 					reads.push(space);
 
-					return 890_880n;
+					return accountFundingRentCeiling(space);
 				},
 			}),
 		} as unknown as LootboxRpc;
@@ -761,7 +762,7 @@ describe("LootboxClient transaction costs", () => {
 				send: async () => {
 					reads.push(space);
 
-					return 1_000n;
+					return accountFundingRentCeiling(space);
 				},
 			}),
 		} as unknown as LootboxRpc;
@@ -810,7 +811,9 @@ describe("LootboxClient transaction costs", () => {
 			BigInt(getResultReceiptStateEncoder().fixedSize),
 			0n,
 		]);
-		expect(quote.resultReceiptRent).toBe(1_000n);
-		expect(quote.serviceVaultRent).toBe(1_000n);
+		expect(quote.resultReceiptRent).toBe(
+			accountFundingRentCeiling(getResultReceiptStateEncoder().fixedSize),
+		);
+		expect(quote.serviceVaultRent).toBe(890_880n);
 	});
 });

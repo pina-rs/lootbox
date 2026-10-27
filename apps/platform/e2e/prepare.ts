@@ -62,7 +62,9 @@ const admin = await generateKeyPairSigner();
 
 await faucet(admin.address);
 
-const client = new LootboxClient(rpcUrl, admin);
+const client = new LootboxClient(rpcUrl, admin, undefined, {
+	maxAccountFundingLamports: 1_000_000_000n,
+});
 const now = BigInt(await clusterTime(createSolanaRpc(rpcUrl)));
 const plan = await planCollection(client, {
 	origin: "https://lootbox.pina.rs",

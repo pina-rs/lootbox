@@ -114,6 +114,8 @@ const client = new LootboxClient(verifiedUrl, payer, (message, signature) => {
 
 	console.log(`✓ ${message}  ${signature}`);
 	sent.push({ phase, label: message, signature: signature as Signature });
+}, {
+	maxAccountFundingLamports: 10_000_000n,
 });
 const oracle = createSwitchboardOracle({
 	rpcUrl: verifiedUrl,

@@ -97,9 +97,11 @@ The lookup table is the one cost that does not come back. `randomness_close` dea
 `sdks/typescript/scripts/launch-treasury.ts` launches a treasury from a JSON plan (name, symbol, uri, `revealAt`, `supplyRecipient`, and bundles of `token`, `sol`, and `mintBadge` prizes; a badge can be created with immutable on-mint metadata). `sdks/typescript/scripts/plans/unlisted-mainnet.example.json` is the launch series: seven PreStocks prizes and a 13-copy empty box that pays an "Empty Box" badge plus 0.001 SOL. It prints a dry run first: bundles, per-mint escrow and issuer-fee gross-up from the mint's current `TransferFeeConfig`, creator balances, estimated SOL, and box supply. It sends nothing without `--execute`:
 
 ```bash
-pnpm --dir sdks/typescript launch:treasury -- --plan treasury.json --cluster devnet --keypair ~/devnet.json
-pnpm --dir sdks/typescript launch:treasury -- --plan treasury.json --cluster devnet --keypair ~/devnet.json --execute
+pnpm --dir sdks/typescript launch:treasury -- --plan treasury.json --cluster devnet --keypair ~/devnet.json --max-account-funding-lamports 10000000
+pnpm --dir sdks/typescript launch:treasury -- --plan treasury.json --cluster devnet --keypair ~/devnet.json --max-account-funding-lamports 10000000 --execute
 ```
+
+`--max-account-funding-lamports` authorizes at most that many lamports per new mint or compression-tree account. Direct SDK callers set `maxAccountFundingLamports` in the fourth `LootboxClient` constructor argument. Account creation requires this cap, bounds the RPC estimate by the historic rent ceiling `(128 + size) * 6960`, and reports the exact debit before signing. Reduced network rent is accepted. An RPC can overstate reduced rent only within both this local ceiling and the caller's cap; underfunding fails on chain. Curve buys and sells likewise require an explicit `maxLamports` or `minLamports`; a displayed RPC quote never supplies an implicit signing limit.
 
 Execution is resumable: a state file next to the plan (`treasury.launch.json`) pins the template id and box mint key, and the SDK continues from on-chain state. The run ends by locking the treasury, which mints the exact box supply to `supplyRecipient`, and prints `VITE_TREASURY=<template>` for the web app. For devnet tests, `pnpm --dir sdks/typescript create:stock-mint` creates a Token-2022 mint shaped like a PreStocks stock (PreStocks issuer as permanent delegate and freeze authority, a 100 bps transfer fee, on-mint metadata).
 

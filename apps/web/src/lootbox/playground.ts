@@ -270,6 +270,7 @@ export function connectPlayground(): Promise<Playground> {
 					rpcUrl,
 					role === "creator" ? creator : recipient,
 					progress,
+					{ maxAccountFundingLamports: 10_000_000n },
 				),
 			faucet: async (role) => {
 				await control("/faucet", {

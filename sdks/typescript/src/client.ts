@@ -37,7 +37,7 @@ import {
 	type TransactionSigner,
 } from "@solana/kit";
 import { lootboxComputeUnitLimit } from "./budget.js";
-import { type BoxCurvePlan, quoteCurveBuy, quoteCurveSell } from "./curve.js";
+import { type BoxCurvePlan } from "./curve.js";
 import {
 	encodeExclusiveLayer,
 	EXCLUSIVE_TREE_SHAPE,
@@ -823,27 +823,56 @@ export async function selectTemplateBundle(
 /** The RPC surface `LootboxClient` drives. */
 export type LootboxRpc = ReturnType<typeof createSolanaRpc>;
 
-/** Rent-exemption memo shared by every client flow. Rent is deterministic per
- * account size, so one RPC read per size is enough for a process lifetime. */
-const rentExemptionCache = new Map<number, bigint>();
+/** JavaScript callers must provide the same explicit u64 bounds as TypeScript. */
+function assertLamportLimit(limit: bigint): void {
+	if (typeof limit !== "bigint" || limit < 0n || limit > (1n << 64n) - 1n) {
+		throw new RangeError(
+			"an explicit lamport limit within u64 bounds is required",
+		);
+	}
+}
 
-/** Rent-exempt minimum for `space` bytes, read from the RPC at most once per
- * size. Pass a local `cache` to keep a test or long-lived worker isolated. */
+/** RPC identities keep cached estimates from crossing cluster boundaries. */
+const rentExemptionCaches = new WeakMap<LootboxRpc, Map<number, bigint>>();
+
+/** Bound rent by Solana's historic 6,960 lamports per byte. Reduced cluster
+ * rates remain valid without letting the RPC raise the spending ceiling. */
+export function accountFundingRentCeiling(space: number | bigint): bigint {
+	const size = typeof space === "bigint" ? space : BigInt(space);
+
+	if (size < 0n || size > 10_485_760n) {
+		throw new RangeError("account size must be between 0 and 10485760 bytes");
+	}
+
+	return (size + 128n) * 6_960n;
+}
+
+/** RPC rent estimate bounded by local policy, read at most once per size.
+ * Underfunding still fails on chain. A caller cache is checked on every use. */
 export async function rentExemptionLamports(
 	rpc: LootboxRpc,
 	space: number | bigint,
-	cache: Map<number, bigint> = rentExemptionCache,
+	cache?: Map<number, bigint>,
 ): Promise<bigint> {
+	const ceiling = accountFundingRentCeiling(space);
 	const size = typeof space === "bigint" ? Number(space) : space;
-	const cached = cache.get(size);
+	const memo = cache ?? rentExemptionCaches.get(rpc) ??
+		new Map<number, bigint>();
+	const cached = memo.get(size);
 
-	if (cached !== undefined) return cached;
+	if (!cache) rentExemptionCaches.set(rpc, memo);
 
-	const lamports = await rpc
+	const lamports = cached ?? await rpc
 		.getMinimumBalanceForRentExemption(BigInt(size))
 		.send();
 
-	cache.set(size, lamports);
+	if (lamports <= 0n || lamports > ceiling) {
+		throw new RangeError(
+			`RPC rent ${lamports} must be positive and at most ${ceiling} lamports for ${size} bytes`,
+		);
+	}
+
+	memo.set(size, lamports);
 
 	return lamports;
 }
@@ -855,6 +884,9 @@ export function base58Bytes(bytes: ReadonlyUint8Array): Base58EncodedBytes {
 
 /** Client-level transaction cost configuration. */
 export type LootboxClientOptions = Readonly<{
+	/** Explicit payer authorization per newly created account. Creation fails
+	 * without this cap, even when the RPC reports the expected rent. */
+	maxAccountFundingLamports?: bigint;
 	/**
 	 * Address lookup tables whose contents are fetched once, cached, and used
 	 * to compress every sent transaction. Tables only need to list the static
@@ -889,6 +921,7 @@ const LOOKUP_TABLE_CACHE_MILLISECONDS = 5 * 60 * 1000;
  */
 export class LootboxClient {
 	readonly rpc: LootboxRpc;
+	readonly #maxAccountFundingLamports: bigint | undefined;
 	readonly #lookupTableAddresses: readonly Address[];
 	readonly #lookupTableCacheMilliseconds: number;
 	#lookupTableCache: {
@@ -903,9 +936,35 @@ export class LootboxClient {
 		options: LootboxClientOptions = {},
 	) {
 		this.rpc = options.rpc ?? createSolanaRpc(rpcUrl);
+		this.#maxAccountFundingLamports = options.maxAccountFundingLamports;
 		this.#lookupTableAddresses = [...(options.lookupTableAddresses ?? [])];
 		this.#lookupTableCacheMilliseconds = options.lookupTableCacheMilliseconds ??
 			LOOKUP_TABLE_CACHE_MILLISECONDS;
+	}
+
+	/** Enforce both the local rent ceiling and the payer's absolute debit cap. */
+	async #accountFundingLamports(space: number | bigint): Promise<bigint> {
+		const maximum = this.#maxAccountFundingLamports;
+
+		if (
+			typeof maximum !== "bigint" || maximum < 0n || maximum > (1n << 64n) - 1n
+		) {
+			throw new RangeError(
+				"account creation requires maxAccountFundingLamports within u64 bounds",
+			);
+		}
+
+		const lamports = await rentExemptionLamports(this.rpc, space);
+
+		if (lamports > maximum) {
+			throw new RangeError(
+				`account funding ${lamports} exceeds approved maximum ${maximum} lamports`,
+			);
+		}
+
+		this.progress(`Fund new account with ${lamports} lamports`);
+
+		return lamports;
 	}
 
 	/** Lookup-table contents, refetched at most once per cache lifetime. */
@@ -1174,7 +1233,7 @@ export class LootboxClient {
 	) {
 		const tree = await generateKeyPairSigner();
 		const [treeConfig] = await this.treeConfigAddress(tree.address);
-		const rent = await rentExemptionLamports(this.rpc, shape.space);
+		const rent = await this.#accountFundingLamports(shape.space);
 		await this.send([
 			getCreateAccountInstruction({
 				payer: this.payer,
@@ -1943,7 +2002,7 @@ export class LootboxClient {
 			// uri, and an empty additional-metadata vector.
 			const finalSize = 234 + 4 + 64 + 4 + utf8.encode(plan.name).length + 4 +
 				utf8.encode(symbol).length + 4 + utf8.encode(plan.uri).length + 4;
-			const rent = await rentExemptionLamports(this.rpc, finalSize);
+			const rent = await this.#accountFundingLamports(finalSize);
 			await this.send([
 				getCreateAccountInstruction({
 					payer: this.payer,
@@ -2900,7 +2959,7 @@ export class LootboxClient {
 			getCreateAccountInstruction({
 				payer: this.payer,
 				newAccount: mint,
-				lamports: await rentExemptionLamports(this.rpc, 82),
+				lamports: await this.#accountFundingLamports(82),
 				space: 82n,
 				programAddress: CLASSIC_TOKEN_PROGRAM,
 			}),
@@ -2968,7 +3027,7 @@ export class LootboxClient {
 			getCreateAccountInstruction({
 				payer: this.payer,
 				newAccount: mint,
-				lamports: await rentExemptionLamports(this.rpc, finalSize),
+				lamports: await this.#accountFundingLamports(finalSize),
 				space: 234n,
 				programAddress: BOX_TOKEN_PROGRAM,
 			}),
@@ -3037,7 +3096,7 @@ export class LootboxClient {
 			getCreateAccountInstruction({
 				payer: this.payer,
 				newAccount: mint,
-				lamports: await rentExemptionLamports(this.rpc, 82),
+				lamports: await this.#accountFundingLamports(82),
 				space: 82n,
 				programAddress: CLASSIC_TOKEN_PROGRAM,
 			}),
@@ -3130,16 +3189,17 @@ export class LootboxClient {
 
 	/**
 	 * Buy `count` boxes from a curve for at most `maxLamports`, fee included.
-	 * Boxes go to `recipient`, so a box can be bought for someone else.
+	 * Boxes go to `recipient`, so a box can be bought for someone else. The
+	 * payer must approve an absolute limit independently of RPC quotes.
 	 */
 	async buyCurveBoxes(
 		template: ChainTemplate,
 		count: bigint,
-		maxLamports?: bigint,
+		maxLamports: bigint,
 		recipient: Address = this.payer.address,
 	): Promise<string> {
+		assertLamportLimit(maxLamports);
 		const curve = await this.requireBoxCurve(template.address);
-		const limit = maxLamports ?? quoteCurveBuy(curve.data, count).total;
 		const { boxMint } = curve.data;
 
 		return this.send([
@@ -3154,7 +3214,7 @@ export class LootboxClient {
 				authority: curve.data.authority,
 				boxTokenProgram: BOX_TOKEN_PROGRAM,
 				count,
-				maxLamports: limit,
+				maxLamports,
 			}),
 		], count === 1n ? "Buy a box" : `Buy ${count} boxes`);
 	}
@@ -3163,10 +3223,10 @@ export class LootboxClient {
 	async sellCurveBoxes(
 		template: ChainTemplate,
 		count: bigint,
-		minLamports?: bigint,
+		minLamports: bigint,
 	): Promise<string> {
+		assertLamportLimit(minLamports);
 		const curve = await this.requireBoxCurve(template.address);
-		const limit = minLamports ?? quoteCurveSell(curve.data, count).total;
 		const { boxMint } = curve.data;
 
 		return this.send([
@@ -3180,7 +3240,7 @@ export class LootboxClient {
 				authority: curve.data.authority,
 				boxTokenProgram: BOX_TOKEN_PROGRAM,
 				count,
-				minLamports: limit,
+				minLamports,
 			}),
 		], count === 1n ? "Sell a box back" : `Sell ${count} boxes back`);
 	}

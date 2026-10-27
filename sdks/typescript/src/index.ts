@@ -3,6 +3,7 @@ export * from "./budget.js";
 export * from "./client.js";
 export * from "./curve.js";
 export * from "./exclusive.js";
+export * from "./http.js";
 export * from "./market.js";
 export * from "./relayer.js";
 export * from "./switchboard.js";

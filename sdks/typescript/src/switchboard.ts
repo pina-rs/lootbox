@@ -33,6 +33,7 @@ import type {
 	OracleProof,
 	RandomnessBinding,
 } from "./client.js";
+import { fetchBoundedText } from "./http.js";
 
 export type SwitchboardCluster = "devnet" | "mainnet";
 
@@ -193,6 +194,10 @@ export type SwitchboardOracleOptions = Readonly<{
 	rpcUrl: string;
 	cluster: SwitchboardCluster;
 	fetch?: typeof fetch;
+	/** Audited HTTPS gateway origins. Never populate this from RPC state.
+	 * The default pins the recorded Switchboard gateway. Other operators must
+	 * explicitly trust their gateway's origin and DNS administration. */
+	gatewayOrigins?: readonly string[];
 	/** Override the default queue; it must match the template's `oracleQueue`. */
 	queue?: Address;
 	/** Injected for deterministic tests. */
@@ -206,6 +211,15 @@ export const DEFAULT_PROOF_RETRY: SwitchboardRetry = {
 	initialDelayMs: 500,
 	maxDelayMs: 5_000,
 };
+
+/** Trusted gateway identity is configuration, never an oracle-account claim. */
+export const SWITCHBOARD_GATEWAY_ORIGINS: readonly string[] = [
+	"https://141.95.35.110.xip.switchboard-oracles.xyz",
+];
+
+const RPC_RESPONSE_BYTES = 1024 * 1024;
+const GATEWAY_RESPONSE_BYTES = 16 * 1024;
+const REQUEST_TIMEOUT_MS = 8_000;
 
 const addressDecoder = getAddressDecoder();
 const addressEncoder = getAddressEncoder();
@@ -332,13 +346,19 @@ export function parseSwitchboardQueue(data: Uint8Array): SwitchboardQueueState {
 	};
 }
 
-/** Normalize an on-chain gateway URI, rejecting anything but http(s). */
-export function switchboardGatewayUrl(gatewayUri: string): URL | undefined {
+/** Accept only a configured gateway identity; account data cannot grant egress. */
+export function switchboardGatewayUrl(
+	gatewayUri: string,
+	allowedOrigins: readonly string[] = SWITCHBOARD_GATEWAY_ORIGINS,
+): URL | undefined {
 	if (!URL.canParse(gatewayUri)) return undefined;
 
 	const url = new URL(gatewayUri);
 
-	return url.protocol === "https:" || url.protocol === "http:"
+	return url.protocol === "https:" && url.port === "" &&
+			url.username === "" && url.password === "" &&
+			url.search === "" && url.hash === "" &&
+			allowedOrigins.includes(url.origin)
 		? url
 		: undefined;
 }
@@ -350,13 +370,14 @@ export function isSwitchboardOracleUsable(
 	oracle: SwitchboardOracleState,
 	queue: Readonly<{ address: Address; nodeTimeout: bigint }>,
 	nowUnix: bigint,
+	allowedOrigins: readonly string[] = SWITCHBOARD_GATEWAY_ORIGINS,
 ): boolean {
 	return oracle.queue === queue.address &&
 		oracle.isOnQueue &&
 		oracle.verified &&
 		oracle.validUntil > nowUnix &&
 		nowUnix - oracle.lastHeartbeat <= queue.nodeTimeout &&
-		switchboardGatewayUrl(oracle.gatewayUri) !== undefined;
+		switchboardGatewayUrl(oracle.gatewayUri, allowedOrigins) !== undefined;
 }
 
 /** Decode a `/gateway/api/v1/randomness_reveal` body into reveal arguments. */
@@ -555,17 +576,26 @@ export function createSwitchboardOracle(
 	const now = options.now ?? Date.now;
 	const random = options.random ?? Math.random;
 	const sleep = options.sleep ?? defaultSleep;
+	const gatewayOrigins = [
+		...(options.gatewayOrigins ?? SWITCHBOARD_GATEWAY_ORIGINS),
+	];
 	let rpcId = 0;
 
 	async function rpc(method: string, params: readonly unknown[]) {
 		let response: Response;
+		let text: string;
 
 		try {
-			response = await fetcher(options.rpcUrl, {
+			({ response, text } = await fetchBoundedText(options.rpcUrl, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ jsonrpc: "2.0", id: ++rpcId, method, params }),
-			});
+				redirect: "error",
+			}, {
+				fetch: fetcher,
+				maxBytes: RPC_RESPONSE_BYTES,
+				timeoutMs: REQUEST_TIMEOUT_MS,
+			}));
 		} catch {
 			throw new SwitchboardError("rpc", `${method} request failed`, true);
 		}
@@ -579,7 +609,7 @@ export function createSwitchboardOracle(
 			);
 		}
 
-		const body: unknown = await response.json();
+		const body: unknown = JSON.parse(text);
 
 		if (!isRecord(body) || "error" in body || !isRecord(body.result)) {
 			throw new SwitchboardError("rpc", `${method} returned an error`);
@@ -665,7 +695,7 @@ export function createSwitchboardOracle(
 			);
 		}
 
-		const gateway = switchboardGatewayUrl(oracle.gatewayUri);
+		const gateway = switchboardGatewayUrl(oracle.gatewayUri, gatewayOrigins);
 
 		if (!gateway) {
 			throw new SwitchboardError(
@@ -683,16 +713,19 @@ export function createSwitchboardOracle(
 		state: SwitchboardRandomness,
 		signal?: AbortSignal,
 	) {
-		const endpoint = new URL(
-			`${gateway.pathname.replace(/\/$/, "")}/gateway/api/v1/randomness_reveal`,
-			gateway,
-		);
+		// Assign the path rather than resolving it: a leading // must never
+		// reinterpret account-controlled path text as a new network authority.
+		const endpoint = new URL(gateway.href);
+		endpoint.pathname = `${
+			gateway.pathname.replace(/\/$/, "")
+		}/gateway/api/v1/randomness_reveal`;
 		let response: Response;
+		let body: string;
 
 		// Privacy: the RPC URL is deliberately not forwarded; it often embeds
 		// an API key, and the gateway resolves the slot hash without it.
 		try {
-			response = await fetcher(endpoint, {
+			({ response, text: body } = await fetchBoundedText(endpoint, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
@@ -704,7 +737,12 @@ export function createSwitchboardOracle(
 					slot: Number(state.seedSlot),
 				}),
 				...(signal ? { signal } : {}),
-			});
+				redirect: "error",
+			}, {
+				fetch: fetcher,
+				maxBytes: GATEWAY_RESPONSE_BYTES,
+				timeoutMs: REQUEST_TIMEOUT_MS,
+			}));
 		} catch {
 			if (signal?.aborted) throw signal.reason;
 
@@ -714,8 +752,6 @@ export function createSwitchboardOracle(
 				true,
 			);
 		}
-
-		const body = await response.text();
 
 		if (!response.ok) {
 			throw new SwitchboardError(
@@ -800,6 +836,7 @@ export function createSwitchboardOracle(
 						parseSwitchboardOracle(account.data),
 						{ address: queue, nodeTimeout: queueState.nodeTimeout },
 						nowUnix,
+						gatewayOrigins,
 					);
 				} catch {
 					// A malformed queue member is skipped, not fatal: the

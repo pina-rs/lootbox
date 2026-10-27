@@ -16,6 +16,7 @@ import {
 	SWITCHBOARD_PROGRAM,
 	SWITCHBOARD_QUEUE,
 	SwitchboardError,
+	switchboardGatewayUrl,
 	switchboardLutSignerAddress,
 	type SwitchboardOracleOptions,
 } from "./switchboard.js";
@@ -223,6 +224,31 @@ describe("Switchboard account parsing", () => {
 });
 
 describe("gateway reveal responses", () => {
+	it.each([
+		"http://127.0.0.1",
+		"https://127.0.0.1",
+		"https://[::1]",
+		"https://169.254.169.254",
+		"https://10.0.0.1",
+		"https://localhost",
+		"https://oracle.attacker.test",
+		"https://141.95.35.110.xip.switchboard-oracles.xyz.attacker.test",
+		"https://141.95.35.110.xip.switchboard-oracles.xyz:8443",
+		"https://user@141.95.35.110.xip.switchboard-oracles.xyz",
+	])("rejects untrusted gateway %s", (url) => {
+		expect(switchboardGatewayUrl(url)).toBeUndefined();
+	});
+
+	it("accepts the pinned gateway and an explicitly trusted HTTPS origin", () => {
+		expect(switchboardGatewayUrl(fixtures.gatewayReveal.gatewayUri)?.href)
+			.toBe(fixtures.gatewayReveal.gatewayUri);
+		expect(
+			switchboardGatewayUrl("https://gateway.example.com/mainnet", [
+				"https://gateway.example.com",
+			])?.origin,
+		).toBe("https://gateway.example.com");
+	});
+
 	it("decodes the recorded devnet gateway response", () => {
 		const proof = parseSwitchboardRevealResponse(fixtures.gatewayReveal.body);
 
@@ -341,6 +367,68 @@ describe("createSwitchboardOracle", () => {
 			),
 			slot: 504_035_171,
 		}]);
+	});
+
+	it("disables redirects on RPC and gateway requests", async () => {
+		const { options } = harness();
+		const redirects: (RequestRedirect | undefined)[] = [];
+		const fetcher = options.fetch;
+
+		if (!fetcher) throw new Error("test transport missing");
+
+		await createSwitchboardOracle({
+			...options,
+			fetch: (input, init) => {
+				redirects.push(init?.redirect);
+
+				return fetcher(input, init);
+			},
+		}).fetchProof(randomness);
+		expect(redirects).toEqual(["error", "error", "error"]);
+	});
+
+	it("never contacts a gateway origin supplied only by account data", async () => {
+		const { options, accounts, gatewayBodies } = harness();
+		const oracle = accounts.get(freshOracle);
+
+		if (!oracle) throw new Error("test oracle missing");
+
+		oracle.data.fill(0, 3584, 3584 + 64);
+		oracle.data.set(new TextEncoder().encode("https://169.254.169.254"), 3584);
+		const error = await rejection(
+			createSwitchboardOracle(options).fetchProof(randomness),
+		);
+
+		expect(error.code).toBe("wrongOracle");
+		expect(gatewayBodies).toEqual([]);
+	});
+
+	it("keeps a double-slash gateway path on the trusted origin", async () => {
+		const { options, accounts } = harness();
+		const oracle = accounts.get(freshOracle);
+		const fetcher = options.fetch;
+		const trusted = new URL(fixtures.gatewayReveal.gatewayUri).origin;
+		const gatewayUri = `${trusted}//127.0.0.1`;
+		const destinations: string[] = [];
+
+		if (!oracle || !fetcher) throw new Error("test transport missing");
+
+		oracle.data.fill(0, 3584, 3584 + 64);
+		oracle.data.set(new TextEncoder().encode(gatewayUri), 3584);
+		await createSwitchboardOracle({
+			...options,
+			fetch: async (input, init) => {
+				const url = new URL(input instanceof Request ? input.url : input);
+
+				if (url.href === rpcUrl + "/") return fetcher(input, init);
+
+				destinations.push(url.origin);
+
+				return new Response(fixtures.gatewayReveal.body);
+			},
+		}).fetchProof(randomness);
+
+		expect(destinations).toEqual([trusted]);
 	});
 
 	it("backs off while the gateway cannot serve the seed slot yet", async () => {

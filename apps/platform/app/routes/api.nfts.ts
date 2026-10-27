@@ -3,6 +3,7 @@
  * Only standard Token Metadata NFTs and plain Core assets are offered because
  * those are the kinds the creator flow can escrow without proofs.
  */
+import { fetchBoundedText } from "@pina-rs/lootbox";
 import {
 	errorResponse,
 	jsonResponse,
@@ -93,7 +94,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 	}
 
 	try {
-		const upstream = await fetch(endpoint, {
+		const { response: upstream, text } = await fetchBoundedText(endpoint, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
@@ -102,13 +103,12 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 				method: "getAssetsByOwner",
 				params: { ownerAddress: owner, page: 1, limit: 100 },
 			}),
-			signal: AbortSignal.timeout(8_000),
-		});
+		}, { maxBytes: 2 * 1024 * 1024, timeoutMs: 8_000 });
 
 		if (!upstream.ok) throw new Error(`DAS returned ${upstream.status}`);
 
 		return jsonResponse({
-			items: parseAssets(await upstream.json()),
+			items: parseAssets(JSON.parse(text)),
 			source: "live",
 		});
 	} catch (error) {

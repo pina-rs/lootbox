@@ -192,7 +192,19 @@ pub fn run(cli: &Cli, submitter: Option<&dyn Submit>) -> Result<String, CliError
 	}
 
 	let submitter = submitter.ok_or(CliError::MissingSubmit)?;
-	let outcome = send::submit(submitter, &instruction)?;
+	let mut instructions = Vec::with_capacity(2);
+
+	if let Some(limit) = lootbox_sdk::lootbox_compute_unit_limit(
+		&lootbox_program_client::generated::programs::LOOTBOX_PROGRAM_ID,
+		[(&instruction.program_id, instruction.data.as_slice())],
+	) {
+		instructions.push(send::set_compute_unit_limit_instruction(
+			u32::try_from(limit).expect("budgets stay under the 1.4M compute cap"),
+		));
+	}
+
+	instructions.push(instruction);
+	let outcome = send::submit(submitter, &instructions)?;
 
 	Ok(if cli.json {
 		output::format_json_with_signature(&rendered, &outcome)

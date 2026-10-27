@@ -7,12 +7,17 @@ import {
 	type AccountSignerMeta,
 	type Address,
 	address,
+	type AddressesByLookupTableAddress,
 	appendTransactionMessageInstructions,
+	type Base58EncodedBytes,
+	compressTransactionMessageUsingAddressLookupTables,
 	createSolanaRpc,
 	createTransactionMessage,
+	fetchAddressesForLookupTables,
 	generateKeyPairSigner,
 	getAddressDecoder,
 	getAddressEncoder,
+	getBase58Decoder,
 	getBase64EncodedWireTransaction,
 	getBase64Encoder,
 	getProgramDerivedAddress,
@@ -23,12 +28,15 @@ import {
 	isTransactionMessageWithinSizeLimit,
 	pipe,
 	type ReadonlyUint8Array,
+	setTransactionMessageComputeUnitLimit,
+	setTransactionMessageComputeUnitPrice,
 	setTransactionMessageFeePayer,
 	setTransactionMessageFeePayerSigner,
 	setTransactionMessageLifetimeUsingBlockhash,
 	signTransactionMessageWithSigners,
 	type TransactionSigner,
 } from "@solana/kit";
+import { lootboxComputeUnitLimit } from "./budget.js";
 import { type BoxCurvePlan, quoteCurveBuy, quoteCurveSell } from "./curve.js";
 import {
 	encodeExclusiveLayer,
@@ -812,34 +820,153 @@ export async function selectTemplateBundle(
 	throw new Error("no outcome for sampled target");
 }
 
+/** The RPC surface `LootboxClient` drives. */
+export type LootboxRpc = ReturnType<typeof createSolanaRpc>;
+
+/** Rent-exemption memo shared by every client flow. Rent is deterministic per
+ * account size, so one RPC read per size is enough for a process lifetime. */
+const rentExemptionCache = new Map<number, bigint>();
+
+/** Rent-exempt minimum for `space` bytes, read from the RPC at most once per
+ * size. Pass a local `cache` to keep a test or long-lived worker isolated. */
+export async function rentExemptionLamports(
+	rpc: LootboxRpc,
+	space: number | bigint,
+	cache: Map<number, bigint> = rentExemptionCache,
+): Promise<bigint> {
+	const size = typeof space === "bigint" ? Number(space) : space;
+	const cached = cache.get(size);
+
+	if (cached !== undefined) return cached;
+
+	const lamports = await rpc
+		.getMinimumBalanceForRentExemption(BigInt(size))
+		.send();
+
+	cache.set(size, lamports);
+
+	return lamports;
+}
+
+/** Encode raw bytes as the base58 string a `memcmp` filter expects. */
+export function base58Bytes(bytes: ReadonlyUint8Array): Base58EncodedBytes {
+	return getBase58Decoder().decode(bytes) as Base58EncodedBytes;
+}
+
+/** Client-level transaction cost configuration. */
+export type LootboxClientOptions = Readonly<{
+	/**
+	 * Address lookup tables whose contents are fetched once, cached, and used
+	 * to compress every sent transaction. Tables only need to list the static
+	 * accounts of the opening flows: programs, sysvars, and mints.
+	 */
+	lookupTableAddresses?: readonly Address[];
+	/** Cache lifetime for lookup-table contents. Defaults to five minutes. */
+	lookupTableCacheMilliseconds?: number;
+	/** Test seam: replaces the RPC transport built from `rpcUrl`. */
+	rpc?: LootboxRpc;
+}>;
+
+/** Per-send transaction cost overrides. */
+export type SendOptions = Readonly<{
+	/**
+	 * Compute-unit limit for the transaction. A number is used verbatim,
+	 * `"none"` sends without a limit, and the default derives a safe limit
+	 * from the measured tables when every instruction is a measured lootbox
+	 * instruction.
+	 */
+	computeUnitLimit?: number | "none";
+	/** Compute-unit price in micro-lamports for priority fees. */
+	priorityFeeMicroLamports?: bigint;
+}>;
+
+/** Default cache lifetime for lookup-table contents. */
+const LOOKUP_TABLE_CACHE_MILLISECONDS = 5 * 60 * 1000;
+
 /** Transaction orchestration over the generated ABI. The caller owns signing,
  * oracle transport, persistence, and cluster selection. No wallet secrets leave
  * the signer. A timeout never causes an automatic duplicate submission.
  */
 export class LootboxClient {
-	readonly rpc: ReturnType<typeof createSolanaRpc>;
+	readonly rpc: LootboxRpc;
+	readonly #lookupTableAddresses: readonly Address[];
+	readonly #lookupTableCacheMilliseconds: number;
+	#lookupTableCache: {
+		fetchedAt: number;
+		tables: AddressesByLookupTableAddress;
+	} | null = null;
+
 	constructor(
 		rpcUrl: string,
 		readonly payer: TransactionSigner,
 		readonly progress: ClientProgress = () => {},
+		options: LootboxClientOptions = {},
 	) {
-		this.rpc = createSolanaRpc(rpcUrl);
+		this.rpc = options.rpc ?? createSolanaRpc(rpcUrl);
+		this.#lookupTableAddresses = [...(options.lookupTableAddresses ?? [])];
+		this.#lookupTableCacheMilliseconds = options.lookupTableCacheMilliseconds ??
+			LOOKUP_TABLE_CACHE_MILLISECONDS;
+	}
+
+	/** Lookup-table contents, refetched at most once per cache lifetime. */
+	async lookupTables(): Promise<AddressesByLookupTableAddress> {
+		const cache = this.#lookupTableCache;
+
+		if (
+			cache !== null &&
+			Date.now() - cache.fetchedAt < this.#lookupTableCacheMilliseconds
+		) {
+			return cache.tables;
+		}
+
+		const tables = await fetchAddressesForLookupTables(
+			[...this.#lookupTableAddresses],
+			this.rpc,
+		);
+		this.#lookupTableCache = { fetchedAt: Date.now(), tables };
+
+		return tables;
 	}
 
 	async send(
 		instructions: readonly Instruction[],
 		label: string,
+		options: SendOptions = {},
 	): Promise<string> {
 		this.progress(label);
 		const { value: blockhash } = await this.rpc.getLatestBlockhash({
 			commitment,
 		}).send();
+		const computeUnitLimit = options.computeUnitLimit === "none"
+			? null
+			: options.computeUnitLimit ?? lootboxComputeUnitLimit(instructions);
+		const lookupTables = this.#lookupTableAddresses.length > 0
+			? await this.lookupTables()
+			: null;
 		const message = pipe(
 			createTransactionMessage({ version: 0 }),
 			(message) => setTransactionMessageFeePayerSigner(this.payer, message),
 			(message) =>
 				setTransactionMessageLifetimeUsingBlockhash(blockhash, message),
 			(message) => appendTransactionMessageInstructions(instructions, message),
+			(message) =>
+				computeUnitLimit === null
+					? message
+					: setTransactionMessageComputeUnitLimit(computeUnitLimit, message),
+			(message) =>
+				options.priorityFeeMicroLamports === undefined
+					? message
+					: setTransactionMessageComputeUnitPrice(
+						options.priorityFeeMicroLamports,
+						message,
+					),
+			(message) =>
+				lookupTables === null
+					? message
+					: compressTransactionMessageUsingAddressLookupTables(
+						message,
+						lookupTables,
+					),
 		);
 		const transaction = await signTransactionMessageWithSigners(message);
 		const signature = await this.rpc.sendTransaction(
@@ -1047,8 +1174,7 @@ export class LootboxClient {
 	) {
 		const tree = await generateKeyPairSigner();
 		const [treeConfig] = await this.treeConfigAddress(tree.address);
-		const rent = await this.rpc.getMinimumBalanceForRentExemption(shape.space)
-			.send();
+		const rent = await rentExemptionLamports(this.rpc, shape.space);
 		await this.send([
 			getCreateAccountInstruction({
 				payer: this.payer,
@@ -1227,31 +1353,65 @@ export class LootboxClient {
 			),
 		);
 	}
+	/** Every template and opening account, in two discriminator-filtered
+	 * `getProgramAccounts` reads. The filters keep unrelated account types and
+	 * their bytes off the wire instead of downloading the full program state. */
+	/** Every template and opening account, in two discriminator-filtered
+	 * `getProgramAccounts` reads. The filters keep unrelated account types and
+	 * their bytes off the wire instead of downloading the full program state. */
 	async inventory() {
-		const accounts = await this.rpc.getProgramAccounts(
-			generated.LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
-			{ encoding: "base64", commitment },
-		).send();
-		const templates: ChainTemplate[] = [];
-		const openings: ChainOpening[] = [];
-
-		for (const account of accounts) {
-			const bytes = getBase64Encoder().encode(account.account.data[0]);
-
-			if (bytes[0] === generated.TEMPLATE_STATE_DISCRIMINATOR) {
-				templates.push({
-					address: account.pubkey,
-					data: generated.getTemplateStateDecoder().decode(bytes),
-				});
-			}
-
-			if (bytes[0] === generated.TEMPLATE_OPENING_STATE_DISCRIMINATOR) {
-				openings.push({
-					address: account.pubkey,
-					data: generated.getTemplateOpeningStateDecoder().decode(bytes),
-				});
-			}
-		}
+		const [templateAccounts, openingAccounts] = await Promise.all([
+			this.rpc.getProgramAccounts(
+				generated.LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
+				{
+					commitment,
+					encoding: "base64",
+					filters: [
+						{
+							memcmp: {
+								offset: 0n,
+								bytes: base58Bytes(
+									new Uint8Array([generated.TEMPLATE_STATE_DISCRIMINATOR]),
+								),
+								encoding: "base58",
+							},
+						},
+					],
+				},
+			).send(),
+			this.rpc.getProgramAccounts(
+				generated.LOOTBOX_PROGRAM_PROGRAM_ADDRESS,
+				{
+					commitment,
+					encoding: "base64",
+					filters: [
+						{
+							memcmp: {
+								offset: 0n,
+								bytes: base58Bytes(
+									new Uint8Array([
+										generated.TEMPLATE_OPENING_STATE_DISCRIMINATOR,
+									]),
+								),
+								encoding: "base58",
+							},
+						},
+					],
+				},
+			).send(),
+		]);
+		const templates: ChainTemplate[] = templateAccounts.map((account) => ({
+			address: account.pubkey,
+			data: generated.getTemplateStateDecoder().decode(
+				getBase64Encoder().encode(account.account.data[0]),
+			),
+		}));
+		const openings: ChainOpening[] = openingAccounts.map((account) => ({
+			address: account.pubkey,
+			data: generated.getTemplateOpeningStateDecoder().decode(
+				getBase64Encoder().encode(account.account.data[0]),
+			),
+		}));
 
 		return { templates, openings };
 	}
@@ -1783,9 +1943,7 @@ export class LootboxClient {
 			// uri, and an empty additional-metadata vector.
 			const finalSize = 234 + 4 + 64 + 4 + utf8.encode(plan.name).length + 4 +
 				utf8.encode(symbol).length + 4 + utf8.encode(plan.uri).length + 4;
-			const rent = await this.rpc.getMinimumBalanceForRentExemption(
-				BigInt(finalSize),
-			).send();
+			const rent = await rentExemptionLamports(this.rpc, finalSize);
 			await this.send([
 				getCreateAccountInstruction({
 					payer: this.payer,
@@ -2071,12 +2229,13 @@ export class LootboxClient {
 			template.data.settlementBountyLamports > 0n;
 		const [resultReceiptRent, serviceVaultRent] = await Promise.all([
 			template.data.resultReceiptsEnabled
-				? this.rpc.getMinimumBalanceForRentExemption(
-					BigInt(generated.getResultReceiptStateEncoder().fixedSize),
-				).send()
+				? rentExemptionLamports(
+					this.rpc,
+					generated.getResultReceiptStateEncoder().fixedSize,
+				)
 				: Promise.resolve(0n),
 			servicesEnabled
-				? this.rpc.getMinimumBalanceForRentExemption(0n).send()
+				? rentExemptionLamports(this.rpc, 0)
 				: Promise.resolve(0n),
 		]);
 		const reservedForResultsAndBounties = requiredServiceBudget(
@@ -2741,7 +2900,7 @@ export class LootboxClient {
 			getCreateAccountInstruction({
 				payer: this.payer,
 				newAccount: mint,
-				lamports: await this.rpc.getMinimumBalanceForRentExemption(82n).send(),
+				lamports: await rentExemptionLamports(this.rpc, 82),
 				space: 82n,
 				programAddress: CLASSIC_TOKEN_PROGRAM,
 			}),
@@ -2809,9 +2968,7 @@ export class LootboxClient {
 			getCreateAccountInstruction({
 				payer: this.payer,
 				newAccount: mint,
-				lamports: await this.rpc.getMinimumBalanceForRentExemption(
-					BigInt(finalSize),
-				).send(),
+				lamports: await rentExemptionLamports(this.rpc, finalSize),
 				space: 234n,
 				programAddress: BOX_TOKEN_PROGRAM,
 			}),
@@ -2880,7 +3037,7 @@ export class LootboxClient {
 			getCreateAccountInstruction({
 				payer: this.payer,
 				newAccount: mint,
-				lamports: await this.rpc.getMinimumBalanceForRentExemption(82n).send(),
+				lamports: await rentExemptionLamports(this.rpc, 82),
 				space: 82n,
 				programAddress: CLASSIC_TOKEN_PROGRAM,
 			}),

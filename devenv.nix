@@ -259,7 +259,7 @@ in
       set -euo pipefail
       node --test tools/normalize-generated.test.mjs
       cargo test --workspace --all-features
-      pnpm --dir sdks/typescript test
+      pnpm --dir sdks/typescript test:coverage
       pnpm --dir apps/platform test
       (cd sdks/dart && dart test)
     '';
@@ -389,10 +389,61 @@ in
     "security:audit".exec = ''
       set -euo pipefail
       # bincode 1.3.3 ships inside the solana 4.x client train the CLI links;
-      # Agave must migrate before the ignore can go.
-      cargo audit --deny warnings --ignore RUSTSEC-2025-0141
-      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --file tests/fixtures/mock_switchboard/Cargo.lock
-      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --file tests/fixtures/mock_bubblegum/Cargo.lock
+      # Agave must migrate before the ignore can go. The October 2026 zstd
+      # advisory wave is unfixed on the zstd 0.13 / zstd-safe 7.x line that
+      # solana-account-decoder pins; the CLI only decompresses trusted RPC
+      # responses. Re-evaluate every zstd ID on a solana-client bump.
+      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 \
+        --ignore RUSTSEC-2026-0386 \
+        --ignore RUSTSEC-2026-0387 \
+        --ignore RUSTSEC-2026-0391 \
+        --ignore RUSTSEC-2026-0395 \
+        --ignore RUSTSEC-2026-0396 \
+        --ignore RUSTSEC-2026-0397 \
+        --ignore RUSTSEC-2026-0398 \
+        --ignore RUSTSEC-2026-0399 \
+        --ignore RUSTSEC-2026-0400 \
+        --ignore RUSTSEC-2026-0401 \
+        --ignore RUSTSEC-2026-0402 \
+        --ignore RUSTSEC-2026-0403 \
+        --ignore RUSTSEC-2026-0404 \
+        --ignore RUSTSEC-2026-0405 \
+        --ignore RUSTSEC-2026-0406 \
+        --ignore RUSTSEC-2026-0410
+      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --file tests/fixtures/mock_switchboard/Cargo.lock \
+        --ignore RUSTSEC-2026-0386 \
+        --ignore RUSTSEC-2026-0387 \
+        --ignore RUSTSEC-2026-0391 \
+        --ignore RUSTSEC-2026-0395 \
+        --ignore RUSTSEC-2026-0396 \
+        --ignore RUSTSEC-2026-0397 \
+        --ignore RUSTSEC-2026-0398 \
+        --ignore RUSTSEC-2026-0399 \
+        --ignore RUSTSEC-2026-0400 \
+        --ignore RUSTSEC-2026-0401 \
+        --ignore RUSTSEC-2026-0402 \
+        --ignore RUSTSEC-2026-0403 \
+        --ignore RUSTSEC-2026-0404 \
+        --ignore RUSTSEC-2026-0405 \
+        --ignore RUSTSEC-2026-0406 \
+        --ignore RUSTSEC-2026-0410
+      cargo audit --deny warnings --ignore RUSTSEC-2025-0141 --file tests/fixtures/mock_bubblegum/Cargo.lock \
+        --ignore RUSTSEC-2026-0386 \
+        --ignore RUSTSEC-2026-0387 \
+        --ignore RUSTSEC-2026-0391 \
+        --ignore RUSTSEC-2026-0395 \
+        --ignore RUSTSEC-2026-0396 \
+        --ignore RUSTSEC-2026-0397 \
+        --ignore RUSTSEC-2026-0398 \
+        --ignore RUSTSEC-2026-0399 \
+        --ignore RUSTSEC-2026-0400 \
+        --ignore RUSTSEC-2026-0401 \
+        --ignore RUSTSEC-2026-0402 \
+        --ignore RUSTSEC-2026-0403 \
+        --ignore RUSTSEC-2026-0404 \
+        --ignore RUSTSEC-2026-0405 \
+        --ignore RUSTSEC-2026-0406 \
+        --ignore RUSTSEC-2026-0410
       # Every ignored advisory below roots in the Surfpool harness's bundled
       # legacy stack (surfpool-core: reqwest 0.11, dalek 1/3, webpki 0.101,
       # plus unmaintained transitive leaves). All are host-only test
@@ -412,6 +463,22 @@ in
         --ignore RUSTSEC-2024-0388 \
         --ignore RUSTSEC-2024-0421 \
         --ignore RUSTSEC-2024-0436 \
+        --ignore RUSTSEC-2026-0386 \
+        --ignore RUSTSEC-2026-0387 \
+        --ignore RUSTSEC-2026-0391 \
+        --ignore RUSTSEC-2026-0395 \
+        --ignore RUSTSEC-2026-0396 \
+        --ignore RUSTSEC-2026-0397 \
+        --ignore RUSTSEC-2026-0398 \
+        --ignore RUSTSEC-2026-0399 \
+        --ignore RUSTSEC-2026-0400 \
+        --ignore RUSTSEC-2026-0401 \
+        --ignore RUSTSEC-2026-0402 \
+        --ignore RUSTSEC-2026-0403 \
+        --ignore RUSTSEC-2026-0404 \
+        --ignore RUSTSEC-2026-0405 \
+        --ignore RUSTSEC-2026-0406 \
+        --ignore RUSTSEC-2026-0410 \
         --ignore RUSTSEC-2025-0134 \
         --ignore RUSTSEC-2025-0141 --ignore RUSTSEC-2024-0449 \
         --ignore RUSTSEC-2025-0161 \

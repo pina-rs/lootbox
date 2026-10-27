@@ -11,6 +11,13 @@ ignore = [
 	# (reqwest 0.11, dalek 1/3, webpki 0.101, and unmaintained transitive
 	# leaves); none ship in the on-chain program, SDKs, or web app. Re-evaluate
 	# every ID on the next Surfpool release.
+	# October 2026 wave: crypto-bigint timing variability and the unfixed
+	# zstd 0.13 line, both inside Surfpool's bundled host-only stack.
+	"RUSTSEC-2026-0387",
+	"RUSTSEC-2026-0391",
+	"RUSTSEC-2026-0398",
+	"RUSTSEC-2026-0403",
+	"RUSTSEC-2026-0410",
 	"RUSTSEC-2020-0016",
 	"RUSTSEC-2021-0139",
 	"RUSTSEC-2022-0093",

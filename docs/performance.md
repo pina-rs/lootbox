@@ -138,6 +138,18 @@ The box-curve family is measured but reported as advisory: Surfpool's local runt
 
 The `compressedNftPrize` trio is gated by the deployed-binary size check and the static profile; its runtime journey needs the fixture program described in the benchmark module's documentation.
 
+## Client compute budgets
+
+The measured tables above are not only documentation: the TypeScript, Dart, and Rust planners budget every transaction from them, pinned across languages by [`tests/vectors/compute-units.json`](../tests/vectors/compute-units.json). A program change that regresses compute units fails the `performance` workflow in the same pull request that must update the vector file, so the client budgets and the measured tables cannot drift apart.
+
+The budget policy doubles the summed measured units and adds 10,000, floored at 50,000 and capped at 1,398,000. The margin is deliberately generous: the journeys use fixture keys whose canonical bumps sit near 255, while real keys can land further down the bump search and shift an instruction by thousands of units. Priority fees are charged on the compute units a transaction consumes, never on the requested limit, so the margin cannot inflate a priority fee — it only guards against limit exhaustion. A transaction containing any instruction outside the measured lootbox tables is sent without a limit rather than guessing.
+
+`LootboxClient.send` applies the budget automatically, accepts an explicit `computeUnitLimit` (or `"none"`), and attaches a `priorityFeeMicroLamports` price when given one. The Rust CLI prepends the same `SetComputeUnitLimit` instruction to every `--send` submission.
+
+## Lookup-table compression
+
+Opening transactions pass roughly twenty accounts, most of them static programs, sysvars, and mints. A program-owned address lookup table compresses those into one-byte indices, shrinking transactions and improving landing odds under congestion. `pnpm --dir sdks/typescript bootstrap:lut -- --cluster <devnet|mainnet> --keypair <path>` creates the table (lootbox, Switchboard, system, compute budget, both token programs, ATA, wrapped SOL, and the four sysvars), extends it in chunks, and verifies it on chain. Pass the printed address to `LootboxClient` through `lookupTableAddresses`; contents are fetched once per cache lifetime (five minutes by default) and every sent transaction is compressed with them. Lookup tables only shrink transactions whose static accounts they list, and only non-signer accounts are compressed.
+
 ## Program size
 
 The deployed `lootbox_program.so` is **465,816 bytes**, built `cdylib`-only with fat LTO, `codegen-units = 1`, and `opt-level = 3` (the profile `pina build` applies). The crate must stay `cdylib`-only: a second `lib` crate type makes rustc silently drop LTO, which cost 17.9% of the program's size and several percent of compute units on every instruction before it was fixed. Removing the Token Metadata prize adapters (fund, claim, reclaim) and the unused `PrizeExhausted` error took another 37 KB after LTO; retiring the superseded single-reward family (ten instructions, three account types, and their helpers) took another 73 KB. The adapter, prize-pool, and exclusive families dispatch out of line so the LTO-inlined main dispatcher frame stays inside the SBF 4 KiB limit.

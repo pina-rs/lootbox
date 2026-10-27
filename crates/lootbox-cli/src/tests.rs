@@ -32,7 +32,7 @@ struct MockSubmit {
 }
 
 impl Submit for MockSubmit {
-	fn submit(&self, _instruction: &Instruction) -> Result<SubmitOutcome, CliError> {
+	fn submit(&self, _instructions: &[Instruction]) -> Result<SubmitOutcome, CliError> {
 		Ok(SubmitOutcome {
 			signature: format!("mock-{}", self.outcome.signature_byte),
 		})
@@ -48,7 +48,7 @@ fn submit_mock(signature_byte: u8) -> MockSubmit {
 struct MockErrorSubmit;
 
 impl Submit for MockErrorSubmit {
-	fn submit(&self, _instruction: &Instruction) -> Result<SubmitOutcome, CliError> {
+	fn submit(&self, _instructions: &[Instruction]) -> Result<SubmitOutcome, CliError> {
 		Err(CliError::Rpc("rejected by mock".to_string()))
 	}
 }
@@ -1781,4 +1781,96 @@ fn prize_pool_cli_rejects_invalid_metadata_hex() {
 		build("gg".to_owned()),
 		Err(CliError::InvalidHexEncoding { .. })
 	));
+}
+
+#[derive(Default)]
+struct CapturingSubmit {
+	submitted: std::cell::RefCell<Vec<Instruction>>,
+}
+
+impl Submit for CapturingSubmit {
+	fn submit(&self, instructions: &[Instruction]) -> Result<SubmitOutcome, CliError> {
+		self.submitted.borrow_mut().extend_from_slice(instructions);
+
+		Ok(SubmitOutcome {
+			signature: "mock-captured".to_string(),
+		})
+	}
+}
+
+#[test]
+fn run_send_mode_prefixes_the_measured_compute_budget() {
+	let cli = parse(&[
+		"--send",
+		"--rpc",
+		"http://localhost:8899",
+		"--keypair",
+		"/tmp/kp.json",
+		"request-template-open",
+		"--box-authority",
+		PK1,
+		"--payer",
+		PK2,
+		"--template",
+		PK3,
+		"--box-mint",
+		PK1,
+		"--box-account",
+		PK2,
+		"--opening",
+		PK3,
+		"--randomness",
+		PK1,
+		"--reward-escrow",
+		PK2,
+		"--oracle-queue",
+		PK3,
+		"--oracle",
+		PK1,
+		"--beneficiary",
+		PK2,
+		"--consumer-program",
+		PK3,
+		"--consumer-context",
+		format!("0x{}", "ab".repeat(32)).as_str(),
+		"--recent-slot-hashes",
+		PK1,
+		"--oracle-program",
+		PROGRAM,
+		"--oracle-program-state",
+		PK2,
+		"--oracle-lut-signer",
+		PK3,
+		"--oracle-lut",
+		PK1,
+		"--wrapped-sol-mint",
+		PK2,
+		"--address-lookup-table-program",
+		PK3,
+		"--recent-slot",
+		"7",
+		"--bump",
+		"254",
+	])
+	.expect("parses");
+	let capture = CapturingSubmit::default();
+
+	crate::run(&cli, Some(&capture)).expect("runs");
+
+	let submitted = capture.submitted.borrow();
+
+	assert_eq!(submitted.len(), 2, "budget instruction then the request");
+	assert_eq!(
+		submitted[0].program_id,
+		pubkey("ComputeBudget111111111111111111111111111111")
+	);
+	// requestTemplateOpen measured 23,972 units; the policy doubles it and
+	// adds 10,000.
+	assert_eq!(&submitted[0].data, &[2u8, 0x58, 0xE2, 0x00, 0x00]);
+	assert_eq!(submitted[1].program_id, pubkey(PROGRAM));
+	assert_eq!(
+		submitted[1].data.first(),
+		Some(&6),
+		"requestTemplateOpen discriminator"
+	);
 }

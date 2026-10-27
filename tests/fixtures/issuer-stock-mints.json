@@ -1,0 +1,56 @@
+{
+	"capturedAt": "2026-09-26",
+	"policy": "Fixed product mint allowlist. Adding a mint requires a reviewed program change; a public delegate key alone never authorizes admission.",
+	"mints": [
+		{
+			"mint": "PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB",
+			"issuer": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+			"name": "PreStocks"
+		},
+		{
+			"mint": "Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw",
+			"issuer": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+			"name": "PreStocks"
+		},
+		{
+			"mint": "PreZad18qfPtbxNpMtMuAuX2zVpvkEU8DnJx56faCWd",
+			"issuer": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+			"name": "PreStocks"
+		},
+		{
+			"mint": "PreLWGkkeqG1s4HEfFZSy9moCrJ7btsHuUtfcCeoRua",
+			"issuer": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+			"name": "PreStocks"
+		},
+		{
+			"mint": "PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S",
+			"issuer": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+			"name": "PreStocks"
+		},
+		{
+			"mint": "PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF",
+			"issuer": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+			"name": "PreStocks"
+		},
+		{
+			"mint": "Pre8AREmFPtoJFT8mQSXQLh56cwJmM7CFDRuoGBZiUP",
+			"issuer": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+			"name": "PreStocks"
+		},
+		{
+			"mint": "PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh",
+			"issuer": "WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc",
+			"name": "PreStocks"
+		},
+		{
+			"mint": "XsensupeZBdHxZtdnLptf1UfWpVyancWcit7qWFYZrJ",
+			"issuer": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+			"name": "Backed xStocks"
+		},
+		{
+			"mint": "Xsc5BxL1ucvrQNXZqW3CT8M9gWTko1LPSLLkSVzGe9h",
+			"issuer": "5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq",
+			"name": "Backed xStocks"
+		}
+	]
+}

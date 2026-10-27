@@ -1694,7 +1694,7 @@ impl<'a> ProcessAccountInfos<'a> for FundTokenPrizeAccounts<'a> {
 			.as_token_mint_for_program(&token_program)?
 			.assert_extensions_allowed(&ISSUER_STOCK_EXTENSIONS)?;
 		let transfer_fee = if mint.token_2022().is_some() {
-			admit_token_2022_prize(&self.mint.try_borrow()?)?
+			admit_token_2022_prize(self.mint.address(), &self.mint.try_borrow()?)?
 		} else if mint.freeze_authority().is_some() {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		} else {

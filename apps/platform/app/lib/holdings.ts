@@ -9,7 +9,7 @@ import {
 	CLASSIC_TOKEN_PROGRAM,
 	PRESTOCK_SYMBOLS,
 	PRESTOCKS,
-	STOCK_ISSUERS,
+	STOCK_MINTS,
 	TOKEN_2022_PROGRAM,
 } from "./tokens.js";
 
@@ -58,8 +58,11 @@ export function describeMint(
 	const delegate = extensions.find((entry) =>
 		entry.__kind === "PermanentDelegate"
 	);
-	const issuerName = delegate?.__kind === "PermanentDelegate"
-		? STOCK_ISSUERS[delegate.delegate] ?? null
+	const registration = STOCK_MINTS.get(mintAddress);
+	const issuerName = owner === TOKEN_2022_PROGRAM &&
+			delegate?.__kind === "PermanentDelegate" &&
+			registration?.issuer === delegate.delegate
+		? registration.name
 		: null;
 	const metadata = extensions.find((entry) => entry.__kind === "TokenMetadata");
 	const feeConfig = extensions.find((entry) =>

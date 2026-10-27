@@ -702,6 +702,11 @@ impl<'a> ProcessAccountInfos<'a> for ClaimTokenPrizeAccounts<'a> {
 			return Err(lootbox_error(LootboxError::InvalidPrize));
 		}
 
+		if kind == PRIZE_TOKEN_2022 {
+			self.mint.assert_owner(&token_2022::ID)?;
+			let _ = admit_token_2022_prize(self.mint.address(), &self.mint.try_borrow()?)?;
+		}
+
 		drop(self.escrow.as_associated_token_account(
 			&bundle_address,
 			self.mint.address(),

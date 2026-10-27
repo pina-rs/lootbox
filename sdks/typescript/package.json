@@ -35,7 +35,6 @@
 		"bootstrap:lut": "tsx scripts/bootstrap-lut.ts",
 		"build": "tsc --noEmit",
 		"check": "tsc --noEmit",
-		"create:stock-mint": "tsx scripts/create-stock-mint.ts",
 		"e2e:devnet": "tsx scripts/devnet-e2e.ts",
 		"launch:treasury": "tsx scripts/launch-treasury.ts",
 		"mint:empty-chests": "tsx scripts/mint-empty-chests.ts",

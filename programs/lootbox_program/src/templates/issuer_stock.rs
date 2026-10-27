@@ -4,8 +4,8 @@
 //! Ordinary Token-2022 prizes stay under the strict policy: only on-mint
 //! metadata extensions and no freeze authority. Tokenized stocks cannot meet
 //! that policy because their issuers keep regulatory powers over every holder.
-//! A mint is admitted as an issuer-controlled stock only when its
-//! `PermanentDelegate` is one of [`ISSUER_STOCK_AUTHORITIES`]. The program
+//! A mint is admitted as an issuer-controlled stock only when its address and
+//! `PermanentDelegate` match an entry in [`ISSUER_STOCK_MINTS`]. The program
 //! cannot restrain those powers; `docs/security-templates.md` discloses them.
 
 use token_2022::state::ExtensionType;
@@ -19,9 +19,51 @@ pub const PRESTOCKS_ISSUER: Address = address!("WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq
 /// Backed xStocks issuer. It is the permanent delegate and the transfer-hook
 /// authority of every xStocks mint, such as `TSLAx`, `AAPLx`, `NVDAx`, and `SPYx`.
 pub const XSTOCKS_ISSUER: Address = address!("5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq");
-/// Permanent delegates that mark a Token-2022 mint as an issuer-controlled
-/// tokenized stock. Every other mint keeps the strict Token-2022 policy.
-pub const ISSUER_STOCK_AUTHORITIES: [Address; 2] = [PRESTOCKS_ISSUER, XSTOCKS_ISSUER];
+/// Fixed product allowlist of `(mint, issuer)` pairs from the dated official
+/// API recordings. Adding a mint requires a reviewed program change.
+/// The exact entries are covered by `tests/fixtures/issuer-stock-mints.json`.
+pub const ISSUER_STOCK_MINTS: [(Address, Address); 10] = [
+	(
+		address!("PresTj4Yc2bAR197Er7wz4UUKSfqt6FryBEdAriBoQB"),
+		PRESTOCKS_ISSUER,
+	),
+	(
+		address!("Pren1FvFX6J3E4kXhJuCiAD5aDmGEb7qJRncwA8Lkhw"),
+		PRESTOCKS_ISSUER,
+	),
+	(
+		address!("PreZad18qfPtbxNpMtMuAuX2zVpvkEU8DnJx56faCWd"),
+		PRESTOCKS_ISSUER,
+	),
+	(
+		address!("PreLWGkkeqG1s4HEfFZSy9moCrJ7btsHuUtfcCeoRua"),
+		PRESTOCKS_ISSUER,
+	),
+	(
+		address!("PrekqLJvJ3qVdXmBGDiexvwUTF4rLFDa6HWS4HJbw9S"),
+		PRESTOCKS_ISSUER,
+	),
+	(
+		address!("PreweJYECqtQwBtpxHL171nL2K6umo692gTm7Q3rpgF"),
+		PRESTOCKS_ISSUER,
+	),
+	(
+		address!("Pre8AREmFPtoJFT8mQSXQLh56cwJmM7CFDRuoGBZiUP"),
+		PRESTOCKS_ISSUER,
+	),
+	(
+		address!("PreANxuXjsy2pvisWWMNB6YaJNzr7681wJJr2rHsfTh"),
+		PRESTOCKS_ISSUER,
+	),
+	(
+		address!("XsensupeZBdHxZtdnLptf1UfWpVyancWcit7qWFYZrJ"),
+		XSTOCKS_ISSUER,
+	),
+	(
+		address!("Xsc5BxL1ucvrQNXZqW3CT8M9gWTko1LPSLLkSVzGe9h"),
+		XSTOCKS_ISSUER,
+	),
+];
 
 /// Extensions every Token-2022 prize may carry.
 const STRICT_EXTENSIONS: [ExtensionType; 2] =
@@ -162,6 +204,7 @@ impl TransferFeeConfig {
 /// to frozen, or names a transfer-hook program, and propagates malformed
 /// extension data.
 pub(super) fn admit_token_2022_prize(
+	address: &Address,
 	data: &[u8],
 ) -> Result<Option<TransferFeeConfig>, ProgramError> {
 	let mint = StateWithExtensions::<token_2022::state::Mint>::from_bytes(data)?;
@@ -169,7 +212,7 @@ pub(super) fn admit_token_2022_prize(
 	let count = mint.write_extension_types(&mut extensions)?;
 	let extensions = &extensions[..count];
 
-	if !is_issuer_stock(mint, extensions)? {
+	if !is_issuer_stock(address, mint, extensions)? {
 		if mint.base.freeze_authority().is_some()
 			|| !extensions
 				.iter()
@@ -226,6 +269,7 @@ pub(super) fn admit_token_2022_prize(
 }
 
 fn is_issuer_stock(
+	address: &Address,
 	mint: &StateWithExtensions<token_2022::state::Mint>,
 	extensions: &[ExtensionType],
 ) -> Result<bool, ProgramError> {
@@ -235,10 +279,9 @@ fn is_issuer_stock(
 
 	let delegate = mint.get_extension::<token_2022::state::PermanentDelegateExtension>()?;
 
-	Ok(delegate
-		.delegate
-		.as_ref()
-		.is_some_and(|delegate| ISSUER_STOCK_AUTHORITIES.contains(delegate)))
+	Ok(ISSUER_STOCK_MINTS
+		.iter()
+		.any(|(mint, issuer)| mint == address && delegate.delegate.as_ref() == Some(issuer)))
 }
 
 /// Return the value bytes of the first `kind` TLV entry on an extended mint.
@@ -388,10 +431,45 @@ mod tests {
 	}
 
 	#[test]
+	fn issuer_admission_matches_the_shared_product_mint_registry() {
+		let fixture: serde_json::Value = serde_json::from_str(include_str!(
+			"../../../../tests/fixtures/issuer-stock-mints.json"
+		))
+		.expect("issuer mint registry");
+		let entries = fixture["mints"].as_array().expect("mint entries");
+		assert_eq!(entries.len(), ISSUER_STOCK_MINTS.len());
+
+		for (entry, (mint, issuer)) in entries.iter().zip(ISSUER_STOCK_MINTS) {
+			assert_eq!(
+				entry["mint"].as_str().expect("mint").parse::<Address>(),
+				Ok(mint)
+			);
+			assert_eq!(
+				entry["issuer"].as_str().expect("issuer").parse::<Address>(),
+				Ok(issuer)
+			);
+		}
+	}
+
+	#[test]
+	fn public_issuer_delegate_cannot_authenticate_an_unregistered_mint() {
+		let bytes = StockMint::prestocks().bytes();
+		assert_eq!(
+			admit_token_2022_prize(&UNKNOWN_ISSUER, &bytes),
+			Err(invalid_prize())
+		);
+		assert_eq!(
+			admit_token_2022_prize(&ISSUER_STOCK_MINTS[8].0, &bytes),
+			Err(invalid_prize())
+		);
+	}
+
+	#[test]
 	fn allowlisted_issuers_admit_their_stock_extension_sets() {
-		let config = admit_token_2022_prize(&StockMint::prestocks().bytes())
-			.expect("PreStocks mint")
-			.expect("transfer fee config");
+		let config =
+			admit_token_2022_prize(&ISSUER_STOCK_MINTS[0].0, &StockMint::prestocks().bytes())
+				.expect("PreStocks mint")
+				.expect("transfer fee config");
 		assert_eq!(
 			config.epoch_fee(0),
 			TransferFee {
@@ -408,7 +486,10 @@ mod tests {
 			fee: None,
 			..StockMint::prestocks()
 		};
-		assert_eq!(admit_token_2022_prize(&xstock.bytes()), Ok(None));
+		assert_eq!(
+			admit_token_2022_prize(&ISSUER_STOCK_MINTS[8].0, &xstock.bytes()),
+			Ok(None)
+		);
 	}
 
 	#[test]
@@ -417,14 +498,17 @@ mod tests {
 			delegate: UNKNOWN_ISSUER,
 			..StockMint::prestocks()
 		};
-		assert_eq!(admit_token_2022_prize(&mint.bytes()), Err(invalid_prize()));
+		assert_eq!(
+			admit_token_2022_prize(&ISSUER_STOCK_MINTS[0].0, &mint.bytes()),
+			Err(invalid_prize())
+		);
 		let unfrozen = StockMint {
 			freeze_authority: None,
 			fee: None,
 			..mint
 		};
 		assert_eq!(
-			admit_token_2022_prize(&unfrozen.bytes()),
+			admit_token_2022_prize(&ISSUER_STOCK_MINTS[0].0, &unfrozen.bytes()),
 			Err(invalid_prize())
 		);
 	}
@@ -453,7 +537,10 @@ mod tests {
 				..StockMint::prestocks()
 			},
 		] {
-			assert_eq!(admit_token_2022_prize(&mint.bytes()), Err(invalid_prize()));
+			assert_eq!(
+				admit_token_2022_prize(&ISSUER_STOCK_MINTS[0].0, &mint.bytes()),
+				Err(invalid_prize())
+			);
 		}
 	}
 
@@ -464,12 +551,18 @@ mod tests {
 		plain.push(6);
 		plain.push(1);
 		plain.extend_from_slice(&[0; 36]);
-		assert_eq!(admit_token_2022_prize(&plain), Ok(None));
+		assert_eq!(
+			admit_token_2022_prize(&ISSUER_STOCK_MINTS[0].0, &plain),
+			Ok(None)
+		);
 
 		let mut frozen = plain.clone();
 		frozen[46..50].copy_from_slice(&1u32.to_le_bytes());
 		frozen[50..82].copy_from_slice(&PRESTOCKS_ISSUER.to_bytes());
-		assert_eq!(admit_token_2022_prize(&frozen), Err(invalid_prize()));
+		assert_eq!(
+			admit_token_2022_prize(&ISSUER_STOCK_MINTS[0].0, &frozen),
+			Err(invalid_prize())
+		);
 
 		let mut fee_only = plain;
 		fee_only.resize(165, 0);
@@ -479,7 +572,10 @@ mod tests {
 			ExtensionType::TransferFeeConfig,
 			&fee_config((0, 0, 0), (0, 0, 0)),
 		);
-		assert_eq!(admit_token_2022_prize(&fee_only), Err(invalid_prize()));
+		assert_eq!(
+			admit_token_2022_prize(&ISSUER_STOCK_MINTS[0].0, &fee_only),
+			Err(invalid_prize())
+		);
 	}
 
 	#[test]

@@ -2793,7 +2793,7 @@ fn assert_invalid_prize(result: Result<(), std::string::String>, reason: &str) {
 
 #[test]
 #[ignore = "run with `devenv shell -- test:surfpool`"]
-fn issuer_controlled_stock_escrows_exactly_the_recorded_amount() {
+fn issuer_delegate_spoof_cannot_receive_the_stock_admission_policy() {
 	use spl_token_2022_interface::extension::pausable;
 
 	pina_test::run(async {
@@ -2864,64 +2864,22 @@ fn issuer_controlled_stock_escrows_exactly_the_recorded_amount() {
 					.expect("mint stock"),
 			)
 			.expect("fund stock source");
-		let per_win = 1_000_000_000;
-		let deposit = 2 * per_win;
-
-		// A paused stock cannot be escrowed until the issuer resumes it.
+		let accounts = (stock, source, escrow);
+		let before = token_balance(&program, &source);
+		assert_invalid_prize(
+			fund_token_2022(&program, (template, bundle), accounts, 1_000_000_000),
+			"copying a public issuer delegate cannot authorize an unregistered mint",
+		);
+		assert_eq!(token_balance(&program, &source), before);
+		assert_eq!(token_balance(&program, &escrow), 0);
 		program
 			.send_instruction(
 				pausable::instruction::pause(&token_2022(), &stock, &payer, &[]).expect("pause"),
 			)
-			.expect("issuer pauses the stock");
-		let accounts = (stock, source, escrow);
+			.expect("attacker retains pause authority");
 		assert_invalid_prize(
-			fund_token_2022(&program, (template, bundle), accounts, per_win),
-			"paused stock is rejected at funding",
-		);
-		program
-			.send_instruction(
-				pausable::instruction::resume(&token_2022(), &stock, &payer, &[]).expect("resume"),
-			)
-			.expect("issuer resumes the stock");
-		program.advance_one_slot().expect("new blockhash");
-		fund_token_2022(&program, (template, bundle), accounts, per_win)
-			.expect("escrow an issuer-controlled stock");
-		let debit = 3_000_000_000 - token_balance(&program, &source);
-		assert_eq!(
-			token_balance(&program, &escrow),
-			deposit,
-			"escrow holds exactly the recorded inventory after the issuer fee",
-		);
-		assert_eq!(debit, 2_020_202_021, "funder pays the minimal 1% gross-up");
-		assert_eq!(
-			debit - deposit,
-			(debit * 100).div_ceil(10_000),
-			"the grossed-up fee is Token-2022's own fee on the gross",
-		);
-
-		// Reclaiming the staged inventory moves the recorded amount; the
-		// issuer withholds its disclosed fee from the recipient's credit.
-		let before = token_balance(&program, &source);
-		program
-			.send(
-				&[LootboxInstruction::ReclaimTokenPrize as u8, 0, 0],
-				vec![
-					AccountMeta::new_readonly(payer, true),
-					AccountMeta::new_readonly(template, false),
-					AccountMeta::new_readonly(box_mint, false),
-					AccountMeta::new(bundle, false),
-					AccountMeta::new_readonly(stock, false),
-					AccountMeta::new(escrow, false),
-					AccountMeta::new(source, false),
-					AccountMeta::new_readonly(token_2022(), false),
-				],
-			)
-			.expect("reclaim staged stock inventory");
-		assert_eq!(token_balance(&program, &escrow), 0);
-		assert_eq!(
-			token_balance(&program, &source) - before,
-			deposit - deposit / 100,
-			"recipient receives the recorded amount minus the issuer fee",
+			fund_token_2022(&program, (template, bundle), accounts, 1_000_000_000),
+			"a paused spoof cannot authorize the issuer policy either",
 		);
 		program.stop().expect("stop Surfpool");
 	});

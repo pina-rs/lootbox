@@ -22,7 +22,7 @@ export function getReclaimSolPrizeDiscriminator2Bytes(): ReadonlyUint8Array { re
 export type ReclaimSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? WritableSignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, ...TRemainingAccounts]>;
 
-export type ReclaimSolPrizeInstructionData = { discriminator: number; migrationVersion: number; 
+export type ReclaimSolPrizeInstructionData = { discriminator: number; migrationVersion: number;
 /**
  * Asset slot within the bundle; must be below its funded asset count,
  * hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and not be reclaimed
@@ -30,7 +30,7 @@ export type ReclaimSolPrizeInstructionData = { discriminator: number; migrationV
  */
 assetIndex: number;  };
 
-export type ReclaimSolPrizeInstructionDataArgs = { 
+export type ReclaimSolPrizeInstructionDataArgs = {
 /**
  * Asset slot within the bundle; must be below its funded asset count,
  * hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and not be reclaimed

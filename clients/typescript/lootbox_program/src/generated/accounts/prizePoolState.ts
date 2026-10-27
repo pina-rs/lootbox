@@ -25,48 +25,48 @@ export function getPrizePoolStateDiscriminator2Bytes(): ReadonlyUint8Array { ret
  * items. Per-item PDAs retain deposit snapshots while the sealed accumulator
  * commits the ordered inventory into the parent treasury manifest.
  */
-export type PrizePoolState = { discriminator: number; migrationVersion: number; 
+export type PrizePoolState = { discriminator: number; migrationVersion: number;
 /**
  * Template authority that created the pool. Receives item rent when a
  * winner claims an item.
  */
-authority: Address; 
+authority: Address;
 /** Bundle whose asset slot this pool fills; seeds this PDA. */
-bundle: Address; 
+bundle: Address;
 /** Nonzero Bubblegum Merkle tree that holds every deposited leaf. */
-tree: Address; 
+tree: Address;
 /**
  * Chained hash of every deposited item in pool order. Removing the
  * unsealed tail restores the previous value; sealing commits it into the
  * bundle slot.
  */
-manifestAccumulator: ReadonlyUint8Array; 
+manifestAccumulator: ReadonlyUint8Array;
 /**
  * Items the pool must hold before sealing; equals the bundle quantity and
  * is between one and 4,096.
  */
-quantity: bigint; 
+quantity: bigint;
 /**
  * Seal counter mixed into the bundle slot commitment; `sealPrizePool`
  * increments it from zero.
  */
-version: bigint; 
+version: bigint;
 /** Items deposited so far, and the pool index of the next item. */
-depositCursor: number; 
+depositCursor: number;
 /** Reserved items, including those already claimed by winners. */
-assignedCount: number; 
+assignedCount: number;
 /** Assigned items already delivered to their winners. */
-claimedCount: number; 
+claimedCount: number;
 /** Items returned to the creator from the sealed pool. */
-reclaimedCount: number; 
+reclaimedCount: number;
 /** Bundle asset slot this pool fills; seeds this PDA. */
-assetIndex: number; 
+assetIndex: number;
 /** 0 funding, 1 sealed. */
-status: number; 
+status: number;
 /** One metadata-admitted item PDA exists at `deposit_cursor`. */
-hasPreparedItem: boolean; 
+hasPreparedItem: boolean;
 /** Canonical bump of this prize pool PDA. */
-bump: number; 
+bump: number;
 /**
  * A set bit means the item cannot be allocated again.
  * Holds one bit per deposited item, so its length is `deposit_cursor`
@@ -74,48 +74,48 @@ bump: number;
  */
 unavailable: Array<number>;  };
 
-export type PrizePoolStateArgs = { 
+export type PrizePoolStateArgs = {
 /**
  * Template authority that created the pool. Receives item rent when a
  * winner claims an item.
  */
-authority: Address; 
+authority: Address;
 /** Bundle whose asset slot this pool fills; seeds this PDA. */
-bundle: Address; 
+bundle: Address;
 /** Nonzero Bubblegum Merkle tree that holds every deposited leaf. */
-tree: Address; 
+tree: Address;
 /**
  * Chained hash of every deposited item in pool order. Removing the
  * unsealed tail restores the previous value; sealing commits it into the
  * bundle slot.
  */
-manifestAccumulator: ReadonlyUint8Array; 
+manifestAccumulator: ReadonlyUint8Array;
 /**
  * Items the pool must hold before sealing; equals the bundle quantity and
  * is between one and 4,096.
  */
-quantity: number | bigint; 
+quantity: number | bigint;
 /**
  * Seal counter mixed into the bundle slot commitment; `sealPrizePool`
  * increments it from zero.
  */
-version: number | bigint; 
+version: number | bigint;
 /** Items deposited so far, and the pool index of the next item. */
-depositCursor: number; 
+depositCursor: number;
 /** Reserved items, including those already claimed by winners. */
-assignedCount: number; 
+assignedCount: number;
 /** Assigned items already delivered to their winners. */
-claimedCount: number; 
+claimedCount: number;
 /** Items returned to the creator from the sealed pool. */
-reclaimedCount: number; 
+reclaimedCount: number;
 /** Bundle asset slot this pool fills; seeds this PDA. */
-assetIndex: number; 
+assetIndex: number;
 /** 0 funding, 1 sealed. */
-status: number; 
+status: number;
 /** One metadata-admitted item PDA exists at `deposit_cursor`. */
-hasPreparedItem: boolean; 
+hasPreparedItem: boolean;
 /** Canonical bump of this prize pool PDA. */
-bump: number; 
+bump: number;
 /**
  * A set bit means the item cannot be allocated again.
  * Holds one bit per deposited item, so its length is `deposit_cursor`

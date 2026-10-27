@@ -499,6 +499,10 @@ describe("LootboxClient transaction costs", () => {
 	it("aborts a submitted RPC request that never responds", async () => {
 		const controller = new AbortController();
 		let submissions = 0;
+		let onSubmission: () => void = () => {};
+		const submitted = new Promise<void>((resolve) => {
+			onSubmission = resolve;
+		});
 		const server = createServer((request, response) => {
 			let text = "";
 			request.setEncoding("utf8");
@@ -514,7 +518,7 @@ describe("LootboxClient transaction costs", () => {
 
 				if (Reflect.get(body, "method") === "sendTransaction") {
 					submissions += 1;
-					controller.abort(new Error("expired pending submission"));
+					onSubmission();
 					return;
 				}
 
@@ -552,6 +556,15 @@ describe("LootboxClient transaction costs", () => {
 					abortSignal: controller.signal,
 				},
 			);
+			const operation = client.send([], "bounded attempt");
+
+			await Promise.race([
+				submitted,
+				operation.then(() => {
+					throw new Error("RPC completed before submission could stall");
+				}),
+			]);
+
 			const safety = new Promise<never>((_resolve, reject) => {
 				timer = setTimeout(
 					() => reject(new Error("submission ignored cancellation")),
@@ -559,7 +572,9 @@ describe("LootboxClient transaction costs", () => {
 				);
 			});
 
-			await expect(Promise.race([client.send([], "bounded attempt"), safety]))
+			controller.abort(new Error("expired pending submission"));
+
+			await expect(Promise.race([operation, safety]))
 				.rejects.toThrow("expired pending submission");
 			expect(submissions).toBe(1);
 		} finally {

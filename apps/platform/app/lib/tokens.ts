@@ -2,6 +2,7 @@
  * Token facts shared by the catalog API, the wallet holdings picker, and the
  * prize descriptions.
  */
+import issuerMints from "../../../../tests/fixtures/issuer-stock-mints.json";
 import snapshot from "./prestocks-snapshot.json";
 
 export const CLASSIC_TOKEN_PROGRAM =
@@ -9,13 +10,15 @@ export const CLASSIC_TOKEN_PROGRAM =
 export const TOKEN_2022_PROGRAM = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
 
 /**
- * Permanent delegates the program admits as issuer-controlled tokenized
- * stocks (see `programs/lootbox_program/src/templates/issuer_stock.rs`).
+ * Fixed mint/issuer pairs admitted by the program. Public delegate keys
+ * alone are never proof of mint origin.
  */
-export const STOCK_ISSUERS: Readonly<Record<string, string>> = {
-	WV9PJN7XTmTLVwbutCLFxp8TyePee6Xq5mRq6Fti5Wc: "PreStocks",
-	"5aMNNLQJwAEeoemTEMkv5NVjqKwvvefRYCQ5Z67HFvEq": "Backed xStocks",
-};
+export const STOCK_MINTS: ReadonlyMap<
+	string,
+	(typeof issuerMints.mints)[number]
+> = new Map(
+	issuerMints.mints.map((mint) => [mint.mint, mint]),
+);
 
 /** PreStocks mints and the company each tracks. */
 export const PRESTOCKS: ReadonlyMap<string, string> = new Map(

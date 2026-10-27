@@ -88,6 +88,18 @@ describe("prize admission (mirrors the program)", () => {
 		expect(early.tracks).toBe("OpenAI");
 	});
 
+	it("rejects an unregistered mint that copies a public issuer delegate", () => {
+		const spoof = mint({
+			freezeAuthority: some(SOMEONE),
+			extensions: some([
+				{ __kind: "PermanentDelegate", delegate: PRESTOCKS },
+			]),
+		});
+		const result = describeMint(SOMEONE, TOKEN_2022_PROGRAM, spoof, 0n);
+		expect(result.issuer).toBeNull();
+		expect(result.ineligible).toMatch(/PermanentDelegate extension/);
+	});
+
 	it("refuses accounts that are not token mints", () => {
 		expect(describeMint(MINT, SOMEONE, mint({}), 0n).ineligible)
 			.toBe("This address isn't a token mint.");

@@ -515,7 +515,7 @@ export async function insertUpload(
 	now: number,
 ): Promise<void> {
 	await db.prepare(
-		"INSERT INTO uploads (key, owner, content_type, size, created_at) VALUES (?, ?, ?, ?, ?)",
+		"INSERT INTO uploads (key, owner, content_type, size, created_at, state) VALUES (?, ?, ?, ?, ?, 'pending')",
 	).bind(upload.key, upload.owner, upload.contentType, upload.size, now).run();
 }
 
@@ -523,10 +523,76 @@ export async function uploadOwner(
 	db: D1Database,
 	key: string,
 ): Promise<string | null> {
-	const row = await db.prepare("SELECT owner FROM uploads WHERE key = ?")
+	const row = await db.prepare(
+		"SELECT owner FROM uploads WHERE key = ? AND state = 'ready'",
+	)
 		.bind(key).first<{ owner: string }>();
 
 	return row?.owner ?? null;
+}
+
+/** Publish an upload only after its object is durably written. */
+export async function completeUpload(
+	db: D1Database,
+	key: string,
+): Promise<void> {
+	await db.prepare(
+		"UPDATE uploads SET state = 'ready' WHERE key = ? AND state = 'pending'",
+	)
+		.bind(key).run();
+}
+
+/** Fence an unused upload before touching R2; attachment triggers reject it. */
+export async function retireUpload(
+	db: D1Database,
+	key: string,
+	owner: string,
+): Promise<boolean> {
+	const result = await db.prepare(`UPDATE uploads SET state = 'deleting'
+		WHERE key = ? AND owner = ?
+		AND NOT EXISTS (SELECT 1 FROM lootboxes WHERE cover_key = uploads.key)
+		AND NOT EXISTS (SELECT 1 FROM drafts
+			WHERE json_extract(data_json, '$.details.coverKey') = uploads.key)`)
+		.bind(key, owner).run();
+
+	return result.meta.changes === 1;
+}
+
+/** Bounded cleanup includes interrupted writes and interrupted deletions. */
+export async function expiredUploads(
+	db: D1Database,
+	now: number,
+): Promise<Readonly<{ key: string; owner: string }>[]> {
+	const { results } = await db.prepare(`SELECT key, owner FROM uploads
+		WHERE (state = 'deleting' OR created_at < ?)
+		AND NOT EXISTS (SELECT 1 FROM lootboxes WHERE cover_key = uploads.key)
+		AND NOT EXISTS (SELECT 1 FROM drafts
+			WHERE json_extract(data_json, '$.details.coverKey') = uploads.key)
+		ORDER BY created_at LIMIT 50`).bind(now - 7 * 86400).all<
+		{ key: string; owner: string }
+	>();
+
+	return results;
+}
+
+/** Release a reservation only after R2 deletion has succeeded. */
+export async function deleteRetiredUpload(
+	db: D1Database,
+	key: string,
+): Promise<void> {
+	await db.prepare("DELETE FROM uploads WHERE key = ? AND state = 'deleting'")
+		.bind(key).run();
+}
+
+/** Unsigned abandoned drafts expire; signed drafts keep their recovery identity. */
+export async function deleteExpiredDrafts(
+	db: D1Database,
+	now: number,
+): Promise<void> {
+	await db.prepare(
+		"DELETE FROM drafts WHERE status = 'editing' AND updated_at < ?",
+	)
+		.bind(now - 30 * 86400).run();
 }
 
 // Relayer

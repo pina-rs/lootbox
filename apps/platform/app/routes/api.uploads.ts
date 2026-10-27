@@ -9,11 +9,14 @@ import {
 	mediaUrl,
 	nowSeconds,
 	readFormData,
+	readJson,
 	requireWallet,
 	services,
 } from "../lib/.server/context.js";
-import { insertUpload } from "../lib/.server/db.js";
+import { completeUpload, insertUpload } from "../lib/.server/db.js";
 import { originFor } from "../lib/.server/env.js";
+import { storageErrorResponse } from "../lib/.server/storage-errors.js";
+import { deleteUnusedUpload } from "../lib/.server/storage.js";
 import type { Route } from "./+types/api.uploads";
 
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -53,6 +56,27 @@ export async function action({ request, context }: Route.ActionArgs) {
 
 	const app = services(context);
 	const wallet = await requireWallet(app, request);
+
+	if (request.method === "DELETE") {
+		const body = await readJson(request, 1024);
+		const key = typeof body === "object" && body !== null && "key" in body
+			? body.key
+			: null;
+
+		if (
+			typeof key !== "string" ||
+			!/^c-[0-9a-f-]{36}\.(png|jpg|gif|webp)$/.test(key)
+		) {
+			return errorResponse(400, "Unknown image");
+		}
+
+		if (!(await deleteUnusedUpload(app, key, wallet))) {
+			return errorResponse(409, "Only your unused images can be deleted");
+		}
+
+		return jsonResponse({ ok: true });
+	}
+
 	const form = await readFormData(request, MAX_BYTES + 64 * 1024);
 	const file = form.get("file");
 
@@ -69,18 +93,25 @@ export async function action({ request, context }: Route.ActionArgs) {
 
 	const key = `c-${crypto.randomUUID()}.${kind.ext}`;
 
+	try {
+		// Reserve both budgets before R2. Failed writes keep a cleanup record.
+		await insertUpload(app.db, {
+			key,
+			owner: wallet,
+			contentType: kind.type,
+			size: bytes.length,
+		}, nowSeconds());
+	} catch (error) {
+		return storageErrorResponse(error);
+	}
+
 	await app.media.put(key, bytes, {
 		httpMetadata: {
 			contentType: kind.type,
 			cacheControl: "public, max-age=31536000, immutable",
 		},
 	});
-	await insertUpload(app.db, {
-		key,
-		owner: wallet,
-		contentType: kind.type,
-		size: bytes.length,
-	}, nowSeconds());
+	await completeUpload(app.db, key);
 
 	return jsonResponse({
 		key,

@@ -102,6 +102,8 @@ The chart, odds strip, stepper, and action cards come from `@pina-rs/lootbox-ui`
 - Manage actions require the session wallet to equal the template authority read from chain, not just the D1 creator.
 - Creator Markdown renders through a tiny parser to React elements; raw HTML is never emitted and links must be `https:`.
 - Uploads are checked by magic bytes, capped at 4 MB, and owned by the uploading wallet.
+- D1 enforces storage budgets atomically. Each wallet may keep 5 unfinished drafts (100 total) and 20 uploads using at most 32 MiB. Global limits are 2,000 drafts and 10,000 uploads using at most 512 MiB. Draft JSON is limited to 64 KiB. New allocations return HTTP 429 when a budget is full; disposable wallets share the global budgets.
+- Uploads reserve D1 capacity before R2 writes. Only completed uploads can be attached to drafts or pages. `DELETE /api/uploads` with JSON `{ "key": "c-<uuid>.png" }` deletes an owned, unused image. Referenced images cannot be deleted. The cron trigger removes unsigned drafts after 30 days without edits and unused uploads after 7 days, at most 50 objects per run. Failed object deletion retains its reservation for retry; signed drafts and published covers do not expire.
 - Market data and swap orders are fetched by the Worker; API keys never reach the browser. Swaps sign only after an explicit confirmation of the quoted amounts.
 - The relayer holds the only server key and can only pay fees: the program pins every prize recipient, and the relayer never forfeits an opening.
 

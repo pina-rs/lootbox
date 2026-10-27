@@ -8,6 +8,7 @@ import {
 	jsonResponse,
 	mediaUrl,
 	nowSeconds,
+	readFormData,
 	requireWallet,
 	services,
 } from "../lib/.server/context.js";
@@ -52,13 +53,7 @@ export async function action({ request, context }: Route.ActionArgs) {
 
 	const app = services(context);
 	const wallet = await requireWallet(app, request);
-	const length = Number(request.headers.get("Content-Length") ?? "0");
-
-	if (length > MAX_BYTES + 64 * 1024) {
-		return errorResponse(413, "Images must be 4 MB or smaller");
-	}
-
-	const form = await request.formData();
+	const form = await readFormData(request, MAX_BYTES + 64 * 1024);
 	const file = form.get("file");
 
 	if (!(file instanceof File)) return errorResponse(400, "Choose an image");

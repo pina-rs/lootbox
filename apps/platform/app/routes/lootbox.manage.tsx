@@ -27,6 +27,7 @@ import {
 	assertSameOrigin,
 	errorResponse,
 	nowSeconds,
+	readFormData,
 	services,
 } from "../lib/.server/context.js";
 import {
@@ -86,7 +87,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 	const app = services(context);
 	const record = await requireLootbox(app, params.slug);
 	const { wallet } = await requireCreator(app, request, record);
-	const form = await request.formData();
+	const form = await readFormData(request, 64 * 1024);
 	const links = [0, 1, 2, 3, 4].flatMap((index) => {
 		const label = String(form.get(`link-label-${index}`) ?? "").trim();
 		const url = String(form.get(`link-url-${index}`) ?? "").trim();

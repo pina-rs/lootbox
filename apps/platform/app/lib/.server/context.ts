@@ -71,19 +71,66 @@ export async function requireWallet(
 	return wallet;
 }
 
-/** Parse a JSON body with a size cap; throws a 400 response on failure. */
+/** Read at most maxBytes before parsing, including requests without a length. */
+export async function readBody(
+	request: Request,
+	maxBytes: number,
+): Promise<Uint8Array<ArrayBuffer>> {
+	const reader = request.body?.getReader();
+	const bytes = new Uint8Array(maxBytes);
+	let size = 0;
+
+	if (!reader) return new Uint8Array();
+
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+
+			if (done) break;
+
+			if (value.byteLength > maxBytes - size) {
+				try {
+					await reader.cancel();
+				} finally {
+					throw errorResponse(413, "Request too large");
+				}
+			}
+
+			bytes.set(value, size);
+			size += value.byteLength;
+		}
+	} finally {
+		reader.releaseLock();
+	}
+
+	return bytes.subarray(0, size);
+}
+
+/** Bound the complete encoded form before the multipart parser allocates files. */
+export async function readFormData(
+	request: Request,
+	maxBytes: number,
+): Promise<FormData> {
+	const bytes = await readBody(request, maxBytes);
+
+	try {
+		return await new Response(bytes, { headers: request.headers }).formData();
+	} catch {
+		throw errorResponse(400, "Malformed form data");
+	}
+}
+
+/** Parse bounded JSON; malformed bodies throw a 400 response. */
 export async function readJson(
 	request: Request,
 	maxBytes = 64 * 1024,
 ): Promise<unknown> {
-	const text = await request.text();
+	const bytes = await readBody(request, maxBytes);
 
-	if (text.length > maxBytes) throw errorResponse(413, "Request too large");
-
-	if (!text) throw errorResponse(400, "Expected a JSON body");
+	if (!bytes.length) throw errorResponse(400, "Expected a JSON body");
 
 	try {
-		return JSON.parse(text);
+		return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
 	} catch {
 		throw errorResponse(400, "Malformed JSON");
 	}

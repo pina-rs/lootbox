@@ -26,6 +26,10 @@ export type Secrets = Readonly<{
 	EXCLUSIVE_COLLECTION_DEVNET?: string;
 	EXCLUSIVE_COLLECTION_MAINNET?: string;
 	EXCLUSIVE_COLLECTION_LOCALNET?: string;
+	/** Program address lookup table per cluster, from `bootstrap:lut`. */
+	PROGRAM_LUT_DEVNET?: string;
+	PROGRAM_LUT_MAINNET?: string;
+	PROGRAM_LUT_LOCALNET?: string;
 }>;
 
 export type WorkerEnv = Env & Secrets;
@@ -46,6 +50,8 @@ export type ServerConfig = Readonly<{
 	}>;
 	/** The Introductory Exclusive Lootbox NFT collection PDA per cluster. */
 	exclusiveCollections: Readonly<Partial<Record<Cluster, string>>>;
+	/** Program address lookup table per cluster, from `bootstrap:lut`. */
+	programLuts: Readonly<Partial<Record<Cluster, string>>>;
 }>;
 
 const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -107,6 +113,17 @@ export function readServerConfig(env: WorkerEnv): ServerConfig {
 						"localnet",
 						localnetAllowed ? env.EXCLUSIVE_COLLECTION_LOCALNET : "",
 					],
+				] as const
+			).flatMap(([cluster, value]) =>
+				value && BASE58.test(value.trim()) ? [[cluster, value.trim()]] : []
+			),
+		),
+		programLuts: Object.fromEntries(
+			(
+				[
+					["devnet", env.PROGRAM_LUT_DEVNET],
+					["mainnet", env.PROGRAM_LUT_MAINNET],
+					["localnet", localnetAllowed ? env.PROGRAM_LUT_LOCALNET : ""],
 				] as const
 			).flatMap(([cluster, value]) =>
 				value && BASE58.test(value.trim()) ? [[cluster, value.trim()]] : []

@@ -2,8 +2,9 @@
  * Explore and Home cards: display copy from D1 plus one batched chain read
  * per cluster for supply and reveal status.
  */
-import { readTemplateSummaries, type TemplateSummary } from "../chain.js";
+import { type TemplateSummary } from "../chain.js";
 import type { Cluster } from "../clusters.js";
+import { cachedTemplateSummaries } from "./chain-cache.js";
 import { type AppServices, mediaUrl } from "./context.js";
 import type { LootboxRecord } from "./db.js";
 import { rpcUrlFor } from "./env.js";
@@ -38,8 +39,9 @@ export async function toCards(
 		[...byCluster].map(async ([cluster, group]) => {
 			try {
 				const rpcUrl = await rpcUrlFor(app.config, cluster);
-				const read = await readTemplateSummaries(
+				const read = await cachedTemplateSummaries(
 					rpcUrl,
+					cluster,
 					group.map((record) => record.template),
 				);
 

@@ -59,6 +59,8 @@
 		"FEATURE_BOX_CURVES": "false",
 		// The Introductory Exclusive Lootbox NFT collection PDA per cluster,
 		// printed by `pnpm exclusive:collection -- --execute`.
+		"PROGRAM_LUT_DEVNET": "",
+		"PROGRAM_LUT_MAINNET": "",
 		"EXCLUSIVE_COLLECTION_DEVNET": "",
 		"EXCLUSIVE_COLLECTION_MAINNET": ""
 	}

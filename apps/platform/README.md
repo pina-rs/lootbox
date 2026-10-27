@@ -59,15 +59,15 @@ The end-to-end suite builds the Worker, serves it with `vite preview` (the same 
 
 `wrangler.jsonc` vars (strings):
 
-| Var                                            | Meaning                                                                                                  |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `PUBLIC_ORIGIN`                                | Canonical origin, `https://lootbox.pina.rs`. Empty uses the request origin, as `.dev.vars.example` does. |
-| `DEFAULT_CLUSTER`, `ENABLED_CLUSTERS`          | Networks creators may use: `devnet`, `mainnet`, `localnet` (loopback only).                              |
-| `RPC_URL_DEVNET`, `RPC_URL_MAINNET`            | RPC endpoints. Use a dedicated provider for mainnet.                                                     |
-| `LOCALNET_CONTROL_URL`                         | Surfpool control plane; localnet is refused unless this is a loopback URL.                               |
-| `RELAYER_CLUSTERS`, `RELAYER_CLAIM`            | Where the cron relayer settles openings, and whether it also delivers prizes.                            |
-| `FEATURE_EXCLUSIVE_NFTS`, `FEATURE_NFT_PRIZES` | Exclusive Lootbox NFT consolation, and NFT prizes from other projects.                                   |
-| `FEATURE_BOX_CURVES`                           | Selling boxes on a bonding curve. A paid chance is a lottery in many places; enable only where lawful.   |
+| Var                                            | Meaning                                                                                                     |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `PUBLIC_ORIGIN`                                | Canonical origin, `https://lootbox.pina.rs`. Empty uses the request origin, as `.dev.vars.example` does.    |
+| `DEFAULT_CLUSTER`, `ENABLED_CLUSTERS`          | Networks creators may use: `devnet`, `mainnet`, `localnet` (loopback only).                                 |
+| `RPC_URL_DEVNET`, `RPC_URL_MAINNET`            | RPC endpoints. Use a dedicated provider for mainnet.                                                        |
+| `LOCALNET_CONTROL_URL`                         | Surfpool control plane; localnet is refused unless this is a loopback URL.                                  |
+| `RELAYER_CLUSTERS`, `RELAYER_CLAIM`            | Where the cron relayer settles openings. Hosted runs require `RELAYER_CLAIM=false`; holders deliver prizes. |
+| `FEATURE_EXCLUSIVE_NFTS`, `FEATURE_NFT_PRIZES` | Exclusive Lootbox NFT consolation, and NFT prizes from other projects.                                      |
+| `FEATURE_BOX_CURVES`                           | Selling boxes on a bonding curve. A paid chance is a lottery in many places; enable only where lawful.      |
 
 Secrets (`wrangler secret put <NAME>`): `JUPITER_API_KEY` (search, prices, swaps), `DAS_RPC_URL` / `DAS_RPC_URL_DEVNET` (wallet NFT discovery), `RELAYER_SECRET_KEY` (relayer fee payer, base58 or JSON bytes).
 
@@ -86,6 +86,10 @@ One-time setup, done by an owner of the Cloudflare account that holds the `pina.
 7. In the repository's settings, create a `platform` environment. Add the account ID as the repository variable `CLOUDFLARE_ACCOUNT_ID` and the token as the environment secret `CLOUDFLARE_API_TOKEN`.
 
 The deploy job is skipped until `CLOUDFLARE_ACCOUNT_ID` is set.
+
+The hosted relayer stops submitting after three minutes, before its four-minute lease expires. Each pass examines at most eight lootboxes and signs at most twelve settlement/allocation transactions, with at most two attempts per lootbox. Failed attempts consume the same budget as successful ones. It uses no priority fees and refuses `RELAYER_CLAIM=true`, because delivering prizes can charge beneficiary-account rent. A persistent D1 cursor rotates work between lootboxes. SDK callers that deliberately pay claim rent can still opt into claims through `relayTemplateOpenings`.
+
+Hosted RPC responses are limited to 1 MiB before account decoding or sorting, with an eight-second deadline including body reads. An oversized template backlog fails closed and the cursor continues to its peers. Operators must settle such a template using their own SDK relayer or reduce its retained opening accounts before hosted processing can resume.
 
 ## Handing boxes out
 

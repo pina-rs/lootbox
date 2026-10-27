@@ -28,6 +28,7 @@ import {
 	type Instruction,
 	type InstructionWithAccounts,
 } from "@solana/kit";
+import { createServer } from "node:http";
 import { describe, expect, it } from "vitest";
 import { computeUnitLimitByNames } from "./budget.js";
 import {
@@ -495,6 +496,165 @@ function decodeSent(wire: string) {
 }
 
 describe("LootboxClient transaction costs", () => {
+	it("aborts a submitted RPC request that never responds", async () => {
+		const controller = new AbortController();
+		let submissions = 0;
+		const server = createServer((request, response) => {
+			let text = "";
+			request.setEncoding("utf8");
+			request.on("data", (chunk: unknown) => {
+				if (typeof chunk === "string") text += chunk;
+			});
+			request.on("end", () => {
+				const body: unknown = JSON.parse(text);
+
+				if (typeof body !== "object" || body === null) {
+					throw new Error("Invalid test RPC request");
+				}
+
+				if (Reflect.get(body, "method") === "sendTransaction") {
+					submissions += 1;
+					controller.abort(new Error("expired pending submission"));
+					return;
+				}
+
+				response.setHeader("Content-Type", "application/json");
+				response.end(JSON.stringify({
+					jsonrpc: "2.0",
+					id: Reflect.get(body, "id"),
+					result: {
+						context: { slot: 1 },
+						value: {
+							blockhash: "GHjnZdpDPTpex7X8WqMf9NdawoM4kXQ8JUkvdLdDebeR",
+							lastValidBlockHeight: 100,
+						},
+					},
+				}));
+			});
+		});
+		await new Promise<void>((resolve) =>
+			server.listen(0, "127.0.0.1", resolve)
+		);
+		const endpoint = server.address();
+
+		if (!endpoint || typeof endpoint === "string") {
+			throw new Error("Test RPC did not bind");
+		}
+
+		let timer: ReturnType<typeof setTimeout> | undefined;
+
+		try {
+			const client = new LootboxClient(
+				`http://127.0.0.1:${endpoint.port}`,
+				await generateKeyPairSigner(),
+				undefined,
+				{
+					abortSignal: controller.signal,
+				},
+			);
+			const safety = new Promise<never>((_resolve, reject) => {
+				timer = setTimeout(
+					() => reject(new Error("submission ignored cancellation")),
+					2_000,
+				);
+			});
+
+			await expect(Promise.race([client.send([], "bounded attempt"), safety]))
+				.rejects.toThrow("expired pending submission");
+			expect(submissions).toBe(1);
+		} finally {
+			clearTimeout(timer);
+			server.closeAllConnections();
+			await new Promise<void>((resolve, reject) =>
+				server.close((error) => error ? reject(error) : resolve())
+			);
+		}
+	});
+
+	it("refuses signing when the caller's transaction budget is exhausted", async () => {
+		const { rpc, sent } = sendRpc();
+		const signer = await generateKeyPairSigner();
+		let signed = false;
+		const client = new LootboxClient(
+			"http://localhost:8899",
+			{
+				...signer,
+				signTransactions: async (
+					...args: Parameters<typeof signer.signTransactions>
+				) => {
+					signed = true;
+
+					return signer.signTransactions(...args);
+				},
+			},
+			undefined,
+			{
+				rpc,
+				beforeTransaction: () => {
+					throw new Error("budget exhausted");
+				},
+			},
+		);
+
+		await expect(client.send([], "bounded attempt")).rejects.toThrow(
+			"budget exhausted",
+		);
+		expect(signed).toBe(false);
+		expect(sent).toEqual([]);
+	});
+
+	it("does not submit when its deadline expires during signing", async () => {
+		const { rpc, sent } = sendRpc();
+		const signer = await generateKeyPairSigner();
+		const controller = new AbortController();
+		const client = new LootboxClient(
+			"http://localhost:8899",
+			{
+				...signer,
+				signTransactions: async (
+					...args: Parameters<typeof signer.signTransactions>
+				) => {
+					const signatures = await signer.signTransactions(...args);
+					controller.abort(new Error("run deadline"));
+
+					return signatures;
+				},
+			},
+			undefined,
+			{ rpc, abortSignal: controller.signal },
+		);
+
+		await expect(client.send([], "expired attempt")).rejects.toThrow(
+			"run deadline",
+		);
+		expect(sent).toEqual([]);
+	});
+
+	it("does not reserve a transaction after cancellation", async () => {
+		const { rpc, sent } = sendRpc();
+		const controller = new AbortController();
+		let reserved = false;
+		controller.abort(new Error("run deadline"));
+		const client = new LootboxClient(
+			"http://localhost:8899",
+			await generateKeyPairSigner(),
+			undefined,
+			{
+				rpc,
+				abortSignal: controller.signal,
+				beforeTransaction: () => {
+					reserved = true;
+				},
+			},
+		);
+
+		await expect(client.send([], "expired attempt")).rejects.toThrow(
+			"run deadline",
+		);
+		expect(reserved).toBe(false);
+		expect(sent).toEqual([]);
+	});
+
 	it("memoizes rent exemption per account size", async () => {
 		const reads: bigint[] = [];
 		const rpc = {

@@ -32,7 +32,9 @@ import {
 	acquireLease,
 	lootboxesOnClusters,
 	recordRelayerEvent,
+	relayerCursor,
 	releaseLease,
+	saveRelayerCursor,
 } from "./db.js";
 import {
 	localControlConfig,
@@ -40,6 +42,8 @@ import {
 	type ServerConfig,
 	type WorkerEnv,
 } from "./env.js";
+import { RELAYER_RUN_LIMITS, relayerBudget } from "./relayer-budget.js";
+import { relayerRpc } from "./relayer-rpc.js";
 
 const LEASE = "relayer";
 /** A run that has not finished in four minutes is assumed dead. */
@@ -72,10 +76,11 @@ function proofBytes(value: unknown, length: number): Uint8Array {
 export async function localProof(
 	controlUrl: string,
 	randomness: string,
+	signal?: AbortSignal,
 ): Promise<OracleProof> {
 	const { response, text } = await fetchBoundedText(
 		`${controlUrl}/proof?randomness=${encodeURIComponent(randomness)}`,
-		{},
+		signal ? { signal } : {},
 		{ maxBytes: 16 * 1024, timeoutMs: 8_000 },
 	);
 	const body: unknown = JSON.parse(text);
@@ -96,9 +101,23 @@ async function oracleFor(
 	config: ServerConfig,
 	cluster: Cluster,
 	rpcUrl: string,
+	signal: AbortSignal,
 ): Promise<RelayerOracle> {
 	if (cluster !== "localnet") {
-		return createSwitchboardOracle({ rpcUrl, cluster });
+		const fetcher: typeof fetch = (input, init) =>
+			fetch(input, {
+				...init,
+				signal: AbortSignal.any([
+					signal,
+					...(init?.signal ? [init.signal] : []),
+				]),
+			});
+		const oracle = createSwitchboardOracle({ rpcUrl, cluster, fetch: fetcher });
+
+		return {
+			accountsFor: (randomness) => oracle.accountsFor(randomness, { signal }),
+			fetchProof: (randomness) => oracle.fetchProof(randomness, { signal }),
+		};
 	}
 
 	const local = await localControlConfig(config);
@@ -114,7 +133,7 @@ async function oracleFor(
 
 	return {
 		accountsFor: () => Promise.resolve(accounts),
-		fetchProof: (randomness) => localProof(controlUrl, randomness),
+		fetchProof: (randomness) => localProof(controlUrl, randomness, signal),
 	};
 }
 
@@ -145,33 +164,68 @@ export async function runRelayer(
 		return { ran: false, lootboxes: 0, advanced: 0 };
 	}
 
+	// Permissionless claim callers pay beneficiary-account rent. Hosted runs
+	// only settle/allocate until a claim can enforce an on-chain debit cap.
+	if (config.relayerClaim) {
+		throw new Error("Hosted relayers require RELAYER_CLAIM=false");
+	}
+
 	const holder = crypto.randomUUID();
+	const signal = AbortSignal.timeout(
+		RELAYER_RUN_LIMITS.durationSeconds * 1000,
+	);
+	const budget = relayerBudget(now, signal);
 
 	if (!(await acquireLease(env.DB, LEASE, holder, now(), LEASE_TTL_SECONDS))) {
 		return { ran: false, lootboxes: 0, advanced: 0 };
 	}
 
 	try {
+		signal.throwIfAborted();
 		const signer = await relayerSigner(secret);
-		const lootboxes = await lootboxesOnClusters(
+		const cursor = await relayerCursor(env.DB);
+		let lootboxes = await lootboxesOnClusters(
 			env.DB,
 			config.relayerClusters,
+			cursor,
+			RELAYER_RUN_LIMITS.lootboxes,
 		);
+
+		if (lootboxes.length === 0 && cursor !== 0) {
+			lootboxes = await lootboxesOnClusters(
+				env.DB,
+				config.relayerClusters,
+				0,
+				RELAYER_RUN_LIMITS.lootboxes,
+			);
+		}
+
 		let advanced = 0;
+		let visited = 0;
 
 		for (const lootbox of lootboxes) {
+			if (budget.shouldStop()) break;
+
+			await saveRelayerCursor(env.DB, lootbox.id);
+			visited += 1;
+			const localBudget = budget.forLootbox();
 			const rpcUrl = await rpcUrlFor(config, lootbox.cluster);
 			const lut = config.programLuts[lootbox.cluster];
+			const rpc = relayerRpc(rpcUrl, signal);
 
 			const client = new LootboxClient(rpcUrl, signer, undefined, {
+				rpc,
+				abortSignal: signal,
+				beforeTransaction: localBudget.reserve,
 				...(lut ? { lookupTableAddresses: [address(lut)] } : {}),
 			});
 			const events: RelayerEvent[] = [];
 			const result = await relayTemplateOpenings({
 				client,
-				oracle: await oracleFor(config, lootbox.cluster, rpcUrl),
+				oracle: await oracleFor(config, lootbox.cluster, rpcUrl, signal),
 				template: address(lootbox.template),
-				claim: config.relayerClaim,
+				claim: false,
+				shouldStop: localBudget.shouldStop,
 				onEvent: (event) => events.push(event),
 			}).catch((error: unknown) => {
 				console.error("relayer pass failed", lootbox.slug, error);
@@ -193,7 +247,7 @@ export async function runRelayer(
 			}
 		}
 
-		return { ran: true, lootboxes: lootboxes.length, advanced };
+		return { ran: true, lootboxes: visited, advanced };
 	} finally {
 		await releaseLease(env.DB, LEASE, holder);
 	}

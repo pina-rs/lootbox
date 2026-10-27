@@ -887,6 +887,12 @@ export type LootboxClientOptions = Readonly<{
 	/** Explicit payer authorization per newly created account. Creation fails
 	 * without this cap, even when the RPC reports the expected rent. */
 	maxAccountFundingLamports?: bigint;
+	/** Cancel pending submission/confirmation and forbid signing after expiry. */
+	abortSignal?: AbortSignal;
+	/** Reserve caller-owned transaction budgets immediately before signing.
+	 * A thrown error prevents signing and submission. Failed attempts remain
+	 * charged to that budget because they can still incur transaction fees. */
+	beforeTransaction?: () => void;
 	/**
 	 * Address lookup tables whose contents are fetched once, cached, and used
 	 * to compress every sent transaction. Tables only need to list the static
@@ -922,6 +928,8 @@ const LOOKUP_TABLE_CACHE_MILLISECONDS = 5 * 60 * 1000;
 export class LootboxClient {
 	readonly rpc: LootboxRpc;
 	readonly #maxAccountFundingLamports: bigint | undefined;
+	readonly #abortSignal: AbortSignal | undefined;
+	readonly #beforeTransaction: (() => void) | undefined;
 	readonly #lookupTableAddresses: readonly Address[];
 	readonly #lookupTableCacheMilliseconds: number;
 	#lookupTableCache: {
@@ -937,6 +945,8 @@ export class LootboxClient {
 	) {
 		this.rpc = options.rpc ?? createSolanaRpc(rpcUrl);
 		this.#maxAccountFundingLamports = options.maxAccountFundingLamports;
+		this.#abortSignal = options.abortSignal;
+		this.#beforeTransaction = options.beforeTransaction;
 		this.#lookupTableAddresses = [...(options.lookupTableAddresses ?? [])];
 		this.#lookupTableCacheMilliseconds = options.lookupTableCacheMilliseconds ??
 			LOOKUP_TABLE_CACHE_MILLISECONDS;
@@ -992,10 +1002,14 @@ export class LootboxClient {
 		label: string,
 		options: SendOptions = {},
 	): Promise<string> {
+		const abortSignal = this.#abortSignal;
+		const requestOptions = abortSignal ? { abortSignal } : {};
+
+		abortSignal?.throwIfAborted();
 		this.progress(label);
 		const { value: blockhash } = await this.rpc.getLatestBlockhash({
 			commitment,
-		}).send();
+		}).send(requestOptions);
 		const computeUnitLimit = options.computeUnitLimit === "none"
 			? null
 			: options.computeUnitLimit ?? lootboxComputeUnitLimit(instructions);
@@ -1027,17 +1041,24 @@ export class LootboxClient {
 						lookupTables,
 					),
 		);
+		abortSignal?.throwIfAborted();
+		this.#beforeTransaction?.();
 		const transaction = await signTransactionMessageWithSigners(message);
+
+		abortSignal?.throwIfAborted();
 		const signature = await this.rpc.sendTransaction(
 			getBase64EncodedWireTransaction(transaction),
 			{
 				encoding: "base64",
 				preflightCommitment: commitment,
 			},
-		).send();
+		).send(requestOptions);
 
 		for (let attempt = 0; attempt < 80; attempt++) {
-			const { value } = await this.rpc.getSignatureStatuses([signature]).send();
+			abortSignal?.throwIfAborted();
+			const { value } = await this.rpc.getSignatureStatuses([signature]).send(
+				requestOptions,
+			);
 			const status = value[0];
 
 			if (status?.err) {

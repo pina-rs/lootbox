@@ -160,15 +160,37 @@ export async function lootboxesByCreator(
 export async function lootboxesOnClusters(
 	db: D1Database,
 	clusters: readonly Cluster[],
+	afterId: number,
+	limit: number,
 ): Promise<LootboxRecord[]> {
 	if (clusters.length === 0) return [];
 
 	const placeholders = clusters.map(() => "?").join(", ");
 	const { results } = await db.prepare(
-		`SELECT * FROM lootboxes WHERE cluster IN (${placeholders}) ORDER BY id`,
-	).bind(...clusters).all<LootboxRow>();
+		`SELECT * FROM lootboxes WHERE cluster IN (${placeholders}) AND id > ? ORDER BY id LIMIT ?`,
+	).bind(...clusters, afterId, limit).all<LootboxRow>();
 
 	return results.map(toLootbox);
+}
+
+/** Resume bounded relayer passes after the last examined lootbox. */
+export async function relayerCursor(db: D1Database): Promise<number> {
+	const cursor = await db.prepare(
+		"SELECT lootbox_id FROM relayer_cursor WHERE id = 1",
+	)
+		.first<{ lootbox_id: number }>();
+
+	return cursor?.lootbox_id ?? 0;
+}
+
+/** Persist before work so a slow or failing lootbox cannot starve its peers. */
+export async function saveRelayerCursor(
+	db: D1Database,
+	lootboxId: number,
+): Promise<void> {
+	await db.prepare(
+		"INSERT INTO relayer_cursor (id, lootbox_id) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET lootbox_id = excluded.lootbox_id",
+	).bind(lootboxId).run();
 }
 
 export type NewLootbox = Readonly<{

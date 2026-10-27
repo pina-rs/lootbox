@@ -234,6 +234,9 @@ export async function relayTemplateOpenings(
 	options: RelayOptions,
 ): Promise<RelayResult> {
 	const { client, claim = false, until, onEvent, shouldStop } = options;
+
+	if (shouldStop?.()) return { advanced: 0, blocked: false };
+
 	let template = await client.template(options.template);
 	let advanced = 0;
 
@@ -253,6 +256,8 @@ export async function relayTemplateOpenings(
 		let opening: ChainOpening | null = snapshot;
 
 		while (opening && needsWork(opening, claim)) {
+			if (shouldStop?.()) return { advanced, blocked: false };
+
 			try {
 				if (!(await advance(options, template, opening, slot))) {
 					return { advanced, blocked: true };

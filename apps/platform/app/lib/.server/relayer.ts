@@ -13,6 +13,7 @@
  */
 import {
 	createSwitchboardOracle,
+	fetchBoundedText,
 	LootboxClient,
 	type OracleProof,
 	type RelayerEvent,
@@ -72,10 +73,12 @@ export async function localProof(
 	controlUrl: string,
 	randomness: string,
 ): Promise<OracleProof> {
-	const response = await fetch(
+	const { response, text } = await fetchBoundedText(
 		`${controlUrl}/proof?randomness=${encodeURIComponent(randomness)}`,
+		{},
+		{ maxBytes: 16 * 1024, timeoutMs: 8_000 },
 	);
-	const body: unknown = await response.json();
+	const body: unknown = JSON.parse(text);
 
 	if (
 		!response.ok || typeof body !== "object" || body === null ||

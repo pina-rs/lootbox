@@ -6,6 +6,7 @@
  * With `CATALOG_FIXTURES=true` (end-to-end tests) every call returns the
  * recorded fixtures instead, so tests are deterministic and offline.
  */
+import { fetchBoundedText, readBoundedText } from "@pina-rs/lootbox";
 import {
 	type CatalogToken,
 	fromBacked,
@@ -21,18 +22,24 @@ import searchFixture from "./fixtures/jupiter-search.json";
 import prestocksFixture from "./fixtures/prestocks.json";
 import orderFixture from "./fixtures/swap-order.json";
 
+type CatalogServices = Readonly<{
+	env: Pick<AppServices["env"], "JUPITER_API_KEY" | "CATALOG_FIXTURES">;
+	waitUntil: AppServices["waitUntil"];
+}>;
+
 const JUPITER = "https://api.jup.ag";
 const PRESTOCKS = "https://prestocks.com/api/prestocks";
 const BACKED = "https://api.backed.fi/api/v2/public/assets";
 const FX = "https://api.frankfurter.app/latest?from=USD&to=GBP";
+const CATALOG_RESPONSE_BYTES = 2 * 1024 * 1024;
 export const WRAPPED_SOL = "So11111111111111111111111111111111111111112";
 
-export function usingFixtures(app: AppServices): boolean {
+export function usingFixtures(app: CatalogServices): boolean {
 	return app.env.CATALOG_FIXTURES === "true";
 }
 
 async function cachedJson(
-	app: AppServices,
+	app: CatalogServices,
 	url: string,
 	init: RequestInit,
 	ttlSeconds: number,
@@ -43,18 +50,26 @@ async function cachedJson(
 	const cache = await caches.open("market-data");
 	const hit = await cache.match(key);
 
-	if (hit) return hit.json();
+	if (hit) {
+		return JSON.parse(
+			await readBoundedText(
+				hit,
+				CATALOG_RESPONSE_BYTES,
+				AbortSignal.timeout(8_000),
+			),
+		);
+	}
 
-	const response = await fetch(url, {
-		...init,
-		signal: AbortSignal.timeout(8_000),
+	const { response, text: body } = await fetchBoundedText(url, init, {
+		maxBytes: CATALOG_RESPONSE_BYTES,
+		timeoutMs: 8_000,
 	});
 
 	if (!response.ok) {
 		throw new Error(`${new URL(url).host} returned ${response.status}`);
 	}
 
-	const body = await response.text();
+	const parsed: unknown = JSON.parse(body);
 
 	app.waitUntil(
 		cache.put(
@@ -68,10 +83,10 @@ async function cachedJson(
 		),
 	);
 
-	return JSON.parse(body);
+	return parsed;
 }
 
-function jupiterHeaders(app: AppServices): HeadersInit | null {
+function jupiterHeaders(app: CatalogServices): HeadersInit | null {
 	const key = app.env.JUPITER_API_KEY;
 
 	return key ? { "x-api-key": key } : null;
@@ -82,7 +97,7 @@ function list(value: unknown): unknown[] {
 }
 
 async function jupiterSearch(
-	app: AppServices,
+	app: CatalogServices,
 	query: string,
 ): Promise<CatalogToken[]> {
 	if (usingFixtures(app)) {
@@ -103,7 +118,7 @@ async function jupiterSearch(
 	return list(body).map(fromJupiter).flatMap((token) => (token ? [token] : []));
 }
 
-async function preStocks(app: AppServices): Promise<CatalogToken[]> {
+async function preStocks(app: CatalogServices): Promise<CatalogToken[]> {
 	const body = usingFixtures(app)
 		? prestocksFixture
 		: await cachedJson(app, PRESTOCKS, {}, 300);
@@ -113,7 +128,7 @@ async function preStocks(app: AppServices): Promise<CatalogToken[]> {
 	) => (token ? [token] : []));
 }
 
-async function xStocks(app: AppServices): Promise<CatalogToken[]> {
+async function xStocks(app: CatalogServices): Promise<CatalogToken[]> {
 	if (usingFixtures(app)) {
 		return list(Reflect.get(backedFixture, "nodes")).map(fromBacked).flatMap((
 			t,
@@ -159,7 +174,7 @@ export type SearchResult = Readonly<{
 
 /** Search one picker category, merging every source that serves it. */
 export async function searchCatalog(
-	app: AppServices,
+	app: CatalogServices,
 	category: TokenCategory,
 	query: string,
 ): Promise<SearchResult> {
@@ -206,7 +221,7 @@ export type Prices = Readonly<{
 
 /** USD prices from Jupiter Price v3 plus a USD→GBP rate. */
 export async function prices(
-	app: AppServices,
+	app: CatalogServices,
 	mints: readonly string[],
 ): Promise<Prices> {
 	const usd: Record<string, number> = {};
@@ -305,7 +320,7 @@ function toOrder(body: unknown): SwapOrder {
 
 /** A Jupiter Swap v2 order: SOL in, `outputMint` out, for `taker`. */
 export async function swapOrder(
-	app: AppServices,
+	app: CatalogServices,
 	input: Readonly<{ outputMint: string; lamports: bigint; taker: string }>,
 ): Promise<SwapOrder> {
 	if (usingFixtures(app)) return toOrder(orderFixture);
@@ -338,7 +353,7 @@ export type SwapExecution = Readonly<{
 
 /** Submit a wallet-signed order through Jupiter's managed landing. */
 export async function swapExecute(
-	app: AppServices,
+	app: CatalogServices,
 	input: Readonly<{ signedTransaction: string; requestId: string }>,
 ): Promise<SwapExecution> {
 	if (usingFixtures(app)) {

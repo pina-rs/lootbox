@@ -4,6 +4,7 @@
  * `wrangler.jsonc` vars arrive as strings and secrets may be absent, so every
  * value is parsed once here. Nothing else reads `env` directly.
  */
+import { fetchBoundedText } from "@pina-rs/lootbox";
 import {
 	type Cluster,
 	CLUSTER_LABELS,
@@ -166,8 +167,11 @@ export function localControlConfig(
 
 	if (!url) return Promise.reject(new Error("localnet is not enabled"));
 
-	localControl ??= fetch(`${url}/config`).then(async (response) => {
-		const body: unknown = await response.json();
+	localControl ??= fetchBoundedText(`${url}/config`, {}, {
+		maxBytes: 64 * 1024,
+		timeoutMs: 8_000,
+	}).then(({ response, text }) => {
+		const body: unknown = JSON.parse(text);
 
 		if (!response.ok || !isLocalControlConfig(body)) {
 			throw new Error("the local Surfpool control plane is not running");

@@ -116,7 +116,7 @@ pnpm --dir apps/platform exclusive:collection -- --cluster devnet --keypair admi
 pnpm --dir apps/platform exclusive:collection -- --cluster devnet --keypair admin.json --closes 2026-12-31T23:59:59Z --max-account-funding-lamports 1000000000 --execute
 ```
 
-It prints a dry run first (collection PDA, base URI, attach window, layer tables, tree rent: depth 20, buffer 64, canopy 10, about 0.76 SOL), then loads the layers from `layers.ts`, appends the Bubblegum V2 tree, creates the Core collection, and publishes. `--max-account-funding-lamports` caps each new account's funding; the example authorizes at most 1 SOL and the SDK independently verifies the RPC rent. It resumes from chain state if interrupted. Put the printed address in `EXCLUSIVE_COLLECTION_DEVNET` and set `FEATURE_EXCLUSIVE_NFTS=true`.
+It prints a dry run first (collection PDA, base URI, attach window, layer tables, tree rent: depth 20, buffer 64, canopy 10, at most 0.76 SOL under the historic rent ceiling), then loads the layers from `layers.ts`, appends the Bubblegum V2 tree, creates the Core collection, and publishes. `--max-account-funding-lamports` caps each new account's funding; the example authorizes at most 1 SOL and the SDK also enforces its local size-based rent ceiling. It resumes from chain state if interrupted. Put the printed address in `EXCLUSIVE_COLLECTION_DEVNET` and set `FEATURE_EXCLUSIVE_NFTS=true`.
 
 The end-to-end suite runs the playground with `LOOTBOX_METAPLEX_PROGRAMS_DIR=target/deploy/metaplex` (from `fetch:metaplex-programs`), so claims mint real compressed NFTs through the pinned Bubblegum V2 (mainnet) and Core (verified 0.15.3 release) programs.
 

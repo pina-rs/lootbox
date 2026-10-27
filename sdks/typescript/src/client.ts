@@ -835,9 +835,9 @@ function assertLamportLimit(limit: bigint): void {
 /** RPC identities keep cached estimates from crossing cluster boundaries. */
 const rentExemptionCaches = new WeakMap<LootboxRpc, Map<number, bigint>>();
 
-/** Independently derive the default Solana rent floor. A changed cluster rent
- * schedule fails closed until this policy is deliberately updated. */
-export function expectedRentExemptionLamports(space: number | bigint): bigint {
+/** Bound rent by Solana's historic 6,960 lamports per byte. Reduced cluster
+ * rates remain valid without letting the RPC raise the spending ceiling. */
+export function accountFundingRentCeiling(space: number | bigint): bigint {
 	const size = typeof space === "bigint" ? space : BigInt(space);
 
 	if (size < 0n || size > 10_485_760n) {
@@ -847,14 +847,14 @@ export function expectedRentExemptionLamports(space: number | bigint): bigint {
 	return (size + 128n) * 6_960n;
 }
 
-/** Rent-exempt minimum for `space` bytes, read from the RPC at most once per
- * size. Pass a local `cache` to keep a test or long-lived worker isolated. */
+/** RPC rent estimate bounded by local policy, read at most once per size.
+ * Underfunding still fails on chain. A caller cache is checked on every use. */
 export async function rentExemptionLamports(
 	rpc: LootboxRpc,
 	space: number | bigint,
 	cache?: Map<number, bigint>,
 ): Promise<bigint> {
-	const expected = expectedRentExemptionLamports(space);
+	const ceiling = accountFundingRentCeiling(space);
 	const size = typeof space === "bigint" ? Number(space) : space;
 	const memo = cache ?? rentExemptionCaches.get(rpc) ??
 		new Map<number, bigint>();
@@ -866,9 +866,9 @@ export async function rentExemptionLamports(
 		.getMinimumBalanceForRentExemption(BigInt(size))
 		.send();
 
-	if (lamports !== expected) {
+	if (lamports <= 0n || lamports > ceiling) {
 		throw new RangeError(
-			`RPC rent ${lamports} differs from expected ${expected} lamports for ${size} bytes`,
+			`RPC rent ${lamports} must be positive and at most ${ceiling} lamports for ${size} bytes`,
 		);
 	}
 
@@ -942,10 +942,9 @@ export class LootboxClient {
 			LOOKUP_TABLE_CACHE_MILLISECONDS;
 	}
 
-	/** Enforce both local rent policy and the payer's absolute debit cap. */
+	/** Enforce both the local rent ceiling and the payer's absolute debit cap. */
 	async #accountFundingLamports(space: number | bigint): Promise<bigint> {
 		const maximum = this.#maxAccountFundingLamports;
-		const expected = expectedRentExemptionLamports(space);
 
 		if (
 			typeof maximum !== "bigint" || maximum < 0n || maximum > (1n << 64n) - 1n
@@ -955,13 +954,14 @@ export class LootboxClient {
 			);
 		}
 
-		if (expected > maximum) {
+		const lamports = await rentExemptionLamports(this.rpc, space);
+
+		if (lamports > maximum) {
 			throw new RangeError(
-				`account funding ${expected} exceeds approved maximum ${maximum} lamports`,
+				`account funding ${lamports} exceeds approved maximum ${maximum} lamports`,
 			);
 		}
 
-		const lamports = await rentExemptionLamports(this.rpc, space);
 		this.progress(`Fund new account with ${lamports} lamports`);
 
 		return lamports;

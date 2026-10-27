@@ -31,6 +31,7 @@ import {
 import { describe, expect, it } from "vitest";
 import { computeUnitLimitByNames } from "./budget.js";
 import {
+	accountFundingRentCeiling,
 	assertFundedPrizeMatches,
 	base58Bytes,
 	boundedRejectionTarget,
@@ -38,7 +39,6 @@ import {
 	bundleAssets,
 	composeWinnerRoutedSolQuoteClaim,
 	composeWinnerRoutedTokenQuoteClaim,
-	expectedRentExemptionLamports,
 	LootboxClient,
 	type LootboxRpc,
 	partitionPrizeDeliveryInstructions,
@@ -502,7 +502,7 @@ describe("LootboxClient transaction costs", () => {
 				send: async () => {
 					reads.push(space);
 
-					return expectedRentExemptionLamports(space);
+					return accountFundingRentCeiling(space);
 				},
 			}),
 		} as unknown as LootboxRpc;
@@ -762,7 +762,7 @@ describe("LootboxClient transaction costs", () => {
 				send: async () => {
 					reads.push(space);
 
-					return expectedRentExemptionLamports(space);
+					return accountFundingRentCeiling(space);
 				},
 			}),
 		} as unknown as LootboxRpc;
@@ -812,7 +812,7 @@ describe("LootboxClient transaction costs", () => {
 			0n,
 		]);
 		expect(quote.resultReceiptRent).toBe(
-			expectedRentExemptionLamports(getResultReceiptStateEncoder().fixedSize),
+			accountFundingRentCeiling(getResultReceiptStateEncoder().fixedSize),
 		);
 		expect(quote.serviceVaultRent).toBe(890_880n);
 	});

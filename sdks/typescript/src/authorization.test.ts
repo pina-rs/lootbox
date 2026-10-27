@@ -12,8 +12,8 @@ import {
 } from "@solana/kit";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+	accountFundingRentCeiling,
 	type ChainTemplate,
-	expectedRentExemptionLamports,
 	LootboxClient,
 	rentExemptionLamports,
 } from "./client.js";
@@ -118,13 +118,13 @@ afterEach(() => {
 });
 
 describe("account funding authorization", () => {
-	it("derives known Solana rent values and rejects impossible account sizes", () => {
-		expect(expectedRentExemptionLamports(0)).toBe(890_880n);
-		expect(expectedRentExemptionLamports(82)).toBe(1_461_600n);
-		expect(expectedRentExemptionLamports(165)).toBe(2_039_280n);
+	it("derives historic rent ceilings and rejects impossible account sizes", () => {
+		expect(accountFundingRentCeiling(0)).toBe(890_880n);
+		expect(accountFundingRentCeiling(82)).toBe(1_461_600n);
+		expect(accountFundingRentCeiling(165)).toBe(2_039_280n);
 
 		for (const size of [-1, 1.5, NaN, Infinity, 10_485_761, 1n << 64n]) {
-			expect(() => expectedRentExemptionLamports(size)).toThrow();
+			expect(() => accountFundingRentCeiling(size)).toThrow();
 		}
 	});
 
@@ -145,7 +145,7 @@ describe("account funding authorization", () => {
 			const send = vi.spyOn(client, "send");
 
 			await expect(create(client, signer)).rejects.toThrow(
-				"differs from expected",
+				"must be positive and at most",
 			);
 			expect(send).not.toHaveBeenCalled();
 		},
@@ -154,7 +154,7 @@ describe("account funding authorization", () => {
 	it.each(creationFlows)(
 		"requires a caller cap before signing %s",
 		async (_name, create) => {
-			const { rpc, requests } = rpcTransport(expectedRentExemptionLamports);
+			const { rpc, requests } = rpcTransport(accountFundingRentCeiling);
 			const signer = await generateKeyPairSigner();
 			const client = new LootboxClient(
 				"http://localhost:8899",
@@ -175,7 +175,7 @@ describe("account funding authorization", () => {
 	it.each(creationFlows)(
 		"enforces the caller's smaller cap for %s",
 		async (_name, create) => {
-			const { rpc } = rpcTransport(expectedRentExemptionLamports);
+			const { rpc } = rpcTransport(accountFundingRentCeiling);
 			const signer = await generateKeyPairSigner();
 			const client = new LootboxClient(
 				"http://localhost:8899",
@@ -196,9 +196,9 @@ describe("account funding authorization", () => {
 	);
 
 	it.each(creationFlows)(
-		"composes only the verified debit for %s",
+		"composes only the bounded debit for %s",
 		async (_name, create) => {
-			const { rpc } = rpcTransport(expectedRentExemptionLamports);
+			const { rpc } = rpcTransport(accountFundingRentCeiling);
 			const signer = await generateKeyPairSigner();
 			const progress = vi.fn();
 			const client = new LootboxClient(
@@ -231,14 +231,72 @@ describe("account funding authorization", () => {
 		},
 	);
 
-	it("rejects poisoned caches and never shares estimates across RPCs", async () => {
-		const { rpc } = rpcTransport(expectedRentExemptionLamports);
+	it.each(creationFlows)(
+		"accepts current reduced rent within the approved cap for %s",
+		async (_name, create) => {
+			let quotedRent = 0n;
+			const { rpc } = rpcTransport((space) => {
+				quotedRent = (space + 128n) * 5_080n;
+				return quotedRent;
+			});
+			const signer = await generateKeyPairSigner();
+			const client = new LootboxClient(
+				"http://localhost:8899",
+				signer,
+				undefined,
+				{
+					rpc,
+					maxAccountFundingLamports: 1_000_000_000n,
+				},
+			);
+			const composed = new Error("inspect before submission");
+			const send = vi.spyOn(client, "send").mockRejectedValue(composed);
+
+			await expect(create(client, signer)).rejects.toBe(composed);
+			const data = send.mock.calls[0]?.[0][0]?.data;
+
+			if (!data) throw new Error("missing account creation data");
+
+			expect(new DataView(Uint8Array.from(data).buffer).getBigUint64(4, true))
+				.toBe(quotedRent);
+		},
+	);
+
+	it("compares the payer's cap with the actual reduced debit", async () => {
+		const { rpc } = rpcTransport(() => 1_066_800n);
+		const signer = await generateKeyPairSigner();
+		const client = new LootboxClient(
+			"http://localhost:8899",
+			signer,
+			undefined,
+			{
+				rpc,
+				maxAccountFundingLamports: 1_066_800n,
+			},
+		);
+		vi.spyOn(client, "send").mockResolvedValue("submitted");
+		await expect(client.createBadgeMint(signer)).resolves.toBe(signer.address);
+	});
+
+	it.each([0n, -1n, 1_461_601n])(
+		"rejects an invalid rent estimate %s",
+		async (estimate) => {
+			const { rpc } = rpcTransport(() => estimate);
+			await expect(rentExemptionLamports(rpc, 82)).rejects.toThrow(
+				"must be positive and at most",
+			);
+		},
+	);
+
+	it("rejects over-ceiling caches and never shares estimates across RPCs", async () => {
+		const { rpc } = rpcTransport(accountFundingRentCeiling);
 		await expect(rentExemptionLamports(rpc, 82)).resolves.toBe(1_461_600n);
-		await expect(rentExemptionLamports(rpc, 82, new Map([[82, 99n]]))).rejects
-			.toThrow("differs from expected");
-		const other = rpcTransport(() => 99n);
+		await expect(rentExemptionLamports(rpc, 82, new Map([[82, 10_000_000n]])))
+			.rejects
+			.toThrow("must be positive and at most");
+		const other = rpcTransport(() => 10_000_000n);
 		await expect(rentExemptionLamports(other.rpc, 82)).rejects.toThrow(
-			"differs from expected",
+			"must be positive and at most",
 		);
 	});
 });
@@ -247,7 +305,7 @@ describe("curve signer limits", () => {
 	it.each(["buy", "sell"])(
 		"rejects missing or invalid %s limits before reading RPC state",
 		async (side) => {
-			const { rpc, requests } = rpcTransport(expectedRentExemptionLamports);
+			const { rpc, requests } = rpcTransport(accountFundingRentCeiling);
 			const client = new LootboxClient(
 				"http://localhost:8899",
 				await generateKeyPairSigner(),
@@ -268,7 +326,7 @@ describe("curve signer limits", () => {
 	);
 
 	it("encodes the payer's bounds unchanged despite forged curve pricing", async () => {
-		const { rpc } = rpcTransport(expectedRentExemptionLamports);
+		const { rpc } = rpcTransport(accountFundingRentCeiling);
 		const client = new LootboxClient(
 			"http://localhost:8899",
 			await generateKeyPairSigner(),

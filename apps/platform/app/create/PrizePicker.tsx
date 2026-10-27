@@ -4,8 +4,7 @@
  * Pick a type (SOL, meme coins and tokens, or stocks), type to search, pick a
  * result, and enter an amount in token units or in dollars or pounds. The
  * Worker checks the token against the program's admission rules before it
- * can be added, and offers to buy it with SOL through Jupiter when the
- * wallet is short.
+ * can be added, and links to Jupiter when the wallet is short.
  */
 import { isAddress } from "@solana/kit";
 import type { UiWalletAccount } from "@wallet-standard/react";
@@ -626,12 +625,8 @@ function TokenForm(
 			)}
 			{shortfall !== null && swaps && (
 				<BuyWithSol
-					account={account}
 					mint={info.mint}
 					symbol={symbol}
-					decimals={info.decimals}
-					shortfall={shortfall}
-					tokenUsd={usdPrice}
 					onBought={onRefreshHoldings}
 				/>
 			)}
@@ -674,7 +669,14 @@ function TokenStep(
 	return (
 		<ChosenToken
 			{...props}
-			choice={choice}
+			choice={{
+				...choice,
+				balance: props.holdings.status === "ready"
+					? props.holdings.value.find((holding) =>
+						holding.mint === choice.token.mint
+					)?.amount ?? 0n
+					: choice.balance,
+			}}
 			onBack={() => setChoice(null)}
 		/>
 	);

@@ -23,7 +23,7 @@ A lootbox here is a Token-2022 "box" token backed by prizes escrowed by the [loo
 | `/l/:slug` (`/odds`, `/rules`, `/manage`) | Live page with tabs and, when a box curve is open, a buy and sell-back panel; Manage is for the creator (SIWS session plus on-chain authority) |
 | `/m/:mint.json`                           | Box token metadata, rebuilt from the creator's current display copy                                                                            |
 | `/og/:slug.png`                           | Social card rendered in the Worker (Satori + resvg)                                                                                            |
-| `/api/*`                                  | Sign-in, drafts, publish, uploads, token search, prices, admission checks, Jupiter swaps, localnet helpers                                     |
+| `/api/*`                                  | Sign-in, drafts, publish, uploads, token search, prices, admission checks, localnet helpers                                                    |
 
 ## Run it locally
 
@@ -69,7 +69,7 @@ The end-to-end suite builds the Worker, serves it with `vite preview` (the same 
 | `FEATURE_EXCLUSIVE_NFTS`, `FEATURE_NFT_PRIZES` | Exclusive Lootbox NFT consolation, and NFT prizes from other projects.                                   |
 | `FEATURE_BOX_CURVES`                           | Selling boxes on a bonding curve. A paid chance is a lottery in many places; enable only where lawful.   |
 
-Secrets (`wrangler secret put <NAME>`): `JUPITER_API_KEY` (search, prices, swaps), `DAS_RPC_URL` / `DAS_RPC_URL_DEVNET` (wallet NFT discovery), `RELAYER_SECRET_KEY` (relayer fee payer, base58 or JSON bytes).
+Secrets (`wrangler secret put <NAME>`): `JUPITER_API_KEY` (search, prices), `DAS_RPC_URL` / `DAS_RPC_URL_DEVNET` (wallet NFT discovery), `RELAYER_SECRET_KEY` (relayer fee payer, base58 or JSON bytes).
 
 ## Deploy
 
@@ -105,7 +105,7 @@ The chart, odds strip, stepper, and action cards come from `@pina-rs/lootbox-ui`
 - Uploads are checked by magic bytes, capped at 4 MB, and owned by the uploading wallet.
 - D1 enforces storage budgets atomically. Each wallet may keep 5 unfinished drafts (100 total) and 20 uploads using at most 32 MiB. Global limits are 2,000 drafts and 10,000 uploads using at most 512 MiB. Draft JSON is limited to 64 KiB. New allocations return HTTP 429 when a budget is full; disposable wallets share the global budgets.
 - Uploads reserve D1 capacity before R2 writes. Only completed uploads can be attached to drafts or pages. `DELETE /api/uploads` with JSON `{ "key": "c-<uuid>.png" }` deletes an owned, unused image. Referenced images cannot be deleted. The cron trigger removes unsigned drafts after 30 days without edits and unused uploads after 7 days, at most 50 objects per run. Failed object deletion retains its reservation for retry; signed drafts and published covers do not expire.
-- Market data and swap orders are fetched by the Worker; API keys never reach the browser. Swaps sign only after an explicit confirmation of the quoted amounts.
+- Market data is fetched by the Worker; API keys never reach the browser. Token purchases open Jupiter in a separate tab for review and authorization. Lootbox never requests or relays a Jupiter transaction signature.
 - The relayer holds the only server key and can only pay fees: the program pins every prize recipient, and the relayer never forfeits an opening.
 
 ## Exclusive Lootbox NFTs

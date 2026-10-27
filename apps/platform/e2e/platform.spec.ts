@@ -228,14 +228,19 @@ test("a creator launches a lootbox through the wizard", async ({ page }) => {
 	await stock.getByLabel("Amount per box").fill("50");
 	await expect(stock.getByText(/= 0\.\d+ \w+ per box/)).toBeVisible();
 
-	// Short on a token: Jupiter quotes a SOL swap, and nothing signs until confirmed.
+	// Token purchases are reviewed on Jupiter; Lootbox never requests a swap signature.
 	await stock.getByLabel("Amount per box").fill("5000000");
 	await expect(stock.getByText(/you need/)).toBeVisible();
-	await stock.getByRole("button", { name: /Buy with SOL/ }).click();
-	await expect(stock.getByTestId("swap-quote")).toContainText("Price impact");
+	await expect(stock.getByRole("link", { name: /Buy on Jupiter/ }))
+		.toHaveAttribute(
+			"href",
+			/^https:\/\/jup\.ag\/swap\/SOL-[1-9A-HJ-NP-Za-km-z]+$/,
+		);
+	await expect(stock.getByRole("button", { name: "Confirm swap" })).toHaveCount(
+		0,
+	);
+	await stock.getByRole("button", { name: "Refresh balance" }).click();
 	await snap(page, "03b-create-swap");
-	await stock.getByTestId("swap").getByRole("button", { name: "Cancel" })
-		.click();
 	await stock.getByLabel("Amount per box").fill("50");
 	await stock.getByRole("button", { name: /^Add / }).click();
 	await expect(stock.getByText(/PreStocks tokens tracking OpenAI/))

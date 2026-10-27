@@ -237,6 +237,7 @@ export async function launchLootbox(
 		input.cluster.rpcUrl,
 		input.signer,
 		input.progress,
+		{ maxAccountFundingLamports: 10_000_000n },
 	);
 	const identity = await prepareIdentity({
 		draftId: input.draftId,

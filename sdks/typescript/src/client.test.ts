@@ -38,6 +38,7 @@ import {
 	bundleAssets,
 	composeWinnerRoutedSolQuoteClaim,
 	composeWinnerRoutedTokenQuoteClaim,
+	expectedRentExemptionLamports,
 	LootboxClient,
 	type LootboxRpc,
 	partitionPrizeDeliveryInstructions,
@@ -501,7 +502,7 @@ describe("LootboxClient transaction costs", () => {
 				send: async () => {
 					reads.push(space);
 
-					return 890_880n;
+					return expectedRentExemptionLamports(space);
 				},
 			}),
 		} as unknown as LootboxRpc;
@@ -761,7 +762,7 @@ describe("LootboxClient transaction costs", () => {
 				send: async () => {
 					reads.push(space);
 
-					return 1_000n;
+					return expectedRentExemptionLamports(space);
 				},
 			}),
 		} as unknown as LootboxRpc;
@@ -810,7 +811,9 @@ describe("LootboxClient transaction costs", () => {
 			BigInt(getResultReceiptStateEncoder().fixedSize),
 			0n,
 		]);
-		expect(quote.resultReceiptRent).toBe(1_000n);
-		expect(quote.serviceVaultRent).toBe(1_000n);
+		expect(quote.resultReceiptRent).toBe(
+			expectedRentExemptionLamports(getResultReceiptStateEncoder().fixedSize),
+		);
+		expect(quote.serviceVaultRent).toBe(890_880n);
 	});
 });

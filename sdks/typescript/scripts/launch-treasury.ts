@@ -3,6 +3,7 @@
  *
  *   pnpm --dir sdks/typescript launch:treasury -- \
  *     --plan treasury.json --cluster devnet --keypair ~/devnet.json \
+ *     --max-account-funding-lamports 10000000 \
  *     [--rpc URL] [--state treasury.launch.json] [--execute]
  *
  * Without `--execute` the script prints a dry-run summary and sends nothing.
@@ -204,6 +205,10 @@ const boxMint = await createKeyPairSignerFromPrivateKeyBytes(
 );
 const client = new LootboxClient(rpcUrl, payer, (message, signature) => {
 	console.log(signature ? `✓ ${message}  ${signature}` : `… ${message}`);
+}, {
+	maxAccountFundingLamports: BigInt(
+		args.required("max-account-funding-lamports"),
+	),
 });
 const { epoch } = await rpc.getEpochInfo().send();
 const mints = new Map<Address, MintInfo>();

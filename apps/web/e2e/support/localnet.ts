@@ -244,7 +244,9 @@ export async function createSeries(
 
 	await faucet(creator.address);
 
-	const client = new LootboxClient(rpcUrl, creator);
+	const client = new LootboxClient(rpcUrl, creator, undefined, {
+		maxAccountFundingLamports: 10_000_000n,
+	});
 	const { bundles, badge } = await seriesBundles(
 		options.kind ?? "stocks",
 		client,

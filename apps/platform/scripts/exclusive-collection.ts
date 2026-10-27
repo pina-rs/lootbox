@@ -3,6 +3,7 @@
  *
  *   pnpm --dir apps/platform exclusive:collection -- \
  *     --cluster devnet --keypair admin.json --closes 2026-12-31T23:59:59Z \
+ *     --max-account-funding-lamports 1000000000 \
  *     [--opens <iso|unix>] [--origin https://lootbox.pina.rs] [--base-uri <url>] \
  *     [--rpc <url>] [--execute]
  *
@@ -47,6 +48,10 @@ const rpcUrl = await verifiedRpcUrl(cluster, args.optional("rpc"));
 const admin = await loadKeypair(args.required("keypair"));
 const client = new LootboxClient(rpcUrl, admin, (message, signature) => {
 	console.log(signature ? `✓ ${message}  ${signature}` : `… ${message}`);
+}, {
+	maxAccountFundingLamports: BigInt(
+		args.required("max-account-funding-lamports"),
+	),
 });
 const baseUri = args.optional("base-uri");
 const plan = await planCollection(client, {

@@ -31,7 +31,6 @@ export default [
 		route("tokens", "routes/api.tokens.ts"),
 		route("prices", "routes/api.prices.ts"),
 		route("admission", "routes/api.admission.ts"),
-		route("swap", "routes/api.swap.ts"),
 		route("nfts", "routes/api.nfts.ts"),
 		route("local/:action", "routes/api.local.ts"),
 	]),

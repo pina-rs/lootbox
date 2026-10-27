@@ -203,8 +203,6 @@ impl TransferFeeConfig {
 /// policies, when an issuer-controlled stock is paused, defaults new accounts
 /// to frozen, or names a transfer-hook program, and propagates malformed
 /// extension data.
-// Share the extension parser between funding and claims instead of inlining two copies.
-#[inline(never)]
 pub(super) fn admit_token_2022_prize(
 	address: &Address,
 	data: &[u8],

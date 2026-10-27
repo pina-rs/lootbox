@@ -22,7 +22,7 @@ export function getClaimMintPrizeDiscriminator2Bytes(): ReadonlyUint8Array { ret
 export type ClaimMintPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountRecipient extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountDestination extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountRecipient extends string ? ReadonlyAccount<TAccountRecipient> : TAccountRecipient, TAccountMint extends string ? WritableAccount<TAccountMint> : TAccountMint, TAccountDestination extends string ? WritableAccount<TAccountDestination> : TAccountDestination, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type ClaimMintPrizeInstructionData = { discriminator: number; migrationVersion: number; 
+export type ClaimMintPrizeInstructionData = { discriminator: number; migrationVersion: number;
 /**
  * Asset slot within the selected bundle; must be below its asset count,
  * hold a `PRIZE_MINT_BADGE` asset with an amount of one, and be unclaimed
@@ -30,7 +30,7 @@ export type ClaimMintPrizeInstructionData = { discriminator: number; migrationVe
  */
 assetIndex: number;  };
 
-export type ClaimMintPrizeInstructionDataArgs = { 
+export type ClaimMintPrizeInstructionDataArgs = {
 /**
  * Asset slot within the selected bundle; must be below its asset count,
  * hold a `PRIZE_MINT_BADGE` asset with an amount of one, and be unclaimed

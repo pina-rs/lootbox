@@ -23,63 +23,63 @@ export function getResultReceiptStateDiscriminator2Bytes(): ReadonlyUint8Array {
  *
  * No instruction mutates or closes this account after initialization.
  */
-export type ResultReceiptState = { discriminator: number; migrationVersion: number; 
+export type ResultReceiptState = { discriminator: number; migrationVersion: number;
 /** Template PDA that allocated the result. */
-template: Address; 
+template: Address;
 /** Opening PDA this receipt records; seeds this PDA. */
-opening: Address; 
+opening: Address;
 /** Authority that burned the box, copied from the opening. */
-boxAuthority: Address; 
+boxAuthority: Address;
 /** Bound prize destination, copied from the opening. */
-beneficiary: Address; 
+beneficiary: Address;
 /** Consumer program bound at request time; the zero address means none. */
-consumerProgram: Address; 
+consumerProgram: Address;
 /** Consumer correlation key bound at request time. */
-consumerContext: ReadonlyUint8Array; 
+consumerContext: ReadonlyUint8Array;
 /** Template's locked manifest hash at allocation. */
-manifestHash: ReadonlyUint8Array; 
+manifestHash: ReadonlyUint8Array;
 /** Switchboard randomness account that supplied the entropy. */
-randomness: Address; 
+randomness: Address;
 /** FIFO sequence of the opening; seeds this PDA. */
-sequence: bigint; 
+sequence: bigint;
 /** Index of the bundle won. */
-selectedBundle: number; 
+selectedBundle: number;
 /** Prize pool item index reserved when `has_pool_assignment` is set. */
-selectedPoolItem: number; 
+selectedPoolItem: number;
 /** Bundle slot holding the prize pool when `has_pool_assignment` is set. */
-selectedPoolAsset: number; 
+selectedPoolAsset: number;
 /** Whether allocation reserved a prize pool item. */
-hasPoolAssignment: boolean; 
+hasPoolAssignment: boolean;
 /** Canonical bump of this receipt PDA. */
 bump: number;  };
 
-export type ResultReceiptStateArgs = { 
+export type ResultReceiptStateArgs = {
 /** Template PDA that allocated the result. */
-template: Address; 
+template: Address;
 /** Opening PDA this receipt records; seeds this PDA. */
-opening: Address; 
+opening: Address;
 /** Authority that burned the box, copied from the opening. */
-boxAuthority: Address; 
+boxAuthority: Address;
 /** Bound prize destination, copied from the opening. */
-beneficiary: Address; 
+beneficiary: Address;
 /** Consumer program bound at request time; the zero address means none. */
-consumerProgram: Address; 
+consumerProgram: Address;
 /** Consumer correlation key bound at request time. */
-consumerContext: ReadonlyUint8Array; 
+consumerContext: ReadonlyUint8Array;
 /** Template's locked manifest hash at allocation. */
-manifestHash: ReadonlyUint8Array; 
+manifestHash: ReadonlyUint8Array;
 /** Switchboard randomness account that supplied the entropy. */
-randomness: Address; 
+randomness: Address;
 /** FIFO sequence of the opening; seeds this PDA. */
-sequence: number | bigint; 
+sequence: number | bigint;
 /** Index of the bundle won. */
-selectedBundle: number; 
+selectedBundle: number;
 /** Prize pool item index reserved when `has_pool_assignment` is set. */
-selectedPoolItem: number; 
+selectedPoolItem: number;
 /** Bundle slot holding the prize pool when `has_pool_assignment` is set. */
-selectedPoolAsset: number; 
+selectedPoolAsset: number;
 /** Whether allocation reserved a prize pool item. */
-hasPoolAssignment: boolean; 
+hasPoolAssignment: boolean;
 /** Canonical bump of this receipt PDA. */
 bump: number;  };
 

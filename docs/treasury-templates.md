@@ -42,7 +42,7 @@ Funding --reclaim every funded asset--> Cancelled and closed
 - An interrupted funding workflow is resumable from chain. The creator can reclaim and cancel only the unpublished tail bundle; already active history is immutable.
 - Market lock requires a live treasury, future reveal time, pristine inventory, no opening history, no staged tail, and actual mint supply matching recorded issuance. It atomically mints every missing claim to the creator-selected account, proves `mint supply == active bundle copies`, revokes mint authority, and records `lockedAt`.
 - After lock, additions and mints fail permanently. Boxes can transfer immediately but cannot open before the reveal timestamp.
-- Retirement stops any remaining lifecycle operations but does not undo a market lock. Before reveal, an issued unlocked treasury cannot retire around the exact-supply invariant. At or after a missed reveal deadline, retirement becomes a non-market recovery seal: creator mutations stop and existing holders may still open, but the series is never presented as market-locked. Unallocated inventory is reclaimable only after box supply and pending openings both reach zero; allocated but unclaimed prizes remain reserved for their recipient.
+- Retirement stops any remaining lifecycle operations but does not undo a market lock. Before reveal, an issued unlocked treasury cannot retire around the exact-supply invariant. At or after a missed reveal deadline, any signer can retire an unlocked treasury into a non-market recovery state: creator mutations stop and existing holders may still open, but the series is never presented as market-locked. Other retirements require the creator. Unallocated inventory is reclaimable only after box supply and pending openings both reach zero; allocated but unclaimed prizes remain reserved for their recipient.
 
 ## Capacity and snapshots
 
@@ -126,7 +126,7 @@ See [Dynamic prize delivery](dynamic-prizes.md) for quote composition, badge col
 
 ## Payers and authority
 
-- The treasury creator signs and pays for creation, staged funding, activation, append operations, cancellation, exact box issuance, market lock, retirement, and any optional result/bounty service reserve.
+- The treasury creator signs and pays for creation, staged funding, activation, append operations, cancellation, exact box issuance, market lock, ordinary retirement, and any optional result/bounty service reserve. Any signer may retire an unlocked treasury after its reveal deadline so holders do not depend on creator cooperation.
 - The box authority signs the burn. The transaction payer may be a sponsor and is recorded as the rent-refund address; the beneficiary may be another wallet or an integrating program's controlled account.
 - Verification, allocation, and claim instructions are permissionless so a relayer may pay; destination substitution is impossible.
 - The bounded creator-funded bounty rewards successful fulfillment or timeout recovery without exposing prize collateral or requiring the beneficiary to sign.

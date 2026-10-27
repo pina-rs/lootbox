@@ -40,8 +40,8 @@ export function getRetireTemplateInstructionDataCodec(): FixedSizeCodec<RetireTe
 
 export type RetireTemplateInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountTemplate extends InstructionAccountInput = InstructionAccountInput> =  {
   /**
- * Template authority; must sign and match the authority recorded on the
- * template.
+ * Signer requesting retirement. Must match the template authority unless
+ * the live, unlocked template has reached its reveal deadline.
  */
 authority: TAccountAuthority;
 /**
@@ -71,8 +71,8 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 export type ParsedRetireTemplateInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
 /**
- * Template authority; must sign and match the authority recorded on the
- * template.
+ * Signer requesting retirement. Must match the template authority unless
+ * the live, unlocked template has reached its reveal deadline.
  */
 authority: TAccountMetas[0];
 /**

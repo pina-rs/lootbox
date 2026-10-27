@@ -1887,6 +1887,20 @@ fn missed_market_lock_retires_without_stranding_holder_claims() {
 				],
 			)
 			.expect("issue short recovery supply");
+		let recoverer = Keypair::new();
+		let recovery_instruction = program.instruction(
+			&[LootboxInstruction::RetireTemplate as u8, 0],
+			vec![
+				AccountMeta::new_readonly(recoverer.pubkey(), true),
+				AccountMeta::new(template, false),
+			],
+		);
+		assert!(
+			program
+				.send_with_signers(recovery_instruction.clone(), &[&recoverer])
+				.is_err(),
+			"an unrelated signer cannot retire before the deadline",
+		);
 		assert!(
 			program
 				.send(
@@ -1902,11 +1916,8 @@ fn missed_market_lock_retires_without_stranding_holder_claims() {
 			.time_travel_to_timestamp(u64::try_from(opens_at + 1).expect("timestamp") * 1000)
 			.expect("miss reveal deadline");
 		program
-			.send(
-				&[LootboxInstruction::RetireTemplate as u8, 0],
-				admin_accounts,
-			)
-			.expect("bounded recovery retirement");
+			.send_with_signers(recovery_instruction, &[&recoverer])
+			.expect("unrelated signer recovers after the missed deadline");
 		assert_eq!(
 			&program.account(&mint).expect("mint").data[..4],
 			&[1, 0, 0, 0],

@@ -98,6 +98,7 @@ The chart, odds strip, stepper, and action cards come from `@pina-rs/lootbox-ui`
 
 ## Security notes
 
+- Browsers display uploaded covers; Worker social cards render only bundled artwork so untrusted image data never enters the server image decoder.
 - Sign-in is Sign In With Solana: single-use nonces bound to the host, full SIWS field checks, Ed25519 verified with WebCrypto, and only a SHA-256 hash of the HttpOnly session cookie stored. Every write requires a same-origin request.
 - Manage actions require the session wallet to equal the template authority read from chain, not just the D1 creator.
 - Creator Markdown renders through a tiny parser to React elements; raw HTML is never emitted and links must be `https:`.

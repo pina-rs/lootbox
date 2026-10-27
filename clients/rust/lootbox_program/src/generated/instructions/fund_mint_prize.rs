@@ -13,8 +13,9 @@
 ///
 /// The template authority, which must be the mint's current mint authority,
 /// signs. The mint needs zero supply and decimals, no freeze authority, and
-/// immutable metadata if any. Mint authority moves to the bundle PDA and one
-/// badge is recorded per win.
+/// immutable, self-pointing embedded metadata for Token-2022 badges. Classic
+/// badges promise only their mint address; external metadata is not verified.
+/// Mint authority moves to the bundle PDA and one badge is recorded per win.
 pub const FUND_MINT_PRIZE_DISCRIMINATOR: u8 = 28u8;
 pub const FUND_MINT_PRIZE_MIGRATION_VERSION: u8 = 0u8;
 

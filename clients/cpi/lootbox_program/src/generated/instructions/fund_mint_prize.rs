@@ -22,8 +22,9 @@ use crate::ProgramAccount;
 ///
 /// The template authority, which must be the mint's current mint authority,
 /// signs. The mint needs zero supply and decimals, no freeze authority, and
-/// immutable metadata if any. Mint authority moves to the bundle PDA and one
-/// badge is recorded per win.
+/// immutable, self-pointing embedded metadata for Token-2022 badges. Classic
+/// badges promise only their mint address; external metadata is not verified.
+/// Mint authority moves to the bundle PDA and one badge is recorded per win.
 /// CPI call for the `fund_mint_prize` instruction.
 #[derive(Clone, Copy, Debug)]
 #[must_use = "the CPI has no effect until invoke or invoke_signed is called"]

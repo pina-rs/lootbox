@@ -66,7 +66,11 @@ function describeAsset(
 			};
 		}
 		case "mintBadge":
-			return { text: "A collectible badge", tracks: null, issuerStock: false };
+			return {
+				text: `Badge (${shortMint(asset.mint)})`,
+				tracks: null,
+				issuerStock: false,
+			};
 		case "exclusiveNft":
 			return {
 				text: "Exclusive Lootbox NFT",

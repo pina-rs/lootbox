@@ -14,6 +14,7 @@ import {
 	useNavigation,
 	useRevalidator,
 } from "react-router";
+import { storageErrorResponse } from "../lib/.server/storage-errors.js";
 import { friendlyError } from "../lib/errors.js";
 
 import { TxProgress, useTxProgress } from "../components/TxProgress.js";
@@ -117,7 +118,11 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 		throw errorResponse(403, "That image belongs to someone else");
 	}
 
-	await updateDisplay(app.db, record.id, parsed.data, nowSeconds());
+	try {
+		await updateDisplay(app.db, record.id, parsed.data, nowSeconds());
+	} catch (error) {
+		throw storageErrorResponse(error);
+	}
 
 	return { ok: true, error: null };
 }

@@ -21,6 +21,7 @@ import {
 	latestDraft,
 	upsertDraft,
 } from "../lib/.server/db.js";
+import { storageErrorResponse } from "../lib/.server/storage-errors.js";
 import { draftWriteSchema, firstIssue } from "../lib/schemas.js";
 import type { Route } from "./+types/api.drafts";
 
@@ -69,13 +70,17 @@ export async function action({ request, context }: Route.ActionArgs) {
 
 	const id = parsed.data.id ?? crypto.randomUUID();
 
-	await upsertDraft(app.db, {
-		id,
-		creator: wallet,
-		cluster: parsed.data.cluster,
-		step: parsed.data.step,
-		data: parsed.data.data,
-	}, nowSeconds());
+	try {
+		await upsertDraft(app.db, {
+			id,
+			creator: wallet,
+			cluster: parsed.data.cluster,
+			step: parsed.data.step,
+			data: parsed.data.data,
+		}, nowSeconds());
+	} catch (error) {
+		return storageErrorResponse(error);
+	}
 
 	return jsonResponse({ id });
 }

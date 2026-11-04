@@ -24,69 +24,69 @@ export function getPrizePoolItemStateDiscriminator2Bytes(): ReadonlyUint8Array {
  * Bubblegum authorities may change verification flags after custody, so claims
  * re-prove the current metadata while pinning every semantic field.
  */
-export type PrizePoolItemState = { discriminator: number; migrationVersion: number; 
+export type PrizePoolItemState = { discriminator: number; migrationVersion: number;
 /** Prize pool PDA that holds this item; seeds this PDA. */
-pool: Address; 
+pool: Address;
 /** Bubblegum asset ID derived from the pool's tree and `nonce`. */
-asset: Address; 
+asset: Address;
 /**
  * Bubblegum leaf data hash admitted at preparation and re-checked on
  * deposit.
  */
-dataHash: ReadonlyUint8Array; 
+dataHash: ReadonlyUint8Array;
 /**
  * Bubblegum leaf creator hash admitted at preparation and re-checked on
  * deposit.
  */
-creatorHash: ReadonlyUint8Array; 
+creatorHash: ReadonlyUint8Array;
 /**
  * Hash of the canonical metadata with only collection and creator
  * verification flags zeroed; claims and reclaims must reproduce it.
  */
-semanticMetadataHash: ReadonlyUint8Array; 
+semanticMetadataHash: ReadonlyUint8Array;
 /** Restores the append-only accumulator when an unfinished tail is removed. */
-previousManifestAccumulator: ReadonlyUint8Array; 
+previousManifestAccumulator: ReadonlyUint8Array;
 /** Bubblegum leaf nonce. */
-nonce: bigint; 
+nonce: bigint;
 /** Leaf index within the Merkle tree. */
-treeIndex: number; 
+treeIndex: number;
 /** Position within the pool in deposit order; seeds this PDA. */
-poolIndex: number; 
+poolIndex: number;
 /** 0 metadata-admitted, 1 transferred into `PrizePool` custody. */
-status: number; 
+status: number;
 /** Canonical bump of this item PDA. */
 bump: number;  };
 
-export type PrizePoolItemStateArgs = { 
+export type PrizePoolItemStateArgs = {
 /** Prize pool PDA that holds this item; seeds this PDA. */
-pool: Address; 
+pool: Address;
 /** Bubblegum asset ID derived from the pool's tree and `nonce`. */
-asset: Address; 
+asset: Address;
 /**
  * Bubblegum leaf data hash admitted at preparation and re-checked on
  * deposit.
  */
-dataHash: ReadonlyUint8Array; 
+dataHash: ReadonlyUint8Array;
 /**
  * Bubblegum leaf creator hash admitted at preparation and re-checked on
  * deposit.
  */
-creatorHash: ReadonlyUint8Array; 
+creatorHash: ReadonlyUint8Array;
 /**
  * Hash of the canonical metadata with only collection and creator
  * verification flags zeroed; claims and reclaims must reproduce it.
  */
-semanticMetadataHash: ReadonlyUint8Array; 
+semanticMetadataHash: ReadonlyUint8Array;
 /** Restores the append-only accumulator when an unfinished tail is removed. */
-previousManifestAccumulator: ReadonlyUint8Array; 
+previousManifestAccumulator: ReadonlyUint8Array;
 /** Bubblegum leaf nonce. */
-nonce: number | bigint; 
+nonce: number | bigint;
 /** Leaf index within the Merkle tree. */
-treeIndex: number; 
+treeIndex: number;
 /** Position within the pool in deposit order; seeds this PDA. */
-poolIndex: number; 
+poolIndex: number;
 /** 0 metadata-admitted, 1 transferred into `PrizePool` custody. */
-status: number; 
+status: number;
 /** Canonical bump of this item PDA. */
 bump: number;  };
 

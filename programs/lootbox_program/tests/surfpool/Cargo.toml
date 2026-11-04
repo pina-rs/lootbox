@@ -81,4 +81,4 @@ solana-zk-sdk-pod = "=0.1.2"
 spl-token-2022-interface = "=3.1.1"
 spl-token-metadata-interface = "=1.0.1"
 surfpool-sdk = "=1.6.0"
-switchboard_randomness_cpi = { path = "../../../../crates/switchboard_randomness_cpi", version = "0.0.2" }
+switchboard_randomness_cpi = { path = "../../../../crates/switchboard_randomness_cpi", version = "0.0.3" }

@@ -22,7 +22,7 @@ export function getClaimSolPrizeDiscriminator2Bytes(): ReadonlyUint8Array { retu
 export type ClaimSolPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountRecipient extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountRecipient extends string ? WritableAccount<TAccountRecipient> : TAccountRecipient, ...TRemainingAccounts]>;
 
-export type ClaimSolPrizeInstructionData = { discriminator: number; migrationVersion: number; 
+export type ClaimSolPrizeInstructionData = { discriminator: number; migrationVersion: number;
 /**
  * Asset slot within the selected bundle; must be below its asset count,
  * hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and be unclaimed by this
@@ -30,7 +30,7 @@ export type ClaimSolPrizeInstructionData = { discriminator: number; migrationVer
  */
 assetIndex: number;  };
 
-export type ClaimSolPrizeInstructionDataArgs = { 
+export type ClaimSolPrizeInstructionDataArgs = {
 /**
  * Asset slot within the selected bundle; must be below its asset count,
  * hold a `PRIZE_SOL` or `PRIZE_QUOTE_SOL` asset, and be unclaimed by this

@@ -22,7 +22,7 @@ export function getAllocatePrizePoolOpenDiscriminator2Bytes(): ReadonlyUint8Arra
 export type AllocatePrizePoolOpenInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountPrizePool extends string | AccountMeta<string> = string, TAccountServiceVault extends string | AccountMeta<string> = string, TAccountResultReceipt extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountTemplate extends string ? WritableAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? ReadonlyAccount<TAccountBundle> : TAccountBundle, TAccountPrizePool extends string ? WritableAccount<TAccountPrizePool> : TAccountPrizePool, TAccountServiceVault extends string ? WritableAccount<TAccountServiceVault> : TAccountServiceVault, TAccountResultReceipt extends string ? WritableAccount<TAccountResultReceipt> : TAccountResultReceipt, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, ...TRemainingAccounts]>;
 
-export type AllocatePrizePoolOpenInstructionData = { discriminator: number; migrationVersion: number; 
+export type AllocatePrizePoolOpenInstructionData = { discriminator: number; migrationVersion: number;
 /**
  * Canonical bump of the result receipt PDA
  * `["result-receipt", opening, sequence]`; checked even when result
@@ -30,7 +30,7 @@ export type AllocatePrizePoolOpenInstructionData = { discriminator: number; migr
  */
 resultReceiptBump: number;  };
 
-export type AllocatePrizePoolOpenInstructionDataArgs = { 
+export type AllocatePrizePoolOpenInstructionDataArgs = {
 /**
  * Canonical bump of the result receipt PDA
  * `["result-receipt", opening, sequence]`; checked even when result

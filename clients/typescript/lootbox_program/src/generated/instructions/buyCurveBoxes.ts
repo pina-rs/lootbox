@@ -23,11 +23,11 @@ export function getBuyCurveBoxesDiscriminator2Bytes(): ReadonlyUint8Array { retu
 export type BuyCurveBoxesInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountBuyer extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxCurve extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountCurveBoxAccount extends string | AccountMeta<string> = string, TAccountDestinationBoxAccount extends string | AccountMeta<string> = string, TAccountAuthority extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = "11111111111111111111111111111111", TAccountBoxTokenProgram extends string | AccountMeta<string> = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountBuyer extends string ? WritableSignerAccount<TAccountBuyer> & AccountSignerMeta<TAccountBuyer> : TAccountBuyer, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxCurve extends string ? WritableAccount<TAccountBoxCurve> : TAccountBoxCurve, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountCurveBoxAccount extends string ? WritableAccount<TAccountCurveBoxAccount> : TAccountCurveBoxAccount, TAccountDestinationBoxAccount extends string ? WritableAccount<TAccountDestinationBoxAccount> : TAccountDestinationBoxAccount, TAccountAuthority extends string ? WritableAccount<TAccountAuthority> : TAccountAuthority, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountBoxTokenProgram extends string ? ReadonlyAccount<TAccountBoxTokenProgram> : TAccountBoxTokenProgram, ...TRemainingAccounts]>;
 
-export type BuyCurveBoxesInstructionData = { discriminator: number; migrationVersion: number; count: bigint; 
+export type BuyCurveBoxesInstructionData = { discriminator: number; migrationVersion: number; count: bigint;
 /** Most the buyer will pay, price and fee together. */
 maxLamports: bigint;  };
 
-export type BuyCurveBoxesInstructionDataArgs = { count: number | bigint; 
+export type BuyCurveBoxesInstructionDataArgs = { count: number | bigint;
 /** Most the buyer will pay, price and fee together. */
 maxLamports: number | bigint;  };
 

@@ -22,14 +22,14 @@ export function getSetExclusiveLayerDiscriminator2Bytes(): ReadonlyUint8Array { 
 export type SetExclusiveLayerInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAdmin extends string | AccountMeta<string> = string, TAccountExclusiveCollection extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAdmin extends string ? ReadonlySignerAccount<TAccountAdmin> & AccountSignerMeta<TAccountAdmin> : TAccountAdmin, TAccountExclusiveCollection extends string ? WritableAccount<TAccountExclusiveCollection> : TAccountExclusiveCollection, ...TRemainingAccounts]>;
 
-export type SetExclusiveLayerInstructionData = { discriminator: number; migrationVersion: number; 
+export type SetExclusiveLayerInstructionData = { discriminator: number; migrationVersion: number;
 /**
  * Layer to overwrite, counted from 0 at the bottom; must be below the
  * collection's `layer_count`.
  */
-layerIndex: number; 
+layerIndex: number;
 /** Traits in the layer, from 1 through 64. */
-traitCount: number; 
+traitCount: number;
 /**
  * Sixty-four little-endian `u32` weights; slots past `trait_count` are zero.
  *
@@ -37,14 +37,14 @@ traitCount: number;
  */
 weights: ReadonlyUint8Array;  };
 
-export type SetExclusiveLayerInstructionDataArgs = { 
+export type SetExclusiveLayerInstructionDataArgs = {
 /**
  * Layer to overwrite, counted from 0 at the bottom; must be below the
  * collection's `layer_count`.
  */
-layerIndex: number; 
+layerIndex: number;
 /** Traits in the layer, from 1 through 64. */
-traitCount: number; 
+traitCount: number;
 /**
  * Sixty-four little-endian `u32` weights; slots past `trait_count` are zero.
  *

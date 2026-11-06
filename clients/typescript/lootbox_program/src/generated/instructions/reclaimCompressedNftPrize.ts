@@ -22,51 +22,51 @@ export function getReclaimCompressedNftPrizeDiscriminator2Bytes(): ReadonlyUint8
 export type ReclaimCompressedNftPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountTemplate extends string | AccountMeta<string> = string, TAccountBoxMint extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountTreeConfig extends string | AccountMeta<string> = string, TAccountMerkleTree extends string | AccountMeta<string> = string, TAccountBubblegumProgram extends string | AccountMeta<string> = string, TAccountLogWrapper extends string | AccountMeta<string> = string, TAccountCompressionProgram extends string | AccountMeta<string> = string, TAccountSystemProgram extends string | AccountMeta<string> = string, TAccountProofAccounts extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountBoxMint extends string ? ReadonlyAccount<TAccountBoxMint> : TAccountBoxMint, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountTreeConfig extends string ? ReadonlyAccount<TAccountTreeConfig> : TAccountTreeConfig, TAccountMerkleTree extends string ? WritableAccount<TAccountMerkleTree> : TAccountMerkleTree, TAccountBubblegumProgram extends string ? ReadonlyAccount<TAccountBubblegumProgram> : TAccountBubblegumProgram, TAccountLogWrapper extends string ? ReadonlyAccount<TAccountLogWrapper> : TAccountLogWrapper, TAccountCompressionProgram extends string ? ReadonlyAccount<TAccountCompressionProgram> : TAccountCompressionProgram, TAccountSystemProgram extends string ? ReadonlyAccount<TAccountSystemProgram> : TAccountSystemProgram, TAccountProofAccounts extends string ? ReadonlyAccount<TAccountProofAccounts> : TAccountProofAccounts, ...TRemainingAccounts]>;
 
-export type ReclaimCompressedNftPrizeInstructionData = { discriminator: number; migrationVersion: number; 
+export type ReclaimCompressedNftPrizeInstructionData = { discriminator: number; migrationVersion: number;
 /**
  * Bundle slot holding the compressed NFT. Must be below the bundle's
  * `funded_assets` and hold the asset ID derived from `merkle_tree` and
  * `nonce`.
  */
-assetIndex: number; 
+assetIndex: number;
 /**
  * Merkle root the proof was built against; Bubblegum verifies the leaf
  * against it.
  */
-root: ReadonlyUint8Array; 
+root: ReadonlyUint8Array;
 /** Bubblegum hash of the leaf's metadata, forwarded to rebuild the leaf. */
-dataHash: ReadonlyUint8Array; 
+dataHash: ReadonlyUint8Array;
 /** Bubblegum hash of the leaf's creators, forwarded to rebuild the leaf. */
-creatorHash: ReadonlyUint8Array; 
+creatorHash: ReadonlyUint8Array;
 /**
  * Leaf nonce. With `merkle_tree` it derives the asset ID, which must match
  * the slot's stored asset.
  */
-nonce: bigint; 
+nonce: bigint;
 /** Leaf position in `merkle_tree`, forwarded to Bubblegum. */
 index: number;  };
 
-export type ReclaimCompressedNftPrizeInstructionDataArgs = { 
+export type ReclaimCompressedNftPrizeInstructionDataArgs = {
 /**
  * Bundle slot holding the compressed NFT. Must be below the bundle's
  * `funded_assets` and hold the asset ID derived from `merkle_tree` and
  * `nonce`.
  */
-assetIndex: number; 
+assetIndex: number;
 /**
  * Merkle root the proof was built against; Bubblegum verifies the leaf
  * against it.
  */
-root: ReadonlyUint8Array; 
+root: ReadonlyUint8Array;
 /** Bubblegum hash of the leaf's metadata, forwarded to rebuild the leaf. */
-dataHash: ReadonlyUint8Array; 
+dataHash: ReadonlyUint8Array;
 /** Bubblegum hash of the leaf's creators, forwarded to rebuild the leaf. */
-creatorHash: ReadonlyUint8Array; 
+creatorHash: ReadonlyUint8Array;
 /**
  * Leaf nonce. With `merkle_tree` it derives the asset ID, which must match
  * the slot's stored asset.
  */
-nonce: number | bigint; 
+nonce: number | bigint;
 /** Leaf position in `merkle_tree`, forwarded to Bubblegum. */
 index: number;  };
 

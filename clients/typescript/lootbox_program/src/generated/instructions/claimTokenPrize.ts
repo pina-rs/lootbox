@@ -22,7 +22,7 @@ export function getClaimTokenPrizeDiscriminator2Bytes(): ReadonlyUint8Array { re
 export type ClaimTokenPrizeInstruction<TProgram extends string = typeof LOOTBOX_PROGRAM_PROGRAM_ADDRESS, TAccountTemplate extends string | AccountMeta<string> = string, TAccountOpening extends string | AccountMeta<string> = string, TAccountBundle extends string | AccountMeta<string> = string, TAccountRecipient extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountDestination extends string | AccountMeta<string> = string, TAccountTokenProgram extends string | AccountMeta<string> = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
 Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountTemplate extends string ? ReadonlyAccount<TAccountTemplate> : TAccountTemplate, TAccountOpening extends string ? WritableAccount<TAccountOpening> : TAccountOpening, TAccountBundle extends string ? WritableAccount<TAccountBundle> : TAccountBundle, TAccountRecipient extends string ? ReadonlyAccount<TAccountRecipient> : TAccountRecipient, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow, TAccountDestination extends string ? WritableAccount<TAccountDestination> : TAccountDestination, TAccountTokenProgram extends string ? ReadonlyAccount<TAccountTokenProgram> : TAccountTokenProgram, ...TRemainingAccounts]>;
 
-export type ClaimTokenPrizeInstructionData = { discriminator: number; migrationVersion: number; 
+export type ClaimTokenPrizeInstructionData = { discriminator: number; migrationVersion: number;
 /**
  * Asset slot within the selected bundle; must be below its asset count,
  * hold a `PRIZE_TOKEN`, `PRIZE_NFT`, `PRIZE_TOKEN_2022`, or
@@ -30,7 +30,7 @@ export type ClaimTokenPrizeInstructionData = { discriminator: number; migrationV
  */
 assetIndex: number;  };
 
-export type ClaimTokenPrizeInstructionDataArgs = { 
+export type ClaimTokenPrizeInstructionDataArgs = {
 /**
  * Asset slot within the selected bundle; must be below its asset count,
  * hold a `PRIZE_TOKEN`, `PRIZE_NFT`, `PRIZE_TOKEN_2022`, or

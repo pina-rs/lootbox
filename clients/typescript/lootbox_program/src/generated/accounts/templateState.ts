@@ -19,254 +19,254 @@ export const TEMPLATE_STATE_DISCRIMINATOR2 = 0;
 export function getTemplateStateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(TEMPLATE_STATE_DISCRIMINATOR2); }
 
 /** Immutable template terms and the live finite inventory. */
-export type TemplateState = { discriminator: number; migrationVersion: number; 
+export type TemplateState = { discriminator: number; migrationVersion: number;
 /**
  * Creator that signs every administrative instruction and seeds this PDA.
  * Receives staging rent, reclaimed inventory, and the closed service vault.
  */
-authority: Address; 
+authority: Address;
 /**
  * Zero-decimal Token-2022 mint whose tokens are unopened boxes. This PDA
  * holds its mint authority until `lockTreasury` revokes it.
  */
-boxMint: Address; 
+boxMint: Address;
 /**
  * Switchboard On-Demand program, mainnet or devnet, fixed at creation.
  * Every randomness account must be owned by this program.
  */
-oracleProgram: Address; 
+oracleProgram: Address;
 /** Nonzero Switchboard queue that every opening's randomness must use. */
-oracleQueue: Address; 
+oracleQueue: Address;
 /** Creator-chosen identifier that seeds this PDA beside `authority`. */
-id: bigint; 
+id: bigint;
 /**
  * Non-negative reveal time in unix seconds. Openings fail before it, and
  * `lockTreasury` must run strictly before it.
  */
-opensAt: bigint; 
+opensAt: bigint;
 /**
  * Timestamp at which the creator irreversibly fixed inventory and supply.
  * Zero means the treasury is still editable.
  */
-lockedAt: bigint; 
+lockedAt: bigint;
 /**
  * Total bundle tickets ever activated. This is the lifetime issuance cap.
  * It never decreases, never exceeds `u32::MAX`, and equals the fixed box
  * supply once the treasury is locked.
  */
-totalBundles: bigint; 
+totalBundles: bigint;
 /**
  * Boxes ever minted by `mintTemplateBoxes`; burns do not reduce it. Must
  * equal `total_bundles` before the treasury can lock.
  */
-totalMinted: bigint; 
+totalMinted: bigint;
 /**
  * Undrawn tickets across all activated bundles, equal to the sum of
  * `remaining`. Activation adds a bundle's quantity; each allocation
  * removes one.
  */
-remainingBundles: bigint; 
+remainingBundles: bigint;
 /**
  * Burned boxes awaiting allocation or forfeiture. A request adds one; an
  * allocation or forfeiture removes one.
  */
-pendingOpenings: bigint; 
+pendingOpenings: bigint;
 /** Sequence assigned to the next opening request; increments per request. */
-nextRequest: bigint; 
+nextRequest: bigint;
 /**
  * Sequence of the FIFO head. Allocation and forfeiture accept only the
  * opening with this sequence, then increment it.
  */
-nextAllocation: bigint; 
+nextAllocation: bigint;
 /** Increments after every activated append; snapshotted by each opening. */
-revision: bigint; 
+revision: bigint;
 /** Incremental commitment to every activated bundle in append order. */
-manifestAccumulator: ReadonlyUint8Array; 
+manifestAccumulator: ReadonlyUint8Array;
 /**
  * Final treasury commitment. Zero until the treasury is locked.
  * Copied into every result receipt.
  */
-manifestHash: ReadonlyUint8Array; 
+manifestHash: ReadonlyUint8Array;
 /**
  * Lamports paid from the creator-funded service vault to the payer of a
  * successful fulfillment or to the beneficiary of a forfeiture. Zero
  * disables bounties; retiring an unlocked template resets it to zero.
  */
-settlementBountyLamports: bigint; 
+settlementBountyLamports: bigint;
 /**
  * Rent prepaid for each optional immutable result receipt at market lock.
  * Zero when receipts are disabled or the treasury is unlocked.
  */
-resultReceiptRentLamports: bigint; 
+resultReceiptRentLamports: bigint;
 /**
  * Receipt allocations still covered by the isolated service vault.
  * Set to `total_bundles` at lock when receipts are enabled.
  */
-remainingResultReceipts: bigint; 
+remainingResultReceipts: bigint;
 /**
  * Settlement or forfeiture cranks still covered by the service vault.
  * Set to `total_bundles` at lock when the bounty is nonzero.
  */
-remainingSettlementBounties: bigint; 
+remainingSettlementBounties: bigint;
 /**
  * Null-padded UTF-8 display name; never used for authorization.
  * Must be nonblank and match the box mint's metadata name at creation.
  */
-name: ReadonlyUint8Array; 
+name: ReadonlyUint8Array;
 /**
  * Null-padded UTF-8 metadata URI; terms on chain remain authoritative.
  * Must match the box mint's metadata URI at creation.
  */
-uri: ReadonlyUint8Array; 
+uri: ReadonlyUint8Array;
 /**
  * Number of activated bundles, the length of `remaining`, and the index
  * of the next bundle PDA. At most 1,024.
  */
-bundleCount: number; 
+bundleCount: number;
 /**
  * 0 draft, 1 live, 2 retired. `locked_at` independently records the
  * irreversible market lock so retirement never erases that fact.
  */
-status: number; 
+status: number;
 /**
  * Whether allocation creates a permanent result receipt at creator expense.
  * Retiring an unlocked template clears it because no receipt was funded.
  */
-resultReceiptsEnabled: boolean; 
+resultReceiptsEnabled: boolean;
 /** Canonical bump of this template PDA. */
-bump: number; 
+bump: number;
 /**
  * Canonical service vault bump, fixed when the treasury is locked.
  * Zero before the lock.
  */
-serviceVaultBump: number; 
+serviceVaultBump: number;
 /**
  * Undrawn inventory per append-only bundle. Only activated slots occupy
  * account bytes; slots are never removed because openings snapshot indices.
  */
 remaining: Array<bigint>;  };
 
-export type TemplateStateArgs = { 
+export type TemplateStateArgs = {
 /**
  * Creator that signs every administrative instruction and seeds this PDA.
  * Receives staging rent, reclaimed inventory, and the closed service vault.
  */
-authority: Address; 
+authority: Address;
 /**
  * Zero-decimal Token-2022 mint whose tokens are unopened boxes. This PDA
  * holds its mint authority until `lockTreasury` revokes it.
  */
-boxMint: Address; 
+boxMint: Address;
 /**
  * Switchboard On-Demand program, mainnet or devnet, fixed at creation.
  * Every randomness account must be owned by this program.
  */
-oracleProgram: Address; 
+oracleProgram: Address;
 /** Nonzero Switchboard queue that every opening's randomness must use. */
-oracleQueue: Address; 
+oracleQueue: Address;
 /** Creator-chosen identifier that seeds this PDA beside `authority`. */
-id: number | bigint; 
+id: number | bigint;
 /**
  * Non-negative reveal time in unix seconds. Openings fail before it, and
  * `lockTreasury` must run strictly before it.
  */
-opensAt: number | bigint; 
+opensAt: number | bigint;
 /**
  * Timestamp at which the creator irreversibly fixed inventory and supply.
  * Zero means the treasury is still editable.
  */
-lockedAt: number | bigint; 
+lockedAt: number | bigint;
 /**
  * Total bundle tickets ever activated. This is the lifetime issuance cap.
  * It never decreases, never exceeds `u32::MAX`, and equals the fixed box
  * supply once the treasury is locked.
  */
-totalBundles: number | bigint; 
+totalBundles: number | bigint;
 /**
  * Boxes ever minted by `mintTemplateBoxes`; burns do not reduce it. Must
  * equal `total_bundles` before the treasury can lock.
  */
-totalMinted: number | bigint; 
+totalMinted: number | bigint;
 /**
  * Undrawn tickets across all activated bundles, equal to the sum of
  * `remaining`. Activation adds a bundle's quantity; each allocation
  * removes one.
  */
-remainingBundles: number | bigint; 
+remainingBundles: number | bigint;
 /**
  * Burned boxes awaiting allocation or forfeiture. A request adds one; an
  * allocation or forfeiture removes one.
  */
-pendingOpenings: number | bigint; 
+pendingOpenings: number | bigint;
 /** Sequence assigned to the next opening request; increments per request. */
-nextRequest: number | bigint; 
+nextRequest: number | bigint;
 /**
  * Sequence of the FIFO head. Allocation and forfeiture accept only the
  * opening with this sequence, then increment it.
  */
-nextAllocation: number | bigint; 
+nextAllocation: number | bigint;
 /** Increments after every activated append; snapshotted by each opening. */
-revision: number | bigint; 
+revision: number | bigint;
 /** Incremental commitment to every activated bundle in append order. */
-manifestAccumulator: ReadonlyUint8Array; 
+manifestAccumulator: ReadonlyUint8Array;
 /**
  * Final treasury commitment. Zero until the treasury is locked.
  * Copied into every result receipt.
  */
-manifestHash: ReadonlyUint8Array; 
+manifestHash: ReadonlyUint8Array;
 /**
  * Lamports paid from the creator-funded service vault to the payer of a
  * successful fulfillment or to the beneficiary of a forfeiture. Zero
  * disables bounties; retiring an unlocked template resets it to zero.
  */
-settlementBountyLamports: number | bigint; 
+settlementBountyLamports: number | bigint;
 /**
  * Rent prepaid for each optional immutable result receipt at market lock.
  * Zero when receipts are disabled or the treasury is unlocked.
  */
-resultReceiptRentLamports: number | bigint; 
+resultReceiptRentLamports: number | bigint;
 /**
  * Receipt allocations still covered by the isolated service vault.
  * Set to `total_bundles` at lock when receipts are enabled.
  */
-remainingResultReceipts: number | bigint; 
+remainingResultReceipts: number | bigint;
 /**
  * Settlement or forfeiture cranks still covered by the service vault.
  * Set to `total_bundles` at lock when the bounty is nonzero.
  */
-remainingSettlementBounties: number | bigint; 
+remainingSettlementBounties: number | bigint;
 /**
  * Null-padded UTF-8 display name; never used for authorization.
  * Must be nonblank and match the box mint's metadata name at creation.
  */
-name: ReadonlyUint8Array; 
+name: ReadonlyUint8Array;
 /**
  * Null-padded UTF-8 metadata URI; terms on chain remain authoritative.
  * Must match the box mint's metadata URI at creation.
  */
-uri: ReadonlyUint8Array; 
+uri: ReadonlyUint8Array;
 /**
  * Number of activated bundles, the length of `remaining`, and the index
  * of the next bundle PDA. At most 1,024.
  */
-bundleCount: number; 
+bundleCount: number;
 /**
  * 0 draft, 1 live, 2 retired. `locked_at` independently records the
  * irreversible market lock so retirement never erases that fact.
  */
-status: number; 
+status: number;
 /**
  * Whether allocation creates a permanent result receipt at creator expense.
  * Retiring an unlocked template clears it because no receipt was funded.
  */
-resultReceiptsEnabled: boolean; 
+resultReceiptsEnabled: boolean;
 /** Canonical bump of this template PDA. */
-bump: number; 
+bump: number;
 /**
  * Canonical service vault bump, fixed when the treasury is locked.
  * Zero before the lock.
  */
-serviceVaultBump: number; 
+serviceVaultBump: number;
 /**
  * Undrawn inventory per append-only bundle. Only activated slots occupy
  * account bytes; slots are never removed because openings snapshot indices.

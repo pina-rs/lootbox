@@ -19,51 +19,51 @@ export const BOX_CURVE_STATE_DISCRIMINATOR2 = 0;
 export function getBoxCurveStateDiscriminator2Bytes(): ReadonlyUint8Array { return getU8Encoder().encode(BOX_CURVE_STATE_DISCRIMINATOR2); }
 
 /** A bonding curve selling one locked lootbox's boxes. */
-export type BoxCurveState = { discriminator: number; migrationVersion: number; template: Address; boxMint: Address; 
+export type BoxCurveState = { discriminator: number; migrationVersion: number; template: Address; boxMint: Address;
 /**
  * The creator. Receives every fee, the reserve at sell-out, and whatever
  * is left when the curve closes.
  */
-authority: Address; 
+authority: Address;
 /** Boxes deposited. The curve sells out when `sold` reaches this. */
-inventory: bigint; 
+inventory: bigint;
 /** Boxes currently sold, net of buybacks. */
-sold: bigint; 
+sold: bigint;
 /** Price of the first box, in lamports. */
-startPrice: bigint; 
+startPrice: bigint;
 /** Price increase per sold box, in lamports. */
-priceStep: bigint; 
+priceStep: bigint;
 /**
  * Lamports that back buybacks: the sum of every sold position's price.
  * Zero once the curve sells out and pays the creator.
  */
-reserve: bigint; 
+reserve: bigint;
 /** Trading closes at the lootbox's reveal time. */
-closesAt: bigint; 
+closesAt: bigint;
 /** When the last box sold. Zero while any inventory remains. */
 soldOutAt: bigint; feeBps: number; bump: number;  };
 
-export type BoxCurveStateArgs = { template: Address; boxMint: Address; 
+export type BoxCurveStateArgs = { template: Address; boxMint: Address;
 /**
  * The creator. Receives every fee, the reserve at sell-out, and whatever
  * is left when the curve closes.
  */
-authority: Address; 
+authority: Address;
 /** Boxes deposited. The curve sells out when `sold` reaches this. */
-inventory: number | bigint; 
+inventory: number | bigint;
 /** Boxes currently sold, net of buybacks. */
-sold: number | bigint; 
+sold: number | bigint;
 /** Price of the first box, in lamports. */
-startPrice: number | bigint; 
+startPrice: number | bigint;
 /** Price increase per sold box, in lamports. */
-priceStep: number | bigint; 
+priceStep: number | bigint;
 /**
  * Lamports that back buybacks: the sum of every sold position's price.
  * Zero once the curve sells out and pays the creator.
  */
-reserve: number | bigint; 
+reserve: number | bigint;
 /** Trading closes at the lootbox's reveal time. */
-closesAt: number | bigint; 
+closesAt: number | bigint;
 /** When the last box sold. Zero while any inventory remains. */
 soldOutAt: number | bigint; feeBps: number; bump: number;  };
 

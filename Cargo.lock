@@ -2048,7 +2048,7 @@ checksum = "5d15f86d12da44cd8d4ec3c73984537eb7f4cadcb9776a575a0a8a05ca11005c"
 
 [[package]]
 name = "lootbox_cli"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "base64 0.22.1",
  "clap",
@@ -2068,7 +2068,7 @@ dependencies = [
 
 [[package]]
 name = "lootbox_program"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "pina",
  "proptest",
@@ -2080,7 +2080,7 @@ dependencies = [
 
 [[package]]
 name = "lootbox_program_client"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "num-derive 0.5.1",
  "num-traits",
@@ -2095,14 +2095,14 @@ dependencies = [
 
 [[package]]
 name = "lootbox_program_cpi"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "pina",
 ]
 
 [[package]]
 name = "lootbox_sdk"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "lootbox_program_client",
  "serde",
@@ -5451,7 +5451,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "switchboard_randomness_cpi"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "pinocchio",
  "solana-address 2.9.0",

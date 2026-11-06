@@ -203,8 +203,7 @@ mod result_receipt_state_version_error_tests {
 	#[test]
 	fn stale_and_future_versions_are_distinguishable() {
 		let error = ResultReceiptState::try_from_bytes(&envelope(1_u8))
-			.err()
-			.expect("a future envelope must fail");
+			.expect_err("a future envelope must fail");
 		assert_eq!(error, ResultReceiptStateVersionError::Future { stored: 1 });
 		assert_eq!(
 			ResultReceiptStateVersionError::Future { stored: 1 }.to_string(),

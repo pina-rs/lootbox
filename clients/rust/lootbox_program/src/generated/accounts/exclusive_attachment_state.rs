@@ -206,8 +206,7 @@ mod exclusive_attachment_state_version_error_tests {
 	#[test]
 	fn stale_and_future_versions_are_distinguishable() {
 		let error = ExclusiveAttachmentState::try_from_bytes(&envelope(1_u8))
-			.err()
-			.expect("a future envelope must fail");
+			.expect_err("a future envelope must fail");
 		assert_eq!(
 			error,
 			ExclusiveAttachmentStateVersionError::Future { stored: 1 }

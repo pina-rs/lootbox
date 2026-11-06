@@ -21,14 +21,14 @@ clap = { features = ["derive"], version = "4" }
 lootbox_program_client = { workspace = true }
 lootbox_sdk = { workspace = true }
 serde_json = { default-features = false, version = "1", features = ["std"] }
-solana-client = { default-features = false, version = "4.2" }
+solana-client = { default-features = false, version = "=4.3.2" }
 solana-commitment-config = { default-features = false, version = "3.1" }
-solana-instruction = { default-features = false, version = "3.4" }
+solana-instruction = { default-features = false, version = "3.5" }
 solana-keypair = { default-features = false, version = "3.1" }
 solana-program-error = { default-features = false, version = "3.0" }
 solana-pubkey = { default-features = false, version = "4" }
 solana-signer = { default-features = false, version = "3.0" }
-solana-transaction = { default-features = false, version = "4.1" }
+solana-transaction = { default-features = false, features = ["wincode"], version = "=4.3.0" }
 thiserror = { default-features = false, version = "2" }
 
 [lints]

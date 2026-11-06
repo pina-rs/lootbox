@@ -63,22 +63,25 @@ wildcard_imports = "allow"
 [dependencies]
 base64 = "=0.22.1"
 bs58 = "=0.5.1"
-pina = { version = "=0.23.0", default-features = false, features = ["account-resize", "compact", "logs", "token", "validation"] }
-pina_test = "=0.23.0"
+pina = { version = "=0.24.0", default-features = false, features = ["account-resize", "compact", "logs", "token", "validation"] }
+pina_test = "=0.24.0"
 proptest = { version = "1", default-features = false, features = ["std"] }
 serde_json = "1"
 solana-commitment-config = "=3.1.1"
 solana-keccak-hasher = { version = "=3.1.0", features = ["sha3"] }
 solana-keypair = "=3.1.2"
-solana-message = "=4.4.1"
-solana-rent = "=4.3.0"
-solana-rpc-client-api = "=4.2.2"
+solana-message = "=4.6.0"
+solana-rent = "=4.4.0"
+solana-rpc-client-api = "=4.3.2"
+# pina_test 0.24 requires the 4.3 line and surfpool 1.7 needs >=4.3.2; pin
+# the shared runtime so the resolver does not hold 4.3.0.
+solana-runtime = "=4.3.2"
 solana-seed-derivable = "=3.0.0"
 solana-sha256-hasher = { version = "=3.1.0", features = ["sha2"] }
-solana-transaction = "=4.1.6"
-solana-transaction-status-client-types = "=4.2.2"
+solana-transaction = "=4.3.0"
+solana-transaction-status-client-types = "=4.3.2"
 solana-zk-sdk-pod = "=0.1.2"
 spl-token-2022-interface = "=3.1.1"
 spl-token-metadata-interface = "=1.0.1"
-surfpool-sdk = "=1.6.0"
+surfpool-sdk = "=1.7.0"
 switchboard_randomness_cpi = { path = "../../../../crates/switchboard_randomness_cpi", version = "0.0.2" }

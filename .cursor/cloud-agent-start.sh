@@ -1,37 +1,39 @@
 #!/usr/bin/env bash
-# The Nix daemon does not survive a snapshot, and these VMs do not run
-# systemd. Start it and wait until the socket answers.
+# Single-user Nix has no daemon. Refresh the PATH wrappers and leave.
+# A warm boot that skips this script still works: the wrappers live in
+# /usr/local/bin, which is on the default PATH.
 set -euo pipefail
 
-if [ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]; then
-	# shellcheck disable=SC1091
-	. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+nix_bin="${HOME}/.nix-profile/bin/nix"
+devenv_bin="${HOME}/.nix-profile/bin/devenv"
+
+if [ -x "$nix_bin" ]; then
+	sudo tee /usr/local/bin/nix >/dev/null <<EOF
+#!/bin/bash
+set -euo pipefail
+if [ -f "\$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
+	. "\$HOME/.nix-profile/etc/profile.d/nix.sh"
+fi
+exec ${nix_bin} "\$@"
+EOF
+	sudo chmod 755 /usr/local/bin/nix
 fi
 
-if [ -x /nix/var/nix/profiles/default/bin/nix ]; then
-	sudo ln -sfn /nix/var/nix/profiles/default/bin/nix /usr/local/bin/nix
+if [ -x "$devenv_bin" ]; then
+	sudo tee /usr/local/bin/devenv >/dev/null <<EOF
+#!/bin/bash
+set -euo pipefail
+if [ -f "\$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
+	. "\$HOME/.nix-profile/etc/profile.d/nix.sh"
 fi
-if [ -x "${HOME}/.nix-profile/bin/devenv" ]; then
-	sudo ln -sfn "${HOME}/.nix-profile/bin/devenv" /usr/local/bin/devenv
-fi
-
-if ! nix store ping >/dev/null 2>&1; then
-	if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
-		sudo systemctl start nix-daemon || true
-	fi
-fi
-
-if ! nix store ping >/dev/null 2>&1; then
-	sudo mkdir -p /var/log
-	sudo sh -c 'nohup /nix/var/nix/profiles/default/bin/nix-daemon >>/var/log/nix-daemon.log 2>&1 &'
+exec ${devenv_bin} "\$@"
+EOF
+	sudo chmod 755 /usr/local/bin/devenv
 fi
 
-for _ in $(seq 1 30); do
-	if nix store ping >/dev/null 2>&1; then
-		exit 0
-	fi
-	sleep 1
-done
+if [ ! -x /usr/local/bin/nix ]; then
+	echo "nix is not installed" >&2
+	exit 1
+fi
 
-echo "nix-daemon did not become ready" >&2
-exit 1
+nix store ping >/dev/null

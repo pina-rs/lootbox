@@ -240,7 +240,7 @@ fn append_tree_with(
 			create_account_instruction(
 				&payer,
 				&tree.pubkey(),
-				rent_minimum(space),
+				rent_minimum(program, space),
 				space,
 				&compression(),
 			),
@@ -470,7 +470,7 @@ fn exclusive_attachment_unwinds_from_a_staged_bundle() {
 			.expect("attach while the window is open");
 		assert_eq!(
 			program.balance(&context.fee_vault).expect("fee vault"),
-			rent_minimum(0) + 3 * BUBBLEGUM_MINT_V2_FEE_LAMPORTS,
+			rent_minimum(&program, 0) + 3 * BUBBLEGUM_MINT_V2_FEE_LAMPORTS,
 		);
 		reclaim_fees(&program, &context).expect("unwind the staged attachment");
 		assert!(
@@ -787,7 +787,7 @@ fn exclusive_nfts_mint_layered_traits_to_the_bound_beneficiary() {
 		);
 		assert_eq!(
 			program.balance(&context.fee_vault).expect("fee vault"),
-			rent_minimum(0) + BUBBLEGUM_MINT_V2_FEE_LAMPORTS,
+			rent_minimum(&program, 0) + BUBBLEGUM_MINT_V2_FEE_LAMPORTS,
 			"Bubblegum fees came from the creator's escrow, not the claimer"
 		);
 
@@ -808,7 +808,7 @@ fn exclusive_nfts_mint_layered_traits_to_the_bound_beneficiary() {
 		reclaim_fees(&program, &context).expect("recover the unused copy's fee");
 		assert_eq!(
 			program.balance(&context.fee_vault).expect("fee vault"),
-			rent_minimum(0)
+			rent_minimum(&program, 0)
 		);
 		assert_eq!(
 			program.balance(&payer).expect("creator") + 5_000 - creator_before,
@@ -910,7 +910,7 @@ fn exclusive_nft_compute_units() {
 				create_account_instruction(
 					&payer,
 					&tree.pubkey(),
-					rent_minimum(space),
+					rent_minimum(&program, space),
 					space,
 					&compression(),
 				),

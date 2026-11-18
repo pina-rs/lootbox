@@ -109,7 +109,8 @@ jobs:
         # file carries a download URL for release-asset pins and falls back to
         # a mainnet dump otherwise. A stale pin also fails the functional
         # suite; keep benchmarking the other families and say so in the report
-        # instead of blocking on it.
+        # instead of blocking on it. exclusive_nft_compute_units and
+        # core_asset_compute_units both deploy these images.
         run: |
           pins="$PWD/tests/fixtures/metaplex-programs.sha256"
           directory="$PWD/target/deploy/metaplex"
@@ -147,7 +148,7 @@ jobs:
           export HOME="${HOME:-/home/runner}"
           skip=""
           if [ "$(cat target/perf/metaplex-ok)" != "1" ]; then
-            skip="--skip exclusive_nft_compute_units"
+            skip="--skip exclusive_nft_compute_units --skip core_asset_compute_units"
           fi
           if git -C ../lootbox-performance-base cat-file \
             -e HEAD:programs/lootbox_program/tests/surfpool/src/templates/perf.rs 2>/dev/null; then
@@ -170,7 +171,7 @@ jobs:
           export HOME="${HOME:-/home/runner}"
           skip=""
           if [ "$(cat target/perf/metaplex-ok)" != "1" ]; then
-            skip="--skip exclusive_nft_compute_units"
+            skip="--skip exclusive_nft_compute_units --skip core_asset_compute_units"
           fi
           LOOTBOX_CU_REPORT_DIR="$PWD/target/perf/cu-head" \
           PINA_SBF_ARTIFACT="$PWD/target/perf/binaries/head.so" \

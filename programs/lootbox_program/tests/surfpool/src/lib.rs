@@ -45,6 +45,7 @@ const ATA_PROGRAM: &str = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
 const ADDRESS_LOOKUP_TABLE_PROGRAM: &str = "AddressLookupTab1e1111111111111111111111111";
 const CLOCK_SYSVAR: &str = "SysvarC1ock11111111111111111111111111111111";
 const SLOT_HASHES_SYSVAR: &str = "SysvarS1otHashes111111111111111111111111111";
+const RENT_SYSVAR: &str = "SysvarRent111111111111111111111111111111111";
 const TOKEN_PROGRAM: &str = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 const WRAPPED_SOL_MINT: &str = "So11111111111111111111111111111111111111112";
 
@@ -510,8 +511,29 @@ fn ata_of(wallet: &pina_test::Pubkey, mint: &pina_test::Pubkey) -> pina_test::Pu
 	.0
 }
 
-fn rent_minimum(space: u64) -> u64 {
-	solana_rent::Rent::default().minimum_balance(usize::try_from(space).expect("space"))
+fn rent_sysvar_id() -> pina_test::Pubkey {
+	pina_test::Pubkey::from_str_const(RENT_SYSVAR)
+}
+
+/// Rent-exempt lamports Surfpool charges for `space` bytes of account data.
+///
+/// Surfpool writes the rent sysvar from the active SIMD-0437 lamports-per-byte
+/// gate, so the rate is not `solana_rent::Rent::default()`. The lootbox program
+/// reads this same sysvar when it escrows rent.
+fn rent_minimum(program: &Harness, space: u64) -> u64 {
+	let account = program.account(&rent_sysvar_id()).expect("rent sysvar");
+	let lamports_per_byte = u64::from_le_bytes(account.data[..8].try_into().expect("rent rate"));
+	let threshold: [u8; 8] = account.data[8..16].try_into().expect("rent threshold");
+	let bytes = 128 + space;
+
+	if threshold == 1.0f64.to_le_bytes() {
+		bytes * lamports_per_byte
+	} else if threshold == 2.0f64.to_le_bytes() {
+		bytes * lamports_per_byte * 2
+	} else {
+		let threshold = f64::from_le_bytes(threshold);
+		(bytes as f64 * lamports_per_byte as f64 * threshold) as u64
+	}
 }
 
 /// A seed-derived keypair for the compute-unit benchmark journeys.
@@ -571,7 +593,7 @@ fn provision_mint_keypair(
 	let create = create_account_instruction(
 		payer,
 		&mint.pubkey(),
-		rent_minimum(MINT_SPACE),
+		rent_minimum(program, MINT_SPACE),
 		MINT_SPACE,
 		&token_program_id(),
 	);

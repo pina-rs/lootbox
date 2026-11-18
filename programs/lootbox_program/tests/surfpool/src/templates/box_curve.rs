@@ -448,7 +448,7 @@ fn a_curve_prices_trades_and_pays_the_creator_at_sell_out() {
 		);
 		assert_eq!(
 			program.balance(&curve.address).expect("curve balance"),
-			rent_minimum(BoxCurveState::SIZE as u64),
+			rent_minimum(&program, BoxCurveState::SIZE as u64),
 			"only rent remains in the curve",
 		);
 		assert_error(

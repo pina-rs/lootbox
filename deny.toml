@@ -34,10 +34,11 @@ skip = [
 	{ name = "darling_core" },
 	{ name = "darling_macro" },
 	{ name = "digest" },
+	# hashbrown 0.15 and 0.17 pin foldhash 0.1 and 0.2. The hashbrown copies
+	# themselves stay because the Solana 3.x and 4.x trains have not met.
+	{ name = "foldhash" },
 	{ name = "getrandom" },
 	{ name = "hashbrown" },
-	# solana-client pulls in the 3.x solana crate train
-	{ name = "num-bigint" },
 	{ name = "num-derive" },
 	{ name = "r-efi" },
 	{ name = "rand" },
@@ -45,15 +46,28 @@ skip = [
 	{ name = "rand_core" },
 	# Pina's ABI hashing pulls sha2 0.11 while spl-discriminator stays on 0.10.
 	{ name = "sha2" },
-	{ name = "solana-account" },
 	{ name = "solana-address" },
 	{ name = "solana-instructions-sysvar" },
 	{ name = "solana-pubkey" },
-	{ name = "solana-system-interface" },
+	# syn 2 (Solana host crates and asn1-rs) and syn 3 (Pina derives, yoke)
+	# each pull their own synstructure.
+	{ name = "synstructure" },
 	{ name = "thiserror" },
 	{ name = "thiserror-impl" },
 	{ name = "webpki-roots" },
+	# windows-sys 0.45 (jni, via rustls-platform-verifier) and 0.52 (ring)
+	# each ship windows-targets and per-arch import libraries. windows-sys
+	# 0.61 uses windows-link and does not add a third copy. These leaves are
+	# Windows-only and do not link into the Linux or SBF build.
 	{ name = "windows-sys" },
+	{ name = "windows-targets" },
+	{ name = "windows_aarch64_gnullvm" },
+	{ name = "windows_aarch64_msvc" },
+	{ name = "windows_i686_gnu" },
+	{ name = "windows_i686_msvc" },
+	{ name = "windows_x86_64_gnu" },
+	{ name = "windows_x86_64_gnullvm" },
+	{ name = "windows_x86_64_msvc" },
 ]
 
 [sources]

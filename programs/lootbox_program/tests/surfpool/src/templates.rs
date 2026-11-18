@@ -44,7 +44,13 @@ fn metadata_mint_with_pointer_authority(
 	let payer = program.payer();
 	let address = mint.pubkey();
 	let instructions = [
-		create_account_instruction(&payer, &address, rent_minimum(512), 234, &token_2022()),
+		create_account_instruction(
+			&payer,
+			&address,
+			rent_minimum(program, 512),
+			234,
+			&token_2022(),
+		),
 		spl_token_2022_interface::extension::metadata_pointer::instruction::initialize(
 			&token_2022(),
 			&address,
@@ -909,7 +915,7 @@ fn oracle_fixture(program: &mut Harness) -> (Pubkey, Pubkey, OracleCpiAccounts) 
 	program
 		.fund_many(
 			&[queue, cpi.program_state, cpi.lut_signer, cpi.lut, cpi.stats],
-			rent_minimum(0),
+			rent_minimum(program, 0),
 		)
 		.expect("oracle infrastructure");
 	program
@@ -917,7 +923,7 @@ fn oracle_fixture(program: &mut Harness) -> (Pubkey, Pubkey, OracleCpiAccounts) 
 			create_account_instruction(
 				&program.payer(),
 				&oracle.pubkey(),
-				rent_minimum(0),
+				rent_minimum(program, 0),
 				0,
 				&oracle_program_id(),
 			),
@@ -1102,14 +1108,16 @@ fn prefunding_the_service_vault_cannot_block_treasury_lock() {
 		)
 		.0;
 		program
-			.fund(&service_vault, rent_minimum(0))
+			.fund(&service_vault, rent_minimum(&program, 0))
 			.expect("attacker pre-funds canonical PDA");
 
 		try_lock_treasury(&program, template, mint, 1)
 			.expect("an unsolicited lamport must not block treasury lock");
 		assert_eq!(
 			program.balance(&service_vault).expect("service balance"),
-			rent_minimum(0) + rent_minimum(ResultReceiptState::SIZE as u64) + 1_000,
+			rent_minimum(&program, 0)
+				+ rent_minimum(&program, ResultReceiptState::SIZE as u64)
+				+ 1_000,
 			"the creator only tops the service vault up to its required reserve",
 		);
 
@@ -1155,7 +1163,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		assert_eq!(template_account.data.len(), TemplateState::HEADER_SIZE);
 		assert_eq!(
 			template_account.lamports,
-			rent_minimum(TemplateState::HEADER_SIZE as u64)
+			rent_minimum(&program, TemplateState::HEADER_SIZE as u64)
 		);
 		let first_bundle = add_bundle(&program, template, 0, 3, 1);
 		let seal_accounts = vec![
@@ -1177,7 +1185,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		assert_eq!(template_account.data.len(), TemplateState::HEADER_SIZE + 8);
 		assert_eq!(
 			template_account.lamports,
-			rent_minimum((TemplateState::HEADER_SIZE + 8) as u64)
+			rent_minimum(&program, (TemplateState::HEADER_SIZE + 8) as u64)
 		);
 		let second_bundle = add_bundle(&program, template, 1, 2, 1);
 		let reward_mint = fund_token(&program, template, second_bundle, false, 2);
@@ -1197,7 +1205,7 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		assert_eq!(template_account.data.len(), TemplateState::HEADER_SIZE + 24);
 		assert_eq!(
 			template_account.lamports,
-			rent_minimum((TemplateState::HEADER_SIZE + 24) as u64)
+			rent_minimum(&program, (TemplateState::HEADER_SIZE + 24) as u64)
 		);
 		let bundles = [first_bundle, second_bundle, third_bundle];
 		program
@@ -1227,7 +1235,8 @@ fn template_treasury_token_nft_fifo_and_time_lock_round_trip() {
 		.0;
 		assert_eq!(
 			program.balance(&service_vault).expect("service balance"),
-			rent_minimum(0) + 6 * (rent_minimum(ResultReceiptState::SIZE as u64) + 1_000),
+			rent_minimum(&program, 0)
+				+ 6 * (rent_minimum(&program, ResultReceiptState::SIZE as u64) + 1_000),
 			"service reserve includes one recoverable zero-data rent floor",
 		);
 		assert_eq!(
@@ -2403,7 +2412,7 @@ fn adversarial_opening_inputs_cannot_substitute_escrow_or_oracle() {
 		// before any oracle CPI or box burn happens.
 		let foreign_escrow = Keypair::new();
 		program
-			.fund(&foreign_escrow.pubkey(), rent_minimum(0))
+			.fund(&foreign_escrow.pubkey(), rent_minimum(&program, 0))
 			.expect("fund foreign escrow substitute");
 		let mut substituted_escrow = valid_accounts.clone();
 		*substituted_escrow.get_mut(6).expect("escrow slot") =
@@ -2429,7 +2438,7 @@ fn adversarial_opening_inputs_cannot_substitute_escrow_or_oracle() {
 		// ownership check instead of being recorded as the answering oracle.
 		let foreign_oracle = Keypair::new();
 		program
-			.fund(&foreign_oracle.pubkey(), rent_minimum(0))
+			.fund(&foreign_oracle.pubkey(), rent_minimum(&program, 0))
 			.expect("fund foreign oracle substitute");
 		let mut substituted_oracle = valid_accounts;
 		*substituted_oracle.get_mut(8).expect("oracle slot") =
@@ -2704,7 +2713,13 @@ fn issuer_stock_mint(program: &Harness, delegate: &Pubkey) -> Pubkey {
 	.expect("stock mint size");
 	let space = u64::try_from(space).expect("space");
 	let instructions = [
-		create_account_instruction(&payer, &address, rent_minimum(space), space, &token_2022()),
+		create_account_instruction(
+			&payer,
+			&address,
+			rent_minimum(program, space),
+			space,
+			&token_2022(),
+		),
 		token_ix::initialize_permanent_delegate(&token_2022(), &address, delegate)
 			.expect("permanent delegate"),
 		default_account_state::instruction::initialize_default_account_state(

@@ -1,9 +1,9 @@
 //! Pinned Bubblegum V2 and Metaplex Core CPIs for Exclusive Lootbox NFTs.
 //!
 //! Instruction layouts are pinned to `mpl-bubblegum` release `bubblegum@2.0.0`
-//! (`79e1a1954bddb7fe5dcd52a5570a66a9f7d465e4`, the OtterSec-verified mainnet
-//! build) and `mpl-core` release `core@0.15.3`
-//! (`8c5cee35199a7d103e181de7b13f2e20b1e20103`, also OtterSec-verified).
+//! (`79e1a1954bddb7fe5dcd52a5570a66a9f7d465e4`) and `mpl-core` release
+//! `core@0.15.3` (`8c5cee35199a7d103e181de7b13f2e20b1e20103`). Surfpool loads
+//! the published release assets; see `tests/fixtures/metaplex-programs.sha256`.
 
 use alloc::vec::Vec;
 

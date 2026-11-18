@@ -13,6 +13,9 @@ ignore = [
 	# every ID on the next Surfpool release.
 	# October 2026 wave: crypto-bigint timing variability and the unfixed
 	# zstd 0.13 line, both inside Surfpool's bundled host-only stack.
+	# chrono 0.4 is unmaintained and has no fixed release. It arrives through
+	# Surfpool's diesel and Agave's solana-genesis-config, both host-only.
+	"RUSTSEC-2026-0543",
 	"RUSTSEC-2026-0387",
 	"RUSTSEC-2026-0391",
 	"RUSTSEC-2026-0398",

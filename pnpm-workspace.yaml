@@ -27,3 +27,8 @@ nodeVersion: 24.13.0
 # read it for Dependabot alerts. CI still installs the exact version from
 # packageManager via pnpm/action-setup.
 pmOnFail: ignore
+# picomatch <=4.0.7 (GHSA-fc5q-39xc-vjpf) is a ReDoS with no patched release.
+# vitest and vite pull it for globbing. Drop this when a fixed picomatch ships.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-fc5q-39xc-vjpf

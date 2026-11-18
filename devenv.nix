@@ -495,7 +495,8 @@ in
         --ignore RUSTSEC-2026-0346 \
         --ignore RUSTSEC-2026-0349 \
         --ignore RUSTSEC-2026-0381 \
-        --ignore RUSTSEC-2026-0382
+        --ignore RUSTSEC-2026-0382 \
+        --ignore RUSTSEC-2026-0543
       cargo deny check -D warnings advisories bans sources
       cargo deny \
         --manifest-path programs/lootbox_program/tests/surfpool/Cargo.toml \
@@ -503,7 +504,10 @@ in
         check \
         -D warnings \
         advisories bans sources
-      pnpm audit --audit-level high
+      # picomatch <=4.0.7 (GHSA-fc5q-39xc-vjpf) is a ReDoS with no patched
+      # release. vitest and vite pull it for globbing. Drop the ignore when a
+      # fixed picomatch ships.
+      pnpm audit --audit-level high --ignore GHSA-fc5q-39xc-vjpf
     '';
     "verify:all".exec = ''
       set -euo pipefail

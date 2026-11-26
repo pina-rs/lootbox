@@ -15,6 +15,11 @@ ignore = [
 	# zstd 0.13 line, both inside Surfpool's bundled host-only stack.
 	# chrono 0.4 is unmaintained and has no fixed release. It arrives through
 	# Surfpool's diesel and Agave's solana-genesis-config, both host-only.
+	# url 1.7.2 (RUSTSEC-2026-0592) is reachable only from this Surfpool test
+	# harness (surfpool-types 1.7.0 and jsonrpc-client-transports 18.0.0 via
+	# surfpool-core/surfpool-sdk/pina_test) and is not linked into
+	# lootbox_program.so; url 2.x is updated to 2.5.9 across all lockfiles.
+	{ id = "RUSTSEC-2026-0592", reason = "url 1.7.2 is reachable only from the Surfpool test harness (surfpool-types and jsonrpc-client-transports) and is not linked into lootbox_program.so" },
 	"RUSTSEC-2026-0543",
 	"RUSTSEC-2026-0387",
 	"RUSTSEC-2026-0391",

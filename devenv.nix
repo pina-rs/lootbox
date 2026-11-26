@@ -451,6 +451,10 @@ in
       # dependencies; the deployed program and shipped SDKs pull none of them.
       # Each entry is a deliberate hold until Surfpool or Agave ships the
       # fixed line - re-evaluate every ID on a surfpool-sdk bump.
+      # RUSTSEC-2026-0592 here covers only url 1.7.2 (reachable only from this
+      # Surfpool test harness via surfpool-types and jsonrpc-client-transports,
+      # and not linked into lootbox_program.so); url 2.x is updated to 2.5.9
+      # in both the workspace and Surfpool lockfiles.
       cargo audit \
         --deny warnings \
         --file programs/lootbox_program/tests/surfpool/Cargo.lock \
@@ -496,7 +500,8 @@ in
         --ignore RUSTSEC-2026-0349 \
         --ignore RUSTSEC-2026-0381 \
         --ignore RUSTSEC-2026-0382 \
-        --ignore RUSTSEC-2026-0543
+        --ignore RUSTSEC-2026-0543 \
+        --ignore RUSTSEC-2026-0592
       cargo deny check -D warnings advisories bans sources
       cargo deny \
         --manifest-path programs/lootbox_program/tests/surfpool/Cargo.toml \

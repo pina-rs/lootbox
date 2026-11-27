@@ -122,6 +122,14 @@ enabled = true
 mode = "builtin"
 trusted_publishing = { enabled = true, repository = "pina-rs/lootbox", workflow = "publish.yml", environment = "publisher" }
 
+[ecosystems.dart]
+enabled = true
+# Let pub refresh the Dart SDK lockfile: the built-in rewrite does not bump the
+# path-dependency version of lootbox_program_client and re-serializes pub's YAML.
+lockfile_commands = [
+	{ command = "dart pub get", cwd = "sdks/dart", shell = "bash" },
+]
+
 [group.lootbox]
 packages = [
 	"switchboard_randomness_cpi",

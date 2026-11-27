@@ -1,0 +1,283 @@
+{
+	"schema_version": "0.10",
+	"kind": "monochange.releaseRecord",
+	"created_at": "2026-11-27T14:41:19Z",
+	"command": "release",
+	"version": "0.0.4",
+	"versions": {
+		"lootbox": "0.0.4"
+	},
+	"release_targets": [
+		{
+			"id": "lootbox",
+			"kind": "group",
+			"version": "0.0.4",
+			"version_format": "namespaced",
+			"tag": false,
+			"release": false,
+			"tag_name": "lootbox/v0.0.4",
+			"rendered_title": "lootbox v0.0.4 (2026-11-27)",
+			"rendered_changelog_title": "lootbox [0.0.4](https://github.com/pina-rs/lootbox/releases/tag/lootbox/v0.0.4) (2026-11-27)",
+			"members": [
+				"switchboard_randomness_cpi",
+				"lootbox_program",
+				"lootbox_sdk",
+				"lootbox_cli",
+				"lootbox_program_client_typescript",
+				"lootbox_sdk_typescript",
+				"lootbox_program_client_dart",
+				"lootbox_sdk_dart"
+			]
+		}
+	],
+	"released_packages": [
+		"@pina-rs/lootbox",
+		"@pina-rs/lootbox-program-client",
+		"lootbox",
+		"lootbox_cli",
+		"lootbox_program",
+		"lootbox_program_client",
+		"lootbox_sdk",
+		"switchboard_randomness_cpi"
+	],
+	"changed_files": [
+		"Cargo.lock",
+		"Cargo.toml",
+		"clients/dart/pubspec.yaml",
+		"clients/typescript/lootbox_program/package.json",
+		"crates/lootbox-cli/Cargo.toml",
+		"crates/switchboard_randomness_cpi/Cargo.toml",
+		"pnpm-lock.yaml",
+		"programs/lootbox_program/Cargo.toml",
+		"programs/lootbox_program/tests/surfpool/Cargo.toml",
+		"sdks/dart/pubspec.lock",
+		"sdks/dart/pubspec.yaml",
+		"sdks/rust/Cargo.toml",
+		"sdks/typescript/package.json"
+	],
+	"package_publications": [],
+	"updated_changelogs": [],
+	"deleted_changesets": [
+		".changeset/pina-0.25.0.md",
+		".changeset/pina-0.25.1.md"
+	],
+	"changesets": [
+		{
+			"path": ".changeset/pina-0.25.0.md",
+			"summary": "Update Pina to 0.25.0",
+			"details": "Track the Pina 0.25.0 release so the program, SDK, CLI, fixtures and Surfpool tests build against the current framework.",
+			"targets": [
+				{
+					"id": "lootbox",
+					"kind": "group",
+					"bump": "patch",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "patch"
+				}
+			],
+			"context": {
+				"provider": "github",
+				"host": "github.com",
+				"capabilities": {
+					"commit_web_urls": true,
+					"actor_profiles": true,
+					"review_request_lookup": true,
+					"related_issues": true,
+					"issue_comments": true
+				},
+				"introduced": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "c17cfc2378699fddc70d77caa92291ce982c98f9",
+						"short_sha": "c17cfc2",
+						"url": "https://github.com/pina-rs/lootbox/commit/c17cfc2378699fddc70d77caa92291ce982c98f9",
+						"authored_at": "2026-11-26T00:35:20Z",
+						"committed_at": "2026-11-26T00:35:20Z",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#91",
+						"title": "chore(deps): update Pina to 0.25.0",
+						"url": "https://github.com/pina-rs/lootbox/pull/91",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"last_updated": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "c17cfc2378699fddc70d77caa92291ce982c98f9",
+						"short_sha": "c17cfc2",
+						"url": "https://github.com/pina-rs/lootbox/commit/c17cfc2378699fddc70d77caa92291ce982c98f9",
+						"authored_at": "2026-11-26T00:35:20Z",
+						"committed_at": "2026-11-26T00:35:20Z",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#91",
+						"title": "chore(deps): update Pina to 0.25.0",
+						"url": "https://github.com/pina-rs/lootbox/pull/91",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"related_issues": []
+			}
+		},
+		{
+			"path": ".changeset/pina-0.25.1.md",
+			"summary": "Update Pina to 0.25.1",
+			"details": "Track the Pina 0.25.1 release so the program, SDK, CLI, fixtures and Surfpool tests build against the current framework. Compute units stay flat (521,426 CU across the 49 benchmark journeys, against 522,121 recorded for 0.25.0) and the SBF binary measures 472,224 bytes, 2,552 bytes below the approved 474,776.",
+			"targets": [
+				{
+					"id": "lootbox",
+					"kind": "group",
+					"bump": "patch",
+					"origin": "direct-change",
+					"evidence_refs": [],
+					"change_type": "patch"
+				}
+			],
+			"context": {
+				"provider": "github",
+				"host": "github.com",
+				"capabilities": {
+					"commit_web_urls": true,
+					"actor_profiles": true,
+					"review_request_lookup": true,
+					"related_issues": true,
+					"issue_comments": true
+				},
+				"introduced": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "a812996b8631ae4b854d53730c9f437f25863f3d",
+						"short_sha": "a812996",
+						"url": "https://github.com/pina-rs/lootbox/commit/a812996b8631ae4b854d53730c9f437f25863f3d",
+						"authored_at": "2026-11-27T10:28:14Z",
+						"committed_at": "2026-11-27T10:28:14Z",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#93",
+						"title": "chore(deps): update Pina to 0.25.1",
+						"url": "https://github.com/pina-rs/lootbox/pull/93",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"last_updated": {
+					"actor": {
+						"provider": "github",
+						"host": "github.com",
+						"id": null,
+						"login": "ifiokjr",
+						"display_name": "ifiokjr",
+						"url": "https://github.com/ifiokjr",
+						"source": "review_request_author"
+					},
+					"commit": {
+						"provider": "github",
+						"host": "github.com",
+						"sha": "a812996b8631ae4b854d53730c9f437f25863f3d",
+						"short_sha": "a812996",
+						"url": "https://github.com/pina-rs/lootbox/commit/a812996b8631ae4b854d53730c9f437f25863f3d",
+						"authored_at": "2026-11-27T10:28:14Z",
+						"committed_at": "2026-11-27T10:28:14Z",
+						"author_name": "Ifiok Jr.",
+						"author_email": "1160934+ifiokjr@users.noreply.github.com"
+					},
+					"review_request": {
+						"provider": "github",
+						"host": "github.com",
+						"kind": "pull_request",
+						"id": "#93",
+						"title": "chore(deps): update Pina to 0.25.1",
+						"url": "https://github.com/pina-rs/lootbox/pull/93",
+						"author": {
+							"provider": "github",
+							"host": "github.com",
+							"id": null,
+							"login": "ifiokjr",
+							"display_name": "ifiokjr",
+							"url": "https://github.com/ifiokjr",
+							"source": "review_request_author"
+						}
+					}
+				},
+				"related_issues": []
+			}
+		}
+	],
+	"changelogs": [],
+	"provider": {
+		"kind": "github",
+		"owner": "pina-rs",
+		"repo": "lootbox",
+		"host": null
+	}
+}

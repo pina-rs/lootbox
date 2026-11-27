@@ -10397,7 +10397,7 @@ dependencies = [
 
 [[package]]
 name = "switchboard_randomness_cpi"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "pinocchio",
  "solana-address 2.7.0",
